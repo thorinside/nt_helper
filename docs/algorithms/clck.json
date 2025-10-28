@@ -1,448 +1,119 @@
 {
-  "name": "Clock",
   "guid": "clck",
-  "short_description": "Generates clocks",
-  "description": "This algorithm produces and/or receives analogue clock pulses and/or MIDI clock. It is designed to synchronise the module with others, or with other devices that it communicates with via MIDI, or simply to be a source of clock pulses for other algorithms within the module. It can generate its own BPM-based clock, or sync to external clock pulses, or sync to MIDI. It can output clock pulses, or send MIDI clock, or both. If syncing to external clock, the algorithm expects a 24ppqn DINsync style clock. If you only have a slower clock available, use the Clock multiplier algorithm to get the clock up to the right speed before this algorithm sees it.",
-  "use_cases": [
-    "Generating master clock for a modular system",
-    "Syncing disting NT to external clock (analog or MIDI)",
-    "Sending MIDI clock to external devices",
-    "Providing divided/multiplied clocks within the module"
-  ],
-  "gui_description": "The display shows the current tempo, and the transport location in bars, beats, and sixteenths. It also shows the clock source, and whether the transport is running or stopped.",
+  "name": "Clock",
+  "description": "This algorithm produces and/or receives analogue clock pulses and/or MIDI clock. It is designed to synchronise the module with others, or with other devices that it communicates with via MIDI, or simply to be a source of clock pulses for other algorithms within the module.\nIt can generate its own BPM-based clock, or sync to external clock pulses, or sync to MIDI.\nIt can output clock pulses, or send MIDI clock, or both.\nIf syncing to external clock, the algorithm expects a 24ppqn DINsync style clock. If you only have a slower clock available, use the Clock multiplier algorithm to get the clock up to the right speed before this algorithm sees it.",
   "categories": [
-    "Clock",
-    "Utility"
+    "clocking",
+    "MIDI"
   ],
+  "short_description": "Generates clocks",
   "specifications": [
     {
       "name": "Outputs",
       "min": 1,
-      "max": 8,
-      "description": "The number of clock outputs to generate."
+      "max": 8
     }
   ],
   "parameters": [
     {
-      "page": "Global",
-      "params": [
-        {
-          "name": "Source",
-          "min": 0,
-          "max": 2,
-          "default": 0,
-          "unit": null,
-          "description": "The clock source.",
-          "enum_values": [
-            "Internal",
-            "External",
-            "MIDI"
-          ]
-        },
-        {
-          "name": "Tempo",
-          "min": 30.0,
-          "max": 240.0,
-          "default": 120.0,
-          "unit": "BPM",
-          "description": "The internal clock tempo."
-        },
-        {
-          "name": "Run",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Starts and stops the internal clock.",
-          "enum_values": [
-            "Stop",
-            "Start"
-          ]
-        },
-        {
-          "name": "Time sig numerator",
-          "min": 1,
-          "max": 99,
-          "default": 4,
-          "unit": null,
-          "description": "The time signature numerator."
-        },
-        {
-          "name": "Time sig denominator",
-          "min": 0,
-          "max": 4,
-          "default": 2,
-          "unit": null,
-          "description": "The time signature denominator: one of 1, 2, 4, 8, or 16.",
-          "enum_values": [
-            "1",
-            "2",
-            "4",
-            "8",
-            "16"
-          ]
-        },
-        {
-          "name": "Clock input",
-          "min": 1,
-          "max": 28,
-          "default": 1,
-          "unit": null,
-          "description": "The external clock input.",
-          "is_bus": true
-        },
-        {
-          "name": "Run/stop input",
-          "min": 0,
-          "max": 28,
-          "default": 2,
-          "unit": null,
-          "description": "The run/stop input for the external clock. 0 = None.",
-          "is_bus": true
-        },
-        {
-          "name": "Output to breakout",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "If on, send MIDI clock to the breakout.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Output to Select Bus",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "If on, send MIDI clock to the Select Bus.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Output to USB",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "If on, send MIDI clock to USB.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        }
-      ]
-    },
-    {
-      "page": "Output {i+1}",
-      "is_per_channel": true,
-      "params": [
-        {
-          "name": "Enable",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Enables the output.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Output",
-          "min": 0,
-          "max": 28,
-          "default": 0,
-          "unit": null,
-          "description": "The output bus. 0 = None.",
-          "is_bus": true
-        },
-        {
-          "name": "Output mode",
-          "min": 0,
-          "max": 1,
-          "default": 1,
-          "unit": null,
-          "description": "The standard Add/Replace mode selector.",
-          "enum_values": [
-            "Replace",
-            "Add"
-          ],
-          "is_common": true
-        },
-        {
-          "name": "Type",
-          "min": 0,
-          "max": 3,
-          "default": 0,
-          "unit": null,
-          "description": "The output type.",
-          "enum_values": [
-            "Clock",
-            "Run/stop",
-            "Reset",
-            "Trigger"
-          ]
-        },
-        {
-          "name": "Divisor",
-          "min": 0,
-          "max": 19,
-          "default": 9,
-          "unit": null,
-          "description": "The clock division to generate.",
-          "enum_values": [
-            "1/64T",
-            "1/32T",
-            "1/32",
-            "1/16T",
-            "1/16",
-            "1/8T",
-            "1/8",
-            "1/4T",
-            "3/16",
-            "1/4",
-            "1/2T",
-            "3/8",
-            "1/2",
-            "1/1T",
-            "3/4",
-            "1/1",
-            "3/2",
-            "2/1",
-            "3/1",
-            "4/1"
-          ]
-        },
-        {
-          "name": "Low voltage",
-          "min": -10.0,
-          "max": 10.0,
-          "default": 0.0,
-          "unit": "V",
-          "description": "The output voltage when the clock is low/inactive."
-        },
-        {
-          "name": "High voltage",
-          "min": -10.0,
-          "max": 10.0,
-          "default": 5.0,
-          "unit": "V",
-          "description": "The output voltage when the clock is high/active."
-        },
-        {
-          "name": "Ratchet mode",
-          "min": 0,
-          "max": 2,
-          "default": 1,
-          "unit": null,
-          "description": "The ratchet mode.",
-          "enum_values": [
-            "Off",
-            "Twos",
-            "Twos and threes"
-          ]
-        },
-        {
-          "name": "Ratchet",
-          "min": 0,
-          "max": 7,
-          "default": 0,
-          "unit": null,
-          "description": "The ratchet division for the clock. If mode is 'Twos', selects from 1, 2, 4, 8, 16. If mode is 'Twos and threes', selects from 1, 2, 3, 4, 6, 8, 12, 16."
-        },
-        {
-          "name": "Trigger length",
-          "min": 1,
-          "max": 100,
-          "default": 10,
-          "unit": "ms",
-          "description": "The length of the trigger pulse, if the type is 'Reset' or 'Trigger'."
-        }
-      ]
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
       "name": "Source",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The clock source. The options are \"Internal\","
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "\"External\", and \"MIDI\". Tempo",
-      "min": 30,
-      "max": 240,
-      "default": 120,
-      "description": "BPM The internal clock tempo."
+      "name": "Tempo",
+      "min": 30.0,
+      "max": 240.0,
+      "default": 120.0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Run",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Starts and stops the internal clock."
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "0 4 2 The time signature denominator: one of 1, 2, 4, 8, or 16. Clock input",
+      "name": "Time sig numerator",
+      "min": 1,
+      "max": 99,
+      "default": 4,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Time sig denominator",
+      "min": 0,
+      "max": 4,
+      "default": 2,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Clock input",
       "min": 1,
       "max": 28,
       "default": 1,
-      "description": "The external clock input.",
-      "scope": "routing"
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Run/stop input",
+      "min": 0,
+      "max": 28,
+      "default": 2,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Output to USB",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables MIDI output to USB.",
-      "scope": "routing"
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "Enable",
+      "name": "Output to internal",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables the output."
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "The standard Add/Replace mode selector as",
-      "scope": "routing"
-    },
-    {
-      "name": "described above. Type",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "The output type, one of \"Clock\", \"Run/stop\","
-    },
-    {
-      "name": "\"Reset\", or \"Trigger\". Divisor",
-      "min": 0,
-      "max": 19,
-      "default": 9,
-      "description": "The clock division to generate. See below."
-    },
-    {
-      "name": "Ratchet mode",
-      "min": 0,
-      "max": 2,
-      "default": 1,
-      "description": "The ratchet mode, one of \"Off\", \"Twos\", and"
-    },
-    {
-      "name": "\"Twos and threes\". Ratchet",
-      "min": 0,
-      "max": 7,
-      "default": 0,
-      "description": "The ratchet division for the clock."
-    },
-    {
-      "name": "If mode is \"Twos\", selects from 1, 2, 4, 8, 16. If mode is \"Twos and threes\", selects from 1, 2, 3, 4, 6, 8, 12, 16. Trigger length",
-      "unit": "ms",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "description": "The length of the trigger pulse, if the type is"
-    },
-    {
-      "name": "Source",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "The clock source. The options are \"Internal\","
-    },
-    {
-      "name": "\"External\", and \"MIDI\". Tempo",
-      "min": 30,
-      "max": 240,
-      "default": 120,
-      "description": "BPM The internal clock tempo."
-    },
-    {
-      "name": "Run",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Starts and stops the internal clock."
-    },
-    {
-      "name": "0 4 2 The time signature denominator: one of 1, 2, 4, 8, or 16. Clock input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "description": "The external clock input.",
-      "scope": "routing"
-    },
-    {
-      "name": "Output to USB",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "If on, send MIDI clock to USB.",
-      "scope": "routing"
-    },
-    {
-      "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables the output."
-    },
-    {
-      "name": "0 1 1 The standard Add/Replace mode selector as described above. Type",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "The output type, one of \"Clock\", \"Run/stop\","
-    },
-    {
-      "name": "\"Reset\", or \"Trigger\". Divisor",
-      "min": 0,
-      "max": 19,
-      "default": 9,
-      "description": "The clock division to generate. See below."
-    },
-    {
-      "name": "Low voltage",
-      "unit": "V",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "description": "The output voltage when the clock is low/inactive."
-    },
-    {
-      "name": "0 2 1 The ratchet mode, one of \"Off\", \"Twos\", and \"Twos and threes\". Ratchet",
-      "min": 0,
-      "max": 7,
-      "default": 0,
-      "description": "The ratchet division for the clock."
+      "type": "string",
+      "is_common": true
     }
   ],
   "input_ports": [],
   "output_ports": [
     {
+      "name": "Enable",
+      "description": "Enables the output.",
+      "isPerChannel": false
+    },
+    {
       "name": "Output",
-      "busIdRef": "Output"
+      "description": "The output bus."
     }
   ]
 }

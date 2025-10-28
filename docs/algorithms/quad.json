@@ -1,0 +1,193 @@
+{
+  "guid": "quad",
+  "name": "Quadraphonic Mixer",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the [video about that algorithm, here](https://www.youtube.com/watch?v=Y5KzBcD-Y5o) [95] . It is a quadraphonic mixer – that is, it has four outputs for four speakers, rather than the usual two for a stereo mixer. If you need a primer on quadraphonic audio, [Wikipedia has a page here](https://en.wikipedia.org/wiki/Quadraphonic_sound) [96] .",
+  "categories": [
+    "mixing",
+    "routing"
+  ],
+  "short_description": "A quadraphonic mixer",
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 12
+    },
+    {
+      "name": "Spinner",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "name": "Orbiter",
+      "min": 1,
+      "max": 1
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Input",
+      "min": 0,
+      "max": 28,
+      "default": "",
+      "type": "bus"
+    },
+    {
+      "name": "Gain",
+      "min": -70.0,
+      "max": 6.0,
+      "default": -70.0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Coordinates",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "X",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Y",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Angle",
+      "min": -180.0,
+      "max": 180.0,
+      "default": 0.0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Radius",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Spinner",
+      "min": 1,
+      "max": 1,
+      "default": "",
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Spin rate",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Orbiter",
+      "min": 1,
+      "max": 1,
+      "default": "",
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Orbit rate",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Orbit radius",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Orbit phase",
+      "min": -180,
+      "max": 180,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Mute",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Solo",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Name",
+      "default": "",
+      "type": "string"
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Input",
+      "description": "The channel’s input bus."
+    },
+    {
+      "name": "Output",
+      "description": "The front left speaker output."
+    },
+    {
+      "name": "Output",
+      "description": "The front right speaker output."
+    },
+    {
+      "name": "Output",
+      "description": "The rear left speaker output."
+    },
+    {
+      "name": "Output",
+      "description": "The rear right speaker output."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The front left speaker output."
+    },
+    {
+      "name": "Output",
+      "description": "The front right speaker output."
+    },
+    {
+      "name": "Output",
+      "description": "The rear left speaker output."
+    },
+    {
+      "name": "Output",
+      "description": "The rear right speaker output."
+    }
+  ]
+}

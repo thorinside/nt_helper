@@ -1,109 +1,93 @@
 {
-  "name": "Clock multiplier",
   "guid": "clkm",
-  "short_description": "Multiplies clocks",
-  "description": "This algorithm is a simple clock multiplier, generating a faster clock from a slower one. The output clock rate is updated on every clock received, except that the clock duration is limited to at most double each time. This is mainly to prevent the output clock rate changing when the input clock is paused and restarted, which would otherwise be interpreted as a really long clock pulse.",
-  "use_cases": [
-    "Generating faster clock rates from a slower master clock",
-    "Creating complex rhythmic patterns by multiplying subdivisions",
-    "Speeding up sequences or LFOs synced to the multiplied clock"
+  "name": "Clock multiplier",
+  "description": "This algorithm is a simple clock multiplier, generating a faster clock from a slower one.\nThe output clock rate is updated on every clock received, except that the clock duration is limited to at\nmost double each time. This is mainly to prevent the output clock rate changing when the input clock\nis paused and restarted, which would otherwise be interpreted as a really long clock pulse.",
+  "categories": [
+    "clocking",
+    "utility"
   ],
-  "gui_description": null,
+  "short_description": "\"Multiplies clocks\"",
   "specifications": [],
   "parameters": [
     {
-      "page": "Parameters",
-      "params": [
-        {
-          "name": "Clock input",
-          "min": 1,
-          "max": 28,
-          "default": 1,
-          "unit": null,
-          "description": "The clock input bus.",
-          "is_bus": true
-        },
-        {
-          "name": "Clock output",
-          "min": 1,
-          "max": 28,
-          "default": 1,
-          "unit": null,
-          "description": "The clock output bus.",
-          "is_bus": true
-        },
-        {
-          "name": "Output mode",
-          "min": 0,
-          "max": 1,
-          "default": 1,
-          "unit": null,
-          "description": "The standard Add/Replace mode selector.",
-          "enum_values": [
-            "Replace",
-            "Add"
-          ],
-          "is_common": true
-        },
-        {
-          "name": "Multiplier",
-          "min": 1,
-          "max": 24,
-          "default": 2,
-          "unit": null,
-          "description": "The clock multiplier."
-        },
-        {
-          "name": "Low voltage",
-          "min": -10.0,
-          "max": 10.0,
-          "default": 0.0,
-          "unit": "V",
-          "description": "The output voltage when the clock is low/inactive."
-        },
-        {
-          "name": "High voltage",
-          "min": -10.0,
-          "max": 10.0,
-          "default": 5.0,
-          "unit": "V",
-          "description": "The output voltage when the clock is high/active."
-        }
-      ]
-    },
-    {
       "name": "Clock input",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 1,
-      "scope": "routing",
-      "description": ""
+      "type": "bus",
+      "parameterNumber": 0
     },
     {
-      "name": "0 1 1 The standard Add/Replace mode selector as described above. Multiplier",
+      "name": "Clock output",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "type": "bus",
+      "parameterNumber": 1
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "parameterNumber": 2
+    },
+    {
+      "name": "Multiplier",
       "min": 1,
       "max": 24,
       "default": 2,
-      "description": "The clock multiplier."
+      "type": "scaled",
+      "parameterNumber": 3
     },
     {
-      "name": "0 1 1 The standard Add/Replace mode selector as described above. Multiplier",
-      "min": 1,
-      "max": 24,
-      "default": 2,
-      "description": "The clock multiplier."
+      "name": "Low voltage",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "type": "folder",
+      "parameterNumber": 4
+    },
+    {
+      "name": "High voltage",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 5.0,
+      "type": "folder",
+      "parameterNumber": 5
     }
-  ],
-  "categories": [
-    "Clock",
-    "Utility"
   ],
   "input_ports": [
     {
       "name": "Clock input",
-      "busIdRef": "Clock input"
+      "description": "The clock input bus."
+    },
+    {
+      "name": "Clock output",
+      "description": "The clock output bus."
+    },
+    {
+      "name": "Output mode",
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Multiplier",
+      "description": "The clock multiplier."
+    },
+    {
+      "name": "Low voltage",
+      "description": "The output voltage when the clock is low/inactive."
+    },
+    {
+      "name": "High voltage",
+      "description": "The output voltage when the clock is high/active."
     }
   ],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Clock output",
+      "description": "The clock output bus."
+    }
+  ]
 }

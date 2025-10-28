@@ -1,328 +1,127 @@
 {
   "guid": "pyfm",
   "name": "Poly FM",
+  "description": "This algorithm is inspired by the original Poly FM algorithm on the disting EX. It is a polyphonic, multitimbral, FM synthesizer. It uses the six-operator FM engine from the open source Plaits (https://github.com/pichenettes/eurorack/tree/master/plaits) [89] module by Émilie Gillet (exactly as used in the Macro Oscillator 2 algorithm, above). It loads Yamaha DX7 voice bank SysEx files from the MicroSD card. Please refer to the section \"Common polysynth features\" above.",
   "categories": [
-    "VCO",
-    "FM",
-    "Polysynth"
+    "synthesis",
+    "polyphonic",
+    "FM"
   ],
-  "description": "A 4-operator FM polysynth algorithm based on the disting EX algorithm. Supports microtuning.",
+  "short_description": "A polyphonic FM synthesizer",
   "specifications": [
     {
+      "name": "Timbres",
+      "min": 1,
+      "max": 4
+    },
+    {
       "name": "Voices",
-      "value": {
-        "minValue": 1,
-        "maxValue": 14,
-        "defaultValue": 1
-      },
-      "description": "The number of simultaneous voices."
+      "min": 1,
+      "max": 24
     }
   ],
   "parameters": [
     {
-      "name": "Operator N Amplitude",
-      "unit": null,
-      "defaultValue": 100,
-      "minValue": 0,
-      "maxValue": 100,
-      "description": "Amplitude of operator N.",
-      "scope": "operator"
+      "name": "Global gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
-      "name": "Operator N Attack",
-      "unit": "ms",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1000,
-      "description": "Attack time for operator N's envelope.",
-      "scope": "operator"
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
-      "name": "Operator N Decay",
-      "unit": "ms",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1000,
-      "description": "Decay time for operator N's envelope.",
-      "scope": "operator"
+      "name": "Bank",
+      "min": null,
+      "max": null,
+      "default": "",
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
-      "name": "Operator N Ratio",
-      "unit": null,
-      "defaultValue": 1.0,
-      "minValue": 0.001,
-      "maxValue": 16.0,
-      "description": "Frequency ratio for operator N relative to the base frequency.",
-      "scope": "operator"
+      "name": "Voice",
+      "min": 1,
+      "max": 32,
+      "default": 1,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
-      "name": "Operator N Offset",
-      "unit": "Hz",
-      "defaultValue": 0.0,
-      "minValue": -1000.0,
-      "maxValue": 1000.0,
-      "description": "Frequency offset for operator N.",
-      "scope": "operator"
+      "name": "Transpose",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
-      "name": "Operator N Feedback",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 100,
-      "description": "Feedback amount for operator N.",
-      "scope": "operator"
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
-      "name": "Modulation N->M",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 100,
-      "description": "Modulation amount from operator N to operator M.",
-      "scope": "global"
+      "name": "Brightness",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 7
     },
     {
-      "name": "Algorithm",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 7,
-      "description": "Selects the FM algorithm (routing of operators).",
-      "scope": "global"
-    },
-    {
-      "name": "Vel->amp sens",
-      "unit": null,
-      "defaultValue": 100,
-      "minValue": 0,
-      "maxValue": 100,
-      "description": "Sensitivity of overall amplitude to velocity.",
-      "scope": "global"
-    },
-    {
-      "name": "Vel->att sens",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 100,
-      "description": "Sensitivity of envelope attack time to velocity.",
-      "scope": "global"
-    },
-    {
-      "name": "Vel->dec sens",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 100,
-      "description": "Sensitivity of envelope decay time to velocity.",
-      "scope": "global"
-    },
-    {
-      "name": "Output bus",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The main output bus.",
-      "scope": "global"
-    },
-    {
-      "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Output mode (Add/Replace).",
-      "scope": "global"
+      "name": "Envelope scale",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 8
     },
     {
       "name": "Gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 6,
-      "description": "Output gain.",
-      "scope": "global"
-    },
-    {
-      "name": "I2C channel",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "The I2C channel to listen on (0=Off).",
-      "scope": "global"
-    },
-    {
-      "name": "Left output",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The left output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "Right output",
-      "unit": "bus",
-      "defaultValue": 14,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The right output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "Global gain",
-      "unit": "dB",
       "min": -40,
       "max": 6,
       "default": 0,
-      "description": "A global gain adjustment applied to all timbres (in"
-    },
-    {
-      "name": "Bank Chooses the voice bank. Voice",
-      "min": 1,
-      "max": 32,
-      "default": 1,
-      "description": "Chooses the voice within the bank."
-    },
-    {
-      "name": "Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Coarse tuning control."
-    },
-    {
-      "name": "Fine tune",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "cents Fine tuning control."
-    },
-    {
-      "name": "Brightness",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "An overall scaling on the modulator depths."
-    },
-    {
-      "name": "-100 100 0 % An overall scaling on the envelope times. Corresponds to the Plaits 'Morph'. Gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "description": "Sets the output level."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 9
     },
     {
       "name": "Sustain",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain"
-    },
-    {
-      "name": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 1,
-      "description": "The MIDI channel to listen on."
-    },
-    {
-      "name": "Bend range",
-      "unit": "ST",
-      "min": 0,
-      "max": 48,
-      "default": 2,
-      "description": "The MIDI pitch bend range."
-    },
-    {
-      "name": "Global gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "description": "A global gain adjustment applied to all timbres (in"
-    },
-    {
-      "name": "Bank Chooses the voice bank. Voice",
-      "min": 1,
-      "max": 32,
-      "default": 1,
-      "description": "Chooses the voice within the bank."
-    },
-    {
-      "name": "Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Coarse tuning control."
-    },
-    {
-      "name": "Fine tune",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "cents Fine tuning control."
-    },
-    {
-      "name": "Brightness",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "An overall scaling on the modulator depths."
-    },
-    {
-      "name": "-100 100 0 % An overall scaling on the envelope times. Corresponds to the Plaits 'Morph'. Gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "description": "Sets the output level."
-    },
-    {
-      "name": "Sustain",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain"
-    },
-    {
-      "name": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 1,
-      "description": "The MIDI channel to listen on."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 10
     }
-  ],
-  "features": [
-    "feat_poly_params"
   ],
   "input_ports": [],
-  "output_ports": [
-    {
-      "id": "out",
-      "name": "Audio Output",
-      "description": "Main audio output.",
-      "busIdRef": "Output bus"
-    },
-    {
-      "name": "Left output",
-      "busIdRef": "Left output"
-    },
-    {
-      "name": "Right output",
-      "busIdRef": "Right output"
-    }
-  ]
+  "output_ports": []
 }

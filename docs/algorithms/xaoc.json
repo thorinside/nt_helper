@@ -1,260 +1,84 @@
 {
-  "name": "Chaos",
   "guid": "xaoc",
-  "short_description": "CVs from the Lorenz equations",
-  "description": "This algorithm generates chaotic CVs according to a variety of so-called 'attractors', including the well-known Lorenz equations. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation - 'Rho mod' affects 'r' (aka ''), and 'Beta mod' affects 'b' (aka ''). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
-  "use_cases": [
-    "Generating chaotic CV modulation",
-    "Creating unpredictable, evolving patterns",
-    "Driving complex sound synthesis parameters"
+  "name": "Chaos",
+  "description": "This algorithm generates chaotic CVs according to a variety of so-called ‘attractors’, including the well-known Lorenz equations [58] . Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation – ‘Rho mod’ affects 'r' (aka 'ρ'), and ‘Beta mod’ affects 'b' (aka 'β'). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
+  "categories": [
+    "CV processing",
+    "randomization"
   ],
-  "gui_description": "The display shows a graphical representation of the outputs, projected onto the X/Y, X/Z, and Y/Z planes.",
+  "short_description": "\"CVs from the Lorenz equations\"",
   "specifications": [],
   "parameters": [
     {
-      "page": "Chaos",
-      "params": [
-        {
-          "name": "Attractor",
-          "min": 0,
-          "max": 4,
-          "default": 0,
-          "unit": null,
-          "description": "Chooses which equations to use: Lorenz, Rossler, Aizawa, Arneodo, or Thomas.",
-          "enum_values": [
-            "Lorenz",
-            "Rossler",
-            "Aizawa",
-            "Arneodo",
-            "Thomas"
-          ]
-        },
-        {
-          "name": "Speed range",
-          "min": -64,
-          "max": 32,
-          "default": 0,
-          "unit": null,
-          "description": "Sets the range of the Speed control, in quarter octaves (i.e. a change of 4 doubles or halves the speed)."
-        },
-        {
-          "name": "Speed",
-          "min": -500,
-          "max": 500,
-          "default": 0,
-          "unit": null,
-          "description": "Controls the speed of the simulation."
-        },
-        {
-          "name": "Rho mod",
-          "min": -10.0,
-          "max": 10.0,
-          "default": 0.0,
-          "unit": "V",
-          "description": "Modulates the Lorenz 'r' parameter."
-        },
-        {
-          "name": "Beta mod",
-          "min": -10.0,
-          "max": 10.0,
-          "default": 0.0,
-          "unit": "V",
-          "description": "Modulates the Lorenz 'b' parameter."
-        },
-        {
-          "name": "Reset",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "When this parameter is set to 1, the system is reset to the values given by the Reset X/Y/Z parameters.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Reset X",
-          "min": -20.0,
-          "max": 20.0,
-          "default": 0.1,
-          "unit": null,
-          "description": "The X value to reset to."
-        },
-        {
-          "name": "Reset Y",
-          "min": -20.0,
-          "max": 20.0,
-          "default": 0.0,
-          "unit": null,
-          "description": "The Y value to reset to."
-        },
-        {
-          "name": "Reset Z",
-          "min": -20.0,
-          "max": 20.0,
-          "default": 0.0,
-          "unit": null,
-          "description": "The Z value to reset to."
-        }
-      ]
+      "name": "Attractor",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
-      "page": "Scale/offset",
-      "params": [
-        {
-          "name": "X scale",
-          "min": -20.0,
-          "max": 20.0,
-          "default": 10.0,
-          "unit": "V",
-          "description": "The scale of the X output."
-        },
-        {
-          "name": "X offset",
-          "min": -20.0,
-          "max": 20.0,
-          "default": 0.0,
-          "unit": "V",
-          "description": "An offset added to the X output."
-        },
-        {
-          "name": "Y scale",
-          "min": -20.0,
-          "max": 20.0,
-          "default": 10.0,
-          "unit": "V",
-          "description": "The scale of the Y output."
-        },
-        {
-          "name": "Y offset",
-          "min": -20.0,
-          "max": 20.0,
-          "default": 0.0,
-          "unit": "V",
-          "description": "An offset added to the Y output."
-        },
-        {
-          "name": "Z scale",
-          "min": -20.0,
-          "max": 20.0,
-          "default": 10.0,
-          "unit": "V",
-          "description": "The scale of the Z output."
-        },
-        {
-          "name": "Z offset",
-          "min": -20.0,
-          "max": 20.0,
-          "default": -8.0,
-          "unit": "V",
-          "description": "An offset added to the Z output."
-        }
-      ]
+      "name": "Speed range",
+      "min": -64,
+      "max": 32,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
-      "page": "Routing",
-      "params": [
-        {
-          "name": "X output",
-          "min": 0,
-          "max": 28,
-          "default": 15,
-          "unit": null,
-          "description": "The bus to use for the X output. 0 = None.",
-          "is_bus": true
-        },
-        {
-          "name": "X output mode",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "The standard Add/Replace mode selector.",
-          "enum_values": [
-            "Replace",
-            "Add"
-          ],
-          "is_common": true
-        },
-        {
-          "name": "Y output",
-          "min": 0,
-          "max": 28,
-          "default": 16,
-          "unit": null,
-          "description": "The bus to use for the Y output. 0 = None.",
-          "is_bus": true
-        },
-        {
-          "name": "Y output mode",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "The standard Add/Replace mode selector.",
-          "enum_values": [
-            "Replace",
-            "Add"
-          ],
-          "is_common": true
-        },
-        {
-          "name": "Z output",
-          "min": 0,
-          "max": 28,
-          "default": 17,
-          "unit": null,
-          "description": "The bus to use for the Z output. 0 = None.",
-          "is_bus": true
-        },
-        {
-          "name": "Z output mode",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "The standard Add/Replace mode selector.",
-          "enum_values": [
-            "Replace",
-            "Add"
-          ],
-          "is_common": true
-        },
-        {
-          "name": "Reset input",
-          "min": 0,
-          "max": 28,
-          "default": 0,
-          "unit": null,
-          "description": "The bus to use for the reset input. A positive-going edge here resets the system to the values given by the Reset X/Y/Z parameters. 0 = None.",
-          "is_bus": true
-        }
-      ]
-    }
-  ],
-  "categories": [
-    "CV",
-    "Random"
-  ],
-  "input_ports": [
+      "name": "Speed",
+      "min": -500,
+      "max": 500,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 3
+    },
     {
-      "name": "Reset input",
-      "busIdRef": "Reset input"
+      "name": "Rho mod",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 4
+    },
+    {
+      "name": "Beta mod",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 5
     }
   ],
+  "input_ports": [],
   "output_ports": [
     {
       "name": "X output",
-      "busIdRef": "X output"
+      "busIdRef": "28",
+      "channelCountRef": "15",
+      "isPerChannel": false
     },
     {
       "name": "Y output",
-      "busIdRef": "Y output"
+      "busIdRef": "28",
+      "channelCountRef": "16",
+      "isPerChannel": false
     },
     {
       "name": "Z output",
-      "busIdRef": "Z output"
+      "busIdRef": "28",
+      "channelCountRef": "17",
+      "isPerChannel": false
     }
   ]
 }

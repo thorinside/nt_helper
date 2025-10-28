@@ -1,185 +1,57 @@
 {
-  "name": "Crossfader",
   "guid": "xfad",
-  "short_description": "Crossfades signals",
-  "description": "This algorithm crossfades between two sets of signals (from mono up to two sets of eight channels). Three different crossfade curves are available: Equal gain (for phase-coherent material), Equal power (for non-phase-coherent material), and Transition (DJ-style). Inputs A & B, and the output, use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the 'Width' parameter. The crossfade can be controlled by both a parameter and a CV.",
-  "use_cases": [
-    "Mixing between two audio sources",
-    "Blending CV signals",
-    "Creating smooth transitions between signal paths",
-    "Voltage-controlled mixing"
+  "name": "Crossfader",
+  "description": "This algorithm crossfades between two sets of signals (from mono up to two sets of eight channels). Three different crossfade curves are available: Equal gain - Appropriate for crossfading phase-coherent material. Equal power - Appropriate for crossfading non-phase-coherent material. Transition - DJ-style crossfade where both sources are at full gain at the 50% position. Inputs A & B, and the output, use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the ‘Width’ parameter. For example, to crossfade stereo signals, set the Width to 2. The crossfade can be controlled by both a parameter and a CV, which are simply summed if both are in use.",
+  "categories": [
+    "audio effects",
+    "mixing"
   ],
-  "gui_description": "The display shows a graphical representation of the crossfade curves, and the amount of the two signals that are combined in the output mix.",
-  "specifications": [
-    {
-      "name": "Channels"
-    }
-  ],
+  "short_description": "\"Crossfades signals\"",
+  "specifications": [],
   "parameters": [
     {
-      "page": "Crossfader",
-      "params": [
-        {
-          "name": "Crossfader",
-          "min": 0.0,
-          "max": 100.0,
-          "default": 50.0,
-          "unit": "%",
-          "description": "The crossfade position, from 0% (input A only) to 100% (input B only)."
-        },
-        {
-          "name": "Curve",
-          "min": 0,
-          "max": 2,
-          "default": 1,
-          "unit": null,
-          "description": "The crossfade curve.",
-          "enum_values": [
-            "Equal gain",
-            "Equal power",
-            "Transition"
-          ]
-        }
-      ]
+      "name": "Crossfader",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
-      "page": "Routing",
-      "params": [
-        {
-          "name": "Input A",
-          "min": 1,
-          "max": 28,
-          "default": 1,
-          "unit": null,
-          "description": "The first bus for input A.",
-          "is_bus": true
-        },
-        {
-          "name": "Input B",
-          "min": 1,
-          "max": 28,
-          "default": 2,
-          "unit": null,
-          "description": "The first bus for input B.",
-          "is_bus": true
-        },
-        {
-          "name": "Output",
-          "min": 1,
-          "max": 28,
-          "default": 13,
-          "unit": null,
-          "description": "The first bus for the output.",
-          "is_bus": true
-        },
-        {
-          "name": "Output mode",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "The standard Add/Replace mode selector.",
-          "enum_values": [
-            "Replace",
-            "Add"
-          ],
-          "is_common": true
-        },
-        {
-          "name": "Width",
-          "min": 1,
-          "max": 8,
-          "default": 1,
-          "unit": null,
-          "description": "The number of busses to process."
-        },
-        {
-          "name": "Crossfade input",
-          "min": 0,
-          "max": 28,
-          "default": 0,
-          "unit": null,
-          "description": "The CV input to drive the crossfade, scaled so that 5V covers the range 0-100%. 0 = None.",
-          "is_bus": true
-        }
-      ]
-    },
-    {
-      "name": "Input A",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Input B",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 2,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Crossfader 0.0 100. 0 50.0 % The crossfade position, from 0% (input A only) to 100% (input B only). Curve",
+      "name": "Curve",
       "min": 0,
       "max": 2,
       "default": 1,
-      "description": "The crossfade curve, as above.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above. Width",
-      "min": 1,
-      "max": 8,
-      "default": 1,
-      "description": "The number of busses to process."
-    },
-    {
-      "name": "Crossfader 0.0 100. 0 50.0 % The crossfade position, from 0% (input A only) to 100% (input B only). Curve",
-      "min": 0,
-      "max": 2,
-      "default": 1,
-      "description": "The crossfade curve, as above.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above. Width",
-      "min": 1,
-      "max": 8,
-      "default": 1,
-      "description": "The number of busses to process."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 2
     }
-  ],
-  "categories": [
-    "Mixer",
-    "Utility"
   ],
   "input_ports": [
     {
       "name": "Input A",
-      "busIdRef": "Input A"
+      "busIdRef": "1",
+      "isPerChannel": false
     },
     {
       "name": "Input B",
-      "busIdRef": "Input B"
+      "busIdRef": "2",
+      "isPerChannel": false
+    },
+    {
+      "name": "Output",
+      "busIdRef": "13",
+      "isPerChannel": false
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "busIdRef": "Output"
+      "busIdRef": "13",
+      "isPerChannel": false
     }
   ]
 }

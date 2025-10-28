@@ -1,111 +1,47 @@
 {
   "guid": "tuns",
   "name": "Tuner (simple)",
+  "description": "This algorithm provides four simultaneous tuners.\nIt uses a simple pitch detection method which will only work reliably for simple tones, but happily\n\"simple tones\" covers most of those that you will get from an analogue VCO, which in a Eurorack\nenvironment you might find yourself tuning quite often.\nBeing simple, it consumes little CPU.\nMicrotuning via Scala or MTS is supported.\nFor a more sophisticated tuner, please see the \"Tuner (fancy)\" algorithm.",
   "categories": [
-    "Utility",
-    "Tuning"
+    "analysis",
+    "calibration"
   ],
-  "description": "Provides four simultaneous tuners using a simple pitch detection method. Works reliably for simple tones (e.g., analogue VCOs). Consumes little CPU. Supports microtuning via Scala/MTS. For complex signals, use 'Tuner (fancy)'.",
+  "short_description": "A basic tuner for simple tones",
   "specifications": [],
   "parameters": [
     {
       "name": "Channel 1",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 1,
-      "scope": "global",
-      "description": "The input bus for tuner number 1 (0=disabled)."
+      "type": "bus",
+      "parameterNumber": 1
     },
     {
       "name": "Channel 2",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
-      "description": "The input bus for tuner number 2 (0=disabled)."
+      "type": "bus",
+      "parameterNumber": 2
     },
     {
       "name": "Channel 3",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
-      "description": "The input bus for tuner number 3 (0=disabled)."
+      "type": "bus",
+      "parameterNumber": 3
     },
     {
       "name": "Channel 4",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
-      "description": "The input bus for tuner number 4 (0=disabled)."
-    },
-    {
-      "name": "Channel",
-      "min": 1,
-      "max": 0,
-      "default": 28,
-      "description": "1 The input bus for tuner number 1."
-    },
-    {
-      "name": "Channel",
-      "min": 2,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 2."
-    },
-    {
-      "name": "Channel",
-      "min": 3,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 3."
-    },
-    {
-      "name": "Channel",
-      "min": 4,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 4."
-    },
-    {
-      "name": "Channel",
-      "min": 1,
-      "max": 0,
-      "default": 28,
-      "description": "1 The input bus for tuner number 1."
-    },
-    {
-      "name": "Channel",
-      "min": 2,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 2."
-    },
-    {
-      "name": "Channel",
-      "min": 3,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 3."
-    },
-    {
-      "name": "Channel",
-      "min": 4,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 4."
+      "type": "bus",
+      "parameterNumber": 4
     }
   ],
-  "input_ports": [
-    "Audio (Channel 1)",
-    "Audio (Channel 2)",
-    "Audio (Channel 3)",
-    "Audio (Channel 4)"
-  ],
+  "input_ports": [],
   "output_ports": []
 }

@@ -1,103 +1,110 @@
 {
   "guid": "samb",
   "name": "Sample Player (Scrub)",
+  "description": "This algorithm is based on the Audio Playback with Scrub algorithm on the disting mk4. You might like to watch the video on that algorithm, here https://www.youtube.com/watch?v=-Z3v_W-s2rI 101 . From the disting mk4 manual: In this algorithm the sample playback position is directly driven from the [input]. Imagine a piece of audio tape passing over a tape head – in other algorithms, that tape is constantly moving at some speed or other as if driven by a motor, but in this algorithm you're basically dragging the tape back and forwards over the playhead yourself. You can scrub the audio using a CV input, or the Scrub parameter (which can of course be mapped). Remember that you need to trigger the sample before any playback will occur, and again to change the sample (unless you have ‘Retrigger on change’ on). Please review the section on the features common to the various Sample Players, above. The display shows the waveform and the playhead position as a check mark above it: The current playback speed is also shown. Positive values indicate forwards playback; negative values indicates reversed playback.",
   "categories": [
-    "Sampler"
+    "sampling"
   ],
-  "description": "This algorithm is based on the Audio Playback with Scrub algorithm on the disting mk4. You might like to watch the video on that algorithm, here^88. From the disting mk4 manual: \"In this algorithm the sample playback position is directly driven from the [input]. Imagine a piece of audio tape passing over a tape head - in other algorithms, that tape is constantly moving at some speed or other as if driven by a motor, but in this algorithm you're basically dragging the tape back and forwards over the playhead yourself.\" You can scrub the audio using a CV input, or the Scrub parameter (which can of course be mapped). Remember that you need to trigger the sample before any playback will occur, and again to change the sample (unless you have 'Retrigger on change' on). Please review the section on the features common to the various Sample Players, above.",
-  "specifications": [],
-  "parameters": [
+  "short_description": "Plays samples with scrub control",
+  "specifications": [
     {
-      "name": "Scrub",
-      "unit": "%",
-      "defaultValue": 50.0,
-      "minValue": 0.0,
-      "maxValue": 100.0,
-      "scope": "global",
-      "description": "Sets the scrub position.",
+      "name": "Record time",
       "min": 0,
-      "max": 100,
-      "default": 50
+      "max": 60
     },
     {
       "name": "Max speed",
-      "unit": null,
-      "defaultValue": 16,
-      "minValue": 1,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "Sets the maximum playback speed.",
       "min": 1,
-      "max": 100,
-      "default": 16
+      "max": 100
     },
     {
       "name": "Slew",
-      "unit": null,
-      "defaultValue": 400,
-      "minValue": 0,
-      "maxValue": 1000,
-      "scope": "global",
-      "description": "Sets the amount of slew applied to the scrub position.",
       "min": 0,
-      "max": 1000,
-      "default": 400
+      "max": 1000
     },
     {
       "name": "Min CV",
-      "unit": "V",
-      "defaultValue": -5,
-      "minValue": -10,
-      "maxValue": 10,
-      "scope": "global",
-      "description": "Sets the CV voltage corresponding to scrubbing to the start of the sample.",
       "min": -10,
-      "max": 10,
-      "default": -5
+      "max": 10
     },
     {
       "name": "Max CV",
-      "unit": "V",
-      "defaultValue": 5,
-      "minValue": -10,
-      "maxValue": 10,
-      "scope": "global",
-      "description": "Sets the CV voltage corresponding to scrubbing to the end of the sample."
+      "min": -10,
+      "max": 10
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Scrub",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": true,
+      "parameterNumber": 1
     },
     {
-      "name": "Scrub input",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use as the scrub CV input."
+      "name": "Max speed",
+      "min": 1,
+      "max": 100,
+      "default": 16,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
-      "name": "position. Min CV",
-      "unit": "V",
+      "name": "Slew",
+      "min": 0,
+      "max": 1000,
+      "default": 400,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 3
+    },
+    {
+      "name": "Min CV",
       "min": -10,
       "max": 10,
       "default": -5,
-      "description": "Sets the CV voltage corresponding to scrubbing to"
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
-      "name": "the start of the sample. Max CV",
-      "unit": "V",
+      "name": "Max CV",
       "min": -10,
       "max": 10,
       "default": 5,
-      "description": "Sets the CV voltage corresponding to scrubbing to"
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
-      "name": "the start of the sample. Max CV",
-      "unit": "V",
-      "min": -10,
-      "max": 10,
-      "default": 5,
-      "description": "Sets the CV voltage corresponding to scrubbing to"
+      "name": "Scrub input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": true,
+      "parameterNumber": 6
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "input_ports": [
+    {
+      "name": "CV Input",
+      "description": "CV input for scrubbing"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Audio Output",
+      "description": "Output audio signal"
+    }
+  ]
 }

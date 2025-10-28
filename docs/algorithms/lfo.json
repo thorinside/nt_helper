@@ -1,0 +1,12 @@
+{
+  "guid": "lfo ",
+  "name": "LFO",
+  "description": "This algorithm offers a number of flexible low frequency oscillators. The global ‘Quality’ parameter offers two options: “Stepped” quality is extremely low CPU usage, and is appropriate for automating parameters of other algorithms (via mapping).  “Linear” quality should be selected if you plan to use the LFOs to output CVs to other modules. The LFOs can run freely, or be synced to external clocks or to MIDI clock. When there is more than one LFO channel, channels 2-4 can be locked to the phase of LFO 1. This allows you to, for example, create a quadrature LFO. Use the ‘Phase’ parameter of LFOs 2-4 to set the phase relationship in degrees to LFO 1. Note that in this case, the ‘Speed’ and ‘Multiplier’ parameters of the phase-locked LFO have no effect. The display shows the shape of the current channel’s output, or if the ‘Globals’ page is active, the shape of all the channels. The global parameters: Quality (0-1, default 1), Clock input (0-28, default 0). Per-channel parameters: Enable (0-1, default 0), Speed (0-16383, default 8605), Multiplier (0-3, default 1), Sine (-10.00-10.00, default 0.00), Triangle (-10.00-10.00, default 0.00), Saw (-10.00-10.00, default 0.00), Square (-10.00-10.00, default 0.00), Pulse width (0.0-100.0, default 50.0), Offset (-10.00-10.00, default 0.00), Asymmetry (-100.0-100.0, default 0.0), Random (-10.00-10.00, default 0.00), Phase (0-360, default 0). Per-channel routing parameters: Output (0-28, default 15), Output mode (0-1, default 0). Per-channel sync parameters: Sync (0-4, default 0), Clock multiplier (0-23, default 15), MIDI divisor (0-19, default 9).",
+  "categories": [
+    "synthesis",
+    "utility",
+    "CV processing",
+    "clocking",
+    "MIDI"
+  ]
+}

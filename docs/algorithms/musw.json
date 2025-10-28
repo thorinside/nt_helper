@@ -1,134 +1,144 @@
 {
   "guid": "musw",
   "name": "Multi-Switch",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the [video on that algorithm here](https://www.youtube.com/watch?v=bbwHnLNqOXo) [85] . It offers up to six highly configurable sequential or voltage controlled switches. Being DC-coupled, it can switch audio or CVs. Each switch consists of two sub-switches: an input sub-switch, and an output sub-switch. The selected input is routed to the selected output. When multiple switches share the same output, their signals are summed. Each sub-switch can crossfade when transitioning, for click-free switches (when the fade is very short) or noticeable blends between sources/targets (when the fade is long). The switches can be controlled by CV inputs, or by one of the 'Macro' parameters, which can in turn be controlled by one of the mapping sources (CV, MIDI, or I2C).",
   "categories": [
-    "Utility",
-    "Routing"
+    "routing",
+    "mixing",
+    "CV processing",
+    "utility"
   ],
-  "description": "Sequential or CV-controlled switch with up to six configurable switches; DC-coupled for audio or CV.",
+  "short_description": "\"Sequential or CV-controlled switch\"",
   "specifications": [
     {
       "name": "Switches",
-      "value": {
-        "minValue": 1,
-        "maxValue": 6,
-        "defaultValue": 2
-      },
-      "description": "Number of switches."
+      "min": 1,
+      "max": 6
+    },
+    {
+      "name": "Number of switches",
+      "min": 1,
+      "max": 6
     }
   ],
   "parameters": [
     {
-      "name": "Input",
-      "unit": "bus",
+      "name": "Macro 1-6",
       "min": 0,
-      "max": 28,
-      "default": 1,
-      "scope": "switch",
-      "description": "Selected input bus for the switch (0=None)."
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "scope": "switch",
-      "description": "Selected output bus for the switch (0=None)."
-    },
-    {
-      "name": "Crossfade",
-      "unit": "ms",
-      "min": 0,
-      "max": 5000,
+      "max": 127,
       "default": 0,
-      "scope": "switch",
-      "description": "Crossfade time when switching."
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "Input A-L",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Output A-H",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Macro 1",
-      "min": -6,
-      "max": 0,
-      "default": 127,
-      "description": "0 A macro parameter that can be chosen as a sub-"
-    },
-    {
-      "name": "switch control source. Output mode",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as",
-      "scope": "routing"
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "0 34 0 The control source for the input switch - one of the 28 busses, or one of the 6 macro parameters. In link switch",
+      "name": "In control type",
       "min": 0,
-      "max": 6,
+      "max": 9,
       "default": 0,
-      "description": "The linked switch, if the 'In control type' is 'Link'.",
-      "scope": "routing"
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "0 11 0 The linked switch offset, if the 'Out control type' is 'Link'. Reset source",
+      "name": "In control source",
       "min": 0,
       "max": 34,
       "default": 0,
-      "description": "The reset source for the switch - one of the 28"
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "busses, or one of the 6 macro parameters. Fade",
-      "unit": "ms",
+      "name": "In link switch",
+      "min": 0,
+      "max": 6,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "In link offset",
+      "min": 0,
+      "max": 11,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Out control type",
+      "min": 0,
+      "max": 9,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Out control source",
+      "min": 0,
+      "max": 34,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Out link switch",
+      "min": 0,
+      "max": 6,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Out link offset",
+      "min": 0,
+      "max": 11,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Reset source",
+      "min": 0,
+      "max": 34,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Fade",
       "min": 0,
       "max": 1000,
       "default": 1,
-      "description": "The switch's crossfade time, in milliseconds."
-    },
-    {
-      "name": "input sub-switch. Output A-H",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for the 8 possible outputs of the",
-      "scope": "routing"
+      "type": "string",
+      "is_common": true
     }
   ],
-  "features": [],
   "input_ports": [
     {
-      "name": "Input",
-      "busIdRef": "Input"
+      "name": "Input A-L",
+      "id": "A-L",
+      "busIdRef": "28",
+      "isPerChannel": false
     },
     {
-      "name": "Input A-L",
-      "busIdRef": "Input A-L"
+      "name": "Output A-H",
+      "id": "A-H",
+      "busIdRef": "28",
+      "isPerChannel": false
     }
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "busIdRef": "Output"
-    },
-    {
       "name": "Output A-H",
-      "busIdRef": "Output A-H"
+      "id": "A-H",
+      "busIdRef": "28",
+      "isPerChannel": false
     }
   ]
 }

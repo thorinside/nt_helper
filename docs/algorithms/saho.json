@@ -1,134 +1,67 @@
 {
   "guid": "saho",
   "name": "Sample and Hold",
+  "description": "This algorithm is a simple sample/track and hold utility. A common gate/trigger input controls the sampling/tracking of a number of signal channels.\nThere are two modes of operation:\n- ‘Sample and hold’ - the output is a sample of the input, taken when the gate/trigger input goes high.\n- ‘Track and hold’ - the output follows the input while the gate is high, and freezes when the gate goes low.",
   "categories": [
-    "CV",
-    "Modulation",
-    "Random"
+    "utility",
+    "logic"
   ],
-  "description": "Simple sample (or track) and hold utility. A common gate/trigger input controls the sampling/tracking of multiple signal channels. Two modes: 'Sample and hold' (samples input on gate high) and 'Track and hold' (follows input while gate high, holds on gate low).",
+  "short_description": "\"Simple sample (or track) and hold\"",
   "specifications": [
     {
       "name": "Channels",
-      "unit": null,
       "min": 1,
-      "max": 8,
-      "description": "The number of bus channels to process."
+      "max": 8
     }
   ],
   "parameters": [
     {
       "name": "Gate input",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 1,
-      "scope": "common",
-      "description": "The input bus to use for the gate/trigger."
+      "type": "bus",
+      "is_common": true
     },
     {
       "name": "Gate offset",
-      "unit": "ms",
       "min": 0.0,
       "max": 10.0,
       "default": 2.0,
-      "scope": "common",
-      "description": "Offsets (delays) the gate input relative to the signal inputs."
+      "type": "scaled",
+      "is_common": true
     },
     {
       "name": "Input",
-      "unit": "bus",
       "min": 1,
       "max": 28,
-      "default": null,
-      "scope": "per-channel",
-      "description": "The signal input bus to sample/track."
+      "default": "",
+      "type": "bus",
+      "is_common": true
     },
     {
       "name": "Output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "per-channel",
-      "description": "The output bus."
+      "type": "bus",
+      "is_common": true
     },
     {
       "name": "Output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "per-channel",
-      "description": "The standard Add/Replace mode selector."
+      "type": "enum",
+      "is_common": true
     },
     {
       "name": "Mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Sample and hold",
-        "Track and hold"
-      ],
-      "scope": "per-channel",
-      "description": "Chooses between 'Sample and hold' and 'Track and hold'."
-    },
-    {
-      "name": "Input 1 28 The signal input bus to sample/track. Output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "described above. Mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Chooses between 'Sample and hold' and 'Track"
-    },
-    {
-      "name": "Input 1 28 The signal input bus to sample/track. Output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "described above. Mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Chooses between 'Sample and hold' and 'Track"
-    }
-  ],
-  "input_ports": [
-    {
-      "name": "CV (Signal)"
-    },
-    {
-      "name": "Gate"
-    },
-    {
-      "name": "Gate input",
-      "busIdRef": "Gate input"
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "CV"
-    },
-    {
-      "name": "Output",
-      "busIdRef": "Output"
+      "type": "enum",
+      "is_common": true
     }
   ]
 }

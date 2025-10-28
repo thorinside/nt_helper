@@ -1,118 +1,87 @@
 {
   "guid": "vcam",
   "name": "VCA/Multiplier",
+  "description": "This algorithm is a voltage multiplier, which can be used as a VCA. The CV on the common channel is used to multiply the voltages on the other channels.",
   "categories": [
-    "VCA",
-    "Dynamics",
-    "Utility"
+    "mixing",
+    "CV Processing"
   ],
-  "description": "Voltage multiplier algorithm that can function as a VCA. Uses a common CV input to multiply voltages on other channels. Supports typical VCA (clamp to 0V) or four-quadrant multiplier behavior.",
+  "short_description": "\"Four quadrant multiplier\"",
   "specifications": [
     {
       "name": "Channels",
-      "unit": null,
       "min": 1,
-      "max": 8,
-      "description": "The number of bus channels to process."
+      "max": 8
+    },
+    {
+      "name": "Input",
+      "min": 1,
+      "max": 28
+    },
+    {
+      "name": "Clamp to 0V",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Divider",
+      "min": 1,
+      "max": 12
+    },
+    {
+      "name": "Default",
+      "value": "8",
+      "description": "Sets the scaling of the input CV that corresponds to \"unity gain\""
     }
   ],
   "parameters": [
     {
       "name": "Input",
-      "unit": "bus",
       "min": 1,
       "max": 28,
-      "default": 1,
-      "scope": "common",
-      "description": "The common input bus (CV for multiplication)."
+      "default": "1",
+      "type": "bus",
+      "parameterNumber": 1
     },
     {
       "name": "Clamp to 0V",
-      "unit": "toggle",
       "min": 0,
       "max": 1,
-      "default": 1,
-      "scope": "common",
-      "description": "Clamps common input to 0V (VCA mode) or allows negative values (4-quadrant multiplier mode)."
+      "default": "1",
+      "type": "bus",
+      "parameterNumber": 2
     },
     {
       "name": "Divider",
-      "unit": "V",
       "min": 1,
       "max": 12,
-      "default": 8,
-      "scope": "common",
-      "description": "Sets the scaling of the input CV that corresponds to unity gain."
+      "default": "8",
+      "type": "bus",
+      "parameterNumber": 3
     },
     {
       "name": "Input",
-      "unit": "bus",
       "min": 1,
       "max": 28,
-      "default": 1,
-      "scope": "per-channel",
-      "description": "The channel input bus (signal to be multiplied)."
+      "default": "1",
+      "type": "bus",
+      "parameterNumber": 4
     },
     {
       "name": "Output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
-      "default": 0,
-      "scope": "per-channel",
-      "description": "The output bus. If 0 (None), the input bus is used as output, and mode is always Replace."
+      "default": "0",
+      "type": "bus",
+      "parameterNumber": 5
     },
     {
       "name": "Output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "per-channel",
-      "description": "The standard Add/Replace mode selector."
-    },
-    {
-      "name": "0 1 1 Whether to clamp the common input to 0V (typical VCA usage) or not (four quadrant multiplier usage). Divider",
-      "unit": "V",
-      "min": 1,
-      "max": 12,
-      "default": 8,
-      "description": "Sets the scaling of the input CV that corresponds to",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 1 Whether to clamp the common input to 0V (typical VCA usage) or not (four quadrant multiplier usage). Divider",
-      "unit": "V",
-      "min": 1,
-      "max": 12,
-      "default": 8,
-      "description": "Sets the scaling of the input CV that corresponds to",
-      "scope": "routing"
-    }
-  ],
-  "input_ports": [
-    {
-      "name": "CV (Multiplier)"
-    },
-    {
-      "name": "Audio/CV (Signal)"
-    },
-    {
-      "name": "Input",
-      "busIdRef": "Input"
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "Audio/CV"
-    },
-    {
-      "name": "Output",
-      "busIdRef": "Output"
+      "default": "1",
+      "type": "bus",
+      "parameterNumber": 6
     }
   ]
 }

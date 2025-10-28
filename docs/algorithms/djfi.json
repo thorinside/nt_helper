@@ -1,0 +1,70 @@
+{
+  "guid": "djfi",
+  "name": "DJ Filter",
+  "description": "This algorithm is an implementation of the disting mk4 algorithm of the same name. You may like to [review the video about that algorithm, which is here](https://www.youtube.com/watch?v=fII_lscKbBg) [64] . The algorithm is a filter which sweeps from lowpass to highpass on a single control. The Sweep parameter sets the filter cutoff. At the central, zero position no filter effect is applied. If the sweep goes negative, a lowpass filter is applied, with a cutoff frequency that sweeps down the more you go. If the sweep goes positive, a highpass filter is applied, with a cutoff frequency that sweeps up the more you go. There is a deadzone around zero where the filter has no effect, indicated by “>DRY<” next to the parameter value.",
+  "categories": [
+    "filtering",
+    "audio effects"
+  ],
+  "short_description": "\"Low/High pass filter\"",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Sweep",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 1
+    },
+    {
+      "name": "Resonance",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 2
+    },
+    {
+      "name": "Input",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 3
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 4
+    },
+    {
+      "name": "Output",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 5
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

@@ -1,416 +1,134 @@
 {
   "guid": "mac2",
   "name": "Macro Oscillator 2",
+  "description": "This algorithm is an implementation of the open source Plaits (https://github.com/pichenettes/eurorack/tree/master/plaits) [83] module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is https://pichenettes.github.io/mutable-instruments-documentation/modules/plaits/manual/ [84]. The documentation below assumes some familiarity with this. This version of the disting NT firmware is based on v1.2 of the Plaits code.",
   "categories": [
-    "VCO",
-    "Oscillator"
+    "synthesis",
+    "FM",
+    "wavetable"
   ],
-  "description": "Implementation of the open source Plaits module by Emilie Gillet, offering a wide range of synthesis models.",
+  "short_description": "\"It's Plaits!\"",
   "specifications": [],
   "parameters": [
     {
       "name": "Model",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 23,
-      "description": "Chooses the synthesis model.",
-      "scope": "global",
       "min": 0,
       "max": 23,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Coarse tune",
-      "unit": "ST",
-      "defaultValue": 0,
-      "minValue": -60,
-      "maxValue": 60,
-      "description": "Coarse tuning control.",
-      "scope": "global",
       "min": -60,
       "max": 60,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Fine tune",
-      "unit": "cents",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "description": "Fine tuning control.",
-      "scope": "global",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Harmonics",
-      "unit": null,
-      "defaultValue": 64,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Sets the harmonics control.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 64
+      "default": 64,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Timbre",
-      "unit": null,
-      "defaultValue": 64,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Sets the timbre control.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 64
+      "default": 64,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Morph",
-      "unit": null,
-      "defaultValue": 64,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Sets the morph control.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 64
+      "default": 64,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "FM",
-      "unit": "%",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "description": "Sets the FM depth.",
-      "scope": "global",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "Timbre mod",
-      "unit": "%",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "description": "Sets the timbre modulation depth.",
-      "scope": "global",
+      "name": "Timbre<br>mod",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Morph mod",
-      "unit": "%",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "description": "Sets the morph modulation depth.",
-      "scope": "global",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
-      "name": "Low-pass gate",
-      "unit": null,
-      "defaultValue": 127,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Sets the LPG colour (VCFA-VCA blend).",
-      "scope": "global"
+      "name": "Low-pass<br>gate",
+      "min": 0,
+      "max": 127,
+      "default": 127,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Time/decay",
-      "unit": null,
-      "defaultValue": 64,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Sets the envelope decay time.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 64
-    },
-    {
-      "name": "Trigger input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Selects which bus is used as the trigger input (0=None, constant sound).",
-      "scope": "global",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "Level input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Selects which bus is used as the level input (0=None).",
-      "scope": "global",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "CV input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Selects which bus is used as the pitch CV input (0=None).",
-      "scope": "global",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "FM input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Selects which bus is used as the FM input (0=None).",
-      "scope": "global",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "Harmonics input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Selects which bus is used as the harmonics input (0=None).",
-      "scope": "global"
-    },
-    {
-      "name": "Timbre input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Selects which bus is used as the timbre input (0=None).",
-      "scope": "global",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "Morph input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Selects which bus is used as the morph input (0=None).",
-      "scope": "global"
-    },
-    {
-      "name": "Main output",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The bus for the 'Main' output (0=None).",
-      "scope": "global"
-    },
-    {
-      "name": "Aux output",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The bus for the 'Aux' output (0=None).",
-      "scope": "global",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Output mode (Add/Replace).",
-      "scope": "global"
-    },
-    {
-      "name": "Main gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 6,
-      "description": "The level of the 'Main' output signal.",
-      "scope": "global"
-    },
-    {
-      "name": "Aux gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 6,
-      "description": "The level of the 'Aux' output signal.",
-      "scope": "global",
-      "min": -40,
-      "max": 6,
-      "default": 0
-    },
-    {
-      "name": "MIDI mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 3,
-      "enumValues": [
-        "Off",
-        "Pitch",
-        "Trigger",
-        "Pitch & trigger"
-      ],
-      "description": "Controls the algorithm's response to MIDI.",
-      "scope": "global",
-      "min": 0,
-      "max": 3,
-      "default": 0
-    },
-    {
-      "name": "I2C mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 3,
-      "enumValues": [
-        "Off",
-        "Pitch",
-        "Trigger",
-        "Pitch & trigger"
-      ],
-      "description": "Controls the algorithm's response to I2C.",
-      "scope": "global"
-    },
-    {
-      "name": "MIDI channel",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 16,
-      "description": "The MIDI channel to receive on (0=Omni).",
-      "scope": "global"
-    },
-    {
-      "name": "I2C channel",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 255,
-      "description": "The I2C channel to receive on (0=Off).",
-      "scope": "global",
-      "min": 0,
-      "max": 255,
-      "default": 1
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above. Main gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "description": "The level of the 'Main' output signal."
-    },
-    {
-      "name": "below. I2C mode",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Controls the algorithm's response to I2C. See"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above. Main gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "description": "The level of the 'Main' output signal."
-    },
-    {
-      "name": "below. I2C mode",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Controls the algorithm's response to I2C. See"
+      "default": 64,
+      "type": "string",
+      "is_common": true
     }
   ],
   "input_ports": [
     {
-      "id": "trigger",
-      "name": "Trigger",
-      "description": "Trigger input for the internal envelope.",
-      "busIdRef": "Trigger input"
+      "name": "Trigger<br>input",
+      "id": "0",
+      "description": "Selects which bus is used as the trigger input."
     },
     {
-      "id": "level",
-      "name": "Level",
-      "description": "Level CV input (affects internal LPG).",
-      "busIdRef": "Level input"
+      "name": "Level<br>input",
+      "id": "0",
+      "description": "Selects which bus is used as the level input."
     },
     {
-      "id": "cv",
-      "name": "CV",
-      "description": "Pitch CV input (1V/Oct).",
-      "busIdRef": "CV input"
+      "name": "CV input",
+      "id": "0",
+      "description": "Selects which bus is used as the pitch CV input."
     },
     {
-      "id": "fm",
-      "name": "FM",
-      "description": "Frequency Modulation input.",
-      "busIdRef": "FM input"
+      "name": "FM input",
+      "id": "0",
+      "description": "Selects which bus is used as the FM input."
     },
     {
-      "id": "harmonics",
-      "name": "Harmonics",
-      "description": "Harmonics control CV input.",
-      "busIdRef": "Harmonics input"
+      "name": "Harmonics<br>input",
+      "id": "0",
+      "description": "Selects which bus is used as the harmonics input."
     },
     {
-      "id": "timbre",
-      "name": "Timbre",
-      "description": "Timbre control CV input.",
-      "busIdRef": "Timbre input"
-    },
-    {
-      "id": "morph",
-      "name": "Morph",
-      "description": "Morph control CV input.",
-      "busIdRef": "Morph input"
-    }
-  ],
-  "output_ports": [
-    {
-      "id": "main",
-      "name": "Main Out",
-      "description": "Main audio output.",
-      "busIdRef": "Main output"
-    },
-    {
-      "id": "aux",
-      "name": "Aux Out",
-      "description": "Auxiliary audio output.",
-      "busIdRef": "Aux output"
+      "name": "Timbre<br>input",
+      "id": "0",
+      "description": "Select..."
     }
   ]
 }

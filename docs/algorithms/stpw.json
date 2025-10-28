@@ -1,82 +1,62 @@
 {
   "guid": "stpw",
   "name": "Stopwatch",
+  "description": "This algorithm is simply a clock, for timing how long things (for example, your performance) have been going on, or for showing a countdown (for example, until you should stop your performance and get off the stage). It has no effect on any input/output bus and consumes almost no CPU.",
   "categories": [
-    "Utility"
+    "clocking",
+    "utility"
   ],
-  "description": "Simple clock for timing or countdowns. Has no effect on input/output buses and consumes almost no CPU. Prevents screensaver activation while running.",
+  "short_description": "\"Real-time clock for timing things\"",
   "specifications": [],
   "parameters": [
     {
       "name": "Mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Timer",
-        "Countdown"
-      ],
-      "scope": "setup",
       "description": "Chooses whether to display a timer or a countdown."
     },
     {
-      "name": "Start/stop mode",
-      "unit": "enum",
+      "name": "Start/stop<br>mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Gate",
-        "Trigger"
-      ],
-      "scope": "setup",
-      "description": "Sets whether start/stop control is a gate (high=start, low=stop) or a trigger (trigger to start, trigger to stop)."
+      "description": "Sets whether the start/stop control is a gate (start when high, stop when low) or a trigger (trigger to start, another trigger to stop)."
     },
     {
       "name": "Hours",
-      "unit": "hours",
       "min": 0,
       "max": 24,
       "default": 0,
-      "scope": "countdown",
       "description": "Sets the number of hours for the countdown."
     },
     {
       "name": "Minutes",
-      "unit": "minutes",
       "min": 0,
       "max": 59,
       "default": 0,
-      "scope": "countdown",
       "description": "Sets the number of minutes for the countdown."
     },
     {
       "name": "Seconds",
-      "unit": "seconds",
       "min": 0,
       "max": 59,
       "default": 0,
-      "scope": "countdown",
       "description": "Sets the number of seconds for the countdown."
     },
     {
       "name": "Start/stop",
-      "unit": "trigger/gate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "controls",
-      "description": "Starts and stops the timer/countdown based on Start/stop mode."
+      "description": "Starts and stops the timer/countdown."
     },
     {
       "name": "Reset",
-      "unit": "trigger",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "controls",
-      "description": "Sets timer to zero or resets countdown to specified values."
+      "description": "Sets the timer to zero, or resets the countdown to that specified by the countdown parameters."
     }
   ],
   "input_ports": [],

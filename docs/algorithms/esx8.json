@@ -1,252 +1,113 @@
 {
   "guid": "esx8",
   "name": "ESX-8CV Combiner",
+  "description": "This algorithm allows you to drive the outputs of an ESX-8CV module attached to an ES-5 expander which is in turn attached to the disting NT.",
   "categories": [
-    "Utility",
-    "CV"
+    "mixing",
+    "routing",
+    "utility"
   ],
-  "description": "Drives the 8 outputs of an ESX-8CV module connected via an ES-5 expander. Features an adaptive mode for performance optimization or non-adaptive mode for predictable timing.",
-  "specifications": [],
+  "short_description": "\"Drives ESX-8CV outputs\"",
   "parameters": [
     {
       "name": "Expander",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 6,
-      "description": "Chooses the expansion header on the ES-5 to which the ESX-8CV is connected."
+      "min": 1,
+      "max": 6,
+      "default": 1,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Adaptive",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Non-adaptive",
-        "Adaptive"
-      ],
-      "description": "Controls update mode: Non-adaptive updates all outputs continuously (predictable timing, 2kHz effective rate). Adaptive updates only changing outputs (better performance, variable rate 2kHz-16kHz)."
-    },
-    {
-      "name": "Input 1",
-      "unit": "bus",
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The input bus from which to drive output 1."
-    },
-    {
-      "name": "Input 2",
-      "unit": "bus",
-      "defaultValue": 2,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The input bus from which to drive output 2."
-    },
-    {
-      "name": "Input 3",
-      "unit": "bus",
-      "defaultValue": 3,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The input bus from which to drive output 3."
-    },
-    {
-      "name": "Input 4",
-      "unit": "bus",
-      "defaultValue": 4,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The input bus from which to drive output 4."
-    },
-    {
-      "name": "Input 5",
-      "unit": "bus",
-      "defaultValue": 5,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The input bus from which to drive output 5."
-    },
-    {
-      "name": "Input 6",
-      "unit": "bus",
-      "defaultValue": 6,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The input bus from which to drive output 6."
-    },
-    {
-      "name": "Input 7",
-      "unit": "bus",
-      "defaultValue": 7,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The input bus from which to drive output 7."
-    },
-    {
-      "name": "Input 8",
-      "unit": "bus",
-      "defaultValue": 8,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The input bus from which to drive output 8."
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "1",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 1,
-      "scope": "routing",
-      "description": ""
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
       "name": "2",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 2,
-      "scope": "routing",
-      "description": ""
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "3",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 3,
-      "scope": "routing",
-      "description": ""
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "4",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 4,
-      "scope": "routing",
-      "description": ""
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "5",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 5,
-      "scope": "routing",
-      "description": ""
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
       "name": "6",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 6,
-      "scope": "routing",
-      "description": ""
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
       "name": "7",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 7,
-      "scope": "routing",
-      "description": ""
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 7
     },
     {
       "name": "8",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 8,
-      "scope": "routing",
-      "description": ""
-    }
-  ],
-  "input_ports": [
-    {
-      "id": "input1",
-      "name": "Input 1",
-      "description": "Input bus for ESX-8CV output 1.",
-      "busIdRef": "Input 1"
-    },
-    {
-      "id": "input2",
-      "name": "Input 2",
-      "description": "Input bus for ESX-8CV output 2.",
-      "busIdRef": "Input 2"
-    },
-    {
-      "id": "input3",
-      "name": "Input 3",
-      "description": "Input bus for ESX-8CV output 3.",
-      "busIdRef": "Input 3"
-    },
-    {
-      "id": "input4",
-      "name": "Input 4",
-      "description": "Input bus for ESX-8CV output 4.",
-      "busIdRef": "Input 4"
-    },
-    {
-      "id": "input5",
-      "name": "Input 5",
-      "description": "Input bus for ESX-8CV output 5.",
-      "busIdRef": "Input 5"
-    },
-    {
-      "id": "input6",
-      "name": "Input 6",
-      "description": "Input bus for ESX-8CV output 6.",
-      "busIdRef": "Input 6"
-    },
-    {
-      "id": "input7",
-      "name": "Input 7",
-      "description": "Input bus for ESX-8CV output 7.",
-      "busIdRef": "Input 7"
-    },
-    {
-      "id": "input8",
-      "name": "Input 8",
-      "description": "Input bus for ESX-8CV output 8.",
-      "busIdRef": "Input 8"
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "1",
-      "busIdRef": "1"
-    },
-    {
-      "name": "2",
-      "busIdRef": "2"
-    },
-    {
-      "name": "3",
-      "busIdRef": "3"
-    },
-    {
-      "name": "4",
-      "busIdRef": "4"
-    },
-    {
-      "name": "5",
-      "busIdRef": "5"
-    },
-    {
-      "name": "6",
-      "busIdRef": "6"
-    },
-    {
-      "name": "7",
-      "busIdRef": "7"
-    },
-    {
-      "name": "8",
-      "busIdRef": "8"
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 8
     }
   ]
 }

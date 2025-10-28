@@ -1,168 +1,92 @@
 {
   "guid": "ptsh",
   "name": "Pitch Shifter",
+  "description": "This algorithm performs pitch shifting, using a time-domain algorithm [88] . The pitch shift amount is the sum of the various shift amount parameters and the CV input. The algorithm was extracted from the disting EX ‘Tracker’ algorithm, as was the disting NT’s 'Tracker', below. As such these two algorithms make a natural pairing.",
   "categories": [
-    "Effect",
-    "Pitch"
+    "pitch",
+    "audio effects",
+    "CV processing"
   ],
-  "description": "Performs pitch shifting using a time-domain algorithm. Can be paired with the Tracker algorithm.",
+  "short_description": "\"A time-domain pitch shifter\"",
   "specifications": [],
   "parameters": [
     {
-      "name": "Shift algorithm",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "2-phase",
-        "3-phase"
-      ],
-      "description": "Chooses the pitch shifting algorithm (3-phase usually sounds better but uses more CPU).",
-      "scope": "global"
+      "name": "Shift<br>algorithm",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
       "name": "Grain delay",
-      "unit": "ms",
-      "defaultValue": 300,
-      "minValue": 1,
-      "maxValue": 682,
-      "description": "Maximum length of the delay line used by the pitch shifter. Mean latency is half this value.",
-      "scope": "global"
+      "min": 1,
+      "max": 682,
+      "default": 300,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Octaves",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": -10,
-      "maxValue": 10,
-      "description": "The pitch shift amount, in octaves.",
-      "scope": "global"
+      "min": -10,
+      "max": 10,
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "Semitones",
-      "unit": "ST",
-      "defaultValue": 0,
-      "minValue": -48,
-      "maxValue": 48,
-      "description": "The pitch shift amount, in semitones.",
-      "scope": "global",
       "min": -48,
       "max": 48,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "Cents",
-      "unit": "cents",
-      "defaultValue": 0,
-      "minValue": -1200,
-      "maxValue": 1200,
-      "description": "The pitch shift amount, in cents.",
-      "scope": "global",
       "min": -1200,
       "max": 1200,
-      "default": 0
-    },
-    {
-      "name": "Audio input",
-      "unit": "bus",
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The bus to use as the audio input.",
-      "scope": "global",
-      "min": 1,
-      "max": 28,
-      "default": 1
-    },
-    {
-      "name": "Shift input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The bus to use as a V/octave pitch shift amount CV (0=None).",
-      "scope": "global",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The output bus.",
-      "scope": "global",
-      "min": 1,
-      "max": 28,
-      "default": 13
-    },
-    {
-      "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Output mode (Add/Replace).",
-      "scope": "global"
-    },
-    {
-      "name": "0 1 1 Chooses the pitch shifting algorithm, '2-phase' or '3- phase'. The latter usually sounds better, at the expense of more CPU usage. Grain delay",
-      "unit": "ms",
-      "min": 1,
-      "max": 682,
-      "default": 300,
-      "description": "The maximum length of the delay line used by the"
-    },
-    {
-      "name": "pitch shifter. The mean latency of the algorithm is half this value. Octaves",
-      "min": -10,
-      "max": 10,
       "default": 0,
-      "description": "The pitch shift amount, in octaves."
-    },
-    {
-      "name": "0 1 1 Chooses the pitch shifting algorithm, '2-phase' or '3- phase'. The latter usually sounds better, at the expense of more CPU usage. Grain delay",
-      "unit": "ms",
-      "min": 1,
-      "max": 682,
-      "default": 300,
-      "description": "The maximum length of the delay line used by the"
-    },
-    {
-      "name": "pitch shifter. The mean latency of the algorithm is half this value. Octaves",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "description": "The pitch shift amount, in octaves."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 5
     }
   ],
   "input_ports": [
     {
-      "id": "audio_in",
-      "name": "Audio Input",
-      "description": "Audio signal to be pitch shifted.",
-      "busIdRef": "Audio input"
+      "name": "Audio input",
+      "busIdRef": "1",
+      "isPerChannel": true
     },
     {
-      "id": "shift_cv",
-      "name": "Shift CV Input",
-      "description": "V/octave CV input to control pitch shift amount.",
-      "busIdRef": "Shift input"
+      "name": "Shift input",
+      "busIdRef": "0",
+      "isPerChannel": true
+    },
+    {
+      "name": "Output",
+      "busIdRef": "1",
+      "isPerChannel": true
+    },
+    {
+      "name": "Output<br>mode",
+      "busIdRef": "0",
+      "isPerChannel": true
     }
   ],
   "output_ports": [
     {
-      "id": "out",
-      "name": "Pitch Shifted Output",
-      "description": "Pitch shifted audio output.",
-      "busIdRef": "Output"
+      "name": "Output",
+      "busIdRef": "13"
     }
   ]
 }

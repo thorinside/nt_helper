@@ -29,3 +29,5 @@ recommended_inputs:
   - game_brief: "{output_folder}/game-brief.md"
   - narrative_design: "{output_folder}/narrative-design.md"
   - market_research: "{output_folder}/market-research.md"
+
+standalone: true

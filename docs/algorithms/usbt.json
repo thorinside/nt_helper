@@ -1,126 +1,40 @@
 {
   "guid": "usbt",
   "name": "USB audio (to host)",
+  "description": "This algorithm routes signals to the USB audio host, if one is connected.\nThe host sees 12 input channels. Each one of these can be set to receive any of the disting NT’s busses.\nNote that the signals seen by the algorithm, and so by the host, depend where in the list of algorithms this one appears. If it’s the first algorithm, it can send to the host the module’s own inputs, unmodified; if it’s the last algorithm, it can send to the host the outputs of all the other algorithms.\nNote also that “USB audio” doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
   "categories": [
-    "Utility",
-    "Audio-IO"
+    "routing",
+    "external control",
+    "utility"
   ],
-  "description": "Routes signals from the Disting NT's internal busses to the 12 USB audio input channels seen by the host. The signals sent depend on the algorithm's position in the processing chain.",
+  "short_description": "Sends audio to USB host",
   "specifications": [],
   "parameters": [
     {
       "name": "USB channel 1 from",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 1,
-      "scope": "common",
-      "description": "The bus to send to USB channel 1."
+      "type": "bus",
+      "is_common": true
     },
     {
       "name": "USB channel 2 from",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 2,
-      "scope": "common",
-      "description": "The bus to send to USB channel 2."
+      "type": "bus",
+      "is_common": true
     },
     {
-      "name": "USB channel 3 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 3,
-      "scope": "common",
-      "description": "The bus to send to USB channel 3."
-    },
-    {
-      "name": "USB channel 4 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 4,
-      "scope": "common",
-      "description": "The bus to send to USB channel 4."
-    },
-    {
-      "name": "USB channel 5 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 5,
-      "scope": "common",
-      "description": "The bus to send to USB channel 5."
-    },
-    {
-      "name": "USB channel 6 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 6,
-      "scope": "common",
-      "description": "The bus to send to USB channel 6."
-    },
-    {
-      "name": "USB channel 7 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 7,
-      "scope": "common",
-      "description": "The bus to send to USB channel 7."
-    },
-    {
-      "name": "USB channel 8 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 8,
-      "scope": "common",
-      "description": "The bus to send to USB channel 8."
-    },
-    {
-      "name": "USB channel 9 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 9,
-      "scope": "common",
-      "description": "The bus to send to USB channel 9."
-    },
-    {
-      "name": "USB channel 10 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 10,
-      "scope": "common",
-      "description": "The bus to send to USB channel 10."
-    },
-    {
-      "name": "USB channel 11 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 11,
-      "scope": "common",
-      "description": "The bus to send to USB channel 11."
-    },
-    {
-      "name": "USB channel 12 from",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 12,
-      "scope": "common",
-      "description": "The bus to send to USB channel 12."
+      "name": "Etc. up to channel 12",
+      "min": null,
+      "max": null,
+      "default": null,
+      "type": "bus",
+      "is_common": true
     }
   ],
-  "input_ports": [
-    "Audio/CV (from Busses)"
-  ],
-  "output_ports": [
-    "USB Audio/CV (to Host)"
-  ]
+  "input_ports": [],
+  "output_ports": []
 }

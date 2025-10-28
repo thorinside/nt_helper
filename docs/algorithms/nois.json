@@ -1,105 +1,76 @@
 {
   "guid": "nois",
   "name": "Noise generator",
+  "description": "This algorithm is a simple noise generator. Various standard \"colours\" of noise can be generated.",
   "categories": [
-    "Source",
-    "Noise",
-    "Generator"
+    "audio effects"
   ],
-  "description": "Generates various standard colours of noise (Violet, White, Pink, Red, Blended) with configurable amplitude and gain per channel.",
+  "short_description": "Generates various colours of noise",
   "specifications": [
     {
       "name": "Channels",
-      "unit": null,
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 8,
-      "description": "The number of output channels."
+      "min": 1,
+      "max": 8
     }
   ],
   "parameters": [
     {
       "name": "Gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 6,
-      "description": "An overall gain to apply, in addition to the per-channel gain.",
-      "scope": "global"
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": false
     },
     {
       "name": "Output",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The output bus.",
-      "scope": "routing"
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "type": "string",
+      "is_per_channel": true
     },
     {
-      "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "The standard Add/Replace mode selector as described above.",
-      "scope": "routing"
+      "name": "Output<br>mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": true
     },
     {
       "name": "Amplitude",
-      "unit": "V",
-      "defaultValue": 10.0,
-      "minValue": 0.0,
-      "maxValue": 10.0,
-      "description": "The amplitude of the noise signal (before the gain is applied).",
-      "scope": "channel"
+      "min": 0.0,
+      "max": 10.0,
+      "default": 10.0,
+      "type": "string",
+      "is_per_channel": true
     },
     {
       "name": "Gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 6,
-      "description": "The output level.",
-      "scope": "channel"
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": true
     },
     {
       "name": "Colour",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 4,
-      "enumValues": [
-        "Blended",
-        "Violet",
-        "White",
-        "Pink",
-        "Red"
-      ],
-      "description": "The noise colour. The options are Blended, Violet, White, Pink, and Red.",
-      "scope": "channel"
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": true
     },
     {
       "name": "Blend",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 300,
-      "description": "If Blended is selected, sets the blend between noise colours.",
-      "scope": "channel"
+      "min": 0,
+      "max": 300,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": true
     }
   ],
   "input_ports": [],
-  "output_ports": [
-    {
-      "id": "noise_out",
-      "name": "Noise Out",
-      "description": "Noise signal output.",
-      "busIdRef": "Output"
-    }
-  ]
+  "output_ports": []
 }

@@ -1,279 +1,198 @@
 {
   "guid": "srra",
   "name": "Shift Register Random",
+  "description": "This algorithm generates random CVs via the popular rotating shift register method, often known simply as a “Turing Machine” after this module (https://www.musicthing.co.uk/Turing-Machine/) [103]. The joy of this method is that it generates a loop of CVs, with a controllable likelihood of change, including the possibility to lock the loop so it does not change. On each clock, the shift register rotates and a new CV is output. On each rotation, there is the possibility that one bit of the shift register will be flipped, changing the pattern. This algorithm can output either CVs, or triggers, or both. You may like to feed the CVs into the Quantizer algorithm to generate random melodies.",
   "categories": [
-    "CV",
-    "Random",
-    "Logic"
+    "CV Processing",
+    "Randomization",
+    "Triggers"
   ],
-  "description": "Generates random CVs using the rotating shift register method (\"Turing Machine\"). Creates a looping sequence of CVs with controllable likelihood of change. Can lock the loop. Outputs CVs and/or triggers.",
+  "short_description": "Generates random CVs",
   "specifications": [],
   "parameters": [
     {
       "name": "Unrandomness",
-      "unit": "%",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "register",
-      "description": "Likelihood of pattern not changing. 0% = 50/50 chance of bit flip (most random). 100% = never flips (locked). -100% = always flips (locks pattern with 2x length)."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
       "name": "Direction",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Forwards",
-        "Reverse"
-      ],
-      "scope": "register",
-      "description": "Sets whether the pattern moves forwards or in reverse when clocked."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Length",
-      "unit": "steps",
       "min": 1,
       "max": 32,
       "default": 8,
-      "scope": "register",
-      "description": "Sets the length of the shift register (number of steps in the sequence)."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "Scale",
-      "unit": "V",
       "min": -20.0,
       "max": 20.0,
       "default": 10.0,
-      "scope": "cv",
-      "description": "Scales the output CV."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "Offset",
-      "unit": "V",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "scope": "cv",
-      "description": "Offsets the output CV."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
       "name": "Cause",
-      "unit": "enum",
       "min": 0,
       "max": 4,
       "default": 0,
-      "values": [
-        "New bit high",
-        "New bit low",
-        "Bit changes",
-        "Bit low to high",
-        "Bit high to low"
-      ],
-      "scope": "trigger",
-      "description": "Chooses what will cause a trigger to be generated."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
       "name": "Type",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Fixed length",
-        "% of clock"
-      ],
-      "scope": "trigger",
-      "description": "Chooses trigger output type: fixed length or percentage of clock length."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 7
     },
     {
       "name": "Length (ms)",
-      "unit": "ms",
       "min": 1,
       "max": 100,
       "default": 10,
-      "scope": "trigger",
-      "description": "The trigger length, if fixed length is chosen."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 8
     },
     {
       "name": "Length (%)",
-      "unit": "%",
       "min": 1,
       "max": 100,
       "default": 50,
-      "scope": "trigger",
-      "description": "The trigger length, if percentage of clock is chosen."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 9
     },
     {
       "name": "Clock input",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 1,
-      "scope": "routing",
-      "description": "Chooses the clock input bus."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 10
     },
     {
       "name": "Modify input",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "Chooses the \"modify\" input bus. High gate forces pattern modification, even if locked."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 11
     },
     {
       "name": "CV output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 15,
-      "scope": "routing",
-      "description": "The output bus for the CV."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 12
     },
     {
       "name": "Trigger output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The output bus for the trigger."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 13
     },
     {
-      "name": "CV output mode",
-      "unit": "enum",
+      "name": "CV output (mode)",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "The Add/Replace mode for the CV bus."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 14
     },
     {
-      "name": "Trigger output mode",
-      "unit": "enum",
+      "name": "Trigger output (mode)",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "The Add/Replace mode for the trigger bus."
-    },
-    {
-      "name": "Unrandomn ess",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Sets the likelihood of the pattern not changing on"
-    },
-    {
-      "name": "each clock. At 0%, there is a 50:50 chance of a bit flip, which is the most random setting. At 100%, there will never be a fit flip, so the pattern is locked. At -100% there will always be a bit flip, which has the effect of locking the pattern with a repeat count of twice the length. Direction",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Sets whether the pattern moves forwards or in"
-    },
-    {
-      "name": " The new bit value is high.  The new bit value is low.  The bit changes.  The bit goes from low to high.  The bit goes from high to low. Type",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Chooses whether the output trigger will be of a"
-    },
-    {
-      "name": "fixed length, or calculated as a percentage of the clock length. Length (ms)",
-      "unit": "ms",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "description": "The trigger length, if fixed length is chosen."
-    },
-    {
-      "name": "is high, the pattern will always be modified on a clock, even if the pattern is locked. CV output",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "description": "The output bus for the CV.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 28 0 The output bus for the trigger. CV output",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The Add/Replace mode for the CV bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "Unrandomn ess",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Sets the likelihood of the pattern not changing on"
-    },
-    {
-      "name": "each clock. At 0%, there is a 50:50 chance of a bit flip, which is the most random setting. At 100%, there will never be a fit flip, so the pattern is locked. At -100% there will always be a bit flip, which has the effect of locking the pattern with a repeat count of twice the length. Direction",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Sets whether the pattern moves forwards or in"
-    },
-    {
-      "name": " The new bit value is high.  The new bit value is low.  The bit changes.  The bit goes from low to high.  The bit goes from high to low. Type",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Chooses whether the output trigger will be of a"
-    },
-    {
-      "name": "fixed length, or calculated as a percentage of the clock length. Length (ms)",
-      "unit": "ms",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "description": "The trigger length, if fixed length is chosen."
-    },
-    {
-      "name": "is high, the pattern will always be modified on a clock, even if the pattern is locked. CV output",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "description": "The output bus for the CV.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 28 0 The output bus for the trigger. CV output",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The Add/Replace mode for the CV bus.",
-      "scope": "routing"
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 15
     }
   ],
   "input_ports": [
-    "Clock",
-    "Gate (Modify)"
-  ],
-  "output_ports": [
     {
-      "name": "CV"
+      "name": "Clock input",
+      "id": "clock_input",
+      "description": "Input bus for clock."
     },
     {
-      "name": "Trigger"
+      "name": "Modify input",
+      "id": "modify_input",
+      "description": "Input bus for modify."
     },
     {
       "name": "CV output",
-      "busIdRef": "CV output"
+      "id": "cv_output",
+      "description": "Output bus for CV."
+    },
+    {
+      "name": "Trigger output",
+      "id": "trigger_output",
+      "description": "Output bus for trigger."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "CV output",
+      "id": "cv_output",
+      "description": "Output bus for CV."
+    },
+    {
+      "name": "Trigger output",
+      "id": "trigger_output",
+      "description": "Output bus for trigger."
     }
   ]
 }

@@ -1,107 +1,70 @@
 {
   "guid": "sams",
   "name": "Sample Player (Speed)",
+  "description": "This algorithm plays samples with flexible control over the playback speed, including the possibility of playing the sample backwards. It provides the features of a number of disting mk4 algorithms, including Audio Playback, Audio Playback with V/Oct, Audio Playback with Z Speed, and Audio Playback with Reverse.",
   "categories": [
-    "Sampler"
+    "sampling"
   ],
-  "description": "This algorithm plays samples with flexible control over the playback speed, including the possibility of playing the sample backwards. It provides the features of a number of disting mk4 algorithms, including Audio Playback, Audio Playback with V/Oct, Audio Playback with Z Speed, and Audio Playback with Reverse. Please review the section on the features common to the various Sample Players, above.",
-  "specifications": [],
+  "short_description": "Plays samples with speed/pitch control",
+  "specifications": [
+    {
+      "name": "Record time",
+      "min": 0,
+      "max": 60
+    }
+  ],
   "parameters": [
     {
       "name": "Speed",
-      "unit": "%",
-      "defaultValue": 100.0,
-      "minValue": -200.0,
-      "maxValue": 200.0,
-      "scope": "global",
-      "description": "Sets the playback speed. Negative values play backwards.",
-      "min": -200,
-      "max": 200,
-      "default": 100
+      "min": -200.0,
+      "max": 200.0,
+      "default": 100.0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
       "name": "Transpose",
-      "unit": "ST",
-      "defaultValue": 0,
-      "minValue": -60,
-      "maxValue": 60,
-      "scope": "global",
-      "description": "Transposes the playback speed in semitones."
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Fine tune",
-      "unit": "cents",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "Adjusts the playback speed in cents.",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "Speed input",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for speed control, scaled as 5V for 100%.",
       "min": 0,
       "max": 28,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": true,
+      "parameterNumber": 4
     },
     {
       "name": "Pitch input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for 1V/octave pitch control.",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "backwards. Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Transposes the playback speed in semitones."
-    },
-    {
-      "name": "100%. Pitch input",
       "min": 0,
       "max": 28,
       "default": 0,
-      "description": "The bus to use for 1V/octave pitch control.",
-      "scope": "routing"
-    },
-    {
-      "name": "backwards. Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Transposes the playback speed in semitones."
-    },
-    {
-      "name": "0 28 0 The bus to use for speed control, scaled as 5V for 100%. Pitch input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for 1V/octave pitch control.",
-      "scope": "routing"
+      "type": "string",
+      "is_common": false,
+      "is_bus": true,
+      "parameterNumber": 5
     }
   ],
-  "input_ports": [
-    {
-      "name": "Pitch input",
-      "busIdRef": "Pitch input"
-    }
-  ],
+  "input_ports": [],
   "output_ports": []
 }

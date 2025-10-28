@@ -1,488 +1,114 @@
 {
-  "name": "Delay (Stereo)",
   "guid": "dels",
-  "short_description": "A simple stereo delay effect",
-  "description": "This algorithm is a simple stereo in/stereo out delay effect. The delay time can be set manually, via a clock pulse, or via MIDI clock. It can also be modulated via its 'V/oct input', which halves the delay time for every 1V rise in CV (conversely, doubles it for every 1V fall in CV). The 'Fractional' parameter allows for delay times that are not integer multiples of the sample rate. This slightly increases CPU load but will sound significantly better if the delay time is being modulated, for example for chorus or flange type sounds. Conversely, turning it off makes for an extremely clean digital delay, with no colouration in the repeats.",
-  "use_cases": [
-    "Standard stereo delay effects",
-    "Ping-pong delay effects",
-    "Clock-synced stereo delays",
-    "Voltage-controlled delay time modulation for stereo signals",
-    "Creating wide stereo fields with modulated delays"
+  "name": "Delay (Stereo)",
+  "description": "This algorithm is a simple stereo in/stereo out delay effect. The delay time can be set manually, via a clock pulse, or via MIDI clock. It can also be modulated via its ‘V/oct input’, which halves the delay time for every 1V rise in CV (conversely, doubles it for every 1V fall in CV). The ‘Fractional’ parameter allows for delay times that are not integer multiples of the sample rate. This slightly increases CPU load but will sound significantly better if the delay time is being modulated, for example for chorus or flange type sounds. Conversely, turning it off makes for an extremely clean digital delay, with no colouration in the repeats.",
+  "categories": [
+    "audio effects",
+    "delay",
+    "utility"
   ],
-  "gui_description": null,
+  "short_description": "A simple stereo delay effect",
   "specifications": [
     {
       "name": "Max delay time",
       "min": 1,
-      "max": 30,
-      "unit": "seconds",
-      "description": "The maximum delay time."
+      "max": 30
+    },
+    {
+      "name": "Description",
+      "value": "The maximum delay time."
     }
   ],
   "parameters": [
     {
-      "page": "Delay",
-      "params": [
-        {
-          "name": "Mode",
-          "min": 0,
-          "max": 2,
-          "default": 0,
-          "unit": null,
-          "description": "The delay mode.",
-          "enum_values": [
-            "Stereo",
-            "Stereo ping-pong",
-            "Ping-pong"
-          ]
-        },
-        {
-          "name": "Mix",
-          "min": 0,
-          "max": 100,
-          "default": 100,
-          "unit": "%",
-          "description": "The wet/dry mix."
-        },
-        {
-          "name": "Level",
-          "min": -40,
-          "max": 0,
-          "default": 0,
-          "unit": "dB",
-          "description": "The gain applied to the delay/wet signal."
-        },
-        {
-          "name": "Time",
-          "min": 1,
-          "max": 32767,
-          "default": 250,
-          "unit": "ms",
-          "description": "The delay time."
-        },
-        {
-          "name": "Feedback",
-          "min": 0,
-          "max": 100,
-          "default": 50,
-          "unit": "%",
-          "description": "The delay feedback."
-        },
-        {
-          "name": "Initial pan",
-          "min": -100,
-          "max": 100,
-          "default": -100,
-          "unit": "%",
-          "description": "If the mode is \"Ping-pong\", sets the pan position of the first delay."
-        },
-        {
-          "name": "Delay multiplier",
-          "min": 0,
-          "max": 23,
-          "default": 15,
-          "unit": null,
-          "description": "Sets a multiplier to apply to the delay time. Affects both the 'Time' parameter and the delay time set by the clock.",
-          "enum_values": [
-            "1/64T",
-            "1/32T",
-            "1/32",
-            "1/16T",
-            "1/16",
-            "1/8T",
-            "1/8",
-            "1/4T",
-            "3/16",
-            "1/4",
-            "1/2T",
-            "3/8",
-            "1/2",
-            "1/1T",
-            "3/4",
-            "1/1",
-            "3/2",
-            "2/1",
-            "3/1",
-            "4/1"
-          ]
-        },
-        {
-          "name": "Time change",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Sets how changes of delay time will be handled.",
-          "enum_values": [
-            "Slew",
-            "Crossfade"
-          ]
-        },
-        {
-          "name": "Fractional",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Enables fractional delay times.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Block DC",
-          "min": 0,
-          "max": 1,
-          "default": 1,
-          "unit": null,
-          "description": "Enables a DC blocker at the delay input. Recommended for audio use; disable when processing CVs.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        }
-      ]
-    },
-    {
-      "page": "Sync",
-      "params": [
-        {
-          "name": "Clock source",
-          "min": 0,
-          "max": 2,
-          "default": 1,
-          "unit": null,
-          "description": "Chooses the clock source.",
-          "enum_values": [
-            "None",
-            "Clock input",
-            "MIDI clock"
-          ]
-        },
-        {
-          "name": "Clock input",
-          "min": 0,
-          "max": 28,
-          "default": 0,
-          "unit": null,
-          "description": "The input bus to use for the clock, if the source is 'Clock input'. 0 = None.",
-          "is_bus": true
-        },
-        {
-          "name": "MIDI divisor",
-          "min": 0,
-          "max": 19,
-          "default": 9,
-          "unit": null,
-          "description": "The MIDI divisor, if the clock source is 'MIDI clock'.",
-          "enum_values": [
-            "1/64T",
-            "1/32T",
-            "1/32",
-            "1/16T",
-            "1/16",
-            "1/8T",
-            "1/8",
-            "1/4T",
-            "3/16",
-            "1/4",
-            "1/2T",
-            "3/8",
-            "1/2",
-            "1/1T",
-            "3/4",
-            "1/1",
-            "3/2",
-            "2/1",
-            "3/1",
-            "4/1"
-          ]
-        },
-        {
-          "name": "MIDI numerator",
-          "min": 1,
-          "max": 16,
-          "default": 1,
-          "unit": null,
-          "description": "The MIDI numerator, if the clock source is 'MIDI clock'."
-        }
-      ]
-    },
-    {
-      "page": "Routing",
-      "params": [
-        {
-          "name": "Left input",
-          "min": 1,
-          "max": 28,
-          "default": 1,
-          "unit": null,
-          "description": "The left input bus.",
-          "is_bus": true
-        },
-        {
-          "name": "Right input",
-          "min": 1,
-          "max": 28,
-          "default": 2,
-          "unit": null,
-          "description": "The right input bus.",
-          "is_bus": true
-        },
-        {
-          "name": "Left output",
-          "min": 1,
-          "max": 28,
-          "default": 13,
-          "unit": null,
-          "description": "The left output bus.",
-          "is_bus": true
-        },
-        {
-          "name": "Right output",
-          "min": 1,
-          "max": 28,
-          "default": 14,
-          "unit": null,
-          "description": "The right output bus.",
-          "is_bus": true
-        },
-        {
-          "name": "Output mode",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "The standard Add/Replace mode selector.",
-          "enum_values": [
-            "Replace",
-            "Add"
-          ],
-          "is_common": true
-        },
-        {
-          "name": "V/oct input",
-          "min": 0,
-          "max": 28,
-          "default": 0,
-          "unit": null,
-          "description": "The input bus to use for 1V/octave modulation of the delay time. 0 = None.",
-          "is_bus": true
-        }
-      ]
-    },
-    {
-      "name": "Left input",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Right input",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 2,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Left output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Right output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 14,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "V/oct input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
       "name": "Mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The delay mode. The options are \"Stereo\", \"Stereo"
+      "description": "The delay mode. The options are “Stereo”, “Stereo<br>ping-pong” (each echo swaps left and right), and<br>“Ping-pong” (the input to the delay is summed to<br>mono, panned, and then swaps left and right on each<br>echo).",
+      "type": "string"
     },
     {
-      "name": "ping-pong\" (each echo swaps left and right), and \"Ping-pong\" (the input to the delay is summed to mono, panned, and then swaps left and right on each echo). Mix",
-      "unit": "%",
+      "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
       "description": "The wet/dry mix.",
-      "scope": "routing"
+      "type": "string"
     },
     {
       "name": "Level",
-      "unit": "dB",
       "min": -40,
       "max": 0,
       "default": 0,
-      "description": "The gain applied to the delay/wet signal."
+      "description": "The gain applied to the delay/wet signal.",
+      "type": "string"
     },
     {
-      "name": "250 ms The delay time. Feedback",
-      "unit": "%",
+      "name": "Time",
+      "min": 1,
+      "max": 3276,
+      "default": 250,
+      "description": "The delay time.",
+      "type": "string"
+    },
+    {
+      "name": "Feedback",
       "min": 0,
       "max": 100,
       "default": 50,
-      "description": "The delay feedback."
+      "description": "The delay feedback.",
+      "type": "string"
     },
     {
       "name": "Initial pan",
-      "unit": "%",
       "min": -100,
       "max": 100,
       "default": -100,
-      "description": "If the mode is \"Ping-pong\", sets the pan position of"
+      "description": "If the mode is “Ping-pong”, sets the pan position of<br>the first delay.",
+      "type": "string"
     },
     {
-      "name": "0 1 0 Sets how changes of delay time will be handled. The options are 'Slew' (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and 'Crossfade' (the effect rapidly crossfades from one time setting to the other). Fractional",
+      "name": "Delay multiplier",
       "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables fractional delay times. See above."
-    },
-    {
-      "name": "Block DC",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "Enables a DC blocker at the delay input."
-    },
-    {
-      "name": "0 19 9 The MIDI divisor, if the clock source is 'MIDI clock'. MIDI numerator",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "description": "The MIDI numerator, if the clock source is 'MIDI"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above. V/oct input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The input bus to use for 1V/octave modulation of",
-      "scope": "routing"
-    },
-    {
-      "name": "Mode",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "The delay mode. The options are \"Stereo\", \"Stereo"
-    },
-    {
-      "name": "ping-pong\" (each echo swaps left and right), and \"Ping-pong\" (the input to the delay is summed to mono, panned, and then swaps left and right on each echo). Mix",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "The wet/dry mix.",
-      "scope": "routing"
-    },
-    {
-      "name": "Level",
-      "unit": "dB",
-      "min": -40,
-      "max": 0,
-      "default": 0,
-      "description": "The gain applied to the delay/wet signal."
-    },
-    {
-      "name": "250 ms The delay time. Feedback",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 50,
-      "description": "The delay feedback."
-    },
-    {
-      "name": "Initial pan",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": -100,
-      "description": "If the mode is \"Ping-pong\", sets the pan position of"
-    },
-    {
-      "name": "0 1 0 Sets how changes of delay time will be handled. The options are 'Slew' (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and 'Crossfade' (the effect rapidly crossfades from one time setting to the other). Fractional",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables fractional delay times. See above."
-    },
-    {
-      "name": "Block DC",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "Enables a DC blocker at the delay input."
-    },
-    {
-      "name": "0 19 9 The MIDI divisor, if the clock source is 'MIDI clock'. MIDI numerator",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "description": "The MIDI numerator, if the clock source is 'MIDI"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above. V/oct input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The input bus to use for 1V/octave modulation of",
-      "scope": "routing"
+      "max": 23,
+      "default": 15,
+      "description": "Sets a multiplier to apply to the delay time. Affects<br>both the ‘Time’ parameter and the delay time set by<br>the clock.",
+      "type": "string"
     }
-  ],
-  "categories": [
-    "Delay",
-    "Effect"
   ],
   "input_ports": [
     {
       "name": "Left input",
-      "busIdRef": "Left input"
+      "busIdRef": "1",
+      "channelCountRef": "28",
+      "isPerChannel": true
     },
     {
       "name": "Right input",
-      "busIdRef": "Right input"
+      "busIdRef": "1",
+      "channelCountRef": "28",
+      "isPerChannel": false
     },
     {
-      "name": "V/oct input",
-      "busIdRef": "V/oct input"
+      "name": "Left output",
+      "busIdRef": "13",
+      "channelCountRef": "28",
+      "isPerChannel": true
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "14",
+      "channelCountRef": "28",
+      "isPerChannel": false
     }
   ],
   "output_ports": [
     {
-      "name": "Left output",
-      "busIdRef": "Left output"
-    },
-    {
-      "name": "Right output",
-      "busIdRef": "Right output"
+      "name": "Output mode",
+      "busIdRef": "0",
+      "channelCountRef": "1",
+      "isPerChannel": true
     }
   ]
 }
