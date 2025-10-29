@@ -715,7 +715,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
                 'name': 'Voice $voiceNum Gate → ES-5 $es5Port',
                 'type': 'gate',
                 'busParam': 'es5_direct', // Special marker for ES-5 routing
-                'channelNumber': es5Port, // ES-5 port number
+                'channel': es5Port, // ES-5 port number (using 'channel' key for Port.fromJson)
                 'parameterNumber': 0,
                 'voiceNumber': voiceNum,
               };
