@@ -107,6 +107,24 @@
       "default": 1.0,
       "type": "string",
       "is_common": true
+    },
+    {
+      "name": "ES-5 Expander",
+      "min": 0,
+      "max": 6,
+      "default": 0,
+      "type": "enum",
+      "parameterNumber": 53,
+      "description": "If set, the ES-5 expander header to use for gate outputs instead of the bus specified by the First output parameter. \"1\" means the ES-5 itself."
+    },
+    {
+      "name": "ES-5 Output",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "type": "enum",
+      "parameterNumber": 54,
+      "description": "If using an ES-5 expander output for gates, sets which of the 8 outputs on the expander to use as the starting output."
     }
   ],
   "input_ports": [

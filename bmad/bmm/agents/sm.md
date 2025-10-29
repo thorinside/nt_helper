@@ -78,6 +78,8 @@ You must fully embody this agent's persona and follow all activation instruction
     <item cmd="*correct-course" workflow="{project-root}/bmad/bmm/workflows/4-implementation/correct-course/workflow.yaml">Execute correct-course task</item>
     <item cmd="*epic-tech-context" workflow="{project-root}/bmad/bmm/workflows/4-implementation/epic-tech-context/workflow.yaml">Use the PRD and Architecture to create a Tech-Spec for a specific epic</item>
     <item cmd="*validate-epic-tech-context" validate-workflow="{project-root}/bmad/bmm/workflows/4-implementation/epic-tech-context/workflow.yaml">Validate latest Tech Spec against checklist</item>
+    <item cmd="*make-epic-ready" workflow="{project-root}/bmad/bmm/workflows/4-implementation/make-epic-ready/workflow.yaml">Prepare all stories in an epic for development</item>
+    <item cmd="*finish-epic" workflow="{project-root}/bmad/bmm/workflows/4-implementation/finish-epic/workflow.yaml">Execute all stories in an epic sequentially through dev and review cycles</item>
     <item cmd="*exit">Exit with confirmation</item>
   </menu>
 </agent>

@@ -1497,7 +1497,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return result;
   }
 
-  /// Extract ES-5 toggle data for Clock/Euclidean algorithms.
+  /// Extract ES-5 toggle data for Clock/Euclidean/Poly CV algorithms.
   ///
   /// Returns null if the algorithm doesn't support ES-5 direct output.
   /// Returns maps of channel numbers to:
@@ -1510,9 +1510,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<int> channelNumbers,
   })?
   _extractEs5ToggleData(RoutingAlgorithm algorithm) {
-    // Check if this is a Clock or Euclidean algorithm
+    // Check if this is a Clock, Euclidean, or Poly CV algorithm
     final guid = algorithm.algorithm.guid;
-    if (guid != 'clck' && guid != 'eucp') {
+    final isPolyCV = guid.startsWith('py');
+    if (guid != 'clck' && guid != 'eucp' && !isPolyCV) {
       return null;
     }
 
@@ -1535,27 +1536,127 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     final parameterNumbers = <int, int>{};
     final channelNumbers = <int>[];
 
-    // Find all ES-5 Expander parameters (format: "N:ES-5 Expander")
-    for (final param in slot.parameters) {
-      final match = RegExp(r'^(\d+):ES-5 Expander$').firstMatch(param.name);
-      if (match != null) {
-        final channel = int.parse(match.group(1)!);
+    if (isPolyCV) {
+      // Poly CV uses global ES-5 configuration
+      // Find the global ES-5 Expander parameter (no channel prefix)
+      final es5ExpanderParam = slot.parameters.firstWhere(
+        (p) => p.name == 'ES-5 Expander',
+        orElse: () => ParameterInfo.filler(),
+      );
 
-        // Get the parameter value
-        final value = slot.values
-            .firstWhere(
-              (v) => v.parameterNumber == param.parameterNumber,
-              orElse: () => ParameterValue(
-                algorithmIndex: slotIndex,
-                parameterNumber: param.parameterNumber,
-                value: param.defaultValue,
-              ),
-            )
-            .value;
+      if (es5ExpanderParam.parameterNumber < 0) {
+        return null; // No ES-5 Expander parameter found
+      }
 
-        toggles[channel] = value > 0;
-        parameterNumbers[channel] = param.parameterNumber;
-        channelNumbers.add(channel);
+      // Get ES-5 Expander value
+      final es5ExpanderValue = slot.values
+          .firstWhere(
+            (v) => v.parameterNumber == es5ExpanderParam.parameterNumber,
+            orElse: () => ParameterValue(
+              algorithmIndex: slotIndex,
+              parameterNumber: es5ExpanderParam.parameterNumber,
+              value: es5ExpanderParam.defaultValue,
+            ),
+          )
+          .value;
+
+      // Get ES-5 Output base value
+      final es5OutputParam = slot.parameters.firstWhere(
+        (p) => p.name == 'ES-5 Output',
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      final es5OutputValue = es5OutputParam.parameterNumber >= 0
+          ? slot.values
+              .firstWhere(
+                (v) => v.parameterNumber == es5OutputParam.parameterNumber,
+                orElse: () => ParameterValue(
+                  algorithmIndex: slotIndex,
+                  parameterNumber: es5OutputParam.parameterNumber,
+                  value: es5OutputParam.defaultValue,
+                ),
+              )
+              .value
+          : 1;
+
+      // Get voice count
+      final voiceCountParam = slot.parameters.firstWhere(
+        (p) => p.name == 'Voices',
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      final voiceCount = voiceCountParam.parameterNumber >= 0
+          ? slot.values
+              .firstWhere(
+                (v) => v.parameterNumber == voiceCountParam.parameterNumber,
+                orElse: () => ParameterValue(
+                  algorithmIndex: slotIndex,
+                  parameterNumber: voiceCountParam.parameterNumber,
+                  value: voiceCountParam.defaultValue,
+                ),
+              )
+              .value
+          : 1;
+
+      // Check if Gate outputs are enabled
+      final gateOutputsParam = slot.parameters.firstWhere(
+        (p) => p.name == 'Gate outputs',
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      final gateOutputsEnabled = gateOutputsParam.parameterNumber >= 0
+          ? slot.values
+              .firstWhere(
+                (v) => v.parameterNumber == gateOutputsParam.parameterNumber,
+                orElse: () => ParameterValue(
+                  algorithmIndex: slotIndex,
+                  parameterNumber: gateOutputsParam.parameterNumber,
+                  value: gateOutputsParam.defaultValue,
+                ),
+              )
+              .value > 0
+          : false;
+
+      // Only populate ES-5 toggles if gates are enabled
+      if (gateOutputsEnabled && es5ExpanderValue >= 0) {
+        final es5Enabled = es5ExpanderValue > 0;
+
+        // Generate synchronized toggles for each gate output (up to 8 ES-5 ports)
+        for (int voice = 0; voice < voiceCount; voice++) {
+          final es5Port = es5OutputValue + voice;
+
+          // Clip to ES-5 port range (1-8)
+          if (es5Port >= 1 && es5Port <= 8) {
+            toggles[es5Port] = es5Enabled;
+            parameterNumbers[es5Port] = es5ExpanderParam.parameterNumber;
+            channelNumbers.add(es5Port);
+          }
+        }
+      }
+    } else {
+      // Clock/Euclidean: per-channel ES-5 configuration
+      // Find all ES-5 Expander parameters (format: "N:ES-5 Expander")
+      for (final param in slot.parameters) {
+        final match = RegExp(r'^(\d+):ES-5 Expander$').firstMatch(param.name);
+        if (match != null) {
+          final channel = int.parse(match.group(1)!);
+
+          // Get the parameter value
+          final value = slot.values
+              .firstWhere(
+                (v) => v.parameterNumber == param.parameterNumber,
+                orElse: () => ParameterValue(
+                  algorithmIndex: slotIndex,
+                  parameterNumber: param.parameterNumber,
+                  value: param.defaultValue,
+                ),
+              )
+              .value;
+
+          toggles[channel] = value > 0;
+          parameterNumbers[channel] = param.parameterNumber;
+          channelNumbers.add(channel);
+        }
       }
     }
 
@@ -1573,6 +1674,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   /// Handle ES-5 toggle change for a channel.
+  ///
+  /// For Clock/Euclidean: Updates per-channel ES-5 Expander parameter.
+  /// For Poly CV: Updates global ES-5 Expander parameter (synchronized across all gates).
   Future<void> _handleEs5ToggleChange(
     int algorithmIndex,
     int channel,
@@ -1593,17 +1697,38 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
 
     final slot = state.slots[algorithmIndex];
+    final guid = slot.algorithm.guid;
+    final isPolyCV = guid.startsWith('py');
 
-    // Find the ES-5 Expander parameter for this channel
-    final paramName = '$channel:ES-5 Expander';
-    final param = slot.parameters.firstWhere(
-      (p) => p.name == paramName,
-      orElse: () => ParameterInfo.filler(),
-    );
+    ParameterInfo param;
 
-    if (param.parameterNumber < 0) {
-      debugPrint('ES-5 Expander parameter not found for channel $channel');
-      return;
+    if (isPolyCV) {
+      // Poly CV: Find the global ES-5 Expander parameter (no channel prefix)
+      param = slot.parameters.firstWhere(
+        (p) => p.name == 'ES-5 Expander',
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      if (param.parameterNumber < 0) {
+        debugPrint('ES-5 Expander parameter not found for Poly CV');
+        return;
+      }
+
+      debugPrint(
+        'Poly CV: Toggling global ES-5 Expander (affects all gates)',
+      );
+    } else {
+      // Clock/Euclidean: Find the per-channel ES-5 Expander parameter
+      final paramName = '$channel:ES-5 Expander';
+      param = slot.parameters.firstWhere(
+        (p) => p.name == paramName,
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      if (param.parameterNumber < 0) {
+        debugPrint('ES-5 Expander parameter not found for channel $channel');
+        return;
+      }
     }
 
     // Update the parameter: 0 = Off, 1 = Expander 1

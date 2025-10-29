@@ -1,0 +1,131 @@
+import 'package:flutter/foundation.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
+import 'es5_direct_output_algorithm_routing.dart';
+
+/// Specialized routing implementation for the Clock Divider algorithm.
+///
+/// The Clock Divider algorithm supports ES-5 direct output routing with per-channel
+/// enable/disable filtering. Only enabled channels (Enable=1) appear in the routing editor.
+///
+/// See [Es5DirectOutputAlgorithmRouting] for details on the dual-mode behavior.
+class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
+  /// Creates a new ClockDividerAlgorithmRouting instance.
+  ClockDividerAlgorithmRouting({
+    required super.slot,
+    required super.config,
+    super.validator,
+  });
+
+  @override
+  String get algorithmName => 'ClockDividerAlgorithmRouting';
+
+  /// Checks if this routing implementation can handle the given slot.
+  ///
+  /// Returns true only for Clock Divider algorithm (guid: 'clkd').
+  static bool canHandle(Slot slot) {
+    return slot.algorithm.guid == 'clkd';
+  }
+
+  /// Creates a ClockDividerAlgorithmRouting instance from a slot.
+  ///
+  /// This factory method creates the specialized routing for Clock Divider algorithm.
+  /// It processes normal input parameters (Clock input, Reset input) using
+  /// the base routing extraction, but customizes output generation for ES-5 support
+  /// and channel filtering.
+  static ClockDividerAlgorithmRouting createFromSlot(
+    Slot slot, {
+    required Map<String, int> ioParameters,
+    Map<String, int>? modeParameters,
+    Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
+    String? algorithmUuid,
+  }) {
+    final configData = Es5DirectOutputAlgorithmRouting.createConfigFromSlot(
+      slot,
+      ioParameters: ioParameters,
+      modeParameters: modeParameters,
+      modeParametersWithNumbers: modeParametersWithNumbers,
+      algorithmUuid: algorithmUuid,
+      debugName: 'ClockDividerAlgorithmRouting',
+    );
+
+    return ClockDividerAlgorithmRouting(slot: slot, config: configData.config);
+  }
+
+  /// Generates output ports based on ES-5 configuration for each channel.
+  ///
+  /// Clock Divider adds channel filtering: only channels with Enable=1 are visible.
+  ///
+  /// For each enabled channel:
+  /// - If ES-5 Expander > 0: Create ES-5 direct output port (ignoring Output parameter)
+  /// - If ES-5 Expander = 0: Create normal output port using Output parameter
+  @override
+  List<Port> generateOutputPorts() {
+    final ports = <Port>[];
+
+    for (int channel = 1; channel <= config.channelCount; channel++) {
+      // Check if channel is enabled (Clock Divider specific)
+      final enableValue = getChannelParameter(channel, 'Enable');
+
+      if (enableValue == null || enableValue == 0) {
+        debugPrint(
+          '$algorithmName: Channel $channel is disabled, skipping',
+        );
+        continue;
+      }
+
+      // Get ES-5 Expander value (0=Off, 1-6=Active)
+      final es5ExpanderValue = getChannelParameter(channel, 'ES-5 Expander');
+
+      if (es5ExpanderValue != null && es5ExpanderValue > 0) {
+        // ES-5 MODE: Ignore Output parameter completely
+        final es5OutputValue =
+            getChannelParameter(channel, 'ES-5 Output') ?? channel;
+
+        ports.add(
+          Port(
+            id: '${algorithmUuid}_channel_${channel}_es5_output',
+            name: 'Ch$channel → ES-5 $es5OutputValue',
+            type: PortType.gate,
+            direction: PortDirection.output,
+            description: 'Direct to ES-5 Output $es5OutputValue',
+            busParam: Es5DirectOutputAlgorithmRouting.es5DirectBusParam, // Special marker
+            channelNumber: es5OutputValue, // ES-5 port number
+          ),
+        );
+
+        debugPrint(
+          '$algorithmName: Channel $channel → ES-5 direct output $es5OutputValue',
+        );
+      } else {
+        // NORMAL MODE: Use Output parameter
+        final outputBus = getChannelParameter(channel, 'Output') ?? 0;
+
+        if (outputBus > 0) {
+          ports.add(
+            Port(
+              id: '${algorithmUuid}_channel_${channel}_output',
+              name: 'Channel $channel',
+              type: PortType.gate,
+              direction: PortDirection.output,
+              description: 'Gate output for channel $channel',
+              busValue: outputBus,
+              channelNumber: channel,
+            ),
+          );
+
+          debugPrint(
+            '$algorithmName: Channel $channel → normal output bus $outputBus',
+          );
+        } else {
+          debugPrint(
+            '$algorithmName: Channel $channel has no output assignment',
+          );
+        }
+      }
+    }
+
+    debugPrint('$algorithmName: Generated ${ports.length} output ports');
+    return ports;
+  }
+}

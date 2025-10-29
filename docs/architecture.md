@@ -391,10 +391,50 @@ abstract class AlgorithmRouting {
    - Verify bus assignments in Slot routing data
    - Use MCP `get_routing` tool to inspect live routing state
 
+### ES-5 Direct Output Support
+
+**Epic 4 Completion** (2025-10-28): Extended ES-5 direct output routing support to three additional algorithms added in firmware 1.12:
+
+- **Clock Multiplier** (clkm) - Single-channel clock multiplier with ES-5 direct output
+- **Clock Divider** (clkd) - Multi-channel clock divider with per-channel ES-5 configuration
+- **Poly CV** (pycv) - Polyphonic MIDI/CV converter with ES-5 support for gate outputs only
+
+**All ES-5-Capable Algorithms** (5 total):
+1. **Clock** (clck) - Single-channel clock generator
+2. **Euclidean** (eucp) - Multi-channel Euclidean rhythm generator
+3. **Clock Multiplier** (clkm) - Single-channel clock multiplier
+4. **Clock Divider** (clkd) - Multi-channel clock divider
+5. **Poly CV** (pycv) - Polyphonic MIDI/CV converter (gates only)
+
+**Base Class**: `lib/core/routing/es5_direct_output_algorithm_routing.dart`
+- Handles dual-mode output logic: ES-5 direct vs. normal bus routing
+- Provides `createConfigFromSlot()` helper for factory creation
+- Uses `es5_direct` bus marker for connection discovery
+- Algorithms determine output routing based on "ES-5 Expander" parameter value:
+  - When ES-5 Expander > 0: Output routes to ES-5 port (normal Output parameter ignored)
+  - When ES-5 Expander = 0: Output uses normal bus assignment
+
+**Factory Registration**: `lib/core/routing/algorithm_routing.dart:309-330`
+- Registration order: Clock, Euclidean, Clock Multiplier, Clock Divider, Poly CV
+- Each implementation provides `canHandle()` and `createFromSlot()` methods
+- Poly CV registered earlier via GUID prefix check (around line 280)
+
+**ES-5 Implementation Files**:
+- `lib/core/routing/clock_algorithm_routing.dart` - Clock (clck)
+- `lib/core/routing/euclidean_algorithm_routing.dart` - Euclidean (eucp)
+- `lib/core/routing/clock_multiplier_algorithm_routing.dart` - Clock Multiplier (clkm)
+- `lib/core/routing/clock_divider_algorithm_routing.dart` - Clock Divider (clkd)
+- `lib/core/routing/poly_algorithm_routing.dart` - Poly CV (pycv) with selective ES-5
+
+**Special Case - Poly CV**: ES-5 applies to gate outputs only, not pitch/velocity CVs. When ES-5 Expander is configured, only the gate signals route directly to ES-5 hardware; pitch and velocity CVs continue using normal bus routing.
+
+**Test Coverage**: `test/core/routing/clock_euclidean_es5_test.dart` and related test files provide comprehensive coverage of ES-5 routing behavior, dual-mode switching, and per-channel configuration.
+
 ### Important Files
 
 - `lib/core/routing/algorithm_routing.dart` - Base class and factory
 - `lib/core/routing/connection_discovery_service.dart` - Connection discovery
+- `lib/core/routing/es5_direct_output_algorithm_routing.dart` - ES-5 base class
 - `lib/cubit/routing_editor_cubit.dart` - State orchestration
 - `lib/ui/widgets/routing/routing_editor_widget.dart` - Visualization only
 - `docs/routing_editor_implementation.md` - Implementation details

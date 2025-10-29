@@ -1,0 +1,44 @@
+# Finish Epic Workflow
+name: finish-epic
+description: "Orchestrates sequential story development through dev-story and review-story workflows until all stories in an epic are completed. Auto-retries stories requiring changes after review."
+author: "BMad"
+
+# Critical variables from config
+config_source: "{project-root}/bmad/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+user_skill_level: "{config_source}:user_skill_level"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Workflow components
+installed_path: "{project-root}/bmad/bmm/workflows/4-implementation/finish-epic"
+instructions: "{installed_path}/instructions.md"
+validation: "{installed_path}/checklist.md"
+
+# This is an orchestration workflow (no output template document)
+template: false
+
+# Variables (can be provided by caller)
+variables:
+  epic_key: "" # Optional: Explicit epic key (e.g., "epic-3"). If not provided, finds first epic with non-done stories
+  story_key: "" # Optional: Starting story key. If not provided, starts with first non-done story in epic
+  sprint_status_file: "{project-root}/docs/sprint-status.yaml"
+  story_dir: "{config_source}:dev_story_location"
+  max_review_retry_cycles: 3 # Maximum times to retry dev-story after review feedback before stopping for user intervention
+  auto_advance_on_success: true # Automatically move to next story when current story is done
+  pause_between_stories: false # If true, wait for user confirmation before starting next story
+
+# Workflow paths for sub-agent orchestration
+sub_workflows:
+  dev_story: "{project-root}/bmad/bmm/workflows/4-implementation/dev-story"
+  review_story: "{project-root}/bmad/bmm/workflows/4-implementation/review-story"
+  story_done: "{project-root}/bmad/bmm/workflows/4-implementation/story-done"
+
+# Recommended inputs
+recommended_inputs:
+  - sprint_status: "Sprint status YAML file (auto-discovered)"
+  - epic_stories: "All story files for the target epic (auto-discovered)"
+
+standalone: true

@@ -1,5 +1,57 @@
 # Routing Audit (manual vs docs/algorithms)
 
+## Epic 4: ES-5 Direct Output Support (Completed 2025-10-28)
+
+Extended ES-5 direct output routing support to three additional algorithms:
+
+### Clock Multiplier (clkm)
+- **Implementation**: `lib/core/routing/clock_multiplier_algorithm_routing.dart`
+- **Base Class**: `Es5DirectOutputAlgorithmRouting`
+- **ES-5 Parameter**: "ES-5 Expander" (0 = normal output, 1-6 = ES-5 port)
+- **Test Coverage**: `test/core/routing/clock_multiplier_es5_test.dart`
+  - Dual-mode output behavior (ES-5 vs. normal bus)
+  - Factory registration via `canHandle()` and `createFromSlot()`
+  - Port generation for single-channel clock multiplication
+
+### Clock Divider (clkd)
+- **Implementation**: `lib/core/routing/clock_divider_algorithm_routing.dart`
+- **Base Class**: `Es5DirectOutputAlgorithmRouting`
+- **ES-5 Parameters**: Per-channel "Ch N ES-5 Expander" (0 = normal output, 1-6 = ES-5 port)
+- **Test Coverage**: `test/core/routing/clock_divider_es5_test.dart`
+  - Per-channel ES-5 configuration
+  - Multi-channel output routing
+  - Mixed mode: some channels to ES-5, others to normal buses
+
+### Poly CV (pycv)
+- **Implementation**: Modified `lib/core/routing/poly_algorithm_routing.dart`
+- **ES-5 Behavior**: Gate outputs only (pitch and velocity CVs use normal buses)
+- **ES-5 Parameter**: "ES-5 Expander" applies to gate outputs
+- **Test Coverage**: `test/core/routing/poly_cv_es5_test.dart`
+  - Selective ES-5 application (gates only)
+  - Pitch/velocity CVs maintain normal bus routing
+  - Complex multi-output routing with mixed ES-5/normal modes
+
+### All ES-5-Capable Algorithms (5 total)
+1. **Clock** (clck) - Existing, covered in `test/core/routing/clock_euclidean_es5_test.dart`
+2. **Euclidean** (eucp) - Existing, covered in `test/core/routing/clock_euclidean_es5_test.dart`
+3. **Clock Multiplier** (clkm) - **New in Epic 4**
+4. **Clock Divider** (clkd) - **New in Epic 4**
+5. **Poly CV** (pycv) - **Enhanced in Epic 4**
+
+### Known Limitations
+- ES-5 requires firmware 1.12 or later for Clock Multiplier, Clock Divider, and Poly CV support
+- Poly CV ES-5 support is gate-only; pitch and velocity CVs cannot route to ES-5
+- ES-5 Expander parameter must be set correctly for routing visualization to reflect actual hardware behavior
+
+### Test Strategy
+All ES-5 implementations follow consistent test patterns:
+- Factory registration verification (`canHandle()` returns true for correct GUID)
+- Dual-mode port generation (ES-5 vs. normal output based on parameter value)
+- Connection discovery via `es5_direct` bus marker
+- Parameter extraction and value interpretation
+
+---
+
 ## Per-GUID Audit
 
 ### arpg – Arpeggiator (arpg.json)
