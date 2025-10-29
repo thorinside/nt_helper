@@ -203,7 +203,7 @@ void main() {
         final outputPorts = routing.outputPorts;
 
         expect(outputPorts, hasLength(1));
-        expect(outputPorts[0].name, equals('Channel 1'));
+        expect(outputPorts[0].name, equals('Output')); // Single-channel uses parameter name
         expect(outputPorts[0].busValue, equals(13));
         expect(outputPorts[0].type, equals(PortType.gate));
         expect(outputPorts[0].direction, equals(PortDirection.output));
@@ -227,7 +227,7 @@ void main() {
         final outputPorts = routing.outputPorts;
 
         expect(outputPorts, hasLength(1));
-        expect(outputPorts[0].name, equals('Channel 1'));
+        expect(outputPorts[0].name, equals('Output')); // Single-channel uses parameter name
         expect(outputPorts[0].busValue, equals(20));
         expect(outputPorts[0].channelNumber, equals(1));
       });
