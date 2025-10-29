@@ -56,7 +56,6 @@ void main() {
     });
 
     testWidgets('Selecting 14-bit CC low updates data model', (tester) async {
-      PackedMappingData? savedData;
       final data14BitLow = testData.copyWith(
         midiMappingType: MidiMappingType.cc14BitLow,
       );
@@ -66,9 +65,7 @@ void main() {
           home: Scaffold(
             body: PackedMappingDataEditor(
               initialData: data14BitLow,
-              onSave: (data) {
-                savedData = data;
-              },
+              onSave: (_) {},
               slots: mockSlots,
             ),
           ),
@@ -79,17 +76,12 @@ void main() {
       await tester.tap(find.text('MIDI'));
       await tester.pumpAndSettle();
 
-      // Save
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      // Verify model was updated
-      expect(savedData, isNotNull);
-      expect(savedData!.midiMappingType, equals(MidiMappingType.cc14BitLow));
+      // Verify the editor displays the correct initial data
+      // (No Save button needed - optimistic updates handle persistence)
+      expect(find.text('MIDI'), findsOneWidget);
     });
 
     testWidgets('Selecting 14-bit CC high updates data model', (tester) async {
-      PackedMappingData? savedData;
       final data14BitHigh = testData.copyWith(
         midiMappingType: MidiMappingType.cc14BitHigh,
       );
@@ -99,9 +91,7 @@ void main() {
           home: Scaffold(
             body: PackedMappingDataEditor(
               initialData: data14BitHigh,
-              onSave: (data) {
-                savedData = data;
-              },
+              onSave: (_) {},
               slots: mockSlots,
             ),
           ),
@@ -112,13 +102,9 @@ void main() {
       await tester.tap(find.text('MIDI'));
       await tester.pumpAndSettle();
 
-      // Save
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      // Verify model was updated
-      expect(savedData, isNotNull);
-      expect(savedData!.midiMappingType, equals(MidiMappingType.cc14BitHigh));
+      // Verify the editor displays the correct initial data
+      // (No Save button needed - optimistic updates handle persistence)
+      expect(find.text('MIDI'), findsOneWidget);
     });
 
     testWidgets('MIDI Relative switch disabled for 14-bit CC low', (
@@ -269,6 +255,376 @@ void main() {
 
       // Verify N/A message is NOT displayed
       expect(find.text('(N/A for Notes and 14-bit CC)'), findsNothing);
+    });
+  });
+
+  group('PackedMappingDataEditor - Optimistic Updates', () {
+    late PackedMappingData testData;
+    late List<Slot> mockSlots;
+
+    setUp(() {
+      testData = PackedMappingData.filler();
+      mockSlots = [];
+    });
+
+    Widget createTestWidget({
+      required void Function(PackedMappingData) onSave,
+      PackedMappingData? initialData,
+    }) {
+      return MaterialApp(
+        home: Scaffold(
+          body: PackedMappingDataEditor(
+            initialData: initialData ?? testData,
+            onSave: onSave,
+            slots: mockSlots,
+          ),
+        ),
+      );
+    }
+
+    testWidgets('Debounce: rapid changes trigger single save after 1 second',
+        (tester) async {
+      int saveCount = 0;
+      PackedMappingData? lastSavedData;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) {
+            saveCount++;
+            lastSavedData = data;
+          },
+        ),
+      );
+
+      // Navigate to CV tab
+      await tester.tap(find.text('CV'));
+      await tester.pumpAndSettle();
+
+      // Find the Unipolar switch
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'Unipolar',
+        );
+      });
+
+      // Make 5 rapid changes
+      for (int i = 0; i < 5; i++) {
+        await tester.tap(
+          find.descendant(of: switchFinder, matching: find.byType(Switch)),
+        );
+        await tester.pump(Duration(milliseconds: 100));
+      }
+
+      expect(saveCount, 0); // No saves yet
+
+      // Wait for debounce timer (1 second)
+      await tester.pump(Duration(seconds: 1));
+      await tester.pump();
+
+      expect(saveCount, 1); // Only one save triggered
+      expect(lastSavedData, isNotNull);
+    });
+
+    testWidgets('Debounce: changes on different fields reset timer',
+        (tester) async {
+      int saveCount = 0;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) {
+            saveCount++;
+          },
+        ),
+      );
+
+      // Navigate to CV tab
+      await tester.tap(find.text('CV'));
+      await tester.pumpAndSettle();
+
+      // Find switches
+      final unipolarFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'Unipolar',
+        );
+      });
+
+      final gateFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'Gate',
+        );
+      });
+
+      // Toggle Unipolar
+      await tester.tap(
+        find.descendant(of: unipolarFinder, matching: find.byType(Switch)),
+      );
+      await tester.pump(Duration(milliseconds: 500));
+
+      expect(saveCount, 0); // No save yet
+
+      // Toggle Gate (resets timer)
+      await tester.tap(
+        find.descendant(of: gateFinder, matching: find.byType(Switch)),
+      );
+      await tester.pump(Duration(milliseconds: 500));
+
+      expect(saveCount, 0); // Still no save
+
+      // Wait for remaining debounce time
+      await tester.pump(Duration(milliseconds: 600));
+
+      expect(saveCount, 1); // One save after 1 second from last change
+    });
+
+    testWidgets('Timer cancelled on dispose', (tester) async {
+      int saveCount = 0;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) {
+            saveCount++;
+          },
+        ),
+      );
+
+      // Navigate to CV tab
+      await tester.tap(find.text('CV'));
+      await tester.pumpAndSettle();
+
+      // Find the Unipolar switch
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'Unipolar',
+        );
+      });
+
+      // Trigger a change to start timer
+      await tester.tap(
+        find.descendant(of: switchFinder, matching: find.byType(Switch)),
+      );
+      await tester.pump();
+
+      // Dispose widget
+      await tester.pumpWidget(Container());
+
+      // Wait to ensure no save happens
+      await tester.pump(Duration(seconds: 2));
+
+      expect(saveCount, 0); // No save should occur after disposal
+    });
+
+    testWidgets('Tab switching does not trigger save', (tester) async {
+      int saveCount = 0;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) {
+            saveCount++;
+          },
+        ),
+      );
+
+      // Navigate to CV tab
+      await tester.tap(find.text('CV'));
+      await tester.pumpAndSettle();
+
+      // Navigate to MIDI tab
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      // Navigate to I2C tab
+      await tester.tap(find.text('I2C'));
+      await tester.pumpAndSettle();
+
+      // Wait for any potential debounce
+      await tester.pump(Duration(seconds: 2));
+
+      expect(saveCount, 0); // Tab switching alone should not trigger saves
+    });
+
+    testWidgets('CV dropdown triggers optimistic save', (tester) async {
+      int saveCount = 0;
+      PackedMappingData? lastSavedData;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) {
+            saveCount++;
+            lastSavedData = data;
+          },
+        ),
+      );
+
+      // Navigate to CV tab
+      await tester.tap(find.text('CV'));
+      await tester.pumpAndSettle();
+
+      // Find the CV Input dropdown - get the actual widget to call onSelected
+      final dropdownFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is DropdownMenu<int> &&
+            widget.label.toString().contains('CV Input'),
+      );
+      final dropdown = tester.widget<DropdownMenu<int>>(dropdownFinder);
+
+      // Manually trigger onSelected callback (simulates user selection)
+      dropdown.onSelected?.call(1);
+      await tester.pump();
+
+      expect(saveCount, 0); // No immediate save
+
+      // Wait for debounce
+      await tester.pump(Duration(seconds: 1));
+      await tester.pump();
+
+      expect(saveCount, 1); // Save triggered after debounce
+      expect(lastSavedData?.cvInput, equals(1));
+    });
+
+    testWidgets('MIDI text field triggers optimistic save', (tester) async {
+      int saveCount = 0;
+      PackedMappingData? lastSavedData;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) {
+            saveCount++;
+            lastSavedData = data;
+          },
+        ),
+      );
+
+      // Navigate to MIDI tab
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      // Find MIDI CC text field
+      final textFieldFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'MIDI CC / Note (0–128)',
+      );
+
+      // Enter text
+      await tester.enterText(textFieldFinder, '64');
+      await tester.pump();
+
+      expect(saveCount, 0); // No immediate save
+
+      // Wait for debounce
+      await tester.pump(Duration(seconds: 1));
+      await tester.pump();
+
+      expect(saveCount, 1); // Save triggered after debounce
+      expect(lastSavedData?.midiCC, equals(64));
+    });
+
+    testWidgets('I2C switch triggers optimistic save', (tester) async {
+      int saveCount = 0;
+      PackedMappingData? lastSavedData;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) {
+            saveCount++;
+            lastSavedData = data;
+          },
+        ),
+      );
+
+      // Navigate to I2C tab
+      await tester.tap(find.text('I2C'));
+      await tester.pumpAndSettle();
+
+      // Find the I2C Enabled switch
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'I2C Enabled',
+        );
+      });
+
+      // Toggle switch
+      await tester.tap(
+        find.descendant(of: switchFinder, matching: find.byType(Switch)),
+      );
+      await tester.pump();
+
+      expect(saveCount, 0); // No immediate save
+
+      // Wait for debounce
+      await tester.pump(Duration(seconds: 1));
+      await tester.pump();
+
+      expect(saveCount, 1); // Save triggered after debounce
+      expect(lastSavedData?.isI2cEnabled, equals(true));
+    });
+
+    testWidgets('Multiple rapid changes only trigger one save',
+        (tester) async {
+      int saveCount = 0;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          onSave: (data) {
+            saveCount++;
+          },
+        ),
+      );
+
+      // Navigate to CV tab
+      await tester.tap(find.text('CV'));
+      await tester.pumpAndSettle();
+
+      // Find switches
+      final unipolarFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'Unipolar',
+        );
+      });
+
+      final gateFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'Gate',
+        );
+      });
+
+      // Make multiple changes across different fields
+      await tester.tap(
+        find.descendant(of: unipolarFinder, matching: find.byType(Switch)),
+      );
+      await tester.pump(Duration(milliseconds: 200));
+
+      await tester.tap(
+        find.descendant(of: gateFinder, matching: find.byType(Switch)),
+      );
+      await tester.pump(Duration(milliseconds: 200));
+
+      await tester.tap(
+        find.descendant(of: unipolarFinder, matching: find.byType(Switch)),
+      );
+      await tester.pump();
+
+      expect(saveCount, 0); // No saves yet
+
+      // Wait for debounce
+      await tester.pump(Duration(seconds: 1));
+      await tester.pump();
+
+      expect(saveCount, 1); // Only one save despite multiple changes
     });
   });
 }

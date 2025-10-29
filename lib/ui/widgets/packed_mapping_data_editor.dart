@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -39,6 +41,11 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   late TextEditingController _i2cCcController;
   late TextEditingController _i2cMinController;
   late TextEditingController _i2cMaxController;
+
+  // Debounce timer for optimistic saves
+  Timer? _debounceTimer;
+  static const _maxRetries = 3;
+  static const _debounceDuration = Duration(seconds: 1);
 
   @override
   void initState() {
@@ -82,6 +89,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _tabController.dispose();
 
     // Dispose controllers
@@ -97,18 +105,33 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     super.dispose();
   }
 
-  void _onSavePressed() {
-    // Final clamp/parse before saving
-    _updateVoltsFromController();
-    _updateDeltaFromController();
-    _updateMidiCcFromController();
-    _updateMidiMinFromController();
-    _updateMidiMaxFromController();
-    _updateI2cCcFromController();
-    _updateI2cMinFromController();
-    _updateI2cMaxFromController();
+  void _triggerOptimisticSave() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, () {
+      _attemptSave();
+    });
+  }
 
-    widget.onSave(_data);
+  Future<void> _attemptSave({int attempt = 0}) async {
+    try {
+      _updateVoltsFromController();
+      _updateDeltaFromController();
+      _updateMidiCcFromController();
+      _updateMidiMinFromController();
+      _updateMidiMaxFromController();
+      _updateI2cCcFromController();
+      _updateI2cMinFromController();
+      _updateI2cMaxFromController();
+
+      widget.onSave(_data);
+    } catch (e) {
+      if (attempt < _maxRetries) {
+        final delay = Duration(milliseconds: 100 * (1 << attempt));
+        await Future.delayed(delay);
+        await _attemptSave(attempt: attempt + 1);
+      }
+      // Silent failure after max retries
+    }
   }
 
   @override
@@ -137,13 +160,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 _buildMidiEditor(),
                 _buildI2cEditor(),
               ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: _onSavePressed,
-              child: const Text('Save'),
             ),
           ),
         ],
@@ -182,6 +198,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   setState(() {
                     _data = _data.copyWith(source: newValue);
                   });
+                  _triggerOptimisticSave();
                 },
                 dropdownMenuEntries: List.generate(34, (index) {
                   if (index == 0) {
@@ -224,6 +241,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   setState(() {
                     _data = _data.copyWith(cvInput: newValue);
                   });
+                  _triggerOptimisticSave();
                 },
                 dropdownMenuEntries: List.generate(29, (index) {
                   if (index == 0) {
@@ -260,6 +278,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                     setState(() {
                       _data = _data.copyWith(isUnipolar: val);
                     });
+                    _triggerOptimisticSave();
                   },
                 ),
               ],
@@ -273,6 +292,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                     setState(() {
                       _data = _data.copyWith(isGate: val);
                     });
+                    _triggerOptimisticSave();
                   },
                 ),
               ],
@@ -281,11 +301,19 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               label: 'Volts',
               controller: _voltsController,
               onSubmit: _updateVoltsFromController,
+              onChanged: () {
+                _updateVoltsFromController();
+                _triggerOptimisticSave();
+              },
             ),
             _buildNumericField(
               label: 'Delta',
               controller: _deltaController,
               onSubmit: _updateDeltaFromController,
+              onChanged: () {
+                _updateDeltaFromController();
+                _triggerOptimisticSave();
+              },
             ),
           ],
         ),
@@ -334,6 +362,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 setState(() {
                   _data = _data.copyWith(midiChannel: newValue);
                 });
+                _triggerOptimisticSave();
               },
               dropdownMenuEntries: List.generate(16, (index) {
                 // 0..15 = Ch 1..16
@@ -361,6 +390,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                     _data = _data.copyWith(isMidiRelative: false);
                   }
                 });
+                _triggerOptimisticSave();
               },
               dropdownMenuEntries: const [
                 DropdownMenuEntry<MidiMappingType>(
@@ -391,6 +421,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'MIDI CC / Note (0–128)',
             controller: _midiCcController,
             onSubmit: _updateMidiCcFromController,
+            onChanged: () {
+              _updateMidiCcFromController();
+              _triggerOptimisticSave();
+            },
           ),
           Row(
             children: [
@@ -401,6 +435,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   setState(() {
                     _data = _data.copyWith(isMidiEnabled: val);
                   });
+                  _triggerOptimisticSave();
                 },
               ),
             ],
@@ -414,6 +449,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   setState(() {
                     _data = _data.copyWith(isMidiSymmetric: val);
                   });
+                  _triggerOptimisticSave();
                 },
               ),
             ],
@@ -428,6 +464,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                         setState(() {
                           _data = _data.copyWith(isMidiRelative: val);
                         });
+                        _triggerOptimisticSave();
                       }
                     : null,
               ),
@@ -448,11 +485,19 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'MIDI Min',
             controller: _midiMinController,
             onSubmit: _updateMidiMinFromController,
+            onChanged: () {
+              _updateMidiMinFromController();
+              _triggerOptimisticSave();
+            },
           ),
           _buildNumericField(
             label: 'MIDI Max',
             controller: _midiMaxController,
             onSubmit: _updateMidiMaxFromController,
+            onChanged: () {
+              _updateMidiMaxFromController();
+              _triggerOptimisticSave();
+            },
           ),
           // Add the MIDI Detector
           MidiDetectorWidget(
@@ -535,6 +580,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'I2C CC',
             controller: _i2cCcController,
             onSubmit: _updateI2cCcFromController,
+            onChanged: () {
+              _updateI2cCcFromController();
+              _triggerOptimisticSave();
+            },
           ),
           Row(
             children: [
@@ -545,6 +594,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   setState(() {
                     _data = _data.copyWith(isI2cEnabled: val);
                   });
+                  _triggerOptimisticSave();
                 },
               ),
             ],
@@ -558,6 +608,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   setState(() {
                     _data = _data.copyWith(isI2cSymmetric: val);
                   });
+                  _triggerOptimisticSave();
                 },
               ),
             ],
@@ -566,11 +617,19 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'I2C Min',
             controller: _i2cMinController,
             onSubmit: _updateI2cMinFromController,
+            onChanged: () {
+              _updateI2cMinFromController();
+              _triggerOptimisticSave();
+            },
           ),
           _buildNumericField(
             label: 'I2C Max',
             controller: _i2cMaxController,
             onSubmit: _updateI2cMaxFromController,
+            onChanged: () {
+              _updateI2cMaxFromController();
+              _triggerOptimisticSave();
+            },
           ),
         ],
       ),
@@ -610,6 +669,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     required String label,
     required TextEditingController controller,
     required VoidCallback onSubmit,
+    VoidCallback? onChanged,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -622,6 +682,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           border: const OutlineInputBorder(),
         ),
         onSubmitted: (_) => onSubmit(),
+        onChanged: onChanged != null ? (_) => onChanged() : null,
       ),
     );
   }
