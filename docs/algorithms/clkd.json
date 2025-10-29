@@ -93,6 +93,24 @@
       "default": 1,
       "type": "enum",
       "is_per_channel": true
+    },
+    {
+      "name": "ES-5 Expander",
+      "min": 0,
+      "max": 6,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. \"1\" means the ES-5 itself."
+    },
+    {
+      "name": "ES-5 Output",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": true,
+      "description": "If using an ES-5 expander output, sets which of the 8 outputs on the expander to use."
     }
   ],
   "input_ports": [

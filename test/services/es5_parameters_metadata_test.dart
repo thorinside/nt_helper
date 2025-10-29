@@ -158,6 +158,143 @@ void main() {
       });
     });
 
+    group('Clock Multiplier Algorithm (clkm)', () {
+      test('should have ES-5 Expander parameter (7)', () {
+        final parameters = metadata['tables']['parameters'] as List<dynamic>;
+        final es5Expander = parameters.firstWhere(
+          (p) => p['algorithmGuid'] == 'clkm' && p['parameterNumber'] == 7,
+          orElse: () => null,
+        );
+
+        expect(
+          es5Expander,
+          isNotNull,
+          reason: 'Clock Multiplier parameter 7 (ES-5 Expander) should exist',
+        );
+        expect(es5Expander['name'], equals('ES-5 Expander'));
+        expect(es5Expander['minValue'], equals(0));
+        expect(es5Expander['maxValue'], equals(6));
+        expect(es5Expander['defaultValue'], equals(0));
+        expect(es5Expander['unitId'], isNull);
+        expect(es5Expander['powerOfTen'], equals(0));
+        expect(es5Expander['rawUnitIndex'], equals(14)); // Enum type
+      });
+
+      test('should have ES-5 Output parameter (8)', () {
+        final parameters = metadata['tables']['parameters'] as List<dynamic>;
+        final es5Output = parameters.firstWhere(
+          (p) => p['algorithmGuid'] == 'clkm' && p['parameterNumber'] == 8,
+          orElse: () => null,
+        );
+
+        expect(
+          es5Output,
+          isNotNull,
+          reason: 'Clock Multiplier parameter 8 (ES-5 Output) should exist',
+        );
+        expect(es5Output['name'], equals('ES-5 Output'));
+        expect(es5Output['minValue'], equals(1));
+        expect(es5Output['maxValue'], equals(8));
+        expect(es5Output['defaultValue'], equals(1));
+        expect(es5Output['unitId'], isNull);
+        expect(es5Output['powerOfTen'], equals(0));
+        expect(es5Output['rawUnitIndex'], equals(14)); // Enum type
+      });
+    });
+
+    group('Clock Divider Algorithm (clkd)', () {
+      test('should have ES-5 Expander parameter (per-channel)', () {
+        final parameters = metadata['tables']['parameters'] as List<dynamic>;
+
+        // Clock Divider has per-channel parameters with channel prefix (e.g., "1:ES-5 Expander")
+        // Look for the first channel's ES-5 Expander parameter
+        final es5Expander = parameters.firstWhere(
+          (p) => p['algorithmGuid'] == 'clkd' && p['name'] == '1:ES-5 Expander',
+          orElse: () => null,
+        );
+
+        expect(
+          es5Expander,
+          isNotNull,
+          reason: 'Clock Divider per-channel ES-5 Expander should exist',
+        );
+        expect(es5Expander['name'], equals('1:ES-5 Expander'));
+        expect(es5Expander['minValue'], equals(0));
+        expect(es5Expander['maxValue'], equals(6));
+        expect(es5Expander['defaultValue'], equals(0));
+        expect(es5Expander['unitId'], isNull);
+        expect(es5Expander['powerOfTen'], equals(0));
+        expect(es5Expander['rawUnitIndex'], equals(14)); // Enum type
+      });
+
+      test('should have ES-5 Output parameter (per-channel)', () {
+        final parameters = metadata['tables']['parameters'] as List<dynamic>;
+
+        // Look for the first channel's ES-5 Output parameter
+        final es5Output = parameters.firstWhere(
+          (p) => p['algorithmGuid'] == 'clkd' && p['name'] == '1:ES-5 Output',
+          orElse: () => null,
+        );
+
+        expect(
+          es5Output,
+          isNotNull,
+          reason: 'Clock Divider per-channel ES-5 Output should exist',
+        );
+        expect(es5Output['name'], equals('1:ES-5 Output'));
+        expect(es5Output['minValue'], equals(1));
+        expect(es5Output['maxValue'], equals(8));
+        expect(es5Output['defaultValue'], equals(1));
+        expect(es5Output['unitId'], isNull);
+        expect(es5Output['powerOfTen'], equals(0));
+        expect(es5Output['rawUnitIndex'], equals(14)); // Enum type
+      });
+    });
+
+    group('Poly CV Algorithm (pycv)', () {
+      test('should have ES-5 Expander parameter (53)', () {
+        final parameters = metadata['tables']['parameters'] as List<dynamic>;
+        final es5Expander = parameters.firstWhere(
+          (p) => p['algorithmGuid'] == 'pycv' && p['parameterNumber'] == 53,
+          orElse: () => null,
+        );
+
+        expect(
+          es5Expander,
+          isNotNull,
+          reason: 'Poly CV parameter 53 (ES-5 Expander) should exist',
+        );
+        expect(es5Expander['name'], equals('ES-5 Expander'));
+        expect(es5Expander['minValue'], equals(0));
+        expect(es5Expander['maxValue'], equals(6));
+        expect(es5Expander['defaultValue'], equals(0));
+        expect(es5Expander['unitId'], isNull);
+        expect(es5Expander['powerOfTen'], equals(0));
+        expect(es5Expander['rawUnitIndex'], equals(14)); // Enum type
+      });
+
+      test('should have ES-5 Output parameter (54)', () {
+        final parameters = metadata['tables']['parameters'] as List<dynamic>;
+        final es5Output = parameters.firstWhere(
+          (p) => p['algorithmGuid'] == 'pycv' && p['parameterNumber'] == 54,
+          orElse: () => null,
+        );
+
+        expect(
+          es5Output,
+          isNotNull,
+          reason: 'Poly CV parameter 54 (ES-5 Output) should exist',
+        );
+        expect(es5Output['name'], equals('ES-5 Output'));
+        expect(es5Output['minValue'], equals(1));
+        expect(es5Output['maxValue'], equals(8));
+        expect(es5Output['defaultValue'], equals(1));
+        expect(es5Output['unitId'], isNull);
+        expect(es5Output['powerOfTen'], equals(0));
+        expect(es5Output['rawUnitIndex'], equals(14)); // Enum type
+      });
+    });
+
     group('Parameter Number Uniqueness', () {
       test(
         'Clock parameters 22 and 23 should not conflict with existing parameters',
@@ -213,6 +350,64 @@ void main() {
             param14Count,
             equals(1),
             reason: 'Should have exactly one parameter 14',
+          );
+        },
+      );
+
+      test(
+        'Clock Multiplier parameters 7 and 8 should not conflict with existing parameters',
+        () {
+          final parameters = metadata['tables']['parameters'] as List<dynamic>;
+          final clkmParams = parameters
+              .where((p) => p['algorithmGuid'] == 'clkm')
+              .toList();
+
+          // Check that we have exactly one parameter with number 7 and one with 8
+          final param7Count = clkmParams
+              .where((p) => p['parameterNumber'] == 7)
+              .length;
+          final param8Count = clkmParams
+              .where((p) => p['parameterNumber'] == 8)
+              .length;
+
+          expect(
+            param7Count,
+            equals(1),
+            reason: 'Should have exactly one parameter 7',
+          );
+          expect(
+            param8Count,
+            equals(1),
+            reason: 'Should have exactly one parameter 8',
+          );
+        },
+      );
+
+      test(
+        'Poly CV parameters 53 and 54 should not conflict with existing parameters',
+        () {
+          final parameters = metadata['tables']['parameters'] as List<dynamic>;
+          final pycvParams = parameters
+              .where((p) => p['algorithmGuid'] == 'pycv')
+              .toList();
+
+          // Check that we have exactly one parameter with number 53 and one with 54
+          final param53Count = pycvParams
+              .where((p) => p['parameterNumber'] == 53)
+              .length;
+          final param54Count = pycvParams
+              .where((p) => p['parameterNumber'] == 54)
+              .length;
+
+          expect(
+            param53Count,
+            equals(1),
+            reason: 'Should have exactly one parameter 53',
+          );
+          expect(
+            param54Count,
+            equals(1),
+            reason: 'Should have exactly one parameter 54',
           );
         },
       );

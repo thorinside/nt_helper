@@ -56,7 +56,7 @@ development_status:
   e4-1-add-clock-multiplier-es-5-direct-output-routing: done
   e4-2-add-clock-divider-es-5-direct-output-routing: done
   e4-3-add-poly-cv-es-5-direct-output-routing: done
-  e4-4-update-algorithm-metadata-for-es-5-parameters: ready-for-dev
+  e4-4-update-algorithm-metadata-for-es-5-parameters: done
   e4-5-add-tests-for-new-es-5-routing-implementations: ready-for-dev
   e4-6-update-documentation-and-architecture-notes: ready-for-dev
   epic-4-retrospective: optional
