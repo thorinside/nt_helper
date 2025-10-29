@@ -49,5 +49,14 @@ development_status:
   e3-4-display-package-install-dialog-with-conflict-resolution: done
   e3-5-execute-package-installation-with-progress-tracking: done
   e3-6-verify-cross-platform-compatibility: done
-  e3-7-remove-obsolete-loadpresetdialog: review
-  epic-3-retrospective: optional
+  e3-7-remove-obsolete-loadpresetdialog: done
+  epic-3-retrospective: completed
+
+  epic-4: contexted
+  e4-1-add-clock-multiplier-es-5-direct-output-routing: done
+  e4-2-add-clock-divider-es-5-direct-output-routing: review
+  e4-3-add-poly-cv-es-5-direct-output-routing: ready-for-dev
+  e4-4-update-algorithm-metadata-for-es-5-parameters: ready-for-dev
+  e4-5-add-tests-for-new-es-5-routing-implementations: ready-for-dev
+  e4-6-update-documentation-and-architecture-notes: ready-for-dev
+  epic-4-retrospective: optional
