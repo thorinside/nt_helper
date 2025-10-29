@@ -275,7 +275,11 @@ void main() {
     group('ES-5 Algorithm Factory Tests', () {
       test('Clock Multiplier (clkm) loads correctly', () {
         final slot = Slot(
-          algorithm: Algorithm(algorithmIndex: 0, guid: 'clkm', name: 'Clock Multiplier'),
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'clkm',
+            name: 'Clock Multiplier',
+          ),
           routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
           pages: ParameterPages(algorithmIndex: 0, pages: []),
           parameters: [],
@@ -285,7 +289,10 @@ void main() {
           valueStrings: const [],
         );
 
-        final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'test-clkm');
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid: 'test-clkm',
+        );
 
         expect(routing, isNotNull);
         expect(routing.runtimeType.toString(), contains('ClockMultiplier'));
@@ -293,7 +300,11 @@ void main() {
 
       test('Clock Divider (clkd) loads correctly', () {
         final slot = Slot(
-          algorithm: Algorithm(algorithmIndex: 0, guid: 'clkd', name: 'Clock Divider'),
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'clkd',
+            name: 'Clock Divider',
+          ),
           routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
           pages: ParameterPages(algorithmIndex: 0, pages: []),
           parameters: [],
@@ -303,7 +314,10 @@ void main() {
           valueStrings: const [],
         );
 
-        final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'test-clkd');
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid: 'test-clkd',
+        );
 
         expect(routing, isNotNull);
         expect(routing.runtimeType.toString(), contains('ClockDivider'));

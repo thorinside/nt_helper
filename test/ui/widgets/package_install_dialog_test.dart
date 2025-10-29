@@ -22,7 +22,8 @@ void main() {
     int conflictCount = 1,
     List<PackageFile>? customFiles,
   }) {
-    final files = customFiles ??
+    final files =
+        customFiles ??
         List.generate(
           fileCount,
           (i) => PackageFile(
@@ -99,7 +100,10 @@ void main() {
 
       await tester.pumpWidget(createTestWidget(analysis: analysis));
 
-      expect(find.widgetWithText(ElevatedButton, 'Install 5 Files'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Install 5 Files'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows cancel button', (tester) async {
@@ -110,7 +114,9 @@ void main() {
       expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);
     });
 
-    testWidgets('displays conflict resolution buttons when conflicts exist', (tester) async {
+    testWidgets('displays conflict resolution buttons when conflicts exist', (
+      tester,
+    ) async {
       final analysis = createTestAnalysis(conflictCount: 2);
 
       await tester.pumpWidget(createTestWidget(analysis: analysis));
@@ -120,7 +126,9 @@ void main() {
       expect(find.text('Skip All'), findsOneWidget);
     });
 
-    testWidgets('hides conflict resolution buttons when no conflicts', (tester) async {
+    testWidgets('hides conflict resolution buttons when no conflicts', (
+      tester,
+    ) async {
       final analysis = createTestAnalysis(conflictCount: 0);
 
       await tester.pumpWidget(createTestWidget(analysis: analysis));
@@ -132,7 +140,9 @@ void main() {
   });
 
   group('PackageInstallDialog - Button States', () {
-    testWidgets('install button is enabled when files selected for install', (tester) async {
+    testWidgets('install button is enabled when files selected for install', (
+      tester,
+    ) async {
       final analysis = createTestAnalysis();
 
       await tester.pumpWidget(createTestWidget(analysis: analysis));
@@ -144,7 +154,9 @@ void main() {
       expect(installButton.onPressed, isNotNull);
     });
 
-    testWidgets('install button is disabled when no files selected', (tester) async {
+    testWidgets('install button is disabled when no files selected', (
+      tester,
+    ) async {
       final files = [
         PackageFile(
           relativePath: 'file.json',
@@ -198,8 +210,9 @@ void main() {
           onFileError: any(named: 'onFileError'),
         ),
       ).thenAnswer((invocation) async {
-        final onFileStart = invocation.namedArguments[const Symbol('onFileStart')]
-            as Function(String, int, int)?;
+        final onFileStart =
+            invocation.namedArguments[const Symbol('onFileStart')]
+                as Function(String, int, int)?;
         if (onFileStart != null) {
           onFileStart('file1.json', 1, 3);
         }
@@ -258,7 +271,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('calls installPackageFiles with correct parameters', (tester) async {
+    testWidgets('calls installPackageFiles with correct parameters', (
+      tester,
+    ) async {
       final analysis = createTestAnalysis();
       final packageData = Uint8List.fromList([1, 2, 3, 4]);
 
@@ -274,10 +289,7 @@ void main() {
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
-        createTestWidget(
-          analysis: analysis,
-          packageData: packageData,
-        ),
+        createTestWidget(analysis: analysis, packageData: packageData),
       );
 
       await tester.tap(find.widgetWithText(ElevatedButton, 'Install 3 Files'));
@@ -308,10 +320,12 @@ void main() {
           onFileError: any(named: 'onFileError'),
         ),
       ).thenAnswer((invocation) async {
-        final onFileStart = invocation.namedArguments[const Symbol('onFileStart')]
-            as Function(String, int, int)?;
-        final onFileComplete = invocation.namedArguments[const Symbol('onFileComplete')]
-            as Function(String)?;
+        final onFileStart =
+            invocation.namedArguments[const Symbol('onFileStart')]
+                as Function(String, int, int)?;
+        final onFileComplete =
+            invocation.namedArguments[const Symbol('onFileComplete')]
+                as Function(String)?;
 
         // Simulate file-by-file installation
         if (onFileStart != null) {
@@ -347,7 +361,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('calls onInstall callback after successful installation', (tester) async {
+    testWidgets('calls onInstall callback after successful installation', (
+      tester,
+    ) async {
       bool installCalled = false;
       final analysis = createTestAnalysis();
 
@@ -390,8 +406,9 @@ void main() {
           onFileError: any(named: 'onFileError'),
         ),
       ).thenAnswer((invocation) async {
-        final onFileError = invocation.namedArguments[const Symbol('onFileError')]
-            as Function(String, String)?;
+        final onFileError =
+            invocation.namedArguments[const Symbol('onFileError')]
+                as Function(String, String)?;
         if (onFileError != null) {
           onFileError('file1.json', 'Write failed');
         }
@@ -420,12 +437,15 @@ void main() {
           onFileError: any(named: 'onFileError'),
         ),
       ).thenAnswer((invocation) async {
-        final onFileStart = invocation.namedArguments[const Symbol('onFileStart')]
-            as Function(String, int, int)?;
-        final onFileComplete = invocation.namedArguments[const Symbol('onFileComplete')]
-            as Function(String)?;
-        final onFileError = invocation.namedArguments[const Symbol('onFileError')]
-            as Function(String, String)?;
+        final onFileStart =
+            invocation.namedArguments[const Symbol('onFileStart')]
+                as Function(String, int, int)?;
+        final onFileComplete =
+            invocation.namedArguments[const Symbol('onFileComplete')]
+                as Function(String)?;
+        final onFileError =
+            invocation.namedArguments[const Symbol('onFileError')]
+                as Function(String, String)?;
 
         // First file succeeds
         if (onFileStart != null) {
@@ -450,7 +470,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show partial success in error dialog
-      expect(find.textContaining('Successfully installed: 1 of 3 files'), findsOneWidget);
+      expect(
+        find.textContaining('Successfully installed: 1 of 3 files'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('error dialog has close button', (tester) async {
@@ -466,8 +489,9 @@ void main() {
           onFileError: any(named: 'onFileError'),
         ),
       ).thenAnswer((invocation) async {
-        final onFileError = invocation.namedArguments[const Symbol('onFileError')]
-            as Function(String, String)?;
+        final onFileError =
+            invocation.namedArguments[const Symbol('onFileError')]
+                as Function(String, String)?;
         if (onFileError != null) {
           onFileError('file1.json', 'Write failed');
         }
@@ -495,8 +519,9 @@ void main() {
           onFileError: any(named: 'onFileError'),
         ),
       ).thenAnswer((invocation) async {
-        final onFileError = invocation.namedArguments[const Symbol('onFileError')]
-            as Function(String, String)?;
+        final onFileError =
+            invocation.namedArguments[const Symbol('onFileError')]
+                as Function(String, String)?;
         if (onFileError != null) {
           onFileError('file1.json', 'Write failed');
         }
@@ -517,7 +542,9 @@ void main() {
   });
 
   group('PackageInstallDialog - File Action Management', () {
-    testWidgets('bulk action "Install All" sets all files to install', (tester) async {
+    testWidgets('bulk action "Install All" sets all files to install', (
+      tester,
+    ) async {
       final files = [
         PackageFile(
           relativePath: 'file1.json',
@@ -539,23 +566,34 @@ void main() {
       await tester.pumpWidget(createTestWidget(analysis: analysis));
 
       // Initially should show 0 files to install
-      expect(find.widgetWithText(ElevatedButton, 'Install 0 Files'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Install 0 Files'),
+        findsOneWidget,
+      );
 
       // Tap "Install All" button
       await tester.tap(find.widgetWithText(ActionChip, 'Install All'));
       await tester.pumpAndSettle();
 
       // Should now show 2 files to install
-      expect(find.widgetWithText(ElevatedButton, 'Install 2 Files'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Install 2 Files'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('bulk action "Skip All" sets all files to skip', (tester) async {
+    testWidgets('bulk action "Skip All" sets all files to skip', (
+      tester,
+    ) async {
       final analysis = createTestAnalysis(fileCount: 3, conflictCount: 1);
 
       await tester.pumpWidget(createTestWidget(analysis: analysis));
 
       // Initially should show 3 files to install
-      expect(find.widgetWithText(ElevatedButton, 'Install 3 Files'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Install 3 Files'),
+        findsOneWidget,
+      );
 
       // Tap "Skip All" button
       await tester.tap(find.widgetWithText(ActionChip, 'Skip All'));
@@ -568,7 +606,9 @@ void main() {
       expect(installButton.onPressed, isNull);
     });
 
-    testWidgets('bulk action "Skip Conflicts" skips only conflict files', (tester) async {
+    testWidgets('bulk action "Skip Conflicts" skips only conflict files', (
+      tester,
+    ) async {
       final files = [
         PackageFile(
           relativePath: 'conflict.json',
@@ -590,7 +630,10 @@ void main() {
       await tester.pumpWidget(createTestWidget(analysis: analysis));
 
       // Initially should show 2 files to install
-      expect(find.widgetWithText(ElevatedButton, 'Install 2 Files'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Install 2 Files'),
+        findsOneWidget,
+      );
 
       // Tap "Skip Conflicts" button
       await tester.tap(find.widgetWithText(ActionChip, 'Skip Conflicts'));

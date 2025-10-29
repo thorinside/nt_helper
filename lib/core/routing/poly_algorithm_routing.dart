@@ -715,7 +715,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
                 'name': 'Voice $voiceNum Gate → ES-5 $es5Port',
                 'type': 'gate',
                 'busParam': 'es5_direct', // Special marker for ES-5 routing
-                'channel': es5Port, // ES-5 port number (using 'channel' key for Port.fromJson)
+                'channel':
+                    es5Port, // ES-5 port number (using 'channel' key for Port.fromJson)
                 'parameterNumber': 0,
                 'voiceNumber': voiceNum,
               };
@@ -782,7 +783,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           cvBusOffset = 1; // Skip gate bus within this voice's bus allocation
         }
 
-        final cvBaseBus = firstOutput + (voice * totalOutputsPerVoice) + cvBusOffset;
+        final cvBaseBus =
+            firstOutput + (voice * totalOutputsPerVoice) + cvBusOffset;
         int currentCvOffset = 0;
 
         if (pitchOutputs > 0) {

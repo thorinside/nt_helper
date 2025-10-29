@@ -1572,15 +1572,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
       final es5OutputValue = es5OutputParam.parameterNumber >= 0
           ? slot.values
-              .firstWhere(
-                (v) => v.parameterNumber == es5OutputParam.parameterNumber,
-                orElse: () => ParameterValue(
-                  algorithmIndex: slotIndex,
-                  parameterNumber: es5OutputParam.parameterNumber,
-                  value: es5OutputParam.defaultValue,
-                ),
-              )
-              .value
+                .firstWhere(
+                  (v) => v.parameterNumber == es5OutputParam.parameterNumber,
+                  orElse: () => ParameterValue(
+                    algorithmIndex: slotIndex,
+                    parameterNumber: es5OutputParam.parameterNumber,
+                    value: es5OutputParam.defaultValue,
+                  ),
+                )
+                .value
           : 1;
 
       // Get voice count
@@ -1591,15 +1591,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
       final voiceCount = voiceCountParam.parameterNumber >= 0
           ? slot.values
-              .firstWhere(
-                (v) => v.parameterNumber == voiceCountParam.parameterNumber,
-                orElse: () => ParameterValue(
-                  algorithmIndex: slotIndex,
-                  parameterNumber: voiceCountParam.parameterNumber,
-                  value: voiceCountParam.defaultValue,
-                ),
-              )
-              .value
+                .firstWhere(
+                  (v) => v.parameterNumber == voiceCountParam.parameterNumber,
+                  orElse: () => ParameterValue(
+                    algorithmIndex: slotIndex,
+                    parameterNumber: voiceCountParam.parameterNumber,
+                    value: voiceCountParam.defaultValue,
+                  ),
+                )
+                .value
           : 1;
 
       // Check if Gate outputs are enabled
@@ -1610,15 +1610,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
       final gateOutputsEnabled = gateOutputsParam.parameterNumber >= 0
           ? slot.values
-              .firstWhere(
-                (v) => v.parameterNumber == gateOutputsParam.parameterNumber,
-                orElse: () => ParameterValue(
-                  algorithmIndex: slotIndex,
-                  parameterNumber: gateOutputsParam.parameterNumber,
-                  value: gateOutputsParam.defaultValue,
-                ),
-              )
-              .value > 0
+                    .firstWhere(
+                      (v) =>
+                          v.parameterNumber == gateOutputsParam.parameterNumber,
+                      orElse: () => ParameterValue(
+                        algorithmIndex: slotIndex,
+                        parameterNumber: gateOutputsParam.parameterNumber,
+                        value: gateOutputsParam.defaultValue,
+                      ),
+                    )
+                    .value >
+                0
           : false;
 
       // Only populate ES-5 toggles if gates are enabled
@@ -1643,8 +1645,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // or "ES-5 Expander" for single-channel algorithms like Clock Multiplier)
       for (final param in slot.parameters) {
         // Try multi-channel format first (e.g., "1:ES-5 Expander")
-        final multiChannelMatch =
-            RegExp(r'^(\d+):ES-5 Expander$').firstMatch(param.name);
+        final multiChannelMatch = RegExp(
+          r'^(\d+):ES-5 Expander$',
+        ).firstMatch(param.name);
         if (multiChannelMatch != null) {
           final channel = int.parse(multiChannelMatch.group(1)!);
 
@@ -1740,9 +1743,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return;
       }
 
-      debugPrint(
-        'Poly CV: Toggling global ES-5 Expander (affects all gates)',
-      );
+      debugPrint('Poly CV: Toggling global ES-5 Expander (affects all gates)');
     } else {
       // Clock/Euclidean/Clock Multiplier/Clock Divider: Find the per-channel ES-5 Expander parameter
       // Try channel-prefixed format first (e.g., "1:ES-5 Expander")

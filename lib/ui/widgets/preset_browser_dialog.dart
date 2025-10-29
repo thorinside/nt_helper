@@ -331,9 +331,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     if (supportedFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Please drop a preset package (.zip)',
-          ),
+          content: Text('Please drop a preset package (.zip)'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -364,7 +362,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
       // Read file data
       final fileBytes = await file.readAsBytes();
-      debugPrint('[PresetBrowserDialog] Package size: ${fileBytes.length} bytes');
+      debugPrint(
+        '[PresetBrowserDialog] Package size: ${fileBytes.length} bytes',
+      );
 
       // Validate and analyze the package
       final isValid = await PresetPackageAnalyzer.isValidPackage(fileBytes);
@@ -392,8 +392,12 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         return;
       }
 
-      debugPrint('[PresetBrowserDialog] Package analyzed: ${analysis.packageName}');
-      debugPrint('[PresetBrowserDialog] Files in package: ${analysis.files.length}');
+      debugPrint(
+        '[PresetBrowserDialog] Package analyzed: ${analysis.packageName}',
+      );
+      debugPrint(
+        '[PresetBrowserDialog] Files in package: ${analysis.files.length}',
+      );
 
       // Store analysis results and package data
       setState(() {
@@ -401,18 +405,24 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         _currentPackageData = fileBytes;
       });
 
-      debugPrint('[PresetBrowserDialog] Package analysis complete, ready for conflict detection');
+      debugPrint(
+        '[PresetBrowserDialog] Package analysis complete, ready for conflict detection',
+      );
 
       // Story E3.3: Detect file conflicts with SD card
       debugPrint('[PresetBrowserDialog] Starting conflict detection...');
       final conflictDetector = FileConflictDetector(widget.distingCubit);
-      final analysisWithConflicts = await conflictDetector.detectConflicts(analysis);
+      final analysisWithConflicts = await conflictDetector.detectConflicts(
+        analysis,
+      );
 
       setState(() {
         _currentAnalysis = analysisWithConflicts;
       });
 
-      debugPrint('[PresetBrowserDialog] Conflict detection complete: ${analysisWithConflicts.conflictCount} conflicts');
+      debugPrint(
+        '[PresetBrowserDialog] Conflict detection complete: ${analysisWithConflicts.conflictCount} conflicts',
+      );
 
       // Story E3.4: Show the install dialog
       if (!mounted) return;
@@ -427,7 +437,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
           onInstall: () {
             Navigator.of(dialogContext).pop(); // Close PackageInstallDialog
             Navigator.of(context).pop(); // Close PresetBrowserDialog
-            debugPrint('[PresetBrowserDialog] Package installed, closing dialogs');
+            debugPrint(
+              '[PresetBrowserDialog] Package installed, closing dialogs',
+            );
           },
           onCancel: () {
             Navigator.of(dialogContext).pop();
@@ -442,7 +454,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         _currentPackageData = null;
         _isInstallingPackage = false;
       });
-
     } catch (e, stackTrace) {
       debugPrint('[PresetBrowserDialog] Error processing package: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -528,9 +539,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     return Positioned.fill(
       child: Container(
         color: Colors.black.withValues(alpha: 0.5),
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: const Center(child: CircularProgressIndicator()),
       ),
     );
   }

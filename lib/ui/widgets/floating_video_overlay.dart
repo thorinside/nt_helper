@@ -169,27 +169,35 @@ class FloatingVideoContent extends StatelessWidget {
       valueListenable: controller,
       builder: (context, value, child) {
         final deviceName = value.device.name;
-        debugPrint('[FloatingVideoContent] Controller state: isInitialized=${value.isInitialized}, '
-            'previewMode=${value.previewMode}, device=$deviceName');
+        debugPrint(
+          '[FloatingVideoContent] Controller state: isInitialized=${value.isInitialized}, '
+          'previewMode=${value.previewMode}, device=$deviceName',
+        );
 
         if (value.isInitialized) {
-          debugPrint('[FloatingVideoContent] Controller initialized - displaying UvcCameraPreview');
+          debugPrint(
+            '[FloatingVideoContent] Controller initialized - displaying UvcCameraPreview',
+          );
           // Wrap in a Container to ensure proper sizing
           return Container(
             color: Colors.black, // Add background to see if widget is there
             child: UvcCameraPreview(controller),
           );
         } else {
-          debugPrint('[FloatingVideoContent] Controller not ready - waiting for initialization');
+          debugPrint(
+            '[FloatingVideoContent] Controller not ready - waiting for initialization',
+          );
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const CircularProgressIndicator(),
                 const SizedBox(height: 8),
-                Text('Initializing camera...\n'
-                    'Device: ${value.device.name}\n'
-                    'Initialized: ${value.isInitialized}'),
+                Text(
+                  'Initializing camera...\n'
+                  'Device: ${value.device.name}\n'
+                  'Initialized: ${value.isInitialized}',
+                ),
               ],
             ),
           );
@@ -227,9 +235,7 @@ class FloatingVideoContent extends StatelessWidget {
                       gaplessPlayback: true,
                       excludeFromSemantics: true,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Text('Frame error'),
-                        );
+                        return const Center(child: Text('Frame error'));
                       },
                     ),
                   ),
@@ -254,9 +260,9 @@ class FloatingVideoContent extends StatelessWidget {
               bloc: cubit,
               builder: (context, cubitState) {
                 final videoState = cubitState.maybeWhen(
-                  synchronized: (_, _, _, _, _, _, _, _, _, _, _, _, _,
-                          videoStream) =>
-                      videoStream,
+                  synchronized:
+                      (_, _, _, _, _, _, _, _, _, _, _, _, _, videoStream) =>
+                          videoStream,
                   orElse: () => null,
                 );
 
@@ -275,10 +281,7 @@ class FloatingVideoContent extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
-                              Icons.error_outline,
-                              color: Colors.red,
-                            ),
+                            const Icon(Icons.error_outline, color: Colors.red),
                             const SizedBox(height: 8),
                             Text(
                               message,
@@ -306,10 +309,7 @@ class FloatingVideoContent extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.videocam_off,
-                              color: Colors.grey,
-                            ),
+                            Icon(Icons.videocam_off, color: Colors.grey),
                             SizedBox(height: 8),
                             Text(
                               'USB video not available',

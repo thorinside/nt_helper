@@ -74,9 +74,9 @@ void main() {
         ],
       );
 
-      when(() => mockCubit.state).thenReturn(
-        createTestSyncState(offline: true),
-      );
+      when(
+        () => mockCubit.state,
+      ).thenReturn(createTestSyncState(offline: true));
 
       // Act
       final result = await detector.detectConflicts(analysis);
@@ -139,14 +139,14 @@ void main() {
         size: 1024,
       );
 
-      when(() => mockCubit.state).thenReturn(
-        createTestSyncState(offline: false, disting: mockDisting),
-      );
+      when(
+        () => mockCubit.state,
+      ).thenReturn(createTestSyncState(offline: false, disting: mockDisting));
       when(() => mockCubit.disting()).thenReturn(mockDisting);
       when(() => mockDisting.requestWake()).thenAnswer((_) async {});
-      when(() => mockDisting.requestDirectoryListing('/presets')).thenAnswer(
-        (_) async => DirectoryListing(entries: [existingEntry]),
-      );
+      when(
+        () => mockDisting.requestDirectoryListing('/presets'),
+      ).thenAnswer((_) async => DirectoryListing(entries: [existingEntry]));
 
       // Act
       final result = await detector.detectConflicts(analysis);
@@ -171,13 +171,14 @@ void main() {
         ],
       );
 
-      when(() => mockCubit.state).thenReturn(
-        createTestSyncState(offline: false, disting: mockDisting),
-      );
+      when(
+        () => mockCubit.state,
+      ).thenReturn(createTestSyncState(offline: false, disting: mockDisting));
       when(() => mockCubit.disting()).thenReturn(mockDisting);
       when(() => mockDisting.requestWake()).thenAnswer((_) async {});
-      when(() => mockDisting.requestDirectoryListing('/presets'))
-          .thenThrow(Exception('Directory not found'));
+      when(
+        () => mockDisting.requestDirectoryListing('/presets'),
+      ).thenThrow(Exception('Directory not found'));
 
       // Act
       final result = await detector.detectConflicts(analysis);
@@ -215,14 +216,14 @@ void main() {
         ],
       );
 
-      when(() => mockCubit.state).thenReturn(
-        createTestSyncState(offline: false, disting: mockDisting),
-      );
+      when(
+        () => mockCubit.state,
+      ).thenReturn(createTestSyncState(offline: false, disting: mockDisting));
       when(() => mockCubit.disting()).thenReturn(mockDisting);
       when(() => mockDisting.requestWake()).thenAnswer((_) async {});
-      when(() => mockDisting.requestDirectoryListing(any())).thenAnswer(
-        (_) async => DirectoryListing(entries: const []),
-      );
+      when(
+        () => mockDisting.requestDirectoryListing(any()),
+      ).thenAnswer((_) async => DirectoryListing(entries: const []));
 
       // Act
       final result = await detector.detectConflicts(analysis);

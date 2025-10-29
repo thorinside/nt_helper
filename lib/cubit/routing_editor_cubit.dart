@@ -766,12 +766,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     int? channel;
 
     // Try multi-channel format first
-    var channelMatch = RegExp(r'_channel_(\d+)_').firstMatch(algorithmOutputPort.id);
+    var channelMatch = RegExp(
+      r'_channel_(\d+)_',
+    ).firstMatch(algorithmOutputPort.id);
     if (channelMatch != null) {
       channel = int.parse(channelMatch.group(1)!);
     } else {
       // Try Poly CV voice format
-      channelMatch = RegExp(r'_gate_output_(\d+)').firstMatch(algorithmOutputPort.id);
+      channelMatch = RegExp(
+        r'_gate_output_(\d+)',
+      ).firstMatch(algorithmOutputPort.id);
       if (channelMatch != null) {
         channel = int.parse(channelMatch.group(1)!);
       }
@@ -820,10 +824,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Clamp to valid ES-5 port range (1-8)
       if (targetValue < 1) {
-        debugPrint('Calculated ES-5 starting port $targetValue is below minimum (1), clamping to 1');
+        debugPrint(
+          'Calculated ES-5 starting port $targetValue is below minimum (1), clamping to 1',
+        );
         targetValue = 1;
       } else if (targetValue > 8) {
-        debugPrint('Calculated ES-5 starting port $targetValue is above maximum (8), clamping to 8');
+        debugPrint(
+          'Calculated ES-5 starting port $targetValue is above maximum (8), clamping to 8',
+        );
         targetValue = 8;
       }
 

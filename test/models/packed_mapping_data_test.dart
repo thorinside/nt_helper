@@ -694,7 +694,10 @@ void main() {
       noteData[offset++] = 0;
 
       final noteMapping = PackedMappingData.fromBytes(5, noteData);
-      expect(noteMapping.midiMappingType, equals(MidiMappingType.noteMomentary));
+      expect(
+        noteMapping.midiMappingType,
+        equals(MidiMappingType.noteMomentary),
+      );
 
       // Test noteToggle (type 2)
       final toggleData = Uint8List(26);

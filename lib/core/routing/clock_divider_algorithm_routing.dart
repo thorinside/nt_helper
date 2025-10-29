@@ -68,19 +68,24 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
       final enableValue = getChannelParameter(channel, 'Enable');
 
       if (enableValue == null || enableValue == 0) {
-        debugPrint(
-          '$algorithmName: Channel $channel is disabled, skipping',
-        );
+        debugPrint('$algorithmName: Channel $channel is disabled, skipping');
         continue;
       }
 
       // Get ES-5 Expander value (0=Off, 1-6=Active)
-      final es5ExpanderValue = getChannelParameter(channel, Es5DirectOutputAlgorithmRouting.es5ExpanderParamName);
+      final es5ExpanderValue = getChannelParameter(
+        channel,
+        Es5DirectOutputAlgorithmRouting.es5ExpanderParamName,
+      );
 
       if (es5ExpanderValue != null && es5ExpanderValue > 0) {
         // ES-5 MODE: Ignore Output parameter completely
         final es5OutputValue =
-            getChannelParameter(channel, Es5DirectOutputAlgorithmRouting.es5OutputParamName) ?? channel;
+            getChannelParameter(
+              channel,
+              Es5DirectOutputAlgorithmRouting.es5OutputParamName,
+            ) ??
+            channel;
 
         ports.add(
           Port(
@@ -89,7 +94,8 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
             type: PortType.gate,
             direction: PortDirection.output,
             description: 'Direct to ES-5 Output $es5OutputValue',
-            busParam: Es5DirectOutputAlgorithmRouting.es5DirectBusParam, // Special marker
+            busParam: Es5DirectOutputAlgorithmRouting
+                .es5DirectBusParam, // Special marker
             channelNumber: es5OutputValue, // ES-5 port number
           ),
         );
@@ -100,7 +106,10 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
       } else {
         // NORMAL MODE: Use Output parameter
         // Need to get both the bus value AND the parameter number for updates
-        final outputParam = getParameterValueAndNumber(channel, Es5DirectOutputAlgorithmRouting.outputParamName);
+        final outputParam = getParameterValueAndNumber(
+          channel,
+          Es5DirectOutputAlgorithmRouting.outputParamName,
+        );
 
         if (outputParam != null && outputParam.value > 0) {
           ports.add(

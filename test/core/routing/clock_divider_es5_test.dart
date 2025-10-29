@@ -10,14 +10,9 @@ void main() {
     Slot createClockDividerSlot({
       required int channelCount,
       required List<
-        ({
-          int channel,
-          int enable,
-          int es5Expander,
-          int es5Output,
-          int output,
-        })
-      > channelConfigs,
+        ({int channel, int enable, int es5Expander, int es5Output, int output})
+      >
+      channelConfigs,
       int algorithmIndex = 0,
     }) {
       final parameters = <ParameterInfo>[];
@@ -170,13 +165,7 @@ void main() {
           channelCount: 8,
           channelConfigs: [
             for (int i = 1; i <= 8; i++)
-              (
-                channel: i,
-                enable: 1,
-                es5Expander: 1,
-                es5Output: i,
-                output: 13,
-              ),
+              (channel: i, enable: 1, es5Expander: 1, es5Output: i, output: 13),
           ],
         );
 
@@ -233,13 +222,7 @@ void main() {
           channelCount: 8,
           channelConfigs: [
             for (int i = 1; i <= 4; i++)
-              (
-                channel: i,
-                enable: 1,
-                es5Expander: 1,
-                es5Output: i,
-                output: 13,
-              ),
+              (channel: i, enable: 1, es5Expander: 1, es5Output: i, output: 13),
             for (int i = 5; i <= 8; i++)
               (
                 channel: i,
@@ -417,11 +400,7 @@ void main() {
 
       test('canHandle returns false for other algorithms', () {
         final slot = Slot(
-          algorithm: Algorithm(
-            algorithmIndex: 0,
-            guid: 'clck',
-            name: 'Clock',
-          ),
+          algorithm: Algorithm(algorithmIndex: 0, guid: 'clck', name: 'Clock'),
           routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
           pages: ParameterPages(algorithmIndex: 0, pages: []),
           parameters: [],

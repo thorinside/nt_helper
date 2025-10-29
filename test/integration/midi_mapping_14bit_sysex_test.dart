@@ -63,12 +63,12 @@ void main() {
 
       // Type 3 (cc14BitLow) should be encoded as (3 << 2) = 0x0C
       expect(midiFlags2 >> 2, equals(3), reason: 'Type value should be 3');
+      expect(midiFlags2 & 0x01, equals(0), reason: 'Relative flag should be 0');
       expect(
-        midiFlags2 & 0x01,
-        equals(0),
-        reason: 'Relative flag should be 0',
+        midiFlags2,
+        equals(0x0C),
+        reason: 'Full flags2 byte should be 0x0C',
       );
-      expect(midiFlags2, equals(0x0C), reason: 'Full flags2 byte should be 0x0C');
     });
 
     test('SetMidiMappingMessage encodes 14-bit CC high type correctly', () {
@@ -109,11 +109,7 @@ void main() {
 
       // Type 4 (cc14BitHigh) should be encoded as (4 << 2) = 0x10
       expect(midiFlags2 >> 2, equals(4), reason: 'Type value should be 4');
-      expect(
-        midiFlags2 & 0x01,
-        equals(0),
-        reason: 'Relative flag should be 0',
-      );
+      expect(midiFlags2 & 0x01, equals(0), reason: 'Relative flag should be 0');
       expect(
         midiFlags2,
         equals(0x10),

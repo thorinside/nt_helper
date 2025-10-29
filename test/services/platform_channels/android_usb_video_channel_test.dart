@@ -548,23 +548,26 @@ void main() {
         expect(true, isTrue);
       });
 
-      test('initialization retry state resets after successful connection', () async {
-        // Act
-        final stream1 = channel.startVideoStream('device-1');
-        await Future.delayed(const Duration(milliseconds: 50));
-        await channel.stopVideoStream();
+      test(
+        'initialization retry state resets after successful connection',
+        () async {
+          // Act
+          final stream1 = channel.startVideoStream('device-1');
+          await Future.delayed(const Duration(milliseconds: 50));
+          await channel.stopVideoStream();
 
-        // Second attempt should not carry over retry state
-        final stream2 = channel.startVideoStream('device-2');
-        await Future.delayed(const Duration(milliseconds: 50));
+          // Second attempt should not carry over retry state
+          final stream2 = channel.startVideoStream('device-2');
+          await Future.delayed(const Duration(milliseconds: 50));
 
-        // Assert
-        expect(stream1, isNotNull);
-        expect(stream2, isNotNull);
+          // Assert
+          expect(stream1, isNotNull);
+          expect(stream2, isNotNull);
 
-        // Cleanup
-        await channel.stopVideoStream();
-      });
+          // Cleanup
+          await channel.stopVideoStream();
+        },
+      );
 
       test('recovery timer is cleaned up on disposal', () async {
         // Arrange

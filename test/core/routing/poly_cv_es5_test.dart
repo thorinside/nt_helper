@@ -213,12 +213,17 @@ void main() {
         final outputPorts = routing.outputPorts;
 
         // Filter out the ES-5 Output parameter port (it's a parameter, not a real output)
-        final gatePorts = outputPorts.where((p) => p.name.contains('Gate')).toList();
+        final gatePorts = outputPorts
+            .where((p) => p.name.contains('Gate'))
+            .toList();
 
         expect(gatePorts, hasLength(1));
         expect(gatePorts[0].name, equals('Voice 1 Gate → ES-5 1'));
         expect(gatePorts[0].busParam, equals('es5_direct'));
-        expect(gatePorts[0].channelNumber, equals(1)); // ES-5 port number stored in channelNumber
+        expect(
+          gatePorts[0].channelNumber,
+          equals(1),
+        ); // ES-5 port number stored in channelNumber
       });
 
       test('Voice count = 4, ES-5 active → 4 gates to ES-5', () {
@@ -249,11 +254,16 @@ void main() {
         final outputPorts = routing.outputPorts;
 
         // Filter out the ES-5 Output parameter port
-        final gatePorts = outputPorts.where((p) => p.name.contains('Gate')).toList();
+        final gatePorts = outputPorts
+            .where((p) => p.name.contains('Gate'))
+            .toList();
 
         expect(gatePorts, hasLength(4));
         for (int i = 0; i < 4; i++) {
-          expect(gatePorts[i].name, equals('Voice ${i + 1} Gate → ES-5 ${i + 1}'));
+          expect(
+            gatePorts[i].name,
+            equals('Voice ${i + 1} Gate → ES-5 ${i + 1}'),
+          );
           expect(gatePorts[i].busParam, equals('es5_direct'));
         }
       });
@@ -286,7 +296,9 @@ void main() {
         final outputPorts = routing.outputPorts;
 
         // Filter out the ES-5 Output parameter port
-        final gatePorts = outputPorts.where((p) => p.name.contains('Gate')).toList();
+        final gatePorts = outputPorts
+            .where((p) => p.name.contains('Gate'))
+            .toList();
 
         expect(gatePorts, hasLength(8));
         for (int i = 0; i < 8; i++) {
@@ -326,13 +338,17 @@ void main() {
         final outputPorts = routing.outputPorts;
 
         // Filter out the ES-5 Output parameter port
-        final realPorts = outputPorts.where((p) => !p.name.contains('ES-5 Output')).toList();
+        final realPorts = outputPorts
+            .where((p) => !p.name.contains('ES-5 Output'))
+            .toList();
 
         // Should have 4 gates (ES-5) + 4 pitch CVs (normal)
         expect(realPorts, hasLength(8));
 
         // Check gates go to ES-5
-        final gatePorts = realPorts.where((p) => p.name.contains('Gate')).toList();
+        final gatePorts = realPorts
+            .where((p) => p.name.contains('Gate'))
+            .toList();
         expect(gatePorts, hasLength(4));
         for (final port in gatePorts) {
           expect(port.busParam, equals('es5_direct'));
@@ -340,7 +356,9 @@ void main() {
         }
 
         // Check pitch CVs use normal buses
-        final pitchPorts = realPorts.where((p) => p.name.contains('Pitch')).toList();
+        final pitchPorts = realPorts
+            .where((p) => p.name.contains('Pitch'))
+            .toList();
         expect(pitchPorts, hasLength(4));
         for (final port in pitchPorts) {
           // Pitch ports have busParam set to 'Pitch output' but use busValue for routing
@@ -378,20 +396,28 @@ void main() {
         final outputPorts = routing.outputPorts;
 
         // Filter out the ES-5 Output parameter port
-        final realPorts = outputPorts.where((p) => !p.name.contains('ES-5 Output')).toList();
+        final realPorts = outputPorts
+            .where((p) => !p.name.contains('ES-5 Output'))
+            .toList();
 
         // Should have 2 gates (ES-5) + 2 pitch CVs + 2 velocity CVs (normal)
         expect(realPorts, hasLength(6));
 
         // Check gates go to ES-5
-        final gatePorts = realPorts.where((p) => p.name.contains('Gate')).toList();
+        final gatePorts = realPorts
+            .where((p) => p.name.contains('Gate'))
+            .toList();
         expect(gatePorts, hasLength(2));
         for (final port in gatePorts) {
           expect(port.busParam, equals('es5_direct'));
         }
 
         // Check CVs use normal buses (not ES-5)
-        final cvPorts = realPorts.where((p) => p.name.contains('Pitch') || p.name.contains('Velocity')).toList();
+        final cvPorts = realPorts
+            .where(
+              (p) => p.name.contains('Pitch') || p.name.contains('Velocity'),
+            )
+            .toList();
         expect(cvPorts, hasLength(4));
         for (final port in cvPorts) {
           // CV ports have busParam set but use busValue for routing
@@ -430,7 +456,9 @@ void main() {
         final outputPorts = routing.outputPorts;
 
         // Filter out the ES-5 Output parameter port
-        final realPorts = outputPorts.where((p) => !p.name.contains('ES-5 Output')).toList();
+        final realPorts = outputPorts
+            .where((p) => !p.name.contains('ES-5 Output'))
+            .toList();
 
         // All ports should use normal buses (no ES-5)
         for (final port in realPorts) {
@@ -458,11 +486,7 @@ void main() {
 
       test('canHandle returns false for other algorithms', () {
         final slot = Slot(
-          algorithm: Algorithm(
-            algorithmIndex: 0,
-            guid: 'clck',
-            name: 'Clock',
-          ),
+          algorithm: Algorithm(algorithmIndex: 0, guid: 'clck', name: 'Clock'),
           routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
           pages: ParameterPages(algorithmIndex: 0, pages: []),
           parameters: [],

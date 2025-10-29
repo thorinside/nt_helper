@@ -44,6 +44,9 @@ class ClockMultiplierAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
       debugName: 'ClockMultiplierAlgorithmRouting',
     );
 
-    return ClockMultiplierAlgorithmRouting(slot: slot, config: configData.config);
+    return ClockMultiplierAlgorithmRouting(
+      slot: slot,
+      config: configData.config,
+    );
   }
 }

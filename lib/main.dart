@@ -106,45 +106,45 @@ void main() async {
   // Only initialize window management on desktop platforms
   if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
     doWhenWindowReady(() async {
-    // SettingsService().init() is already called above, so SharedPreferences should be initialized.
-    final prefs = await SharedPreferences.getInstance();
-    double? x, y, width, height;
-    try {
-      x = prefs.getDouble('window_x');
-      y = prefs.getDouble('window_y');
-      width = prefs.getDouble('window_width');
-      height = prefs.getDouble('window_height');
-    } catch (e) {
-      // Handle error loading window state
-      // Consider logging this to a file or analytics in a real app
-    }
+      // SettingsService().init() is already called above, so SharedPreferences should be initialized.
+      final prefs = await SharedPreferences.getInstance();
+      double? x, y, width, height;
+      try {
+        x = prefs.getDouble('window_x');
+        y = prefs.getDouble('window_y');
+        width = prefs.getDouble('window_width');
+        height = prefs.getDouble('window_height');
+      } catch (e) {
+        // Handle error loading window state
+        // Consider logging this to a file or analytics in a real app
+      }
 
-    appWindow.minSize = Size(640, 720);
+      appWindow.minSize = Size(640, 720);
 
-    bool hasSavedPositionAndSize =
-        x != null && y != null && width != null && height != null;
+      bool hasSavedPositionAndSize =
+          x != null && y != null && width != null && height != null;
 
-    if (hasSavedPositionAndSize) {
-      // Ensure width and height are positive, otherwise bitsdojo might ignore the rect.
-      if (width <= 0 || height <= 0) {
+      if (hasSavedPositionAndSize) {
+        // Ensure width and height are positive, otherwise bitsdojo might ignore the rect.
+        if (width <= 0 || height <= 0) {
+          const initialSize = Size(720, 1080);
+          appWindow.size = initialSize;
+          appWindow.alignment = Alignment.center;
+        } else {
+          // Create Size and Offset objects
+          Size savedSize = Size(width, height);
+          Offset savedPosition = Offset(x, y);
+
+          appWindow.size = savedSize;
+          appWindow.position = savedPosition;
+        }
+      } else {
         const initialSize = Size(720, 1080);
         appWindow.size = initialSize;
         appWindow.alignment = Alignment.center;
-      } else {
-        // Create Size and Offset objects
-        Size savedSize = Size(width, height);
-        Offset savedPosition = Offset(x, y);
-
-        appWindow.size = savedSize;
-        appWindow.position = savedPosition;
       }
-    } else {
-      const initialSize = Size(720, 1080);
-      appWindow.size = initialSize;
-      appWindow.alignment = Alignment.center;
-    }
 
-    appWindow.show();
+      appWindow.show();
     });
   }
 }

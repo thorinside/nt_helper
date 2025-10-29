@@ -91,7 +91,8 @@ void main() {
         expect(
           es5ExpanderEnums.length,
           equals(0),
-          reason: 'ES-5 Expander enums handled by enum system, not in parameterEnums',
+          reason:
+              'ES-5 Expander enums handled by enum system, not in parameterEnums',
         );
       });
     });
@@ -153,7 +154,8 @@ void main() {
         expect(
           es5ExpanderEnums.length,
           equals(0),
-          reason: 'ES-5 Expander enums handled by enum system, not in parameterEnums',
+          reason:
+              'ES-5 Expander enums handled by enum system, not in parameterEnums',
         );
       });
     });

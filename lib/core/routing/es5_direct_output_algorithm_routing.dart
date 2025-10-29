@@ -48,7 +48,10 @@ abstract class Es5DirectOutputAlgorithmRouting
 
     for (int channel = 1; channel <= config.channelCount; channel++) {
       // Get ES-5 Expander value (0=Off, 1-6=Active)
-      final es5ExpanderValue = getChannelParameter(channel, es5ExpanderParamName);
+      final es5ExpanderValue = getChannelParameter(
+        channel,
+        es5ExpanderParamName,
+      );
 
       if (es5ExpanderValue != null && es5ExpanderValue > 0) {
         // ES-5 MODE: Ignore Output parameter completely
@@ -78,7 +81,8 @@ abstract class Es5DirectOutputAlgorithmRouting
         if (outputBusResult != null && outputBusResult.busValue > 0) {
           // For single-channel algorithms, use the actual parameter name (e.g., "Clock output")
           // For multi-channel, use "Channel N" format
-          final portName = config.channelCount == 1 && outputBusResult.paramName != null
+          final portName =
+              config.channelCount == 1 && outputBusResult.paramName != null
               ? outputBusResult.paramName!
               : 'Channel $channel';
 
@@ -113,11 +117,16 @@ abstract class Es5DirectOutputAlgorithmRouting
   /// Helper to get output bus value along with parameter name and number.
   ///
   /// Returns a record with the bus value, parameter name, and parameter number.
-  ({int busValue, String? paramName, int? parameterNumber})? _getOutputBusWithName(int channel) {
+  ({int busValue, String? paramName, int? parameterNumber})?
+  _getOutputBusWithName(int channel) {
     // Try 'Output' first
     final outputParam = getParameterValueAndNumber(channel, outputParamName);
     if (outputParam != null && outputParam.value > 0) {
-      return (busValue: outputParam.value, paramName: outputParamName, parameterNumber: outputParam.parameterNumber);
+      return (
+        busValue: outputParam.value,
+        paramName: outputParamName,
+        parameterNumber: outputParam.parameterNumber,
+      );
     }
 
     // Fall back to pattern matching (e.g., 'Clock output')
@@ -144,7 +153,11 @@ abstract class Es5DirectOutputAlgorithmRouting
             .value;
 
         if (value > 0) {
-          return (busValue: value, paramName: param.name, parameterNumber: param.parameterNumber);
+          return (
+            busValue: value,
+            paramName: param.name,
+            parameterNumber: param.parameterNumber,
+          );
         }
       }
     }
@@ -221,14 +234,11 @@ abstract class Es5DirectOutputAlgorithmRouting
     final regex = RegExp(paramPattern);
 
     // Look for parameter with channel prefix first (e.g., "1:Clock output")
-    final prefixedMatch = slot.parameters.firstWhere(
-      (p) {
-        if (!p.name.startsWith('$channel:')) return false;
-        final nameWithoutPrefix = p.name.substring('$channel:'.length);
-        return regex.hasMatch(nameWithoutPrefix);
-      },
-      orElse: () => ParameterInfo.filler(),
-    );
+    final prefixedMatch = slot.parameters.firstWhere((p) {
+      if (!p.name.startsWith('$channel:')) return false;
+      final nameWithoutPrefix = p.name.substring('$channel:'.length);
+      return regex.hasMatch(nameWithoutPrefix);
+    }, orElse: () => ParameterInfo.filler());
 
     if (prefixedMatch.parameterNumber >= 0) {
       final value = slot.values
@@ -241,7 +251,9 @@ abstract class Es5DirectOutputAlgorithmRouting
             ),
           )
           .value;
-      debugPrint('$algorithmName: Found pattern match "${prefixedMatch.name}" = $value');
+      debugPrint(
+        '$algorithmName: Found pattern match "${prefixedMatch.name}" = $value',
+      );
       return value;
     }
 
@@ -263,7 +275,9 @@ abstract class Es5DirectOutputAlgorithmRouting
               ),
             )
             .value;
-        debugPrint('$algorithmName: Found pattern match "${nonPrefixedMatch.name}" = $value');
+        debugPrint(
+          '$algorithmName: Found pattern match "${nonPrefixedMatch.name}" = $value',
+        );
         return value;
       }
     }

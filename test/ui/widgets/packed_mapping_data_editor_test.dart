@@ -26,8 +26,7 @@ void main() {
       );
     }
 
-    testWidgets('MIDI type dropdown includes all 5 options',
-        (tester) async {
+    testWidgets('MIDI type dropdown includes all 5 options', (tester) async {
       await tester.pumpWidget(createTestWidget());
 
       // Navigate to MIDI tab
@@ -43,7 +42,9 @@ void main() {
       expect(dropdownFinder, findsOneWidget);
 
       // Get the dropdown widget to verify it has all 5 entries
-      final dropdown = tester.widget<DropdownMenu<MidiMappingType>>(dropdownFinder);
+      final dropdown = tester.widget<DropdownMenu<MidiMappingType>>(
+        dropdownFinder,
+      );
       expect(dropdown.dropdownMenuEntries.length, equals(5));
 
       // Verify entry labels
@@ -54,8 +55,7 @@ void main() {
       expect(dropdown.dropdownMenuEntries[4].label, equals('14 bit CC - high'));
     });
 
-    testWidgets('Selecting 14-bit CC low updates data model',
-        (tester) async {
+    testWidgets('Selecting 14-bit CC low updates data model', (tester) async {
       PackedMappingData? savedData;
       final data14BitLow = testData.copyWith(
         midiMappingType: MidiMappingType.cc14BitLow,
@@ -88,8 +88,7 @@ void main() {
       expect(savedData!.midiMappingType, equals(MidiMappingType.cc14BitLow));
     });
 
-    testWidgets('Selecting 14-bit CC high updates data model',
-        (tester) async {
+    testWidgets('Selecting 14-bit CC high updates data model', (tester) async {
       PackedMappingData? savedData;
       final data14BitHigh = testData.copyWith(
         midiMappingType: MidiMappingType.cc14BitHigh,
@@ -122,8 +121,9 @@ void main() {
       expect(savedData!.midiMappingType, equals(MidiMappingType.cc14BitHigh));
     });
 
-    testWidgets('MIDI Relative switch disabled for 14-bit CC low',
-        (tester) async {
+    testWidgets('MIDI Relative switch disabled for 14-bit CC low', (
+      tester,
+    ) async {
       final data14BitLow = testData.copyWith(
         midiMappingType: MidiMappingType.cc14BitLow,
       );
@@ -135,31 +135,27 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the MIDI Relative switch
-      final switchFinder = find.byWidgetPredicate(
-        (widget) {
-          if (widget is! Row) return false;
-          final children = widget.children;
-          return children.any(
-            (child) => child is Text && child.data == 'MIDI Relative',
-          );
-        },
-      );
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'MIDI Relative',
+        );
+      });
       expect(switchFinder, findsOneWidget);
 
       // Find the Switch widget within that Row
       final switchWidget = tester.widget<Switch>(
-        find.descendant(
-          of: switchFinder,
-          matching: find.byType(Switch),
-        ),
+        find.descendant(of: switchFinder, matching: find.byType(Switch)),
       );
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
     });
 
-    testWidgets('MIDI Relative switch disabled for 14-bit CC high',
-        (tester) async {
+    testWidgets('MIDI Relative switch disabled for 14-bit CC high', (
+      tester,
+    ) async {
       final data14BitHigh = testData.copyWith(
         midiMappingType: MidiMappingType.cc14BitHigh,
       );
@@ -171,34 +167,26 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the MIDI Relative switch
-      final switchFinder = find.byWidgetPredicate(
-        (widget) {
-          if (widget is! Row) return false;
-          final children = widget.children;
-          return children.any(
-            (child) => child is Text && child.data == 'MIDI Relative',
-          );
-        },
-      );
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'MIDI Relative',
+        );
+      });
       expect(switchFinder, findsOneWidget);
 
       // Find the Switch widget within that Row
       final switchWidget = tester.widget<Switch>(
-        find.descendant(
-          of: switchFinder,
-          matching: find.byType(Switch),
-        ),
+        find.descendant(of: switchFinder, matching: find.byType(Switch)),
       );
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
     });
 
-    testWidgets('MIDI Relative switch enabled for standard CC',
-        (tester) async {
-      final dataCc = testData.copyWith(
-        midiMappingType: MidiMappingType.cc,
-      );
+    testWidgets('MIDI Relative switch enabled for standard CC', (tester) async {
+      final dataCc = testData.copyWith(midiMappingType: MidiMappingType.cc);
 
       await tester.pumpWidget(createTestWidget(initialData: dataCc));
 
@@ -207,31 +195,25 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the MIDI Relative switch
-      final switchFinder = find.byWidgetPredicate(
-        (widget) {
-          if (widget is! Row) return false;
-          final children = widget.children;
-          return children.any(
-            (child) => child is Text && child.data == 'MIDI Relative',
-          );
-        },
-      );
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'MIDI Relative',
+        );
+      });
       expect(switchFinder, findsOneWidget);
 
       // Find the Switch widget within that Row
       final switchWidget = tester.widget<Switch>(
-        find.descendant(
-          of: switchFinder,
-          matching: find.byType(Switch),
-        ),
+        find.descendant(of: switchFinder, matching: find.byType(Switch)),
       );
 
       // Verify it's enabled (onChanged is not null)
       expect(switchWidget.onChanged, isNotNull);
     });
 
-    testWidgets('MIDI Relative switch disabled for note types',
-        (tester) async {
+    testWidgets('MIDI Relative switch disabled for note types', (tester) async {
       final dataNoteMomentary = testData.copyWith(
         midiMappingType: MidiMappingType.noteMomentary,
       );
@@ -243,31 +225,25 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the MIDI Relative switch
-      final switchFinder = find.byWidgetPredicate(
-        (widget) {
-          if (widget is! Row) return false;
-          final children = widget.children;
-          return children.any(
-            (child) => child is Text && child.data == 'MIDI Relative',
-          );
-        },
-      );
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'MIDI Relative',
+        );
+      });
       expect(switchFinder, findsOneWidget);
 
       // Find the Switch widget within that Row
       final switchWidget = tester.widget<Switch>(
-        find.descendant(
-          of: switchFinder,
-          matching: find.byType(Switch),
-        ),
+        find.descendant(of: switchFinder, matching: find.byType(Switch)),
       );
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
     });
 
-    testWidgets('Displays N/A message for 14-bit CC types',
-        (tester) async {
+    testWidgets('Displays N/A message for 14-bit CC types', (tester) async {
       final data14BitLow = testData.copyWith(
         midiMappingType: MidiMappingType.cc14BitLow,
       );
@@ -279,17 +255,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify N/A message is displayed
-      expect(
-        find.text('(N/A for Notes and 14-bit CC)'),
-        findsOneWidget,
-      );
+      expect(find.text('(N/A for Notes and 14-bit CC)'), findsOneWidget);
     });
 
-    testWidgets('Does not display N/A message for CC type',
-        (tester) async {
-      final dataCc = testData.copyWith(
-        midiMappingType: MidiMappingType.cc,
-      );
+    testWidgets('Does not display N/A message for CC type', (tester) async {
+      final dataCc = testData.copyWith(midiMappingType: MidiMappingType.cc);
 
       await tester.pumpWidget(createTestWidget(initialData: dataCc));
 
@@ -298,10 +268,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify N/A message is NOT displayed
-      expect(
-        find.text('(N/A for Notes and 14-bit CC)'),
-        findsNothing,
-      );
+      expect(find.text('(N/A for Notes and 14-bit CC)'), findsNothing);
     });
   });
 }
