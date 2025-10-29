@@ -59,7 +59,7 @@ void main() {
         expect(decoded['guid'], equals('clck'));
         expect(decoded['name'], equals('Clock'));
         expect(decoded['parameters'], isList);
-        expect(decoded['categories'], contains('Clock'));
+        expect(decoded['categories'], contains('clocking'));
       });
 
       test('should return algorithm details by name', () async {
@@ -145,7 +145,7 @@ void main() {
       });
 
       test('should filter by category', () async {
-        final result = await tools.listAlgorithms({'category': 'Clock'});
+        final result = await tools.listAlgorithms({'category': 'clocking'});
 
         final decoded = jsonDecode(result);
         expect(decoded, isList);
