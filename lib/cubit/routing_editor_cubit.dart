@@ -116,7 +116,15 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Check if ES-5 node should be displayed based on algorithm GUIDs
   bool shouldShowEs5Node(List<Slot> slots) {
-    const es5AlgorithmGuids = {'usbf', 'clck', 'eucp', 'es5e'};
+    const es5AlgorithmGuids = {
+      'usbf',
+      'clck',
+      'eucp',
+      'es5e',
+      'clkm', // Clock Multiplier
+      'clkd', // Clock Divider
+      'pycv', // Poly CV
+    };
 
     for (final slot in slots) {
       if (es5AlgorithmGuids.contains(slot.algorithm.guid)) {

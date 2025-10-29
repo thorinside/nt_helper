@@ -1497,7 +1497,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return result;
   }
 
-  /// Extract ES-5 toggle data for Clock/Euclidean/Poly CV algorithms.
+  /// Extract ES-5 toggle data for Clock/Euclidean/Clock Multiplier/Clock Divider/Poly CV algorithms.
   ///
   /// Returns null if the algorithm doesn't support ES-5 direct output.
   /// Returns maps of channel numbers to:
@@ -1510,10 +1510,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<int> channelNumbers,
   })?
   _extractEs5ToggleData(RoutingAlgorithm algorithm) {
-    // Check if this is a Clock, Euclidean, or Poly CV algorithm
+    // Check if this is a Clock, Euclidean, Clock Multiplier, Clock Divider, or Poly CV algorithm
     final guid = algorithm.algorithm.guid;
     final isPolyCV = guid.startsWith('py');
-    if (guid != 'clck' && guid != 'eucp' && !isPolyCV) {
+    if (guid != 'clck' &&
+        guid != 'eucp' &&
+        guid != 'clkm' && // Clock Multiplier
+        guid != 'clkd' && // Clock Divider
+        !isPolyCV) {
       return null;
     }
 
