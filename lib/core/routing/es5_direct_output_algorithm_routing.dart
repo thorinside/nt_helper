@@ -68,25 +68,29 @@ abstract class Es5DirectOutputAlgorithmRouting
       } else {
         // NORMAL MODE: Use Output parameter
         // Try 'Output' first, then fall back to any parameter ending with 'output' (e.g., 'Clock output')
-        final outputBus = getChannelParameter(channel, 'Output') ??
-            getChannelParameterByPattern(channel, r'(?:.*\s)?[Oo]utput$') ??
-            0;
+        final outputBusResult = _getOutputBusWithName(channel);
 
-        if (outputBus > 0) {
+        if (outputBusResult != null && outputBusResult.busValue > 0) {
+          // For single-channel algorithms, use the actual parameter name (e.g., "Clock output")
+          // For multi-channel, use "Channel N" format
+          final portName = config.channelCount == 1 && outputBusResult.paramName != null
+              ? outputBusResult.paramName!
+              : 'Channel $channel';
+
           ports.add(
             Port(
               id: '${algorithmUuid}_channel_${channel}_output',
-              name: 'Channel $channel',
+              name: portName,
               type: PortType.gate,
               direction: PortDirection.output,
               description: 'Gate output for channel $channel',
-              busValue: outputBus,
+              busValue: outputBusResult.busValue,
               channelNumber: channel,
             ),
           );
 
           debugPrint(
-            '$algorithmName: Channel $channel → normal output bus $outputBus',
+            '$algorithmName: Channel $channel → normal output bus ${outputBusResult.busValue} (${outputBusResult.paramName ?? "Output"})',
           );
         } else {
           debugPrint(
@@ -98,6 +102,48 @@ abstract class Es5DirectOutputAlgorithmRouting
 
     debugPrint('$algorithmName: Generated ${ports.length} output ports');
     return ports;
+  }
+
+  /// Helper to get output bus value along with parameter name.
+  ///
+  /// Returns a record with the bus value and the actual parameter name found.
+  ({int busValue, String? paramName})? _getOutputBusWithName(int channel) {
+    // Try 'Output' first
+    final outputValue = getChannelParameter(channel, 'Output');
+    if (outputValue != null && outputValue > 0) {
+      return (busValue: outputValue, paramName: 'Output');
+    }
+
+    // Fall back to pattern matching (e.g., 'Clock output')
+    // Also find the actual parameter name
+    final regex = RegExp(r'(?:.*\s)?[Oo]utput$');
+
+    // For single-channel, look for non-prefixed parameter
+    if (config.channelCount == 1) {
+      final param = slot.parameters.firstWhere(
+        (p) => regex.hasMatch(p.name),
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      if (param.parameterNumber >= 0) {
+        final value = slot.values
+            .firstWhere(
+              (v) => v.parameterNumber == param.parameterNumber,
+              orElse: () => ParameterValue(
+                algorithmIndex: 0,
+                parameterNumber: param.parameterNumber,
+                value: param.defaultValue,
+              ),
+            )
+            .value;
+
+        if (value > 0) {
+          return (busValue: value, paramName: param.name);
+        }
+      }
+    }
+
+    return null;
   }
 
   /// Gets the value of a parameter for a specific channel by regex pattern.

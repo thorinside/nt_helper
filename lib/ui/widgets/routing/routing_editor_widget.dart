@@ -1638,12 +1638,34 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         }
       }
     } else {
-      // Clock/Euclidean: per-channel ES-5 configuration
-      // Find all ES-5 Expander parameters (format: "N:ES-5 Expander")
+      // Clock/Euclidean/Clock Multiplier/Clock Divider: per-channel ES-5 configuration
+      // Find all ES-5 Expander parameters (format: "N:ES-5 Expander" for multi-channel,
+      // or "ES-5 Expander" for single-channel algorithms like Clock Multiplier)
       for (final param in slot.parameters) {
-        final match = RegExp(r'^(\d+):ES-5 Expander$').firstMatch(param.name);
-        if (match != null) {
-          final channel = int.parse(match.group(1)!);
+        // Try multi-channel format first (e.g., "1:ES-5 Expander")
+        final multiChannelMatch =
+            RegExp(r'^(\d+):ES-5 Expander$').firstMatch(param.name);
+        if (multiChannelMatch != null) {
+          final channel = int.parse(multiChannelMatch.group(1)!);
+
+          // Get the parameter value
+          final value = slot.values
+              .firstWhere(
+                (v) => v.parameterNumber == param.parameterNumber,
+                orElse: () => ParameterValue(
+                  algorithmIndex: slotIndex,
+                  parameterNumber: param.parameterNumber,
+                  value: param.defaultValue,
+                ),
+              )
+              .value;
+
+          toggles[channel] = value > 0;
+          parameterNumbers[channel] = param.parameterNumber;
+          channelNumbers.add(channel);
+        } else if (param.name == 'ES-5 Expander') {
+          // Single-channel format (e.g., Clock Multiplier uses "ES-5 Expander" without channel prefix)
+          final channel = 1; // Single-channel algorithms always use channel 1
 
           // Get the parameter value
           final value = slot.values
