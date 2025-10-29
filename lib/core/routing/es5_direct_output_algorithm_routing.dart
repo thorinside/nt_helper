@@ -67,7 +67,10 @@ abstract class Es5DirectOutputAlgorithmRouting
         );
       } else {
         // NORMAL MODE: Use Output parameter
-        final outputBus = getChannelParameter(channel, 'Output') ?? 0;
+        // Try 'Output' first, then fall back to any parameter ending with 'output' (e.g., 'Clock output')
+        final outputBus = getChannelParameter(channel, 'Output') ??
+            getChannelParameterByPattern(channel, r'(?:.*\s)?[Oo]utput$') ??
+            0;
 
         if (outputBus > 0) {
           ports.add(
@@ -95,6 +98,71 @@ abstract class Es5DirectOutputAlgorithmRouting
 
     debugPrint('$algorithmName: Generated ${ports.length} output ports');
     return ports;
+  }
+
+  /// Gets the value of a parameter for a specific channel by regex pattern.
+  ///
+  /// Similar to getChannelParameter but matches parameter names using a regex pattern.
+  /// Useful for finding parameters with varying names like "Clock output", "Output", etc.
+  ///
+  /// Parameters:
+  /// - [channel]: The channel number (1-based)
+  /// - [paramPattern]: The regex pattern to match parameter names
+  ///
+  /// Returns the parameter value, or null if not found
+  @protected
+  int? getChannelParameterByPattern(int channel, String paramPattern) {
+    final regex = RegExp(paramPattern);
+
+    // Look for parameter with channel prefix first (e.g., "1:Clock output")
+    final prefixedMatch = slot.parameters.firstWhere(
+      (p) {
+        if (!p.name.startsWith('$channel:')) return false;
+        final nameWithoutPrefix = p.name.substring('$channel:'.length);
+        return regex.hasMatch(nameWithoutPrefix);
+      },
+      orElse: () => ParameterInfo.filler(),
+    );
+
+    if (prefixedMatch.parameterNumber >= 0) {
+      final value = slot.values
+          .firstWhere(
+            (v) => v.parameterNumber == prefixedMatch.parameterNumber,
+            orElse: () => ParameterValue(
+              algorithmIndex: 0,
+              parameterNumber: prefixedMatch.parameterNumber,
+              value: prefixedMatch.defaultValue,
+            ),
+          )
+          .value;
+      debugPrint('$algorithmName: Found pattern match "${prefixedMatch.name}" = $value');
+      return value;
+    }
+
+    // For single-channel algorithms, try non-prefixed parameter names
+    if (config.channelCount == 1) {
+      final nonPrefixedMatch = slot.parameters.firstWhere(
+        (p) => regex.hasMatch(p.name),
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      if (nonPrefixedMatch.parameterNumber >= 0) {
+        final value = slot.values
+            .firstWhere(
+              (v) => v.parameterNumber == nonPrefixedMatch.parameterNumber,
+              orElse: () => ParameterValue(
+                algorithmIndex: 0,
+                parameterNumber: nonPrefixedMatch.parameterNumber,
+                value: nonPrefixedMatch.defaultValue,
+              ),
+            )
+            .value;
+        debugPrint('$algorithmName: Found pattern match "${nonPrefixedMatch.name}" = $value');
+        return value;
+      }
+    }
+
+    return null;
   }
 
   /// Gets the value of a parameter for a specific channel.
