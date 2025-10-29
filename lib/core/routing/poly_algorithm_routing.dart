@@ -665,17 +665,34 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
         'Velocity outputs',
       );
 
-      // Count how many output types are enabled
-      int outputsPerVoice = 0;
-      if (gateOutputs > 0) outputsPerVoice++;
-      if (pitchOutputs > 0) outputsPerVoice++;
-      if (velocityOutputs > 0) outputsPerVoice++;
+      // Get ES-5 parameters for gate routing
+      final es5ExpanderValue = AlgorithmRouting.getParameterValue(
+        slot,
+        'ES-5 Expander',
+      );
+      final es5OutputValue = AlgorithmRouting.getParameterValue(
+        slot,
+        'ES-5 Output',
+      );
+
+      // Get ES-5 Expander parameter number for UI toggle synchronization
+      final es5ExpanderParam = slot.parameters.firstWhere(
+        (p) => p.name == 'ES-5 Expander',
+        orElse: () => ParameterInfo.filler(),
+      );
+      final es5ExpanderParamNumber = es5ExpanderParam.parameterNumber >= 0
+          ? es5ExpanderParam.parameterNumber
+          : null;
+
+      final useEs5ForGates = es5ExpanderValue > 0 && gateOutputs > 0;
+
+      debugPrint(
+        'PolyAlgorithmRouting: ES-5 Expander=$es5ExpanderValue, '
+        'ES-5 Output=$es5OutputValue, useEs5ForGates=$useEs5ForGates',
+      );
 
       // Generate output ports for each voice
       for (int voice = 0; voice < voiceCount; voice++) {
-        int currentBus = firstOutput + (voice * outputsPerVoice);
-        int busOffset = 0;
-
         // Voice numbering is 1-based for display
         final voiceNum = voice + 1;
 
@@ -687,18 +704,86 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             gateMode = modeParameters['Gate mode'] == 1 ? 'replace' : 'add';
           }
 
-          outputPorts.add({
-            'id': '${algId}_gate_output_$voiceNum',
-            'name': 'Gate output $voiceNum',
-            'type': 'gate',
-            'busValue': currentBus + busOffset,
-            'busParam': 'Gate output',
-            'parameterNumber': 0,
-            'voiceNumber': voiceNum,
-            'outputMode': gateMode,
-          });
-          busOffset++;
+          if (useEs5ForGates) {
+            // ES-5 MODE: Gates route to ES-5 expander ports
+            final es5Port = es5OutputValue + voice;
+
+            // Handle edge case: If voice count > 8, clip to ES-5 port range (1-8)
+            if (es5Port <= 8) {
+              final portMap = <String, dynamic>{
+                'id': '${algId}_gate_output_$voiceNum',
+                'name': 'Voice $voiceNum Gate → ES-5 $es5Port',
+                'type': 'gate',
+                'busParam': 'es5_direct', // Special marker for ES-5 routing
+                'channelNumber': es5Port, // ES-5 port number
+                'parameterNumber': 0,
+                'voiceNumber': voiceNum,
+              };
+
+              if (gateMode != null) {
+                portMap['outputMode'] = gateMode;
+              }
+
+              // Only include es5ExpanderParamNumber if valid
+              if (es5ExpanderParamNumber != null) {
+                portMap['es5ExpanderParamNumber'] = es5ExpanderParamNumber;
+              }
+
+              outputPorts.add(portMap);
+
+              debugPrint(
+                'PolyAlgorithmRouting: Voice $voiceNum gate → ES-5 port $es5Port',
+              );
+            } else {
+              debugPrint(
+                'PolyAlgorithmRouting: Voice $voiceNum gate exceeds ES-5 port range (port $es5Port > 8), skipping',
+              );
+            }
+          } else {
+            // NORMAL MODE: Gates use normal bus allocation
+            // Bus calculation: firstOutput + (voice * total_outputs_per_voice) + offset_within_voice
+            int outputsPerVoice = 0;
+            if (gateOutputs > 0) outputsPerVoice++;
+            if (pitchOutputs > 0) outputsPerVoice++;
+            if (velocityOutputs > 0) outputsPerVoice++;
+
+            final currentBus = firstOutput + (voice * outputsPerVoice);
+
+            outputPorts.add({
+              'id': '${algId}_gate_output_$voiceNum',
+              'name': 'Gate output $voiceNum',
+              'type': 'gate',
+              'busValue': currentBus,
+              'busParam': 'Gate output',
+              'parameterNumber': 0,
+              'voiceNumber': voiceNum,
+              'outputMode': gateMode,
+            });
+
+            debugPrint(
+              'PolyAlgorithmRouting: Voice $voiceNum gate → normal bus $currentBus',
+            );
+          }
         }
+
+        // Pitch and Velocity CVs ALWAYS use normal bus allocation
+        // (ES-5 does not affect CV outputs)
+        // Bus allocation: Each voice occupies totalOutputsPerVoice buses
+        // Calculate total outputs per voice for proper bus allocation
+        int totalOutputsPerVoice = 0;
+        if (gateOutputs > 0) totalOutputsPerVoice++;
+        if (pitchOutputs > 0) totalOutputsPerVoice++;
+        if (velocityOutputs > 0) totalOutputsPerVoice++;
+
+        int cvBusOffset = 0;
+        // When gates use normal buses, CVs come after gates within this voice's allocation
+        // When gates use ES-5, CVs start from firstOutput (gates don't consume buses)
+        if (!useEs5ForGates && gateOutputs > 0) {
+          cvBusOffset = 1; // Skip gate bus within this voice's bus allocation
+        }
+
+        final cvBaseBus = firstOutput + (voice * totalOutputsPerVoice) + cvBusOffset;
+        int currentCvOffset = 0;
 
         if (pitchOutputs > 0) {
           // Get Pitch mode if available
@@ -712,13 +797,17 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             'id': '${algId}_pitch_output_$voiceNum',
             'name': 'Pitch output $voiceNum',
             'type': 'cv',
-            'busValue': currentBus + busOffset,
+            'busValue': cvBaseBus + currentCvOffset,
             'busParam': 'Pitch output',
             'parameterNumber': 0,
             'voiceNumber': voiceNum,
             'outputMode': pitchMode,
           });
-          busOffset++;
+
+          debugPrint(
+            'PolyAlgorithmRouting: Voice $voiceNum pitch CV → normal bus ${cvBaseBus + currentCvOffset}',
+          );
+          currentCvOffset++;
         }
 
         if (velocityOutputs > 0) {
@@ -735,13 +824,17 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             'id': '${algId}_velocity_output_$voiceNum',
             'name': 'Velocity output $voiceNum',
             'type': 'cv',
-            'busValue': currentBus + busOffset,
+            'busValue': cvBaseBus + currentCvOffset,
             'busParam': 'Velocity output',
             'parameterNumber': 0,
             'voiceNumber': voiceNum,
             'outputMode': velocityMode,
           });
-          busOffset++;
+
+          debugPrint(
+            'PolyAlgorithmRouting: Voice $voiceNum velocity CV → normal bus ${cvBaseBus + currentCvOffset}',
+          );
+          currentCvOffset++;
         }
       }
     }
