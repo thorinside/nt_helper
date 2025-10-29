@@ -17,6 +17,11 @@ abstract class Es5DirectOutputAlgorithmRouting
   /// Special marker for ES-5 direct output connections
   static const String es5DirectBusParam = 'es5_direct';
 
+  /// Parameter name constants for ES-5 algorithms
+  static const String outputParamName = 'Output';
+  static const String es5ExpanderParamName = 'ES-5 Expander';
+  static const String es5OutputParamName = 'ES-5 Output';
+
   /// The slot containing all algorithm data
   final Slot slot;
 
@@ -43,12 +48,12 @@ abstract class Es5DirectOutputAlgorithmRouting
 
     for (int channel = 1; channel <= config.channelCount; channel++) {
       // Get ES-5 Expander value (0=Off, 1-6=Active)
-      final es5ExpanderValue = getChannelParameter(channel, 'ES-5 Expander');
+      final es5ExpanderValue = getChannelParameter(channel, es5ExpanderParamName);
 
       if (es5ExpanderValue != null && es5ExpanderValue > 0) {
         // ES-5 MODE: Ignore Output parameter completely
         final es5OutputValue =
-            getChannelParameter(channel, 'ES-5 Output') ?? channel;
+            getChannelParameter(channel, es5OutputParamName) ?? channel;
 
         ports.add(
           Port(
@@ -110,9 +115,9 @@ abstract class Es5DirectOutputAlgorithmRouting
   /// Returns a record with the bus value, parameter name, and parameter number.
   ({int busValue, String? paramName, int? parameterNumber})? _getOutputBusWithName(int channel) {
     // Try 'Output' first
-    final outputParam = _getParameterWithValue(channel, 'Output');
+    final outputParam = getParameterValueAndNumber(channel, outputParamName);
     if (outputParam != null && outputParam.value > 0) {
-      return (busValue: outputParam.value, paramName: 'Output', parameterNumber: outputParam.parameterNumber);
+      return (busValue: outputParam.value, paramName: outputParamName, parameterNumber: outputParam.parameterNumber);
     }
 
     // Fall back to pattern matching (e.g., 'Clock output')
@@ -147,10 +152,21 @@ abstract class Es5DirectOutputAlgorithmRouting
     return null;
   }
 
-  /// Helper to get a parameter's value and number by name.
+  /// Gets a parameter's value and number by name for a specific channel.
+  ///
+  /// This is the canonical method for retrieving parameter metadata used across
+  /// all ES-5 algorithm implementations.
+  ///
+  /// Parameters:
+  /// - [channel]: The channel number (1-based)
+  /// - [paramName]: The parameter name to find (without channel prefix)
   ///
   /// Returns a record with the parameter number and current value, or null if not found.
-  ({int parameterNumber, int value})? _getParameterWithValue(int channel, String paramName) {
+  @protected
+  ({int parameterNumber, int value})? getParameterValueAndNumber(
+    int channel,
+    String paramName,
+  ) {
     // Look for parameter with channel prefix (e.g., "1:Output")
     final prefixedName = '$channel:$paramName';
 
