@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'es5_direct_output_algorithm_routing.dart';
 
 /// Specialized routing implementation for the Clock Divider algorithm.
@@ -99,9 +100,10 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
         );
       } else {
         // NORMAL MODE: Use Output parameter
-        final outputBus = getChannelParameter(channel, 'Output') ?? 0;
+        // Need to get both the bus value AND the parameter number for updates
+        final outputParam = _getOutputParameterInfo(channel);
 
-        if (outputBus > 0) {
+        if (outputParam != null && outputParam.busValue > 0) {
           ports.add(
             Port(
               id: '${algorithmUuid}_channel_${channel}_output',
@@ -109,13 +111,14 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
               type: PortType.gate,
               direction: PortDirection.output,
               description: 'Gate output for channel $channel',
-              busValue: outputBus,
+              busValue: outputParam.busValue,
               channelNumber: channel,
+              parameterNumber: outputParam.parameterNumber,
             ),
           );
 
           debugPrint(
-            '$algorithmName: Channel $channel → normal output bus $outputBus',
+            '$algorithmName: Channel $channel → normal output bus ${outputParam.busValue}',
           );
         } else {
           debugPrint(
@@ -127,5 +130,36 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
 
     debugPrint('$algorithmName: Generated ${ports.length} output ports');
     return ports;
+  }
+
+  /// Helper to get output parameter info (value and parameter number).
+  ///
+  /// Returns a record with the bus value and parameter number, or null if not found.
+  ({int busValue, int parameterNumber})? _getOutputParameterInfo(int channel) {
+    // Look for parameter with channel prefix (e.g., "1:Output")
+    final prefixedName = '$channel:Output';
+
+    final param = slot.parameters.firstWhere(
+      (p) => p.name == prefixedName,
+      orElse: () => ParameterInfo.filler(),
+    );
+
+    if (param.parameterNumber < 0) {
+      return null;
+    }
+
+    // Get the parameter value
+    final value = slot.values
+        .firstWhere(
+          (v) => v.parameterNumber == param.parameterNumber,
+          orElse: () => ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: param.parameterNumber,
+            value: param.defaultValue,
+          ),
+        )
+        .value;
+
+    return (busValue: value, parameterNumber: param.parameterNumber);
   }
 }

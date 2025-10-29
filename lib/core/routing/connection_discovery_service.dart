@@ -355,25 +355,34 @@ class ConnectionDiscoveryService {
     final connections = <Connection>[];
 
     for (final outputPort in routing.outputPorts) {
-      if (outputPort.busParam == 'es5_direct' &&
-          outputPort.channelNumber != null) {
-        final es5PortId = 'es5_${outputPort.channelNumber}';
+      if (outputPort.busParam == 'es5_direct') {
+        // Extract ES-5 port number from channelNumber or stereoSide
+        int? es5PortNumber = outputPort.channelNumber;
 
-        connections.add(
-          Connection(
-            id: 'conn_${outputPort.id}_to_$es5PortId',
-            sourcePortId: outputPort.id,
-            destinationPortId: es5PortId,
-            connectionType: ConnectionType.algorithmToAlgorithm,
-            algorithmId: routing.algorithmUuid!,
-            signalType: SignalType.gate,
-            description: 'ES-5 direct connection',
-          ),
-        );
+        // For poly CV algorithms, the ES-5 port may be stored in stereoSide as a string
+        if (es5PortNumber == null && outputPort.stereoSide != null) {
+          es5PortNumber = int.tryParse(outputPort.stereoSide!);
+        }
 
-        debugPrint(
-          '[ConnectionDiscovery]   ES-5 Direct: ${outputPort.id} -> $es5PortId',
-        );
+        if (es5PortNumber != null) {
+          final es5PortId = 'es5_$es5PortNumber';
+
+          connections.add(
+            Connection(
+              id: 'conn_${outputPort.id}_to_$es5PortId',
+              sourcePortId: outputPort.id,
+              destinationPortId: es5PortId,
+              connectionType: ConnectionType.algorithmToAlgorithm,
+              algorithmId: routing.algorithmUuid!,
+              signalType: SignalType.gate,
+              description: 'ES-5 direct connection',
+            ),
+          );
+
+          debugPrint(
+            '[ConnectionDiscovery]   ES-5 Direct: ${outputPort.id} -> $es5PortId',
+          );
+        }
       }
     }
 

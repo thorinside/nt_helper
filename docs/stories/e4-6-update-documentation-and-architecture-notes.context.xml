@@ -1,0 +1,247 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>6</storyId>
+    <title>Update Documentation and Architecture Notes</title>
+    <status>drafted</status>
+    <generatedAt>2025-10-28</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e4-6-update-documentation-and-architecture-notes.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer maintaining project documentation</asA>
+    <iWant>Epic 4 documented in architecture notes</iWant>
+    <soThat>future developers understand ES-5 direct output support scope</soThat>
+    <tasks>
+- [ ] Review existing documentation structure (AC: 1, 6)
+  - [ ] Check if `CLAUDE/index.md` has routing architecture section
+  - [ ] Check if `docs/audit/routing_audit.md` exists
+  - [ ] Identify where routing system is documented
+  - [ ] Note any other documentation that references ES-5 or routing
+
+- [ ] Update main architecture document (AC: 2-5)
+  - [ ] Open `docs/architecture.md`
+  - [ ] Locate routing system section
+  - [ ] Add Epic 4 completion note with date
+  - [ ] Update ES-5 algorithm list to include all 5 algorithms
+  - [ ] Document algorithm GUIDs: clck, eucp, clkm, clkd, pycv
+  - [ ] Reference base class: `Es5DirectOutputAlgorithmRouting`
+  - [ ] Mention factory registration pattern
+  - [ ] Note dual-mode behavior (ES-5 vs. normal outputs)
+
+- [ ] Update CLAUDE documentation if needed (AC: 1)
+  - [ ] If `CLAUDE/index.md` has routing section: update with Epic 4 info
+  - [ ] Add reference to new routing implementations
+  - [ ] Link to algorithm files for future reference
+
+- [ ] Update routing audit if exists (AC: 6)
+  - [ ] If `docs/audit/routing_audit.md` exists: add Epic 4 algorithms
+  - [ ] Document test coverage for new algorithms
+  - [ ] Note any known limitations or edge cases
+
+- [ ] Run analysis (AC: 7)
+  - [ ] Run `flutter analyze`
+  - [ ] Fix any warnings if present
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Update `CLAUDE/index.md` if routing architecture section exists
+2. Update `docs/architecture.md` with Epic 4 completion note
+3. Add Epic 4 to routing system section: "ES-5 direct output now supports 5 algorithms: Clock, Euclidean, Clock Multiplier, Clock Divider, Poly CV"
+4. Document algorithm GUIDs: clck, eucp, clkm, clkd, pycv
+5. Reference `Es5DirectOutputAlgorithmRouting` base class
+6. Update `docs/audit/routing_audit.md` if it exists
+7. `flutter analyze` passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Critical Architecture: Routing Graph System</section>
+        <snippet>The routing system visualizes signal flow between algorithms in a preset. Currently documents Clock (clck) and Euclidean (eucp) ES-5 support. Needs update to include Clock Multiplier (clkm), Clock Divider (clkd), and Poly CV (pycv) ES-5 support added in Epic 4.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4: ES-5 Direct Output Support for New Algorithms - Technical Context</title>
+        <section>Epic Overview</section>
+        <snippet>Extend ES-5 direct output support to three algorithms that gained this capability in Disting NT firmware 1.12: Poly CV (pycv), Clock Divider (clkd), and Clock Multiplier (clkm). Base class pattern at lib/core/routing/es5_direct_output_algorithm_routing.dart.</snippet>
+      </doc>
+      <doc>
+        <path>docs/audit/routing_audit.md</path>
+        <title>Routing Audit (manual vs docs/algorithms)</title>
+        <section>Per-GUID Audit</section>
+        <snippet>Documents routing parameter coverage for all algorithms. Needs update to reflect ES-5 parameter additions for clkm, clkd, and pycv algorithms completed in Epic 4.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE/index.md</path>
+        <title>nt_helper - Disting NT MIDI Helper - Documentation Index</title>
+        <section>Table of Contents</section>
+        <snippet>Main documentation index for AI agents. Contains links to routing system documentation, architecture patterns, and development standards. No dedicated ES-5 or routing architecture section currently exists.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Instructions</title>
+        <section>Routing System</section>
+        <snippet>High-level routing system overview. Documents source of truth (DistingCubit), OO framework, connection discovery via bus assignments, and mentions ES-5 algorithms. Needs update with Epic 4 completion.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/e4-1-add-clock-multiplier-es-5-direct-output-routing.md</path>
+        <title>Story 4.1: Clock Multiplier ES-5 Direct Output Routing</title>
+        <section>Story</section>
+        <snippet>Implementation story for Clock Multiplier (clkm) ES-5 support. Creates ClockMultiplierAlgorithmRouting class extending Es5DirectOutputAlgorithmRouting base class.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/e4-2-add-clock-divider-es-5-direct-output-routing.md</path>
+        <title>Story 4.2: Clock Divider ES-5 Direct Output Routing</title>
+        <section>Story</section>
+        <snippet>Implementation story for Clock Divider (clkd) ES-5 support with per-channel configuration. Creates ClockDividerAlgorithmRouting class.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/e4-3-add-poly-cv-es-5-direct-output-routing.md</path>
+        <title>Story 4.3: Poly CV ES-5 Direct Output Routing</title>
+        <section>Story</section>
+        <snippet>Implementation story for Poly CV (pycv) ES-5 support. Modifies existing PolyAlgorithmRouting class to handle ES-5 for gate outputs only, with pitch/velocity CVs using normal buses.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/core/routing/es5_direct_output_algorithm_routing.dart</path>
+        <kind>base class</kind>
+        <symbol>Es5DirectOutputAlgorithmRouting</symbol>
+        <lines>1-206</lines>
+        <reason>Base class for all ES-5 direct output routing implementations. Handles dual-mode output logic (ES-5 vs. normal). Reference this in documentation as the foundation pattern.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/clock_algorithm_routing.dart</path>
+        <kind>routing implementation</kind>
+        <symbol>ClockAlgorithmRouting</symbol>
+        <lines>1-50</lines>
+        <reason>Existing ES-5 implementation for Clock algorithm (clck). Example of simple single-channel ES-5 pattern to reference in documentation.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/euclidean_algorithm_routing.dart</path>
+        <kind>routing implementation</kind>
+        <symbol>EuclideanAlgorithmRouting</symbol>
+        <lines>1-50</lines>
+        <reason>Existing ES-5 implementation for Euclidean algorithm (eucp). Example of per-channel ES-5 pattern to reference in documentation.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/algorithm_routing.dart</path>
+        <kind>factory</kind>
+        <symbol>AlgorithmRouting.fromSlot</symbol>
+        <lines>309-330</lines>
+        <reason>Factory registration pattern where ES-5 algorithms are registered. Document this location as the central registry for routing implementations.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/poly_algorithm_routing.dart</path>
+        <kind>routing implementation</kind>
+        <symbol>PolyAlgorithmRouting</symbol>
+        <lines>1-500</lines>
+        <reason>Poly CV routing implementation modified in E4.3 to support ES-5 for gate outputs only. Complex example with selective ES-5 application.</reason>
+      </artifact>
+      <artifact>
+        <path>test/core/routing/clock_euclidean_es5_test.dart</path>
+        <kind>test</kind>
+        <symbol>Clock/Euclidean ES-5 Direct Routing Tests</symbol>
+        <lines>1-470</lines>
+        <reason>Test pattern for ES-5 routing implementations. Reference as example of comprehensive ES-5 testing approach.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter" version="3.35.1">Core framework</package>
+        <package name="flutter_bloc" version="^9.1.1">State management - Cubit pattern</package>
+      </flutter>
+      <dart>
+        <package name="freezed_annotation" version="^3.1.0">Immutable data classes</package>
+        <package name="collection" version="^1.19.1">Collection utilities</package>
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+1. This is a documentation-only story - no code changes required
+2. Must maintain consistency with existing documentation style and structure
+3. All file paths must be relative to project root
+4. Must document all 5 ES-5-capable algorithms: clck, eucp, clkm, clkd, pycv
+5. Must reference the Es5DirectOutputAlgorithmRouting base class as the foundational pattern
+6. Must explain dual-mode behavior: ES-5 direct output when ES-5 Expander &gt; 0, normal bus routing when ES-5 Expander = 0
+7. For Poly CV, must note that ES-5 applies to gate outputs only, not pitch/velocity CVs
+8. Must include Epic 4 completion date: 2025-10-28
+9. Must run flutter analyze and ensure zero warnings (standard for all stories)
+10. Document formatting: Use proper markdown headers, code blocks, bullet lists
+11. If CLAUDE/index.md has no routing section, do not create one - just skip that AC
+12. Update routing_audit.md only if it exists - it does exist at docs/audit/routing_audit.md
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Es5DirectOutputAlgorithmRouting</name>
+      <kind>Abstract base class</kind>
+      <signature>
+abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRouting {
+  static const String es5DirectBusParam = 'es5_direct';
+
+  @override
+  List&lt;Port&gt; generateOutputPorts(); // Dual-mode: ES-5 or normal based on ES-5 Expander parameter
+
+  int? getChannelParameter(int channel, String paramName); // Extract channel-prefixed parameters
+
+  static ({MultiChannelConfig config, ...}) createConfigFromSlot(...); // Factory helper
+}
+      </signature>
+      <path>lib/core/routing/es5_direct_output_algorithm_routing.dart</path>
+    </interface>
+    <interface>
+      <name>AlgorithmRouting Factory</name>
+      <kind>Factory method with registration pattern</kind>
+      <signature>
+// Factory registration in AlgorithmRouting.fromSlot() around line 309-330
+} else if (ClockAlgorithmRouting.canHandle(slot)) {
+  instance = ClockAlgorithmRouting.createFromSlot(...);
+} else if (EuclideanAlgorithmRouting.canHandle(slot)) {
+  instance = EuclideanAlgorithmRouting.createFromSlot(...);
+} else if (ClockMultiplierAlgorithmRouting.canHandle(slot)) {
+  instance = ClockMultiplierAlgorithmRouting.createFromSlot(...);
+} else if (ClockDividerAlgorithmRouting.canHandle(slot)) {
+  instance = ClockDividerAlgorithmRouting.createFromSlot(...);
+}
+// Poly CV registered earlier via guid prefix check
+      </signature>
+      <path>lib/core/routing/algorithm_routing.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+- Documentation stories do not require code tests
+- Must run `flutter analyze` to ensure no documentation changes introduce warnings
+- Manual verification: Read updated documentation for accuracy, completeness, and consistency
+- Cross-reference: Verify all algorithm GUIDs and file paths are correct
+- Check markdown formatting: Proper headers, code blocks, lists
+    </standards>
+    <locations>
+- No test files needed for documentation story
+- Verification is manual review of updated markdown files
+    </locations>
+    <ideas>
+- Manual review checklist (from story Dev Notes):
+  - [ ] All 5 ES-5 algorithms listed
+  - [ ] Algorithm GUIDs included
+  - [ ] Base class referenced
+  - [ ] Factory registration location noted
+  - [ ] Dual-mode behavior explained
+  - [ ] Epic 4 completion date included
+  - [ ] File paths accurate and current
+- Markdown validation:
+  - Check for broken links
+  - Verify code blocks have correct syntax highlighting
+  - Ensure consistent formatting style
+- Run flutter analyze to catch any accidental code changes
+    </ideas>
+  </tests>
+</story-context>

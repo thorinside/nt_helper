@@ -1,0 +1,282 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>2</storyId>
+    <title>Add Clock Divider ES-5 Direct Output Routing</title>
+    <status>drafted</status>
+    <generatedAt>2025-10-28</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e4-2-add-clock-divider-es-5-direct-output-routing.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user configuring Clock Divider with ES-5 expander</asA>
+    <iWant>nt_helper to display per-channel ES-5 direct output routing in the routing editor</iWant>
+    <soThat>I can see where each divided clock channel is being sent</soThat>
+    <tasks>
+      - Create Clock Divider routing implementation (AC: 1-8)
+        - Create `lib/core/routing/clock_divider_algorithm_routing.dart`
+        - Extend `Es5DirectOutputAlgorithmRouting` base class
+        - Implement `canHandle()` with guid check for 'clkd'
+        - Implement `createFromSlot()` factory method
+        - Define per-channel ioParameters for Input, Reset input, Output
+        - Add shared Reset input parameter (non-prefixed)
+        - Implement channel filtering based on `X:Enable` parameter
+        - Verify all 8 channels are present in parameter list
+
+      - Register in factory (AC: 9)
+        - Add registration check in `lib/core/routing/algorithm_routing.dart`
+        - Place after Clock Multiplier check
+        - Add import for ClockDividerAlgorithmRouting
+
+      - Verify per-channel routing display behavior (AC: 10-12)
+        - Test per-channel ES-5 mode: `X:ES-5 Expander` > 0 shows ES-5 direct port
+        - Test per-channel normal mode: `X:ES-5 Expander` = 0 shows normal output
+        - Test channel filtering: only enabled channels show ports
+        - Test mixed configuration: some channels ES-5, some normal
+        - Verify shared reset input handled correctly
+
+      - Run tests and analysis (AC: 13-14)
+        - Run full test suite: `flutter test`
+        - Verify all existing tests pass
+        - Run `flutter analyze`
+        - Fix any warnings if present
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Create `lib/core/routing/clock_divider_algorithm_routing.dart` extending `Es5DirectOutputAlgorithmRouting`
+    2. Implement `canHandle()` checking for guid == 'clkd'
+    3. Implement `createFromSlot()` factory calling `createConfigFromSlot()`
+    4. Clock Divider always has 8 channels present in parameter list (parameters repeat every 11 positions)
+    5. Filter channels by checking `X:Enable` parameter (only create ports for enabled channels)
+    6. Define per-channel `ioParameters`: `X:Input` (input), `X:Reset input` (input), `X:Output` (normal output)
+    7. Support shared Reset input (parameter 1, non-channel-prefixed)
+    8. Per-channel ES-5 parameters: `X:ES-5 Expander` and `X:ES-5 Output` where X is channel number 1-8
+    9. Register in `algorithm_routing.dart` factory after Clock Multiplier check
+    10. Routing editor displays per-channel ES-5 direct outputs when `X:ES-5 Expander` > 0 for that channel
+    11. Routing editor displays per-channel normal outputs when `X:ES-5 Expander` = 0 for that channel
+    12. Only show ports for channels where `X:Enable` = 1
+    13. All existing tests pass
+    14. `flutter analyze` passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Algorithm 2: Clock Divider (clkd) - MODERATE COMPLEXITY</section>
+        <snippet>Multichannel clock divider with per-channel ES-5 configuration. Always has 8 channels, parameters repeat every 11 positions, channels filtered by X:Enable parameter. Expected per-channel ES-5 parameters: X:ES-5 Expander, X:ES-5 Output for channels 1-8.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Base Class Pattern</section>
+        <snippet>Es5DirectOutputAlgorithmRouting handles dual-mode output logic. When ES-5 Expander > 0, output routes directly to ES-5 port, completely ignoring the normal Output parameter. When ES-5 Expander = 0, output uses normal Output parameter for standard bus routing.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Reference Implementations (Already Working)</section>
+        <snippet>Euclidean algorithm (eucp) follows identical structure with per-channel ES-5 support. Pattern: extends Es5DirectOutputAlgorithmRouting, implements canHandle(), factory createFromSlot() calls createConfigFromSlot().</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Factory Registration Pattern</section>
+        <snippet>Required additions: After Clock Multiplier check, add Clock Divider check. Registration order: USB From, ES5 Encoder, Clock, Euclidean, Clock Multiplier, Clock Divider, Poly algorithms.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story E4.2: Add Clock Divider ES-5 Direct Output Routing</section>
+        <snippet>User story defining the need for per-channel ES-5 direct output routing in the routing editor for Clock Divider with ES-5 expander, enabling users to see where each divided clock channel is being sent.</snippet>
+      </doc>
+      <doc>
+        <path>docs/algorithms/clkd.json</path>
+        <title>Clock Divider Algorithm Metadata</title>
+        <section>parameters</section>
+        <snippet>Clock Divider has 10 parameters, including shared Reset input (non-prefixed), per-channel Enable, Input, Reset input, and Output parameters. Parameters use is_per_channel flag for channel-specific params.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE/routing-system.md</path>
+        <title>Routing System Architecture</title>
+        <section>OO Framework</section>
+        <snippet>AlgorithmRouting.fromSlot() factory creates routing instances from live Slot data. Specialized implementations like PolyAlgorithmRouting, MultiChannelAlgorithmRouting provide per-algorithm logic. ConnectionDiscoveryService discovers connections via bus assignments.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>lib/core/routing/es5_direct_output_algorithm_routing.dart</path>
+        <kind>base class</kind>
+        <symbol>Es5DirectOutputAlgorithmRouting</symbol>
+        <lines>1-206</lines>
+        <reason>Base class providing ES-5 direct output pattern implementation. Clock Divider will extend this class and inherit generateOutputPorts() logic for dual-mode ES-5/normal routing.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/euclidean_algorithm_routing.dart</path>
+        <kind>reference implementation</kind>
+        <symbol>EuclideanAlgorithmRouting</symbol>
+        <lines>1-50</lines>
+        <reason>Reference implementation showing per-channel ES-5 support pattern. Clock Divider follows the same structure: extends base class, implements canHandle(), creates from slot with ioParameters.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/algorithm_routing.dart</path>
+        <kind>factory</kind>
+        <symbol>AlgorithmRouting.fromSlot</symbol>
+        <lines>309-327</lines>
+        <reason>Factory registration location. Clock Divider registration must be added after Clock Multiplier check (which follows Euclidean). Must add import and canHandle() check.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/connection_discovery_service.dart</path>
+        <kind>service</kind>
+        <symbol>ConnectionDiscoveryService.discoverConnections</symbol>
+        <lines>1-80</lines>
+        <reason>Service that discovers connections between algorithms via bus assignments. Handles es5_direct bus marker for ES-5 connections. No changes required, but important for understanding connection behavior.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/multi_channel_algorithm_routing.dart</path>
+        <kind>base class</kind>
+        <symbol>MultiChannelAlgorithmRouting</symbol>
+        <lines>entire file</lines>
+        <reason>Base class for Es5DirectOutputAlgorithmRouting. Provides channel detection logic via RegExp on parameter names (e.g., "1:Enable", "2:Input"). Clock Divider inherits this channel detection.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>state management</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>entire file</lines>
+        <reason>Primary state management. Exposes synchronized Slots (algorithm + parameters + values). Routing implementations extract data from Slot objects.</reason>
+      </artifact>
+      <artifact>
+        <path>test/core/routing/clock_euclidean_es5_test.dart</path>
+        <kind>test</kind>
+        <symbol>Clock/Euclidean ES-5 Direct Routing Tests</symbol>
+        <lines>1-100</lines>
+        <reason>Test pattern for ES-5 routing. Shows helper function createClockSlot() pattern for creating test slots with channel configs. Clock Divider tests (Story E4.5) will follow this structure.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/models/port.dart</path>
+        <kind>model</kind>
+        <symbol>Port</symbol>
+        <lines>entire file</lines>
+        <reason>Port model with direct properties (id, name, type, direction, busValue, channelNumber, busParam). ES-5 ports use busParam = 'es5_direct' marker.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <flutter>
+        <package name="flutter">SDK</package>
+        <package name="flutter_bloc">^9.1.1</package>
+      </flutter>
+      <testing>
+        <package name="flutter_test">SDK</package>
+        <package name="mocktail">^1.0.4</package>
+        <package name="bloc_test">^10.0.0</package>
+      </testing>
+      <codegen>
+        <package name="freezed">^3.2.0</package>
+        <package name="json_serializable">^6.10.0</package>
+        <package name="build_runner">^2.7.1</package>
+      </codegen>
+      <utils>
+        <package name="collection">^1.19.1</package>
+        <package name="equatable">^2.0.7</package>
+        <package name="uuid">^4.5.1</package>
+      </utils>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - MUST extend Es5DirectOutputAlgorithmRouting base class (do not reimplement ES-5 logic)
+    - MUST implement canHandle() with guid == 'clkd' check
+    - MUST use createConfigFromSlot() helper from base class in factory method
+    - MUST filter channels based on X:Enable parameter value (0=disabled, 1=enabled)
+    - MUST support both shared Reset input (non-prefixed) and per-channel Reset input (X:Reset input)
+    - MUST handle 8 channels with 11 parameters per channel (as defined in algorithm metadata)
+    - Per-channel ES-5 parameters X:ES-5 Expander and X:ES-5 Output will be added in Story E4.4 (not yet present in metadata)
+    - MUST NOT modify base class Es5DirectOutputAlgorithmRouting
+    - MUST NOT modify ConnectionDiscoveryService
+    - MUST NOT modify RoutingEditorWidget (visualization is display-only)
+    - MUST use debugPrint() for logging, never print()
+    - MUST pass flutter analyze with zero warnings before completion
+    - MUST pass all existing tests (no regressions allowed)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Es5DirectOutputAlgorithmRouting.canHandle</name>
+      <kind>static method</kind>
+      <signature>static bool canHandle(Slot slot)</signature>
+      <path>lib/core/routing/es5_direct_output_algorithm_routing.dart</path>
+    </interface>
+    <interface>
+      <name>Es5DirectOutputAlgorithmRouting.createFromSlot</name>
+      <kind>factory method</kind>
+      <signature>static T createFromSlot(Slot slot, {required Map&lt;String, int&gt; ioParameters, Map&lt;String, int&gt;? modeParameters, Map&lt;String, ({int parameterNumber, int value})&gt;? modeParametersWithNumbers, String? algorithmUuid})</signature>
+      <path>lib/core/routing/es5_direct_output_algorithm_routing.dart</path>
+    </interface>
+    <interface>
+      <name>Es5DirectOutputAlgorithmRouting.createConfigFromSlot</name>
+      <kind>static helper method</kind>
+      <signature>static ({RoutingConfig config, Map&lt;int, Port&gt; createdPorts}) createConfigFromSlot(Slot slot, {required Map&lt;String, int&gt; ioParameters, Map&lt;String, int&gt;? modeParameters, Map&lt;String, ({int parameterNumber, int value})&gt;? modeParametersWithNumbers, String? algorithmUuid, String debugName = 'Es5DirectOutputAlgorithmRouting'})</signature>
+      <path>lib/core/routing/es5_direct_output_algorithm_routing.dart</path>
+    </interface>
+    <interface>
+      <name>AlgorithmRouting.fromSlot</name>
+      <kind>factory method</kind>
+      <signature>factory AlgorithmRouting.fromSlot(Slot slot, {Map&lt;String, int&gt;? ioParameters, Map&lt;String, int&gt;? modeParameters, Map&lt;String, ({int parameterNumber, int value})&gt;? modeParametersWithNumbers, String? algorithmUuid})</signature>
+      <path>lib/core/routing/algorithm_routing.dart</path>
+    </interface>
+    <interface>
+      <name>Slot</name>
+      <kind>data class</kind>
+      <signature>class Slot { Algorithm algorithm; List&lt;ParameterInfo&gt; parameters; List&lt;ParameterValue&gt; values; ... }</signature>
+      <path>lib/domain/disting_nt_sysex.dart</path>
+    </interface>
+    <interface>
+      <name>Port</name>
+      <kind>data class</kind>
+      <signature>class Port { String id; String name; PortType type; PortDirection direction; int? busValue; int? channelNumber; String? busParam; ... }</signature>
+      <path>lib/core/routing/models/port.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      This project follows Flutter best practices for testing. All routing implementations have dedicated test files in test/core/routing/. Tests use flutter_test framework with mocktail for mocking. Test pattern: create test Slot with helper functions, instantiate routing class via createFromSlot(), verify port generation based on parameter values. ES-5 tests verify dual-mode behavior (ES-5 vs normal output) and connection discovery.
+    </standards>
+
+    <locations>
+      - test/core/routing/ - All routing implementation tests
+      - test/core/routing/clock_euclidean_es5_test.dart - Reference test pattern for ES-5 routing
+      - test/core/routing/algorithm_loading_test.dart - Factory registration tests
+    </locations>
+
+    <ideas>
+      <idea ac="1-3">
+        Test canHandle() returns true for 'clkd' guid, false for other guids. Test createFromSlot() instantiates ClockDividerAlgorithmRouting successfully with valid slot.
+      </idea>
+      <idea ac="4-5">
+        Test channel detection: verify 8 channels always present in parameter list. Test channel filtering: create slot with channels 1,3,5 enabled (Enable=1), channels 2,4,6,7,8 disabled (Enable=0), verify only 3 output ports generated.
+      </idea>
+      <idea ac="6-7">
+        Test ioParameters extraction: verify X:Input creates input port, X:Reset input creates per-channel reset input, X:Output used for normal mode output. Test shared Reset input (non-prefixed) creates separate input port.
+      </idea>
+      <idea ac="8,10-11">
+        Test per-channel ES-5 mode: channel 1 with ES-5 Expander=1, ES-5 Output=3 creates ES-5 direct port (busParam='es5_direct', channelNumber=3, name='Ch1 → ES-5 3'). Test per-channel normal mode: channel 2 with ES-5 Expander=0, Output=15 creates normal output port (busValue=15, name='Channel 2').
+      </idea>
+      <idea ac="12">
+        Test mixed configuration: channels 1-4 enabled with ES-5, channels 5-6 enabled with normal outputs, channels 7-8 disabled. Verify 6 output ports total with correct routing types.
+      </idea>
+      <idea ac="9">
+        Test factory registration: create slot with guid='clkd', call AlgorithmRouting.fromSlot(), verify returned instance is ClockDividerAlgorithmRouting. Verify no ClassCastException or factory fallback to MultiChannelAlgorithmRouting.
+      </idea>
+      <idea ac="13-14">
+        Integration test: run full test suite with flutter test, verify zero failures. Run flutter analyze, verify zero warnings or errors. Verify no regressions in existing routing tests.
+      </idea>
+    </ideas>
+  </tests>
+</story-context>

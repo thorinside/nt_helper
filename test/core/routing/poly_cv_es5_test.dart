@@ -218,7 +218,7 @@ void main() {
         expect(gatePorts, hasLength(1));
         expect(gatePorts[0].name, equals('Voice 1 Gate → ES-5 1'));
         expect(gatePorts[0].busParam, equals('es5_direct'));
-        expect(gatePorts[0].channelNumber, isNull); // channelNumber is null for Poly CV
+        expect(gatePorts[0].channelNumber, equals(1)); // ES-5 port number stored in channelNumber
       });
 
       test('Voice count = 4, ES-5 active → 4 gates to ES-5', () {

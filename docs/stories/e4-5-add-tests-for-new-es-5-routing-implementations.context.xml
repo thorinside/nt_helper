@@ -1,0 +1,333 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>5</storyId>
+    <title>Add Tests for New ES-5 Routing Implementations</title>
+    <status>drafted</status>
+    <generatedAt>2025-10-28</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e4-5-add-tests-for-new-es-5-routing-implementations.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer ensuring code quality</asA>
+    <iWant>detailed tests for the three new ES-5 routing implementations</iWant>
+    <soThat>routing behavior is verified and regressions are prevented</soThat>
+    <tasks>
+      - Create Clock Multiplier ES-5 tests (AC: 1)
+        - Create test/core/routing/clock_multiplier_es5_test.dart
+        - Add test helper: createClockMultiplierSlot()
+        - Test ES-5 mode: ES-5 Expander > 0 creates ES-5 port
+        - Test normal mode: ES-5 Expander = 0 creates normal output
+        - Test Output parameter ignored in ES-5 mode
+        - Follow pattern from clock_euclidean_es5_test.dart
+
+      - Create Clock Divider ES-5 tests (AC: 2)
+        - Create test/core/routing/clock_divider_es5_test.dart
+        - Add test helper: createClockDividerSlot()
+        - Test multichannel with all 8 channels
+        - Test per-channel ES-5 configuration (mixed: channels 1-4 ES-5, channels 5-8 normal)
+        - Test channel filtering by Enable parameter (only enabled channels create ports)
+        - Test shared reset input (global, non-prefixed)
+        - Test per-channel reset inputs (if supported)
+        - Verify ES-5/normal outputs per channel
+
+      - Create Poly CV ES-5 tests (AC: 3)
+        - Create test/core/routing/poly_cv_es5_test.dart
+        - Add test helper: createPolyCvSlot()
+        - Test multi-voice ES-5 routing (1-14 voices)
+        - Test gate outputs to ES-5 when ES-5 Expander > 0
+        - Test pitch/velocity CVs always use normal buses
+        - Test mixed routing: gates to ES-5, CVs to normal buses
+        - Test voice count extraction from parameter 23
+        - Test edge case: voice count > 8 (gates clip to 8 ES-5 ports)
+        - Test ES-5 toggle synchronization (all gates share parameter 53)
+
+      - Update algorithm loading tests (AC: 4)
+        - Open test/core/routing/algorithm_loading_test.dart
+        - Add Clock Multiplier (clkm) to algorithm loading tests
+        - Add Clock Divider (clkd) to algorithm loading tests
+        - Verify Poly CV (pycv) already tested with ES-5 support
+        - Verify factory registration for new algorithms
+
+      - Update integration tests if needed (AC: 5)
+        - Check if test/integration/es5_routing_integration_test.dart exists
+        - If exists: Add scenarios for new algorithms
+        - If not: Skip (integration tests optional for this story)
+
+      - Run full test suite (AC: 6-7)
+        - Run all tests: flutter test
+        - Verify all existing tests still pass (no regressions)
+        - Verify new tests pass
+        - Run flutter analyze
+        - Fix any warnings if present
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Create test file: test/core/routing/clock_multiplier_es5_test.dart
+       - Test ES-5 mode: ES-5 Expander > 0 creates ES-5 direct output port
+       - Test normal mode: ES-5 Expander = 0 creates normal output bus port
+       - Test output parameter ignored in ES-5 mode
+
+    2. Create test file: test/core/routing/clock_divider_es5_test.dart
+       - Test multichannel with mixed ES-5/normal outputs
+       - Test per-channel ES-5 configuration
+       - Test shared vs. per-channel reset inputs
+
+    3. Create test file: test/core/routing/poly_cv_es5_test.dart
+       - Test multi-voice ES-5 routing
+       - Test multiple output types per voice
+       - Test voice count extraction (1-14 voices)
+
+    4. Update test/core/routing/algorithm_loading_test.dart to include new algorithms
+
+    5. Update test/integration/es5_routing_integration_test.dart if needed
+
+    6. All tests pass: flutter test
+
+    7. flutter analyze passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4: ES-5 Direct Output Support - Technical Context</title>
+        <section>Testing Infrastructure (Established Patterns)</section>
+        <snippet>Reference test file: test/core/routing/clock_euclidean_es5_test.dart (470+ lines). Test pattern demonstrates test helper creation, ES-5 mode vs normal mode verification, and parameter configuration. Required new test files: clock_multiplier_es5_test.dart, clock_divider_es5_test.dart, poly_cv_es5_test.dart.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Algorithm-Specific Technical Details</section>
+        <snippet>Clock Multiplier (clkm): Simplest single-channel implementation. Clock Divider (clkd): Moderate complexity with 8 channels, per-channel ES-5 config, Enable parameter filtering. Poly CV (pycv): Most complex with multi-voice routing, ES-5 applies to gate outputs ONLY, pitch/velocity CVs always use normal buses.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story E4.5: Add Tests for New ES-5 Routing Implementations</section>
+        <snippet>Prerequisites: Stories E4.1, E4.2, E4.3. Tests verify the routing implementations work correctly and prevent future regressions. All tests pass: flutter test. flutter analyze passes with zero warnings.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Instructions</title>
+        <section>Development Standards</section>
+        <snippet>Code Quality: Zero tolerance for flutter analyze errors. Debugging: Always use debugPrint(), never print(). Testing: Run tests before commits. Check for existing test patterns.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file>
+        <path>test/core/routing/clock_euclidean_es5_test.dart</path>
+        <kind>test</kind>
+        <symbol>main, createClockSlot, createEuclideanSlot</symbol>
+        <lines>1-470+</lines>
+        <reason>PRIMARY REFERENCE: Complete test pattern for ES-5 direct output routing. Shows helper function structure (createClockSlot), ES-5 mode vs normal mode test cases, parameter configuration with channel prefixes, and connection discovery verification. This is the pattern to follow for Clock Multiplier and Clock Divider tests.</reason>
+      </file>
+      <file>
+        <path>lib/core/routing/es5_direct_output_algorithm_routing.dart</path>
+        <kind>routing</kind>
+        <symbol>Es5DirectOutputAlgorithmRouting</symbol>
+        <lines>1-206</lines>
+        <reason>Base class for ES-5 direct output. Implements dual-mode behavior: ES-5 mode (Expander > 0) uses ES-5 Output parameter and ignores Output parameter; Normal mode (Expander = 0) uses Output parameter. Tests must verify both modes work correctly.</reason>
+      </file>
+      <file>
+        <path>lib/core/routing/poly_algorithm_routing.dart</path>
+        <kind>routing</kind>
+        <symbol>PolyAlgorithmRouting, PolyAlgorithmConfig</symbol>
+        <lines>1-500+</lines>
+        <reason>MODIFIED FILE FOR E4.3: Existing Poly CV routing implementation. Tests must verify ES-5 gate routing (parameter 53, 54), multi-voice output generation, and that pitch/velocity CVs always use normal buses regardless of ES-5 Expander setting.</reason>
+      </file>
+      <file>
+        <path>lib/core/routing/clock_algorithm_routing.dart</path>
+        <kind>routing</kind>
+        <symbol>ClockAlgorithmRouting</symbol>
+        <lines>1-50</lines>
+        <reason>REFERENCE IMPLEMENTATION: Shows minimal ES-5 direct output extension. Pattern: canHandle() guid check, createFromSlot() factory, extends Es5DirectOutputAlgorithmRouting. Clock Multiplier will follow this exact pattern with guid='clkm'.</reason>
+      </file>
+      <file>
+        <path>lib/core/routing/euclidean_algorithm_routing.dart</path>
+        <kind>routing</kind>
+        <symbol>EuclideanAlgorithmRouting</symbol>
+        <lines>1-50</lines>
+        <reason>REFERENCE IMPLEMENTATION: Per-channel ES-5 routing with channel prefixes. Pattern for Clock Divider tests which also has per-channel ES-5 configuration with channel filtering via Enable parameter.</reason>
+      </file>
+      <file>
+        <path>test/integration/es5_routing_integration_test.dart</path>
+        <kind>test</kind>
+        <symbol>main, createClockSlot, createEuclideanSlot, createEs5EncoderSlot</symbol>
+        <lines>1-704</lines>
+        <reason>INTEGRATION TEST REFERENCE: End-to-end ES-5 routing scenarios including connection discovery, mixed algorithms, and ES-5 node display logic. May need updates to include Clock Multiplier, Clock Divider, and Poly CV scenarios if comprehensive integration coverage is desired.</reason>
+      </file>
+      <file>
+        <path>test/core/routing/algorithm_loading_test.dart</path>
+        <kind>test</kind>
+        <symbol>main, _createSlotFromJson</symbol>
+        <lines>1-100+</lines>
+        <reason>TO BE UPDATED: Algorithm factory loading tests. Must add test cases for Clock Multiplier (guid='clkm') and Clock Divider (guid='clkd') to verify factory registration works and AlgorithmRouting.fromSlot() creates correct routing instances.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>state</kind>
+        <symbol>DistingCubit, Slot, Algorithm, ParameterInfo, ParameterValue</symbol>
+        <lines>N/A</lines>
+        <reason>Core data models: Slot, Algorithm, ParameterInfo, ParameterValue. Test helpers create slots with these models to simulate hardware parameter state. Understanding slot structure is essential for test helper implementation.</reason>
+      </file>
+      <file>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>domain</kind>
+        <symbol>Slot, Algorithm, ParameterInfo, ParameterValue, ParameterPage</symbol>
+        <lines>N/A</lines>
+        <reason>Domain models for Disting NT SysEx data. Imported in all routing tests for slot creation. Contains data structures that test helpers must populate correctly.</reason>
+      </file>
+      <file>
+        <path>lib/core/routing/connection_discovery_service.dart</path>
+        <kind>service</kind>
+        <symbol>ConnectionDiscoveryService.discoverConnections</symbol>
+        <lines>N/A</lines>
+        <reason>Service that discovers connections between algorithm ports via bus assignments. Tests use this to verify ES-5 direct connections (busParam='es5_direct') are created correctly and route to ES-5 port nodes.</reason>
+      </file>
+    </code>
+
+    <dependencies>
+      <flutter_test>
+        Testing framework included with Flutter SDK. Primary test API.
+      </flutter_test>
+      <flutter>
+        Flutter SDK (>= 3.8.1 &lt; 4.0.0). Core framework.
+      </flutter>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>ZERO TOLERANCE: flutter analyze must pass with zero warnings before story completion</constraint>
+    <constraint>TESTING REQUIREMENT: All tests must pass (flutter test) including existing tests - no regressions allowed</constraint>
+    <constraint>DEBUGGING STANDARD: Always use debugPrint(), never print() for debug output</constraint>
+    <constraint>TEST PATTERN: Follow established test pattern from test/core/routing/clock_euclidean_es5_test.dart</constraint>
+    <constraint>HELPER FUNCTIONS: Create test helper functions (createClockMultiplierSlot, createClockDividerSlot, createPolyCvSlot) following existing helper patterns</constraint>
+    <constraint>ES-5 PORT NAMING: ES-5 mode port names follow pattern "ChN → ES-5 M" where N is channel number, M is ES-5 port number</constraint>
+    <constraint>NORMAL PORT NAMING: Normal mode port names follow pattern "Channel N"</constraint>
+    <constraint>BUS PARAM MARKER: ES-5 direct connections use busParam='es5_direct', normal connections use busValue=(bus number)</constraint>
+    <constraint>POLY CV SPECIAL RULE: ES-5 applies ONLY to gate outputs, never to pitch/velocity CVs. Tests must verify this critical behavior.</constraint>
+    <constraint>CLOCK DIVIDER CHANNEL FILTERING: Only channels with Enable=1 create ports. Disabled channels must be invisible in routing.</constraint>
+    <constraint>VOICE COUNT EXTRACTION: Poly CV voice count comes from parameter 23 ("Voices"). Tests must extract and verify correct voice count (1-14).</constraint>
+    <constraint>ES-5 TOGGLE SYNC: Poly CV gate outputs all share parameter 53 (ES-5 Expander). Tests must verify es5ExpanderParameterNumbers all reference same parameter.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>AlgorithmRouting.fromSlot</name>
+      <kind>Factory Method</kind>
+      <signature>static AlgorithmRouting fromSlot(Slot slot, {required String algorithmUuid})</signature>
+      <path>lib/core/routing/algorithm_routing.dart</path>
+      <description>Factory method that creates appropriate routing instance based on slot.algorithm.guid. Tests verify this creates ClockMultiplierAlgorithmRouting, ClockDividerAlgorithmRouting, and PolyAlgorithmRouting (with ES-5 support) for respective GUIDs.</description>
+    </interface>
+    <interface>
+      <name>ClockMultiplierAlgorithmRouting.createFromSlot</name>
+      <kind>Static Factory</kind>
+      <signature>static ClockMultiplierAlgorithmRouting createFromSlot(Slot slot, {required String algorithmUuid, required Map&lt;String, int&gt; ioParameters})</signature>
+      <path>lib/core/routing/clock_multiplier_algorithm_routing.dart</path>
+      <description>Factory for Clock Multiplier routing. Tests call this with test slots to verify ES-5 vs normal mode port generation. Expected ioParameters: {'Clock input': paramNumber, 'Clock output': paramNumber}</description>
+    </interface>
+    <interface>
+      <name>ClockDividerAlgorithmRouting.createFromSlot</name>
+      <kind>Static Factory</kind>
+      <signature>static ClockDividerAlgorithmRouting createFromSlot(Slot slot, {required String algorithmUuid, required Map&lt;String, int&gt; ioParameters})</signature>
+      <path>lib/core/routing/clock_divider_algorithm_routing.dart</path>
+      <description>Factory for Clock Divider routing. Tests verify per-channel ES-5 config, channel filtering by Enable parameter, and mixed ES-5/normal outputs. Expected per-channel ioParameters: {'X:Input', 'X:Reset input', 'X:Output'}</description>
+    </interface>
+    <interface>
+      <name>PolyAlgorithmRouting Constructor</name>
+      <kind>Class Constructor</kind>
+      <signature>PolyAlgorithmRouting({required PolyAlgorithmConfig config, ...})</signature>
+      <path>lib/core/routing/poly_algorithm_routing.dart</path>
+      <description>Poly CV routing constructor. Tests must verify ES-5 gate routing when ES-5 Expander (param 53) > 0, and that pitch/velocity CVs always use normal buses regardless of ES-5 setting.</description>
+    </interface>
+    <interface>
+      <name>ConnectionDiscoveryService.discoverConnections</name>
+      <kind>Static Method</kind>
+      <signature>static List&lt;Connection&gt; discoverConnections(List&lt;AlgorithmRouting&gt; routings)</signature>
+      <path>lib/core/routing/connection_discovery_service.dart</path>
+      <description>Discovers connections between algorithm ports based on bus assignments. Tests use this to verify ES-5 direct connections (busParam='es5_direct') create connections to ES-5 port nodes.</description>
+    </interface>
+    <interface>
+      <name>Port Constructor</name>
+      <kind>Data Model</kind>
+      <signature>Port({required String id, required String name, PortType type, PortDirection direction, String? busParam, int? busValue, int? channelNumber, ...})</signature>
+      <path>lib/core/routing/models/port.dart</path>
+      <description>Port data model. Tests verify port properties: busParam='es5_direct' for ES-5 mode, busValue=bus# for normal mode, channelNumber for port/channel identification, correct name formatting.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Tests follow Flutter test framework patterns using flutter_test package. Test files located in test/ directory mirroring lib/ structure. Test naming: {algorithm}_es5_test.dart for ES-5-specific routing tests. Test helpers create Slot instances with ParameterInfo (definitions) and ParameterValue (actual values) to simulate hardware state. All tests must use expect() assertions with clear failure messages. Tests verify both port generation (outputPorts, inputPorts) and connection discovery (ConnectionDiscoveryService). Integration tests verify end-to-end scenarios with multiple algorithms. Use debugPrint() for test debugging output, never print().
+    </standards>
+
+    <locations>
+      test/core/routing/*_test.dart - Unit tests for routing implementations
+      test/integration/*_test.dart - Integration tests for multi-algorithm scenarios
+      test/services/*_test.dart - Service layer tests (metadata, etc)
+    </locations>
+
+    <ideas>
+      AC1 - Clock Multiplier ES-5 Tests:
+        - Test ES-5 mode creates port with busParam='es5_direct' and correct channelNumber
+        - Test normal mode creates port with busValue=(Output parameter) and normal name
+        - Test Output parameter completely ignored when ES-5 Expander > 0
+        - Test helper createClockMultiplierSlot() with flexible parameter configuration
+        - Verify port count: exactly 1 output port in all cases
+        - Test ES-5 Expander values: 0 (off), 1 (active), 6 (max)
+        - Test ES-5 Output port range: 1-8
+
+      AC2 - Clock Divider ES-5 Tests:
+        - Test all 8 channels with all ES-5 active → 8 ES-5 ports
+        - Test all 8 channels with all normal → 8 normal ports
+        - Test mixed: channels 1-4 ES-5, 5-8 normal → 8 ports, mixed types
+        - Test channel filtering: channels 1-4 Enable=1, 5-8 Enable=0 → 4 ports only
+        - Test single enabled channel → 1 port
+        - Test all disabled → 0 ports
+        - Test shared reset input parameter (non-prefixed)
+        - Test per-channel reset inputs if supported
+        - Verify each channel's ES-5 config is independent
+        - Test helper createClockDividerSlot() with per-channel configs
+
+      AC3 - Poly CV ES-5 Tests:
+        - Test voice count extraction from parameter 23: 1, 4, 8, 14 voices
+        - Test ES-5 Expander > 0: gates route to ES-5 ports sequentially
+        - Test ES-5 Expander = 0: all outputs use normal buses
+        - Test gates-only ES-5: pitch/velocity disabled, only gates to ES-5
+        - Test mixed routing: gates to ES-5 starting from ES-5 Output param, pitch CVs to normal buses starting from First output param, velocity CVs follow pitch
+        - Test ES-5 Output base port: 1, 3, 8 (gates go to sequential ports)
+        - Test voice count > 8: verify gate clipping or overflow behavior
+        - Test es5ChannelToggles populated for all gate port channel numbers
+        - Test es5ExpanderParameterNumbers: all gates reference parameter 53
+        - Test synchronized toggle behavior: changing parameter 53 affects all gates
+        - Test helper createPolyCvSlot() with voice count, output enables, ES-5 params
+
+      AC4 - Algorithm Loading Tests:
+        - Add test: Clock Multiplier (guid='clkm') loads as ClockMultiplierAlgorithmRouting
+        - Add test: Clock Divider (guid='clkd') loads as ClockDividerAlgorithmRouting
+        - Verify Poly CV (guid starts with 'py') loads as PolyAlgorithmRouting
+        - Verify factory registration order: clkm after eucp, clkd after clkm
+        - Test fromSlot() with minimal slot data for each algorithm
+
+      AC5 - Integration Tests (Optional):
+        - If test/integration/es5_routing_integration_test.dart exists:
+          - Add Clock Multiplier scenario: ES-5 mode connection discovery
+          - Add Clock Divider scenario: multichannel mixed ES-5/normal
+          - Add Poly CV scenario: gates to ES-5, CVs to normal buses
+          - Test mixed preset: all three new algorithms coexist without conflicts
+          - Verify ES-5 node appears when any of the three algorithms present
+        - If file doesn't exist: skip integration tests
+
+      AC6-7 - Full Test Suite:
+        - Run flutter test → verify all tests pass
+        - Verify no regression in existing tests
+        - Run flutter analyze → must show zero warnings
+        - If failures occur: debug using debugPrint() output
+        - Check for parameter name mismatches (Story E4.4 dependency)
+    </ideas>
+  </tests>
+</story-context>

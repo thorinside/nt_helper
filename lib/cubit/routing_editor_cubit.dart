@@ -668,12 +668,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             state,
           );
         }
-        // Otherwise it's Clock/Euclidean ES-5 direct output
-        return await _assignEs5DirectOutput(
-          algorithmOutputPort,
-          es5PortNumber,
-          state,
+        // Check if this is ES-5 direct output (busParam = 'es5_direct')
+        if (algorithmOutputPort.busParam == 'es5_direct') {
+          return await _assignEs5DirectOutput(
+            algorithmOutputPort,
+            es5PortNumber,
+            state,
+          );
+        }
+        // Otherwise, this is a normal algorithm output being dragged to an ES-5 port
+        // Fall through to normal bus assignment logic below
+        debugPrint(
+          'Normal algorithm output dragged to ES-5 port: not supported yet',
         );
+        return null;
       }
       debugPrint('Invalid ES-5 port: $hardwareOutputPortId');
       return null;
@@ -751,39 +759,87 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     final slot = distingState.slots[algorithmIndex];
 
-    // Extract channel number from port ID (format: {uuid}_channel_{N}_es5_output or similar)
-    final channelMatch = RegExp(
-      r'_channel_(\d+)_',
-    ).firstMatch(algorithmOutputPort.id);
-    if (channelMatch == null) {
+    // Extract channel/voice number from port ID
+    // Formats:
+    // - Clock/Euclidean/Clock Multiplier/Clock Divider: {uuid}_channel_{N}_es5_output
+    // - Poly CV: {uuid}_gate_output_{N}
+    int? channel;
+
+    // Try multi-channel format first
+    var channelMatch = RegExp(r'_channel_(\d+)_').firstMatch(algorithmOutputPort.id);
+    if (channelMatch != null) {
+      channel = int.parse(channelMatch.group(1)!);
+    } else {
+      // Try Poly CV voice format
+      channelMatch = RegExp(r'_gate_output_(\d+)').firstMatch(algorithmOutputPort.id);
+      if (channelMatch != null) {
+        channel = int.parse(channelMatch.group(1)!);
+      }
+    }
+
+    if (channel == null) {
       debugPrint(
-        'Could not extract channel number from port ID: ${algorithmOutputPort.id}',
+        'Could not extract channel/voice number from port ID: ${algorithmOutputPort.id}',
       );
       return null;
     }
 
-    final channel = int.parse(channelMatch.group(1)!);
-
-    // Find the ES-5 Output parameter for this channel
-    final es5OutputParamName = '$channel:ES-5 Output';
-    final es5OutputParam = slot.parameters.firstWhere(
+    // Find the ES-5 Output parameter
+    // For multi-channel algorithms (Clock/Euclidean/etc): "$channel:ES-5 Output"
+    // For Poly CV: "ES-5 Output" (no channel prefix, controls starting port for all voices)
+    String es5OutputParamName = '$channel:ES-5 Output';
+    var es5OutputParam = slot.parameters.firstWhere(
       (p) => p.name == es5OutputParamName,
       orElse: () => ParameterInfo.filler(),
     );
 
+    int targetValue = es5PortNumber;
+    bool isPolyCv = false;
+
+    // If not found with channel prefix, try without (Poly CV case)
     if (es5OutputParam.parameterNumber < 0) {
-      debugPrint('ES-5 Output parameter not found for channel $channel');
+      es5OutputParamName = 'ES-5 Output';
+      es5OutputParam = slot.parameters.firstWhere(
+        (p) => p.name == es5OutputParamName,
+        orElse: () => ParameterInfo.filler(),
+      );
+      isPolyCv = true;
+    }
+
+    if (es5OutputParam.parameterNumber < 0) {
+      debugPrint('ES-5 Output parameter not found for channel/voice $channel');
       return null;
     }
 
-    // Set the ES-5 Output parameter to the target ES-5 port number
+    // For Poly CV, calculate the starting ES-5 port based on which voice was dragged
+    // Voice numbering is 1-based, ES-5 ports are 1-8
+    // If Voice 3 is dragged to ES-5 5, then starting port = 5 - (3 - 1) = 3
+    if (isPolyCv) {
+      final voiceIndex = channel - 1; // Convert to 0-based
+      targetValue = es5PortNumber - voiceIndex;
+
+      // Clamp to valid ES-5 port range (1-8)
+      if (targetValue < 1) {
+        debugPrint('Calculated ES-5 starting port $targetValue is below minimum (1), clamping to 1');
+        targetValue = 1;
+      } else if (targetValue > 8) {
+        debugPrint('Calculated ES-5 starting port $targetValue is above maximum (8), clamping to 8');
+        targetValue = 8;
+      }
+
+      debugPrint(
+        'Poly CV: Voice $channel dragged to ES-5 $es5PortNumber → setting starting port to ES-5 $targetValue',
+      );
+    }
+
+    // Set the ES-5 Output parameter
     debugPrint(
-      'Setting ES-5 Output for algorithm $algorithmIndex, channel $channel, parameter ${es5OutputParam.parameterNumber} to ES-5 port $es5PortNumber',
+      'Setting ES-5 Output for algorithm $algorithmIndex, ${isPolyCv ? 'starting port' : 'channel $channel'}, parameter ${es5OutputParam.parameterNumber} to $targetValue',
     );
     await _distingCubit!.updateParameterValue(
       algorithmIndex: algorithmIndex,
       parameterNumber: es5OutputParam.parameterNumber,
-      value: es5PortNumber,
+      value: targetValue,
       userIsChangingTheValue: false,
     );
 

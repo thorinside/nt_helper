@@ -1,0 +1,41 @@
+# Make Epic Ready Workflow
+name: make-epic-ready
+description: "Orchestrates parallel story context generation for all drafted stories in an epic, then marks them all as ready-for-dev. Optimized for Scrum Master to prepare multiple stories simultaneously after user review."
+author: "BMad"
+
+# Critical variables from config
+config_source: "{project-root}/bmad/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+user_skill_level: "{config_source}:user_skill_level"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Workflow components
+installed_path: "{project-root}/bmad/bmm/workflows/4-implementation/make-epic-ready"
+instructions: "{installed_path}/instructions.md"
+validation: "{installed_path}/checklist.md"
+
+# This is an orchestration workflow (no output template document)
+template: false
+
+# Variables (can be provided by caller)
+variables:
+  epic_key: "" # Optional: Explicit epic key (e.g., "epic-3"). If not provided, finds first epic with drafted stories
+  sprint_status_file: "{project-root}/docs/sprint-status.yaml"
+  story_dir: "{config_source}:dev_story_location"
+  validate_context: false # If true, validate generated context files (can be omitted for speed)
+  skip_context_generation: false # If true, only mark stories ready (assumes context already exists)
+
+# Workflow paths for sub-agent orchestration
+sub_workflows:
+  story_context: "{project-root}/bmad/bmm/workflows/4-implementation/story-context"
+  story_ready: "{project-root}/bmad/bmm/workflows/4-implementation/story-ready"
+
+# Recommended inputs
+recommended_inputs:
+  - sprint_status: "Sprint status YAML file (auto-discovered)"
+  - drafted_stories: "All drafted story files for the target epic (auto-discovered)"
+
+standalone: true

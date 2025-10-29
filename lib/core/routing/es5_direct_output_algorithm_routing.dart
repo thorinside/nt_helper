@@ -86,6 +86,7 @@ abstract class Es5DirectOutputAlgorithmRouting
               description: 'Gate output for channel $channel',
               busValue: outputBusResult.busValue,
               channelNumber: channel,
+              parameterNumber: outputBusResult.parameterNumber,
             ),
           );
 
@@ -104,14 +105,14 @@ abstract class Es5DirectOutputAlgorithmRouting
     return ports;
   }
 
-  /// Helper to get output bus value along with parameter name.
+  /// Helper to get output bus value along with parameter name and number.
   ///
-  /// Returns a record with the bus value and the actual parameter name found.
-  ({int busValue, String? paramName})? _getOutputBusWithName(int channel) {
+  /// Returns a record with the bus value, parameter name, and parameter number.
+  ({int busValue, String? paramName, int? parameterNumber})? _getOutputBusWithName(int channel) {
     // Try 'Output' first
-    final outputValue = getChannelParameter(channel, 'Output');
-    if (outputValue != null && outputValue > 0) {
-      return (busValue: outputValue, paramName: 'Output');
+    final outputParam = _getParameterWithValue(channel, 'Output');
+    if (outputParam != null && outputParam.value > 0) {
+      return (busValue: outputParam.value, paramName: 'Output', parameterNumber: outputParam.parameterNumber);
     }
 
     // Fall back to pattern matching (e.g., 'Clock output')
@@ -138,12 +139,55 @@ abstract class Es5DirectOutputAlgorithmRouting
             .value;
 
         if (value > 0) {
-          return (busValue: value, paramName: param.name);
+          return (busValue: value, paramName: param.name, parameterNumber: param.parameterNumber);
         }
       }
     }
 
     return null;
+  }
+
+  /// Helper to get a parameter's value and number by name.
+  ///
+  /// Returns a record with the parameter number and current value, or null if not found.
+  ({int parameterNumber, int value})? _getParameterWithValue(int channel, String paramName) {
+    // Look for parameter with channel prefix (e.g., "1:Output")
+    final prefixedName = '$channel:$paramName';
+
+    var param = slot.parameters.firstWhere(
+      (p) => p.name == prefixedName,
+      orElse: () => ParameterInfo.filler(),
+    );
+
+    // For single-channel algorithms, fall back to non-prefixed parameter name
+    if (param.parameterNumber < 0 && config.channelCount == 1) {
+      param = slot.parameters.firstWhere(
+        (p) => p.name == paramName,
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      if (param.parameterNumber < 0) {
+        return null;
+      }
+    }
+
+    if (param.parameterNumber < 0) {
+      return null;
+    }
+
+    // Get the parameter value
+    final value = slot.values
+        .firstWhere(
+          (v) => v.parameterNumber == param.parameterNumber,
+          orElse: () => ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: param.parameterNumber,
+            value: param.defaultValue,
+          ),
+        )
+        .value;
+
+    return (parameterNumber: param.parameterNumber, value: value);
   }
 
   /// Gets the value of a parameter for a specific channel by regex pattern.
