@@ -1744,12 +1744,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         'Poly CV: Toggling global ES-5 Expander (affects all gates)',
       );
     } else {
-      // Clock/Euclidean: Find the per-channel ES-5 Expander parameter
+      // Clock/Euclidean/Clock Multiplier/Clock Divider: Find the per-channel ES-5 Expander parameter
+      // Try channel-prefixed format first (e.g., "1:ES-5 Expander")
       final paramName = '$channel:ES-5 Expander';
       param = slot.parameters.firstWhere(
         (p) => p.name == paramName,
         orElse: () => ParameterInfo.filler(),
       );
+
+      // For single-channel algorithms (e.g., Clock Multiplier), fall back to non-prefixed parameter
+      if (param.parameterNumber < 0 && channel == 1) {
+        param = slot.parameters.firstWhere(
+          (p) => p.name == 'ES-5 Expander',
+          orElse: () => ParameterInfo.filler(),
+        );
+      }
 
       if (param.parameterNumber < 0) {
         debugPrint('ES-5 Expander parameter not found for channel $channel');
