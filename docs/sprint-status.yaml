@@ -58,5 +58,5 @@ development_status:
   e4-3-add-poly-cv-es-5-direct-output-routing: done
   e4-4-update-algorithm-metadata-for-es-5-parameters: done
   e4-5-add-tests-for-new-es-5-routing-implementations: done
-  e4-6-update-documentation-and-architecture-notes: ready-for-dev
+  e4-6-update-documentation-and-architecture-notes: done
   epic-4-retrospective: optional

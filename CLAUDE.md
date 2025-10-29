@@ -30,19 +30,31 @@ The routing editor uses an object-oriented framework for data-driven routing vis
 - **Source of Truth**: `DistingCubit` exposes synchronized `Slot`s (algorithm + parameters + values)
 - **OO Framework**: `lib/core/routing/` contains all routing logic
   - `AlgorithmRouting.fromSlot()` factory creates routing instances from live Slot data
-  - Specialized implementations: `PolyAlgorithmRouting`, `MultiChannelAlgorithmRouting`, etc.
+  - Specialized implementations: `PolyAlgorithmRouting`, `MultiChannelAlgorithmRouting`, `Es5DirectOutputAlgorithmRouting`, etc.
   - `ConnectionDiscoveryService` discovers connections via bus assignments (1-12 inputs, 13-20 outputs)
 - **State Management**: `RoutingEditorCubit` orchestrates the framework, stores computed state
 - **Visualization**: `RoutingEditorWidget` purely displays pre-computed data
+
+### ES-5 Direct Output Support (Epic 4 - Completed 2025-10-28)
+Five algorithms support ES-5 direct output routing, where outputs can route directly to ES-5 expander hardware:
+- **Clock** (clck) - Single-channel clock generator
+- **Euclidean** (eucp) - Multi-channel Euclidean rhythm generator
+- **Clock Multiplier** (clkm) - Single-channel clock multiplier
+- **Clock Divider** (clkd) - Multi-channel clock divider
+- **Poly CV** (pycv) - Polyphonic MIDI/CV converter (gates only)
+
+**Base Class**: `lib/core/routing/es5_direct_output_algorithm_routing.dart` handles dual-mode output logic (ES-5 vs. normal buses) based on "ES-5 Expander" parameter value.
 
 ### Key Principles
 - All routing logic lives in the OO framework (`lib/core/routing/`)
 - Connections are discovered automatically via shared bus assignments
 - Port model uses typesafe direct properties (no generic metadata maps)
 - The visualization layer contains no business logic
+- ES-5 algorithms use dual-mode output: direct to ES-5 when configured, or normal bus routing
 
 ### Important Files
 - `lib/core/routing/algorithm_routing.dart` – Base class and factory
+- `lib/core/routing/es5_direct_output_algorithm_routing.dart` – ES-5 base class
 - `lib/core/routing/connection_discovery_service.dart` – Connection discovery
 - `lib/cubit/routing_editor_cubit.dart` – State orchestration
 - `lib/ui/widgets/routing/routing_editor_widget.dart` – Visualization only
