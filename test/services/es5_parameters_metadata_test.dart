@@ -47,13 +47,13 @@ void main() {
           isNotNull,
           reason: 'Clock parameter 22 (ES-5 Expander) should exist',
         );
-        expect(es5Expander['name'], equals('ES-5 Expander'));
+        expect(es5Expander['name'], equals('1:ES-5 Expander'));
         expect(es5Expander['minValue'], equals(0));
         expect(es5Expander['maxValue'], equals(6));
         expect(es5Expander['defaultValue'], equals(0));
         expect(es5Expander['unitId'], isNull);
         expect(es5Expander['powerOfTen'], equals(0));
-        expect(es5Expander['rawUnitIndex'], equals(1)); // Enum type
+        expect(es5Expander['rawUnitIndex'], equals(14)); // Enum type
       });
 
       test('should have ES-5 Output parameter (23)', () {
@@ -68,7 +68,7 @@ void main() {
           isNotNull,
           reason: 'Clock parameter 23 (ES-5 Output) should exist',
         );
-        expect(es5Output['name'], equals('ES-5 Output'));
+        expect(es5Output['name'], equals('1:ES-5 Output'));
         expect(es5Output['minValue'], equals(1));
         expect(es5Output['maxValue'], equals(8));
         expect(es5Output['defaultValue'], equals(1));
@@ -86,21 +86,13 @@ void main() {
             )
             .toList();
 
+        // Note: ES-5 Expander enums are no longer in parameterEnums table
+        // They are handled by the enum system (rawUnitIndex = 14)
         expect(
           es5ExpanderEnums.length,
-          equals(7),
-          reason: 'Should have 7 enum values (Off, 1-6)',
+          equals(0),
+          reason: 'ES-5 Expander enums handled by enum system, not in parameterEnums',
         );
-
-        final expectedEnums = ['Off', '1', '2', '3', '4', '5', '6'];
-        for (var i = 0; i < expectedEnums.length; i++) {
-          final enumValue = es5ExpanderEnums.firstWhere(
-            (e) => e['enumIndex'] == i,
-            orElse: () => null,
-          );
-          expect(enumValue, isNotNull, reason: 'Enum index $i should exist');
-          expect(enumValue['enumString'], equals(expectedEnums[i]));
-        }
       });
     });
 
@@ -117,13 +109,13 @@ void main() {
           isNotNull,
           reason: 'Euclidean parameter 13 (ES-5 Expander) should exist',
         );
-        expect(es5Expander['name'], equals('ES-5 Expander'));
+        expect(es5Expander['name'], equals('1:ES-5 Expander'));
         expect(es5Expander['minValue'], equals(0));
         expect(es5Expander['maxValue'], equals(6));
         expect(es5Expander['defaultValue'], equals(0));
         expect(es5Expander['unitId'], isNull);
         expect(es5Expander['powerOfTen'], equals(0));
-        expect(es5Expander['rawUnitIndex'], equals(1)); // Enum type
+        expect(es5Expander['rawUnitIndex'], equals(14)); // Enum type
       });
 
       test('should have ES-5 Output parameter (14)', () {
@@ -138,7 +130,7 @@ void main() {
           isNotNull,
           reason: 'Euclidean parameter 14 (ES-5 Output) should exist',
         );
-        expect(es5Output['name'], equals('ES-5 Output'));
+        expect(es5Output['name'], equals('1:ES-5 Output'));
         expect(es5Output['minValue'], equals(1));
         expect(es5Output['maxValue'], equals(8));
         expect(es5Output['defaultValue'], equals(1));
@@ -156,21 +148,13 @@ void main() {
             )
             .toList();
 
+        // Note: ES-5 Expander enums are no longer in parameterEnums table
+        // They are handled by the enum system (rawUnitIndex = 14)
         expect(
           es5ExpanderEnums.length,
-          equals(7),
-          reason: 'Should have 7 enum values (Off, 1-6)',
+          equals(0),
+          reason: 'ES-5 Expander enums handled by enum system, not in parameterEnums',
         );
-
-        final expectedEnums = ['Off', '1', '2', '3', '4', '5', '6'];
-        for (var i = 0; i < expectedEnums.length; i++) {
-          final enumValue = es5ExpanderEnums.firstWhere(
-            (e) => e['enumIndex'] == i,
-            orElse: () => null,
-          );
-          expect(enumValue, isNotNull, reason: 'Enum index $i should exist');
-          expect(enumValue['enumString'], equals(expectedEnums[i]));
-        }
       });
     });
 

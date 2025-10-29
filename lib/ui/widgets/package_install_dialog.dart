@@ -177,25 +177,27 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
       children: [
         Text('Bulk actions:', style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(width: 8),
-        Wrap(
-          spacing: 8,
-          children: [
-            ActionChip(
-              label: const Text('Install All'),
-              onPressed: () => _setActionForAllFiles(FileAction.install),
-              avatar: const Icon(Icons.check_circle, size: 16),
-            ),
-            ActionChip(
-              label: const Text('Skip Conflicts'),
-              onPressed: () => _setActionForConflicts(FileAction.skip),
-              avatar: const Icon(Icons.warning, size: 16),
-            ),
-            ActionChip(
-              label: const Text('Skip All'),
-              onPressed: () => _setActionForAllFiles(FileAction.skip),
-              avatar: const Icon(Icons.cancel, size: 16),
-            ),
-          ],
+        Expanded(
+          child: Wrap(
+            spacing: 8,
+            children: [
+              ActionChip(
+                label: const Text('Install All'),
+                onPressed: () => _setActionForAllFiles(FileAction.install),
+                avatar: const Icon(Icons.check_circle, size: 16),
+              ),
+              ActionChip(
+                label: const Text('Skip Conflicts'),
+                onPressed: () => _setActionForConflicts(FileAction.skip),
+                avatar: const Icon(Icons.warning, size: 16),
+              ),
+              ActionChip(
+                label: const Text('Skip All'),
+                onPressed: () => _setActionForAllFiles(FileAction.skip),
+                avatar: const Icon(Icons.cancel, size: 16),
+              ),
+            ],
+          ),
         ),
       ],
     );

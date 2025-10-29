@@ -8,12 +8,15 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 
 void main() {
-  group('AlgorithmRouting Loading Tests', () {
+  // Check if the required JSON file exists before defining tests
+  final file = File('docs/nt_algorithm_details_1757556475.json');
+  final fileExists = file.existsSync();
+
+  group('AlgorithmRouting Loading Tests', skip: !fileExists, () {
     late Map<String, dynamic> algorithmData;
 
     setUpAll(() async {
       // Load the JSON file with all algorithm data
-      final file = File('docs/nt_algorithm_details_1757556475.json');
       final jsonString = await file.readAsString();
       algorithmData = json.decode(jsonString);
     });

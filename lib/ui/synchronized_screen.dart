@@ -14,7 +14,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 
 import 'package:nt_helper/ui/widgets/floating_video_overlay.dart';
 import 'package:nt_helper/cubit/video_frame_cubit.dart';
-import 'package:nt_helper/ui/widgets/load_preset_dialog.dart' show PresetAction;
+import 'package:nt_helper/models/preset_action.dart';
 import 'package:nt_helper/ui/widgets/preset_browser_dialog.dart';
 import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 
