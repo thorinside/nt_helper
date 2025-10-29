@@ -44,10 +44,10 @@ development_status:
 
   epic-3: contexted
   e3-1-integrate-droptarget-into-browse-presets-dialog: done
-  e3-2-handle-dropped-files-and-analyze-packages: ready-for-dev
-  e3-3-detect-file-conflicts-with-sd-card: ready-for-dev
-  e3-4-display-package-install-dialog-with-conflict-resolution: ready-for-dev
-  e3-5-execute-package-installation-with-progress-tracking: ready-for-dev
-  e3-6-verify-cross-platform-compatibility: ready-for-dev
-  e3-7-remove-obsolete-loadpresetdialog: ready-for-dev
+  e3-2-handle-dropped-files-and-analyze-packages: done
+  e3-3-detect-file-conflicts-with-sd-card: done
+  e3-4-display-package-install-dialog-with-conflict-resolution: done
+  e3-5-execute-package-installation-with-progress-tracking: done
+  e3-6-verify-cross-platform-compatibility: done
+  e3-7-remove-obsolete-loadpresetdialog: review
   epic-3-retrospective: optional
