@@ -52,7 +52,7 @@ class MappingEditButton extends StatelessWidget {
 
               final data = widget.mappingData ?? PackedMappingData.filler();
               final myMidiCubit = context.read<MidiListenerCubit>();
-              final updatedData = await showModalBottomSheet(
+              await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 builder: (context) {
@@ -60,17 +60,11 @@ class MappingEditButton extends StatelessWidget {
                     myMidiCubit: myMidiCubit,
                     data: data,
                     slots: currentSlots,
+                    algorithmIndex: widget.algorithmIndex,
+                    parameterNumber: widget.parameterNumber,
                   );
                 },
               );
-
-              if (updatedData != null) {
-                cubit.saveMapping(
-                  widget.algorithmIndex,
-                  widget.parameterNumber,
-                  updatedData,
-                );
-              }
             },
           );
         },

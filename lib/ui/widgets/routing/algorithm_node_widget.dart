@@ -567,19 +567,17 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     final data = mapping.packedMappingData;
     final myMidiCubit = context.read<MidiListenerCubit>();
 
-    final updatedData = await showModalBottomSheet<PackedMappingData>(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => MappingEditorBottomSheet(
         myMidiCubit: myMidiCubit,
         data: data,
         slots: state.slots,
+        algorithmIndex: slotIndex,
+        parameterNumber: parameterNumber,
       ),
     );
-
-    if (updatedData != null) {
-      cubit.saveMapping(slotIndex, parameterNumber, updatedData);
-    }
   }
 
   void _showFeedback(String message, {bool isError = false}) {
