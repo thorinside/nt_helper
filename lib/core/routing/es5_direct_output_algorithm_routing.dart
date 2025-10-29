@@ -100,6 +100,7 @@ abstract class Es5DirectOutputAlgorithmRouting
   /// Gets the value of a parameter for a specific channel.
   ///
   /// Parameters are prefixed with channel number (e.g., "1:Output", "2:ES-5 Expander").
+  /// For single-channel algorithms, falls back to non-prefixed parameter names.
   ///
   /// Parameters:
   /// - [channel]: The channel number (1-based)
@@ -111,10 +112,38 @@ abstract class Es5DirectOutputAlgorithmRouting
     // Look for parameter with channel prefix (e.g., "1:Output")
     final prefixedName = '$channel:$paramName';
 
-    final param = slot.parameters.firstWhere(
+    var param = slot.parameters.firstWhere(
       (p) => p.name == prefixedName,
       orElse: () => ParameterInfo.filler(),
     );
+
+    // For single-channel algorithms, fall back to non-prefixed parameter name
+    if (param.parameterNumber < 0 && config.channelCount == 1) {
+      param = slot.parameters.firstWhere(
+        (p) => p.name == paramName,
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      if (param.parameterNumber < 0) {
+        debugPrint('$algorithmName: Parameter "$paramName" not found');
+        return null;
+      }
+
+      // Get the parameter value
+      final value = slot.values
+          .firstWhere(
+            (v) => v.parameterNumber == param.parameterNumber,
+            orElse: () => ParameterValue(
+              algorithmIndex: 0,
+              parameterNumber: param.parameterNumber,
+              value: param.defaultValue,
+            ),
+          )
+          .value;
+
+      debugPrint('$algorithmName: Found $paramName = $value');
+      return value;
+    }
 
     if (param.parameterNumber < 0) {
       debugPrint('$algorithmName: Parameter "$prefixedName" not found');
