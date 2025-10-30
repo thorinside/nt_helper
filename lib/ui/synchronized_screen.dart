@@ -456,11 +456,21 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           tooltip: 'Center View',
                         ),
 
-                        // Copy Nodes Image (tight bounds, 24px margin)
+                        // Share/Copy Nodes Image (tight bounds, 24px margin)
                         IconButton(
-                          icon: const Icon(Icons.image_outlined),
-                          onPressed: () => _editorController.copyNodesImage(),
-                          tooltip: 'Copy Nodes Image',
+                          icon: Icon(_platformService.isMobilePlatform() 
+                              ? Icons.share 
+                              : Icons.image_outlined),
+                          onPressed: () {
+                            if (_platformService.isMobilePlatform()) {
+                              _editorController.shareNodesImage();
+                            } else {
+                              _editorController.copyNodesImage();
+                            }
+                          },
+                          tooltip: _platformService.isMobilePlatform() 
+                              ? 'Share Nodes Image' 
+                              : 'Copy Nodes Image',
                         ),
                       ],
                     );
