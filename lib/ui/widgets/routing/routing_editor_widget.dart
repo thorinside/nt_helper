@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:convert' as convert;
 
@@ -10,6 +11,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pasteboard/pasteboard.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:cross_file/cross_file.dart';
 
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
@@ -128,6 +131,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       copyCanvasImage: _copyCanvasImageViewport,
       copyCanvasImageFit: _copyCanvasImageToClipboardFit,
       copyNodesImage: _copyNodesAreaToClipboard,
+      shareCanvasImage: _shareCanvasViewportImage,
+      shareNodesImage: _shareNodesAreaImage,
     );
 
     // Center the view on the canvas after the first frame
@@ -569,6 +574,155 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     } catch (e) {
       _showError('Copy failed: $e');
     }
+  }
+
+  // Share nodes area image using platform-native sharing on mobile
+  Future<void> _shareNodesAreaImage() async {
+    try {
+      final bytes = await _captureNodesAreaImageBytes();
+      if (bytes == null) return;
+
+      final platformService = widget.platformService;
+      if (platformService?.isMobilePlatform() == true) {
+        // Use native sharing on mobile
+        await Share.shareXFiles(
+          [XFile.fromData(bytes, mimeType: 'image/png', name: 'routing_diagram.png')],
+          text: 'Routing diagram from nt_helper',
+        );
+        _showFeedback('Routing diagram shared');
+      } else {
+        // Fall back to clipboard on desktop
+        await _copyNodesAreaToClipboard();
+      }
+    } catch (e) {
+      _showError('Share failed: $e');
+    }
+  }
+
+  // Share canvas viewport image using platform-native sharing on mobile
+  Future<void> _shareCanvasViewportImage() async {
+    try {
+      final bytes = await _captureCanvasViewportImageBytes();
+      if (bytes == null) return;
+
+      final platformService = widget.platformService;
+      if (platformService?.isMobilePlatform() == true) {
+        // Use native sharing on mobile
+        await Share.shareXFiles(
+          [XFile.fromData(bytes, mimeType: 'image/png', name: 'routing_canvas.png')],
+          text: 'Routing canvas from nt_helper',
+        );
+        _showFeedback('Routing canvas shared');
+      } else {
+        // Fall back to clipboard on desktop
+        await _copyCanvasImageViewport();
+      }
+    } catch (e) {
+      _showError('Share failed: $e');
+    }
+  }
+
+  // Helper function to capture nodes area image bytes (extracted from _copyNodesAreaToClipboard)
+  Future<Uint8List?> _captureNodesAreaImageBytes() async {
+    if (_nodePositions.isEmpty) {
+      _showFeedback('Nothing to capture');
+      return null;
+    }
+    final ctx = _captureKey.currentContext;
+    if (ctx == null) {
+      _showFeedback('Canvas not ready');
+      return null;
+    }
+    final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) {
+      _showFeedback('Capture unavailable');
+      return null;
+    }
+
+    // Full canvas at DPR for crisp crop
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final ui.Image full = await boundary.toImage(pixelRatio: dpr);
+
+    // Compute content bounds from node positions (approximate node size)
+    double minX = double.infinity, maxX = double.negativeInfinity;
+    double minY = double.infinity, maxY = double.negativeInfinity;
+    for (final e in _nodePositions.entries) {
+      final id = e.key;
+      final p = e.value;
+      final bool isPhysical =
+          id == 'physical_inputs' || id == 'physical_outputs';
+      final double w = isPhysical ? 180 : 340; // slightly wider algo node
+      final double h = isPhysical ? 320 : 200; // include title/ports
+      if (p.dx < minX) minX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+      if (p.dx + w > maxX) maxX = p.dx + w;
+      if (p.dy + h > maxY) maxY = p.dy + h;
+    }
+    // 24px margin in canvas logical pixels
+    const double margin = 24.0;
+    final double sx = ((minX - margin).clamp(0.0, _canvasWidth)) * dpr;
+    final double sy = ((minY - margin).clamp(0.0, _canvasHeight)) * dpr;
+    final double sw =
+        ((maxX - minX + 2 * margin).clamp(1.0, _canvasWidth)) * dpr;
+    final double sh =
+        ((maxY - minY + 2 * margin).clamp(1.0, _canvasHeight)) * dpr;
+
+    final int outW = sw.round();
+    final int outH = sh.round();
+
+    final recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    final Rect src = Rect.fromLTWH(sx, sy, sw, sh);
+    final Rect dst = Rect.fromLTWH(0, 0, outW.toDouble(), outH.toDouble());
+    final Paint paint = Paint()..isAntiAlias = true;
+    canvas.drawImageRect(full, src, dst, paint);
+    final ui.Image out = await recorder.endRecording().toImage(outW, outH);
+    final byteData = await out.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) {
+      _showFeedback('Encode failed');
+      return null;
+    }
+    return byteData.buffer.asUint8List();
+  }
+
+  // Helper function to capture canvas viewport image bytes (extracted from _copyCanvasImageViewport)
+  Future<Uint8List?> _captureCanvasViewportImageBytes() async {
+    final ctx = _captureKey.currentContext;
+    if (ctx == null) {
+      _showFeedback('Canvas not ready');
+      return null;
+    }
+    final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) {
+      _showFeedback('Capture unavailable');
+      return null;
+    }
+
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final ui.Image full = await boundary.toImage(pixelRatio: dpr);
+
+    final double vx = _horizontalScrollController.hasClients
+        ? _horizontalScrollController.offset * dpr
+        : 0.0;
+    final double vy = _verticalScrollController.hasClients
+        ? _verticalScrollController.offset * dpr
+        : 0.0;
+    final int outW = (widget.canvasSize.width * dpr).round();
+    final int outH = (widget.canvasSize.height * dpr).round();
+    final Rect src = Rect.fromLTWH(vx, vy, outW.toDouble(), outH.toDouble());
+
+    final recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    final Rect dst = Rect.fromLTWH(0, 0, outW.toDouble(), outH.toDouble());
+    final Paint paint = Paint()..isAntiAlias = true;
+    canvas.drawImageRect(full, src, dst, paint);
+    final ui.Image out = await recorder.endRecording().toImage(outW, outH);
+    final byteData = await out.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) {
+      _showFeedback('Encode failed');
+      return null;
+    }
+    return byteData.buffer.asUint8List();
   }
 
   @override
