@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math'; // For min, pow functions
 import 'dart:typed_data'; // Added for Uint8List
 
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:image/image.dart' as img; // For image processing
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show Algorithm, ParameterInfo;
@@ -44,7 +43,6 @@ class DistingTools {
       );
       return enumStrings?.values;
     } catch (e) {
-      debugPrint('Error fetching enum values: $e');
       return null;
     }
   }
@@ -150,9 +148,7 @@ class DistingTools {
                 }
               }
             } catch (e) {
-              debugPrint(
-                'Error getting mapping for slot $i param $paramIndex: $e',
-              );
+              // Intentionally empty
             }
 
             parametersJsonList.add(paramData);

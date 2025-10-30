@@ -38,7 +38,6 @@ class DebugService {
 
     // Also print to console in debug mode
     if (kDebugMode) {
-      debugPrint('[USB_VIDEO_DEBUG] $message');
     }
   }
 

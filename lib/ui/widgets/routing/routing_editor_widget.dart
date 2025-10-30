@@ -793,7 +793,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   /// Cancel current drag operation
   void _cancelDragOperation() {
-    debugPrint('=== DRAG CANCELLED: ESC key pressed');
     setState(() {
       _isDraggingConnection = false;
       _dragSourcePort = null;
@@ -804,7 +803,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   /// Display an error message with auto-dismiss after 5 seconds
   void _showError(String message) {
-    debugPrint('=== ROUTING ERROR: $message');
     setState(() {
       _errorMessage = message;
     });
@@ -859,14 +857,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         targetPortId: targetPortId,
       );
 
-      debugPrint('Connection created successfully');
     } on ArgumentError catch (e) {
       _showError('Invalid connection: ${e.message}');
     } on StateError catch (e) {
       _showError('State error: ${e.message}');
     } catch (e) {
       _showError('Connection failed: ${e.toString()}');
-      debugPrint('Connection creation error: $e');
     }
   }
 
@@ -1029,9 +1025,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                         child: GestureDetector(
                           // Handle taps and panning on empty space
                           onTapDown: (details) {
-                            debugPrint(
-                              '=== GRID TAP DOWN: ${details.localPosition}',
-                            );
                             _handleCanvasTap(
                               details.localPosition,
                               connections,
@@ -1377,9 +1370,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             }
           },
           onPositionChanged: (newPosition) {
-            debugPrint(
-              '=== ROUTING EDITOR: Node $nodeId position changed to $newPosition',
-            );
             // When a node is being dragged, flag it so canvas doesn't pan
             if (!_isDraggingNode) {
               setState(() {
@@ -1711,9 +1701,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     int channel,
     bool enabled,
   ) async {
-    debugPrint(
-      'ES-5 toggle changed: algorithm=$algorithmIndex, channel=$channel, enabled=$enabled',
-    );
 
     final cubit = context.read<DistingCubit>();
     final state = cubit.state;
@@ -1739,11 +1726,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       );
 
       if (param.parameterNumber < 0) {
-        debugPrint('ES-5 Expander parameter not found for Poly CV');
         return;
       }
 
-      debugPrint('Poly CV: Toggling global ES-5 Expander (affects all gates)');
     } else {
       // Clock/Euclidean/Clock Multiplier/Clock Divider: Find the per-channel ES-5 Expander parameter
       // Try channel-prefixed format first (e.g., "1:ES-5 Expander")
@@ -1762,7 +1747,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       }
 
       if (param.parameterNumber < 0) {
-        debugPrint('ES-5 Expander parameter not found for channel $channel');
         return;
       }
     }
@@ -1776,9 +1760,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       userIsChangingTheValue: false,
     );
 
-    debugPrint(
-      'ES-5 Expander parameter updated: algorithm=$algorithmIndex, param=${param.parameterNumber}, value=$newValue',
-    );
   }
 
   Widget _buildUnifiedConnectionCanvas(List<Connection> connections) {
@@ -1817,11 +1798,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         // Debug the first connection
         if (connection.sourcePortId.contains('hw_in_1') ||
             connection.destinationPortId.contains('Clock_input_1')) {
-          debugPrint('Connection positions for ${connection.id}:');
-          debugPrint('  Source ${connection.sourcePortId}: $sourcePosition');
-          debugPrint(
-            '  Target ${connection.destinationPortId}: $targetPosition',
-          );
         }
       }
 
@@ -1847,18 +1823,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         final busIdMatch = RegExp(r'bus_(\d+)').firstMatch(connection.busId!);
         if (busIdMatch != null) {
           busNumber = int.tryParse(busIdMatch.group(1)!);
-          debugPrint(
-            'RoutingEditorWidget: Got bus number from busId: $busNumber',
-          );
         }
       }
 
       if (busNumber == null) {
-        debugPrint(
-          'RoutingEditorWidget: No bus number found for connection ${connection.id}',
-        );
-        debugPrint('  - busNumber: ${connection.busNumber}');
-        debugPrint('  - busId: ${connection.busId}');
       }
 
       connectionDataList.add(
@@ -1980,7 +1948,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   void _handleCanvasTap(Offset tapPosition, List<Connection> connections) {
-    debugPrint('=== CANVAS TAP: $tapPosition');
 
     // If there's a highlighted connection, check if the tap hits it
     if (_hoveredConnectionId != null) {
@@ -1997,7 +1964,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       if (highlightedConnection.id.isNotEmpty &&
           _isPointNearConnection(tapPosition, highlightedConnection)) {
         // Tap hit the highlighted connection - delete it
-        debugPrint('Deleting connection: $_hoveredConnectionId');
         _deleteConnection(_hoveredConnectionId!, connections);
         return;
       }
@@ -2119,13 +2085,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   // Port and node interaction handlers
   void _handlePortTap(Port port) {
-    debugPrint('=== PORT TAP: ${port.id} (${port.name})');
 
     // Only allow deletion from input ports
     if (!port.isInput) {
-      debugPrint(
-        'Deletion only allowed from input ports. Ignoring tap on output port: ${port.id}',
-      );
       return;
     }
 
@@ -2140,12 +2102,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   void _handlePortTapById(String portId) {
-    debugPrint('=== PORT TAP: $portId');
 
     // Find the actual port to check if it's an input
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) {
-      debugPrint('Cannot process port tap - routing editor not loaded');
       return;
     }
 
@@ -2187,15 +2147,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
 
     if (tappedPort == null) {
-      debugPrint('Could not find port with ID: $portId');
       return;
     }
 
     // Only allow deletion from input ports
     if (!tappedPort.isInput) {
-      debugPrint(
-        'Deletion only allowed from input ports. Ignoring tap on output port: $portId',
-      );
       return;
     }
 
@@ -2221,7 +2177,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Get the current port position
     final portPosition = _getPortPosition(port.id);
     if (portPosition == null) {
-      debugPrint('Cannot find position for port: ${port.id}');
       return;
     }
 
@@ -2289,7 +2244,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
 
     if (port == null) {
-      debugPrint('Port not found: $portId');
       return;
     }
 
@@ -2299,7 +2253,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Get the current port position
     final portPosition = _getPortPosition(portId);
     if (portPosition == null) {
-      debugPrint('Cannot find position for port: $portId');
       return;
     }
 
@@ -2309,9 +2262,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       _dragCurrentPosition = portPosition;
     });
 
-    debugPrint(
-      'Started connection drag from algorithm output port: ${port.name}',
-    );
   }
 
   void _handleAlgorithmPortDragUpdate(String portId, Offset position) {
@@ -2377,13 +2327,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final targetPort = _findPortAtPosition(localPosition);
 
       if (targetPort != null) {
-        debugPrint(
-          'Port found at drop position: ${targetPort.name}, isInput: ${targetPort.isInput}, direction: ${targetPort.direction}, id: ${targetPort.id}',
-        );
       }
 
       if (targetPort != null && targetPort.isInput) {
-        debugPrint('Valid drop target found: ${targetPort.name}');
 
         // Check for duplicate connection before attempting to create
         final cubit = context.read<RoutingEditorCubit>();
@@ -2411,12 +2357,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             sourcePortId: _dragSourcePort!.id,
             targetPortId: targetPort.id,
           );
-          debugPrint('Connection created successfully');
         } catch (e) {
           _showError('Failed to create connection: ${e.toString()}');
         }
       } else {
-        debugPrint('Invalid drop target or dropped on non-port area');
       }
     } finally {
       // Always clear drag state
@@ -2452,13 +2396,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final targetPort = _findPortAtPosition(localPosition);
 
       if (targetPort != null) {
-        debugPrint(
-          'Port found at drop position: ${targetPort.name}, isInput: ${targetPort.isInput}, direction: ${targetPort.direction}, id: ${targetPort.id}',
-        );
       }
 
       if (targetPort != null && targetPort.isInput) {
-        debugPrint('Valid drop target found: ${targetPort.name}');
 
         // Check for duplicate connection before attempting to create
         final currentState = context.read<RoutingEditorCubit>().state;
@@ -2483,18 +2423,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           targetPort.id,
         );
 
-        debugPrint(
-          'Connection creation requested: ${_dragSourcePort!.name} -> ${targetPort.name}',
-        );
       } else {
         // Invalid drop - silently clear drag state (no error message)
-        debugPrint(
-          'No valid input port found at drop position - silent failure',
-        );
       }
     } catch (e) {
       _showError('Failed to create connection: ${e.toString()}');
-      debugPrint('Error in drag end: $e');
     } finally {
       // Always clear drag state
       setState(() {
@@ -2523,7 +2456,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         .toList();
 
     if (portConnections.isEmpty) {
-      debugPrint('No connections found for port: $portId');
       return;
     }
 
@@ -2622,9 +2554,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       for (final connection in portConnections) {
         await cubit.deleteConnectionWithSmartBusLogic(connection.id);
       }
-      debugPrint(
-        'Deleted ${portConnections.length} connections for port $portId',
-      );
     }
   }
 
@@ -2940,7 +2869,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     String action,
     List<Connection> connections,
   ) {
-    debugPrint('=== PORT ROUTING ACTION: $portId -> $action');
 
     switch (action) {
       case 'hover_start':
@@ -2958,12 +2886,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           setState(() {
             _hoveredConnectionId = portConnections.first.id;
           });
-          debugPrint('Highlighting connection: ${portConnections.first.id}');
 
           // Auto-deselect after 5 seconds
           _connectionHighlightTimer = Timer(const Duration(seconds: 5), () {
             _clearConnectionHighlight();
-            debugPrint('Auto-cleared connection highlighting after 5 seconds');
           });
         }
         break;
@@ -2972,7 +2898,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         setState(() {
           _hoveredConnectionId = null;
         });
-        debugPrint('Cleared connection highlighting');
         break;
 
       case 'delete_connections':
@@ -2985,9 +2910,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             )
             .toList();
 
-        debugPrint(
-          'Deleting ${portConnections.length} connections for port $portId',
-        );
         final cubit = context.read<RoutingEditorCubit>();
         for (final connection in portConnections) {
           cubit.deleteConnectionWithSmartBusLogic(connection.id);
@@ -3073,7 +2995,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       Widget overlay = GestureDetector(
         behavior: HitTestBehavior.opaque, // Capture all taps in this area
         onTap: () {
-          debugPrint('Connection label tapped: $connectionId');
           _toggleConnectionOutputMode(connectionId);
         },
         child: const SizedBox.expand(), // Fill the entire positioned area
@@ -3130,7 +3051,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     );
 
     if (connection.id.isEmpty) {
-      debugPrint('Partial connection not found: $connectionId');
       return;
     }
 
@@ -3142,9 +3062,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       for (final algorithm in routingState.algorithms) {
         for (final port in algorithm.outputPorts) {
           if (port.id == sourcePortId && port.parameterNumber != null) {
-            debugPrint(
-              'Clearing output bus for port ${port.name} (algorithm ${algorithm.index})',
-            );
 
             // Clear the bus assignment by setting parameter to 0
             context.read<DistingCubit>().updateParameterValue(
@@ -3175,7 +3092,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       portId: connection.sourcePortId,
     );
 
-    debugPrint('Toggling output mode for ${connection.sourcePortId}');
   }
 }
 

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:nt_helper/db/database.dart';
 
@@ -13,7 +12,6 @@ class MetadataImportService {
   /// This is used to pre-populate the database on first launch
   Future<bool> importFromAsset(String assetPath) async {
     try {
-      debugPrint('Importing metadata from asset: $assetPath');
 
       // Load the JSON file from assets
       final jsonString = await rootBundle.loadString(assetPath);
@@ -21,13 +19,11 @@ class MetadataImportService {
 
       // Validate the export format
       if (data['exportType'] != 'full_metadata') {
-        debugPrint('Invalid export type: ${data['exportType']}');
         return false;
       }
 
       final tables = data['tables'] as Map<String, dynamic>;
       if (tables.isEmpty) {
-        debugPrint('No tables found in import data');
         return false;
       }
 
@@ -46,16 +42,12 @@ class MetadataImportService {
       // Log import summary
       final summary = data['summary'] as Map<String, dynamic>?;
       if (summary != null) {
-        debugPrint('Import completed successfully:');
         summary.forEach((key, value) {
-          debugPrint('  $key: $value');
         });
       }
 
       return true;
-    } catch (e, stackTrace) {
-      debugPrint('Error importing metadata from asset: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e) {
       return false;
     }
   }
@@ -69,7 +61,6 @@ class MetadataImportService {
 
   Future<void> _importUnits(List<dynamic>? unitsList) async {
     if (unitsList == null || unitsList.isEmpty) {
-      debugPrint('No units to import');
       return;
     }
 
@@ -92,12 +83,10 @@ class MetadataImportService {
       );
     });
 
-    debugPrint('Imported ${entries.length} units');
   }
 
   Future<void> _importAlgorithms(List<dynamic>? algorithmsList) async {
     if (algorithmsList == null || algorithmsList.isEmpty) {
-      debugPrint('No algorithms to import');
       return;
     }
 
@@ -122,12 +111,10 @@ class MetadataImportService {
       );
     });
 
-    debugPrint('Imported ${entries.length} algorithms');
   }
 
   Future<void> _importSpecifications(List<dynamic>? specsList) async {
     if (specsList == null || specsList.isEmpty) {
-      debugPrint('No specifications to import');
       return;
     }
 
@@ -155,12 +142,10 @@ class MetadataImportService {
       );
     });
 
-    debugPrint('Imported ${entries.length} specifications');
   }
 
   Future<void> _importParameters(List<dynamic>? paramsList) async {
     if (paramsList == null || paramsList.isEmpty) {
-      debugPrint('No parameters to import');
       return;
     }
 
@@ -190,12 +175,10 @@ class MetadataImportService {
       );
     });
 
-    debugPrint('Imported ${entries.length} parameters');
   }
 
   Future<void> _importParameterEnums(List<dynamic>? enumsList) async {
     if (enumsList == null || enumsList.isEmpty) {
-      debugPrint('No parameter enums to import');
       return;
     }
 
@@ -220,12 +203,10 @@ class MetadataImportService {
       );
     });
 
-    debugPrint('Imported ${entries.length} parameter enums');
   }
 
   Future<void> _importParameterPages(List<dynamic>? pagesList) async {
     if (pagesList == null || pagesList.isEmpty) {
-      debugPrint('No parameter pages to import');
       return;
     }
 
@@ -249,12 +230,10 @@ class MetadataImportService {
       );
     });
 
-    debugPrint('Imported ${entries.length} parameter pages');
   }
 
   Future<void> _importParameterPageItems(List<dynamic>? itemsList) async {
     if (itemsList == null || itemsList.isEmpty) {
-      debugPrint('No parameter page items to import');
       return;
     }
 
@@ -278,12 +257,10 @@ class MetadataImportService {
       );
     });
 
-    debugPrint('Imported ${entries.length} parameter page items');
   }
 
   Future<void> _importMetadataCache(List<dynamic>? cacheList) async {
     if (cacheList == null || cacheList.isEmpty) {
-      debugPrint('No metadata cache to import');
       return;
     }
 
@@ -306,6 +283,5 @@ class MetadataImportService {
       );
     });
 
-    debugPrint('Imported ${entries.length} metadata cache entries');
   }
 }

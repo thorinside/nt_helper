@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'es5_direct_output_algorithm_routing.dart';
@@ -68,7 +67,6 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
       final enableValue = getChannelParameter(channel, 'Enable');
 
       if (enableValue == null || enableValue == 0) {
-        debugPrint('$algorithmName: Channel $channel is disabled, skipping');
         continue;
       }
 
@@ -100,9 +98,6 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
           ),
         );
 
-        debugPrint(
-          '$algorithmName: Channel $channel → ES-5 direct output $es5OutputValue',
-        );
       } else {
         // NORMAL MODE: Use Output parameter
         // Need to get both the bus value AND the parameter number for updates
@@ -125,18 +120,11 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
             ),
           );
 
-          debugPrint(
-            '$algorithmName: Channel $channel → normal output bus ${outputParam.value}',
-          );
         } else {
-          debugPrint(
-            '$algorithmName: Channel $channel has no output assignment',
-          );
         }
       }
     }
 
-    debugPrint('$algorithmName: Generated ${ports.length} output ports');
     return ports;
   }
 }

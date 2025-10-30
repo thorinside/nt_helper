@@ -878,9 +878,6 @@ class DistingMidiManager implements IDistingMidiManager {
     final numSlots = await requestNumAlgorithmsInPreset();
 
     if (presetName == null || numSlots == null) {
-      debugPrint(
-        "[OnlineManager] Failed to get preset name or number of slots.",
-      );
       return null; // Cannot proceed
     }
 
@@ -890,10 +887,7 @@ class DistingMidiManager implements IDistingMidiManager {
       try {
         final slotDetails = await _fetchOnlineSlotDetails(i);
         fullSlots.add(slotDetails);
-      } catch (e, stackTrace) {
-        debugPrint(
-          "[OnlineManager] Error fetching details for slot $i: $e\n$stackTrace",
-        );
+      } catch (e) {
         return null; // If any slot fails, abort
       }
     }
@@ -1211,7 +1205,6 @@ class DistingMidiManager implements IDistingMidiManager {
         }
       } catch (e) {
         // Directory might not exist, continue with others
-        debugPrint('Failed to list directory $directory: $e');
       }
     }
 
@@ -1245,14 +1238,9 @@ class DistingMidiManager implements IDistingMidiManager {
           // Write file
           await localFile.writeAsBytes(fileData);
 
-          debugPrint(
-            'Backed up $filePath to $localFilePath (${fileData.length} bytes)',
-          );
         } else {
-          debugPrint('Failed to download $filePath - no data received');
         }
       } catch (e) {
-        debugPrint('Error backing up $filePath: $e');
         // Continue with other files
       }
 

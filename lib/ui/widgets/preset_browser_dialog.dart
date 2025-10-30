@@ -358,13 +358,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     });
 
     try {
-      debugPrint('[PresetBrowserDialog] Analyzing package: ${file.path}');
 
       // Read file data
       final fileBytes = await file.readAsBytes();
-      debugPrint(
-        '[PresetBrowserDialog] Package size: ${fileBytes.length} bytes',
-      );
 
       // Validate and analyze the package
       final isValid = await PresetPackageAnalyzer.isValidPackage(fileBytes);
@@ -392,12 +388,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         return;
       }
 
-      debugPrint(
-        '[PresetBrowserDialog] Package analyzed: ${analysis.packageName}',
-      );
-      debugPrint(
-        '[PresetBrowserDialog] Files in package: ${analysis.files.length}',
-      );
 
       // Store analysis results and package data
       setState(() {
@@ -405,12 +395,8 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         _currentPackageData = fileBytes;
       });
 
-      debugPrint(
-        '[PresetBrowserDialog] Package analysis complete, ready for conflict detection',
-      );
 
       // Story E3.3: Detect file conflicts with SD card
-      debugPrint('[PresetBrowserDialog] Starting conflict detection...');
       final conflictDetector = FileConflictDetector(widget.distingCubit);
       final analysisWithConflicts = await conflictDetector.detectConflicts(
         analysis,
@@ -420,9 +406,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         _currentAnalysis = analysisWithConflicts;
       });
 
-      debugPrint(
-        '[PresetBrowserDialog] Conflict detection complete: ${analysisWithConflicts.conflictCount} conflicts',
-      );
 
       // Story E3.4: Show the install dialog
       if (!mounted) return;
@@ -437,13 +420,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
           onInstall: () {
             Navigator.of(dialogContext).pop(); // Close PackageInstallDialog
             Navigator.of(context).pop(); // Close PresetBrowserDialog
-            debugPrint(
-              '[PresetBrowserDialog] Package installed, closing dialogs',
-            );
           },
           onCancel: () {
             Navigator.of(dialogContext).pop();
-            debugPrint('[PresetBrowserDialog] Package installation canceled');
           },
         ),
       );
@@ -455,7 +434,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         _isInstallingPackage = false;
       });
     } catch (e, stackTrace) {
-      debugPrint('[PresetBrowserDialog] Error processing package: $e');
       debugPrintStack(stackTrace: stackTrace);
 
       setState(() {

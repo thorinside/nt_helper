@@ -102,12 +102,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
   }) : _state = initialState ?? const RoutingState(),
        super(
          algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?,
-       ) {
-    debugPrint(
-      'PolyAlgorithmRouting: Initialized with ${config.voiceCount} voices, '
-      'gates: ${config.requiresGateInputs}, CV: ${config.usesVirtualCvPorts}',
-    );
-  }
+       );
 
   @override
   RoutingState get state => _state;
@@ -188,9 +183,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           final cvCount = gateIndex < gateCvCounts.length
               ? gateCvCounts[gateIndex]
               : 0;
-          debugPrint(
-            '[PolyRouting] Gate $gateNumber: Creating $cvCount CV inputs',
-          );
           for (int cv = 0; cv < cvCount; cv++) {
             final cvNumber = cv + 1;
             final algUuid =
@@ -249,7 +241,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       }
     }
 
-    debugPrint('PolyAlgorithmRouting: Generated ${ports.length} input ports');
     return ports;
   }
 
@@ -308,16 +299,10 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           );
         }
       }
-      debugPrint(
-        'PolyAlgorithmRouting: Generated ${ports.length} output ports (declared)',
-      );
       return ports;
     }
 
     // No declared outputs; return empty and let higher layers decide or provide outputs via properties
-    debugPrint(
-      'PolyAlgorithmRouting: No declared outputs found (returning none)',
-    );
     return ports;
   }
 
@@ -363,10 +348,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       if (sourceVoice != null &&
           destVoice != null &&
           sourceVoice != destVoice) {
-        debugPrint(
-          'PolyAlgorithmRouting: Cross-voice connection attempted between '
-          'voice $sourceVoice and voice $destVoice',
-        );
         return false;
       }
     }
@@ -384,7 +365,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       _cachedOutputPorts = null;
     }
 
-    debugPrint('PolyAlgorithmRouting: State updated');
   }
 
   /// Validates gate-specific connections
@@ -449,9 +429,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       _cachedInputPorts = null;
       _cachedOutputPorts = null;
 
-      debugPrint(
-        'PolyAlgorithmRouting: Voice count updated from ${config.voiceCount} to $newVoiceCount',
-      );
     }
   }
 
@@ -460,7 +437,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     super.dispose();
     _cachedInputPorts = null;
     _cachedOutputPorts = null;
-    debugPrint('PolyAlgorithmRouting: Disposed');
   }
 
   /// Determines if this routing implementation can handle the given slot.
@@ -512,7 +488,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       final cvCount = ioParameters['Gate $i CV count'] ?? 0;
       gateCvCounts.add(cvCount);
       if (gateBus > 0 || cvCount > 0) {
-        debugPrint('[PolyRouting] Gate $i: bus=$gateBus, cvCount=$cvCount');
       }
     }
 
@@ -686,10 +661,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
 
       final useEs5ForGates = es5ExpanderValue > 0 && gateOutputs > 0;
 
-      debugPrint(
-        'PolyAlgorithmRouting: ES-5 Expander=$es5ExpanderValue, '
-        'ES-5 Output=$es5OutputValue, useEs5ForGates=$useEs5ForGates',
-      );
 
       // Generate output ports for each voice
       for (int voice = 0; voice < voiceCount; voice++) {
@@ -732,13 +703,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
 
               outputPorts.add(portMap);
 
-              debugPrint(
-                'PolyAlgorithmRouting: Voice $voiceNum gate → ES-5 port $es5Port',
-              );
             } else {
-              debugPrint(
-                'PolyAlgorithmRouting: Voice $voiceNum gate exceeds ES-5 port range (port $es5Port > 8), skipping',
-              );
             }
           } else {
             // NORMAL MODE: Gates use normal bus allocation
@@ -761,9 +726,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               'outputMode': gateMode,
             });
 
-            debugPrint(
-              'PolyAlgorithmRouting: Voice $voiceNum gate → normal bus $currentBus',
-            );
           }
         }
 
@@ -806,9 +768,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             'outputMode': pitchMode,
           });
 
-          debugPrint(
-            'PolyAlgorithmRouting: Voice $voiceNum pitch CV → normal bus ${cvBaseBus + currentCvOffset}',
-          );
           currentCvOffset++;
         }
 
@@ -833,9 +792,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             'outputMode': velocityMode,
           });
 
-          debugPrint(
-            'PolyAlgorithmRouting: Voice $voiceNum velocity CV → normal bus ${cvBaseBus + currentCvOffset}',
-          );
           currentCvOffset++;
         }
       }

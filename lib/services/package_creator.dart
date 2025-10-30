@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/collected_file.dart';
@@ -108,11 +107,10 @@ class PackageCreator {
       onProgress?.call('Complete!');
 
       // Print summary report
-      final report = PresetAnalyzer.generatePackageReport(
+      PresetAnalyzer.generatePackageReport(
         dependencies,
         dependencyFiles,
       );
-      debugPrint(report);
 
       return Uint8List.fromList(zipBytes);
     } catch (e) {

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 // Cache entry for listDirectoryInSession results, might still be useful
@@ -36,7 +35,6 @@ class IosFileAccessService {
       // This path will be used as the session identifier by convention.
       return path;
     } catch (e) {
-      debugPrint('Error in pickDirectoryAndCreateBookmark: $e');
       return null;
     }
   }
@@ -52,7 +50,6 @@ class IosFileAccessService {
       });
       return success ?? false;
     } catch (e) {
-      debugPrint('Error starting access session for $bookmarkedPathKey: $e');
       return false;
     }
   }
@@ -69,9 +66,6 @@ class IosFileAccessService {
     final cachedEntry = _listDirectoryCache[cacheKey];
 
     if (cachedEntry != null && cachedEntry.isValid) {
-      debugPrint(
-        'iOS File Access: Returning cached list for $directoryPathToList in session $sessionId',
-      );
       return List<String>.from(cachedEntry.contents); // Return a copy
     }
 
@@ -91,21 +85,12 @@ class IosFileAccessService {
           contents,
           DateTime.now().add(_cacheDuration),
         );
-        debugPrint(
-          'iOS File Access: Fetched and cached list for $directoryPathToList in session $sessionId',
-        );
         return contents;
       } else {
         _listDirectoryCache.remove(cacheKey);
-        debugPrint(
-          'iOS File Access: Native list returned null for $directoryPathToList in session $sessionId, not caching.',
-        );
         return null;
       }
     } catch (e) {
-      debugPrint(
-        'Error listing directory $directoryPathToList in session $sessionId: $e',
-      );
       _listDirectoryCache.remove(cacheKey);
       return null;
     }
@@ -129,9 +114,6 @@ class IosFileAccessService {
       );
       return fileData;
     } catch (e) {
-      debugPrint(
-        'Error reading file $filePathToRead in session $sessionId: $e',
-      );
       return null;
     }
   }
@@ -143,14 +125,13 @@ class IosFileAccessService {
       await _channel.invokeMethod('stopAccessSession', {
         'sessionId': sessionId,
       });
-      debugPrint('iOS File Access: Session $sessionId stopped.');
       // Optionally clear all cache entries related to this session if desired,
       // though timed expiry might be sufficient.
       _listDirectoryCache.removeWhere(
         (key, value) => key.startsWith('$sessionId::'),
       );
     } catch (e) {
-      debugPrint('Error stopping access session $sessionId: $e');
+      // Intentionally empty
     }
   }
 }

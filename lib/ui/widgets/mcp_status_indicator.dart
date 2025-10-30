@@ -32,7 +32,6 @@ class McpStatusIndicator extends StatelessWidget {
       onTap: () async {
         // Check if on supported platform first
         if (!(Platform.isMacOS || Platform.isWindows)) {
-          debugPrint("[McpIndicatorTap] Not on MacOS/Windows. Toggle ignored.");
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
@@ -46,49 +45,23 @@ class McpStatusIndicator extends StatelessWidget {
         final bool currentMcpSetting = settings.mcpEnabled;
         final newMcpSetting = !currentMcpSetting;
         await settings.setMcpEnabled(newMcpSetting);
-        debugPrint(
-          "[McpIndicatorTap] Toggled MCP setting. Old: $currentMcpSetting, New: $newMcpSetting",
-        );
 
         // Now apply the logic to start/stop the server
         final bool isServerCurrentlyRunning = mcpInstance.isRunning;
-        debugPrint(
-          "[McpIndicatorTap] Server was running: $isServerCurrentlyRunning. New MCP setting: $newMcpSetting",
-        );
 
         if (newMcpSetting) {
           // Try to turn ON
           if (!isServerCurrentlyRunning) {
-            debugPrint(
-              "[McpIndicatorTap] MCP Setting is ON, Server is OFF. Attempting to START server.",
-            );
             await mcpInstance.start().catchError((e) {
-              debugPrint('[McpIndicatorTap] Error starting MCP Server: $e');
             });
-            debugPrint(
-              "[McpIndicatorTap] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}",
-            );
           } else {
-            debugPrint(
-              "[McpIndicatorTap] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}",
-            );
           }
         } else {
           // Try to turn OFF
           if (isServerCurrentlyRunning) {
-            debugPrint(
-              "[McpIndicatorTap] MCP Setting is OFF, Server is ON. Attempting to STOP server.",
-            );
             await mcpInstance.stop().catchError((e) {
-              debugPrint('[McpIndicatorTap] Error stopping MCP Server: $e');
             });
-            debugPrint(
-              "[McpIndicatorTap] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}",
-            );
           } else {
-            debugPrint(
-              "[McpIndicatorTap] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}",
-            );
           }
         }
         // McpServerService.notifyListeners() is called by start()/stop(), which Consumer listens to.

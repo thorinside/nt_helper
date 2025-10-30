@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
 import 'package:nt_helper/core/routing/poly_algorithm_routing.dart';
 import 'package:nt_helper/core/routing/multi_channel_algorithm_routing.dart';
@@ -87,10 +86,6 @@ class RoutingFactory {
     PortCompatibilityValidator? validator,
   }) {
     try {
-      debugPrint(
-        'RoutingFactory: Creating routing for algorithm ${metadata.algorithmGuid} '
-        'with type ${metadata.routingType}',
-      );
 
       // Use provided validator, factory default, or null (routing will create its own)
       final effectiveValidator = validator ?? _validator;
@@ -112,11 +107,7 @@ class RoutingFactory {
         // case RoutingType.newType:
         //   return _createNewTypeRouting(metaeffectiveValidator);
       }
-    } catch (e, stackTrace) {
-      debugPrint(
-        'RoutingFactory: Error creating routing for ${metadata.algorithmGuid}: $e',
-      );
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e) {
 
       throw RoutingFactoryException(
         'Failed to create routing instance',
@@ -134,9 +125,6 @@ class RoutingFactory {
     AlgorithmRoutingMetadata metadata,
     PortCompatibilityValidator? validator,
   ) {
-    debugPrint(
-      'RoutingFactory: Creating polyphonic routing with ${metadata.voiceCount} voices',
-    );
 
     final config = PolyAlgorithmConfig(
       voiceCount: metadata.voiceCount,
@@ -163,9 +151,6 @@ class RoutingFactory {
     AlgorithmRoutingMetadata metadata,
     PortCompatibilityValidator? validator,
   ) {
-    debugPrint(
-      'RoutingFactory: Creating multi-channel routing with ${metadata.channelCount} channels',
-    );
 
     // Convert string port types to PortType enum
     final supportedPortTypes = _convertPortTypes(metadata.supportedPortTypes);
@@ -206,7 +191,6 @@ class RoutingFactory {
       if (portType != null) {
         supportedTypes.add(portType);
       } else {
-        debugPrint('RoutingFactory: Unknown port type "$typeName", skipping');
       }
     }
 
@@ -247,7 +231,6 @@ class RoutingFactory {
   bool validateMetadata(AlgorithmRoutingMetadata metadata) {
     // Basic validation
     if (metadata.algorithmGuid.isEmpty) {
-      debugPrint('RoutingFactory: Algorithm GUID cannot be empty');
       return false;
     }
 
@@ -263,17 +246,10 @@ class RoutingFactory {
   /// Validates polyphonic routing metadata.
   bool _validatePolyphonicMetadata(AlgorithmRoutingMetadata metadata) {
     if (metadata.voiceCount <= 0) {
-      debugPrint(
-        'RoutingFactory: Voice count must be positive, got ${metadata.voiceCount}',
-      );
       return false;
     }
 
     if (metadata.virtualCvPortsPerVoice < 0) {
-      debugPrint(
-        'RoutingFactory: Virtual CV ports per voice cannot be negative, '
-        'got ${metadata.virtualCvPortsPerVoice}',
-      );
       return false;
     }
 
@@ -283,9 +259,6 @@ class RoutingFactory {
   /// Validates multi-channel routing metadata.
   bool _validateMultiChannelMetadata(AlgorithmRoutingMetadata metadata) {
     if (metadata.channelCount <= 0) {
-      debugPrint(
-        'RoutingFactory: Channel count must be positive, got ${metadata.channelCount}',
-      );
       return false;
     }
 

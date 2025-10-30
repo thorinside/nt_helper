@@ -125,12 +125,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   }) : _state = initialState ?? const RoutingState(),
        super(
          algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?,
-       ) {
-    debugPrint(
-      'MultiChannelAlgorithmRouting: Initialized with ${config.channelCount} channels, '
-      'stereo: ${config.supportsStereoChannels}, mix: ${config.createMasterMix}',
-    );
-  }
+       );
 
   @override
   RoutingState get state => _state;
@@ -153,9 +148,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     if (declaredInputs is List) {
       // If the list is explicitly empty, return empty ports (no fallback)
       if (declaredInputs.isEmpty) {
-        debugPrint(
-          'MultiChannelAlgorithmRouting: No input ports declared - returning empty',
-        );
         return ports;
       }
 
@@ -185,9 +177,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           );
         }
       }
-      debugPrint(
-        'MultiChannelAlgorithmRouting: Generated ${ports.length} input ports (declared)',
-      );
       return ports;
     }
 
@@ -251,9 +240,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       }
     }
 
-    debugPrint(
-      'MultiChannelAlgorithmRouting: Generated ${ports.length} input ports',
-    );
     return ports;
   }
 
@@ -266,9 +252,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     if (declared is List) {
       // If the list is explicitly empty, return empty ports (no fallback)
       if (declared.isEmpty) {
-        debugPrint(
-          'MultiChannelAlgorithmRouting: No output ports declared - returning empty',
-        );
         return ports;
       }
 
@@ -302,9 +285,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           }
 
           if (modeParameterNumber != null) {
-            debugPrint(
-              'MultiChannelRouting: Found mode parameter for ${item['name']}: $modeParameterNumber',
-            );
           }
 
           ports.add(
@@ -329,9 +309,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           );
         }
       }
-      debugPrint(
-        'MultiChannelAlgorithmRouting: Generated ${ports.length} output ports (declared)',
-      );
       return ports;
     }
 
@@ -446,9 +423,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       }
     }
 
-    debugPrint(
-      'MultiChannelAlgorithmRouting: Generated ${ports.length} output ports',
-    );
     return ports;
   }
 
@@ -501,7 +475,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       _cachedOutputPorts = null;
     }
 
-    debugPrint('MultiChannelAlgorithmRouting: State updated');
   }
 
   /// Validates multi-channel specific connections
@@ -548,9 +521,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   bool _validateMasterMixConnection(Port source, Port destination) {
     // Master mix outputs should only connect to external destinations
     if (_isMasterMixPort(source) && _isMultiChannelPort(destination)) {
-      debugPrint(
-        'MultiChannelAlgorithmRouting: Master mix should not connect back to channels',
-      );
       return false;
     }
 
@@ -603,10 +573,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       _cachedInputPorts = null;
       _cachedOutputPorts = null;
 
-      debugPrint(
-        'MultiChannelAlgorithmRouting: Channel count updated from '
-        '${config.channelCount} to $newChannelCount',
-      );
     }
   }
 
@@ -633,7 +599,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     super.dispose();
     _cachedInputPorts = null;
     _cachedOutputPorts = null;
-    debugPrint('MultiChannelAlgorithmRouting: Disposed');
   }
 
   /// Determines if this routing implementation can handle the given slot.
@@ -668,9 +633,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       if (AlgorithmRouting.hasParameter(slot, paramName)) {
         final value = AlgorithmRouting.getParameterValue(slot, paramName);
         if (value > 0) {
-          debugPrint(
-            'MultiChannelAlgorithmRouting: Found width parameter "$paramName" = $value',
-          );
           return value;
         }
       }
@@ -874,12 +836,9 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             port['outputMode'] = (modeValue == 1)
                 ? 'replace'
                 : 'add'; // 0 = Add, 1 = Replace
-            debugPrint(
-              'Found output mode "$actualModeName" for output "$paramName" with value $modeValue',
-            );
           } else {
             // Optional: Log if no mode parameter was found for the value
-            // debugPrint('No output mode value parameter found for "$paramName" among candidates: $uniquePossibleModeNames. Available: ${modeParameters.keys}');
+            // 
           }
         }
 
@@ -901,19 +860,13 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           // Debugging log to see what's being searched for and what's available
           // Can be noisy, so enable when debugging mode parameter discovery
           /*
-          debugPrint(
-            'Searching for mode param number for output "$paramName". Candidates: $uniquePossibleModeNames. Available mode params with numbers: ${modeParametersWithNumbers.keys.toList()}',
-          );
           */
 
           if (actualModeNameForNumber != null && modeInfo != null) {
             port['modeParameterNumber'] = modeInfo.parameterNumber;
-            debugPrint(
-              'Found mode parameter number mapping for "$paramName" using key "$actualModeNameForNumber". Parameter number: ${modeInfo.parameterNumber}',
-            );
           } else {
             // Optional: Log if no mode parameter was found for the number
-            // debugPrint('Mode parameter number not found for "$paramName" among candidates: $uniquePossibleModeNames');
+            // 
           }
         }
 
@@ -1000,9 +953,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
 
         // Only duplicate if the original Audio input has a valid bus assignment
         if (baseBusValue > 0) {
-          debugPrint(
-            'MultiChannelAlgorithmRouting: Duplicating Audio input for $channelCount channels',
-          );
 
           // Create virtual ports and insert them right after the original
           final virtualPorts = <Map<String, Object?>>[];
@@ -1019,9 +969,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               'basedOn': 'Audio input',
             };
             virtualPorts.add(virtualPort);
-            debugPrint(
-              '  Added virtual Audio input $channel on bus ${baseBusValue + (channel - 1)}',
-            );
           }
 
           // Insert all virtual ports right after the original Audio input

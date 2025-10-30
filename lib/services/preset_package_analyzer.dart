@@ -9,13 +9,9 @@ class PresetPackageAnalyzer {
   /// Analyze a zip file and extract package information
   static Future<PackageAnalysis> analyzePackage(Uint8List zipBytes) async {
     try {
-      debugPrint('[PackageAnalyzer] Starting package analysis...');
 
       // Decode the archive
       final archive = ZipDecoder().decodeBytes(zipBytes);
-      debugPrint(
-        '[PackageAnalyzer] Decoded archive with ${archive.files.length} files',
-      );
 
       // Find and parse manifest.json
       final manifestFile = archive.files
@@ -27,7 +23,6 @@ class PresetPackageAnalyzer {
 
       final manifestContent = utf8.decode(manifestFile.content as List<int>);
       final manifest = jsonDecode(manifestContent) as Map<String, dynamic>;
-      debugPrint('[PackageAnalyzer] Found and parsed manifest');
 
       // Extract package metadata from manifest
       final presetInfo = manifest['preset'] as Map<String, dynamic>? ?? {};
@@ -42,9 +37,6 @@ class PresetPackageAnalyzer {
           .where((file) => file.isFile && file.name.startsWith('root/'))
           .toList();
 
-      debugPrint(
-        '[PackageAnalyzer] Found ${rootFiles.length} files in root/ directory',
-      );
 
       // Convert archive files to PackageFile objects
       final packageFiles = <PackageFile>[];
@@ -65,9 +57,6 @@ class PresetPackageAnalyzer {
         packageFiles.add(packageFile);
       }
 
-      debugPrint(
-        '[PackageAnalyzer] Created ${packageFiles.length} package file entries',
-      );
 
       return PackageAnalysis(
         packageName: packageName,
@@ -79,7 +68,6 @@ class PresetPackageAnalyzer {
         isValid: true,
       );
     } catch (e, stackTrace) {
-      debugPrint('[PackageAnalyzer] Error analyzing package: $e');
       debugPrintStack(stackTrace: stackTrace);
 
       return PackageAnalysis.invalid(
@@ -101,7 +89,6 @@ class PresetPackageAnalyzer {
 
       return hasManifest && hasRootDirectory;
     } catch (e) {
-      debugPrint('[PackageAnalyzer] Package validation failed: $e');
       return false;
     }
   }
@@ -122,7 +109,6 @@ class PresetPackageAnalyzer {
 
       return Uint8List.fromList(file.content as List<int>);
     } catch (e) {
-      debugPrint('[PackageAnalyzer] Failed to extract file $filePath: $e');
       return null;
     }
   }

@@ -35,16 +35,8 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   @override
   void initState() {
     super.initState();
-    debugPrint(
-      '[FloatingVideoOverlay] initState called - starting video stream',
-    );
-    debugPrint('[FloatingVideoOverlay] Widget cubit: ${widget.cubit}');
-    debugPrint(
-      '[FloatingVideoOverlay] VideoFrame cubit: ${widget.videoFrameCubit}',
-    );
     // Start video stream when widget is created
     widget.cubit.startVideoStream();
-    debugPrint('[FloatingVideoOverlay] startVideoStream() called');
 
     // Connect VideoFrameCubit to the raw video stream when it becomes available
     // Only for non-Android platforms (Android uses UvcCameraPreview widget directly)
@@ -56,9 +48,6 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   void _connectVideoFrameCubit() {
     // Don't reconnect if already connected
     if (_isConnected) {
-      debugPrint(
-        '[FloatingVideoOverlay] Already connected, skipping reconnection',
-      );
       return;
     }
 
@@ -69,26 +58,17 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
       // Check if we have an Android controller first
       final androidController = videoManager.getAndroidCameraController();
       if (androidController != null) {
-        debugPrint(
-          '[FloatingVideoOverlay] Android controller available, skipping VideoFrameCubit connection',
-        );
         return; // Don't connect VideoFrameCubit on Android when using UvcCameraPreview
       }
 
       final rawStream = videoManager.getRawVideoStream();
       if (rawStream != null) {
-        debugPrint(
-          '[FloatingVideoOverlay] Connecting VideoFrameCubit to raw stream',
-        );
         widget.videoFrameCubit.connectToStream(rawStream);
         _isConnected = true;
         return;
       }
     }
 
-    debugPrint(
-      '[FloatingVideoOverlay] Video stream not available yet, will retry in 500ms',
-    );
     // Retry after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _connectVideoFrameCubit();
@@ -168,25 +148,15 @@ class FloatingVideoContent extends StatelessWidget {
     return ValueListenableBuilder(
       valueListenable: controller,
       builder: (context, value, child) {
-        final deviceName = value.device.name;
-        debugPrint(
-          '[FloatingVideoContent] Controller state: isInitialized=${value.isInitialized}, '
-          'previewMode=${value.previewMode}, device=$deviceName',
-        );
+        value.device.name;
 
         if (value.isInitialized) {
-          debugPrint(
-            '[FloatingVideoContent] Controller initialized - displaying UvcCameraPreview',
-          );
           // Wrap in a Container to ensure proper sizing
           return Container(
             color: Colors.black, // Add background to see if widget is there
             child: UvcCameraPreview(controller),
           );
         } else {
-          debugPrint(
-            '[FloatingVideoContent] Controller not ready - waiting for initialization',
-          );
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -347,22 +317,10 @@ class FloatingVideoContent extends StatelessWidget {
     if (Platform.isAndroid) {
       androidController = cubit.videoManager?.getAndroidCameraController();
       useAndroidPreview = androidController != null;
-      debugPrint(
-        '[FloatingVideoContent] Android platform detected:\n'
-        '  - videoManager: ${cubit.videoManager != null ? "Available" : "NULL"}\n'
-        '  - controller: ${androidController != null ? "Available" : "NULL"}\n'
-        '  - useAndroidPreview: $useAndroidPreview',
-      );
 
       // Additional debug info about the controller state
       if (androidController != null) {
-        final state = androidController.value;
-        debugPrint(
-          '[FloatingVideoContent] Controller details:\n'
-          '  - isInitialized: ${state.isInitialized}\n'
-          '  - device: ${state.device.name}\n'
-          '  - previewMode: ${state.previewMode}',
-        );
+        androidController.value;
       }
     }
 

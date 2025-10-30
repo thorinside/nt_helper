@@ -49,17 +49,11 @@ class UsbVideoManager {
 
   Future<List<UsbDeviceInfo>> listUsbCameras() async {
     try {
-      debugPrint('[USB_VIDEO] Calling listUsbCameras()...');
       final devices = await _channel.listUsbCameras();
-      debugPrint('[USB_VIDEO] Found ${devices.length} devices');
-      for (var device in devices) {
-        debugPrint(
-          '[USB_VIDEO]   - ${device.productName} (ID: ${device.deviceId})',
-        );
+      for (var _ in devices) {
       }
       return devices;
     } catch (e) {
-      debugPrint('[USB_VIDEO] ERROR listing USB cameras: $e');
       return [];
     }
   }
@@ -119,11 +113,7 @@ class UsbVideoManager {
         ),
       );
 
-      debugPrint(
-        '[UsbVideoManager] Video stream state updated to streaming - VideoFrameCubit will handle frame consumption',
-      );
     } catch (e) {
-      debugPrint('[UsbVideoManager] Connection failed: $e');
       _updateState(
         VideoStreamState.error('Device disconnected or unavailable'),
       );
@@ -151,17 +141,15 @@ class UsbVideoManager {
       _stopRecoveryTimer();
       _updateState(const VideoStreamState.disconnected());
     } catch (e) {
-      debugPrint('Error disconnecting video: $e');
+      // Intentionally empty
     }
   }
 
   Future<void> autoConnect() async {
-    debugPrint('[USB_VIDEO] === AUTOCONNECT START ===');
 
     // First check if video is supported on this platform
     final supported = await isSupported();
     if (!supported) {
-      debugPrint('[USB_VIDEO] Platform does not support USB video');
       _updateState(
         const VideoStreamState.error(
           'USB video not supported on this platform',
@@ -172,26 +160,19 @@ class UsbVideoManager {
 
     final distingNT = await findDistingNT();
     if (distingNT != null) {
-      debugPrint('[USB_VIDEO] Found Disting NT: ${distingNT.deviceId}');
       await connectToDevice(distingNT.deviceId);
     } else {
       // Try to find any USB camera as fallback
       final devices = await listUsbCameras();
-      debugPrint('[USB_VIDEO] Total devices found: ${devices.length}');
 
       if (devices.isNotEmpty) {
-        debugPrint(
-          '[USB_VIDEO] Connecting to first device: ${devices.first.deviceId}',
-        );
         await connectToDevice(devices.first.deviceId);
       } else {
-        debugPrint('[USB_VIDEO] No devices found - setting error state');
         _updateState(
           const VideoStreamState.error('No USB video devices found'),
         );
       }
     }
-    debugPrint('[USB_VIDEO] === AUTOCONNECT END ===');
   }
 
   void _updateState(VideoStreamState newState) {
@@ -201,9 +182,6 @@ class UsbVideoManager {
 
   void _startRecoveryTimer() {
     _stopRecoveryTimer(); // Cancel any existing timer
-    debugPrint(
-      '[UsbVideoManager] Starting recovery timer - checking every ${_recoveryCheckInterval.inSeconds} seconds',
-    );
 
     _recoveryTimer = Timer.periodic(_recoveryCheckInterval, (timer) async {
       // Only attempt recovery if we're in error state
@@ -212,7 +190,6 @@ class UsbVideoManager {
         return;
       }
 
-      debugPrint('[UsbVideoManager] Attempting automatic recovery...');
 
       // Try to reconnect to the last known device first
       if (_lastConnectedDeviceId != null) {
@@ -222,9 +199,6 @@ class UsbVideoManager {
             .firstOrNull;
 
         if (targetDevice != null) {
-          debugPrint(
-            '[UsbVideoManager] Last connected device found, attempting reconnection',
-          );
           await connectToDevice(_lastConnectedDeviceId!);
           return;
         }

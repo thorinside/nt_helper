@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 enum MidiMappingType {
@@ -101,9 +100,6 @@ class PackedMappingData {
   // Decode from packed Uint8List with bounds checking
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
     if (version < 1 || version > 5) {
-      debugPrint(
-        "Warning: Unknown PackedMappingData version $version. Returning filler.",
-      );
       return PackedMappingData.filler();
     }
 
@@ -113,9 +109,6 @@ class PackedMappingData {
     // Helper function for safe decoding (decode16 needs 3 bytes) - using unsigned version to match JavaScript
     int safeDecode16Unsigned(int currentOffset) {
       if (currentOffset + 3 > dataLength) {
-        debugPrint(
-          "Warning: PackedMappingData truncated during decode16 at offset $currentOffset (length $dataLength). Returning 0.",
-        );
         return 0;
       }
       return decode16Unsigned(data, currentOffset);
@@ -124,9 +117,6 @@ class PackedMappingData {
     // Helper function for safe byte read
     int safeReadByte(int currentOffset) {
       if (currentOffset >= dataLength) {
-        debugPrint(
-          "Warning: PackedMappingData truncated during byte read at offset $currentOffset (length $dataLength). Returning 0.",
-        );
         return 0;
       }
       return data[currentOffset];
@@ -144,9 +134,6 @@ class PackedMappingData {
         : 26; // 7 + 9 + 9 + 1 = CV(7) + MIDI(9) + I2C(9) + Perf(1)
 
     if (dataLength != expectedLength) {
-      debugPrint(
-        "Warning: PackedMappingData length mismatch. Expected exactly $expectedLength bytes for version $version, got $dataLength. Returning filler.",
-      );
       return PackedMappingData.filler();
     }
 
@@ -183,9 +170,6 @@ class PackedMappingData {
     if (typeValue >= 0 && typeValue < MidiMappingType.values.length) {
       midiMappingType = MidiMappingType.values[typeValue];
     } else {
-      debugPrint(
-        'Warning: Unknown MIDI mapping type value $typeValue in flags2=$midiFlags2. Defaulting to cc.',
-      );
       midiMappingType = MidiMappingType.cc;
     }
 
@@ -211,16 +195,10 @@ class PackedMappingData {
     final perfPageIndex = (version >= 5) ? safeReadByte(offset++) : 0;
 
     if (version < 5) {
-      debugPrint(
-        'PackedMappingData.fromBytes: Received version $version mapping data (does not include performance page field). Performance pages require version 5+.',
-      );
     }
 
     // Final validation: offset should equal expected length
     if (offset != expectedLength) {
-      debugPrint(
-        "Error: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data is corrupt. Returning filler.",
-      );
       return PackedMappingData.filler();
     }
 
@@ -330,9 +308,6 @@ class PackedMappingData {
       // Validate and clamp perfPageIndex to valid range (0-15)
       final clampedIndex = perfPageIndex.clamp(0, 15);
       if (clampedIndex != perfPageIndex) {
-        debugPrint(
-          'Warning: perfPageIndex $perfPageIndex out of range (0-15), clamping to $clampedIndex',
-        );
       }
       allBytes.add(clampedIndex & 0x7F);
     }
@@ -351,9 +326,6 @@ class PackedMappingData {
         : 26; // 7 + 9 + 9 + 1 = CV(7) + MIDI(9) + I2C(9) + Perf(1)
 
     if (result.length != expectedLength) {
-      debugPrint(
-        "Error: PackedMappingData.toBytes() produced ${result.length} bytes for version $version, expected $expectedLength. CV: ${cvBytes.length}, MIDI: ${midiBytes.length}, I2C: ${i2cBytes.length}",
-      );
     }
 
     return result;

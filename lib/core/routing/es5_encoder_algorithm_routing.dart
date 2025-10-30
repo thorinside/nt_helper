@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'multi_channel_algorithm_routing.dart';
@@ -38,11 +37,7 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
     required this.slot,
     required super.config,
     super.validator,
-  }) {
-    debugPrint(
-      'ES5EncoderAlgorithmRouting: Initialized for ${slot.algorithm.name}',
-    );
-  }
+  });
 
   /// Generates input ports only for enabled channels.
   ///
@@ -58,15 +53,9 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
         .toList();
 
     if (channelPages.isEmpty) {
-      debugPrint(
-        'ES5EncoderAlgorithmRouting: No channel pages found, returning empty ports',
-      );
       return ports;
     }
 
-    debugPrint(
-      'ES5EncoderAlgorithmRouting: Found ${channelPages.length} channel pages',
-    );
 
     // Process each channel page
     for (final page in channelPages) {
@@ -78,9 +67,6 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
 
       // Channel pages should have 4 parameters
       if (page.parameters.length < 4) {
-        debugPrint(
-          'ES5EncoderAlgorithmRouting: Channel $channelNumber has insufficient parameters (${page.parameters.length})',
-        );
         continue;
       }
 
@@ -156,19 +142,10 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
         );
 
         ports.add(port);
-        debugPrint(
-          'ES5EncoderAlgorithmRouting: Created input port for Channel $channelNumber (bus $inputBusValue)',
-        );
       } else {
-        debugPrint(
-          'ES5EncoderAlgorithmRouting: Channel $channelNumber is disabled, skipping',
-        );
       }
     }
 
-    debugPrint(
-      'ES5EncoderAlgorithmRouting: Generated ${ports.length} enabled input ports',
-    );
     return ports;
   }
 
@@ -233,15 +210,9 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
           ),
         );
 
-        debugPrint(
-          'ES5EncoderAlgorithmRouting: Created output port for Channel $channelNumber → ES-5 Port $outputValue',
-        );
       }
     }
 
-    debugPrint(
-      'ES5EncoderAlgorithmRouting: Generated ${ports.length} output ports',
-    );
     return ports;
   }
 
@@ -266,9 +237,6 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
         .toList();
     final channelCount = channelPages.length;
 
-    debugPrint(
-      'ES5EncoderAlgorithmRouting: Creating with $channelCount channels',
-    );
 
     // Create configuration for the ES-5 Encoder
     final config = MultiChannelAlgorithmConfig(

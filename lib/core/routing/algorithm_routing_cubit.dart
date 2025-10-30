@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'algorithm_routing.dart';
 import 'models/routing_state.dart';
@@ -16,7 +15,7 @@ import 'models/connection.dart';
 /// final cubit = AlgorithmRoutingCubit(myAlgorithm);
 /// cubit.stream.listen((state) {
 ///   // React to state changes
-///   debugPrint('Routing status: ${state.status}');
+///   
 /// });
 ///
 /// cubit.initializeRouting();
@@ -46,12 +45,7 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
 
       emit(newState);
 
-      debugPrint(
-        'AlgorithmRoutingCubit: Initialized with ${inputPorts.length} input ports '
-        'and ${outputPorts.length} output ports',
-      );
     } catch (e) {
-      debugPrint('AlgorithmRoutingCubit: Initialization failed - $e');
       emit(
         state.withStatus(
           RoutingSystemStatus.error,
@@ -64,9 +58,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
   /// Attempts to create a connection between two ports
   void connectPorts(String sourcePortId, String destinationPortId) {
     if (!state.isReady) {
-      debugPrint(
-        'AlgorithmRoutingCubit: Cannot connect ports - system not ready',
-      );
       return;
     }
 
@@ -100,9 +91,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
         emit(newState);
         _algorithm.updateState(newState);
 
-        debugPrint(
-          'AlgorithmRoutingCubit: Connected ${sourcePort.name} to ${destinationPort.name}',
-        );
       } else {
         emit(
           state.withStatus(
@@ -113,7 +101,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
         );
       }
     } catch (e) {
-      debugPrint('AlgorithmRoutingCubit: Connection failed - $e');
       emit(
         state.withStatus(
           RoutingSystemStatus.error,
@@ -129,9 +116,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
     String destinationPortId,
   ) {
     if (!state.isReady) {
-      debugPrint(
-        'AlgorithmRoutingCubit: Cannot connect ports - system not ready',
-      );
       return;
     }
 
@@ -177,14 +161,8 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
         emit(newState);
         _algorithm.updateState(newState);
 
-        // Log warnings if any
-        for (final warning in validationResult.warnings) {
-          debugPrint('AlgorithmRoutingCubit: Warning - ${warning.message}');
-        }
+        // Warnings are part of validationResult but not logged
 
-        debugPrint(
-          'AlgorithmRoutingCubit: Connected ${sourcePort.name} to ${destinationPort.name}',
-        );
       } else {
         // Connection is invalid - emit error with detailed information
         final errorMessages = validationResult.errors
@@ -198,13 +176,9 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
           ),
         );
 
-        debugPrint('AlgorithmRoutingCubit: Connection validation failed');
-        for (final error in validationResult.errors) {
-          debugPrint('  - ${error.type.name}: ${error.message}');
-        }
+        // Errors are part of validationResult and included in errorMessages above
       }
     } catch (e) {
-      debugPrint('AlgorithmRoutingCubit: Connection failed - $e');
       emit(
         state.withStatus(
           RoutingSystemStatus.error,
@@ -217,7 +191,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
   /// Removes a connection by its ID
   void disconnectPorts(String connectionId) {
     if (!state.isReady && state.status != RoutingSystemStatus.error) {
-      debugPrint('AlgorithmRoutingCubit: Cannot disconnect - system not ready');
       return;
     }
 
@@ -248,7 +221,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
         emit(newState);
         _algorithm.updateState(newState);
 
-        debugPrint('AlgorithmRoutingCubit: Disconnected $connectionId');
       } else {
         emit(
           state.withStatus(
@@ -258,7 +230,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
         );
       }
     } catch (e) {
-      debugPrint('AlgorithmRoutingCubit: Disconnection failed - $e');
       emit(
         state.withStatus(
           RoutingSystemStatus.error,
@@ -276,9 +247,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
     bool? isInverted,
   }) {
     if (!state.isReady) {
-      debugPrint(
-        'AlgorithmRoutingCubit: Cannot update connection - system not ready',
-      );
       return;
     }
 
@@ -320,9 +288,7 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
       emit(newState);
       _algorithm.updateState(newState);
 
-      debugPrint('AlgorithmRoutingCubit: Updated connection $connectionId');
     } catch (e) {
-      debugPrint('AlgorithmRoutingCubit: Connection update failed - $e');
       emit(
         state.withStatus(
           RoutingSystemStatus.error,
@@ -335,7 +301,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
   /// Validates the entire routing configuration
   void validateRouting() {
     if (!state.isReady && state.status != RoutingSystemStatus.error) {
-      debugPrint('AlgorithmRoutingCubit: Cannot validate - system not ready');
       return;
     }
 
@@ -346,7 +311,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
 
       if (isValid) {
         emit(state.withStatus(RoutingSystemStatus.ready));
-        debugPrint('AlgorithmRoutingCubit: Routing validation passed');
       } else {
         emit(
           state.withStatus(
@@ -355,10 +319,8 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
                 'Routing validation failed - invalid connections detected',
           ),
         );
-        debugPrint('AlgorithmRoutingCubit: Routing validation failed');
       }
     } catch (e) {
-      debugPrint('AlgorithmRoutingCubit: Validation failed - $e');
       emit(
         state.withStatus(
           RoutingSystemStatus.error,
@@ -371,9 +333,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
   /// Clears all connections and returns to ready state
   void clearAllConnections() {
     if (!state.isReady && state.status != RoutingSystemStatus.error) {
-      debugPrint(
-        'AlgorithmRoutingCubit: Cannot clear connections - system not ready',
-      );
       return;
     }
 
@@ -388,9 +347,7 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
       emit(newState);
       _algorithm.updateState(newState);
 
-      debugPrint('AlgorithmRoutingCubit: Cleared all connections');
     } catch (e) {
-      debugPrint('AlgorithmRoutingCubit: Failed to clear connections - $e');
       emit(
         state.withStatus(
           RoutingSystemStatus.error,
@@ -402,7 +359,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
 
   /// Resets the routing system to initial state
   void resetRouting() {
-    debugPrint('AlgorithmRoutingCubit: Resetting routing system');
     emit(const RoutingState());
     _initialize();
   }
@@ -413,15 +369,10 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
   @override
   void onChange(Change<RoutingState> change) {
     super.onChange(change);
-    debugPrint(
-      'AlgorithmRoutingCubit: State changed from ${change.currentState.status} '
-      'to ${change.nextState.status}',
-    );
   }
 
   @override
   Future<void> close() {
-    debugPrint('AlgorithmRoutingCubit: Disposing');
     _algorithm.dispose();
     return super.close();
   }

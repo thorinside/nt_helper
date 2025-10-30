@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/domain/video/usb_device_info.dart';
 import 'package:nt_helper/services/debug_service.dart';
@@ -44,7 +43,6 @@ class AndroidUsbVideoChannel {
 
   void _debugLog(String message) {
     _debugService.addLocalMessage('[AndroidUsbVideoChannel] $message');
-    debugPrint('[AndroidUsbVideoChannel] $message');
   }
 
   Future<List<UsbDeviceInfo>> listUsbCameras() async {

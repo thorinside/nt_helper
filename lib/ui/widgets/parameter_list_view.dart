@@ -26,9 +26,6 @@ class ParameterListView extends StatelessWidget {
         // Skip this parameter if we don't have essential data
         // Note: valueString and enumStrings can be empty/filler for many parameters
         if (parameter == null || value == null) {
-          debugPrint(
-            '[ParameterListView] Missing essential data for parameter $index in slot ${slot.algorithm.algorithmIndex}',
-          );
           return const SizedBox.shrink();
         }
 

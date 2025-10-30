@@ -50,9 +50,8 @@ class NodePositionsPersistenceService {
         (key, value) => MapEntry(key.toString(), value.toJson()),
       );
       await _prefs?.setString(_pendingKey!, jsonEncode(serializable));
-      debugPrint('Node positions saved for key: $_pendingKey');
     } catch (e) {
-      debugPrint('Failed to save node positions: $e');
+      // Intentionally empty
     }
     _pendingPositions = null;
     _pendingKey = null;
@@ -69,7 +68,6 @@ class NodePositionsPersistenceService {
         (key, value) => MapEntry(int.parse(key), NodePosition.fromJson(value)),
       );
     } catch (e) {
-      debugPrint('Failed to load node positions: $e');
       return {};
     }
   }
@@ -78,9 +76,8 @@ class NodePositionsPersistenceService {
     try {
       final key = '$_nodePositionsKeyPrefix$presetName';
       await _prefs?.remove(key);
-      debugPrint('Node positions cleared for preset: $presetName');
     } catch (e) {
-      debugPrint('Failed to clear node positions: $e');
+      // Intentionally empty
     }
   }
 

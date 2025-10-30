@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/tables.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart'; // For PresetMappingEntry
@@ -155,9 +154,6 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
             ),
           );
         } else {
-          debugPrint(
-            "Warning: Algorithm with GUID ${slotEntry.algorithmGuid} not found for preset ${presetEntry.name}, slot index ${slotEntry.slotIndex}",
-          );
           // Handle missing algorithm metadata gracefully (e.g., skip slot or error)
         }
       }
@@ -166,10 +162,7 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       fullSlots.sort((a, b) => a.slot.slotIndex.compareTo(b.slot.slotIndex));
 
       return FullPresetDetails(preset: presetEntry, slots: fullSlots);
-    } catch (e, stackTrace) {
-      debugPrint(
-        "Error getting full preset details for ID $presetId: $e\n$stackTrace",
-      );
+    } catch (e) {
       return null;
     }
   }
@@ -348,9 +341,6 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
           ..where((m) => m.parameterNumber.equals(parameterNumber)))
         .write(PresetMappingsCompanion(perfPageIndex: Value(perfPageIndex)));
 
-    debugPrint(
-      '[PresetsDao] Updated perfPageIndex to $perfPageIndex for presetSlotId=$presetSlotId param=$parameterNumber',
-    );
   }
 
   // --- Deletion Methods ---

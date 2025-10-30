@@ -1294,9 +1294,7 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
           }
         });
       }
-    } catch (e, stacktrace) {
-      debugPrint("Error fetching parameters for ${widget.algorithm.guid}: $e");
-      debugPrint("Stack trace:\n$stacktrace");
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -1383,8 +1381,7 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
           ),
         );
       }
-    } catch (e, stackTrace) {
-      debugPrint('Error rescanning algorithm: $e\n$stackTrace');
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isRescanning = false;

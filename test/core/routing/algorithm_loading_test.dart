@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -56,17 +55,9 @@ void main() {
       }
 
       // Report results
-      debugPrint('\nAlgorithm Loading Results:');
-      debugPrint(
-        'Successfully loaded: ${successfulAlgorithms.length} algorithms',
-      );
-      debugPrint('Failed to load: ${failedAlgorithms.length} algorithms');
 
       if (failedAlgorithms.isNotEmpty) {
-        debugPrint('\nFailed algorithms:');
         failedAlgorithms.forEach((name, error) {
-          debugPrint('  - $name');
-          debugPrint('    Error: ${error.split('\n').first}');
         });
       }
 
@@ -98,13 +89,11 @@ void main() {
           // Skip community algorithms (those with uppercase letters in GUID)
           // They may not load properly in metadata collector
           if (guid.contains(RegExp(r'[A-Z]'))) {
-            debugPrint('Skipping $name ($guid) - Community algorithm');
             continue;
           }
 
           // Skip known special cases
           if (specialCases.containsKey(guid)) {
-            debugPrint('Skipping $name ($guid) - ${specialCases[guid]}');
             continue;
           }
 
@@ -127,26 +116,17 @@ void main() {
               algorithmsWithNoIO.add(
                 '$name ($guid) - inputs: ${routing.inputPorts.length}, outputs: ${routing.outputPorts.length}',
               );
-              debugPrint(
-                'WARNING: Algorithm $name ($guid) has no inputs or outputs!',
-              );
             } else {
-              debugPrint(
-                '✓ $name ($guid) - inputs: ${routing.inputPorts.length}, outputs: ${routing.outputPorts.length}',
-              );
             }
           } catch (e) {
             // If we can't load the algorithm, that's a different problem
             // that should be caught by the first test
-            debugPrint('ERROR: Failed to load $name ($guid): $e');
           }
         }
 
         // Report any algorithms with no I/O
         if (algorithmsWithNoIO.isNotEmpty) {
-          debugPrint('\nAlgorithms with NO inputs or outputs:');
-          for (final algo in algorithmsWithNoIO) {
-            debugPrint('  - $algo');
+          for (final _ in algorithmsWithNoIO) {
           }
         }
 
@@ -214,14 +194,10 @@ void main() {
         if (algorithmJson != null) {
           try {
             entry.value(algorithmJson);
-            debugPrint(
-              '✓ ${algorithmJson['name']} (${entry.key}) passed specific tests',
-            );
           } catch (e) {
             fail('Algorithm ${entry.key} failed specific tests: $e');
           }
         } else {
-          debugPrint('⚠ Algorithm ${entry.key} not found in JSON data');
         }
       }
     });

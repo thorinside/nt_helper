@@ -217,9 +217,6 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
             const Duration(seconds: 5),
             onTimeout: () {
               // Don't fail the save if refresh times out, just log it
-              debugPrint(
-                '[NotesAlgorithmView] Slot refresh timed out after save',
-              );
             },
           );
 

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'algorithm_routing.dart';
 import 'es5_encoder_algorithm_routing.dart';
 import 'models/port.dart';
@@ -23,9 +22,6 @@ class ConnectionDiscoveryService {
   static List<Connection> discoverConnections(List<AlgorithmRouting> routings) {
     final connections = <Connection>[];
 
-    debugPrint(
-      '[ConnectionDiscovery] Starting discovery for ${routings.length} algorithms',
-    );
 
     // Build a bus registry mapping bus numbers to ports
     final busRegistry = <int, List<_PortAssignment>>{};
@@ -35,9 +31,6 @@ class ConnectionDiscoveryService {
       final routing = routings[i];
       final algorithmId = _extractAlgorithmId(routing);
 
-      debugPrint(
-        '[ConnectionDiscovery] Processing algorithm $i ($algorithmId)',
-      );
 
       // Register input ports
       _registerPorts(routing.inputPorts, algorithmId, i, false, busRegistry);
@@ -169,15 +162,6 @@ class ConnectionDiscoveryService {
     );
     connections.addAll(partialConnections);
 
-    debugPrint(
-      '[ConnectionDiscovery] Created ${connections.length - partialConnections.length} full connections',
-    );
-    debugPrint(
-      '[ConnectionDiscovery] Created ${partialConnections.length} partial connections',
-    );
-    debugPrint(
-      '[ConnectionDiscovery] Total connections: ${connections.length}',
-    );
     _logConnectionSummary(connections);
 
     return connections;
@@ -194,9 +178,6 @@ class ConnectionDiscoveryService {
     for (final port in ports) {
       final busValue = port.busValue;
       if (busValue != null && busValue > 0) {
-        debugPrint(
-          '[ConnectionDiscovery]   ${isOutput ? 'Output' : 'Input'} port ${port.id}: bus=$busValue, outputMode=${port.outputMode}',
-        );
         busRegistry
             .putIfAbsent(busValue, () => [])
             .add(
@@ -255,9 +236,6 @@ class ConnectionDiscoveryService {
     if (BusSpec.isEs5(busNumber)) {
       final es5PortId = busNumber == 29 ? 'es5_L' : 'es5_R';
 
-      debugPrint(
-        '[ConnectionDiscovery] Creating ES-5 connections: bus $busNumber -> $es5PortId',
-      );
 
       for (final output in outputs) {
         connections.add(
@@ -309,9 +287,6 @@ class ConnectionDiscoveryService {
   ) {
     final connections = <Connection>[];
 
-    debugPrint(
-      '[ConnectionDiscovery] Creating ES-5 Encoder mirror connections',
-    );
 
     for (final outputPort in routing.outputPorts) {
       if (outputPort.busParam == ES5EncoderAlgorithmRouting.mirrorBusParam &&
@@ -332,15 +307,9 @@ class ConnectionDiscoveryService {
           ),
         );
 
-        debugPrint(
-          '[ConnectionDiscovery]   Mirror: ${outputPort.id} -> $es5PortId',
-        );
       }
     }
 
-    debugPrint(
-      '[ConnectionDiscovery] Created ${connections.length} ES-5 Encoder mirror connections',
-    );
 
     return connections;
   }
@@ -379,17 +348,11 @@ class ConnectionDiscoveryService {
             ),
           );
 
-          debugPrint(
-            '[ConnectionDiscovery]   ES-5 Direct: ${outputPort.id} -> $es5PortId',
-          );
         }
       }
     }
 
     if (connections.isNotEmpty) {
-      debugPrint(
-        '[ConnectionDiscovery] Created ${connections.length} ES-5 direct connections',
-      );
     }
 
     return connections;
@@ -440,39 +403,12 @@ class ConnectionDiscoveryService {
   static void _logBusRegistrySummary(
     Map<int, List<_PortAssignment>> busRegistry,
   ) {
-    debugPrint('[ConnectionDiscovery] Bus registry summary:');
-    for (final entry in busRegistry.entries) {
-      final busNumber = entry.key;
-      final assignments = entry.value;
-      final outputs = assignments.where((a) => a.isOutput).length;
-      final inputs = assignments.where((a) => !a.isOutput).length;
-      debugPrint(
-        '[ConnectionDiscovery]   Bus $busNumber: $outputs outputs, $inputs inputs',
-      );
-    }
+    // Debug logging removed - was used for debugPrint
   }
 
   /// Logs connection summary for debugging
   static void _logConnectionSummary(List<Connection> connections) {
-    final hwConnections = connections
-        .where(
-          (c) =>
-              c.connectionType == ConnectionType.hardwareInput ||
-              c.connectionType == ConnectionType.hardwareOutput,
-        )
-        .length;
-    final algoConnections = connections
-        .where((c) => c.connectionType == ConnectionType.algorithmToAlgorithm)
-        .length;
-    final partialConnections = connections.where((c) => c.isPartial).length;
-
-    debugPrint('[ConnectionDiscovery]   Hardware connections: $hwConnections');
-    debugPrint(
-      '[ConnectionDiscovery]   Algorithm-to-algorithm: $algoConnections',
-    );
-    debugPrint(
-      '[ConnectionDiscovery]   Partial connections: $partialConnections',
-    );
+    // Debug logging removed - was used for debugPrint
   }
 
   /// Creates partial connections for unmatched ports with non-zero bus values
@@ -482,9 +418,6 @@ class ConnectionDiscoveryService {
   ) {
     final partialConnections = <Connection>[];
 
-    debugPrint(
-      '[ConnectionDiscovery] Creating partial connections for unmatched ports',
-    );
 
     // Process each bus to find unmatched ports
     for (final entry in busRegistry.entries) {
@@ -498,9 +431,6 @@ class ConnectionDiscoveryService {
 
       if (unmatchedPorts.isEmpty) continue;
 
-      debugPrint(
-        '[ConnectionDiscovery] Bus $busNumber has ${unmatchedPorts.length} unmatched ports',
-      );
 
       // Create partial connections for each unmatched port
       for (final port in unmatchedPorts) {
@@ -521,9 +451,6 @@ class ConnectionDiscoveryService {
         );
         partialConnections.add(partialConnection);
 
-        debugPrint(
-          '[ConnectionDiscovery]   Created partial connection: ${port.portId} -> $busLabel',
-        );
       }
     }
 

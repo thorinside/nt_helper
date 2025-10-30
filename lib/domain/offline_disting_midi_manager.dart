@@ -81,15 +81,11 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         _customNames[i] = slotData.slot.customName!;
       }
     }
-    debugPrint(
-      "[Offline] Initialized manager state from DB preset '$_presetName' (ID: $_loadedPresetId). Slots: ${_presetAlgorithmGuids.length}",
-    );
   }
 
   @override
   void dispose() {
     // No resources to dispose for the offline manager
-    debugPrint("OfflineDistingMidiManager disposed.");
   }
 
   // --- Metadata Request Implementations ---
@@ -100,7 +96,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       final algorithms = await _metadataDao.getAllAlgorithms();
       return algorithms.length;
     } catch (e) {
-      debugPrint("Error fetching algorithm count from DB: $e");
       return 0;
     }
   }
@@ -136,7 +131,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
             .toList(),
       );
     } catch (e) {
-      debugPrint("Error fetching AlgorithmInfo($algorithmIndex) from DB: $e");
       return null;
     }
   }
@@ -144,9 +138,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex) async {
     if (algorithmIndex < 0 || algorithmIndex >= _presetAlgorithmGuids.length) {
-      debugPrint(
-        "[Offline] requestAlgorithmGuid: Index $algorithmIndex out of bounds for preset size ${_presetAlgorithmGuids.length}",
-      );
       return null;
     }
     final guid = _presetAlgorithmGuids[algorithmIndex];
@@ -167,15 +158,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
           name: customName ?? defaultName ?? "Error: Name Missing",
         );
       } else {
-        debugPrint(
-          "[Offline] requestAlgorithmGuid: Algorithm with GUID $guid not found in DB.",
-        );
         return null;
       }
     } catch (e, stackTrace) {
-      debugPrint(
-        "[Offline] Error fetching AlgorithmGuid($algorithmIndex, guid: $guid) from DB: $e",
-      );
       debugPrintStack(stackTrace: stackTrace);
       return null;
     }
@@ -321,9 +306,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         return ParameterEnumStrings.filler();
       }
     } catch (e, stackTrace) {
-      debugPrint(
-        "[Offline] Error fetching enums for guid $guid, param $parameterNumber: $e",
-      );
       debugPrintStack(stackTrace: stackTrace);
       return ParameterEnumStrings.filler();
     }
@@ -410,7 +392,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<RoutingInfo?> requestRoutingInformation(int algorithmIndex) {
     // Routing information is not stored or handled in offline mode.
-    debugPrint("[Offline] requestRoutingInformation - Not supported.");
     return Future.value(RoutingInfo.filler());
   }
 
@@ -460,7 +441,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         return [];
       }
     } catch (e, stackTrace) {
-      debugPrint("[Offline] Error fetching cached UnitStrings from DB: $e");
       debugPrintStack(stackTrace: stackTrace);
       return [];
     }
@@ -486,9 +466,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     String value,
   ) async {
     (_parameterStringValues[algorithmIndex] ??= {})[parameterNumber] = value;
-    debugPrint(
-      "[Offline] setParameterString: Algo $algorithmIndex, Param $parameterNumber = '$value'",
-    );
   }
 
   @override
@@ -508,42 +485,33 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       final presetsDao = _database.presetsDao;
       await presetsDao.updatePresetName(_loadedPresetId!, name);
     } catch (e, stackTrace) {
-      debugPrint("[Offline] Error updating preset name in DB: $e");
       debugPrintStack(stackTrace: stackTrace);
     }
   }
 
   @override
   Future<void> requestSavePreset({int option = 0}) async {
-    debugPrint("[Offline] requestSavePreset: Saving offline state...");
     try {
       final FullPresetDetails? presetDetails =
           await _buildPresetDetailsForSave();
       if (presetDetails == null) {
-        debugPrint("[Offline] Failed to build preset details.");
         return;
       }
       final presetsDao = _database.presetsDao;
       final savedPresetId = await presetsDao.saveFullPreset(presetDetails);
       _loadedPresetId = savedPresetId;
       _presetName = presetDetails.preset.name;
-      debugPrint(
-        "[Offline] Saved state to preset ID $_loadedPresetId ('$_presetName').",
-      );
     } catch (e, stackTrace) {
-      debugPrint("[Offline] Error saving offline state: $e");
       debugPrintStack(stackTrace: stackTrace);
     }
   }
 
   @override
   Future<void> requestLoadPreset(String name, bool append) async {
-    debugPrint("[Offline] requestLoadPreset - No-op");
   }
 
   @override
   Future<void> requestNewPreset() async {
-    debugPrint("[Offline] requestNewPreset: Clearing internal state.");
     _presetAlgorithmGuids.clear();
     _parameterValues.clear();
     _parameterStringValues.clear();
@@ -588,9 +556,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       _presetAlgorithmGuids.removeAt(algorithmIndex);
       _removeAndShiftState(algorithmIndex);
     } else {
-      debugPrint(
-        "[Offline] requestRemoveAlgorithm: Invalid index $algorithmIndex",
-      );
     }
   }
 
@@ -606,9 +571,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       _presetAlgorithmGuids.insert(algorithmIndex - 1, guid);
       _shiftStateUp(algorithmIndex);
     } else {
-      debugPrint(
-        "[Offline] requestMoveAlgorithmUp: Cannot move index $algorithmIndex up",
-      );
     }
   }
 
@@ -620,9 +582,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       _presetAlgorithmGuids.insert(algorithmIndex + 1, guid);
       _shiftStateDown(algorithmIndex);
     } else {
-      debugPrint(
-        "[Offline] requestMoveAlgorithmDown: Cannot move index $algorithmIndex down",
-      );
     }
   }
 
@@ -631,9 +590,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     if (algorithmIndex >= 0 && algorithmIndex < _presetAlgorithmGuids.length) {
       _customNames[algorithmIndex] = newName;
     } else {
-      debugPrint(
-        "[Offline] requestSendSlotName: Invalid index $algorithmIndex",
-      );
     }
   }
 
@@ -712,24 +668,18 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         );
       }
     } catch (e) {
-      debugPrint(
-        '[OfflineDistingMidiManager] Error persisting perfPageIndex: $e',
-      );
+      // Intentionally empty
     }
   }
 
   @override
   Future<String?> executeLua(String luaScript) async {
-    debugPrint("[Offline] executeLua: script='$luaScript'");
     // Lua execution is not supported in offline mode
     throw UnsupportedError('Lua execution is not available in offline mode');
   }
 
   @override
   Future<String?> installLua(int algorithmIndex, String luaScript) async {
-    debugPrint(
-      "[Offline] installLua: algo=$algorithmIndex, script='$luaScript'",
-    );
     // Lua installation is not supported in offline mode
     throw UnsupportedError('Lua installation is not available in offline mode');
   }
@@ -773,9 +723,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     try {
       return await queryRunner(guid);
     } catch (e, stackTrace) {
-      debugPrint(
-        "[Offline] Error running query for guid $guid (index $algorithmIndex): $e",
-      );
       debugPrintStack(stackTrace: stackTrace);
       return errorValue;
     }
@@ -805,9 +752,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       )..where((a) => a.guid.equals(guid))).getSingleOrNull();
 
       if (algoEntry == null) {
-        debugPrint(
-          "[Offline] Warning: Algorithm metadata missing for GUID $guid.",
-        );
         return null;
       }
 

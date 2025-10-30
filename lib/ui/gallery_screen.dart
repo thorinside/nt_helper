@@ -90,10 +90,6 @@ class _GalleryViewState extends State<_GalleryView>
     BuildContext context,
     GalleryPlugin plugin,
   ) async {
-    debugPrint('Documentation button pressed for plugin: ${plugin.name}');
-    debugPrint(
-      'Repository: ${plugin.repository.owner}/${plugin.repository.name}',
-    );
 
     try {
       // Construct the GitHub README URL
@@ -106,7 +102,6 @@ class _GalleryViewState extends State<_GalleryView>
             : '$readmeUrl#readme';
       }
 
-      debugPrint('Opening README URL: $readmeUrl');
 
       final uri = Uri.parse(readmeUrl);
       if (await canLaunchUrl(uri)) {
@@ -122,7 +117,6 @@ class _GalleryViewState extends State<_GalleryView>
         }
       }
     } catch (e) {
-      debugPrint('Error opening documentation: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1404,14 +1398,10 @@ class _GalleryViewState extends State<_GalleryView>
       // Download and extract plugin list
       var galleryCubit = context.read<GalleryCubit>();
       final galleryService = galleryCubit.galleryService;
-      debugPrint(
-        '[PluginDialog] Downloading archive for ${queuedPlugin.plugin.name}',
-      );
       final archiveBytes = await galleryService.downloadPluginArchive(
         queuedPlugin.plugin,
         queuedPlugin.selectedVersion,
       );
-      debugPrint('[PluginDialog] Downloaded ${archiveBytes.length} bytes');
 
       // Check if this is actually a collection with multiple installable plugins
       final installableCount =
@@ -1419,7 +1409,6 @@ class _GalleryViewState extends State<_GalleryView>
             archiveBytes,
             queuedPlugin.plugin,
           );
-      debugPrint('[PluginDialog] Found $installableCount installable plugins');
 
       if (!mounted) return;
 
@@ -1428,7 +1417,6 @@ class _GalleryViewState extends State<_GalleryView>
 
       // If exactly one installable plugin, auto-select it and skip dialog
       if (installableCount == 1) {
-        debugPrint('[PluginDialog] Single plugin detected, auto-selecting');
         final availablePlugins =
             await PluginMetadataExtractor.extractPluginsFromArchive(
               archiveBytes,
@@ -1466,7 +1454,6 @@ class _GalleryViewState extends State<_GalleryView>
 
       // Handle case where no installable plugins found
       if (installableCount == 0) {
-        debugPrint('[PluginDialog] No installable plugins found');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1485,9 +1472,6 @@ class _GalleryViewState extends State<_GalleryView>
             archiveBytes,
             queuedPlugin.plugin,
           );
-      debugPrint(
-        '[PluginDialog] Extraction returned ${availablePlugins.length} plugins',
-      );
 
       // Initialize selection from existing state, or select all if first time
       final existingSelection = queuedPlugin.selectedPlugins;
@@ -1524,9 +1508,6 @@ class _GalleryViewState extends State<_GalleryView>
           plugin: queuedPlugin.plugin,
           availablePlugins: availablePlugins,
           onSelectionChanged: (selectedPlugins) {
-            debugPrint(
-              '[PluginDialog] Selection changed: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} plugins selected',
-            );
             galleryCubit.updateQueuedPluginSelection(
               queuedPlugin.plugin.id,
               selectedPlugins,

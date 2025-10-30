@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
@@ -83,12 +82,6 @@ class NodeLayoutAlgorithm {
     required List<RoutingAlgorithm> algorithms,
     required List<Connection> connections,
   }) {
-    debugPrint('[NodeLayoutAlgorithm] Starting layout calculation');
-    debugPrint('  Physical inputs: ${physicalInputs.length}');
-    debugPrint('  Physical outputs: ${physicalOutputs.length}');
-    debugPrint('  ES-5 inputs: ${es5Inputs.length}');
-    debugPrint('  Algorithms: ${algorithms.length}');
-    debugPrint('  Connections: ${connections.length}');
 
     // Step 1: Sort algorithms by slot index (lower indices appear higher)
     final sortedAlgorithms = List<RoutingAlgorithm>.from(algorithms);
@@ -153,9 +146,6 @@ class NodeLayoutAlgorithm {
       allPositions,
     );
 
-    debugPrint('[NodeLayoutAlgorithm] Layout calculation complete');
-    debugPrint('  Algorithm positions: ${algorithmPositions.length}');
-    debugPrint('  Remaining overlaps: ${overlapsAfterOptimization.length}');
 
     return LayoutResult(
       physicalInputPositions: physicalInputPositions,
@@ -222,10 +212,6 @@ class NodeLayoutAlgorithm {
 
     positions['physical_inputs'] = NodePosition(x: x, y: y);
 
-    debugPrint(
-      '[NodeLayout] Physical inputs positioned at x=$x, y=$y (left of algorithms with 1 grid gap)',
-    );
-    debugPrint('[NodeLayout] Physical inputs height: $physicalNodeHeight px');
 
     return positions;
   }
@@ -259,9 +245,6 @@ class NodeLayoutAlgorithm {
 
     maxY += 3.0 * gridSize;
 
-    // Calculate height of ES-5 node
-    final es5NodeHeight = (es5Inputs.length * 30.0 + 60.0);
-
     // Position ES-5 at same X as physical outputs (right side)
     // Use similar logic as physical outputs positioning
     final algorithmWidth = 250.0; // Default estimate
@@ -288,10 +271,6 @@ class NodeLayoutAlgorithm {
 
     positions['es5_node'] = NodePosition(x: x, y: y);
 
-    debugPrint(
-      '[NodeLayout] ES-5 node positioned at x=$x, y=$y (below physical outputs on right side)',
-    );
-    debugPrint('[NodeLayout] ES-5 node height: $es5NodeHeight px');
 
     return positions;
   }
@@ -370,10 +349,6 @@ class NodeLayoutAlgorithm {
 
     positions['physical_outputs'] = NodePosition(x: x, y: y);
 
-    debugPrint(
-      '[NodeLayout] Physical outputs positioned at x=$x, y=$y (right of algorithms with 1 grid gap)',
-    );
-    debugPrint('[NodeLayout] Physical outputs height: $physicalNodeHeight px');
 
     return positions;
   }
@@ -484,13 +459,6 @@ class NodeLayoutAlgorithm {
     }
     for (final id in assignments.keys) {
       assignments[id] = remap[assignments[id]!]!;
-    }
-
-    // Debug
-    for (final a in algorithms) {
-      debugPrint(
-        '[NodeLayout] Column assigned: algo ${a.index} (${a.id}) -> col ${assignments[a.id]}',
-      );
     }
 
     return assignments;

@@ -48,17 +48,11 @@ class DesktopFeedbackService {
   /// Enable or disable visual feedback
   void setVisualFeedbackEnabled(bool enabled) {
     _visualFeedbackEnabled = enabled;
-    debugPrint(
-      '[DesktopFeedbackService] Visual feedback ${enabled ? 'enabled' : 'disabled'}',
-    );
   }
 
   /// Enable or disable audio feedback
   void setAudioFeedbackEnabled(bool enabled) {
     _audioFeedbackEnabled = enabled;
-    debugPrint(
-      '[DesktopFeedbackService] Audio feedback ${enabled ? 'enabled' : 'disabled'}',
-    );
   }
 
   /// Light visual feedback - subtle highlight or glow effect
@@ -80,9 +74,7 @@ class DesktopFeedbackService {
         target: target,
       );
     } catch (e) {
-      debugPrint(
-        '[DesktopFeedbackService] Error showing light visual feedback: $e',
-      );
+      // Intentionally empty
     }
   }
 
@@ -105,9 +97,7 @@ class DesktopFeedbackService {
         target: target,
       );
     } catch (e) {
-      debugPrint(
-        '[DesktopFeedbackService] Error showing medium visual feedback: $e',
-      );
+      // Intentionally empty
     }
   }
 
@@ -130,9 +120,7 @@ class DesktopFeedbackService {
         target: target,
       );
     } catch (e) {
-      debugPrint(
-        '[DesktopFeedbackService] Error showing heavy visual feedback: $e',
-      );
+      // Intentionally empty
     }
   }
 
@@ -155,9 +143,7 @@ class DesktopFeedbackService {
         target: target,
       );
     } catch (e) {
-      debugPrint(
-        '[DesktopFeedbackService] Error showing error visual feedback: $e',
-      );
+      // Intentionally empty
     }
   }
 
@@ -170,9 +156,7 @@ class DesktopFeedbackService {
       // Use system click sound for light feedback
       await SystemSound.play(SystemSoundType.click);
     } catch (e) {
-      debugPrint(
-        '[DesktopFeedbackService] Error playing light audio feedback: $e',
-      );
+      // Intentionally empty
     }
   }
 
@@ -185,9 +169,7 @@ class DesktopFeedbackService {
       // Use system alert sound for medium feedback
       await SystemSound.play(SystemSoundType.alert);
     } catch (e) {
-      debugPrint(
-        '[DesktopFeedbackService] Error playing medium audio feedback: $e',
-      );
+      // Intentionally empty
     }
   }
 
@@ -200,9 +182,7 @@ class DesktopFeedbackService {
       // Use system alert sound for heavy feedback (could be enhanced with custom sounds)
       await SystemSound.play(SystemSoundType.alert);
     } catch (e) {
-      debugPrint(
-        '[DesktopFeedbackService] Error playing heavy audio feedback: $e',
-      );
+      // Intentionally empty
     }
   }
 
@@ -215,9 +195,7 @@ class DesktopFeedbackService {
       // Use system alert sound for error feedback
       await SystemSound.play(SystemSoundType.alert);
     } catch (e) {
-      debugPrint(
-        '[DesktopFeedbackService] Error playing error audio feedback: $e',
-      );
+      // Intentionally empty
     }
   }
 

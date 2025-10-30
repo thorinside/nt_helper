@@ -11,9 +11,6 @@ class FileConflictDetector {
 
   /// Check for file conflicts between package files and existing SD card files
   Future<PackageAnalysis> detectConflicts(PackageAnalysis analysis) async {
-    debugPrint(
-      '[ConflictDetector] Starting conflict detection for ${analysis.totalFiles} files',
-    );
 
     if (!analysis.isValid) {
       return analysis;
@@ -21,9 +18,6 @@ class FileConflictDetector {
 
     final state = distingCubit.state;
     if (state is! DistingStateSynchronized || state.offline) {
-      debugPrint(
-        '[ConflictDetector] Cannot detect conflicts: Not synchronized or offline',
-      );
       // Return analysis without conflict detection
       return analysis;
     }
@@ -38,7 +32,6 @@ class FileConflictDetector {
         final directory = entry.key;
         final filesInDir = entry.value;
 
-        debugPrint('[ConflictDetector] Checking directory: /$directory');
 
         // Get existing files in this directory
         final existingFiles = await _getExistingFilesInDirectory('/$directory');
@@ -52,21 +45,14 @@ class FileConflictDetector {
           updatedFiles.add(updatedFile);
 
           if (hasConflict) {
-            debugPrint(
-              '[ConflictDetector] Conflict detected: ${file.targetPath}',
-            );
           }
         }
       }
 
-      final conflictCount = updatedFiles.where((f) => f.hasConflict).length;
-      debugPrint(
-        '[ConflictDetector] Conflict detection complete: $conflictCount conflicts found',
-      );
+      updatedFiles.where((f) => f.hasConflict).length;
 
       return analysis.copyWith(files: updatedFiles);
     } catch (e, stackTrace) {
-      debugPrint('[ConflictDetector] Error during conflict detection: $e');
       debugPrintStack(stackTrace: stackTrace);
 
       // Return original analysis if conflict detection fails
@@ -81,7 +67,6 @@ class FileConflictDetector {
     try {
       final disting = distingCubit.disting();
       if (disting == null) {
-        debugPrint('[ConflictDetector] No disting manager available');
         return files;
       }
 
@@ -94,18 +79,9 @@ class FileConflictDetector {
             files.add(entry.name);
           }
         }
-        debugPrint(
-          '[ConflictDetector] Found ${files.length} files in $directoryPath',
-        );
       } else {
-        debugPrint(
-          '[ConflictDetector] Directory not found or empty: $directoryPath',
-        );
       }
     } catch (e) {
-      debugPrint(
-        '[ConflictDetector] Error listing directory $directoryPath: $e',
-      );
       // Don't throw - just return empty set to avoid blocking installation
     }
 
@@ -122,9 +98,6 @@ class FileConflictDetector {
       final existingFiles = await _getExistingFilesInDirectory(directory);
       return existingFiles.contains(filename);
     } catch (e) {
-      debugPrint(
-        '[ConflictDetector] Error checking file existence: $filePath - $e',
-      );
       return false;
     }
   }

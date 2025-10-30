@@ -484,9 +484,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
 
   void _handleDragStart(DragStartDetails details) {
-    debugPrint(
-      '=== ALGORITHM NODE DRAG START: ${widget.algorithmName} at ${details.globalPosition}',
-    );
 
     setState(() {
       _isDragging = true;
@@ -501,7 +498,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   // Toolbar action handlers removed; actions call callbacks directly
 
   void _handleDelete() async {
-    debugPrint('AlgorithmNodeWidget: Deleting algorithm #${widget.slotNumber}');
 
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -528,7 +524,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     );
 
     if (confirmed != true) {
-      debugPrint('AlgorithmNodeWidget: Delete cancelled by user');
       return;
     }
 
@@ -541,9 +536,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       await cubit.onRemoveAlgorithm(algorithmIndex);
       widget.onDelete?.call();
       _showFeedback('Algorithm deleted');
-      debugPrint('AlgorithmNodeWidget: Successfully deleted algorithm');
     } catch (e) {
-      debugPrint('AlgorithmNodeWidget: Error deleting algorithm: $e');
       _showFeedback('Failed to delete algorithm: $e', isError: true);
     }
   }
@@ -614,9 +607,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       snappedPosition.dy.clamp(0.0, canvasSize - 100),
     );
 
-    debugPrint(
-      '=== ALGORITHM NODE DRAG UPDATE: ${widget.algorithmName} to $constrainedPosition',
-    );
     widget.onPositionChanged?.call(constrainedPosition);
   }
 

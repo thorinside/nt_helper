@@ -219,7 +219,6 @@ class _InteractiveConnectionWidgetState
         _animationController.reset();
       }
     } catch (e) {
-      debugPrint('Error deleting connection: $e');
 
       // Show error feedback to user
       if (mounted) {

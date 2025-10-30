@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
@@ -57,22 +56,13 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (Migrator m) async {
       await m.createAll();
       // Add initial data if needed
-      debugPrint("Database created from scratch (version 2).");
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      debugPrint("Starting database migration from version $from to $to...");
       // Example: Migrating FROM version 1 TO version 2 (or higher)
       if (from == 1) {
         try {
-          debugPrint(
-            "Attempting to add rawUnitIndex column to parameters table...",
-          );
           await m.addColumn(parameters, parameters.rawUnitIndex);
-          debugPrint(
-            "Migration successful: Added rawUnitIndex column to parameters table.",
-          );
         } catch (e) {
-          debugPrint("Migration error adding rawUnitIndex column: $e");
           // Consider re-throwing or handling the error appropriately
         }
       }
@@ -80,44 +70,32 @@ class AppDatabase extends _$AppDatabase {
       // Migration for version 3: Add SdCards and IndexedPresetFiles tables (removed in version 7)
       if (from <= 2) {
         try {
-          debugPrint(
-            "Skipping obsolete SD card tables creation (they will be dropped in version 7)...",
-          );
         } catch (e) {
-          debugPrint("Migration error: $e");
+          // Intentionally empty
         }
       }
 
       // Migration for version 4: Add PluginInstallations table
       if (from <= 3) {
         try {
-          debugPrint("Creating PluginInstallations table...");
           await m.createTable(pluginInstallations);
-          debugPrint("Migration successful: Added PluginInstallations table.");
         } catch (e) {
-          debugPrint("Migration error adding PluginInstallations table: $e");
+          // Intentionally empty
         }
       }
 
       // Migration for version 5: Add pluginFilePath column to algorithms table
       if (from <= 4) {
         try {
-          debugPrint("Adding pluginFilePath column to algorithms table...");
           await m.addColumn(algorithms, algorithms.pluginFilePath);
-          debugPrint(
-            "Migration successful: Added pluginFilePath column to algorithms table.",
-          );
         } catch (e) {
-          debugPrint("Migration error adding pluginFilePath column: $e");
+          // Intentionally empty
         }
       }
 
       // Migration for version 6: Add version tracking columns to plugin_installations table
       if (from <= 5) {
         try {
-          debugPrint(
-            "Adding version tracking columns to plugin_installations table...",
-          );
           await m.addColumn(
             pluginInstallations,
             pluginInstallations.availableVersion,
@@ -130,18 +108,14 @@ class AppDatabase extends _$AppDatabase {
             pluginInstallations,
             pluginInstallations.lastChecked,
           );
-          debugPrint("Migration successful: Added version tracking columns.");
         } catch (e) {
-          debugPrint("Migration error adding version tracking: $e");
+          // Intentionally empty
         }
       }
 
       // Migration for version 7: Remove obsolete SD card scanning tables
       if (from <= 6) {
         try {
-          debugPrint(
-            "Migrating to version 7: Removing obsolete SD card tables...",
-          );
 
           // Drop tables if they exist (safe for fresh installs)
           await m.database.customStatement(
@@ -149,11 +123,7 @@ class AppDatabase extends _$AppDatabase {
           );
           await m.database.customStatement('DROP TABLE IF EXISTS sd_cards');
 
-          debugPrint(
-            "Migration successful: Removed obsolete SD card scanning tables.",
-          );
         } catch (e) {
-          debugPrint("Migration error removing SD card tables: $e");
           // Non-critical error - tables might not exist in some installations
         }
       }
@@ -161,13 +131,9 @@ class AppDatabase extends _$AppDatabase {
       // Migration for version 8: Add perfPageIndex column to preset_mappings table
       if (from <= 7) {
         try {
-          debugPrint("Adding perfPageIndex column to preset_mappings table...");
           await m.addColumn(presetMappings, presetMappings.perfPageIndex);
-          debugPrint(
-            "Migration successful: Added perfPageIndex column to preset_mappings table.",
-          );
         } catch (e) {
-          debugPrint("Migration error adding perfPageIndex column: $e");
+          // Intentionally empty
         }
       }
     },

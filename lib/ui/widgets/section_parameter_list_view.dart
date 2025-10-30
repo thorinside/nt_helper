@@ -183,9 +183,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         );
       }
     } catch (e) {
-      debugPrint(
-        '[SectionParameterListView] Error removing from performance page: $e',
-      );
+      // Intentionally empty
     }
   }
 
@@ -224,9 +222,6 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         }
       }
     } catch (e) {
-      debugPrint(
-        '[SectionParameterListView] Error assigning to performance page: $e',
-      );
       // Revert optimistic update on error
       if (mounted) {
         setState(() {
@@ -444,9 +439,6 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                     // Skip this parameter if we don't have essential data
                     // Note: valueString and enumStrings can be empty/filler for many parameters
                     if (value == null || parameterInfo == null) {
-                      debugPrint(
-                        '[SectionParameterListView] Missing essential data for parameter $parameterNumber in slot ${widget.slot.algorithm.algorithmIndex}',
-                      );
                       return const SizedBox.shrink();
                     }
 

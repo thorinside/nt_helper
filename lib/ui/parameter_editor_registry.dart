@@ -315,9 +315,6 @@ class ParameterEditorRegistry {
     final parameterName = parameterInfo.name;
     final unit = parameterInfo.unit;
 
-    debugPrint(
-      '[ParameterEditorRegistry] Looking for editor: algorithm=$algorithmGuid, parameter=$parameterName, unit=$unit',
-    );
 
     // Find first matching rule
     for (final rule in _rules) {
@@ -326,9 +323,6 @@ class ParameterEditorRegistry {
         parameterName: parameterName,
         unit: unit,
       )) {
-        debugPrint(
-          '[ParameterEditorRegistry] ✅ Found matching rule: ${rule.description}',
-        );
         // Return appropriate editor widget based on rule
         return FileParameterEditor(
           slot: slot,
@@ -341,7 +335,6 @@ class ParameterEditorRegistry {
       }
     }
 
-    debugPrint('[ParameterEditorRegistry] No matching rule found');
     return null; // No special editor needed
   }
 

@@ -11,16 +11,12 @@ class AlgorithmJsonExporter {
   /// Exports all algorithm details with parameters to a JSON file
   Future<void> exportAlgorithmDetails(String filePath) async {
     try {
-      debugPrint('Starting algorithm export to: $filePath');
 
       final dao = database.metadataDao;
       final algorithms = await dao.getAllAlgorithms();
       final List<Map<String, dynamic>> exportData = [];
 
       for (final algorithm in algorithms) {
-        debugPrint(
-          'Processing algorithm: ${algorithm.name} (${algorithm.guid})',
-        );
 
         // Get full details including parameters
         final details = await dao.getFullAlgorithmDetails(algorithm.guid);
@@ -71,12 +67,7 @@ class AlgorithmJsonExporter {
         encoding: utf8,
       );
 
-      debugPrint(
-        'Successfully exported ${exportData.length} algorithms to $filePath',
-      );
-    } catch (e, stackTrace) {
-      debugPrint('Error exporting algorithm details: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e) {
       rethrow;
     }
   }
@@ -104,7 +95,6 @@ class AlgorithmJsonExporter {
         'hasParameters': totalParameters > 0,
       };
     } catch (e) {
-      debugPrint('Error getting export preview: $e');
       return {
         'totalAlgorithms': 0,
         'estimatedSize': '0 KB',
@@ -122,7 +112,6 @@ class AlgorithmJsonExporter {
     }
 
     try {
-      debugPrint('[DEBUG] Starting FULL metadata export to: $filePath');
 
       final dao = database.metadataDao;
 
@@ -136,15 +125,6 @@ class AlgorithmJsonExporter {
       final parameterPageItems = await dao.getAllParameterPageItems();
       final metadataCache = await dao.getMetadataCacheEntries();
 
-      debugPrint('[DEBUG] Fetched data from all tables:');
-      debugPrint('  - Algorithms: ${algorithms.length}');
-      debugPrint('  - Specifications: ${specifications.length}');
-      debugPrint('  - Units: ${units.length}');
-      debugPrint('  - Parameters: ${parameters.length}');
-      debugPrint('  - Parameter Enums: ${parameterEnums.length}');
-      debugPrint('  - Parameter Pages: ${parameterPages.length}');
-      debugPrint('  - Parameter Page Items: ${parameterPageItems.length}');
-      debugPrint('  - Metadata Cache: ${metadataCache.length}');
 
       // Build the complete export structure
       final Map<String, dynamic> exportJson = {
@@ -260,13 +240,8 @@ class AlgorithmJsonExporter {
         encoding: utf8,
       );
 
-      final fileSize = await file.length();
-      debugPrint(
-        '[DEBUG] Successfully exported FULL metadata to $filePath (${(fileSize / 1024).toStringAsFixed(1)} KB)',
-      );
-    } catch (e, stackTrace) {
-      debugPrint('[DEBUG] Error exporting full metadata: $e');
-      debugPrint('Stack trace: $stackTrace');
+      await file.length();
+    } catch (e) {
       rethrow;
     }
   }
@@ -318,7 +293,6 @@ class AlgorithmJsonExporter {
         'sampleAlgorithms': algorithms.take(5).map((a) => a.name).toList(),
       };
     } catch (e) {
-      debugPrint('[DEBUG] Error getting full export preview: $e');
       return {
         'error': 'Failed to get preview: $e',
         'exportType': 'full_metadata',

@@ -1,5 +1,4 @@
 // lib/services/version_comparison_service.dart
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:nt_helper/models/gallery_models.dart';
 
@@ -18,7 +17,7 @@ class VersionComparisonService {
         return v1.compareTo(v2);
       }
     } catch (e) {
-      debugPrint('SemanticVersion comparison failed: $e');
+      // Intentionally empty
     }
 
     // Fallback to custom comparison logic
@@ -99,7 +98,6 @@ class VersionComparisonService {
       final cleaned = _cleanVersionString(versionString);
       return Version.parse(cleaned);
     } catch (e) {
-      debugPrint('Failed to parse version "$versionString": $e');
       return null;
     }
   }
@@ -166,7 +164,6 @@ class VersionComparisonService {
 
   /// Fallback comparison for non-semantic versions
   static int _fallbackVersionComparison(String version1, String version2) {
-    debugPrint('Using fallback comparison for: $version1 vs $version2');
 
     // Try to extract numeric parts for comparison
     final nums1 = _extractNumbers(version1);

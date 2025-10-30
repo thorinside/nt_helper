@@ -1,6 +1,5 @@
 import 'dart:typed_data'; // Added for Uint8List
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show
@@ -212,9 +211,6 @@ class DistingControllerImpl implements DistingController {
           .requestParameterValue(actualAlgorithmIndex, parameterNumber);
       return paramValueResponse?.value;
     } catch (e) {
-      debugPrint(
-        'Error fetching parameter value for slot $slotIndex, param $parameterNumber (algoIndex $actualAlgorithmIndex): $e',
-      );
       return null;
     }
   }
@@ -239,9 +235,6 @@ class DistingControllerImpl implements DistingController {
 
       return null;
     } catch (e) {
-      debugPrint(
-        'Error fetching parameter string value for slot $slotIndex, param $parameterNumber: $e',
-      );
       return null;
     }
   }
@@ -295,7 +288,6 @@ class DistingControllerImpl implements DistingController {
       // _getSynchronizedState(); // Determine if sync state is strictly needed for a screenshot
       return await _distingCubit.getHardwareScreenshot();
     } catch (e) {
-      debugPrint('Error in getModuleScreenshot: ${e.toString()}');
       return null; // Ensure null is returned on any error
     }
   }
@@ -313,7 +305,6 @@ class DistingControllerImpl implements DistingController {
       _getSynchronizedState(); // Ensure we're in sync state
       return await _getManager().requestCpuUsage();
     } catch (e) {
-      debugPrint('Error fetching CPU usage: ${e.toString()}');
       return null; // Return null on any error
     }
   }
@@ -335,7 +326,6 @@ class DistingControllerImpl implements DistingController {
           .firstOrNull;
       return enums;
     } catch (e) {
-      debugPrint('Error getting parameter enum strings: $e');
       return null;
     }
   }
@@ -357,7 +347,6 @@ class DistingControllerImpl implements DistingController {
       }
       return null;
     } catch (e) {
-      debugPrint('Error getting parameter mapping: $e');
       return null;
     }
   }

@@ -225,12 +225,8 @@ class DistingCubit extends Cubit<DistingState> {
     ); // Use fetchSlots with mockManager
 
     // Debug: Check slots immediately after fetching
-    debugPrint("[Cubit onDemo] fetchSlots returned ${slots.length} slots.");
     for (int i = 0; i < slots.length; i++) {
-      final s = slots[i];
-      debugPrint(
-        "[Cubit onDemo] Slot $i ('${s.algorithm.name}'): Params=${s.parameters.length}, Vals=${s.values.length}, Enums=${s.enums.length}, Maps=${s.mappings.length}, ValStrs=${s.valueStrings.length}",
-      );
+      slots[i];
     }
 
     // --- Emit the State ---
@@ -264,7 +260,6 @@ class DistingCubit extends Cubit<DistingState> {
     bool enableBackgroundCommunityLoading = false,
   }) async {
     final numAlgorithms = await manager.requestNumberOfAlgorithms() ?? 0;
-    debugPrint("[Cubit] Found $numAlgorithms total algorithms to process");
 
     if (enableBackgroundCommunityLoading) {
       // Optimized approach: only fetch factory algorithms synchronously
@@ -286,9 +281,6 @@ class DistingCubit extends Cubit<DistingState> {
     final List<AlgorithmInfo> factoryResults = [];
     final List<int> backgroundIndices = [];
 
-    debugPrint(
-      "[Cubit] Starting optimized fetch with $numAlgorithms algorithms - using short timeouts to identify fast factory algorithms",
-    );
 
     // Quick pass with short timeout to catch fast-responding factory algorithms
     for (int i = 0; i < numAlgorithms; i++) {
@@ -300,11 +292,9 @@ class DistingCubit extends Cubit<DistingState> {
 
         if (algorithmInfo != null && _isFactoryAlgorithm(algorithmInfo.guid)) {
           factoryResults.add(algorithmInfo);
-          debugPrint("[Cubit] Quick factory algorithm: ${algorithmInfo.name}");
         } else if (algorithmInfo != null) {
           // Got response but it's a community plugin - queue for background
           backgroundIndices.add(i);
-          debugPrint("[Cubit] Community plugin queued: ${algorithmInfo.name}");
         } else {
           // Timed out - likely a community plugin that's not loaded, queue for background
           backgroundIndices.add(i);
@@ -312,13 +302,9 @@ class DistingCubit extends Cubit<DistingState> {
       } catch (e) {
         // Error - queue for background retry
         backgroundIndices.add(i);
-        debugPrint("[Cubit] Algorithm $i error, queued for background: $e");
       }
     }
 
-    debugPrint(
-      "[Cubit] Quick sync complete: ${factoryResults.length} factory algorithms loaded, ${backgroundIndices.length} queued for background",
-    );
 
     // Start background loading for community plugins and timed-out algorithms
     if (backgroundIndices.isNotEmpty) {
@@ -352,7 +338,6 @@ class DistingCubit extends Cubit<DistingState> {
           }
         }
       } catch (e) {
-        debugPrint("Error categorizing algorithm $i: $e");
         // If we can't determine, treat as community (lower priority)
         communityIndices.add(i);
       }
@@ -368,7 +353,7 @@ class DistingCubit extends Cubit<DistingState> {
           results.add(algorithmInfo);
         }
       } catch (e) {
-        debugPrint("Error fetching factory algorithm $i: $e");
+        // Intentionally empty
       }
     }
 
@@ -380,7 +365,7 @@ class DistingCubit extends Cubit<DistingState> {
           results.add(algorithmInfo);
         }
       } catch (e) {
-        debugPrint("Error fetching community algorithm $i: $e");
+        // Intentionally empty
       }
     }
 
@@ -392,9 +377,6 @@ class DistingCubit extends Cubit<DistingState> {
     IDistingMidiManager manager,
     int numAlgorithms,
   ) async {
-    debugPrint(
-      "[Cubit] Starting background loading for all $numAlgorithms algorithms",
-    );
 
     final List<AlgorithmInfo> factoryResults = [];
     final List<AlgorithmInfo> communityResults = [];
@@ -416,9 +398,6 @@ class DistingCubit extends Cubit<DistingState> {
                 ...communityResults,
               ];
               emit(currentState.copyWith(algorithms: currentAlgorithms));
-              debugPrint(
-                "[Cubit] Updated state with factory algorithm: ${algorithmInfo.name} (${factoryResults.length} factory total)",
-              );
             }
           } else {
             communityResults.add(algorithmInfo);
@@ -432,22 +411,15 @@ class DistingCubit extends Cubit<DistingState> {
                 ...communityResults,
               ];
               emit(currentState.copyWith(algorithms: currentAlgorithms));
-              debugPrint(
-                "[Cubit] Updated state with community plugin: ${algorithmInfo.name} (${communityResults.length} community total)",
-              );
             }
           }
         }
       } catch (e) {
-        debugPrint("[Cubit] Failed to load algorithm at index $i: $e");
         // Continue with next algorithm
       }
     }
 
-    final totalLoaded = factoryResults.length + communityResults.length;
-    debugPrint(
-      "[Cubit] Background algorithm loading complete: ${factoryResults.length} factory + ${communityResults.length} community = $totalLoaded total",
-    );
+    factoryResults.length + communityResults.length;
   }
 
   // Background loading of community plugins with single retry and state merging
@@ -456,9 +428,6 @@ class DistingCubit extends Cubit<DistingState> {
     List<int> communityIndices,
     List<AlgorithmInfo> baseResults,
   ) async {
-    debugPrint(
-      "[Cubit] Starting background community plugin loading for ${communityIndices.length} plugins",
-    );
 
     final List<AlgorithmInfo> communityResults = [];
 
@@ -468,14 +437,8 @@ class DistingCubit extends Cubit<DistingState> {
         final algorithmInfo = await manager.requestAlgorithmInfo(i);
         if (algorithmInfo != null) {
           communityResults.add(algorithmInfo);
-          debugPrint(
-            "[Cubit] Successfully loaded community plugin: ${algorithmInfo.name} (${algorithmInfo.guid})",
-          );
         }
       } catch (e) {
-        debugPrint(
-          "[Cubit] Failed to load community plugin at index $i (single attempt): $e",
-        );
         // Move on to next plugin - no retry
       }
     }
@@ -483,22 +446,13 @@ class DistingCubit extends Cubit<DistingState> {
     // Merge results and update state if still synchronized
     if (communityResults.isNotEmpty) {
       final mergedResults = [...baseResults, ...communityResults];
-      debugPrint(
-        "[Cubit] Background loading complete. Merging ${communityResults.length} community plugins with ${baseResults.length} factory algorithms",
-      );
 
       // Only update state if we're still in synchronized mode and not offline
       final currentState = state;
       if (currentState is DistingStateSynchronized && !currentState.offline) {
         emit(currentState.copyWith(algorithms: mergedResults));
-        debugPrint(
-          "[Cubit] State updated with ${mergedResults.length} total algorithms",
-        );
       }
     } else {
-      debugPrint(
-        "[Cubit] No community plugins successfully loaded in background",
-      );
     }
   }
 
@@ -567,14 +521,10 @@ class DistingCubit extends Cubit<DistingState> {
   Future<CpuUsage?> getCpuUsage() async {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
-      debugPrint("[Cubit] Cannot get CPU usage: Not in synchronized state.");
       return null;
     }
 
     if (currentState.offline || currentState.demo) {
-      debugPrint(
-        "[Cubit] Cannot get CPU usage: Device is offline or in demo mode.",
-      );
       return null;
     }
 
@@ -584,7 +534,6 @@ class DistingCubit extends Cubit<DistingState> {
       final cpuUsage = await disting.requestCpuUsage();
       return cpuUsage;
     } catch (e, stackTrace) {
-      debugPrint("Error getting CPU usage: $e");
       debugPrintStack(stackTrace: stackTrace);
       return null;
     }
@@ -620,7 +569,6 @@ class DistingCubit extends Cubit<DistingState> {
       inputDevice = currentState.inputDevice;
       outputDevice = currentState.outputDevice;
     } else {
-      debugPrint("[Cubit] Cannot sync: Invalid state or offline.");
       return;
     }
 
@@ -629,7 +577,6 @@ class DistingCubit extends Cubit<DistingState> {
 
     try {
       // --- Fetch ALL data from device REGARDLESS ---
-      debugPrint("[Cubit] _performSyncAndEmit: Fetching full device state...");
 
       // Start background algorithm loading (slots will have their own algorithm info)
       List<AlgorithmInfo> algorithms = [];
@@ -639,20 +586,13 @@ class DistingCubit extends Cubit<DistingState> {
             await distingManager.requestNumberOfAlgorithms() ?? 0;
         numInPreset = await distingManager.requestNumAlgorithmsInPreset() ?? 0;
 
-        debugPrint(
-          "[Cubit] Found $numAlgorithms total algorithms, $numInPreset in preset",
-        );
 
         // Start background loading for ALL algorithms (slots contain their own algorithm info for UI)
         if (numAlgorithms > 0) {
           _loadAllAlgorithmsInBackground(distingManager, numAlgorithms);
         }
 
-        debugPrint(
-          "[Cubit] Background algorithm loading started, continuing with device sync",
-        );
       } catch (e, stackTrace) {
-        debugPrint("Error starting algorithm background loading: $e");
         debugPrintStack(stackTrace: stackTrace);
       }
 
@@ -660,7 +600,6 @@ class DistingCubit extends Cubit<DistingState> {
       final presetName = await distingManager.requestPresetName() ?? "Default";
       var unitStrings = await distingManager.requestUnitStrings() ?? [];
       List<Slot> slots = await fetchSlots(numInPreset, distingManager);
-      debugPrint("[Cubit] _performSyncAndEmit: Fetched ${slots.length} slots.");
 
       // --- Emit final synchronized state --- (Ensure offline is false)
       emit(
@@ -681,15 +620,10 @@ class DistingCubit extends Cubit<DistingState> {
 
       // Start background retry processing for any failed parameter requests
       if (_parameterRetryQueue.isNotEmpty) {
-        debugPrint(
-          '[Cubit] Starting background retry processing for ${_parameterRetryQueue.length} failed requests',
-        );
         _processParameterRetryQueue(distingManager).catchError((e) {
-          debugPrint('[Cubit] Background retry processing failed: $e');
         });
       }
     } catch (e, stackTrace) {
-      debugPrint("Error during synchronization: $e");
       debugPrintStack(stackTrace: stackTrace);
       // Do NOT store connection details if sync fails
       await loadDevices();
@@ -775,17 +709,12 @@ class DistingCubit extends Cubit<DistingState> {
         final localUnixTime =
             now.millisecondsSinceEpoch ~/ 1000 - now.timeZoneOffset.inSeconds;
         await newDistingManager.requestSetRealTimeClock(localUnixTime);
-        debugPrint(
-          "[DistingCubit] Device clock synchronized to local time: $localUnixTime",
-        );
       } catch (e) {
-        debugPrint("[DistingCubit] Failed to synchronize device clock: $e");
         // Continue with connection even if clock sync fails
       }
 
       await _performSyncAndEmit(); // Sync with the new connection
     } catch (e, stackTrace) {
-      debugPrint("Error connecting or initial sync: ${e.toString()}");
       debugPrintStack(stackTrace: stackTrace);
       // Clear last connection details if connection/sync fails
       _lastOnlineInputDevice = null;
@@ -798,7 +727,7 @@ class DistingCubit extends Cubit<DistingState> {
           _midiCommand.disconnectDevice(outputDevice);
         }
       } catch (disconnectError) {
-        debugPrint("Error during MIDI disconnect cleanup: $disconnectError");
+        // Intentionally empty
       }
       await loadDevices();
     }
@@ -825,7 +754,6 @@ class DistingCubit extends Cubit<DistingState> {
       currentOutputDevice = currentState.outputDevice;
     }
 
-    debugPrint("[DistingCubit] Entering offline mode...");
     emit(
       DistingState.connected(disting: MockDistingMidiManager(), loading: true),
     );
@@ -835,16 +763,10 @@ class DistingCubit extends Cubit<DistingState> {
       if (currentManager != null) {
         // Check if there *was* a manager
         if (currentInputDevice != null) {
-          debugPrint(
-            "[DistingCubit] Disconnecting input device ${currentInputDevice.name}...",
-          );
           _midiCommand.disconnectDevice(currentInputDevice);
         }
         if (currentOutputDevice != null &&
             currentOutputDevice.id != currentInputDevice?.id) {
-          debugPrint(
-            "[DistingCubit] Disconnecting output device ${currentOutputDevice.name}...",
-          );
           _midiCommand.disconnectDevice(currentOutputDevice);
         }
         currentManager.dispose(); // Dispose the old manager (online or offline)
@@ -868,7 +790,6 @@ class DistingCubit extends Cubit<DistingState> {
         _offlineManager!,
       );
 
-      debugPrint("[DistingCubit] Emitting offline synchronized state.");
       // Emit state WITHOUT devices or custom names map
       emit(
         DistingState.synchronized(
@@ -891,7 +812,6 @@ class DistingCubit extends Cubit<DistingState> {
       // Create parameter queue for offline manager
       _createParameterQueue();
     } catch (e, stackTrace) {
-      debugPrint("Error initializing offline mode: $e");
       debugPrintStack(stackTrace: stackTrace);
       await loadDevices();
     }
@@ -905,7 +825,6 @@ class DistingCubit extends Cubit<DistingState> {
       await loadDevices();
       return;
     }
-    debugPrint("[DistingCubit] Going online...");
 
     // Dispose offline manager first
     _offlineManager?.dispose();
@@ -915,9 +834,6 @@ class DistingCubit extends Cubit<DistingState> {
     if (_lastOnlineInputDevice != null &&
         _lastOnlineOutputDevice != null &&
         _lastOnlineSysExId != null) {
-      debugPrint(
-        "Attempting to reconnect using last known online connection...",
-      );
       try {
         // Attempt direct connection using stored details
         await connectToDevices(
@@ -928,9 +844,6 @@ class DistingCubit extends Cubit<DistingState> {
         // If connectToDevices succeeds, it will emit the connected/synchronized state
         return; // Successfully reconnected
       } catch (e) {
-        debugPrint(
-          "Failed to reconnect using last known details: $e. Falling back to device selection.",
-        );
         // Clear potentially stale details if reconnection failed
         _lastOnlineInputDevice = null;
         _lastOnlineOutputDevice = null;
@@ -940,7 +853,6 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     // If no last connection details or direct reconnect failed, load devices normally
-    debugPrint("No valid last connection details, proceeding to loadDevices.");
     disconnect(); // Ensure any residual MIDI connection is closed
     await loadDevices(); // Go back to device selection / auto-connect
   }
@@ -953,17 +865,12 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> loadPresetOffline(FullPresetDetails presetDetails) async {
     final currentState = state;
     if (!(currentState is DistingStateSynchronized && currentState.offline)) {
-      debugPrint("Error: Cannot load preset offline when not in offline mode.");
       return;
     }
     if (_offlineManager == null) {
-      debugPrint("Error: Offline manager not initialized.");
       return;
     }
 
-    debugPrint(
-      "[DistingCubit] Loading preset offline: ${presetDetails.preset.name}",
-    );
     emit(currentState.copyWith(loading: true)); // Show loading
 
     try {
@@ -982,9 +889,6 @@ class DistingCubit extends Cubit<DistingState> {
       final version =
           await _offlineManager!.requestVersionString() ?? "Offline";
 
-      debugPrint(
-        "[DistingCubit] Emitting updated offline state with loaded preset: $presetName",
-      );
       // 4. Emit the new synchronized state, still marked offline
       emit(
         DistingState.synchronized(
@@ -1004,7 +908,6 @@ class DistingCubit extends Cubit<DistingState> {
         ),
       );
     } catch (e, stackTrace) {
-      debugPrint("Error loading preset offline: $e");
       debugPrintStack(stackTrace: stackTrace);
       emit(currentState.copyWith(loading: false)); // Stop loading on error
     }
@@ -1047,7 +950,6 @@ class DistingCubit extends Cubit<DistingState> {
       );
       return availableAlgorithmsInfo;
     } catch (e, stackTrace) {
-      debugPrint("Error fetching offline algorithms metadata: $e");
       debugPrintStack(stackTrace: stackTrace);
       return []; // Return empty on error
     }
@@ -1057,12 +959,10 @@ class DistingCubit extends Cubit<DistingState> {
   /// By default, performs a fast refresh of preset data only.
   /// Set [fullRefresh] to true to also re-download the algorithm library.
   Future<void> refresh({bool fullRefresh = false}) async {
-    debugPrint("[Cubit] Refresh requested (fullRefresh: $fullRefresh).");
     final currentState = state;
     if (currentState is DistingStateSynchronized) {
       // *** Add check for offline mode ***
       if (currentState.offline) {
-        debugPrint("[Cubit] Cannot refresh while offline.");
         return;
       }
 
@@ -1079,7 +979,6 @@ class DistingCubit extends Cubit<DistingState> {
         }
       }
     } else {
-      debugPrint("[Cubit] Cannot refresh: Not in Synchronized state.");
       // Optionally handle error or do nothing
     }
   }
@@ -1093,7 +992,6 @@ class DistingCubit extends Cubit<DistingState> {
         midiManager: manager,
         onParameterStringUpdated: _onParameterStringUpdated,
       );
-      debugPrint('[DistingCubit] Created parameter update queue');
     }
   }
 
@@ -1107,7 +1005,6 @@ class DistingCubit extends Cubit<DistingState> {
 
   // Background refresh of algorithm library without blocking the UI
   void _refreshAlgorithmsInBackground() {
-    debugPrint("[Cubit] Starting background algorithm refresh...");
 
     // Run asynchronously without awaiting
     () async {
@@ -1131,20 +1028,13 @@ class DistingCubit extends Cubit<DistingState> {
           if (newState is DistingStateSynchronized &&
               !newState.offline &&
               algorithms.length != newState.algorithms.length) {
-            debugPrint(
-              "[Cubit] Background algorithm refresh completed, updating state with ${algorithms.length} algorithms.",
-            );
             emit(newState.copyWith(algorithms: algorithms));
           }
         } catch (e, stackTrace) {
-          debugPrint(
-            "Error during background algorithm refresh (continuing normally): $e",
-          );
           debugPrintStack(stackTrace: stackTrace);
           // Don't update state on algorithm fetch failure during background refresh
         }
       } catch (e, stackTrace) {
-        debugPrint("Error during background algorithm refresh: $e");
         debugPrintStack(stackTrace: stackTrace);
         // Don't emit error state for background refresh failures
       }
@@ -1153,7 +1043,6 @@ class DistingCubit extends Cubit<DistingState> {
 
   // Public method to trigger algorithm list refresh from UI
   void refreshAlgorithms() {
-    debugPrint("[DistingCubit] Manual algorithm refresh requested from UI");
     _refreshAlgorithmsInBackground();
   }
 
@@ -1195,11 +1084,7 @@ class DistingCubit extends Cubit<DistingState> {
 
       emit(currentState.copyWith(slots: updatedSlots));
 
-      debugPrint(
-        '[DistingCubit] Updated parameter string UI for $algorithmIndex:$parameterNumber = "$value"',
-      );
     } catch (e, stackTrace) {
-      debugPrint('[DistingCubit] Error updating parameter string UI: $e');
       debugPrintStack(stackTrace: stackTrace);
     }
   }
@@ -1254,7 +1139,6 @@ class DistingCubit extends Cubit<DistingState> {
     _acquireCommandSemaphore();
 
     try {
-      debugPrint("value = $value, userChanging = $userIsChangingTheValue");
 
       switch (state) {
         case DistingStateInitial():
@@ -1321,9 +1205,6 @@ class DistingCubit extends Cubit<DistingState> {
                 parameterNumber,
               );
               if (value < parameterInfo.min || value > parameterInfo.max) {
-                debugPrint(
-                  "Out-of-bounds data for device: algo $algorithmIndex, param $parameterNumber, value $value, expected ${parameterInfo.min}-${parameterInfo.max}",
-                );
                 _refreshSlotAfterAnomaly(algorithmIndex);
                 return; // Return early as the slot will be refreshed
               }
@@ -1384,13 +1265,7 @@ class DistingCubit extends Cubit<DistingState> {
             specsToSend = storedAlgoInfo.specifications
                 .map((s) => s.defaultValue)
                 .toList();
-            debugPrint(
-              "[Offline Cubit] Using stored default specifications for ${algorithm.name}: $specsToSend",
-            );
           } else {
-            debugPrint(
-              "[Offline Cubit] Warning: Could not find stored AlgorithmInfo for ${algorithm.name}. Using passed specifications.",
-            );
           }
         }
 
@@ -1407,11 +1282,7 @@ class DistingCubit extends Cubit<DistingState> {
           final updatedSlots = [...syncstate.slots, newSlot];
           emit(syncstate.copyWith(slots: updatedSlots, loading: false));
 
-          debugPrint(
-            "[Cubit] Added algorithm '${algorithm.name}' to slot $newSlotIndex",
-          );
         } catch (e, stackTrace) {
-          debugPrint("Error fetching new slot after adding algorithm: $e");
           debugPrintStack(stackTrace: stackTrace);
           // Fall back to full refresh on error
           await _refreshStateFromManager();
@@ -1446,7 +1317,6 @@ class DistingCubit extends Cubit<DistingState> {
         final disting = requireDisting();
         // Don't await here, let it run in the background
         disting.requestRemoveAlgorithm(algorithmIndex).catchError((e, s) {
-          debugPrint("Error sending remove algorithm request: $e");
           // Refresh immediately on error
           _refreshStateFromManager(delay: Duration.zero);
         });
@@ -1461,23 +1331,14 @@ class DistingCubit extends Cubit<DistingState> {
             // Only verify if the current state still matches the optimistic one we emitted
             final eq = const DeepCollectionEquality();
             if (!eq.equals(verificationState.slots, optimisticSlots)) {
-              debugPrint(
-                "[Cubit Remove Verify] State changed before verification completed. Skipping verification.",
-              );
               return;
             }
 
-            debugPrint(
-              "[Cubit Remove Verify] Verifying optimistic removal of algorithm at index $algorithmIndex...",
-            );
             try {
               // Check if the number of algorithms matches our optimistic state
               final actualNumAlgorithms =
                   await disting.requestNumAlgorithmsInPreset() ?? 0;
               if (actualNumAlgorithms != optimisticSlots.length) {
-                debugPrint(
-                  "[Cubit Remove Verify] Algorithm count mismatch. Expected: ${optimisticSlots.length}, Actual: $actualNumAlgorithms",
-                );
                 await _refreshStateFromManager(delay: Duration.zero);
                 return;
               }
@@ -1492,29 +1353,20 @@ class DistingCubit extends Cubit<DistingState> {
                     actualAlgorithm.guid != optimisticAlgorithm.guid ||
                     actualAlgorithm.name != optimisticAlgorithm.name) {
                   mismatchDetected = true;
-                  debugPrint(
-                    "[Cubit Remove Verify] Mismatch detected at index $i. Expected: '${optimisticAlgorithm.name}' (GUID: ${optimisticAlgorithm.guid}), Actual: '${actualAlgorithm?.name ?? 'NULL'}' (GUID: ${actualAlgorithm?.guid ?? 'NULL'})",
-                  );
                   break;
                 }
               }
 
               if (mismatchDetected) {
-                debugPrint(
-                  "[Cubit Remove Verify] Optimistic state INCORRECT based on GUID/Name check. Reverting to actual state.",
-                );
                 await _refreshStateFromManager(delay: Duration.zero);
               } else {
-                debugPrint("[Cubit Remove Verify] Optimistic state CORRECT.");
               }
             } catch (e, stackTrace) {
-              debugPrint("[Cubit Remove Verify] Error during verification: $e");
               debugPrintStack(stackTrace: stackTrace);
               await _refreshStateFromManager(delay: Duration.zero);
             }
           }),
-          onCancel: () =>
-              debugPrint("[Cubit Remove Verify] Verification cancelled."),
+          onCancel: () {},
         );
         break;
     }
@@ -1535,7 +1387,6 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<int> moveAlgorithmUp(int algorithmIndex) async {
-    debugPrint("moveAlgorithmUp $algorithmIndex");
 
     final currentState = state;
     if (currentState is! DistingStateSynchronized) return algorithmIndex;
@@ -1576,7 +1427,6 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     // Don't await here, let it run in the background
     disting.requestMoveAlgorithmUp(algorithmIndex).catchError((e, s) {
-      debugPrint("Error sending move up request: $e");
       // Optionally trigger a full refresh on error?
       _refreshStateFromManager(
         delay: Duration.zero,
@@ -1595,15 +1445,9 @@ class DistingCubit extends Cubit<DistingState> {
         // Use a deep equality check for the slots.
         final eq = const DeepCollectionEquality();
         if (!eq.equals(verificationState.slots, optimisticSlotsCorrected)) {
-          debugPrint(
-            "[Cubit Move Verify] State changed before verification completed. Skipping verification.",
-          );
           return;
         }
 
-        debugPrint(
-          "[Cubit Move Verify] Verifying optimistic move up for index $algorithmIndex...",
-        );
         try {
           // --- Verification: Check GUIDs and Names ---
           bool mismatchDetected = false;
@@ -1616,18 +1460,12 @@ class DistingCubit extends Cubit<DistingState> {
                 actualAlgorithm.guid != optimisticAlgorithm.guid ||
                 actualAlgorithm.name != optimisticAlgorithm.name) {
               mismatchDetected = true;
-              debugPrint(
-                "[Cubit Move Verify] Mismatch detected at index $i. Expected: '${optimisticAlgorithm.name}' (GUID: ${optimisticAlgorithm.guid}), Actual: '${actualAlgorithm?.name ?? 'NULL'}' (GUID: ${actualAlgorithm?.guid ?? 'NULL'})",
-              );
               break; // No need to check further
             }
           }
           // --- End Verification ---
 
           if (mismatchDetected) {
-            debugPrint(
-              "[Cubit Move Verify] Optimistic state INCORRECT based on GUID/Name check. Reverting to actual state.",
-            );
             // If mismatch, only fetch the actual slots, keep other metadata.
             final actualSlots = await fetchSlots(
               optimisticSlotsCorrected.length,
@@ -1655,17 +1493,15 @@ class DistingCubit extends Cubit<DistingState> {
               ),
             );
           } else {
-            debugPrint("[Cubit Move Verify] Optimistic state CORRECT.");
           }
         } catch (e, stackTrace) {
-          debugPrint("[Cubit Move Verify] Error during verification: $e");
           debugPrintStack(stackTrace: stackTrace);
           // Optionally trigger a full refresh on verification error?
           // Avoid emitting potentially stale state on error. A full refresh might be safer.
           _refreshStateFromManager(delay: Duration.zero);
         }
       }),
-      onCancel: () => debugPrint("[Cubit Move Verify] Verification cancelled."),
+      onCancel: () {},
     );
 
     // 4. Return optimistic index
@@ -1673,7 +1509,6 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<int> moveAlgorithmDown(int algorithmIndex) async {
-    debugPrint("moveAlgorithmDown $algorithmIndex");
 
     final currentState = state;
     if (currentState is! DistingStateSynchronized) return algorithmIndex;
@@ -1713,7 +1548,6 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     // Don't await here, let it run in the background
     disting.requestMoveAlgorithmDown(algorithmIndex).catchError((e, s) {
-      debugPrint("Error sending move down request: $e");
       _refreshStateFromManager(
         delay: Duration.zero,
       ); // Refresh immediately on error
@@ -1727,15 +1561,9 @@ class DistingCubit extends Cubit<DistingState> {
 
         final eq = const DeepCollectionEquality();
         if (!eq.equals(verificationState.slots, optimisticSlotsCorrected)) {
-          debugPrint(
-            "[Cubit Move Verify] State changed before verification completed. Skipping verification.",
-          );
           return;
         }
 
-        debugPrint(
-          "[Cubit Move Verify] Verifying optimistic move down for index $algorithmIndex...",
-        );
         try {
           // --- Verification: Check GUIDs and Names ---
           bool mismatchDetected = false;
@@ -1748,18 +1576,12 @@ class DistingCubit extends Cubit<DistingState> {
                 actualAlgorithm.guid != optimisticAlgorithm.guid ||
                 actualAlgorithm.name != optimisticAlgorithm.name) {
               mismatchDetected = true;
-              debugPrint(
-                "[Cubit Move Verify] Mismatch detected at index $i. Expected: '${optimisticAlgorithm.name}' (GUID: ${optimisticAlgorithm.guid}), Actual: '${actualAlgorithm?.name ?? 'NULL'}' (GUID: ${actualAlgorithm?.guid ?? 'NULL'})",
-              );
               break; // No need to check further
             }
           }
           // --- End Verification ---
 
           if (mismatchDetected) {
-            debugPrint(
-              "[Cubit Move Verify] Optimistic state INCORRECT based on GUID/Name check. Reverting to actual state.",
-            );
             // If mismatch, only fetch the actual slots, keep other metadata.
             final actualSlots = await fetchSlots(
               optimisticSlotsCorrected.length,
@@ -1787,15 +1609,13 @@ class DistingCubit extends Cubit<DistingState> {
               ),
             );
           } else {
-            debugPrint("[Cubit Move Verify] Optimistic state CORRECT.");
           }
         } catch (e, stackTrace) {
-          debugPrint("[Cubit Move Verify] Error during verification: $e");
           debugPrintStack(stackTrace: stackTrace);
           _refreshStateFromManager(delay: Duration.zero);
         }
       }),
-      onCancel: () => debugPrint("[Cubit Move Verify] Verification cancelled."),
+      onCancel: () {},
     );
 
     // 4. Return optimistic index
@@ -1818,7 +1638,6 @@ class DistingCubit extends Cubit<DistingState> {
     if (currentState is DistingStateSynchronized) {
       // Prevent online load preset when offline
       if (currentState.offline) {
-        debugPrint("Error: Cannot load device preset while offline.");
         return;
       }
       final disting = requireDisting();
@@ -1880,16 +1699,10 @@ class DistingCubit extends Cubit<DistingState> {
   ) async {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
-      debugPrint(
-        "[Cubit] Cannot set performance page mapping: Not in Synchronized state.",
-      );
       return;
     }
 
     if (slotIndex >= currentState.slots.length) {
-      debugPrint(
-        "[Cubit] Cannot set performance page mapping: Invalid slot index $slotIndex.",
-      );
       return;
     }
 
@@ -1899,9 +1712,6 @@ class DistingCubit extends Cubit<DistingState> {
     final slot = currentState.slots[slotIndex];
 
     if (parameterNumber >= slot.mappings.length) {
-      debugPrint(
-        "[Cubit] Cannot set performance page mapping: Invalid parameter number $parameterNumber for slot $slotIndex.",
-      );
       return;
     }
 
@@ -1929,15 +1739,11 @@ class DistingCubit extends Cubit<DistingState> {
       ),
     );
 
-    debugPrint(
-      "[Cubit] Optimistic update: Set performance page $perfPageIndex for slot $slotIndex param $parameterNumber",
-    );
 
     // 2. Send update to hardware (non-blocking)
     disting
         .setPerformancePageMapping(slotIndex, parameterNumber, perfPageIndex)
         .catchError((e, s) {
-          debugPrint("Error sending performance page mapping to hardware: $e");
           debugPrintStack(stackTrace: s);
         });
 
@@ -1958,25 +1764,16 @@ class DistingCubit extends Cubit<DistingState> {
         );
 
         if (actualMapping == null) {
-          debugPrint(
-            "[Cubit] Verification attempt ${attempt + 1}/$maxRetries: No response from hardware.",
-          );
           continue; // Retry
         }
 
         // 4. If hardware value differs from optimistic value, hardware wins
         if (actualMapping.packedMappingData.perfPageIndex !=
             optimisticMapping.packedMappingData.perfPageIndex) {
-          debugPrint(
-            "[Cubit] Verification attempt ${attempt + 1}/$maxRetries: Mismatch detected. Expected: $perfPageIndex, Actual: ${actualMapping.packedMappingData.perfPageIndex}.",
-          );
 
           // Check if this is the last attempt
           if (attempt == maxRetries - 1) {
             // Last attempt - accept hardware value as final
-            debugPrint(
-              "[Cubit] Final verification: Hardware value ${actualMapping.packedMappingData.perfPageIndex} differs from requested $perfPageIndex. Updating UI with hardware value.",
-            );
 
             // Update UI with actual hardware value
             final verificationState = state;
@@ -1998,37 +1795,22 @@ class DistingCubit extends Cubit<DistingState> {
             verified = true;
           } else {
             // Not the last attempt - retry to see if hardware catches up
-            debugPrint(
-              "[Cubit] Hardware not yet updated, retrying (attempt ${attempt + 1}/$maxRetries)...",
-            );
             continue;
           }
         } else {
           // Hardware matches optimistic value - success!
-          debugPrint(
-            "[Cubit] Verification successful on attempt ${attempt + 1}: Hardware confirms performance page $perfPageIndex.",
-          );
           verified = true;
         }
       } catch (e, stackTrace) {
-        debugPrint(
-          "[Cubit] Error during verification attempt ${attempt + 1}/$maxRetries: $e",
-        );
         debugPrintStack(stackTrace: stackTrace);
 
         if (attempt == maxRetries - 1) {
           // Last attempt failed - log error
-          debugPrint(
-            "[Cubit] All verification attempts failed. Performance page mapping may be out of sync with hardware.",
-          );
         }
       }
     }
 
     if (!verified) {
-      debugPrint(
-        "[Cubit] Warning: Could not verify performance page mapping after $maxRetries attempts. Reverting to original value.",
-      );
 
       // Revert to original mapping since we couldn't verify the change
       final revertState = state;
@@ -2048,9 +1830,6 @@ class DistingCubit extends Cubit<DistingState> {
         );
       }
 
-      debugPrint(
-        "[Cubit] Reverted performance page mapping for slot $slotIndex param $parameterNumber to original value ${originalMapping.packedMappingData.perfPageIndex}.",
-      );
     }
   }
 
@@ -2062,7 +1841,6 @@ class DistingCubit extends Cubit<DistingState> {
   }) async {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
-      debugPrint("[Cubit] Cannot refresh state: Not in Synchronized state.");
       return;
     }
 
@@ -2086,7 +1864,6 @@ class DistingCubit extends Cubit<DistingState> {
         ),
       );
     } catch (e, stackTrace) {
-      debugPrint("Error refreshing state from manager: $e");
       debugPrintStack(stackTrace: stackTrace);
       emit(currentState.copyWith(loading: false)); // Stop loading on error
     }
@@ -2201,7 +1978,6 @@ class DistingCubit extends Cubit<DistingState> {
     _programRefreshSlot = algorithmIndex;
     _programRefreshRetries = 0;
 
-    debugPrint('[ProgramRefresh] Queuing refresh for slot $algorithmIndex');
 
     // Start new timer with 2 second delay to give hardware time to load the new program
     _programRefreshTimer = Timer(const Duration(seconds: 2), () {
@@ -2213,13 +1989,9 @@ class DistingCubit extends Cubit<DistingState> {
     final slotIndex = _programRefreshSlot;
     if (slotIndex == null) return;
 
-    debugPrint(
-      '[ProgramRefresh] Executing refresh for slot $slotIndex (attempt ${_programRefreshRetries + 1})',
-    );
 
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
-      debugPrint('[ProgramRefresh] State not synchronized, aborting');
       _programRefreshTimer = null;
       _programRefreshSlot = null;
       return;
@@ -2232,7 +2004,6 @@ class DistingCubit extends Cubit<DistingState> {
       // Check if state is still synchronized
       final newState = state;
       if (newState is! DistingStateSynchronized) {
-        debugPrint('[ProgramRefresh] State changed during refresh, aborting');
         return;
       }
 
@@ -2243,30 +2014,24 @@ class DistingCubit extends Cubit<DistingState> {
         ),
       );
 
-      debugPrint('[ProgramRefresh] Successfully refreshed slot $slotIndex');
 
       // Clear the queue
       _programRefreshTimer = null;
       _programRefreshSlot = null;
       _programRefreshRetries = 0;
     } catch (e, stackTrace) {
-      debugPrint('[ProgramRefresh] Error refreshing slot $slotIndex: $e');
 
       // Retry with exponential backoff if we haven't exceeded max retries
       if (_programRefreshRetries < 3) {
         _programRefreshRetries++;
         final delaySeconds = _programRefreshRetries; // 1s, 2s, 3s
 
-        debugPrint(
-          '[ProgramRefresh] Retrying in ${delaySeconds}s (attempt ${_programRefreshRetries + 1}/4)',
-        );
 
         _programRefreshTimer = Timer(
           Duration(seconds: delaySeconds),
           _executeProgramRefresh,
         );
       } else {
-        debugPrint('[ProgramRefresh] Max retries exceeded, giving up');
         debugPrintStack(stackTrace: stackTrace);
 
         // Clear the queue
@@ -2370,9 +2135,6 @@ class DistingCubit extends Cubit<DistingState> {
       // Anomaly Check
       if (newValue.value < mapped.parameter.min ||
           newValue.value > mapped.parameter.max) {
-        debugPrint(
-          "Out-of-bounds data from device (polling): algo ${mapped.parameter.algorithmIndex}, param ${mapped.parameter.parameterNumber}, value ${newValue.value}, expected ${mapped.parameter.min}-${mapped.parameter.max}",
-        );
         _refreshSlotAfterAnomaly(mapped.parameter.algorithmIndex);
         // Unlike in updateParameterValue, we don't return early here.
         // The polling loop will continue, and the refresh will eventually correct the state.
@@ -2383,18 +2145,12 @@ class DistingCubit extends Cubit<DistingState> {
       if (currentState is DistingStateSynchronized) {
         // Add boundary checks before accessing slots and values
         if (mapped.parameter.algorithmIndex >= currentState.slots.length) {
-          debugPrint(
-            "[Polling] Slot index ${mapped.parameter.algorithmIndex} is out of bounds after potential refresh. Stopping poll for this parameter.",
-          );
           _pollingTasks.remove(key); // Remove task to stop polling
           return;
         }
         final currentSlot = currentState.slots[mapped.parameter.algorithmIndex];
         // Check if parameter number is still valid
         if (mapped.parameter.parameterNumber >= currentSlot.values.length) {
-          debugPrint(
-            "[Polling] Parameter number ${mapped.parameter.parameterNumber} out of bounds for slot ${mapped.parameter.algorithmIndex} after potential refresh. Stopping poll for this parameter.",
-          );
           _pollingTasks.remove(key); // Remove task to stop polling
           return;
         }
@@ -2462,9 +2218,6 @@ class DistingCubit extends Cubit<DistingState> {
     IDistingMidiManager disting,
   ) async {
     final stopwatch = Stopwatch()..start();
-    debugPrint(
-      "[fetchSlots] Starting: Requesting $numAlgorithmsInPreset slots...",
-    );
 
     final slotsFutures = List.generate(numAlgorithmsInPreset, (
       algorithmIndex,
@@ -2474,10 +2227,7 @@ class DistingCubit extends Cubit<DistingState> {
 
     // Finish off the requests
     final slots = await Future.wait(slotsFutures);
-    final totalTime = stopwatch.elapsedMilliseconds;
-    debugPrint(
-      "[fetchSlots] COMPLETED: Fetched ${slots.length} slots in ${totalTime}ms (avg ${totalTime ~/ (numAlgorithmsInPreset > 0 ? numAlgorithmsInPreset : 1)}ms per slot)",
-    );
+    stopwatch.elapsedMilliseconds;
     return slots;
   }
 
@@ -2495,16 +2245,12 @@ class DistingCubit extends Cubit<DistingState> {
   // Background retry for failed parameter requests
   void _queueParameterRetry(_ParameterRetryRequest request) {
     _parameterRetryQueue.add(request);
-    debugPrint(
-      '[fetchSlot] Queued for background retry: ${request.type} for slot ${request.slotIndex} param ${request.paramIndex}',
-    );
   }
 
   // Acquire semaphore for active commands (blocks retry queue)
   void _acquireCommandSemaphore() {
     _activeCommandCount++;
     if (_activeCommandCount == 1) {
-      debugPrint('[Cubit] Active command started - retry queue will wait');
     }
   }
 
@@ -2512,15 +2258,11 @@ class DistingCubit extends Cubit<DistingState> {
   void _releaseCommandSemaphore() {
     _activeCommandCount--;
     if (_activeCommandCount == 0) {
-      debugPrint('[Cubit] No active commands - retry queue can proceed');
       if (!_commandSemaphore.isCompleted) {
         _commandSemaphore.complete();
       }
     }
     if (_activeCommandCount < 0) {
-      debugPrint(
-        '[Cubit] Warning: Command semaphore count went negative, resetting to 0',
-      );
       _activeCommandCount = 0;
     }
   }
@@ -2547,9 +2289,6 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> _processParameterRetryQueue(IDistingMidiManager disting) async {
     if (_parameterRetryQueue.isEmpty) return;
 
-    debugPrint(
-      '[Cubit] Starting low-priority background retry for ${_parameterRetryQueue.length} failed parameter requests',
-    );
 
     final retryList = List.from(_parameterRetryQueue);
     _parameterRetryQueue.clear();
@@ -2569,9 +2308,6 @@ class DistingCubit extends Cubit<DistingState> {
 
         // Periodically yield to event loop for longer pauses to allow user operations
         if (i > 0 && i % 3 == 0) {
-          debugPrint(
-            '[Cubit] Background retry yielding to user operations (processed $i/${retryList.length})',
-          );
           await Future.delayed(const Duration(seconds: 1));
         }
 
@@ -2593,9 +2329,6 @@ class DistingCubit extends Cubit<DistingState> {
                 request.paramIndex,
                 info,
               );
-              debugPrint(
-                '[Cubit] Background retry succeeded: parameter info for slot ${request.slotIndex} param ${request.paramIndex}',
-              );
             }
             break;
           case _ParameterRetryType.enumStrings:
@@ -2608,9 +2341,6 @@ class DistingCubit extends Cubit<DistingState> {
                 request.slotIndex,
                 request.paramIndex,
                 enums,
-              );
-              debugPrint(
-                '[Cubit] Background retry succeeded: enum strings for slot ${request.slotIndex} param ${request.paramIndex}',
               );
             }
             break;
@@ -2625,9 +2355,6 @@ class DistingCubit extends Cubit<DistingState> {
                 request.paramIndex,
                 mappings,
               );
-              debugPrint(
-                '[Cubit] Background retry succeeded: mappings for slot ${request.slotIndex} param ${request.paramIndex}',
-              );
             }
             break;
           case _ParameterRetryType.valueStrings:
@@ -2641,24 +2368,15 @@ class DistingCubit extends Cubit<DistingState> {
                 request.paramIndex,
                 valueStrings,
               );
-              debugPrint(
-                '[Cubit] Background retry succeeded: value strings for slot ${request.slotIndex} param ${request.paramIndex}',
-              );
             }
             break;
         }
       } catch (e) {
-        debugPrint(
-          '[Cubit] Background retry failed for ${request.type} slot ${request.slotIndex} param ${request.paramIndex}: $e',
-        );
         // Add extra delay after failures to avoid overwhelming the device
         await Future.delayed(const Duration(milliseconds: 200));
       }
     }
 
-    debugPrint(
-      '[Cubit] Low-priority background parameter retry processing complete',
-    );
   }
 
   // State update methods for retry results
@@ -2772,8 +2490,7 @@ class DistingCubit extends Cubit<DistingState> {
     IDistingMidiManager disting,
     int algorithmIndex,
   ) async {
-    final sw = Stopwatch()..start();
-    debugPrint('[fetchSlot] start slot $algorithmIndex');
+    Stopwatch().start();
 
     /* ------------------------------------------------------------------ *
    * 1-2.  Pages  |  #Parameters  |  Algorithm GUID  |  All Values      *
@@ -2804,11 +2521,7 @@ class DistingCubit extends Cubit<DistingState> {
             numParams,
             (_) => ParameterValue.filler(),
           );
-      debugPrint('[fetchSlot] Got parameter values for slot $algorithmIndex');
     } catch (e) {
-      debugPrint(
-        '[fetchSlot] Parameter values failed for slot $algorithmIndex: $e - retrying with longer timeout',
-      );
       try {
         // Retry with a longer timeout - give it more time to respond
         await Future.delayed(
@@ -2823,13 +2536,7 @@ class DistingCubit extends Cubit<DistingState> {
               numParams,
               (_) => ParameterValue.filler(),
             );
-        debugPrint(
-          '[fetchSlot] Parameter values retry succeeded for slot $algorithmIndex',
-        );
       } catch (retryError) {
-        debugPrint(
-          '[fetchSlot] Parameter values retry also failed for slot $algorithmIndex: $retryError - using default values',
-        );
         allValues = List<ParameterValue>.generate(
           numParams,
           (_) => ParameterValue.filler(),
@@ -2837,7 +2544,6 @@ class DistingCubit extends Cubit<DistingState> {
       }
     }
 
-    debugPrint('[fetchSlot] meta finished in ${sw.elapsedMilliseconds} ms');
 
     /* Visible-parameter set (built from pages) */
     final visible = pages.pages.expand((p) => p.parameters).toSet();
@@ -2868,9 +2574,6 @@ class DistingCubit extends Cubit<DistingState> {
             );
           }
         } catch (e) {
-          debugPrint(
-            '[fetchSlot] Parameter info failed for slot $algorithmIndex param $param: $e - queuing for retry',
-          );
           parameters[param] = ParameterInfo.filler();
           _queueParameterRetry(
             _ParameterRetryRequest(
@@ -2882,7 +2585,6 @@ class DistingCubit extends Cubit<DistingState> {
         }
       },
     );
-    debugPrint('[fetchSlot] ParameterInfo ${sw.elapsedMilliseconds} ms');
 
     /* Pre-calculate which params are enumerated / mappable / string */
     bool isEnum(int i) => parameters[i].unit == 1;
@@ -2925,9 +2627,6 @@ class DistingCubit extends Cubit<DistingState> {
               );
             }
           } catch (e) {
-            debugPrint(
-              '[fetchSlot] Enum strings failed for slot $algorithmIndex param $param: $e - queuing for retry',
-            );
             enums[param] = ParameterEnumStrings.filler();
             _queueParameterRetry(
               _ParameterRetryRequest(
@@ -2961,9 +2660,6 @@ class DistingCubit extends Cubit<DistingState> {
               );
             }
           } catch (e) {
-            debugPrint(
-              '[fetchSlot] Mappings failed for slot $algorithmIndex param $param: $e - queuing for retry',
-            );
             mappings[param] = Mapping.filler();
             _queueParameterRetry(
               _ParameterRetryRequest(
@@ -2998,9 +2694,6 @@ class DistingCubit extends Cubit<DistingState> {
               );
             }
           } catch (e) {
-            debugPrint(
-              '[fetchSlot] Value strings failed for slot $algorithmIndex param $param: $e - queuing for retry',
-            );
             valueStrings[param] = ParameterValueString.filler();
             _queueParameterRetry(
               _ParameterRetryRequest(
@@ -3013,12 +2706,10 @@ class DistingCubit extends Cubit<DistingState> {
         },
       ),
     ]);
-    debugPrint('[fetchSlot] Detail fetches ${sw.elapsedMilliseconds} ms');
 
     /* ------------------------------------------------------------------ *
    * 5. Assemble the Slot                                               *
    * ------------------------------------------------------------------ */
-    debugPrint('[fetchSlot] done in ${sw.elapsedMilliseconds} ms');
 
     return Slot(
       algorithm:
@@ -3112,16 +2803,10 @@ class DistingCubit extends Cubit<DistingState> {
     final lastAttempt = _lastAnomalyRefreshAttempt[algorithmIndex];
     if (lastAttempt != null &&
         now.difference(lastAttempt) < const Duration(seconds: 10)) {
-      debugPrint(
-        "[Anomaly Refresh] Skipping refresh for slot $algorithmIndex, last attempt was too recent.",
-      );
       return;
     }
     _lastAnomalyRefreshAttempt[algorithmIndex] = now;
 
-    debugPrint(
-      "[Anomaly Refresh] Triggering refresh for slot $algorithmIndex due to data anomaly.",
-    );
 
     try {
       final disting = requireDisting();
@@ -3131,7 +2816,6 @@ class DistingCubit extends Cubit<DistingState> {
       newSlots[algorithmIndex] = updatedSlot;
       emit(currentState.copyWith(slots: newSlots));
     } catch (e, stackTrace) {
-      debugPrint("[Anomaly Refresh] Error refreshing slot $algorithmIndex: $e");
       debugPrintStack(stackTrace: stackTrace);
       // Optionally, clear the timestamp to allow immediate retry if fetch failed
       // _lastAnomalyRefreshAttempt.remove(algorithmIndex);
@@ -3197,16 +2881,10 @@ class DistingCubit extends Cubit<DistingState> {
     final currentState = state;
 
     if (currentState is! DistingStateSynchronized || currentState.offline) {
-      debugPrint(
-        "[DistingCubit] Cannot fetch SD card presets: Not synchronized or offline.",
-      );
       return [];
     }
 
     if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
-      debugPrint(
-        "[DistingCubit] Firmware does not support SD card operations.",
-      );
       return [];
     }
 
@@ -3219,16 +2897,10 @@ class DistingCubit extends Cubit<DistingState> {
     final currentState = state;
 
     if (currentState is! DistingStateSynchronized || currentState.offline) {
-      debugPrint(
-        "[DistingCubit] Cannot fetch Lua plugins: Not synchronized or offline.",
-      );
       return [];
     }
 
     if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
-      debugPrint(
-        "[DistingCubit] Firmware does not support SD card operations.",
-      );
       return [];
     }
 
@@ -3241,16 +2913,10 @@ class DistingCubit extends Cubit<DistingState> {
     final currentState = state;
 
     if (currentState is! DistingStateSynchronized || currentState.offline) {
-      debugPrint(
-        "[DistingCubit] Cannot fetch 3pot plugins: Not synchronized or offline.",
-      );
       return [];
     }
 
     if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
-      debugPrint(
-        "[DistingCubit] Firmware does not support SD card operations.",
-      );
       return [];
     }
 
@@ -3263,16 +2929,10 @@ class DistingCubit extends Cubit<DistingState> {
     final currentState = state;
 
     if (currentState is! DistingStateSynchronized || currentState.offline) {
-      debugPrint(
-        "[DistingCubit] Cannot fetch C++ plugins: Not synchronized or offline.",
-      );
       return [];
     }
 
     if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
-      debugPrint(
-        "[DistingCubit] Firmware does not support SD card operations.",
-      );
       return [];
     }
 
@@ -3286,18 +2946,12 @@ class DistingCubit extends Cubit<DistingState> {
     await disting.requestWake();
 
     try {
-      debugPrint(
-        "[DistingCubit] Scanning for ${pluginType.displayName} plugins in ${pluginType.directory}",
-      );
       final pluginInfos = await _scanDirectoryForPlugins(
         pluginType.directory,
         pluginType,
       );
       plugins.addAll(pluginInfos);
     } catch (e, stack) {
-      debugPrint(
-        "Error scanning ${pluginType.directory} for ${pluginType.extension} files: $e",
-      );
       debugPrintStack(stackTrace: stack);
     }
 
@@ -3357,7 +3011,6 @@ class DistingCubit extends Cubit<DistingState> {
               }
             } catch (e) {
               // If date conversion fails, just use null
-              debugPrint("Failed to convert date/time for ${entry.name}: $e");
             }
 
             plugins.add(
@@ -3373,9 +3026,6 @@ class DistingCubit extends Cubit<DistingState> {
         }
       }
     } catch (e, stack) {
-      debugPrint(
-        "Error scanning directory $path for ${pluginType.extension} files: $e",
-      );
       debugPrintStack(stackTrace: stack);
     }
 
@@ -3386,16 +3036,10 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> refreshSlotParameterStrings(int algorithmIndex) async {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
-      debugPrint(
-        "[Cubit] Cannot refresh slot parameter strings: Not in synchronized state.",
-      );
       return;
     }
 
     if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) {
-      debugPrint(
-        "[Cubit] Cannot refresh slot parameter strings: Invalid algorithm index $algorithmIndex",
-      );
       return;
     }
 
@@ -3434,13 +3078,7 @@ class DistingCubit extends Cubit<DistingState> {
 
       emit(currentState.copyWith(slots: updatedSlots));
 
-      debugPrint(
-        "[Cubit] Refreshed parameter strings for slot $algorithmIndex",
-      );
     } catch (e, stackTrace) {
-      debugPrint(
-        "[Cubit] Error refreshing parameter strings for slot $algorithmIndex: $e",
-      );
       debugPrintStack(stackTrace: stackTrace);
     }
   }
@@ -3459,7 +3097,6 @@ class DistingCubit extends Cubit<DistingState> {
       newSlots[algorithmIndex] = updatedSlot;
       emit(currentState.copyWith(slots: newSlots));
     } catch (e, stackTrace) {
-      debugPrint("[DistingCubit] Error refreshing slot $algorithmIndex: $e");
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }
@@ -3521,23 +3158,14 @@ class DistingCubit extends Cubit<DistingState> {
 
   /// Starts the USB video stream from the Disting NT device
   Future<void> startVideoStream() async {
-    debugPrint("[Cubit] startVideoStream called");
     final currentState = state;
-    debugPrint("[Cubit] Current state type: ${currentState.runtimeType}");
     if (currentState is! DistingStateSynchronized) {
-      debugPrint(
-        "[Cubit] Cannot start video stream: Not in synchronized state.",
-      );
       return;
     }
 
-    debugPrint(
-      "[Cubit] Synchronized state confirmed, initializing video manager",
-    );
     // Initialize video manager if not already created
     _videoManager ??= UsbVideoManager();
     await _videoManager!.initialize();
-    debugPrint("[Cubit] Video manager initialized");
 
     // Subscribe to video state changes and update cubit state
     _videoStateSubscription?.cancel();
@@ -3572,7 +3200,6 @@ class DistingCubit extends Cubit<DistingState> {
 
   // CPU Usage Streaming
   void _startCpuUsagePolling() {
-    debugPrint("[Cubit] Starting CPU usage polling...");
 
     // Cancel any existing timer
     _cpuUsageTimer?.cancel();
@@ -3589,7 +3216,6 @@ class DistingCubit extends Cubit<DistingState> {
     // This prevents stopping polling when one listener cancels but others remain
     Timer(const Duration(milliseconds: 100), () {
       if (!_cpuUsageController.hasListener) {
-        debugPrint("[Cubit] Stopping CPU usage polling - no listeners.");
         _cpuUsageTimer?.cancel();
         _cpuUsageTimer = null;
       }
@@ -3603,7 +3229,6 @@ class DistingCubit extends Cubit<DistingState> {
         _cpuUsageController.add(cpuUsage);
       }
     } catch (e, stackTrace) {
-      debugPrint("Error polling CPU usage: $e");
       debugPrintStack(stackTrace: stackTrace);
       // Don't add error to stream, just log it
     }
@@ -3611,14 +3236,12 @@ class DistingCubit extends Cubit<DistingState> {
 
   /// Temporarily pause CPU usage polling (useful during sync operations)
   void pauseCpuMonitoring() {
-    debugPrint("[Cubit] Pausing CPU usage polling for sync operation...");
     _cpuUsageTimer?.cancel();
     _cpuUsageTimer = null;
   }
 
   /// Resume CPU usage polling if there are listeners
   void resumeCpuMonitoring() {
-    debugPrint("[Cubit] Resuming CPU usage polling after sync operation...");
     if (_cpuUsageController.hasListener && _cpuUsageTimer == null) {
       _startCpuUsagePolling();
     }
@@ -3640,14 +3263,10 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     await disting.requestWake();
 
-    debugPrint(
-      "[DistingCubit] Sending delete command for plugin: ${plugin.name} at ${plugin.path}",
-    );
 
     // Send the delete command (fire-and-forget)
     await disting.requestFileDelete(plugin.path);
 
-    debugPrint("[DistingCubit] Delete command sent for plugin: ${plugin.name}");
   }
 
   /// Uploads a plugin file to the appropriate directory on the SD card.
@@ -3703,9 +3322,6 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     await disting.requestWake();
 
-    debugPrint(
-      "[DistingCubit] Starting upload of $fileName (${fileData.length} bytes) to $targetPath",
-    );
 
     // Upload in 512-byte chunks (matching JavaScript tool behavior)
     const chunkSize = 512;
@@ -3718,9 +3334,6 @@ class DistingCubit extends Cubit<DistingState> {
           : chunkSize;
       final chunk = fileData.sublist(uploadPos, uploadPos + currentChunkSize);
 
-      debugPrint(
-        "[DistingCubit] Uploading chunk at position $uploadPos, size $currentChunkSize",
-      );
 
       try {
         await _uploadChunk(targetPath, chunk, uploadPos);
@@ -3735,20 +3348,13 @@ class DistingCubit extends Cubit<DistingState> {
           await Future.delayed(const Duration(milliseconds: 50));
         }
       } catch (e) {
-        debugPrint(
-          "[DistingCubit] Error uploading chunk at position $uploadPos: $e",
-        );
         throw Exception("Upload failed at position $uploadPos: $e");
       }
     }
 
-    debugPrint("[DistingCubit] Successfully uploaded $fileName to $targetPath");
 
     // Refresh algorithm list to include newly installed plugin
     _refreshAlgorithmsInBackground();
-    debugPrint(
-      "[DistingCubit] Triggered algorithm refresh after plugin installation",
-    );
   }
 
   /// Uploads a single chunk of file data.
@@ -3798,9 +3404,6 @@ class DistingCubit extends Cubit<DistingState> {
     final currentSlot = currentState.slots[algorithmIndex];
     final disting = currentState.disting;
 
-    debugPrint(
-      '[DistingCubit] Starting state-preserving Lua script reload for slot $algorithmIndex',
-    );
 
     try {
       // 1. CAPTURE CURRENT STATE
@@ -3811,12 +3414,8 @@ class DistingCubit extends Cubit<DistingState> {
       );
       // Note: Routing restoration may require additional research for programmatic setting
 
-      debugPrint(
-        '[DistingCubit] Captured state: ${savedValues.length} values, ${savedMappings.length} mappings, ${savedValueStrings.length} strings',
-      );
 
       // 2. FORCE SCRIPT UNLOAD (Program = 0)
-      debugPrint('[DistingCubit] Unloading current script (Program = 0)');
       await disting.setParameterValue(
         algorithmIndex,
         programParameterNumber,
@@ -3827,9 +3426,6 @@ class DistingCubit extends Cubit<DistingState> {
       ); // Allow hardware to process
 
       // 3. RELOAD TARGET SCRIPT (Program = currentProgramValue)
-      debugPrint(
-        '[DistingCubit] Reloading target script (Program = $currentProgramValue)',
-      );
       await disting.setParameterValue(
         algorithmIndex,
         programParameterNumber,
@@ -3840,7 +3436,6 @@ class DistingCubit extends Cubit<DistingState> {
       ); // Allow script to initialize
 
       // 4. RESTORE ALL PARAMETER VALUES (except Program parameter)
-      debugPrint('[DistingCubit] Restoring parameter values...');
       for (final paramValue in savedValues) {
         if (paramValue.parameterNumber != programParameterNumber) {
           await disting.setParameterValue(
@@ -3854,7 +3449,6 @@ class DistingCubit extends Cubit<DistingState> {
       }
 
       // 5. RESTORE STRING PARAMETERS
-      debugPrint('[DistingCubit] Restoring string parameters...');
       for (final stringValue in savedValueStrings) {
         if (stringValue.parameterNumber != programParameterNumber) {
           await disting.setParameterString(
@@ -3867,7 +3461,6 @@ class DistingCubit extends Cubit<DistingState> {
       }
 
       // 6. RESTORE MIDI/CV MAPPINGS
-      debugPrint('[DistingCubit] Restoring MIDI/CV mappings...');
       for (final mapping in savedMappings) {
         if (mapping.parameterNumber != programParameterNumber) {
           await disting.requestSetMapping(
@@ -3879,13 +3472,8 @@ class DistingCubit extends Cubit<DistingState> {
         }
       }
 
-      debugPrint(
-        '[DistingCubit] State-preserving Lua script reload completed successfully',
-      );
     } catch (e) {
-      debugPrint('[DistingCubit] Error during state-preserving reload: $e');
       // On error, refresh the slot to ensure UI is in sync with hardware
-      debugPrint('[DistingCubit] Refreshing slot state due to reload error');
       await _refreshSlotAfterAnomaly(algorithmIndex);
       rethrow;
     }
@@ -3909,13 +3497,10 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     await disting.requestWake();
 
-    debugPrint("[DistingCubit] Starting plugin backup to $backupDirectory");
 
     try {
       await disting.backupPlugins(backupDirectory, onProgress: onProgress);
-      debugPrint("[DistingCubit] Plugin backup completed successfully");
     } catch (e) {
-      debugPrint("[DistingCubit] Plugin backup failed: $e");
       rethrow;
     }
   }
@@ -3939,9 +3524,6 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     final filesToInstall = files.where((f) => f.shouldInstall).toList();
-    debugPrint(
-      "[DistingCubit] Installing ${filesToInstall.length} files from package",
-    );
 
     for (int i = 0; i < filesToInstall.length; i++) {
       final file = filesToInstall[i];
@@ -3964,15 +3546,12 @@ class DistingCubit extends Cubit<DistingState> {
         );
 
         onFileComplete?.call(file.filename);
-        debugPrint("[DistingCubit] Successfully installed ${file.targetPath}");
       } catch (e) {
         final errorMsg = "Failed to install ${file.filename}: $e";
-        debugPrint("[DistingCubit] $errorMsg");
         onFileError?.call(file.filename, errorMsg);
       }
     }
 
-    debugPrint("[DistingCubit] Package installation completed");
   }
 
   /// Install a single file to a specific path on the SD card
@@ -3984,9 +3563,6 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     await disting.requestWake();
 
-    debugPrint(
-      "[DistingCubit] Installing file to $targetPath (${fileData.length} bytes)",
-    );
 
     // Upload in 512-byte chunks (matching existing implementation)
     const chunkSize = 512;
@@ -4016,7 +3592,6 @@ class DistingCubit extends Cubit<DistingState> {
       }
     }
 
-    debugPrint("[DistingCubit] Successfully installed file to $targetPath");
   }
 
   /// Load a plugin using the dedicated 0x38 Load Plugin SysEx command
@@ -4024,7 +3599,6 @@ class DistingCubit extends Cubit<DistingState> {
   Future<AlgorithmInfo?> loadPlugin(String guid) async {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
-      debugPrint("[LoadPlugin] Cannot load plugin: not in synchronized state");
       return null;
     }
 
@@ -4036,7 +3610,6 @@ class DistingCubit extends Cubit<DistingState> {
     );
 
     if (algorithmIndex == -1) {
-      debugPrint("[LoadPlugin] Algorithm with GUID $guid not found");
       return null;
     }
 
@@ -4044,13 +3617,9 @@ class DistingCubit extends Cubit<DistingState> {
 
     // Check if it's already loaded
     if (algorithm.isLoaded) {
-      debugPrint("[LoadPlugin] Algorithm ${algorithm.name} is already loaded");
       return algorithm;
     }
 
-    debugPrint(
-      "[LoadPlugin] Loading plugin: ${algorithm.name} (${algorithm.guid})",
-    );
 
     try {
       // 1. Send load plugin command
@@ -4060,9 +3629,6 @@ class DistingCubit extends Cubit<DistingState> {
       final updatedInfo = await disting.requestAlgorithmInfo(algorithmIndex);
 
       if (updatedInfo != null) {
-        debugPrint(
-          "[LoadPlugin] Successfully loaded ${updatedInfo.name} with ${updatedInfo.numSpecifications} specifications",
-        );
 
         // 3. Update only this algorithm in the state
         final updatedAlgorithms = List<AlgorithmInfo>.from(
@@ -4073,13 +3639,9 @@ class DistingCubit extends Cubit<DistingState> {
         emit(currentState.copyWith(algorithms: updatedAlgorithms));
         return updatedInfo;
       } else {
-        debugPrint(
-          "[LoadPlugin] Failed to get updated algorithm info for ${algorithm.name}",
-        );
         return null;
       }
     } catch (e, stackTrace) {
-      debugPrint("[LoadPlugin] Error loading plugin ${algorithm.name}: $e");
       debugPrintStack(stackTrace: stackTrace);
       return null;
     }

@@ -101,14 +101,8 @@ class ParameterUpdateQueue {
 
     if (wasAlreadyPending) {
       _updatesConsolidated++;
-      debugPrint(
-        '[ParameterQueue] Consolidated update for ${update.key} (total consolidated: $_updatesConsolidated)',
-      );
     }
 
-    debugPrint(
-      '[ParameterQueue] Queued: $update (pending: ${_pendingUpdates.length})',
-    );
 
     // For real-time updates during slider movement, request string update immediately
     if (isRealTimeUpdate && needsStringUpdate) {
@@ -165,26 +159,17 @@ class ParameterUpdateQueue {
     final lastUpdate = _lastStringUpdateTime[key];
     if (lastUpdate != null &&
         now.difference(lastUpdate) < _stringUpdateThrottle) {
-      debugPrint(
-        '[ParameterQueue] Throttling immediate string update for $key',
-      );
       return;
     }
 
     _lastStringUpdateTime[key] = now;
 
     try {
-      debugPrint(
-        '[ParameterQueue] Requesting immediate string update for $key',
-      );
       final parameterString = await _midiManager.requestParameterValueString(
         algorithmIndex,
         parameterNumber,
       );
       if (parameterString != null) {
-        debugPrint(
-          '[ParameterQueue] Immediate string update: "${parameterString.value}"',
-        );
         onParameterStringUpdated?.call(
           algorithmIndex,
           parameterNumber,
@@ -192,9 +177,6 @@ class ParameterUpdateQueue {
         );
       }
     } catch (e) {
-      debugPrint(
-        '[ParameterQueue] Failed immediate string update for $key: $e',
-      );
       // Don't propagate errors for immediate updates
     }
   }
@@ -210,7 +192,6 @@ class ParameterUpdateQueue {
       _pendingUpdates.remove(entry.key);
       final update = entry.value;
 
-      debugPrint('[ParameterQueue] Processing: $update');
 
       // Send parameter value (fire-and-forget)
       await _midiManager.setParameterValue(
@@ -228,9 +209,6 @@ class ParameterUpdateQueue {
                 update.parameterNumber,
               );
           if (parameterString != null) {
-            debugPrint(
-              '[ParameterQueue] Updated parameter string for ${update.key}: "${parameterString.value}"',
-            );
             // Notify the cubit about the updated parameter string
             onParameterStringUpdated?.call(
               update.algorithmIndex,
@@ -238,24 +216,14 @@ class ParameterUpdateQueue {
               parameterString.value,
             );
           } else {
-            debugPrint(
-              '[ParameterQueue] No parameter string returned for ${update.key}',
-            );
           }
         } catch (e) {
-          debugPrint(
-            '[ParameterQueue] Failed to update parameter string for ${update.key}: $e',
-          );
           // Continue processing even if string update fails
         }
       }
 
       _totalUpdatesSent++;
-      debugPrint(
-        '[ParameterQueue] Completed: $update (remaining: ${_pendingUpdates.length})',
-      );
     } catch (e, stackTrace) {
-      debugPrint('[ParameterQueue] Error processing update: $e');
       debugPrintStack(stackTrace: stackTrace);
     } finally {
       _isProcessing = false;

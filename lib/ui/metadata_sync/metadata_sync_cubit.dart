@@ -243,12 +243,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       }
 
       final name = detailsToSave.preset.name; // Get name for success message
-      debugPrint(
-        " >> saveCurrentPreset: Fetched details for preset '$name' (ID: ${detailsToSave.preset.id}) with ${detailsToSave.slots.length} slots from manager.",
-      );
 
       // 2. Save to Database using the details obtained from the manager
-      debugPrint("Saving preset to database...");
       await _presetsDao.saveFullPreset(detailsToSave);
 
       emit(
@@ -256,8 +252,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       );
       // Reload data after successful save
       loadLocalData();
-    } catch (e, stacktrace) {
-      debugPrint("Error saving preset: $e\n$stacktrace");
+    } catch (e) {
       emit(
         MetadataSyncState.presetSaveFailure(
           "Failed to save preset: ${e.toString()}",
@@ -272,14 +267,10 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   ) async {
     emit(const MetadataSyncState.loadingPreset());
     if (kDebugMode) {
-      debugPrint(
-        "loadPresetToDevice: Starting load for preset '${preset.preset.name}'",
-      );
     }
     try {
       // 0. Clear the current preset on the device
       if (kDebugMode) {
-        debugPrint("  -> Sending New Preset command to clear device state...");
       }
       await manager.requestNewPreset();
       await Future.delayed(
@@ -288,17 +279,11 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // 1. Add all algorithms first
       if (kDebugMode) {
-        debugPrint(
-          "  -> Adding ${preset.slots.length} algorithms to the device...",
-        );
       }
       for (int i = 0; i < preset.slots.length; i++) {
         final slot = preset.slots[i];
         final algorithmGuid = slot.algorithm.guid;
         if (kDebugMode) {
-          debugPrint(
-            "  -> Preparing to add Algorithm ${i + 1}: GUID $algorithmGuid",
-          );
         }
 
         // Fetch full details to get specifications and AlgorithmInfo fields
@@ -311,9 +296,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           );
         }
         if (kDebugMode) {
-          debugPrint(
-            "    -> Found local metadata for '${algoDetails.algorithm.name}'",
-          );
         }
 
         // Prepare AlgorithmInfo and default specifications
@@ -338,9 +320,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
             .toList();
 
         if (kDebugMode) {
-          debugPrint(
-            "    -> Sending Add Algorithm command for slot $i with GUID $algorithmGuid and ${defaultSpecifications.length} specs.",
-          );
         }
         await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
         // Add delay after adding each algorithm
@@ -349,13 +328,11 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // 2. Set parameters and mappings for each slot
       if (kDebugMode) {
-        debugPrint("  -> Setting parameters and mappings for all slots...");
       }
       for (int i = 0; i < preset.slots.length; i++) {
         final slot = preset.slots[i];
         final algorithmGuid = slot.algorithm.guid; // Needed again for metadata
         if (kDebugMode) {
-          debugPrint("  -> Configuring Slot ${i + 1} (GUID: $algorithmGuid)");
         }
 
         // Send the slot name to the device
@@ -366,17 +343,11 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           algorithmGuid,
         );
         if (algoDetails == null) {
-          debugPrint(
-            "Warning: Metadata for GUID '$algorithmGuid' not found during parameter/mapping phase for slot ${i + 1}. Skipping.",
-          );
           continue; // Skip configuration for this slot if metadata missing
         }
 
         // 2a. Send Parameter Values
         if (kDebugMode) {
-          debugPrint(
-            "    -> Preparing to send ${slot.parameterValues.length} parameter values for slot $i",
-          );
         }
         for (final paramEntry in slot.parameterValues.entries) {
           final parameterNumber = paramEntry.key;
@@ -386,15 +357,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           final paramMetadata = algoDetails.parameters.firstWhereOrNull(
             (p) => p.parameter.parameterNumber == parameterNumber,
           );
-          final paramName = paramMetadata?.parameter.name ?? 'Unnamed';
+          paramMetadata?.parameter.name ?? 'Unnamed';
 
           // NOTE: ParameterAccess check removed as access level isn't stored
           // in ParameterEntry from the database.
 
           if (kDebugMode) {
-            debugPrint(
-              "    -> Sending Param $parameterNumber ($paramName) = $value for slot $i",
-            );
           }
           // Use setParameterValue
           await manager.setParameterValue(
@@ -408,18 +376,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
         // 2b. Send Mappings
         if (kDebugMode) {
-          debugPrint(
-            "    -> Preparing to send ${slot.mappings.length} mappings for slot $i",
-          );
         }
         for (final mappingEntry in slot.mappings.entries) {
           final parameterNumber = mappingEntry.key;
           final mappingData = mappingEntry.value;
 
           if (kDebugMode) {
-            debugPrint(
-              "    -> Sending Mapping for Param $parameterNumber in slot $i: CV(${mappingData.cvInput}), MIDI(${mappingData.isMidiEnabled ? mappingData.midiCC : 'Off'}), I2C(${mappingData.isI2cEnabled ? mappingData.i2cCC : 'Off'})",
-            );
           }
           // Use requestSetMapping
           await manager.requestSetMapping(
@@ -435,7 +397,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       // 2d. Set the preset name on the device
       final presetName = preset.preset.name.trim();
       if (kDebugMode) {
-        debugPrint("  -> Setting preset name on device to: '$presetName'");
       }
       await manager.requestSetPresetName(presetName);
       await Future.delayed(
@@ -455,8 +416,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       );
       // Reload local data after success to ensure UI is in ViewingLocalData state
       await loadLocalData();
-    } catch (e, stacktrace) {
-      debugPrint("Error loading preset to device: $e\n$stacktrace");
+    } catch (e) {
       emit(
         MetadataSyncState.presetLoadFailure(
           "Error sending preset: ${e.toString()}",
@@ -512,8 +472,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           ),
         );
       }
-    } catch (e, stacktrace) {
-      debugPrint('Error loading local data: $e\n$stacktrace');
+    } catch (e) {
       emit(
         MetadataSyncState.failure("Failed to load local data: ${e.toString()}"),
       );
@@ -594,8 +553,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           presets: presets,
         ),
       );
-    } catch (e, stacktrace) {
-      debugPrint('Error loading local data: $e\n$stacktrace');
+    } catch (e) {
       emit(
         MetadataSyncState.failure("Failed to load local data: ${e.toString()}"),
       );
@@ -770,8 +728,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // Reload data to show updated parameter count
       await loadLocalData();
-    } catch (e, stackTrace) {
-      debugPrint('Error rescanning algorithm: $e\n$stackTrace');
+    } catch (e) {
       emit(
         MetadataSyncState.metadataSyncFailure("Failed to rescan algorithm: $e"),
       );

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'algorithm_routing.dart';
@@ -44,9 +43,7 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     super.validator,
     RoutingState? initialState,
   }) : _state = initialState ?? const RoutingState(),
-       super(algorithmUuid: algorithmUuid) {
-    debugPrint('UsbFromAlgorithmRouting: Initialized with UUID $algorithmUuid');
-  }
+       super(algorithmUuid: algorithmUuid);
 
   @override
   RoutingState get state => _state;
@@ -63,7 +60,6 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
   @override
   List<Port> generateInputPorts() {
     // USB Audio (From Host) has no input ports
-    debugPrint('UsbFromAlgorithmRouting: No input ports (USB from host)');
     return [];
   }
 
@@ -110,9 +106,6 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
       }
     }
 
-    debugPrint(
-      'UsbFromAlgorithmRouting: Generated ${ports.length} output ports from properties',
-    );
     return ports;
   }
 
@@ -126,7 +119,6 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
       _cachedOutputPorts = null;
     }
 
-    debugPrint('UsbFromAlgorithmRouting: State updated');
   }
 
   @override
@@ -134,7 +126,6 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     super.dispose();
     _cachedInputPorts = null;
     _cachedOutputPorts = null;
-    debugPrint('UsbFromAlgorithmRouting: Disposed');
   }
 
   /// Determines if this routing implementation can handle the given slot.
@@ -222,9 +213,6 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
   }) {
-    debugPrint(
-      'UsbFromAlgorithmRouting.createFromSlot: Algorithm ${slot.algorithm.name}',
-    );
     final algUuid =
         algorithmUuid ?? 'algo_usbf_${DateTime.now().millisecondsSinceEpoch}';
 

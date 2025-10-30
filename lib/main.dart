@@ -61,26 +61,20 @@ void main() async {
         final List<bool> results = await Future.wait(saveFutures);
         prefsSavedSuccessfully = results.every((result) => result);
       } catch (e) {
-        debugPrint("Error saving window preferences: $e");
         prefsSavedSuccessfully = false;
       }
 
       try {
-        debugPrint("Closing database...");
         await database.close(); // Close the database
-        debugPrint("Database closed successfully.");
       } catch (e) {
-        debugPrint("Error closing database: $e");
         // Optionally, decide if this error should affect prefsSavedSuccessfully
         // For now, we let it proceed and return based on prefs saving.
       }
 
       try {
-        debugPrint("Resetting routing service locator...");
         await RoutingServiceLocator.reset();
-        debugPrint("Routing service locator reset successfully.");
       } catch (e) {
-        debugPrint("Error resetting routing service locator: $e");
+        // Intentionally empty
       }
 
       return prefsSavedSuccessfully; // Signal success/failure of prefs saving

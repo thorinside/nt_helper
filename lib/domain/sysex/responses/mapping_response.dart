@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -16,9 +15,6 @@ class MappingResponse extends SysexResponse {
     final version = decode8(data.sublist(4, 5));
     final mappingData = data.sublist(5);
 
-    debugPrint(
-      '[MappingResponse] Parsing mapping for slot $algorithmIndex param $parameterNumber: version=$version, dataLength=${mappingData.length}',
-    );
 
     return Mapping(
       algorithmIndex: algorithmIndex,

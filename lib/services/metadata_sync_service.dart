@@ -66,9 +66,6 @@ class MetadataSyncService {
         mainMessage,
         subMessage,
       );
-      debugPrint(
-        "[MetadataSync] Progress: $algorithmsProcessed/$totalAlgorithms - $mainMessage - $subMessage",
-      );
     }
 
     // Helper to check cancellation
@@ -141,11 +138,7 @@ class MetadataSyncService {
       // --- NEW: Save the ordered list to the cache ---
       try {
         await metadataDao.saveOrderedUnitStrings(unitStrings);
-        debugPrint("[MetadataSync] Saved ordered unit strings to cache.");
       } catch (e) {
-        debugPrint(
-          "[MetadataSync] Warning: Failed to save ordered unit strings to cache: $e",
-        );
         // Decide if this is a fatal error - maybe not, if reconstruction can fall back?
         // For now, we just log a warning.
       }
@@ -211,9 +204,6 @@ class MetadataSyncService {
             );
           }
         } else {
-          debugPrint(
-            "[MetadataSync] Warning: Could not fetch info for global algo index $globalAlgoIndex",
-          );
         }
         final fetchProgressMsg =
             "Fetched basic info ${globalAlgoIndex + 1}/$totalAlgorithms";
@@ -257,9 +247,6 @@ class MetadataSyncService {
       // Process community first for faster testing, then factory
       final orderedAlgorithms = [...communityAlgorithms, ...factoryAlgorithms];
 
-      debugPrint(
-        "[MetadataSync] Processing ${communityAlgorithms.length} community plugins, then ${factoryAlgorithms.length} factory algorithms.",
-      );
 
       final dbUnits = await metadataDao.getAllUnits();
       final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();
@@ -322,9 +309,6 @@ class MetadataSyncService {
             attempts++;
 
             if (numInPreset != 1) {
-              debugPrint(
-                "[MetadataSync] Waiting for ${algoInfo.name} to be added (attempt $attempts/$maxAttempts, found $numInPreset algorithms)",
-              );
             }
           }
 
@@ -377,16 +361,10 @@ class MetadataSyncService {
             attempts++;
 
             if (numInPreset != 0) {
-              debugPrint(
-                "[MetadataSync] Waiting for ${algoInfo.name} to be removed (attempt $attempts/$maxRemoveAttempts, found $numInPreset algorithms)",
-              );
             }
           }
 
           if (numInPreset != 0) {
-            debugPrint(
-              "[MetadataSync] Warning: Failed to remove ${algoInfo.name} cleanly after $attempts attempts (expected 0, found $numInPreset).",
-            );
           }
 
           reportProgress(mainProgressMsg, "Done.");
@@ -394,7 +372,6 @@ class MetadataSyncService {
           // Report the main error first
           final errorMsg =
               "Error processing ${algoInfo.name}: $instantiationError";
-          debugPrint("[MetadataSync] $errorMsg");
           debugPrintStack(stackTrace: stackTrace);
 
           // Check if this is a timeout-related error that requires device reboot
@@ -430,14 +407,9 @@ class MetadataSyncService {
               final numAlgos = await _distingManager
                   .requestNumberOfAlgorithms();
               if (numAlgos == null || numAlgos != totalAlgorithms) {
-                debugPrint(
-                  "[MetadataSync] Communication test failed after reboot: expected $totalAlgorithms algorithms, got $numAlgos",
-                );
               }
             } catch (cleanupError) {
-              debugPrint(
-                "[MetadataSync] Cleanup after reboot failed: $cleanupError",
-              );
+              // Intentionally empty
             }
           } else {
             onError?.call(errorMsg);
@@ -493,19 +465,13 @@ class MetadataSyncService {
             final paramCount = parameterCounts[algoInfo.guid] ?? 0;
             if (paramCount == 0) {
               algorithmsWithZeroParams.add(algoInfo);
-              debugPrint(
-                "[MetadataSync] Found algorithm with 0 parameters: ${algoInfo.name} (${algoInfo.guid})",
-              );
             }
           }
         } catch (e) {
-          debugPrint("[MetadataSync] Error checking parameter counts: $e");
+          // Intentionally empty
         }
 
         if (algorithmsWithZeroParams.isNotEmpty && !checkCancel()) {
-          debugPrint(
-            "[MetadataSync] Retrying ${algorithmsWithZeroParams.length} algorithms with 0 parameters",
-          );
           reportProgress(
             "Final Verification",
             "Retrying ${algorithmsWithZeroParams.length} algorithms with missing parameters...",
@@ -594,18 +560,9 @@ class MetadataSyncService {
                 }
 
                 reportProgress(mainProgressMsg, "Retry completed.");
-                debugPrint(
-                  "[MetadataSync] Successfully retried ${algoInfo.name}",
-                );
               } else {
-                debugPrint(
-                  "[MetadataSync] Failed to add ${algoInfo.name} during retry",
-                );
               }
             } catch (retryError, stackTrace) {
-              debugPrint(
-                "[MetadataSync] Retry failed for ${algoInfo.name}: $retryError",
-              );
               debugPrintStack(stackTrace: stackTrace);
 
               // Clean up if retry fails
@@ -613,9 +570,7 @@ class MetadataSyncService {
                 await _distingManager.requestNewPreset();
                 await Future.delayed(const Duration(milliseconds: 500));
               } catch (cleanupError) {
-                debugPrint(
-                  "[MetadataSync] Cleanup after retry failure: $cleanupError",
-                );
+                // Intentionally empty
               }
             }
           }
@@ -635,7 +590,6 @@ class MetadataSyncService {
       }
     } catch (e, stackTrace) {
       final errorMsg = "Synchronization failed: $e";
-      debugPrint("[MetadataSync] $errorMsg");
       debugPrintStack(stackTrace: stackTrace);
       // Avoid reporting progress if cancelled, let the main error handler do it
       if (!checkCancel()) {
@@ -656,13 +610,9 @@ class MetadataSyncService {
     final numParamsResult = await _distingManager.requestNumberOfParameters(0);
     final numParams = numParamsResult?.numParameters ?? 0;
     if (numParams == 0) {
-      debugPrint("    - Algo ${algoInfo.guid} instantiated with 0 parameters.");
       return;
     }
 
-    debugPrint(
-      "    - Fetching $numParams parameters for slot 0 (${algoInfo.guid})...",
-    );
 
     final parameterInfos = <ParameterInfo>[];
     final parameterPagesResult = await _distingManager.requestParameterPages(0);
@@ -685,12 +635,8 @@ class MetadataSyncService {
           }
         }
       } else {
-        debugPrint(
-          "    - Warning: Failed to get param info for slot 0, pNum $pNum.",
-        );
       }
     }
-    debugPrint("    - Fetched info for ${parameterInfos.length} parameters.");
 
     // Process and Store Parameter Definitions (using insertOrIgnore)
     final paramEntries = <ParameterEntry>[];
@@ -734,9 +680,6 @@ class MetadataSyncService {
         mode: InsertMode.insertOrIgnore,
       );
     });
-    debugPrint(
-      "    - Upserted ${paramEntries.length} unique base parameter definitions.",
-    );
 
     // Upsert Parameter Enums (link to the parameterNumber key)
     final enumEntries = <ParameterEnumEntry>[];
@@ -793,20 +736,13 @@ class MetadataSyncService {
               ),
             );
           } else {
-            debugPrint(
-              "    - Warning: Page '${page.name}' references parameter number $paramNumKey for which no base definition was stored. Skipping page item.",
-            );
           }
         }
       });
       // Use replace mode for pages/items within an algorithm, assuming pages are definitive per sync
       await metadataDao.upsertParameterPages(pageEntries);
       await metadataDao.upsertParameterPageItems(pageItemEntries);
-      debugPrint(
-        "    - Cached ${pageEntries.length} pages and ${pageItemEntries.length} page items.",
-      );
     } else {
-      debugPrint("    - No parameter pages found or fetched for slot 0.");
     }
   }
 
@@ -903,9 +839,6 @@ class MetadataSyncService {
     }) {
       final progress = total == 0 ? 0.0 : processed / total;
       onProgress?.call(progress, processed, total, mainMessage, subMessage);
-      debugPrint(
-        "[MetadataSync] Incremental: $processed/$total - $mainMessage - $subMessage",
-      );
     }
 
     // Helper to check cancellation
@@ -967,11 +900,7 @@ class MetadataSyncService {
         return;
       }
 
-      debugPrint(
-        "[MetadataSync] Found ${newAlgorithms.length} new algorithms to sync:",
-      );
-      for (final algo in newAlgorithms) {
-        debugPrint("  - ${algo.name} (${algo.guid})");
+      for (final _ in newAlgorithms) {
       }
 
       // Process community plugins first, then factory algorithms
@@ -1171,7 +1100,6 @@ class MetadataSyncService {
         } catch (error, stackTrace) {
           final errorMsg =
               "Error syncing new algorithm ${algoInfo.name}: $error";
-          debugPrint("[MetadataSync] $errorMsg");
           debugPrintStack(stackTrace: stackTrace);
 
           // Clean up on error
@@ -1180,7 +1108,7 @@ class MetadataSyncService {
             await _distingManager.requestNewPreset();
             await Future.delayed(const Duration(milliseconds: 500));
           } catch (cleanupError) {
-            debugPrint("[MetadataSync] Cleanup failed: $cleanupError");
+            // Intentionally empty
           }
 
           onError?.call(errorMsg);
@@ -1204,7 +1132,6 @@ class MetadataSyncService {
       }
     } catch (e, stackTrace) {
       final errorMsg = "Incremental sync failed: $e";
-      debugPrint("[MetadataSync] $errorMsg");
       debugPrintStack(stackTrace: stackTrace);
       if (!checkCancel()) {
         reportProgress("Incremental Sync Failed", "Error: $e");
@@ -1232,15 +1159,11 @@ class MetadataSyncService {
       );
 
       if (guidToFilePathMap.isEmpty) {
-        debugPrint("[MetadataSync] No plugin files found in $pluginDirectory");
         onProgress?.call("No plugin files found.");
         return;
       }
 
       onProgress?.call("Updating algorithm records...");
-      debugPrint(
-        "[MetadataSync] Found ${guidToFilePathMap.length} plugin files, updating database...",
-      );
 
       final metadataDao = _database.metadataDao;
       int updatedCount = 0;
@@ -1256,27 +1179,18 @@ class MetadataSyncService {
             // Update the plugin file path
             await metadataDao.updateAlgorithmPluginFilePath(guid, filePath);
             updatedCount++;
-            debugPrint(
-              "[MetadataSync] Updated algorithm $guid with file path: $filePath",
-            );
           } else {
-            debugPrint(
-              "[MetadataSync] Algorithm $guid not found in database (plugin-only, not algorithm)",
-            );
           }
         } catch (e) {
-          debugPrint("[MetadataSync] Error updating algorithm $guid: $e");
           onError?.call("Error updating algorithm $guid: $e");
         }
       }
 
       final message =
           "Updated $updatedCount algorithm records with plugin file paths.";
-      debugPrint("[MetadataSync] $message");
       onProgress?.call(message);
     } catch (e) {
       final errorMsg = "Plugin scan failed: $e";
-      debugPrint("[MetadataSync] $errorMsg");
       onError?.call(errorMsg);
     }
   }

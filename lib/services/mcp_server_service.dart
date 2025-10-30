@@ -20,7 +20,6 @@ String generateUUID() {
   try {
     // First try: Use Dart's secure random
     rng = math.Random.secure();
-    debugPrint('[MCP] Using secure random number generator');
   } catch (e) {
     try {
       // Second try: Create entropy using crypto package and timestamp
@@ -32,18 +31,15 @@ String generateUUID() {
         (prev, byte) => prev ^ (byte << (prev % 24)),
       );
       rng = math.Random(seed);
-      debugPrint('[MCP] Using crypto-enhanced random: $e');
     } catch (e2) {
       try {
         // Third try: Simple timestamp seed
         final timestamp = DateTime.now().microsecondsSinceEpoch;
         final seed = timestamp ^ (timestamp >> 32);
         rng = math.Random(seed);
-        debugPrint('[MCP] Using timestamp-seeded random: $e2');
       } catch (e3) {
         // Final fallback: Regular random
         rng = math.Random();
-        debugPrint('[MCP] Using regular random as final fallback: $e3');
       }
     }
   }
@@ -79,7 +75,6 @@ class McpServerService extends ChangeNotifier {
 
   static void initialize({required DistingCubit distingCubit}) {
     if (_instance != null) {
-      debugPrint('Warning: McpServerService already initialized.');
       return;
     }
     _instance = McpServerService._(distingCubit);
@@ -111,7 +106,6 @@ class McpServerService extends ChangeNotifier {
 
   Future<void> start({int port = 3000, InternetAddress? bindAddress}) async {
     if (isRunning) {
-      debugPrint('[MCP] Server already running.');
       return;
     }
 
@@ -123,9 +117,6 @@ class McpServerService extends ChangeNotifier {
 
       // Create HTTP server
       _httpServer = await HttpServer.bind(address, port);
-      debugPrint(
-        '[MCP] HTTP Server listening on http://${address.address}:$port/mcp',
-      );
 
       // Handle HTTP requests
       _httpSubscription = _httpServer!.listen(
@@ -133,19 +124,15 @@ class McpServerService extends ChangeNotifier {
           await _handleHttpRequest(request);
         },
         onError: (error, stackTrace) {
-          debugPrint('[MCP] HTTP server error: $error\n$stackTrace');
         },
         onDone: () {
-          debugPrint('[MCP] HTTP server listener closed');
           _cleanup();
         },
         cancelOnError: false,
       );
 
       notifyListeners();
-      debugPrint('[MCP] Service started successfully');
-    } catch (e, s) {
-      debugPrint('[MCP] Failed to start service: $e\n$s');
+    } catch (e) {
       await stop();
       rethrow;
     }
@@ -218,7 +205,6 @@ class McpServerService extends ChangeNotifier {
 
   /// Handle POST requests for JSON-RPC calls
   Future<void> _handlePostRequest(HttpRequest request) async {
-    debugPrint('[MCP] Received POST request');
 
     try {
       // Parse the request body
@@ -233,33 +219,24 @@ class McpServerService extends ChangeNotifier {
       if (sessionId != null && _transports.containsKey(sessionId)) {
         // Reuse existing transport
         transport = _transports[sessionId]!;
-        debugPrint('[MCP] Using existing transport for session $sessionId');
       } else if (_isInitializeRequest(body)) {
         // New initialization request - create transport and server
         if (sessionId != null) {
           // Client provided a session ID - use it for the new transport
           transport = await _createNewTransport(sessionId: sessionId);
-          debugPrint(
-            '[MCP] Creating new transport with client-provided session ID: $sessionId',
-          );
         } else {
           // No session ID provided - generate one
           transport = await _createNewTransport();
-          debugPrint('[MCP] Creating new transport with generated session ID');
         }
 
         // Ensure session is fully initialized before proceeding
         await Future.delayed(const Duration(milliseconds: 1));
 
-        debugPrint('[MCP] Handling initialization request for new session');
         await transport.handleRequest(request, body);
         return; // Already handled
       } else {
         // Non-initialization request with unknown session ID - create a new session
         if (sessionId != null) {
-          debugPrint(
-            '[MCP] Unknown session ID $sessionId, creating new transport',
-          );
           transport = await _createNewTransport(sessionId: sessionId);
         } else {
           _sendErrorResponse(
@@ -273,8 +250,7 @@ class McpServerService extends ChangeNotifier {
 
       // Handle the request with existing transport
       await transport.handleRequest(request, body);
-    } catch (e, s) {
-      debugPrint('[MCP] Error handling POST request: $e\n$s');
+    } catch (e) {
       _sendErrorResponse(
         request,
         HttpStatus.internalServerError,
@@ -297,15 +273,9 @@ class McpServerService extends ChangeNotifier {
 
     // If session doesn't exist, create a new transport for it
     if (!_transports.containsKey(sessionId)) {
-      debugPrint(
-        '[MCP] Creating new transport for unknown session ID: $sessionId',
-      );
       try {
         await _createNewTransport(sessionId: sessionId);
       } catch (e) {
-        debugPrint(
-          '[MCP] Failed to create transport for session $sessionId: $e',
-        );
         _sendErrorResponse(
           request,
           HttpStatus.internalServerError,
@@ -318,9 +288,7 @@ class McpServerService extends ChangeNotifier {
     // Check for Last-Event-ID header for resumability
     final lastEventId = request.headers.value('Last-Event-ID');
     if (lastEventId != null) {
-      debugPrint('[MCP] Client reconnecting with Last-Event-ID: $lastEventId');
     } else {
-      debugPrint('[MCP] Establishing new SSE stream for session $sessionId');
     }
 
     final transport = _transports[sessionId]!;
@@ -339,9 +307,6 @@ class McpServerService extends ChangeNotifier {
       return;
     }
 
-    debugPrint(
-      '[MCP] Received session termination request for session $sessionId',
-    );
 
     try {
       if (_transports.containsKey(sessionId)) {
@@ -349,9 +314,6 @@ class McpServerService extends ChangeNotifier {
         await transport.handleRequest(request);
       } else {
         // Session doesn't exist - just return OK since it's already "terminated"
-        debugPrint(
-          '[MCP] Session $sessionId already terminated or never existed',
-        );
         request.response.statusCode = HttpStatus.ok;
         request.response.headers.contentType = ContentType.json;
         request.response.write(
@@ -359,8 +321,7 @@ class McpServerService extends ChangeNotifier {
         );
         await request.response.close();
       }
-    } catch (e, s) {
-      debugPrint('[MCP] Error handling DELETE request: $e\n$s');
+    } catch (e) {
       _sendErrorResponse(
         request,
         HttpStatus.internalServerError,
@@ -416,11 +377,9 @@ class McpServerService extends ChangeNotifier {
 
   Future<void> stop() async {
     if (!isRunning) {
-      debugPrint('[MCP] Stop called but server not running.');
       return;
     }
 
-    debugPrint('[MCP] Stopping MCP server...');
 
     await _httpSubscription?.cancel();
     _httpSubscription = null;
@@ -436,15 +395,12 @@ class McpServerService extends ChangeNotifier {
     _servers.clear();
 
     notifyListeners();
-    debugPrint('[MCP] MCP Service stopped.');
   }
 
   Future<void> restart({int port = 3000, InternetAddress? bindAddress}) async {
-    debugPrint('[MCP] Restarting MCP server...');
     await stop();
     await Future.delayed(const Duration(milliseconds: 500));
     await start(port: port, bindAddress: bindAddress);
-    debugPrint('[MCP] Server restart completed.');
   }
 
   void _cleanup() {
@@ -458,7 +414,6 @@ class McpServerService extends ChangeNotifier {
 
   /// Pre-load all documentation resources at startup
   Future<void> _preloadResources() async {
-    debugPrint('[MCP] Pre-loading documentation resources...');
 
     // DEBUGGING: Use hardcoded content to test if the resource mechanism works
     // This bypasses asset loading entirely to isolate the issue
@@ -586,20 +541,11 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     // Load hardcoded content into cache
     for (final entry in hardcodedContent.entries) {
       _resourceCache[entry.key] = entry.value;
-      debugPrint(
-        '[MCP] ✅ Pre-loaded hardcoded resource: ${entry.key} (${entry.value.length} chars)',
-      );
     }
 
-    debugPrint(
-      '[MCP] Pre-loading complete. Cached ${_resourceCache.length} resources',
-    );
 
     // Debug: Show what's in the cache
-    for (final entry in _resourceCache.entries) {
-      debugPrint(
-        '[MCP] 📋 Cache entry: ${entry.key} -> ${entry.value.length} chars',
-      );
+    for (final _ in _resourceCache.entries) {
     }
   }
 
@@ -1286,7 +1232,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'disting_state': stateInfo,
         };
 
-        debugPrint('[MCP] Diagnostics requested - Server running: $isRunning');
         return CallToolResult.fromContent(
           content: [TextContent(text: jsonEncode(diagnostics))],
         );
@@ -1301,27 +1246,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
   ) {
     return (uri, extra) async {
       final startTime = DateTime.now();
-      debugPrint(
-        '[MCP] 🔄 Serving resource: $resourceName (${content.length} chars)',
-      );
 
       // DEBUGGING: Add more detailed logging for resource requests
-      debugPrint('[MCP] 🔍 Resource request details:');
-      debugPrint('[MCP]   - URI: ${uri.toString()}');
-      debugPrint('[MCP]   - Content length: ${content.length}');
-      debugPrint(
-        '[MCP]   - Content preview: ${content.substring(0, content.length > 50 ? 50 : content.length)}...',
-      );
-      debugPrint('[MCP]   - Cache entries: ${_resourceCache.keys.join(', ')}');
 
       // Double-check cache state at request time
       final originalContent = _resourceCache[resourceName];
       if (originalContent != null) {
-        debugPrint(
-          '[MCP] ✅ Cache hit for $resourceName (${originalContent.length} chars)',
-        );
       } else {
-        debugPrint('[MCP] ❌ Cache miss for $resourceName');
       }
 
       // Use real content now that we know the mechanism works
@@ -1329,10 +1260,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           originalContent ??
           'Documentation not available - Resource not found in cache: $resourceName';
 
-      debugPrint('[MCP] 🔄 Raw content length: ${rawContent.length}');
-      debugPrint(
-        '[MCP] 🔄 Raw content preview: ${rawContent.substring(0, rawContent.length > 100 ? 100 : rawContent.length)}...',
-      );
 
       // SANITIZE: Replace Unicode characters that break MCP JSON serialization
       final originalLength = rawContent.length;
@@ -1348,47 +1275,29 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
 
       final sanitizedLength = finalContent.length;
       if (originalLength != sanitizedLength) {
-        debugPrint(
-          '[MCP] 🧹 Content sanitized: $originalLength → $sanitizedLength chars',
-        );
       } else {
-        debugPrint('[MCP] 🧹 Content requires no sanitization');
       }
 
       // Return pre-loaded content immediately - no async operations
       // Try different ways to construct the ResourceContents
-      debugPrint('[MCP] 🔄 Attempting to build ResourceContents...');
 
       try {
-        debugPrint('[MCP] 🔄 Trying fromJson method...');
         final resourceContents = ResourceContents.fromJson({
           'uri': uri.toString(),
           'text': finalContent,
           'mimeType': 'text/markdown',
         });
 
-        debugPrint('[MCP] ✅ ResourceContents created successfully');
 
         final result = ReadResourceResult(contents: [resourceContents]);
-        debugPrint('[MCP] ✅ ReadResourceResult created successfully');
 
-        final duration = DateTime.now().difference(startTime);
-        debugPrint(
-          '[MCP] ⏱️ Resource callback completed in ${duration.inMilliseconds}ms',
-        );
-        debugPrint('[MCP] 🚀 Returning ReadResourceResult to transport layer');
+        DateTime.now().difference(startTime);
 
         return result;
-      } catch (e, s) {
-        debugPrint('[MCP] ❌ Error creating ResourceContents: $e');
-        debugPrint('[MCP] ❌ Stack trace: $s');
+      } catch (e) {
 
         // Last resort: return empty result
-        debugPrint('[MCP] 🔄 Returning empty result as fallback');
-        final duration = DateTime.now().difference(startTime);
-        debugPrint(
-          '[MCP] ⏱️ Resource callback (fallback) completed in ${duration.inMilliseconds}ms',
-        );
+        DateTime.now().difference(startTime);
 
         return ReadResourceResult(contents: []);
       }
@@ -1396,7 +1305,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
   }
 
   void _registerDocumentationResources(McpServer server) {
-    debugPrint('[MCP] 🔄 Starting resource registration...');
 
     // Define resource metadata
     final resourceMeta = {
@@ -1413,7 +1321,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       final resourceName = entry.key;
       final description = entry.value;
 
-      debugPrint('[MCP] Registering $resourceName...');
 
       // Get content from cache - fallback to error message if not found
       final content =
@@ -1421,16 +1328,9 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Documentation not available - Resource not cached: $resourceName';
 
       // DEBUGGING: Add more detailed logging for registration
-      debugPrint('[MCP] 🔍 Registration details for $resourceName:');
-      debugPrint('[MCP]   - Cache lookup result: ${content.length} chars');
-      debugPrint(
-        '[MCP]   - Content preview: ${content.substring(0, content.length > 50 ? 50 : content.length)}...',
-      );
 
       if (_resourceCache.containsKey(resourceName)) {
-        debugPrint('[MCP] ✅ Resource found in cache');
       } else {
-        debugPrint('[MCP] ❌ Resource NOT found in cache - using fallback');
       }
 
       server.resource(
@@ -1440,10 +1340,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         metadata: (mimeType: 'text/markdown', description: description),
       );
 
-      debugPrint('[MCP] ✅ Registered $resourceName (${content.length} chars)');
     }
 
-    debugPrint('[MCP] 🔄 Resource registration complete');
   }
 
   void _registerHelpfulPrompts(McpServer server) {
@@ -1665,9 +1563,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         eventStore: InMemoryEventStore(),
         onsessioninitialized: (initializedSessionId) {
           // Store both transport and server by session ID when session is initialized
-          debugPrint(
-            '[MCP] Session initialized with ID: $initializedSessionId',
-          );
           _transports[initializedSessionId] = transport!;
           _servers[initializedSessionId] = server!;
         },
@@ -1678,9 +1573,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     transport.onclose = () {
       final sessionId = transport!.sessionId;
       if (sessionId != null && _transports.containsKey(sessionId)) {
-        debugPrint(
-          '[MCP] Transport closed for session $sessionId, removing from transports map',
-        );
         _cleanupSession(sessionId);
       }
     };
@@ -1696,7 +1588,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     _transports[sessionId]?.close();
     _transports.remove(sessionId);
     _servers.remove(sessionId);
-    debugPrint('[MCP] Cleaned up session: $sessionId');
   }
 }
 

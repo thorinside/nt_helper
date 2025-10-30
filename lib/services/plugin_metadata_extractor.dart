@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
 import 'package:nt_helper/models/gallery_models.dart';
@@ -16,9 +15,6 @@ class PluginMetadataExtractor {
     final installation = plugin.installation;
     int count = 0;
 
-    debugPrint(
-      '[PluginExtractor] Counting installable plugins in archive with ${archive.length} files',
-    );
 
     for (final file in archive) {
       if (!file.isFile) continue;
@@ -57,7 +53,6 @@ class PluginMetadataExtractor {
       count++;
     }
 
-    debugPrint('[PluginExtractor] Found $count installable plugin files');
     return count;
   }
 
@@ -70,9 +65,6 @@ class PluginMetadataExtractor {
     final plugins = <CollectionPlugin>[];
     final installation = plugin.installation;
 
-    debugPrint(
-      '[PluginExtractor] Archive has ${archive.length} files, sourceDir: ${installation.sourceDirectoryPath}',
-    );
 
     for (final file in archive) {
       if (!file.isFile) continue;
@@ -95,9 +87,6 @@ class PluginMetadataExtractor {
       // Skip if not a plugin file (include both source and compiled files)
       final extension = path.extension(filePath).toLowerCase();
       if (!const ['.o', '.lua', '.3pot', '.cpp'].contains(extension)) {
-        debugPrint(
-          '[PluginExtractor] Skipping non-plugin file: $filePath (ext: $extension)',
-        );
         continue;
       }
 
@@ -108,11 +97,9 @@ class PluginMetadataExtractor {
           filePath.endsWith('template2.h') ||
           filePath.endsWith('templateKernels.h') ||
           filePath.endsWith('templateStereo.h')) {
-        debugPrint('[PluginExtractor] Skipping template/build file: $filePath');
         continue;
       }
 
-      debugPrint('[PluginExtractor] Found plugin file: $filePath');
 
       final fileName = path.basenameWithoutExtension(filePath);
       final fileType = extension.substring(1); // Remove the dot
@@ -153,9 +140,6 @@ class PluginMetadataExtractor {
 
     // Sort plugins by name
     plugins.sort((a, b) => a.name.compareTo(b.name));
-    debugPrint(
-      '[PluginExtractor] Extracted ${plugins.length} plugins from archive',
-    );
     return plugins;
   }
 

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -125,7 +124,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       detectedType = MidiEventType.cc;
       detectedCc = data[1]; // CC number
       detectedNumber = detectedCc;
-      // debugPrint("Raw CC: ch=$channel, cc=$detectedCc, val=${data[2]}");
+      // 
     }
     // Note On Message (0x90)
     else if (messageType == 0x90) {
@@ -137,7 +136,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
           : MidiEventType.noteOn;
       detectedNote = note;
       detectedNumber = detectedNote;
-      // debugPrint("Raw Note On: ch=$channel, note=$detectedNote, vel=$velocity -> Type=$detectedType");
+      // 
     }
     // Note Off Message (0x80)
     else if (messageType == 0x80) {
@@ -145,7 +144,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       detectedNote = data[1]; // Note number
       // data[2] is velocity, which we ignore for detection logic
       detectedNumber = detectedNote;
-      // debugPrint("Raw Note Off: ch=$channel, note=$detectedNote, vel=${data[2]}");
+      // 
     }
 
     // --- Process if a relevant message was detected ---
@@ -175,12 +174,6 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       final currentState = state;
       if (currentState is Data) {
         // --- Debug Print Start ---
-        debugPrint(
-          'MIDI Event Parsed: type=$detectedType, ch=$channel, num=$detectedNumber, cc=$detectedCc, note=$detectedNote',
-        );
-        debugPrint(
-          'Consecutive Count: $_consecutiveCount, Threshold Met: $thresholdMet',
-        );
         // --- Debug Print End ---
 
         // Set fields only if threshold is met, otherwise null
@@ -194,13 +187,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
         // --- Debug Print Start ---
         if (thresholdMet) {
-          debugPrint(
-            'Emitting State: type=${nextState.lastDetectedType}, ch=${nextState.lastDetectedChannel}, cc=${nextState.lastDetectedCc}, note=${nextState.lastDetectedNote}',
-          );
         } else {
-          debugPrint(
-            'Threshold not met, emitting null state for detected event.',
-          );
         }
         // --- Debug Print End ---
 
@@ -212,11 +199,10 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
           _lastEventSignature = null;
         }
       } else {
-        debugPrint("Warning: _handleMidiData called but state was not 'data'.");
       }
     } else {
       // Optionally log ignored message types
-      // debugPrint("Ignored MIDI message: status=0x${statusByte.toRadixString(16)}");
+      // 
     }
   }
 

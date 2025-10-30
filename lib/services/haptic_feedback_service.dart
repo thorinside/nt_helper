@@ -73,9 +73,6 @@ class HapticFeedbackService implements IHapticFeedbackService {
   @override
   void setEnabled(bool enabled) {
     _settings.setHapticsEnabled(enabled);
-    debugPrint(
-      '[HapticFeedbackService] Haptic feedback ${enabled ? 'enabled' : 'disabled'}',
-    );
   }
 
   /// Light impact feedback for subtle interactions
@@ -96,7 +93,7 @@ class HapticFeedbackService implements IHapticFeedbackService {
         await _desktopFeedback.lightFeedback(context);
       }
     } catch (e) {
-      debugPrint('[HapticFeedbackService] Error triggering light impact: $e');
+      // Intentionally empty
     }
   }
 
@@ -118,7 +115,7 @@ class HapticFeedbackService implements IHapticFeedbackService {
         await _desktopFeedback.mediumFeedback(context);
       }
     } catch (e) {
-      debugPrint('[HapticFeedbackService] Error triggering medium impact: $e');
+      // Intentionally empty
     }
   }
 
@@ -140,7 +137,7 @@ class HapticFeedbackService implements IHapticFeedbackService {
         await _desktopFeedback.heavyFeedback(context);
       }
     } catch (e) {
-      debugPrint('[HapticFeedbackService] Error triggering heavy impact: $e');
+      // Intentionally empty
     }
   }
 
@@ -163,7 +160,7 @@ class HapticFeedbackService implements IHapticFeedbackService {
         await _desktopFeedback.errorFeedback(context);
       }
     } catch (e) {
-      debugPrint('[HapticFeedbackService] Error triggering error feedback: $e');
+      // Intentionally empty
     }
   }
 

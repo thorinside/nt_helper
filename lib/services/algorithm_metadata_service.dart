@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/models/algorithm_feature.dart';
@@ -32,9 +31,6 @@ class AlgorithmMetadataService {
     await _mergeSyncedAlgorithms(database);
 
     _isInitialized = true;
-    debugPrint(
-      'AlgorithmMetadataService initialized with a total of ${_algorithms.length} algorithms (from JSON and DB) and ${_features.length} features.',
-    );
   }
 
   /// Checks if the database is empty and imports bundled metadata if available
@@ -43,7 +39,6 @@ class AlgorithmMetadataService {
       // Check if we already have metadata in the database
       final hasMetadata = await database.metadataDao.hasCachedAlgorithms();
       if (hasMetadata) {
-        debugPrint('Database already has metadata, skipping bundled import');
         return;
       }
 
@@ -58,31 +53,22 @@ class AlgorithmMetadataService {
         final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
         if (!manifestMap.containsKey(bundledMetadataPath)) {
-          debugPrint('No bundled metadata asset found at $bundledMetadataPath');
           return;
         }
 
         // Import the bundled metadata
-        debugPrint(
-          'Found bundled metadata, importing to enable offline mode...',
-        );
         final importService = MetadataImportService(database);
         final success = await importService.importFromAsset(
           bundledMetadataPath,
         );
 
         if (success) {
-          debugPrint('Successfully imported bundled metadata for offline mode');
         } else {
-          debugPrint('Failed to import bundled metadata');
         }
       } catch (e) {
         // Asset doesn't exist, which is normal if metadata hasn't been exported yet
-        debugPrint('No bundled metadata available: $e');
       }
-    } catch (e, stackTrace) {
-      debugPrint('Error checking/importing bundled metadata: $e');
-      debugPrint('Stack trace: $stackTrace');
+    } catch (e) {
       // Continue initialization even if import fails
     }
   }
@@ -98,7 +84,6 @@ class AlgorithmMetadataService {
         )
         .toList();
 
-    debugPrint('Found ${algorithmFiles.length} algorithm files in manifest.');
 
     for (final path in algorithmFiles) {
       try {
@@ -107,8 +92,8 @@ class AlgorithmMetadataService {
         final algorithm = AlgorithmMetadata.fromJson(jsonMap);
         _algorithms[algorithm.guid] = algorithm;
         // print('Loaded algorithm: ${algorithm.name} (${algorithm.guid})');
-      } catch (e, stacktrace) {
-        debugPrint('Error processing algorithm file $path: $e\n$stacktrace');
+      } catch (e) {
+        // Intentionally empty
       }
     }
   }
@@ -123,7 +108,6 @@ class AlgorithmMetadataService {
         )
         .toList();
 
-    debugPrint('Found ${featureFiles.length} feature files in manifest.');
 
     for (final path in featureFiles) {
       try {
@@ -132,8 +116,8 @@ class AlgorithmMetadataService {
         final feature = AlgorithmFeature.fromJson(jsonMap);
         _features[feature.guid] = feature;
         // print('Loaded feature: ${feature.name} (${feature.guid})');
-      } catch (e, stacktrace) {
-        debugPrint('Error processing feature file $path: $e\n$stacktrace');
+      } catch (e) {
+        // Intentionally empty
       }
     }
   }
@@ -144,9 +128,6 @@ class AlgorithmMetadataService {
         .getAllAlgorithms();
     int mergedCount = 0;
 
-    debugPrint(
-      '[AlgorithmMetadataService] Found ${syncedEntries.length} algorithm entries in local DB for potential merging.',
-    );
 
     for (final entry in syncedEntries) {
       if (!_algorithms.containsKey(entry.guid)) {
@@ -164,13 +145,7 @@ class AlgorithmMetadataService {
       }
     }
     if (mergedCount > 0) {
-      debugPrint(
-        '[AlgorithmMetadataService] Successfully merged $mergedCount new algorithms from the local database.',
-      );
     } else {
-      debugPrint(
-        '[AlgorithmMetadataService] No new algorithms from local DB to merge (all already present in JSON or DB empty).',
-      );
     }
   }
 
@@ -241,9 +216,6 @@ class AlgorithmMetadataService {
           combinedParams[param.name] = param; // Overwrite if name exists
         }
       } else {
-        debugPrint(
-          'Warning: Feature with guid $featureGuid not found for algorithm ${algorithm.guid}',
-        );
       }
     }
     return combinedParams.values.toList();

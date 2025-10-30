@@ -1048,58 +1048,25 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       final bool isServerStillRunningBeforeAction =
                           mcpInstance.isRunning;
 
-                      debugPrint(
-                        "[SyncScreenSettings] After dialog saved: New MCP Setting: $isMcpEnabledAfterDialog, Server Currently Running (before action): $isServerStillRunningBeforeAction",
-                      );
 
                       if (Platform.isMacOS || Platform.isWindows) {
                         if (isMcpEnabledAfterDialog) {
                           if (!isServerStillRunningBeforeAction) {
-                            debugPrint(
-                              "[SyncScreenSettings] MCP Setting is ON, Server is OFF. Attempting to START server.",
-                            );
                             await mcpInstance.start().catchError((e) {
-                              debugPrint(
-                                '[SyncScreenSettings] Error starting MCP Server: $e',
-                              );
                             });
-                            debugPrint(
-                              "[SyncScreenSettings] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}",
-                            );
                           } else {
-                            debugPrint(
-                              "[SyncScreenSettings] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}",
-                            );
                           }
                         } else {
                           // MCP Setting is OFF
                           if (isServerStillRunningBeforeAction) {
-                            debugPrint(
-                              "[SyncScreenSettings] MCP Setting is OFF, Server is ON. Attempting to STOP server.",
-                            );
                             await mcpInstance.stop().catchError((e) {
-                              debugPrint(
-                                '[SyncScreenSettings] Error stopping MCP Server: $e',
-                              );
                             });
-                            debugPrint(
-                              "[SyncScreenSettings] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}",
-                            );
                           } else {
-                            debugPrint(
-                              "[SyncScreenSettings] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}",
-                            );
                           }
                         }
                       } else {
-                        debugPrint(
-                          "[SyncScreenSettings] Not on MacOS/Windows. No MCP server action taken.",
-                        );
                       }
                     } else {
-                      debugPrint(
-                        "[SyncScreenSettings] Settings dialog cancelled or no changes saved. No MCP server action taken.",
-                      );
                     }
                   },
             child: const Row(
@@ -1287,14 +1254,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   void _showScreenshotOverlay(BuildContext context) {
-    debugPrint('[SynchronizedScreen] _showScreenshotOverlay called');
     final cubit = context.read<DistingCubit>();
 
     // Create a VideoFrameCubit for this overlay
     final videoFrameCubit = VideoFrameCubit();
-    debugPrint(
-      '[SynchronizedScreen] Created VideoFrameCubit: $videoFrameCubit',
-    );
 
     late OverlayEntry overlayEntry;
 
@@ -1306,9 +1269,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       ),
     );
 
-    debugPrint('[SynchronizedScreen] Inserting overlay entry');
     Overlay.of(context).insert(overlayEntry);
-    debugPrint('[SynchronizedScreen] Overlay entry inserted successfully');
   }
 
   double _findClosestZoomLevel(double currentZoom) {

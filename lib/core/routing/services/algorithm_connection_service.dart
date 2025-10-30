@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/algorithm_connection.dart';
 
@@ -40,9 +39,6 @@ class AlgorithmConnectionService {
       return _cachedConnections!;
     }
 
-    debugPrint(
-      'AlgorithmConnectionService: Discovering connections for ${slots.length} slots',
-    );
 
     try {
       // Discover all connections
@@ -52,14 +48,8 @@ class AlgorithmConnectionService {
       _lastSlotsHash = slotsHash;
       _cachedConnections = connections;
 
-      debugPrint(
-        'AlgorithmConnectionService: Found ${connections.length} algorithm connections',
-      );
       return connections;
     } catch (e) {
-      debugPrint(
-        'AlgorithmConnectionService: Error discovering connections: $e',
-      );
       return [];
     }
   }
@@ -166,14 +156,8 @@ class AlgorithmConnectionService {
 
       if (_isOutputParameter(paramName)) {
         outputBuses[param.name] = busValue;
-        debugPrint(
-          'AlgorithmConnectionService: Found OUTPUT parameter "${param.name}" -> bus $busValue',
-        );
       } else if (_isInputParameter(paramName)) {
         inputBuses[param.name] = busValue;
-        debugPrint(
-          'AlgorithmConnectionService: Found INPUT parameter "${param.name}" -> bus $busValue',
-        );
       }
     }
 

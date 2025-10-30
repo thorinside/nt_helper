@@ -21,7 +21,6 @@ class UsbVideoChannel {
 
   void _debugLog(String message) {
     _debugService.addLocalMessage('[UsbVideoChannel] $message');
-    debugPrint('[UsbVideoChannel] $message');
   }
 
   bool get _useAndroidImplementation => !kIsWeb && Platform.isAndroid;

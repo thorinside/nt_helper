@@ -181,10 +181,6 @@ class DistingMessageScheduler {
     final request = _currentRequest!;
     request.attemptCount++;
 
-    debugPrint(
-      'Sending SysEx (attempt ${request.attemptCount}): '
-      '${request.packet.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')} ${request.key}',
-    );
 
     // Send the message
     _midi.sendData(request.packet, deviceId: _outputDevice.id);
@@ -218,7 +214,6 @@ class DistingMessageScheduler {
       _finishCurrentRequest();
     } else {
       // Retry after delay
-      debugPrint('Timeout, retrying (attempt ${request.attemptCount + 1})...');
       _state = _SchedulerState.sending;
 
       if (request.retryDelay == Duration.zero) {
@@ -262,20 +257,13 @@ class DistingMessageScheduler {
     if (request == null ||
         _state != _SchedulerState.waitingForResponse ||
         request.completer.isCompleted) {
-      debugPrint("Received SysEx but no matching request pending");
       return;
     }
 
     if (!request.key.matches(parsed)) {
-      debugPrint("Received SysEx doesn't match pending request");
-      debugPrint("  Expected: ${request.key}");
-      debugPrint("  Received: ${parsed.messageType}");
       return;
     }
 
-    debugPrint(
-      'Received matching SysEx: ${parsed.rawBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
-    );
 
     // Parse and complete the response
     final response = ResponseFactory.fromMessageType(
@@ -289,9 +277,6 @@ class DistingMessageScheduler {
         request.completer.complete(parsed);
       } catch (e) {
         // If parsing fails, complete with error instead of raw response to avoid type mismatches
-        debugPrint(
-          '[DistingMessageScheduler] Parsing failed for ${response.runtimeType}: $e',
-        );
         if (request.expectation == ResponseExpectation.optional) {
           request.completer.complete(null);
         } else {

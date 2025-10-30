@@ -169,7 +169,7 @@ typedef ValidationRule =
 /// } else {
 ///   // Handle errors
 ///   for (final error in result.errors) {
-///     debugPrint('Validation error: ${error.message}');
+///     
 ///   }
 /// }
 /// ```
@@ -183,13 +183,11 @@ class PortCompatibilityValidator {
   /// Adds a custom validation rule
   void addCustomRule(ValidationRule rule) {
     _customRules.add(rule);
-    debugPrint('PortCompatibilityValidator: Added custom validation rule');
   }
 
   /// Removes all custom validation rules
   void clearCustomRules() {
     _customRules.clear();
-    debugPrint('PortCompatibilityValidator: Cleared custom validation rules');
   }
 
   /// Validates whether a connection between two ports is valid.
@@ -270,15 +268,10 @@ class PortCompatibilityValidator {
             destinationPortId: destination.id,
           ),
         );
-        debugPrint('PortCompatibilityValidator: Custom rule failed - $e');
       }
     }
 
     final isValid = errors.isEmpty;
-    debugPrint(
-      'PortCompatibilityValidator: Validation ${isValid ? "passed" : "failed"} for '
-      '${source.id} -> ${destination.id}',
-    );
 
     return ValidationResult(
       isValid: isValid,

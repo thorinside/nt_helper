@@ -1,6 +1,5 @@
 // lib/services/plugin_update_checker.dart
 import 'dart:async';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 import 'package:nt_helper/models/gallery_models.dart';
@@ -32,12 +31,10 @@ class PluginUpdateChecker {
     bool forceCheck = false,
   }) async {
     if (_isCheckingUpdates && !forceCheck) {
-      debugPrint('Plugin update check already in progress, skipping');
       return UpdateCheckResult.inProgress();
     }
 
     _isCheckingUpdates = true;
-    debugPrint('Starting batch plugin update check...');
 
     try {
       final startTime = DateTime.now();
@@ -49,7 +46,6 @@ class PluginUpdateChecker {
                 .getPluginsNeedingUpdateCheck();
 
       if (pluginsToCheck.isEmpty) {
-        debugPrint('No plugins need update checking');
         return UpdateCheckResult.success(
           checkedCount: 0,
           updatesFound: 0,
@@ -58,12 +54,10 @@ class PluginUpdateChecker {
         );
       }
 
-      debugPrint('Checking ${pluginsToCheck.length} plugins for updates');
 
       // Get current gallery data
       final galleryPlugins = await _fetchGalleryPlugins();
       if (galleryPlugins.isEmpty) {
-        debugPrint('No gallery plugins available, cannot check for updates');
         return UpdateCheckResult.error('Gallery data not available');
       }
 
@@ -76,14 +70,9 @@ class PluginUpdateChecker {
       _lastBatchCheck = DateTime.now();
 
       final summary = _summarizeResults(results, startTime);
-      debugPrint(
-        'Plugin update check completed: ${summary.checkedCount} checked, '
-        '${summary.updatesFound} updates found, ${summary.errors.length} errors',
-      );
 
       return summary;
     } catch (e) {
-      debugPrint('Error during plugin update check: $e');
       return UpdateCheckResult.error(e.toString());
     } finally {
       _isCheckingUpdates = false;
@@ -93,7 +82,6 @@ class PluginUpdateChecker {
   /// Check for updates for a specific plugin
   Future<PluginUpdateResult> checkPluginUpdate(String pluginId) async {
     try {
-      debugPrint('Checking updates for plugin: $pluginId');
 
       // Get installed plugin info
       final installedVersions = await _database.pluginInstallationsDao
@@ -119,7 +107,6 @@ class PluginUpdateChecker {
           .firstOrNull;
 
       if (galleryPlugin == null) {
-        debugPrint('Plugin $pluginId not found in gallery');
         return PluginUpdateResult.notInGallery(pluginId);
       }
 
@@ -131,7 +118,6 @@ class PluginUpdateChecker {
 
       return updateResult;
     } catch (e) {
-      debugPrint('Error checking plugin update for $pluginId: $e');
       return PluginUpdateResult.error(pluginId, e.toString());
     }
   }
@@ -172,7 +158,6 @@ class PluginUpdateChecker {
       final galleryData = await _galleryService.getGalleryData();
       return galleryData?.plugins ?? [];
     } catch (e) {
-      debugPrint('Error fetching gallery data: $e');
       return [];
     }
   }
@@ -196,9 +181,6 @@ class PluginUpdateChecker {
       );
       final batch = pluginsToCheck.sublist(i, batchEnd);
 
-      debugPrint(
-        'Processing batch ${(i ~/ _maxConcurrentChecks) + 1}: ${batch.length} plugins',
-      );
 
       final batchResults = await Future.wait(
         batch.map((installedPlugin) async {
@@ -254,7 +236,6 @@ class PluginUpdateChecker {
         galleryPlugin: galleryPlugin,
       );
     } catch (e) {
-      debugPrint('Error checking update for ${installedPlugin.pluginId}: $e');
       return PluginUpdateResult.error(installedPlugin.pluginId, e.toString());
     }
   }

@@ -230,9 +230,6 @@ class _PluginSelectionDialogState extends State<PluginSelectionDialog> {
             ElevatedButton(
               onPressed: selectedCount > 0
                   ? () {
-                      debugPrint(
-                        '[PluginSelection] Install Selected button pressed: $selectedCount plugins selected',
-                      );
                       widget.onSelectionChanged(plugins);
                       Navigator.of(dlgContext).pop();
                     }

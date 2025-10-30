@@ -1,5 +1,4 @@
 import 'package:get_it/get_it.dart';
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/core/routing/routing_factory.dart';
 import 'package:nt_helper/core/routing/port_compatibility_validator.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
@@ -70,24 +69,19 @@ class RoutingServiceLocator {
       );
     }
 
-    debugPrint('RoutingServiceLocator: Setting up routing dependencies');
 
     // Register port compatibility validator as singleton
     final validator = customValidator ?? PortCompatibilityValidator();
     _getIt.registerSingleton<PortCompatibilityValidator>(validator);
-    debugPrint('RoutingServiceLocator: Registered PortCompatibilityValidator');
 
     // Register routing factory as singleton
     final factory = customFactory ?? RoutingFactory(validator: validator);
     _getIt.registerSingleton<RoutingFactory>(factory);
-    debugPrint('RoutingServiceLocator: Registered RoutingFactory');
 
     // Register haptic feedback service as singleton
     final hapticService = HapticFeedbackService();
     _getIt.registerSingleton<IHapticFeedbackService>(hapticService);
-    debugPrint('RoutingServiceLocator: Registered HapticFeedbackService');
 
-    debugPrint('RoutingServiceLocator: Setup complete');
   }
 
   /// Convenience method to get a routing instance directly.
@@ -174,27 +168,20 @@ class RoutingServiceLocator {
   /// This method is safe to call even if the service locator hasn't been
   /// set up or has already been reset.
   static Future<void> reset() async {
-    debugPrint('RoutingServiceLocator: Resetting routing dependencies');
 
     // Unregister in reverse order of registration to handle dependencies properly
     if (_getIt.isRegistered<IHapticFeedbackService>()) {
       await _getIt.unregister<IHapticFeedbackService>();
-      debugPrint('RoutingServiceLocator: Unregistered HapticFeedbackService');
     }
 
     if (_getIt.isRegistered<RoutingFactory>()) {
       await _getIt.unregister<RoutingFactory>();
-      debugPrint('RoutingServiceLocator: Unregistered RoutingFactory');
     }
 
     if (_getIt.isRegistered<PortCompatibilityValidator>()) {
       await _getIt.unregister<PortCompatibilityValidator>();
-      debugPrint(
-        'RoutingServiceLocator: Unregistered PortCompatibilityValidator',
-      );
     }
 
-    debugPrint('RoutingServiceLocator: Reset complete');
   }
 
   /// Ensures the service locator has been set up, throwing an error if not.
@@ -244,19 +231,11 @@ class RoutingServiceLocator {
       );
     }
 
-    debugPrint(
-      'RoutingServiceLocator: Setting up routing dependencies (advanced)',
-    );
 
     registerValidator(_getIt);
-    debugPrint(
-      'RoutingServiceLocator: Custom PortCompatibilityValidator registered',
-    );
 
     registerFactory(_getIt);
-    debugPrint('RoutingServiceLocator: Custom RoutingFactory registered');
 
-    debugPrint('RoutingServiceLocator: Advanced setup complete');
   }
 
   /// Gets diagnostic information about the current registration state.

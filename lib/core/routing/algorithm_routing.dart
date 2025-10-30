@@ -168,9 +168,6 @@ abstract class AlgorithmRouting {
   /// Returns the created [Connection] if successful, null if invalid.
   Connection? addConnection(Port source, Port destination) {
     if (!validateConnection(source, destination)) {
-      debugPrint(
-        'AlgorithmRouting: Invalid connection attempt from ${source.id} to ${destination.id}',
-      );
       return null;
     }
 
@@ -181,7 +178,6 @@ abstract class AlgorithmRouting {
       connectionType: ConnectionType.algorithmToAlgorithm,
     );
 
-    debugPrint('AlgorithmRouting: Created connection ${connection.id}');
 
     return connection;
   }
@@ -197,9 +193,7 @@ abstract class AlgorithmRouting {
   bool removeConnection(String connectionId) {
     final removed = connections.any((conn) => conn.id == connectionId);
     if (removed) {
-      debugPrint('AlgorithmRouting: Removed connection $connectionId');
     } else {
-      debugPrint('AlgorithmRouting: Connection $connectionId not found');
     }
     return removed;
   }
@@ -243,16 +237,10 @@ abstract class AlgorithmRouting {
       final destination = findPortById(connection.destinationPortId);
 
       if (source == null || destination == null) {
-        debugPrint(
-          'AlgorithmRouting: Invalid connection ${connection.id} - missing ports',
-        );
         return false;
       }
 
       if (!validateConnection(source, destination)) {
-        debugPrint(
-          'AlgorithmRouting: Invalid connection ${connection.id} - validation failed',
-        );
         return false;
       }
     }
@@ -266,7 +254,6 @@ abstract class AlgorithmRouting {
   /// any resources, listeners, or subscriptions they may have created.
   @mustCallSuper
   void dispose() {
-    debugPrint('AlgorithmRouting: Disposing routing algorithm');
   }
 
   /// Factory method to create the appropriate AlgorithmRouting from a Slot.
@@ -389,9 +376,6 @@ abstract class AlgorithmRouting {
     // Even if it has parameters that look like bus parameters,
     // they're not for routing audio/CV signals
     if (slot.algorithm.guid == 'note') {
-      debugPrint(
-        'Notes algorithm detected (guid: note) - returning empty I/O parameters (no routing capability)',
-      );
       return {};
     }
 
@@ -423,9 +407,6 @@ abstract class AlgorithmRouting {
         // Extract the prefix by removing " mode" suffix
         final prefix = param.name.substring(0, param.name.length - 5);
         outputParameterPrefixes.add(prefix);
-        debugPrint(
-          'AlgorithmRouting: Found mode parameter "${param.name}" - marking "$prefix" as output',
-        );
       }
     }
 
@@ -477,9 +458,6 @@ abstract class AlgorithmRouting {
         ioParameters[param.name] = value;
 
         if (hasMatchingModeParameter) {
-          debugPrint(
-            'AlgorithmRouting: Including "${param.name}" as IO parameter (has matching mode parameter)',
-          );
         }
       }
     }
@@ -556,9 +534,6 @@ abstract class AlgorithmRouting {
       for (final e in slot.enums) e.parameterNumber: e.values,
     };
 
-    debugPrint(
-      'AlgorithmRouting: Scanning ${slot.parameters.length} parameters for mode parameters',
-    );
 
     for (final param in slot.parameters) {
       // Mode parameters are identified by:
@@ -575,9 +550,6 @@ abstract class AlgorithmRouting {
           enumValues.contains('Replace');
 
       if (param.name.toLowerCase().contains('output')) {
-        debugPrint(
-          'AlgorithmRouting: Checking output parameter ${param.name}: unit=${param.unit}, enums=$enumValues, isModeParam=$isModeParameter',
-        );
       }
 
       if (isModeParameter) {
@@ -586,15 +558,9 @@ abstract class AlgorithmRouting {
           parameterNumber: param.parameterNumber,
           value: value,
         );
-        debugPrint(
-          'AlgorithmRouting: Found mode parameter: ${param.name} -> paramNum=${param.parameterNumber}, value=$value',
-        );
       }
     }
 
-    debugPrint(
-      'AlgorithmRouting: Found ${modeParameters.length} mode parameters: ${modeParameters.keys}',
-    );
     return modeParameters;
   }
 

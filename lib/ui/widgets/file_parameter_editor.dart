@@ -65,15 +65,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     super.initState();
     _textController = TextEditingController();
     _currentDirectory = widget.rule.baseDirectory;
-    debugPrint(
-      '[FileParameterEditor] Constructor called for parameter: ${widget.parameterInfo.name}',
-    );
-    debugPrint(
-      '[FileParameterEditor] Initializing with directory: $_currentDirectory, mode: ${widget.rule.mode}, parameter: ${widget.parameterInfo.name}',
-    );
     _updateDisplayValue();
     if (widget.rule.mode != FileSelectionMode.textInput) {
-      debugPrint('[FileParameterEditor] Starting directory load...');
       _loadDirectoryContents();
     } else {
       // For text input, initialize the controller with current value string
@@ -159,13 +152,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
       // If folder changed, reload directory contents
       if (oldFolderValue != newFolderValue) {
-        debugPrint(
-          '[FileParameterEditor] Folder changed from $oldFolderValue to $newFolderValue, reloading files',
-        );
         _loadDirectoryContents();
       }
     } catch (e) {
-      debugPrint('[FileParameterEditor] Error checking folder changes: $e');
+      // Intentionally empty
     }
   }
 
@@ -339,7 +329,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       final disting = cubit.disting();
 
       if (disting == null) {
-        debugPrint('[FileParameterEditor] No disting manager available');
         if (mounted) {
           setState(() {
             _isLoadingFiles = false;
@@ -352,22 +341,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
       if (widget.rule.recursive) {
         // Recursive search for files
-        debugPrint(
-          '[FileParameterEditor] Performing recursive search in: $directoryToLoad',
-        );
         allFiles = await _loadDirectoryRecursive(disting, directoryToLoad, '');
-        debugPrint(
-          '[FileParameterEditor] Found ${allFiles.length} files recursively',
-        );
       } else {
         // Single directory listing
-        debugPrint(
-          '[FileParameterEditor] Requesting directory listing for: $directoryToLoad',
-        );
         final listing = await disting.requestDirectoryListing(directoryToLoad);
-        debugPrint(
-          '[FileParameterEditor] Received listing: ${listing?.entries.length ?? 0} entries',
-        );
 
         if (listing != null) {
           allFiles = listing.entries;
@@ -430,14 +407,12 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         // After loading, resolve the current value to actual name
         await _resolveCurrentValueToName();
       } else if (allFiles.isEmpty && mounted) {
-        debugPrint('[FileParameterEditor] No files found');
         setState(() {
           _availableFiles = [];
           _isLoadingFiles = false;
         });
       }
     } catch (e) {
-      debugPrint('[FileParameterEditor] Error loading directory: $e');
       if (mounted) {
         setState(() {
           _isLoadingFiles = false;
@@ -458,7 +433,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       );
 
       if (folderParamIndex == -1) {
-        debugPrint('[FileParameterEditor] No folder parameter found');
         return _currentDirectory;
       }
 
@@ -470,9 +444,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
       final listing = await disting.requestDirectoryListing(_currentDirectory!);
       if (listing == null) {
-        debugPrint(
-          '[FileParameterEditor] No listing received for folder selection',
-        );
         return _currentDirectory;
       }
 
@@ -490,17 +461,11 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
       if (folderIndex >= 0 && folderIndex < folders.length) {
         final selectedFolder = folders[folderIndex].name.replaceAll('/', '');
-        debugPrint('[FileParameterEditor] Selected folder: $selectedFolder');
         return '$_currentDirectory/$selectedFolder';
       } else {
-        debugPrint(
-          '[FileParameterEditor] Folder index $folderIndex out of range (${folders.length} folders)',
-        );
       }
     } catch (e) {
-      debugPrint(
-        '[FileParameterEditor] Error getting selected folder path: $e',
-      );
+      // Intentionally empty
     }
 
     return _currentDirectory;
@@ -1153,16 +1118,13 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             _onFileChanged();
           }
         } catch (e) {
-          debugPrint('File watch error: $e');
           if (mounted) {
             setState(() => _devState = _DevelopmentState.error);
           }
         }
       });
 
-      debugPrint('Development mode started for: ${path.basename(filePath)}');
     } catch (e) {
-      debugPrint('Failed to start development mode: $e');
       _showError('Failed to start development mode: $e');
     }
   }
@@ -1179,7 +1141,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       _devState = _DevelopmentState.inactive;
     });
 
-    debugPrint('Development mode stopped');
   }
 
   void _onFileChanged() {
@@ -1194,14 +1155,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     // Start a new debounce timer - wait 3 seconds for changes to settle
     _debounceTimer = Timer(const Duration(seconds: 3), () async {
       if (mounted && _devState == _DevelopmentState.changed) {
-        debugPrint('[Development Mode] File changes settled, uploading...');
         await _uploadAndReloadScript();
       }
     });
 
-    debugPrint(
-      '[Development Mode] File changed, waiting for changes to settle...',
-    );
   }
 
   Future<void> _uploadAndReloadScript() async {
@@ -1243,13 +1200,11 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         setState(() => _devState = _DevelopmentState.monitoring);
       }
 
-      debugPrint('Script uploaded and reloaded: $fileName');
     } catch (e) {
       if (mounted) {
         setState(() => _devState = _DevelopmentState.error);
         _showError('Upload failed: $e');
       }
-      debugPrint('Failed to upload/reload script: $e');
 
       // Don't stop monitoring on upload errors, allow retry
       Timer(const Duration(seconds: 3), () {

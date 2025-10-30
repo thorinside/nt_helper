@@ -145,7 +145,6 @@ class ElfGuidExtractor {
         );
       }
 
-      debugPrint('Extracted GUID "$guidString" from $fileName');
 
       return PluginGuid(guid: guidString, rawValue: rawGuid);
     } catch (e) {
@@ -165,7 +164,6 @@ class ElfGuidExtractor {
     final result = <String, String>{};
 
     try {
-      debugPrint('Scanning plugin directory: $directoryPath');
 
       // List all files in the plugin directory
       final allFiles = await fileSystem.listFiles(
@@ -178,16 +176,13 @@ class ElfGuidExtractor {
           .where((path) => path.endsWith('.o'))
           .toList();
 
-      debugPrint('Found ${pluginFiles.length} .o files to process');
 
       for (final filePath in pluginFiles) {
         try {
-          debugPrint('Processing plugin file: $filePath');
 
           // Read the file via SYSEX
           final fileBytes = await fileSystem.readFile(filePath);
           if (fileBytes == null) {
-            debugPrint('Failed to read file: $filePath');
             continue;
           }
 
@@ -195,20 +190,13 @@ class ElfGuidExtractor {
           final pluginGuid = await extractGuidFromBytes(fileBytes, filePath);
           result[pluginGuid.guid] = filePath;
 
-          debugPrint(
-            'Found ${pluginGuid.isCommunityPlugin ? 'community' : 'factory'} plugin: ${pluginGuid.guid} -> $filePath',
-          );
         } catch (e) {
-          debugPrint('Failed to extract GUID from $filePath: $e');
           // Continue processing other files
         }
       }
 
-      debugPrint(
-        'Plugin scan complete. Found ${result.length} plugins with GUIDs',
-      );
     } catch (e) {
-      debugPrint('Error scanning plugin directory $directoryPath: $e');
+      // Intentionally empty
     }
 
     return result;

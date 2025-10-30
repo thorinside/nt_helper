@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 
 /// Utility class for generating ES-5 Eurorack hardware node port configurations.
@@ -44,7 +43,6 @@ class ES5HardwareNode {
   ///
   /// Returns a list of 10 Port objects configured as ES-5 inputs.
   static List<Port> createInputPorts() {
-    debugPrint('[ES5HardwareNode] Creating ES-5 input ports');
 
     final ports = <Port>[];
 
@@ -91,7 +89,6 @@ class ES5HardwareNode {
       );
     }
 
-    debugPrint('[ES5HardwareNode] Created ${ports.length} ES-5 input ports');
 
     return ports;
   }
@@ -103,7 +100,6 @@ class ES5HardwareNode {
   ///
   /// Returns an empty list.
   static List<Port> createOutputPorts() {
-    debugPrint('[ES5HardwareNode] ES-5 has no output ports (sink device)');
     return [];
   }
 

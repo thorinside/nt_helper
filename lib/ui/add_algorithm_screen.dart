@@ -318,14 +318,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
     try {
       final cubit = context.read<DistingCubit>();
-      debugPrint("[AddAlgorithmScreen] Loading plugin: ${algorithm.name}");
 
       final loadedInfo = await cubit.loadPlugin(algorithmGuid);
 
       if (loadedInfo != null && mounted) {
-        debugPrint(
-          "[AddAlgorithmScreen] Plugin loaded successfully: ${algorithm.name}",
-        );
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -354,9 +350,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           });
         }
       } else if (mounted) {
-        debugPrint(
-          "[AddAlgorithmScreen] Plugin load failed: ${algorithm.name}",
-        );
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -367,9 +360,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         );
       }
     } catch (e) {
-      debugPrint(
-        "[AddAlgorithmScreen] Plugin load error for ${algorithm.name}: $e",
-      );
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(

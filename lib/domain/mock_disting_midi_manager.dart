@@ -797,18 +797,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
     _state.versionString = "Demo v1.0";
 
     // Debug print lengths
-    debugPrint(
-      "[Mock Init] Clock Divider Slot: params=${clockSlot.parameters.length}, vals=${clockSlot.values.length}, enums=${clockSlot.enums.length}, maps=${clockSlot.mappings.length}, strs=${clockSlot.valueStrings.length}",
-    );
-    debugPrint(
-      "[Mock Init] Sequencer Slot: params=${sequencerSlot.parameters.length}, vals=${sequencerSlot.values.length}, enums=${sequencerSlot.enums.length}, maps=${sequencerSlot.mappings.length}, strs=${sequencerSlot.valueStrings.length}",
-    );
-    debugPrint(
-      "[Mock Init] VCO Slot: params=${vcoSlot.parameters.length}, vals=${vcoSlot.values.length}, enums=${vcoSlot.enums.length}, maps=${vcoSlot.mappings.length}, strs=${vcoSlot.valueStrings.length}",
-    );
-    debugPrint(
-      "[Mock Init] Berlin School Pluck Voice: ${_state.presetSlots.length} slots total",
-    );
   }
 
   @override
@@ -830,7 +818,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
       // Return the Algorithm part of the Slot
       return _state.presetSlots[algorithmIndex].algorithm;
     }
-    debugPrint("[Mock] requestAlgorithmGuid: Invalid index $algorithmIndex");
     return null;
   }
 
@@ -839,7 +826,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
     if (index >= 0 && index < _state.availableAlgorithms.length) {
       return _state.availableAlgorithms[index];
     }
-    debugPrint("[Mock] requestAlgorithmInfo: Invalid index $index");
     return null;
   }
 
@@ -854,9 +840,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
         values: _state.presetSlots[algorithmIndex].values,
       );
     }
-    debugPrint(
-      "[Mock] requestAllParameterValues: Invalid index $algorithmIndex",
-    );
     return null;
   }
 
@@ -872,9 +855,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
         return _state.presetSlots[algorithmIndex].enums[parameterNumber];
       }
     }
-    debugPrint(
-      "[Mock] requestParameterEnumStrings: Invalid index $algorithmIndex / $parameterNumber",
-    );
     return ParameterEnumStrings.filler();
   }
 
@@ -892,9 +872,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
         result = _state.presetSlots[algorithmIndex].mappings[parameterNumber];
       }
     }
-    debugPrint(
-      "[Mock] requestMappings: Algo $algorithmIndex, Param $parameterNumber -> Returning ${result.packedMappingData.isMapped() ? 'Mapped' : 'Filler'}",
-    );
     return result;
   }
 
@@ -907,9 +884,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
         numParameters: _state.presetSlots[algorithmIndex].parameters.length,
       );
     }
-    debugPrint(
-      "[Mock] requestNumberOfParameters: Invalid index $algorithmIndex",
-    );
     return null;
   }
 
@@ -935,9 +909,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
         return _state.presetSlots[algorithmIndex].parameters[parameterNumber];
       }
     }
-    debugPrint(
-      "[Mock] requestParameterInfo: Invalid index $algorithmIndex / $parameterNumber",
-    );
     return null;
   }
 
@@ -946,7 +917,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
     if (algorithmIndex >= 0 && algorithmIndex < _state.presetSlots.length) {
       return _state.presetSlots[algorithmIndex].pages;
     }
-    debugPrint("[Mock] requestParameterPages: Invalid index $algorithmIndex");
     return null;
   }
 
@@ -963,9 +933,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
         return _state.presetSlots[algorithmIndex].values[parameterNumber];
       }
     }
-    debugPrint(
-      "[Mock] requestParameterValue: Invalid index $algorithmIndex / $parameterNumber",
-    );
     return null;
   }
 
@@ -986,9 +953,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
             : ParameterValueString.filler();
       }
     }
-    debugPrint(
-      "[Mock] requestParameterValueString: Invalid index $algorithmIndex / $parameterNumber",
-    );
     return ParameterValueString.filler();
   }
 
@@ -1028,13 +992,11 @@ class MockDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestLoadPreset(String name, bool append) async {
     // No-op for mock
-    debugPrint("[Mock] requestLoadPreset: name=$name, append=$append");
     return;
   }
 
   @override
   Future<void> requestMoveAlgorithmDown(int algorithmIndex) async {
-    debugPrint("[Mock] requestMoveAlgorithmDown: index $algorithmIndex");
     if (algorithmIndex >= 0 && algorithmIndex < _state.presetSlots.length - 1) {
       // Swap full Slot objects in the list
       final temp = _state.presetSlots[algorithmIndex];
@@ -1055,17 +1017,12 @@ class MockDistingMidiManager implements IDistingMidiManager {
             algorithm: _state.presetSlots[algorithmIndex + 1].algorithm
                 .copyWith(algorithmIndex: algorithmIndex + 1),
           );
-      debugPrint(
-        "[Mock] State after move down: ${_state.presetSlots.map((s) => '${s.algorithm.name}(${s.algorithm.algorithmIndex})').toList()}",
-      );
     } else {
-      debugPrint("[Mock] Invalid index for move down.");
     }
   }
 
   @override
   Future<void> requestMoveAlgorithmUp(int algorithmIndex) async {
-    debugPrint("[Mock] requestMoveAlgorithmUp: index $algorithmIndex");
     if (algorithmIndex > 0 && algorithmIndex < _state.presetSlots.length) {
       // Swap full Slot objects in the list
       final temp = _state.presetSlots[algorithmIndex];
@@ -1086,11 +1043,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
             algorithm: _state.presetSlots[algorithmIndex - 1].algorithm
                 .copyWith(algorithmIndex: algorithmIndex - 1),
           );
-      debugPrint(
-        "[Mock] State after move up: ${_state.presetSlots.map((s) => '${s.algorithm.name}(${s.algorithm.algorithmIndex})').toList()}",
-      );
     } else {
-      debugPrint("[Mock] Invalid index for move up.");
     }
   }
 
@@ -1107,7 +1060,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestSavePreset({int? option}) async {
     // No-op for mock
-    debugPrint("[Mock] requestSavePreset: option=$option");
     return;
   }
 
@@ -1174,7 +1126,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
         }
       }
     } catch (e) {
-      debugPrint('[MockDistingMidiManager] Error updating perfPageIndex: $e');
+      // Intentionally empty
     }
   }
 
@@ -1213,7 +1165,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestSetPresetName(String newName) async {
     _state.presetName = newName;
-    debugPrint("[Mock] requestSetPresetName: newName=$newName");
   }
 
   @override
@@ -1249,23 +1200,11 @@ class MockDistingMidiManager implements IDistingMidiManager {
             values: updatedValues,
           ); // Assuming Slot has copyWith
           _state.presetSlots[algorithmIndex] = updatedSlot;
-          debugPrint(
-            "[Mock] setParameterValue: Algo $algorithmIndex, Param $parameterNumber = $value",
-          );
         } else {
-          debugPrint(
-            "[Mock] setParameterValue: Error finding value index for Param $parameterNumber",
-          );
         }
       } else {
-        debugPrint(
-          "[Mock] setParameterValue: Invalid parameterNumber $parameterNumber",
-        );
       }
     } else {
-      debugPrint(
-        "[Mock] setParameterValue: Invalid algorithmIndex $algorithmIndex",
-      );
     }
   }
 
@@ -1300,36 +1239,22 @@ class MockDistingMidiManager implements IDistingMidiManager {
             valueStrings: updatedValueStrings,
           ); // Assuming Slot has copyWith
           _state.presetSlots[algorithmIndex] = updatedSlot;
-          debugPrint(
-            "[Mock] setParameterString: Algo $algorithmIndex, Param $parameterNumber = '$value'",
-          );
         } else {
-          debugPrint(
-            "[Mock] setParameterString: Error finding value string index for Param $parameterNumber",
-          );
         }
       } else {
-        debugPrint(
-          "[Mock] setParameterString: Invalid parameterNumber $parameterNumber",
-        );
       }
     } else {
-      debugPrint(
-        "[Mock] setParameterString: Invalid algorithmIndex $algorithmIndex",
-      );
     }
   }
 
   @override
   Future<String?> executeLua(String luaScript) async {
-    debugPrint("[Mock] executeLua: script='$luaScript'");
     // Return a mock response
     return "Mock Lua execution result for: ${luaScript.substring(0, luaScript.length > 20 ? 20 : luaScript.length)}...";
   }
 
   @override
   Future<String?> installLua(int algorithmIndex, String luaScript) async {
-    debugPrint("[Mock] installLua: algo=$algorithmIndex, script='$luaScript'");
     // Return a mock response
     return "Mock Lua installed in slot $algorithmIndex";
   }
