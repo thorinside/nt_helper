@@ -507,8 +507,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<void> requestLoadPreset(String name, bool append) async {
-  }
+  Future<void> requestLoadPreset(String name, bool append) async {}
 
   @override
   Future<void> requestNewPreset() async {
@@ -555,8 +554,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     if (algorithmIndex >= 0 && algorithmIndex < _presetAlgorithmGuids.length) {
       _presetAlgorithmGuids.removeAt(algorithmIndex);
       _removeAndShiftState(algorithmIndex);
-    } else {
-    }
+    } else {}
   }
 
   @override
@@ -570,8 +568,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       final guid = _presetAlgorithmGuids.removeAt(algorithmIndex);
       _presetAlgorithmGuids.insert(algorithmIndex - 1, guid);
       _shiftStateUp(algorithmIndex);
-    } else {
-    }
+    } else {}
   }
 
   @override
@@ -581,16 +578,14 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       final guid = _presetAlgorithmGuids.removeAt(algorithmIndex);
       _presetAlgorithmGuids.insert(algorithmIndex + 1, guid);
       _shiftStateDown(algorithmIndex);
-    } else {
-    }
+    } else {}
   }
 
   @override
   Future<void> requestSendSlotName(int algorithmIndex, String newName) async {
     if (algorithmIndex >= 0 && algorithmIndex < _presetAlgorithmGuids.length) {
       _customNames[algorithmIndex] = newName;
-    } else {
-    }
+    } else {}
   }
 
   @override
@@ -735,12 +730,14 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         id: _loadedPresetId!,
         name: _presetName,
         lastModified: DateTime.now(),
+        isTemplate: false,
       );
     } else {
       presetEntry = PresetEntry(
         id: -1,
         name: _presetName,
         lastModified: DateTime.now(),
+        isTemplate: false,
       );
     }
 

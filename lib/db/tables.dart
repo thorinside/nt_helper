@@ -110,6 +110,7 @@ class Presets extends Table {
   TextColumn get name => text()();
   DateTimeColumn get lastModified =>
       dateTime().withDefault(currentDateAndTime)();
+  BoolColumn get isTemplate => boolean().withDefault(const Constant(false))();
 }
 
 @DataClassName('PresetSlotEntry')

@@ -66,6 +66,32 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     return (select(presets)..where((p) => p.id.equals(id))).getSingleOrNull();
   }
 
+  Future<List<FullPresetDetails>> getTemplates() async {
+    final templatePresets =
+        await (select(presets)..where((p) => p.isTemplate.equals(true))).get();
+    final List<FullPresetDetails> templates = [];
+    for (final preset in templatePresets) {
+      final details = await getFullPresetDetails(preset.id);
+      if (details != null) {
+        templates.add(details);
+      }
+    }
+    return templates;
+  }
+
+  Future<List<FullPresetDetails>> getNonTemplates() async {
+    final nonTemplatePresets =
+        await (select(presets)..where((p) => p.isTemplate.equals(false))).get();
+    final List<FullPresetDetails> nonTemplates = [];
+    for (final preset in nonTemplatePresets) {
+      final details = await getFullPresetDetails(preset.id);
+      if (details != null) {
+        nonTemplates.add(details);
+      }
+    }
+    return nonTemplates;
+  }
+
   Future<FullPresetDetails?> getFullPresetDetails(int presetId) async {
     final presetEntry = await (select(
       presets,
@@ -172,7 +198,10 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   /// Saves a complete preset structure (insert or update).
   /// Handles saving the preset entry, slots, values, mappings, routing, and string values.
   /// Returns the ID of the saved/updated preset.
-  Future<int> saveFullPreset(FullPresetDetails details) async {
+  Future<int> saveFullPreset(
+    FullPresetDetails details, {
+    bool isTemplate = false,
+  }) async {
     return transaction(() async {
       // 1. Upsert Preset Entry
       final presetCompanion = details.preset
@@ -184,6 +213,7 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
                 ? const Value.absent()
                 : Value(details.preset.id),
             lastModified: Value(DateTime.now()),
+            isTemplate: Value(isTemplate),
           );
 
       // Insert the companion. `insertOrReplace` will:
@@ -340,7 +370,6 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
           ..where((m) => m.presetSlotId.equals(presetSlotId))
           ..where((m) => m.parameterNumber.equals(parameterNumber)))
         .write(PresetMappingsCompanion(perfPageIndex: Value(perfPageIndex)));
-
   }
 
   // --- Deletion Methods ---

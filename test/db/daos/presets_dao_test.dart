@@ -59,6 +59,7 @@ void main() {
           id: -1, // -1 indicates new preset for auto-increment
           name: 'Test Preset',
           lastModified: DateTime.now(),
+          isTemplate: false,
         ),
         slots: [
           FullPresetSlot(
@@ -147,6 +148,7 @@ void main() {
           id: -1,
           name: 'Test Preset 2',
           lastModified: DateTime.now(),
+          isTemplate: false,
         ),
         slots: [
           FullPresetSlot(
@@ -183,6 +185,288 @@ void main() {
         equals(0),
         reason: 'perfPageIndex = 0 should be persisted correctly',
       );
+    });
+  });
+
+  group('PresetsDao - Template functionality', () {
+    test('saves preset with isTemplate=true', () async {
+      // 1. Create test algorithm
+      await database.metadataDao.upsertAlgorithms([
+        AlgorithmEntry(
+          guid: 'TMPL',
+          name: 'Template Algorithm',
+          numSpecifications: 0,
+          pluginFilePath: null,
+        ),
+      ]);
+
+      // 2. Create a template preset
+      final templateDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'My Template',
+          lastModified: DateTime.now(),
+          isTemplate: false, // Will be overridden by saveFullPreset parameter
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TMPL',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TMPL',
+              name: 'Template Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 3. Save with isTemplate=true
+      final presetId = await database.presetsDao.saveFullPreset(
+        templateDetails,
+        isTemplate: true,
+      );
+
+      // 4. Load and verify
+      final loadedPreset = await database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
+
+      expect(loadedPreset, isNotNull);
+      expect(loadedPreset!.preset.isTemplate, isTrue);
+    });
+
+    test('getTemplates returns only templates', () async {
+      // 1. Create test algorithm
+      await database.metadataDao.upsertAlgorithms([
+        AlgorithmEntry(
+          guid: 'TEST',
+          name: 'Test Algorithm',
+          numSpecifications: 0,
+          pluginFilePath: null,
+        ),
+      ]);
+
+      // 2. Create one template preset
+      final templateDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Template Preset',
+          lastModified: DateTime.now(),
+          isTemplate: false,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TEST',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TEST',
+              name: 'Test Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 3. Create one regular preset
+      final regularDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Regular Preset',
+          lastModified: DateTime.now(),
+          isTemplate: false,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TEST',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TEST',
+              name: 'Test Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 4. Save both
+      await database.presetsDao.saveFullPreset(templateDetails, isTemplate: true);
+      await database.presetsDao.saveFullPreset(regularDetails, isTemplate: false);
+
+      // 5. Query templates
+      final templates = await database.presetsDao.getTemplates();
+
+      // 6. Verify only template is returned
+      expect(templates.length, equals(1));
+      expect(templates[0].preset.name, equals('Template Preset'));
+      expect(templates[0].preset.isTemplate, isTrue);
+    });
+
+    test('getNonTemplates returns only non-templates', () async {
+      // 1. Create test algorithm
+      await database.metadataDao.upsertAlgorithms([
+        AlgorithmEntry(
+          guid: 'TEST',
+          name: 'Test Algorithm',
+          numSpecifications: 0,
+          pluginFilePath: null,
+        ),
+      ]);
+
+      // 2. Create one template preset
+      final templateDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Template Preset',
+          lastModified: DateTime.now(),
+          isTemplate: false,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TEST',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TEST',
+              name: 'Test Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 3. Create one regular preset
+      final regularDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Regular Preset',
+          lastModified: DateTime.now(),
+          isTemplate: false,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TEST',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TEST',
+              name: 'Test Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 4. Save both
+      await database.presetsDao.saveFullPreset(templateDetails, isTemplate: true);
+      await database.presetsDao.saveFullPreset(regularDetails, isTemplate: false);
+
+      // 5. Query non-templates
+      final nonTemplates = await database.presetsDao.getNonTemplates();
+
+      // 6. Verify only regular preset is returned
+      expect(nonTemplates.length, equals(1));
+      expect(nonTemplates[0].preset.name, equals('Regular Preset'));
+      expect(nonTemplates[0].preset.isTemplate, isFalse);
+    });
+
+    test('migration sets existing presets to isTemplate=false', () async {
+      // This test verifies that the default value works correctly
+      // In a real migration scenario, existing presets would have isTemplate=false
+
+      // 1. Create test algorithm
+      await database.metadataDao.upsertAlgorithms([
+        AlgorithmEntry(
+          guid: 'TEST',
+          name: 'Test Algorithm',
+          numSpecifications: 0,
+          pluginFilePath: null,
+        ),
+      ]);
+
+      // 2. Create preset without explicitly setting isTemplate
+      final presetDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Migrated Preset',
+          lastModified: DateTime.now(),
+          isTemplate: false, // Default value
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TEST',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TEST',
+              name: 'Test Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 3. Save without specifying isTemplate (defaults to false)
+      final presetId = await database.presetsDao.saveFullPreset(presetDetails);
+
+      // 4. Load and verify it defaults to false
+      final loadedPreset = await database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
+
+      expect(loadedPreset, isNotNull);
+      expect(loadedPreset!.preset.isTemplate, isFalse);
     });
   });
 }

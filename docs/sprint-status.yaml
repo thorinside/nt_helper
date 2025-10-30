@@ -1,4 +1,4 @@
-# generated: 2025-10-28
+# generated: 2025-10-30
 # project: nt_helper
 # project_key: nt_helper
 # tracking_system: file-system
@@ -29,7 +29,7 @@
 # - SM typically drafts next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
-generated: 2025-10-28
+generated: 2025-10-30
 project: nt_helper
 project_key: nt_helper
 tracking_system: file-system
@@ -60,6 +60,16 @@ development_status:
   e4-5-add-tests-for-new-es-5-routing-implementations: done
   e4-6-update-documentation-and-architecture-notes: done
   epic-4-retrospective: optional
+
+  epic-5: contexted
+  e5-1-extend-database-schema-for-template-flag: review
+  e5-2-add-ui-to-tag-untag-presets-as-templates: ready-for-dev
+  e5-3-filter-presets-to-show-templates-only: ready-for-dev
+  e5-4-implement-template-injection-logic-append-only: ready-for-dev
+  e5-5-build-template-preview-dialog: ready-for-dev
+  e5-6-add-inject-template-action-to-templates-view: ready-for-dev
+  e5-7-handle-edge-cases-and-error-scenarios: ready-for-dev
+  epic-5-retrospective: optional
 
   epic-6: contexted
   e6-1-mobile-performance-page-support: review
