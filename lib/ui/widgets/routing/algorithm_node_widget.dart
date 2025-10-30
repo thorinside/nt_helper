@@ -484,7 +484,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
 
   void _handleDragStart(DragStartDetails details) {
-
     setState(() {
       _isDragging = true;
       _dragStartGlobal = details.globalPosition;
@@ -498,7 +497,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   // Toolbar action handlers removed; actions call callbacks directly
 
   void _handleDelete() async {
-
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -559,12 +557,14 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
 
     final data = mapping.packedMappingData;
     final myMidiCubit = context.read<MidiListenerCubit>();
+    final distingCubit = context.read<DistingCubit>();
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => MappingEditorBottomSheet(
         myMidiCubit: myMidiCubit,
+        distingCubit: distingCubit,
         data: data,
         slots: state.slots,
         algorithmIndex: slotIndex,

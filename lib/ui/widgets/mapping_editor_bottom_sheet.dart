@@ -9,6 +9,7 @@ class MappingEditorBottomSheet extends StatelessWidget {
   const MappingEditorBottomSheet({
     super.key,
     required this.myMidiCubit,
+    required this.distingCubit,
     required this.data,
     required this.slots,
     required this.algorithmIndex,
@@ -16,6 +17,7 @@ class MappingEditorBottomSheet extends StatelessWidget {
   });
 
   final MidiListenerCubit myMidiCubit;
+  final DistingCubit distingCubit;
   final PackedMappingData data;
   final List<Slot> slots;
   final int algorithmIndex;
@@ -33,19 +35,19 @@ class MappingEditorBottomSheet extends StatelessWidget {
               : MediaQuery.of(context).padding.bottom,
         ),
         child: SingleChildScrollView(
-          child: BlocProvider.value(
-            value: myMidiCubit,
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: myMidiCubit),
+              BlocProvider.value(value: distingCubit),
+            ],
             child: PackedMappingDataEditor(
               initialData: data,
               slots: slots,
+              algorithmIndex: algorithmIndex,
+              parameterNumber: parameterNumber,
               onSave: (updatedData) {
                 // Save directly to cubit without closing the dialog
-                final cubit = context.read<DistingCubit>();
-                cubit.saveMapping(
-                  algorithmIndex,
-                  parameterNumber,
-                  updatedData,
-                );
+                distingCubit.saveMapping(algorithmIndex, parameterNumber, updatedData);
               },
             ),
           ),

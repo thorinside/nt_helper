@@ -60,3 +60,6 @@ development_status:
   e4-5-add-tests-for-new-es-5-routing-implementations: done
   e4-6-update-documentation-and-architecture-notes: done
   epic-4-retrospective: optional
+
+  epic-6: contexted
+  e6-1-mobile-performance-page-support: review

@@ -262,32 +262,35 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               unit: unit,
             ),
           ),
-          const SizedBox(width: 8),
-          // Performance page selector
-          DropdownButton<int>(
-            value: perfPageIndex,
-            isDense: true,
-            underline: const SizedBox.shrink(),
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontSize: 11),
-            hint: const Text('Page'),
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            onChanged: (newValue) {
-              if (newValue != null) {
-                _assignToPerformancePage(parameterNumber, newValue);
-              }
-            },
-            items: [
-              const DropdownMenuItem(value: 0, child: Text('Not Assigned')),
-              ...List.generate(15, (i) {
-                return DropdownMenuItem(
-                  value: i + 1,
-                  child: Text('Page ${i + 1}'),
-                );
-              }),
-            ],
-          ),
+          // Only show inline dropdown on desktop (width >= 600)
+          if (MediaQuery.of(context).size.width >= 600) ...[
+            const SizedBox(width: 8),
+            // Performance page selector
+            DropdownButton<int>(
+              value: perfPageIndex,
+              isDense: true,
+              underline: const SizedBox.shrink(),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontSize: 11),
+              hint: const Text('Page'),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              onChanged: (newValue) {
+                if (newValue != null) {
+                  _assignToPerformancePage(parameterNumber, newValue);
+                }
+              },
+              items: [
+                const DropdownMenuItem(value: 0, child: Text('Not Assigned')),
+                ...List.generate(15, (i) {
+                  return DropdownMenuItem(
+                    value: i + 1,
+                    child: Text('Page ${i + 1}'),
+                  );
+                }),
+              ],
+            ),
+          ],
         ],
       ),
     );

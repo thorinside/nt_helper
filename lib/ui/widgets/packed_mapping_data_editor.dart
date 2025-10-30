@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
@@ -10,11 +11,16 @@ class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
   final ValueChanged<PackedMappingData> onSave;
   final List<Slot> slots;
+  final int algorithmIndex;
+  final int parameterNumber;
+
   const PackedMappingDataEditor({
     super.key,
     required this.initialData,
     required this.onSave,
     required this.slots,
+    required this.algorithmIndex,
+    required this.parameterNumber,
   });
 
   @override
@@ -64,14 +70,17 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     } else if (_data.isI2cEnabled) {
       // I2C is in use
       initialIndex = 2;
+    } else if (_data.perfPageIndex > 0) {
+      // Performance page is assigned
+      initialIndex = 3;
     } else {
-      // No CV, MIDI, or I2C in use, default to CV tab
+      // No CV, MIDI, I2C, or Performance in use, default to CV tab
       initialIndex = 0;
     }
 
     // Create the TabController with initialIndex set to the matching page.
     _tabController = TabController(
-      length: 3,
+      length: 4,
       vsync: this,
       initialIndex: initialIndex,
     );
@@ -150,6 +159,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               Tab(text: 'CV'),
               Tab(text: 'MIDI'),
               Tab(text: 'I2C'),
+              Tab(text: 'Performance'),
             ],
           ),
           Expanded(
@@ -159,6 +169,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 _buildCvEditor(),
                 _buildMidiEditor(),
                 _buildI2cEditor(),
+                _buildPerformanceEditor(),
               ],
             ),
           ),
@@ -658,6 +669,112 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       _data = _data.copyWith(i2cMax: parsed);
       _i2cMaxController.text = _data.i2cMax.toString();
     });
+  }
+
+  /// ---------------------
+  /// Performance Editor
+  /// ---------------------
+  Widget _buildPerformanceEditor() {
+    return BlocBuilder<DistingCubit, DistingState>(
+      builder: (context, state) {
+        if (state is! DistingStateSynchronized) {
+          return const Center(child: Text('Not synchronized'));
+        }
+
+        final slot = state.slots[widget.algorithmIndex];
+        final currentPerfPageIndex =
+            slot.mappings[widget.parameterNumber].packedMappingData.perfPageIndex;
+
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Info text explaining performance pages
+              Text(
+                'Assign this parameter to a performance page for quick access.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
+              const SizedBox(height: 16),
+
+              // Performance page dropdown
+              DropdownMenu<int>(
+                initialSelection: currentPerfPageIndex,
+                label: const Text('Performance Page'),
+                expandedInsets: EdgeInsets.zero,
+                dropdownMenuEntries: [
+                  // "None" option
+                  const DropdownMenuEntry<int>(
+                    value: 0,
+                    label: 'None',
+                  ),
+                  // P1 through P15
+                  for (int i = 1; i <= 15; i++)
+                    DropdownMenuEntry<int>(
+                      value: i,
+                      label: 'P$i',
+                      leadingIcon: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getPageColor(i),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'P$i',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+                onSelected: (newValue) {
+                  if (newValue == null) return;
+                  // Call cubit directly - SAME AS INLINE DROPDOWN
+                  context.read<DistingCubit>().setPerformancePageMapping(
+                        widget.algorithmIndex,
+                        widget.parameterNumber,
+                        newValue,
+                      );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // Help text
+              Text(
+                currentPerfPageIndex == 0
+                    ? 'Not assigned to any performance page'
+                    : 'Assigned to Performance Page $currentPerfPageIndex',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[700],
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper method to get color for page badges (matches section_parameter_list_view.dart and performance_screen.dart)
+  Color _getPageColor(int pageIndex) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.red,
+    ];
+    return colors[(pageIndex - 1) % colors.length];
   }
 
   /// ---------------------

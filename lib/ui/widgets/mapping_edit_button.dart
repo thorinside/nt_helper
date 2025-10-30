@@ -52,12 +52,14 @@ class MappingEditButton extends StatelessWidget {
 
               final data = widget.mappingData ?? PackedMappingData.filler();
               final myMidiCubit = context.read<MidiListenerCubit>();
+              final distingCubit = context.read<DistingCubit>();
               await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 builder: (context) {
                   return MappingEditorBottomSheet(
                     myMidiCubit: myMidiCubit,
+                    distingCubit: distingCubit,
                     data: data,
                     slots: currentSlots,
                     algorithmIndex: widget.algorithmIndex,
