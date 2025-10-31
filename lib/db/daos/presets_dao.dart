@@ -67,8 +67,10 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   }
 
   Future<List<FullPresetDetails>> getTemplates() async {
-    final templatePresets =
-        await (select(presets)..where((p) => p.isTemplate.equals(true))).get();
+    final templatePresets = await (select(presets)
+          ..where((p) => p.isTemplate.equals(true))
+          ..orderBy([(p) => OrderingTerm.asc(p.name)]))
+        .get();
     final List<FullPresetDetails> templates = [];
     for (final preset in templatePresets) {
       final details = await getFullPresetDetails(preset.id);
@@ -77,6 +79,13 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       }
     }
     return templates;
+  }
+
+  Stream<int> watchTemplateCount() {
+    final query = selectOnly(presets)
+      ..addColumns([presets.id.count()])
+      ..where(presets.isTemplate.equals(true));
+    return query.map((row) => row.read(presets.id.count()) ?? 0).watchSingle();
   }
 
   Future<List<FullPresetDetails>> getNonTemplates() async {

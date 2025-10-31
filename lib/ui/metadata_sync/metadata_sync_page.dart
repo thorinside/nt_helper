@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
+import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
@@ -808,13 +809,30 @@ class MetadataSyncPage extends StatelessWidget {
     int? loadedOfflinePresetId,
   ) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
-          const TabBar(
+          TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.save_alt), text: "Saved Presets"),
-              Tab(icon: Icon(Icons.memory), text: "Synced Algorithms"),
+              const Tab(icon: Icon(Icons.save_alt), text: "Saved Presets"),
+              StreamBuilder<int>(
+                stream: builderContext
+                    .read<AppDatabase>()
+                    .presetsDao
+                    .watchTemplateCount(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  return Tab(
+                    icon: Badge(
+                      label: Text('$count'),
+                      isLabelVisible: count > 0,
+                      child: const Icon(Icons.star),
+                    ),
+                    text: "Templates",
+                  );
+                },
+              ),
+              const Tab(icon: Icon(Icons.memory), text: "Synced Algorithms"),
             ],
           ),
           Expanded(
@@ -833,6 +851,17 @@ class MetadataSyncPage extends StatelessWidget {
                     metadataSyncCubit: BlocProvider.of<MetadataSyncCubit>(
                       builderContext,
                     ),
+                  ),
+                  // --- Templates Tab ---
+                  _TemplateListView(
+                    isOperationInProgress: isOperationInProgress,
+                    isOffline: isOffline,
+                    loadedOfflinePresetId: loadedOfflinePresetId,
+                    distingCubit: BlocProvider.of<DistingCubit>(builderContext),
+                    metadataSyncCubit: BlocProvider.of<MetadataSyncCubit>(
+                      builderContext,
+                    ),
+                    database: builderContext.read<AppDatabase>(),
                   ),
                   // --- Algorithms Tab ---
                   _AlgorithmMetadataListView(
@@ -1160,6 +1189,308 @@ class _PresetListView extends StatelessWidget {
         } else {
           cubit.togglePresetTemplate(preset.id, true);
         }
+      }
+    });
+  }
+
+  // Helper function for Unmark Template Confirmation Dialog
+  void _showUnmarkTemplateConfirmationDialog(
+    BuildContext context,
+    PresetEntry preset,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Remove Template Status?'),
+          content: Text(
+            'Remove template status from "${preset.name}"? This will move the preset back to regular presets.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Remove'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                metadataSyncCubit.togglePresetTemplate(preset.id, false);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// --- Widget for Template List View ---
+class _TemplateListView extends StatelessWidget {
+  final bool isOperationInProgress;
+  final bool isOffline;
+  final int? loadedOfflinePresetId;
+  final DistingCubit distingCubit;
+  final MetadataSyncCubit metadataSyncCubit;
+  final AppDatabase database;
+
+  const _TemplateListView({
+    required this.isOperationInProgress,
+    required this.isOffline,
+    this.loadedOfflinePresetId,
+    required this.distingCubit,
+    required this.metadataSyncCubit,
+    required this.database,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<FullPresetDetails>>(
+      future: database.presetsDao.getTemplates(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                "Error loading templates: ${snapshot.error}",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final templates = snapshot.data ?? [];
+
+        if (templates.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.star_border,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "No templates found. Mark saved presets as templates to see them here.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          itemCount: templates.length,
+          separatorBuilder: (context, index) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final template = templates[index];
+            final preset = template.preset;
+            final formattedDate = preset.lastModified.toLocal().toString();
+
+            final bool isCurrentlyLoadedOffline = false;
+
+            // Determine button states
+            final bool canLoad = !isOperationInProgress;
+            final bool canDelete = !isOperationInProgress;
+
+            return GestureDetector(
+              onLongPress: canLoad
+                  ? () => _showTemplateToggleMenu(context, preset)
+                  : null,
+              child: ListTile(
+                key: ValueKey(preset.id),
+                selected: isCurrentlyLoadedOffline,
+                selectedTileColor: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                leading: Icon(
+                  Icons.star,
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
+                title: Text(preset.name.trim()),
+                subtitle: Text("Saved: $formattedDate"),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Load Button
+                    IconButton(
+                      icon: Icon(
+                        isOffline ? Icons.edit_note : Icons.upload_file_outlined,
+                        color: canLoad
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
+                      ),
+                      tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
+                      onPressed: canLoad
+                          ? () => _showLoadConfirmationDialog(
+                                context,
+                                template,
+                                isOffline,
+                                distingCubit,
+                                metadataSyncCubit,
+                              )
+                          : null,
+                    ),
+                    // Delete Button
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: canDelete
+                            ? Theme.of(context).colorScheme.error
+                            : Colors.grey,
+                      ),
+                      tooltip: 'Delete Template',
+                      onPressed: canDelete
+                          ? () => _showDeleteConfirmationDialog(context, preset)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Helper function for Load Confirmation Dialog
+  void _showLoadConfirmationDialog(
+    BuildContext context,
+    FullPresetDetails template,
+    bool isOffline,
+    DistingCubit distingCubit,
+    MetadataSyncCubit metadataSyncCubit,
+  ) {
+    final preset = template.preset;
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            isOffline ? 'Load Template Offline?' : 'Send Template to NT?',
+          ),
+          content: Text(
+            isOffline
+                ? 'Load "${preset.name}" for offline use?'
+                : 'Send "${preset.name}" to device? This overwrites current device state.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: Text(isOffline ? 'Load Offline' : 'Send'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                if (isOffline) {
+                  distingCubit.loadPresetOffline(template);
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                } else {
+                  final onlineManager = distingCubit.disting();
+                  if (onlineManager != null) {
+                    metadataSyncCubit.loadPresetToDevice(
+                      template,
+                      onlineManager,
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper function for Delete Confirmation Dialog
+  void _showDeleteConfirmationDialog(BuildContext context, PresetEntry preset) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Template?'),
+          content: Text(
+            'Are you sure you want to permanently delete the template "${preset.name}"?',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                metadataSyncCubit.deletePreset(preset.id);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper function for Template Toggle Menu
+  void _showTemplateToggleMenu(BuildContext context, PresetEntry preset) {
+    final RenderBox? overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final Offset position = button.localToGlobal(Offset.zero);
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + button.size.height,
+        overlay?.size.width ?? 0,
+        0,
+      ),
+      items: [
+        const PopupMenuItem<String>(
+          value: 'unmark',
+          child: Row(
+            children: [
+              Icon(Icons.star_border, size: 20),
+              SizedBox(width: 12),
+              Text('Unmark as Template'),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'unmark' && context.mounted) {
+        _showUnmarkTemplateConfirmationDialog(context, preset);
       }
     });
   }
