@@ -65,7 +65,7 @@ development_status:
   e5-1-extend-database-schema-for-template-flag: done
   e5-2-add-ui-to-tag-untag-presets-as-templates: done
   e5-3-filter-presets-to-show-templates-only: done
-  e5-4-implement-template-injection-logic-append-only: ready-for-dev
+  e5-4-implement-template-injection-logic-append-only: review
   e5-5-build-template-preview-dialog: ready-for-dev
   e5-6-add-inject-template-action-to-templates-view: ready-for-dev
   e5-7-handle-edge-cases-and-error-scenarios: ready-for-dev

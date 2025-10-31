@@ -741,4 +741,170 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       });
     }
   }
+
+  /// Injects a template preset into the current device preset by appending
+  /// its algorithms to the end without clearing the existing preset.
+  ///
+  /// This method:
+  /// - Validates that current preset + template slots ≤ 32
+  /// - Adds each template algorithm sequentially via requestAddAlgorithm()
+  /// - Sets parameter values and mappings for each injected slot
+  /// - Does NOT call requestNewPreset() (preserves current preset)
+  /// - Does NOT call requestSavePreset() (lets user save manually)
+  ///
+  /// Throws [Exception] if slot limit would be exceeded.
+  /// Emits loading/success/failure states to UI.
+  Future<void> injectTemplateToDevice(
+    FullPresetDetails template,
+    IDistingMidiManager manager,
+  ) async {
+    emit(const MetadataSyncState.loadingPreset());
+    if (kDebugMode) {}
+
+    try {
+      // Validate slot limit before starting injection
+      final currentSlotCount =
+          await manager.requestNumAlgorithmsInPreset() ?? 0;
+      final templateSlotCount = template.slots.length;
+      final totalSlots = currentSlotCount + templateSlotCount;
+
+      if (totalSlots > 32) {
+        throw Exception(
+          'Cannot inject template: would exceed 32 slot limit '
+          '(current: $currentSlotCount, template: $templateSlotCount, total: $totalSlots)',
+        );
+      }
+
+      if (kDebugMode) {}
+
+      // Track the starting slot index for parameter/mapping application
+      final startingSlotIndex = currentSlotCount;
+
+      // Add all algorithms first (sequentially, not in parallel)
+      if (kDebugMode) {}
+      for (int i = 0; i < template.slots.length; i++) {
+        final slot = template.slots[i];
+        final algorithmGuid = slot.algorithm.guid;
+        if (kDebugMode) {}
+
+        // Fetch full details to get specifications and AlgorithmInfo fields
+        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
+          algorithmGuid,
+        );
+        if (algoDetails == null) {
+          throw Exception(
+            "Algorithm metadata for GUID '$algorithmGuid' not found locally. "
+            "Cannot add template slot ${i + 1}.",
+          );
+        }
+        if (kDebugMode) {}
+
+        // Prepare AlgorithmInfo and default specifications
+        // Use startingSlotIndex + i as the target slot index
+        final targetSlotIndex = startingSlotIndex + i;
+        final algorithmInfo = AlgorithmInfo(
+          algorithmIndex: targetSlotIndex,
+          guid: algoDetails.algorithm.guid,
+          name: algoDetails.algorithm.name,
+          specifications: algoDetails.specifications
+              .map(
+                (spec) => Specification(
+                  name: spec.name,
+                  min: spec.minValue,
+                  max: spec.maxValue,
+                  defaultValue: spec.defaultValue,
+                  type: spec.type,
+                ),
+              )
+              .toList(),
+        );
+        final defaultSpecifications = algoDetails.specifications
+            .map((s) => s.defaultValue)
+            .toList();
+
+        if (kDebugMode) {}
+        await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
+        // Add delay after adding each algorithm
+        await Future.delayed(const Duration(milliseconds: 150));
+      }
+
+      // Set parameters and mappings for each injected slot
+      if (kDebugMode) {}
+      for (int i = 0; i < template.slots.length; i++) {
+        final slot = template.slots[i];
+        final targetSlotIndex = startingSlotIndex + i;
+        final algorithmGuid = slot.algorithm.guid;
+        if (kDebugMode) {}
+
+        // Send the slot name to the device
+        await manager.requestSendSlotName(targetSlotIndex, slot.algorithm.name);
+
+        // Fetch metadata again to get parameter names for logging
+        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
+          algorithmGuid,
+        );
+        if (algoDetails == null) {
+          continue; // Skip configuration for this slot if metadata missing
+        }
+
+        // Send Parameter Values
+        if (kDebugMode) {}
+        for (final paramEntry in slot.parameterValues.entries) {
+          final parameterNumber = paramEntry.key;
+          final value = paramEntry.value;
+
+          // Find parameter name for logging (optional, but helpful)
+          final paramMetadata = algoDetails.parameters.firstWhereOrNull(
+            (p) => p.parameter.parameterNumber == parameterNumber,
+          );
+          paramMetadata?.parameter.name ?? 'Unnamed';
+
+          if (kDebugMode) {}
+          // Use setParameterValue
+          await manager.setParameterValue(
+            targetSlotIndex,
+            parameterNumber,
+            value,
+          );
+          // Optional small delay between parameter sends
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+
+        // Send Mappings
+        if (kDebugMode) {}
+        for (final mappingEntry in slot.mappings.entries) {
+          final parameterNumber = mappingEntry.key;
+          final mappingData = mappingEntry.value;
+
+          if (kDebugMode) {}
+          // Use requestSetMapping
+          await manager.requestSetMapping(
+            targetSlotIndex,
+            parameterNumber,
+            mappingData,
+          );
+          // Optional small delay
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+      }
+
+      // Add a final delay after all commands are sent
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      emit(
+        MetadataSyncState.presetLoadSuccess(
+          "Template '${template.preset.name}' injected to device. "
+          "Save manually when ready.",
+        ),
+      );
+      // Reload local data after success to ensure UI is in ViewingLocalData state
+      await loadLocalData();
+    } catch (e) {
+      emit(
+        MetadataSyncState.presetLoadFailure(
+          "Error injecting template: ${e.toString()}",
+        ),
+      );
+    }
+  }
 }
