@@ -2,6 +2,8 @@
 
 This document explains how to create releases with automatically generated, beautiful release notes.
 
+> **⚠️ Integration Required**: To enable automatic release notes, see [WORKFLOW_INTEGRATION.md](./WORKFLOW_INTEGRATION.md) for the one-time workflow setup.
+
 ## 🚀 Quick Release
 
 To create a new release with automatic changelog generation:
