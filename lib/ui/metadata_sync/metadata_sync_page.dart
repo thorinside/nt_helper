@@ -1556,6 +1556,19 @@ class _TemplateListView extends StatelessWidget {
     DistingCubit distingCubit,
     MetadataSyncCubit metadataSyncCubit,
   ) async {
+    // Check for empty template first
+    if (template.slots.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot inject empty template'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
     final manager = distingCubit.disting();
     if (manager == null) {
       if (context.mounted) {
@@ -1573,6 +1586,32 @@ class _TemplateListView extends StatelessWidget {
     final currentSlotCount = await manager.requestNumAlgorithmsInPreset() ?? 0;
 
     if (!context.mounted) return;
+
+    // Show confirmation dialog for large templates (> 10 algorithms)
+    if (template.slots.length > 10) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Large Template'),
+          content: Text(
+            'This will add ${template.slots.length} algorithms to your preset. Continue?',
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text('Continue'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+      if (!context.mounted) return;
+    }
 
     // Show the template preview dialog
     final result = await TemplatePreviewDialog.show(

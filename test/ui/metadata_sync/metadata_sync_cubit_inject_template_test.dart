@@ -59,6 +59,19 @@ void main() {
       build: () {
         when(() => mockMidiManager.requestNumAlgorithmsInPreset())
             .thenAnswer((_) async => 31);
+        when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
+          (_) async => FullAlgorithmDetails(
+            algorithm: AlgorithmEntry(
+              guid: 'test-guid',
+              name: 'Test Algorithm',
+              numSpecifications: 1,
+            ),
+            specifications: [],
+            parameters: [],
+            parameterPages: [],
+            enums: {},
+          ),
+        );
 
         return cubit;
       },
@@ -113,7 +126,7 @@ void main() {
         isA<PresetLoadFailure>().having(
           (state) => state.error,
           'error message',
-          contains('would exceed 32 slot limit'),
+          contains('Would exceed 32 slot limit'),
         ),
       ],
     );
@@ -451,6 +464,82 @@ void main() {
         verify(() => mockMidiManager.setParameterValue(10, 0, 75)).called(1);
         verify(() => mockMidiManager.setParameterValue(10, 1, 50)).called(1);
       },
+    );
+
+    blocTest<MetadataSyncCubit, MetadataSyncState>(
+      'throws exception when template is empty',
+      build: () => cubit,
+      act: (cubit) async {
+        final emptyTemplate = FullPresetDetails(
+          preset: PresetEntry(
+            id: 1,
+            name: 'Empty Template',
+            lastModified: DateTime.now(),
+            isTemplate: true,
+          ),
+          slots: [], // Empty slots
+        );
+
+        await cubit.injectTemplateToDevice(emptyTemplate, mockMidiManager);
+      },
+      expect: () => [
+        const MetadataSyncState.loadingPreset(),
+        isA<PresetLoadFailure>().having(
+          (state) => state.error,
+          'error message',
+          contains('Cannot inject empty template'),
+        ),
+      ],
+    );
+
+    blocTest<MetadataSyncCubit, MetadataSyncState>(
+      'throws exception when template algorithm metadata is missing',
+      build: () {
+        when(() => mockMidiManager.requestNumAlgorithmsInPreset())
+            .thenAnswer((_) async => 5);
+        when(() => mockMetadataDao.getFullAlgorithmDetails(any()))
+            .thenAnswer((_) async => null); // Simulate missing metadata
+
+        return cubit;
+      },
+      act: (cubit) async {
+        final template = FullPresetDetails(
+          preset: PresetEntry(
+            id: 1,
+            name: 'Test Template',
+            lastModified: DateTime.now(),
+            isTemplate: true,
+          ),
+          slots: [
+            FullPresetSlot(
+              slot: PresetSlotEntry(
+                id: 1,
+                presetId: 1,
+                slotIndex: 0,
+                algorithmGuid: 'missing-guid',
+              ),
+              algorithm: AlgorithmEntry(
+                guid: 'missing-guid',
+                name: 'Missing Algorithm',
+                numSpecifications: 1,
+              ),
+              parameterValues: {},
+              parameterStringValues: {},
+              mappings: {},
+            ),
+          ],
+        );
+
+        await cubit.injectTemplateToDevice(template, mockMidiManager);
+      },
+      expect: () => [
+        const MetadataSyncState.loadingPreset(),
+        isA<PresetLoadFailure>().having(
+          (state) => state.error,
+          'error message',
+          contains('Template missing algorithm metadata'),
+        ),
+      ],
     );
   });
 }

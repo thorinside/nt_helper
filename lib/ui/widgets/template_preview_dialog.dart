@@ -52,6 +52,7 @@ class TemplatePreviewDialog extends StatefulWidget {
 
 class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
   bool _isLoading = false;
+  bool _isCancelled = false;
   String? _errorMessage;
 
   int get _templateSlotCount => widget.template.slots.length;
@@ -197,8 +198,28 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: _handleCancel,
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
+  }
+
+  void _handleCancel() {
+    if (_isLoading && !_isCancelled) {
+      // Cancel the injection in the cubit
+      widget.syncCubit.cancelInjection();
+
+      setState(() {
+        _isCancelled = true;
+        _isLoading = false;
+        _errorMessage =
+            'Injection cancelled. Preset may be partially modified.';
+      });
+    }
   }
 
   Widget _buildErrorDialog() {

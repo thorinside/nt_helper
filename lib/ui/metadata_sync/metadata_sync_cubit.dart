@@ -27,6 +27,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   // Cancellation flag for metadata sync
   bool _isMetadataSyncCancelled = false;
 
+  // Cancellation flag for template injection
+  bool _isInjectionCancelled = false;
+
   // Completer for user continue prompt (returns bool)
   Completer<bool>? _continueCompleter;
 
@@ -149,6 +152,10 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         await loadLocalData();
       }
     }
+  }
+
+  void cancelInjection() {
+    _isInjectionCancelled = true;
   }
 
   void cancelMetadataSync() {
@@ -758,10 +765,38 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     FullPresetDetails template,
     IDistingMidiManager manager,
   ) async {
+    _isInjectionCancelled = false; // Reset cancellation flag
     emit(const MetadataSyncState.loadingPreset());
     if (kDebugMode) {}
 
     try {
+      // Check for empty template
+      if (template.slots.isEmpty) {
+        throw Exception('Cannot inject empty template');
+      }
+
+      // Check for cancellation early
+      if (_isInjectionCancelled) {
+        throw Exception(
+          'Injection cancelled. Preset may be partially modified.',
+        );
+      }
+
+      // Validate that all template algorithms have metadata
+      for (int i = 0; i < template.slots.length; i++) {
+        final slot = template.slots[i];
+        final algorithmGuid = slot.algorithm.guid;
+        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
+          algorithmGuid,
+        );
+        if (algoDetails == null) {
+          throw Exception(
+            'Template missing algorithm metadata. '
+            'Sync algorithms first.',
+          );
+        }
+      }
+
       // Validate slot limit before starting injection
       final currentSlotCount =
           await manager.requestNumAlgorithmsInPreset() ?? 0;
@@ -770,8 +805,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       if (totalSlots > 32) {
         throw Exception(
-          'Cannot inject template: would exceed 32 slot limit '
-          '(current: $currentSlotCount, template: $templateSlotCount, total: $totalSlots)',
+          'Cannot inject: Would exceed 32 slot limit '
+          '(current: $currentSlotCount, template: $templateSlotCount)',
         );
       }
 
@@ -783,49 +818,67 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       // Add all algorithms first (sequentially, not in parallel)
       if (kDebugMode) {}
       for (int i = 0; i < template.slots.length; i++) {
+        // Check for cancellation between algorithms
+        if (_isInjectionCancelled) {
+          throw Exception(
+            'Injection cancelled after adding $i of ${template.slots.length} algorithms. '
+            'Preset may be partially modified.',
+          );
+        }
+
         final slot = template.slots[i];
         final algorithmGuid = slot.algorithm.guid;
         if (kDebugMode) {}
 
-        // Fetch full details to get specifications and AlgorithmInfo fields
-        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
-          algorithmGuid,
-        );
-        if (algoDetails == null) {
+        try {
+          // Fetch full details to get specifications and AlgorithmInfo fields
+          final algoDetails = await _metadataDao.getFullAlgorithmDetails(
+            algorithmGuid,
+          );
+          if (algoDetails == null) {
+            throw Exception(
+              "Algorithm metadata for GUID '$algorithmGuid' not found locally. "
+              "Cannot add template slot ${i + 1}.",
+            );
+          }
+          if (kDebugMode) {}
+
+          // Prepare AlgorithmInfo and default specifications
+          // Use startingSlotIndex + i as the target slot index
+          final targetSlotIndex = startingSlotIndex + i;
+          final algorithmInfo = AlgorithmInfo(
+            algorithmIndex: targetSlotIndex,
+            guid: algoDetails.algorithm.guid,
+            name: algoDetails.algorithm.name,
+            specifications: algoDetails.specifications
+                .map(
+                  (spec) => Specification(
+                    name: spec.name,
+                    min: spec.minValue,
+                    max: spec.maxValue,
+                    defaultValue: spec.defaultValue,
+                    type: spec.type,
+                  ),
+                )
+                .toList(),
+          );
+          final defaultSpecifications = algoDetails.specifications
+              .map((s) => s.defaultValue)
+              .toList();
+
+          if (kDebugMode) {}
+          await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
+          // Add delay after adding each algorithm
+          await Future.delayed(const Duration(milliseconds: 150));
+        } catch (algorithmError) {
+          // Report partial injection failure with specific algorithm that failed
           throw Exception(
-            "Algorithm metadata for GUID '$algorithmGuid' not found locally. "
-            "Cannot add template slot ${i + 1}.",
+            'Failed to inject algorithm "${slot.algorithm.name}" '
+            '(${i + 1} of ${template.slots.length}). '
+            'Preset may be partially modified. '
+            'Error: ${algorithmError.toString()}',
           );
         }
-        if (kDebugMode) {}
-
-        // Prepare AlgorithmInfo and default specifications
-        // Use startingSlotIndex + i as the target slot index
-        final targetSlotIndex = startingSlotIndex + i;
-        final algorithmInfo = AlgorithmInfo(
-          algorithmIndex: targetSlotIndex,
-          guid: algoDetails.algorithm.guid,
-          name: algoDetails.algorithm.name,
-          specifications: algoDetails.specifications
-              .map(
-                (spec) => Specification(
-                  name: spec.name,
-                  min: spec.minValue,
-                  max: spec.maxValue,
-                  defaultValue: spec.defaultValue,
-                  type: spec.type,
-                ),
-              )
-              .toList(),
-        );
-        final defaultSpecifications = algoDetails.specifications
-            .map((s) => s.defaultValue)
-            .toList();
-
-        if (kDebugMode) {}
-        await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
-        // Add delay after adding each algorithm
-        await Future.delayed(const Duration(milliseconds: 150));
       }
 
       // Set parameters and mappings for each injected slot
@@ -900,11 +953,28 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       // Reload local data after success to ensure UI is in ViewingLocalData state
       await loadLocalData();
     } catch (e) {
-      emit(
-        MetadataSyncState.presetLoadFailure(
-          "Error injecting template: ${e.toString()}",
-        ),
-      );
+      // Provide specific error messages based on exception type
+      String errorMessage;
+
+      // Check for connection-related errors
+      if (e.toString().contains('connection') ||
+          e.toString().contains('Connection') ||
+          e.toString().contains('disconnect') ||
+          e.toString().contains('MIDI') ||
+          e.toString().contains('timeout')) {
+        errorMessage =
+          'Connection lost during injection. Preset may be partially modified. '
+          'Reconnect your device and check the preset.';
+      } else if (e.toString().contains('metadata') ||
+                 e.toString().contains('not found locally')) {
+        errorMessage =
+          'Template missing algorithm metadata. '
+          'Go to Settings > Sync Algorithms to download latest metadata.';
+      } else {
+        errorMessage = "Error injecting template: ${e.toString()}";
+      }
+
+      emit(MetadataSyncState.presetLoadFailure(errorMessage));
     }
   }
 }
