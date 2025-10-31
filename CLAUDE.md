@@ -94,9 +94,13 @@ To connect MCP Dart tooling:
 3. Use URL after "The Flutter DevTools debugger and profiler on macOS is available at:"
 4. Connect MCP tool using the DTD URL
 
-### Version bumping
-- Run `./version && git push && git push --tags`
-- For a patch release Run `./version patch && git push && git push --tags` instead.
+### Release Process
+- **Quick Release**: `./version && git push && git push --tags` 
+- **Patch Release**: `./version patch && git push && git push --tags`
+- **Major Release**: `./version major && git push && git push --tags`
+- **📝 Automatic Changelogs**: GitHub Actions now generates beautiful, categorized release notes from commits and PRs
+- **Manual Generation**: Use `./scripts/generate-release-notes.sh [tag]` for testing
+- **Full Documentation**: See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for complete details
 
 ---
 
