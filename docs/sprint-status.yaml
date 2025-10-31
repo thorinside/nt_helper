@@ -67,7 +67,7 @@ development_status:
   e5-3-filter-presets-to-show-templates-only: done
   e5-4-implement-template-injection-logic-append-only: review
   e5-5-build-template-preview-dialog: done
-  e5-6-add-inject-template-action-to-templates-view: ready-for-dev
+  e5-6-add-inject-template-action-to-templates-view: done
   e5-7-handle-edge-cases-and-error-scenarios: ready-for-dev
   epic-5-retrospective: optional
 

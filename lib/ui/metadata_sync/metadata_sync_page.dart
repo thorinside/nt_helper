@@ -12,6 +12,7 @@ import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/debug_metadata_export_dialog.dart';
+import 'package:nt_helper/ui/widgets/template_preview_dialog.dart';
 
 class MetadataSyncPage extends StatelessWidget {
   // Accept DistingCubit as a parameter
@@ -1332,6 +1333,26 @@ class _TemplateListView extends StatelessWidget {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Inject Button
+                    IconButton(
+                      icon: Icon(
+                        Icons.add_circle_outline,
+                        color: canLoad && !isOffline
+                            ? Theme.of(context).colorScheme.secondary
+                            : Colors.grey,
+                      ),
+                      tooltip: isOffline
+                          ? 'Connect to device to inject templates'
+                          : 'Inject Template',
+                      onPressed: canLoad && !isOffline
+                          ? () => _showInjectDialog(
+                                context,
+                                template,
+                                distingCubit,
+                                metadataSyncCubit,
+                              )
+                          : null,
+                    ),
                     // Load Button
                     IconButton(
                       icon: Icon(
@@ -1526,6 +1547,55 @@ class _TemplateListView extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Helper function for Inject Template Dialog
+  Future<void> _showInjectDialog(
+    BuildContext context,
+    FullPresetDetails template,
+    DistingCubit distingCubit,
+    MetadataSyncCubit metadataSyncCubit,
+  ) async {
+    final manager = distingCubit.disting();
+    if (manager == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Device not connected'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Get current slot count from device
+    final currentSlotCount = await manager.requestNumAlgorithmsInPreset() ?? 0;
+
+    if (!context.mounted) return;
+
+    // Show the template preview dialog
+    final result = await TemplatePreviewDialog.show(
+      context,
+      template,
+      currentSlotCount,
+      metadataSyncCubit,
+      manager,
+    );
+
+    // If injection succeeded, show success snackbar
+    if (result == true && context.mounted) {
+      final algorithmsAdded = template.slots.length;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Template '${template.preset.name}' injected ($algorithmsAdded algorithm${algorithmsAdded == 1 ? '' : 's'} added)",
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 }
 
