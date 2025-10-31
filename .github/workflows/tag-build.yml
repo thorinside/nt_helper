@@ -27,15 +27,86 @@ jobs:
           VERSION="${VERSION#v}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          # Get previous tag for comparison
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "${{ github.ref_name }}" | head -1)
+          echo "Previous tag: $PREVIOUS_TAG"
+          
+          # If no previous tag, use initial commit
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          
+          # Generate release notes with categorization
+          {
+            echo "## 🚀 What's New in ${{ github.ref_name }}"
+            echo ""
+            
+            # Features (feat:, add:, new:)
+            FEATURES=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${{ github.ref_name }} --grep="feat:" --grep="add:" --grep="new:" --grep="feature:" -i)
+            if [ ! -z "$FEATURES" ]; then
+              echo "### ✨ Features"
+              echo "$FEATURES"
+              echo ""
+            fi
+            
+            # Improvements (improve:, enhance:, update:)  
+            IMPROVEMENTS=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${{ github.ref_name }} --grep="improve:" --grep="enhance:" --grep="update:" --grep="refactor:" -i)
+            if [ ! -z "$IMPROVEMENTS" ]; then
+              echo "### 🔧 Improvements"
+              echo "$IMPROVEMENTS"
+              echo ""
+            fi
+            
+            # Bug fixes (fix:, bug:)
+            FIXES=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${{ github.ref_name }} --grep="fix:" --grep="bug:" -i)
+            if [ ! -z "$FIXES" ]; then
+              echo "### 🐛 Bug Fixes"
+              echo "$FIXES"
+              echo ""
+            fi
+            
+            # Documentation (docs:, doc:)
+            DOCS=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${{ github.ref_name }} --grep="docs:" --grep="doc:" -i)
+            if [ ! -z "$DOCS" ]; then
+              echo "### 📚 Documentation"
+              echo "$DOCS"
+              echo ""
+            fi
+            
+            # Other changes
+            OTHER=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${{ github.ref_name }} --invert-grep --grep="feat:" --grep="add:" --grep="new:" --grep="feature:" --grep="improve:" --grep="enhance:" --grep="update:" --grep="refactor:" --grep="fix:" --grep="bug:" --grep="docs:" --grep="doc:" -i)
+            if [ ! -z "$OTHER" ]; then
+              echo "### 🔄 Other Changes"
+              echo "$OTHER"
+              echo ""
+            fi
+            
+            # Pull requests merged
+            echo "### 📋 Pull Requests"
+            git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${{ github.ref_name }} --grep="#[0-9]" | head -10
+            
+            echo ""
+            echo "---"
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ github.ref_name }}"
+            
+          } > release_notes.md
+          
+          # Save for next step
+          cat release_notes.md
+
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
-          name: "Release ${{ github.ref_name }}"
-          body: "Automated release for version ${{ github.ref_name }}"
+          name: "${{ github.ref_name }} - Automated Release"
+          bodyFile: release_notes.md
           draft: false
           prerelease: false
+          generateReleaseNotes: true
 
   android:
     name: Build and Sign Android APK

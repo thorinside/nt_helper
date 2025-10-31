@@ -1,0 +1,61 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - dependencies
+    authors:
+      - octocat
+      - dependabot
+  categories:
+    - title: 🚀 New Features
+      labels:
+        - feature
+        - enhancement
+        - feat
+        - new
+    - title: 🐛 Bug Fixes  
+      labels:
+        - bug
+        - fix
+        - bugfix
+        - hotfix
+    - title: 🔧 Improvements & Refactoring
+      labels:
+        - improvement
+        - refactor
+        - performance
+        - optimization
+    - title: 📱 Mobile & Platform Support
+      labels:
+        - mobile
+        - ios
+        - android
+        - platform
+        - cross-platform
+    - title: 🎛️ Hardware Integration
+      labels:
+        - hardware
+        - midi
+        - disting
+        - eurorack
+        - es5
+    - title: 🎨 UI/UX Improvements
+      labels:
+        - ui
+        - ux
+        - design
+        - styling
+    - title: 📚 Documentation
+      labels:
+        - documentation
+        - docs
+        - readme
+    - title: ⚙️ Development & Tooling
+      labels:
+        - ci
+        - build
+        - tooling
+        - development
+    - title: 🔄 Other Changes
+      labels:
+        - "*"
