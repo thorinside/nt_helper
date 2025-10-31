@@ -355,6 +355,15 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     );
   }
 
+  Future<void> toggleTemplateStatus(int presetId, bool newStatus) async {
+    await (update(presets)..where((p) => p.id.equals(presetId))).write(
+      PresetsCompanion(
+        isTemplate: Value(newStatus),
+        lastModified: Value(DateTime.now()),
+      ),
+    );
+  }
+
   /// Updates the performance page index for a specific parameter in a preset slot.
   ///
   /// - [presetSlotId]: The ID of the preset slot (from PresetSlots table)

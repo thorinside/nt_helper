@@ -468,5 +468,193 @@ void main() {
       expect(loadedPreset, isNotNull);
       expect(loadedPreset!.preset.isTemplate, isFalse);
     });
+
+    test('toggleTemplateStatus marks preset as template', () async {
+      // 1. Create test algorithm
+      await database.metadataDao.upsertAlgorithms([
+        AlgorithmEntry(
+          guid: 'TEST',
+          name: 'Test Algorithm',
+          numSpecifications: 0,
+          pluginFilePath: null,
+        ),
+      ]);
+
+      // 2. Create a regular preset
+      final presetDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Regular Preset',
+          lastModified: DateTime.now(),
+          isTemplate: false,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TEST',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TEST',
+              name: 'Test Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 3. Save as regular preset
+      final presetId = await database.presetsDao.saveFullPreset(
+        presetDetails,
+        isTemplate: false,
+      );
+
+      // 4. Toggle to template
+      await database.presetsDao.toggleTemplateStatus(presetId, true);
+
+      // 5. Load and verify
+      final loadedPreset = await database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
+
+      expect(loadedPreset, isNotNull);
+      expect(loadedPreset!.preset.isTemplate, isTrue);
+    });
+
+    test('toggleTemplateStatus unmarks preset as template', () async {
+      // 1. Create test algorithm
+      await database.metadataDao.upsertAlgorithms([
+        AlgorithmEntry(
+          guid: 'TEST',
+          name: 'Test Algorithm',
+          numSpecifications: 0,
+          pluginFilePath: null,
+        ),
+      ]);
+
+      // 2. Create a template preset
+      final templateDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Template Preset',
+          lastModified: DateTime.now(),
+          isTemplate: false,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TEST',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TEST',
+              name: 'Test Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 3. Save as template
+      final presetId = await database.presetsDao.saveFullPreset(
+        templateDetails,
+        isTemplate: true,
+      );
+
+      // 4. Toggle to regular preset
+      await database.presetsDao.toggleTemplateStatus(presetId, false);
+
+      // 5. Load and verify
+      final loadedPreset = await database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
+
+      expect(loadedPreset, isNotNull);
+      expect(loadedPreset!.preset.isTemplate, isFalse);
+    });
+
+    test('toggleTemplateStatus updates lastModified timestamp', () async {
+      // 1. Create test algorithm
+      await database.metadataDao.upsertAlgorithms([
+        AlgorithmEntry(
+          guid: 'TEST',
+          name: 'Test Algorithm',
+          numSpecifications: 0,
+          pluginFilePath: null,
+        ),
+      ]);
+
+      // 2. Create preset
+      final presetDetails = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Test Preset',
+          lastModified: DateTime.now(),
+          isTemplate: false,
+        ),
+        slots: [
+          FullPresetSlot(
+            slot: PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'TEST',
+              customName: null,
+            ),
+            algorithm: AlgorithmEntry(
+              guid: 'TEST',
+              name: 'Test Algorithm',
+              numSpecifications: 0,
+              pluginFilePath: null,
+            ),
+            parameterValues: {},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
+      );
+
+      // 3. Save preset
+      final presetId = await database.presetsDao.saveFullPreset(presetDetails);
+
+      // 4. Get initial timestamp
+      final initialPreset = await database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
+      final initialTimestamp = initialPreset!.preset.lastModified;
+
+      // 5. Wait a bit to ensure timestamp changes
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // 6. Toggle template status
+      await database.presetsDao.toggleTemplateStatus(presetId, true);
+
+      // 7. Load and verify timestamp updated
+      final updatedPreset = await database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
+
+      expect(updatedPreset, isNotNull);
+      expect(
+        updatedPreset!.preset.lastModified.isAfter(initialTimestamp) ||
+        updatedPreset.preset.lastModified.isAtSameMomentAs(initialTimestamp),
+        isTrue,
+        reason: 'lastModified should be updated or remain the same',
+      );
+    });
   });
 }

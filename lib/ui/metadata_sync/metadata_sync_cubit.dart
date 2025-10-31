@@ -266,25 +266,21 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     IDistingMidiManager manager,
   ) async {
     emit(const MetadataSyncState.loadingPreset());
-    if (kDebugMode) {
-    }
+    if (kDebugMode) {}
     try {
       // 0. Clear the current preset on the device
-      if (kDebugMode) {
-      }
+      if (kDebugMode) {}
       await manager.requestNewPreset();
       await Future.delayed(
         const Duration(milliseconds: 200),
       ); // Allow time to process
 
       // 1. Add all algorithms first
-      if (kDebugMode) {
-      }
+      if (kDebugMode) {}
       for (int i = 0; i < preset.slots.length; i++) {
         final slot = preset.slots[i];
         final algorithmGuid = slot.algorithm.guid;
-        if (kDebugMode) {
-        }
+        if (kDebugMode) {}
 
         // Fetch full details to get specifications and AlgorithmInfo fields
         final algoDetails = await _metadataDao.getFullAlgorithmDetails(
@@ -295,8 +291,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
             "Algorithm metadata for GUID '$algorithmGuid' not found locally. Cannot add slot ${i + 1}.",
           );
         }
-        if (kDebugMode) {
-        }
+        if (kDebugMode) {}
 
         // Prepare AlgorithmInfo and default specifications
         final algorithmInfo = AlgorithmInfo(
@@ -319,21 +314,18 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
             .map((s) => s.defaultValue)
             .toList();
 
-        if (kDebugMode) {
-        }
+        if (kDebugMode) {}
         await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
         // Add delay after adding each algorithm
         await Future.delayed(const Duration(milliseconds: 150));
       }
 
       // 2. Set parameters and mappings for each slot
-      if (kDebugMode) {
-      }
+      if (kDebugMode) {}
       for (int i = 0; i < preset.slots.length; i++) {
         final slot = preset.slots[i];
         final algorithmGuid = slot.algorithm.guid; // Needed again for metadata
-        if (kDebugMode) {
-        }
+        if (kDebugMode) {}
 
         // Send the slot name to the device
         await manager.requestSendSlotName(i, slot.algorithm.name);
@@ -347,8 +339,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         }
 
         // 2a. Send Parameter Values
-        if (kDebugMode) {
-        }
+        if (kDebugMode) {}
         for (final paramEntry in slot.parameterValues.entries) {
           final parameterNumber = paramEntry.key;
           final value = paramEntry.value;
@@ -362,8 +353,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           // NOTE: ParameterAccess check removed as access level isn't stored
           // in ParameterEntry from the database.
 
-          if (kDebugMode) {
-          }
+          if (kDebugMode) {}
           // Use setParameterValue
           await manager.setParameterValue(
             i, // slotIndex (use loop index)
@@ -375,14 +365,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         }
 
         // 2b. Send Mappings
-        if (kDebugMode) {
-        }
+        if (kDebugMode) {}
         for (final mappingEntry in slot.mappings.entries) {
           final parameterNumber = mappingEntry.key;
           final mappingData = mappingEntry.value;
 
-          if (kDebugMode) {
-          }
+          if (kDebugMode) {}
           // Use requestSetMapping
           await manager.requestSetMapping(
             i, // slotIndex (use loop index)
@@ -396,8 +384,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // 2d. Set the preset name on the device
       final presetName = preset.preset.name.trim();
-      if (kDebugMode) {
-      }
+      if (kDebugMode) {}
       await manager.requestSetPresetName(presetName);
       await Future.delayed(
         const Duration(milliseconds: 50),
@@ -572,6 +559,19 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       await loadLocalData(); // Reload data after deletion
     } catch (e) {
       emit(MetadataSyncState.presetDeleteFailure("Error deleting preset: $e"));
+    }
+  }
+
+  Future<void> togglePresetTemplate(int presetId, bool isTemplate) async {
+    try {
+      await _presetsDao.toggleTemplateStatus(presetId, isTemplate);
+      await loadLocalData(); // Reload data to reflect the change
+    } catch (e) {
+      emit(
+        MetadataSyncState.failure(
+          "Error toggling template status: ${e.toString()}",
+        ),
+      );
     }
   }
 

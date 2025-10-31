@@ -923,51 +923,62 @@ class _PresetListView extends StatelessWidget {
         final bool canLoad = !isOperationInProgress;
         final bool canDelete = !isOperationInProgress;
 
-        return ListTile(
-          key: ValueKey(preset.id),
-          selected: isCurrentlyLoadedOffline,
-          selectedTileColor: Theme.of(
-            context,
-          ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-          title: Text(preset.name.trim()),
-          subtitle: Text("Saved: $formattedDate"),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Load Button (Calls different cubits based on mode)
-              IconButton(
-                icon: Icon(
-                  isOffline ? Icons.edit_note : Icons.upload_file_outlined,
-                  color: canLoad
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.grey,
+        return GestureDetector(
+          onLongPress: canLoad
+              ? () => _showTemplateToggleMenu(context, preset)
+              : null,
+          child: ListTile(
+            key: ValueKey(preset.id),
+            selected: isCurrentlyLoadedOffline,
+            selectedTileColor: Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+            leading: preset.isTemplate
+                ? Icon(
+                    Icons.star,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  )
+                : null,
+            title: Text(preset.name.trim()),
+            subtitle: Text("Saved: $formattedDate"),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Load Button (Calls different cubits based on mode)
+                IconButton(
+                  icon: Icon(
+                    isOffline ? Icons.edit_note : Icons.upload_file_outlined,
+                    color: canLoad
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey,
+                  ),
+                  tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
+                  onPressed: canLoad
+                      ? () =>
+                            _showLoadConfirmationDialog(
+                              context,
+                              preset,
+                              isOffline,
+                              distingCubit,
+                              metadataSyncCubit,
+                            ) // Pass both cubits
+                      : null,
                 ),
-                tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
-                onPressed: canLoad
-                    ? () =>
-                          _showLoadConfirmationDialog(
-                            context,
-                            preset,
-                            isOffline,
-                            distingCubit,
-                            metadataSyncCubit,
-                          ) // Pass both cubits
-                    : null,
-              ),
-              // Delete Button (Calls MetadataSyncCubit)
-              IconButton(
-                icon: Icon(
-                  Icons.delete_outline,
-                  color: canDelete
-                      ? Theme.of(context).colorScheme.error
-                      : Colors.grey,
+                // Delete Button (Calls MetadataSyncCubit)
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: canDelete
+                        ? Theme.of(context).colorScheme.error
+                        : Colors.grey,
+                  ),
+                  tooltip: 'Delete Saved Preset',
+                  onPressed: canDelete
+                      ? () => _showDeleteConfirmationDialog(context, preset)
+                      : null,
                 ),
-                tooltip: 'Delete Saved Preset',
-                onPressed: canDelete
-                    ? () => _showDeleteConfirmationDialog(context, preset)
-                    : null,
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -1101,6 +1112,83 @@ class _PresetListView extends StatelessWidget {
                 Navigator.of(dialogContext).pop();
                 // Delete uses MetadataSyncCubit from context
                 context.read<MetadataSyncCubit>().deletePreset(preset.id);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper function for Template Toggle Menu
+  void _showTemplateToggleMenu(BuildContext context, PresetEntry preset) {
+    final RenderBox? overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final Offset position = button.localToGlobal(Offset.zero);
+    final cubit = metadataSyncCubit;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + button.size.height,
+        overlay?.size.width ?? 0,
+        0,
+      ),
+      items: [
+        PopupMenuItem<String>(
+          value: preset.isTemplate ? 'unmark' : 'mark',
+          child: Row(
+            children: [
+              Icon(
+                preset.isTemplate ? Icons.star_border : Icons.star,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                preset.isTemplate ? 'Unmark as Template' : 'Mark as Template',
+              ),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value != null && context.mounted) {
+        if (value == 'unmark') {
+          _showUnmarkTemplateConfirmationDialog(context, preset);
+        } else {
+          cubit.togglePresetTemplate(preset.id, true);
+        }
+      }
+    });
+  }
+
+  // Helper function for Unmark Template Confirmation Dialog
+  void _showUnmarkTemplateConfirmationDialog(
+    BuildContext context,
+    PresetEntry preset,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Remove Template Status?'),
+          content: Text(
+            'Remove template status from "${preset.name}"? This will move the preset back to regular presets.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Remove'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                metadataSyncCubit.togglePresetTemplate(preset.id, false);
               },
             ),
           ],

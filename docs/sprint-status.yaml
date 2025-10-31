@@ -62,8 +62,8 @@ development_status:
   epic-4-retrospective: optional
 
   epic-5: contexted
-  e5-1-extend-database-schema-for-template-flag: review
-  e5-2-add-ui-to-tag-untag-presets-as-templates: ready-for-dev
+  e5-1-extend-database-schema-for-template-flag: done
+  e5-2-add-ui-to-tag-untag-presets-as-templates: done
   e5-3-filter-presets-to-show-templates-only: ready-for-dev
   e5-4-implement-template-injection-logic-append-only: ready-for-dev
   e5-5-build-template-preview-dialog: ready-for-dev
