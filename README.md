@@ -26,11 +26,13 @@ For detailed instructions, troubleshooting, and a full feature list, please refe
 
 ## Recent Updates
 
-- **v1.39.0+77**: Added incremental sync and improved algorithm rescan UX
+- **v1.61.0**: Platform-native image sharing for mobile routing editor
+- **v1.60.0**: Advanced algorithm metadata management and enhanced preset synchronization
+- **v1.59.x**: Incremental sync, improved algorithm rescan UX, and performance optimizations
 - **Drag & Drop Support**: Preset packages can now be installed via drag-and-drop on desktop platforms
 - **MCP Enhancements**: Simplified server implementation, improved connection stability, and added CPU usage monitoring
-- **Algorithm Matching**: Added fuzzy category matching for better algorithm discovery
-- **Routing Improvements**: Enhanced real-time routing data queries from hardware
+
+📋 **[View Complete Changelog](./CHANGELOG.md)** for detailed release notes and version history.
 
 ## Contributing
 
