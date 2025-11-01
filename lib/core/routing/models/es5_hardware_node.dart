@@ -43,7 +43,6 @@ class ES5HardwareNode {
   ///
   /// Returns a list of 10 Port objects configured as ES-5 inputs.
   static List<Port> createInputPorts() {
-
     final ports = <Port>[];
 
     // Create L port (audio, bus 29)
@@ -88,7 +87,6 @@ class ES5HardwareNode {
         ),
       );
     }
-
 
     return ports;
   }

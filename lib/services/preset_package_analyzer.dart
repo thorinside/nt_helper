@@ -9,7 +9,6 @@ class PresetPackageAnalyzer {
   /// Analyze a zip file and extract package information
   static Future<PackageAnalysis> analyzePackage(Uint8List zipBytes) async {
     try {
-
       // Decode the archive
       final archive = ZipDecoder().decodeBytes(zipBytes);
 
@@ -37,7 +36,6 @@ class PresetPackageAnalyzer {
           .where((file) => file.isFile && file.name.startsWith('root/'))
           .toList();
 
-
       // Convert archive files to PackageFile objects
       final packageFiles = <PackageFile>[];
       for (final file in rootFiles) {
@@ -56,7 +54,6 @@ class PresetPackageAnalyzer {
 
         packageFiles.add(packageFile);
       }
-
 
       return PackageAnalysis(
         packageName: packageName,

@@ -63,8 +63,7 @@ class AlgorithmMetadataService {
         );
 
         if (success) {
-        } else {
-        }
+        } else {}
       } catch (e) {
         // Asset doesn't exist, which is normal if metadata hasn't been exported yet
       }
@@ -83,7 +82,6 @@ class AlgorithmMetadataService {
               path.startsWith('docs/algorithms/') && path.endsWith('.json'),
         )
         .toList();
-
 
     for (final path in algorithmFiles) {
       try {
@@ -108,7 +106,6 @@ class AlgorithmMetadataService {
         )
         .toList();
 
-
     for (final path in featureFiles) {
       try {
         final jsonString = await rootBundle.loadString(path);
@@ -128,7 +125,6 @@ class AlgorithmMetadataService {
         .getAllAlgorithms();
     int mergedCount = 0;
 
-
     for (final entry in syncedEntries) {
       if (!_algorithms.containsKey(entry.guid)) {
         final newAlgo = AlgorithmMetadata(
@@ -145,8 +141,7 @@ class AlgorithmMetadataService {
       }
     }
     if (mergedCount > 0) {
-    } else {
-    }
+    } else {}
   }
 
   // --- Public Access Methods ---
@@ -215,8 +210,7 @@ class AlgorithmMetadataService {
         for (final param in feature.parameters) {
           combinedParams[param.name] = param; // Overwrite if name exists
         }
-      } else {
-      }
+      } else {}
     }
     return combinedParams.values.toList();
   }

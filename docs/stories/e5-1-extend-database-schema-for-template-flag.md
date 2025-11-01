@@ -1,6 +1,6 @@
 # Story 5.1: Extend database schema for template flag
 
-Status: review
+Status: done
 
 ## Story
 
@@ -161,3 +161,98 @@ All acceptance criteria met. Story ready for review.
 - lib/domain/disting_midi_manager.dart
 - lib/domain/offline_disting_midi_manager.dart
 - test/db/daos/presets_dao_test.dart
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Neal
+**Date:** 2025-10-30
+**Outcome:** Approved
+
+### Summary
+
+Story E5.1 successfully implements the database schema extension for the template flag feature. The implementation is clean, follows established patterns, includes thorough test coverage, and meets all acceptance criteria. The database migration is correctly implemented, all PresetEntry constructors across the codebase have been updated, and the new DAO query methods function as expected.
+
+### Key Findings
+
+**Strengths:**
+- **Database Schema:** The `isTemplate` boolean column was correctly added to the Presets table with an appropriate default value of `false`, ensuring backward compatibility
+- **Migration Logic:** Schema version was incremented from 8 to 9, and the migration handler properly adds the new column for existing databases
+- **DAO Implementation:** The `getTemplates()` and `getNonTemplates()` query methods are implemented efficiently and correctly filter based on the `isTemplate` flag
+- **Parameter Handling:** The `saveFullPreset()` method signature was updated to accept an optional `isTemplate` parameter with a sensible default
+- **Codebase Updates:** All PresetEntry constructors in `disting_midi_manager.dart` and `offline_disting_midi_manager.dart` were updated to include the `isTemplate` field with appropriate default values
+- **Test Coverage:** Four new tests comprehensively cover template functionality including save/load, filtering, and migration behavior
+
+**No Issues Found:** Zero warnings from `flutter analyze` and all 729 tests pass.
+
+### Acceptance Criteria Coverage
+
+✅ **AC #1:** `isTemplate` boolean column added to presets table with default value `false` (verified in `/Users/nealsanche/nosuch/nt_helper/lib/db/tables.dart` line 113)
+
+✅ **AC #2:** Drift migration generated successfully, schema version incremented from 8 to 9 (verified in `/Users/nealsanche/nosuch/nt_helper/lib/db/database.dart` lines 46, 137-144)
+
+✅ **AC #3:** PresetsDao exposes `isTemplate` in queries via `getTemplates()` and `getNonTemplates()` methods (verified in `/Users/nealsanche/nosuch/nt_helper/lib/db/daos/presets_dao.dart` lines 69-93)
+
+✅ **AC #4:** `saveFullPreset()` method accepts optional `isTemplate` parameter with default `false` (verified in `/Users/nealsanche/nosuch/nt_helper/lib/db/daos/presets_dao.dart` lines 201-217)
+
+✅ **AC #5:** Database migration runs successfully on app upgrade (verified via migration test in `/Users/nealsanche/nosuch/nt_helper/test/db/daos/presets_dao_test.dart` lines 416-471)
+
+✅ **AC #6:** `flutter analyze` passes with zero warnings (verified via command execution)
+
+✅ **AC #7:** All tests pass - 729/729 tests passing including 4 new template-specific tests (verified via `flutter test` execution)
+
+### Test Coverage and Gaps
+
+**Excellent Test Coverage:**
+- Template save and retrieval with `isTemplate=true`
+- Non-template save with default `isTemplate=false`
+- `getTemplates()` filtering returns only templates
+- `getNonTemplates()` filtering returns only non-templates
+- Migration verification ensuring existing presets default to `isTemplate=false`
+- All tests use in-memory database for fast, isolated execution
+
+**No Gaps Identified:** Test coverage is thorough for this foundational story. Future stories (E5.2-E5.7) will add UI and business logic tests as the template system is built out.
+
+### Architectural Alignment
+
+**Perfect Alignment with Project Standards:**
+- Follows Drift ORM patterns consistently (table definitions, migrations, DAOs)
+- Uses `@DataClassName` annotations appropriately
+- Implements `copyWith` pattern in `saveFullPreset()` for the `isTemplate` parameter
+- Migration logic follows established pattern with version-based conditional execution
+- Default value using `withDefault(const Constant(false))` is the correct Drift idiom
+- Generated code via build_runner is properly excluded from version control
+
+**Database Design:**
+- Non-nullable boolean with default is the right choice (avoids null-handling complexity)
+- Placement in Presets table (not PresetSlots) is architecturally correct
+- No foreign key constraints needed for a simple boolean flag
+- Index not required for template flag (small dataset, infrequent filtering)
+
+### Security Notes
+
+No security concerns identified. This is a pure data model extension with no user input validation required (boolean flag is type-safe), no authentication/authorization implications, and no exposure of sensitive data.
+
+### Best-Practices and References
+
+**Drift Best Practices:** ([Drift Documentation](https://drift.simonbinder.eu/))
+- ✅ Column added with appropriate default value for backward compatibility
+- ✅ Schema version incremented correctly
+- ✅ Migration uses `addColumn()` method in version-conditional block
+- ✅ DAO query methods use type-safe Drift query builders
+- ✅ Tests use in-memory database via `NativeDatabase.memory()`
+
+**Flutter/Dart Conventions:**
+- ✅ Named parameters with defaults (`{bool isTemplate = false}`) used appropriately
+- ✅ Boolean naming follows Dart convention (`isTemplate`, not `templateFlag`)
+- ✅ Async/await patterns used consistently
+- ✅ Null-safety handled correctly (non-nullable boolean)
+
+### Action Items
+
+**None.** This implementation is production-ready with no follow-up actions required.
+
+### Change Log
+
+- 2025-10-30: Senior Developer Review completed - Approved

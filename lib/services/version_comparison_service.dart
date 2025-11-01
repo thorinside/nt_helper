@@ -164,7 +164,6 @@ class VersionComparisonService {
 
   /// Fallback comparison for non-semantic versions
   static int _fallbackVersionComparison(String version1, String version2) {
-
     // Try to extract numeric parts for comparison
     final nums1 = _extractNumbers(version1);
     final nums2 = _extractNumbers(version2);

@@ -63,7 +63,7 @@ Five algorithms support ES-5 direct output routing, where outputs can route dire
 
 **Code Quality:** Zero tolerance for `flutter analyze` errors.
 
-**Debugging:** Always use `debugPrint()`, never `print()`.
+**Debugging:** Ask the user to set breakpoints and debug with MCP tools if possible. Never add debug logging to code unless explicitly asked to do so.
 
 **Testing:** Run tests before commits. Check for existing test patterns.
 

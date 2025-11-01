@@ -364,7 +364,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       _cachedInputPorts = null;
       _cachedOutputPorts = null;
     }
-
   }
 
   /// Validates gate-specific connections
@@ -428,7 +427,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       // a new instance would be created with different config
       _cachedInputPorts = null;
       _cachedOutputPorts = null;
-
     }
   }
 
@@ -487,8 +485,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       // CV count for this gate (only relevant if gate is connected)
       final cvCount = ioParameters['Gate $i CV count'] ?? 0;
       gateCvCounts.add(cvCount);
-      if (gateBus > 0 || cvCount > 0) {
-      }
+      if (gateBus > 0 || cvCount > 0) {}
     }
 
     // Trim trailing unconnected gates
@@ -661,7 +658,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
 
       final useEs5ForGates = es5ExpanderValue > 0 && gateOutputs > 0;
 
-
       // Generate output ports for each voice
       for (int voice = 0; voice < voiceCount; voice++) {
         // Voice numbering is 1-based for display
@@ -702,9 +698,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               }
 
               outputPorts.add(portMap);
-
-            } else {
-            }
+            } else {}
           } else {
             // NORMAL MODE: Gates use normal bus allocation
             // Bus calculation: firstOutput + (voice * total_outputs_per_voice) + offset_within_voice
@@ -725,7 +719,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               'voiceNumber': voiceNum,
               'outputMode': gateMode,
             });
-
           }
         }
 

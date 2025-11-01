@@ -462,8 +462,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       if (folderIndex >= 0 && folderIndex < folders.length) {
         final selectedFolder = folders[folderIndex].name.replaceAll('/', '');
         return '$_currentDirectory/$selectedFolder';
-      } else {
-      }
+      } else {}
     } catch (e) {
       // Intentionally empty
     }
@@ -1123,7 +1122,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
           }
         }
       });
-
     } catch (e) {
       _showError('Failed to start development mode: $e');
     }
@@ -1140,7 +1138,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     setState(() {
       _devState = _DevelopmentState.inactive;
     });
-
   }
 
   void _onFileChanged() {
@@ -1158,7 +1155,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         await _uploadAndReloadScript();
       }
     });
-
   }
 
   Future<void> _uploadAndReloadScript() async {
@@ -1199,7 +1195,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       if (mounted) {
         setState(() => _devState = _DevelopmentState.monitoring);
       }
-
     } catch (e) {
       if (mounted) {
         setState(() => _devState = _DevelopmentState.error);

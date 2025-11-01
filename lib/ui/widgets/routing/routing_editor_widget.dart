@@ -1010,7 +1010,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         sourcePortId: sourcePortId,
         targetPortId: targetPortId,
       );
-
     } on ArgumentError catch (e) {
       _showError('Invalid connection: ${e.message}');
     } on StateError catch (e) {
@@ -1855,7 +1854,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     int channel,
     bool enabled,
   ) async {
-
     final cubit = context.read<DistingCubit>();
     final state = cubit.state;
     if (state is! DistingStateSynchronized) {
@@ -1882,7 +1880,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       if (param.parameterNumber < 0) {
         return;
       }
-
     } else {
       // Clock/Euclidean/Clock Multiplier/Clock Divider: Find the per-channel ES-5 Expander parameter
       // Try channel-prefixed format first (e.g., "1:ES-5 Expander")
@@ -1913,7 +1910,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       value: newValue,
       userIsChangingTheValue: false,
     );
-
   }
 
   Widget _buildUnifiedConnectionCanvas(List<Connection> connections) {
@@ -1951,8 +1947,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
         // Debug the first connection
         if (connection.sourcePortId.contains('hw_in_1') ||
-            connection.destinationPortId.contains('Clock_input_1')) {
-        }
+            connection.destinationPortId.contains('Clock_input_1')) {}
       }
 
       if (sourcePosition == null || targetPosition == null) {
@@ -1980,8 +1975,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         }
       }
 
-      if (busNumber == null) {
-      }
+      if (busNumber == null) {}
 
       connectionDataList.add(
         painter.ConnectionData(
@@ -2102,7 +2096,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   void _handleCanvasTap(Offset tapPosition, List<Connection> connections) {
-
     // If there's a highlighted connection, check if the tap hits it
     if (_hoveredConnectionId != null) {
       final highlightedConnection = connections.firstWhere(
@@ -2239,7 +2232,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   // Port and node interaction handlers
   void _handlePortTap(Port port) {
-
     // Only allow deletion from input ports
     if (!port.isInput) {
       return;
@@ -2256,7 +2248,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   void _handlePortTapById(String portId) {
-
     // Find the actual port to check if it's an input
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) {
@@ -2415,7 +2406,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       _dragSourcePort = port;
       _dragCurrentPosition = portPosition;
     });
-
   }
 
   void _handleAlgorithmPortDragUpdate(String portId, Offset position) {
@@ -2480,11 +2470,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Find port at drop position
       final targetPort = _findPortAtPosition(localPosition);
 
-      if (targetPort != null) {
-      }
+      if (targetPort != null) {}
 
       if (targetPort != null && targetPort.isInput) {
-
         // Check for duplicate connection before attempting to create
         final cubit = context.read<RoutingEditorCubit>();
         final currentState = cubit.state;
@@ -2514,8 +2502,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         } catch (e) {
           _showError('Failed to create connection: ${e.toString()}');
         }
-      } else {
-      }
+      } else {}
     } finally {
       // Always clear drag state
       setState(() {
@@ -2549,11 +2536,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Find port at drop position
       final targetPort = _findPortAtPosition(localPosition);
 
-      if (targetPort != null) {
-      }
+      if (targetPort != null) {}
 
       if (targetPort != null && targetPort.isInput) {
-
         // Check for duplicate connection before attempting to create
         final currentState = context.read<RoutingEditorCubit>().state;
         if (currentState is RoutingEditorStateLoaded) {
@@ -2576,7 +2561,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           _dragSourcePort!.id,
           targetPort.id,
         );
-
       } else {
         // Invalid drop - silently clear drag state (no error message)
       }
@@ -3023,7 +3007,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     String action,
     List<Connection> connections,
   ) {
-
     switch (action) {
       case 'hover_start':
         // Find connections involving this port and highlight the first one
@@ -3216,7 +3199,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       for (final algorithm in routingState.algorithms) {
         for (final port in algorithm.outputPorts) {
           if (port.id == sourcePortId && port.parameterNumber != null) {
-
             // Clear the bus assignment by setting parameter to 0
             context.read<DistingCubit>().updateParameterValue(
               algorithmIndex: algorithm.index,
@@ -3245,7 +3227,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     context.read<RoutingEditorCubit>().togglePortOutputMode(
       portId: connection.sourcePortId,
     );
-
   }
 }
 

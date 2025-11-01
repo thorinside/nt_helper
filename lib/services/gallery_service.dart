@@ -78,9 +78,7 @@ class GalleryService {
           )
           .timeout(const Duration(seconds: 30));
 
-
       if (response.statusCode == 200) {
-
         // Check if the response looks like HTML (Google Drive error page)
         if (response.body.trim().startsWith('<')) {
           throw GalleryException(
@@ -229,7 +227,6 @@ class GalleryService {
         plugin,
       );
 
-
       if (pluginCount > 1) {
         // This is a collection - extract the plugin list
         final collectionPlugins =
@@ -310,8 +307,7 @@ class GalleryService {
         selectedPlugins: selectedPlugins,
       );
       _notifyQueueChanged();
-    } else {
-    }
+    } else {}
   }
 
   /// Download plugin archive for a specific version
@@ -321,7 +317,6 @@ class GalleryService {
   ) async {
     final release = plugin.getVersionTag(version);
     final downloadUrl = await _getDownloadUrl(plugin, release);
-
 
     final response = await http.get(Uri.parse(downloadUrl));
     if (response.statusCode != 200) {
@@ -436,7 +431,6 @@ class GalleryService {
     final plugin = queuedPlugin.plugin;
     final version = plugin.getVersionTag(queuedPlugin.selectedVersion);
 
-
     // Update status to downloading
     _updateQueuedPlugin(
       plugin.id,
@@ -458,7 +452,6 @@ class GalleryService {
     final downloadUri = Uri.parse(downloadUrl);
     final fileName = path.basename(downloadUri.path);
     final fileExtension = path.extension(fileName).toLowerCase();
-
 
     List<MapEntry<String, List<int>>> filesToInstall;
 
@@ -519,7 +512,6 @@ class GalleryService {
   /// Get download URL for a plugin - prioritizes downloadUrl from installation config
   Future<String> _getDownloadUrl(GalleryPlugin plugin, String version) async {
     final repo = plugin.repository;
-
 
     // Priority 1: Use direct download URL from installation config if available
     if (plugin.installation.downloadUrl != null &&
@@ -595,7 +587,6 @@ class GalleryService {
     String url,
     Function(double) onProgress,
   ) async {
-
     final request = http.Request('GET', Uri.parse(url));
     final response = await http.Client().send(request);
 
@@ -628,7 +619,6 @@ class GalleryService {
     final archive = ZipDecoder().decodeBytes(archiveBytes);
     final extractedFiles = <MapEntry<String, List<int>>>[];
     final installation = plugin.installation;
-
 
     // Compile regex pattern for file filtering if extractPattern is provided
     RegExp? extractRegex;
@@ -697,7 +687,6 @@ class GalleryService {
       extractedFiles.add(MapEntry(filePath, file.content as List<int>));
     }
 
-
     if (extractedFiles.isEmpty) {
       throw GalleryException(
         'No plugin files found in archive for ${plugin.name}. Extract pattern: ${installation.extractPattern ?? "none"}',
@@ -719,14 +708,12 @@ class GalleryService {
     distingInstallPlugin,
     Function(double)? onProgress,
   ) async {
-
     int filesProcessed = 0;
 
     for (final fileEntry in files) {
       final relativePath = fileEntry.key;
       final fileData = Uint8List.fromList(fileEntry.value);
       final fileName = path.basename(relativePath);
-
 
       try {
         // Try to upload with directory structure first (if path contains directories)
@@ -767,7 +754,6 @@ class GalleryService {
         throw GalleryException('Failed to upload $fileName: $e');
       }
     }
-
   }
 
   /// Update a queued plugin's status
@@ -899,7 +885,6 @@ class GalleryService {
           );
         }
       }
-
     } catch (e) {
       // Intentionally empty
     }

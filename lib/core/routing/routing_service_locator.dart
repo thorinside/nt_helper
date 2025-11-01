@@ -69,7 +69,6 @@ class RoutingServiceLocator {
       );
     }
 
-
     // Register port compatibility validator as singleton
     final validator = customValidator ?? PortCompatibilityValidator();
     _getIt.registerSingleton<PortCompatibilityValidator>(validator);
@@ -81,7 +80,6 @@ class RoutingServiceLocator {
     // Register haptic feedback service as singleton
     final hapticService = HapticFeedbackService();
     _getIt.registerSingleton<IHapticFeedbackService>(hapticService);
-
   }
 
   /// Convenience method to get a routing instance directly.
@@ -168,7 +166,6 @@ class RoutingServiceLocator {
   /// This method is safe to call even if the service locator hasn't been
   /// set up or has already been reset.
   static Future<void> reset() async {
-
     // Unregister in reverse order of registration to handle dependencies properly
     if (_getIt.isRegistered<IHapticFeedbackService>()) {
       await _getIt.unregister<IHapticFeedbackService>();
@@ -181,7 +178,6 @@ class RoutingServiceLocator {
     if (_getIt.isRegistered<PortCompatibilityValidator>()) {
       await _getIt.unregister<PortCompatibilityValidator>();
     }
-
   }
 
   /// Ensures the service locator has been set up, throwing an error if not.
@@ -231,11 +227,9 @@ class RoutingServiceLocator {
       );
     }
 
-
     registerValidator(_getIt);
 
     registerFactory(_getIt);
-
   }
 
   /// Gets diagnostic information about the current registration state.

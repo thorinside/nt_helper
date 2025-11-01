@@ -26,13 +26,14 @@
 
 **Primary Changes**
 - `lib/ui/widgets/packed_mapping_data_editor.dart` - Add fourth "Performance" tab with performance page dropdown selector
+- `lib/ui/widgets/section_parameter_list_view.dart` - Hide inline performance page dropdown on mobile screens (desktop only)
+- `lib/ui/widgets/mapping_editor_bottom_sheet.dart` - Pass algorithmIndex and parameterNumber to enable direct cubit calls
 
 **No Changes Required**
 - `lib/models/packed_mapping_data.dart` - Already has `perfPageIndex` field with `copyWith` support
-- `lib/cubit/disting_cubit.dart` - Already has `saveMapping` method that handles performance page updates
+- `lib/cubit/disting_cubit.dart` - Already has `setPerformancePageMapping` method with optimistic updates and hardware sync
 - `lib/domain/sysex/requests/set_performance_page_message.dart` - Already handles SysEx encoding for performance page assignments
 - `lib/ui/performance_screen.dart` - No changes needed (already reads from `perfPageIndex`)
-- `lib/ui/widgets/section_parameter_list_view.dart` - No changes needed (desktop dropdown remains functional)
 
 ### New Files
 
@@ -57,30 +58,44 @@ Extend the existing 3-tab `PackedMappingDataEditor` widget to include a fourth "
 ### Key Principles
 
 1. **Consistent Tab Pattern**: Follow the exact same pattern as CV/MIDI/I2C tabs for UI consistency
-2. **Optimistic Updates**: Leverage the existing optimistic auto-save mechanism (1-second debounce) already implemented in the editor
-3. **Zero New Dependencies**: Use existing Flutter Material widgets and state management patterns
-4. **Dual Input Methods**: Desktop users can continue using the inline dropdown; mobile users can use the mapping editor
-5. **Minimal Changes**: Add one tab, one dropdown, zero architectural changes
+2. **Match Inline Dropdown Behavior**: Call `DistingCubit.setPerformancePageMapping()` directly (same as inline dropdown) for optimistic updates and hardware sync
+3. **Desktop-Only Inline Dropdown**: Hide the inline performance page dropdown on mobile screens using responsive layout checks
+4. **Zero New Dependencies**: Use existing Flutter Material widgets and state management patterns
+5. **Dual Input Methods**: Desktop users can continue using the inline dropdown; mobile users can use the mapping editor
+6. **Minimal Changes**: Add one tab, hide inline dropdown on mobile, zero architectural changes
 
 ### Implementation Strategy
 
-**1. Add Fourth Tab to TabController**
+**1. Hide Inline Dropdown on Mobile**
+- Modify `section_parameter_list_view.dart` to conditionally show performance page dropdown
+- Use `MediaQuery` to detect narrow screens (width < 600px = mobile)
+- Desktop: Show inline dropdown as before
+- Mobile: Hide inline dropdown (use mapping editor instead)
+
+**2. Update Mapping Editor Bottom Sheet**
+- Pass `algorithmIndex` and `parameterNumber` to `PackedMappingDataEditor`
+- Remove `onSave` callback pattern (no longer needed)
+- Editor will call `DistingCubit.setPerformancePageMapping()` directly
+
+**3. Add Fourth Tab to TabController**
 - Change `TabController` length from 3 to 4
 - Add "Performance" label to tab bar
 - Add initial index logic to select Performance tab if `perfPageIndex > 0`
 
-**2. Build Performance Tab UI**
+**4. Build Performance Tab UI**
 - Create `_buildPerformanceEditor()` method following same pattern as `_buildCvEditor()`
 - Add single `DropdownMenu<int>` for page selection
 - Dropdown options: "None" (0), "P1" (1), "P2" (2), ..., "P15" (15)
-- Use optimistic save trigger on dropdown selection
+- Call `DistingCubit.setPerformancePageMapping()` on selection (matches inline dropdown behavior)
 
-**3. State Management**
-- Leverage existing `_data.perfPageIndex` field (already in `PackedMappingData`)
-- Use `_data.copyWith(perfPageIndex: newValue)` on dropdown change
-- Call `_triggerOptimisticSave()` to auto-persist after 1 second
+**5. State Management**
+- Read current `perfPageIndex` from `DistingCubit` state (NOT from local `_data`)
+- Call `context.read<DistingCubit>().setPerformancePageMapping(algorithmIndex, parameterNumber, newValue)`
+- This triggers optimistic state update + hardware sync + verification (same as inline dropdown)
+- DistingCubit emits new state with updated mapping
+- Widget rebuilds automatically via BLoC pattern
 
-**4. Visual Design**
+**6. Visual Design**
 - Match styling of existing dropdowns (CV Input, MIDI Channel, etc.)
 - Use colored page badges (P1-P15) to match Performance screen and inline dropdown visual language
 - Show "None" option clearly for unassigned state
@@ -268,28 +283,38 @@ Color _getPageColor(int pageIndex) {
 1. **User Opens Parameter Editor**
    - User taps mapping edit button on a parameter row
    - `MappingEditButton` shows `MappingEditorBottomSheet`
-   - Bottom sheet creates `PackedMappingDataEditor` with `initialData` containing current `perfPageIndex`
+   - Bottom sheet creates `PackedMappingDataEditor` with `algorithmIndex` and `parameterNumber`
+   - Editor reads current `perfPageIndex` from `DistingCubit` state via `BlocBuilder`
    - Initial tab is selected based on which mapping types are active (including Performance if `perfPageIndex > 0`)
 
 2. **User Selects Performance Tab**
    - Tab view switches to `_buildPerformanceEditor()`
-   - Dropdown shows current assignment (0 = "None", 1-15 = "P1" through "P15")
+   - Dropdown shows current assignment from cubit state (0 = "None", 1-15 = "P1" through "P15")
 
 3. **User Selects Performance Page**
    - Dropdown `onSelected` callback fires
-   - `setState` updates local `_data.perfPageIndex`
-   - `_triggerOptimisticSave()` starts 1-second debounce timer
+   - Immediately calls `context.read<DistingCubit>().setPerformancePageMapping(algorithmIndex, parameterNumber, newValue)`
+   - **EXACT SAME PATTERN AS INLINE DROPDOWN** in `section_parameter_list_view.dart:278`
 
-4. **Auto-Save Triggers**
-   - After 1 second of no changes, `_attemptSave()` is called
-   - `widget.onSave(_data)` is invoked with updated `PackedMappingData`
-   - Parent widget (`MappingEditorBottomSheet`) calls `DistingCubit.saveMapping()`
-   - `DistingCubit` encodes and sends `SetPerformancePageMessage` via SysEx
+4. **DistingCubit Optimistic Update** (from `setPerformancePageMapping`)
+   - Creates optimistic `Mapping` with updated `perfPageIndex` (lines 1701-1707)
+   - **Emits new state immediately** with updated mapping (lines 1710-1722)
+   - All widgets listening to `DistingCubit` rebuild instantly
+   - Performance tab dropdown updates to show new selection
+   - Inline dropdown (if visible on desktop) updates to show new selection
+   - Performance screen updates to show new assignment
 
-5. **Hardware Synchronization**
-   - Disting NT hardware receives SysEx message and updates parameter's performance page assignment
-   - Performance screen automatically reflects the change (reads from same `perfPageIndex` field)
-   - Desktop parameter row dropdown also reflects the change (both read from the same source)
+5. **Hardware Synchronization** (from `setPerformancePageMapping`)
+   - Sends `SetPerformancePageMessage` to hardware via SysEx (line 1726)
+   - Verifies by reading back mapping from hardware with exponential backoff retries (lines 1731-1779)
+   - If hardware value differs from optimistic value, hardware wins and cubit emits corrected state
+   - All widgets automatically update to hardware's actual value
+
+6. **UI Consistency**
+   - Both inline dropdown (desktop) and Performance tab (mobile) read from same cubit state
+   - Both call same `setPerformancePageMapping()` method
+   - Changes from either source are instantly reflected in both UIs
+   - Performance screen always shows current cubit state
 
 ---
 
@@ -323,11 +348,70 @@ This feature uses existing dependencies and architecture patterns. No new packag
 
 ## Implementation Guide
 
-### Step 1: Update TabController Length
+### Step 1: Hide Inline Performance Dropdown on Mobile
+
+**File:** `lib/ui/widgets/section_parameter_list_view.dart`
+
+**Location:** Around lines 265-295 (performance page dropdown section)
+
+**Wrap the dropdown Row with conditional visibility:**
+```dart
+// Only show inline dropdown on desktop (width >= 600)
+if (MediaQuery.of(context).size.width >= 600)
+  Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      // ... existing dropdown code ...
+    ],
+  ),
+```
+
+**Rationale:** Mobile users will use the Performance tab in the mapping editor instead.
+
+### Step 2: Update Mapping Editor Bottom Sheet
+
+**File:** `lib/ui/widgets/mapping_editor_bottom_sheet.dart`
+
+**Pass `algorithmIndex` and `parameterNumber` to editor:**
+```dart
+PackedMappingDataEditor(
+  initialData: data,
+  slots: slots,
+  algorithmIndex: algorithmIndex,  // ADD THIS
+  parameterNumber: parameterNumber, // ADD THIS
+  // REMOVE onSave callback - no longer needed
+),
+```
+
+### Step 3: Update PackedMappingDataEditor Constructor
 
 **File:** `lib/ui/widgets/packed_mapping_data_editor.dart`
 
-**Location:** `initState()` method, around line 72
+**Add new required parameters:**
+```dart
+class PackedMappingDataEditor extends StatefulWidget {
+  final PackedMappingData initialData;
+  final List<Slot> slots;
+  final int algorithmIndex;     // ADD THIS
+  final int parameterNumber;    // ADD THIS
+  // REMOVE: final Function(PackedMappingData) onSave;
+
+  const PackedMappingDataEditor({
+    super.key,
+    required this.initialData,
+    required this.slots,
+    required this.algorithmIndex,     // ADD THIS
+    required this.parameterNumber,    // ADD THIS
+    // REMOVE: required this.onSave,
+  });
+}
+```
+
+### Step 4: Update TabController Length
+
+**File:** `lib/ui/widgets/packed_mapping_data_editor.dart`
+
+**Location:** `initState()` method
 
 **Change:**
 ```dart
@@ -338,11 +422,11 @@ _tabController = TabController(
 );
 ```
 
-### Step 2: Add Performance Tab to Initial Index Logic
+### Step 5: Add Performance Tab to Initial Index Logic
 
 **File:** `lib/ui/widgets/packed_mapping_data_editor.dart`
 
-**Location:** `initState()` method, around line 56-69
+**Location:** `initState()` method, initial index calculation
 
 **Add this condition before the final `else`:**
 ```dart
@@ -351,11 +435,11 @@ _tabController = TabController(
   initialIndex = 3;
 ```
 
-### Step 3: Add Performance Tab to TabBar
+### Step 6: Add Performance Tab to TabBar
 
 **File:** `lib/ui/widgets/packed_mapping_data_editor.dart`
 
-**Location:** `build()` method, TabBar widget, around line 140
+**Location:** `build()` method, TabBar widget
 
 **Change:**
 ```dart
@@ -370,11 +454,11 @@ TabBar(
 ),
 ```
 
-### Step 4: Add Performance Tab to TabBarView
+### Step 7: Add Performance Tab to TabBarView
 
 **File:** `lib/ui/widgets/packed_mapping_data_editor.dart`
 
-**Location:** `build()` method, TabBarView widget, around line 150
+**Location:** `build()` method, TabBarView widget
 
 **Change:**
 ```dart
@@ -389,93 +473,114 @@ TabBarView(
 ),
 ```
 
-### Step 5: Add _buildPerformanceEditor() Method
+### Step 8: Add _buildPerformanceEditor() Method
 
 **File:** `lib/ui/widgets/packed_mapping_data_editor.dart`
 
 **Location:** After `_buildI2cEditor()` method, before the end of class
 
-**Add this complete method:**
+**Add this complete method (uses BlocBuilder to read cubit state):**
 ```dart
 Widget _buildPerformanceEditor() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Info text explaining performance pages
-        Text(
-          'Assign this parameter to a performance page for quick access.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
-        ),
-        const SizedBox(height: 16),
+  return BlocBuilder<DistingCubit, DistingState>(
+    builder: (context, state) {
+      if (state is! DistingStateSynchronized) {
+        return const Center(child: Text('Not synchronized'));
+      }
 
-        // Performance page dropdown
-        DropdownMenu<int>(
-          initialSelection: _data.perfPageIndex,
-          label: const Text('Performance Page'),
-          expandedInsets: EdgeInsets.zero,
-          dropdownMenuEntries: [
-            // "None" option
-            const DropdownMenuEntry<int>(
-              value: 0,
-              label: 'None',
+      final slot = state.slots[widget.algorithmIndex];
+      final currentPerfPageIndex = slot.mappings[widget.parameterNumber].packedMappingData.perfPageIndex;
+
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Info text explaining performance pages
+            Text(
+              'Assign this parameter to a performance page for quick access.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
             ),
-            // P1 through P15
-            for (int i = 1; i <= 15; i++)
-              DropdownMenuEntry<int>(
-                value: i,
-                label: 'P$i',
-                leadingIcon: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getPageColor(i),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'P$i',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+            const SizedBox(height: 16),
+
+            // Performance page dropdown
+            DropdownMenu<int>(
+              initialSelection: currentPerfPageIndex,
+              label: const Text('Performance Page'),
+              expandedInsets: EdgeInsets.zero,
+              dropdownMenuEntries: [
+                // "None" option
+                const DropdownMenuEntry<int>(
+                  value: 0,
+                  label: 'None',
+                ),
+                // P1 through P15
+                for (int i = 1; i <= 15; i++)
+                  DropdownMenuEntry<int>(
+                    value: i,
+                    label: 'P$i',
+                    leadingIcon: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getPageColor(i),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'P$i',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+              ],
+              onSelected: (newValue) {
+                if (newValue == null) return;
+                // Call cubit directly - SAME AS INLINE DROPDOWN
+                context.read<DistingCubit>().setPerformancePageMapping(
+                  widget.algorithmIndex,
+                  widget.parameterNumber,
+                  newValue,
+                );
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            // Help text
+            Text(
+              currentPerfPageIndex == 0
+                  ? 'Not assigned to any performance page'
+                  : 'Assigned to Performance Page $currentPerfPageIndex',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[700],
+                    fontStyle: FontStyle.italic,
+                  ),
+            ),
           ],
-          onSelected: (newValue) {
-            if (newValue == null) return;
-            setState(() {
-              _data = _data.copyWith(perfPageIndex: newValue);
-            });
-            _triggerOptimisticSave();
-          },
         ),
-
-        const SizedBox(height: 16),
-
-        // Help text
-        Text(
-          _data.perfPageIndex == 0
-              ? 'Not assigned to any performance page'
-              : 'Assigned to Performance Page ${_data.perfPageIndex}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[700],
-                fontStyle: FontStyle.italic,
-              ),
-        ),
-      ],
-    ),
+      );
+    },
   );
 }
 ```
 
-### Step 6: Add _getPageColor() Helper Method
+**Key Changes from Original Tech Spec:**
+- Wraps entire widget in `BlocBuilder` to read cubit state
+- Reads `currentPerfPageIndex` from cubit state, NOT from local `_data`
+- Dropdown `initialSelection` uses cubit state value
+- `onSelected` calls `context.read<DistingCubit>().setPerformancePageMapping()` directly
+- NO `setState`, NO `_triggerOptimisticSave()` - cubit handles everything
+- Widget auto-rebuilds when cubit emits new state
+
+### Step 9: Add _getPageColor() Helper Method
 
 **File:** `lib/ui/widgets/packed_mapping_data_editor.dart`
 
@@ -496,18 +601,23 @@ Color _getPageColor(int pageIndex) {
 }
 ```
 
-### Step 7: Verification Checklist
+### Step 10: Verification Checklist
 
 After implementation, verify:
+- [ ] Inline dropdown hidden on mobile (width < 600px) in `section_parameter_list_view.dart`
+- [ ] `MappingEditorBottomSheet` passes `algorithmIndex` and `parameterNumber` to editor
+- [ ] `PackedMappingDataEditor` constructor has `algorithmIndex` and `parameterNumber` parameters
+- [ ] `PackedMappingDataEditor` NO LONGER has `onSave` callback
 - [ ] TabController length is 4
-- [ ] Initial index logic includes Performance tab case
+- [ ] Initial index logic includes Performance tab case (`perfPageIndex > 0`)
 - [ ] TabBar has 4 tabs (CV, MIDI, I2C, Performance)
 - [ ] TabBarView has 4 children
-- [ ] `_buildPerformanceEditor()` method is implemented
+- [ ] `_buildPerformanceEditor()` uses `BlocBuilder<DistingCubit, DistingState>`
+- [ ] Dropdown reads `currentPerfPageIndex` from cubit state
+- [ ] Dropdown calls `context.read<DistingCubit>().setPerformancePageMapping()`
 - [ ] `_getPageColor()` helper method is implemented
 - [ ] Dropdown shows "None" and "P1" through "P15"
-- [ ] Dropdown selection triggers optimistic save
-- [ ] Help text updates when selection changes
+- [ ] Help text updates when cubit emits new state
 
 ---
 
@@ -522,7 +632,7 @@ After implementation, verify:
 1. **Tab Rendering**
    - Verify that 4 tabs are rendered (CV, MIDI, I2C, Performance)
    - Verify that Performance tab is selectable
-   - Verify that Performance tab content is rendered correctly
+   - Verify that Performance tab content is rendered correctly with BlocBuilder
 
 2. **Initial Tab Selection**
    - Verify Performance tab is selected if `perfPageIndex > 0` and no other mappings active
@@ -531,34 +641,48 @@ After implementation, verify:
 3. **Dropdown Rendering**
    - Verify dropdown shows "None" option with value 0
    - Verify dropdown shows P1-P15 options with values 1-15
-   - Verify dropdown initial selection matches `_data.perfPageIndex`
+   - Verify dropdown `initialSelection` matches cubit state `perfPageIndex`
    - Verify page badges are color-coded correctly
 
-4. **Dropdown Selection**
-   - Verify selecting a page updates `_data.perfPageIndex`
-   - Verify selection triggers optimistic save after 1 second
-   - Verify help text updates to reflect selection
+4. **Dropdown Selection and Cubit Integration** (CRITICAL)
+   - Verify selecting a page calls `DistingCubit.setPerformancePageMapping()` with correct parameters
+   - Verify cubit emits new state with updated `perfPageIndex`
+   - Verify widget rebuilds with new cubit state
+   - Verify help text updates to reflect new cubit state
 
 5. **Help Text**
-   - Verify "Not assigned" text when `perfPageIndex == 0`
-   - Verify "Assigned to Performance Page N" text when `perfPageIndex > 0`
+   - Verify "Not assigned" text when cubit state `perfPageIndex == 0`
+   - Verify "Assigned to Performance Page N" text when cubit state `perfPageIndex > 0`
 
-6. **Integration with Auto-Save**
-   - Verify that changing performance page triggers `_triggerOptimisticSave()`
-   - Verify that rapid changes trigger only one save after 1 second
-   - Verify that `onSave` callback receives updated `PackedMappingData` with correct `perfPageIndex`
+6. **Cubit State Management** (NEW - REQUIRED)
+   - Verify widget reads `perfPageIndex` from `DistingCubit` state via `BlocBuilder`
+   - Verify widget does NOT maintain local `perfPageIndex` state
+   - Verify widget rebuilds when cubit emits new state
+   - Verify both inline dropdown (desktop) and Performance tab (mobile) stay synchronized via cubit
 
 #### Test Implementation Examples
 
+**IMPORTANT:** All tests must use `MockDistingCubit` or real `DistingCubit` wrapped in `BlocProvider` since the Performance tab reads state from the cubit.
+
 ```dart
-testWidgets('Performance tab is rendered', (tester) async {
+testWidgets('Performance tab is rendered with BlocBuilder', (tester) async {
+  final cubit = MockDistingCubit();
+  final mockState = createMockSynchronizedState(
+    slots: [createMockSlot(algorithmIndex: 0, perfPageIndex: 0)],
+  );
+  when(() => cubit.state).thenReturn(mockState);
+
   await tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(
-        body: PackedMappingDataEditor(
-          initialData: PackedMappingData.filler(),
-          slots: [],
-          onSave: (_) {},
+      home: BlocProvider.value(
+        value: cubit,
+        child: Scaffold(
+          body: PackedMappingDataEditor(
+            initialData: PackedMappingData.filler(),
+            slots: mockState.slots,
+            algorithmIndex: 0,
+            parameterNumber: 0,
+          ),
         ),
       ),
     ),
@@ -571,14 +695,24 @@ testWidgets('Performance tab is rendered', (tester) async {
   expect(find.text('Performance'), findsOneWidget);
 });
 
-testWidgets('Performance tab shows correct dropdown options', (tester) async {
+testWidgets('Performance tab dropdown shows correct initial value from cubit', (tester) async {
+  final cubit = MockDistingCubit();
+  final mockState = createMockSynchronizedState(
+    slots: [createMockSlot(algorithmIndex: 0, perfPageIndex: 7)], // P7 assigned
+  );
+  when(() => cubit.state).thenReturn(mockState);
+
   await tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(
-        body: PackedMappingDataEditor(
-          initialData: PackedMappingData.filler(),
-          slots: [],
-          onSave: (_) {},
+      home: BlocProvider.value(
+        value: cubit,
+        child: Scaffold(
+          body: PackedMappingDataEditor(
+            initialData: PackedMappingData.filler(),
+            slots: mockState.slots,
+            algorithmIndex: 0,
+            parameterNumber: 0,
+          ),
         ),
       ),
     ),
@@ -588,33 +722,38 @@ testWidgets('Performance tab shows correct dropdown options', (tester) async {
   await tester.tap(find.text('Performance'));
   await tester.pumpAndSettle();
 
-  // Tap dropdown to expand
+  // Verify help text shows P7 assignment
+  expect(find.text('Assigned to Performance Page 7'), findsOneWidget);
+
+  // Verify dropdown shows "None" and P1-P15 options
   await tester.tap(find.byType(DropdownMenu<int>));
   await tester.pumpAndSettle();
-
-  // Verify "None" option exists
   expect(find.text('None'), findsOneWidget);
-
-  // Verify P1-P15 options exist
   for (int i = 1; i <= 15; i++) {
     expect(find.text('P$i'), findsWidgets);
   }
 });
 
-testWidgets('Selecting performance page triggers optimistic save', (tester) async {
-  int saveCount = 0;
-  PackedMappingData? savedData;
+testWidgets('Selecting performance page calls cubit.setPerformancePageMapping', (tester) async {
+  final cubit = MockDistingCubit();
+  final mockState = createMockSynchronizedState(
+    slots: [createMockSlot(algorithmIndex: 0, perfPageIndex: 0)],
+  );
+  when(() => cubit.state).thenReturn(mockState);
+  when(() => cubit.setPerformancePageMapping(any(), any(), any()))
+      .thenAnswer((_) async {});
 
   await tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(
-        body: PackedMappingDataEditor(
-          initialData: PackedMappingData.filler(),
-          slots: [],
-          onSave: (data) {
-            saveCount++;
-            savedData = data;
-          },
+      home: BlocProvider.value(
+        value: cubit,
+        child: Scaffold(
+          body: PackedMappingDataEditor(
+            initialData: PackedMappingData.filler(),
+            slots: mockState.slots,
+            algorithmIndex: 0,
+            parameterNumber: 2,
+          ),
         ),
       ),
     ),
@@ -630,46 +769,66 @@ testWidgets('Selecting performance page triggers optimistic save', (tester) asyn
   await tester.tap(find.text('P5').last);
   await tester.pumpAndSettle();
 
-  expect(saveCount, 0); // No save yet
-
-  // Wait for debounce timer
-  await tester.pump(const Duration(seconds: 1));
-  await tester.pumpAndSettle();
-
-  expect(saveCount, 1); // Save triggered
-  expect(savedData?.perfPageIndex, 5); // Correct value saved
+  // Verify cubit method was called with correct parameters
+  verify(() => cubit.setPerformancePageMapping(0, 2, 5)).called(1);
 });
 
-testWidgets('Initial tab selection prefers Performance when perfPageIndex > 0', (tester) async {
-  final data = PackedMappingData.filler().copyWith(
-    perfPageIndex: 3, // P3 assigned
-    cvInput: 0,        // No CV
-    isMidiEnabled: false, // No MIDI
-    isI2cEnabled: false,  // No I2C
+testWidgets('Widget rebuilds when cubit emits new state', (tester) async {
+  final cubit = MockDistingCubit();
+  final stateController = StreamController<DistingState>.broadcast();
+
+  when(() => cubit.state).thenAnswer((_) => stateController.stream.value);
+  when(() => cubit.stream).thenAnswer((_) => stateController.stream);
+
+  // Initial state: perfPageIndex = 0
+  final initialState = createMockSynchronizedState(
+    slots: [createMockSlot(algorithmIndex: 0, perfPageIndex: 0)],
   );
+  stateController.add(initialState);
 
   await tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(
-        body: PackedMappingDataEditor(
-          initialData: data,
-          slots: [],
-          onSave: (_) {},
+      home: BlocProvider.value(
+        value: cubit,
+        child: Scaffold(
+          body: PackedMappingDataEditor(
+            initialData: PackedMappingData.filler(),
+            slots: initialState.slots,
+            algorithmIndex: 0,
+            parameterNumber: 0,
+          ),
         ),
       ),
     ),
   );
 
+  await tester.tap(find.text('Performance'));
   await tester.pumpAndSettle();
 
-  // Verify Performance tab is selected (index 3)
-  final tabController = tester.widget<PackedMappingDataEditor>(
-    find.byType(PackedMappingDataEditor),
-  ).createState()._tabController;
+  // Verify initial state
+  expect(find.text('Not assigned to any performance page'), findsOneWidget);
 
-  expect(tabController.index, 3);
+  // Cubit emits new state: perfPageIndex = 5
+  final newState = createMockSynchronizedState(
+    slots: [createMockSlot(algorithmIndex: 0, perfPageIndex: 5)],
+  );
+  stateController.add(newState);
+  await tester.pumpAndSettle();
+
+  // Verify widget rebuilt with new state
+  expect(find.text('Assigned to Performance Page 5'), findsOneWidget);
+  expect(find.text('Not assigned to any performance page'), findsNothing);
+
+  stateController.close();
 });
 ```
+
+**Key Test Requirements:**
+1. **MUST** use `BlocProvider` with mock or real cubit
+2. **MUST** verify dropdown reads from cubit state (NOT local widget state)
+3. **MUST** verify `setPerformancePageMapping()` is called with correct `algorithmIndex`, `parameterNumber`, `perfPageIndex`
+4. **MUST** verify widget rebuilds when cubit emits new state
+5. **MUST** test that both inline dropdown and Performance tab stay synchronized via cubit state
 
 ### Integration Tests
 

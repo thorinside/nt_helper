@@ -82,7 +82,6 @@ class NodeLayoutAlgorithm {
     required List<RoutingAlgorithm> algorithms,
     required List<Connection> connections,
   }) {
-
     // Step 1: Sort algorithms by slot index (lower indices appear higher)
     final sortedAlgorithms = List<RoutingAlgorithm>.from(algorithms);
     sortedAlgorithms.sort((a, b) => a.index.compareTo(b.index));
@@ -145,7 +144,6 @@ class NodeLayoutAlgorithm {
       connections,
       allPositions,
     );
-
 
     return LayoutResult(
       physicalInputPositions: physicalInputPositions,
@@ -212,7 +210,6 @@ class NodeLayoutAlgorithm {
 
     positions['physical_inputs'] = NodePosition(x: x, y: y);
 
-
     return positions;
   }
 
@@ -270,7 +267,6 @@ class NodeLayoutAlgorithm {
         gridSize;
 
     positions['es5_node'] = NodePosition(x: x, y: y);
-
 
     return positions;
   }
@@ -348,7 +344,6 @@ class NodeLayoutAlgorithm {
         gridSize;
 
     positions['physical_outputs'] = NodePosition(x: x, y: y);
-
 
     return positions;
   }

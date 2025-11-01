@@ -11,13 +11,11 @@ class AlgorithmJsonExporter {
   /// Exports all algorithm details with parameters to a JSON file
   Future<void> exportAlgorithmDetails(String filePath) async {
     try {
-
       final dao = database.metadataDao;
       final algorithms = await dao.getAllAlgorithms();
       final List<Map<String, dynamic>> exportData = [];
 
       for (final algorithm in algorithms) {
-
         // Get full details including parameters
         final details = await dao.getFullAlgorithmDetails(algorithm.guid);
 
@@ -66,7 +64,6 @@ class AlgorithmJsonExporter {
         const JsonEncoder.withIndent('  ').convert(exportJson),
         encoding: utf8,
       );
-
     } catch (e) {
       rethrow;
     }
@@ -112,7 +109,6 @@ class AlgorithmJsonExporter {
     }
 
     try {
-
       final dao = database.metadataDao;
 
       // Fetch all data from all metadata tables
@@ -124,7 +120,6 @@ class AlgorithmJsonExporter {
       final parameterPages = await dao.getAllParameterPages();
       final parameterPageItems = await dao.getAllParameterPageItems();
       final metadataCache = await dao.getMetadataCacheEntries();
-
 
       // Build the complete export structure
       final Map<String, dynamic> exportJson = {

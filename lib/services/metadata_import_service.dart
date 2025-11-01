@@ -12,7 +12,6 @@ class MetadataImportService {
   /// This is used to pre-populate the database on first launch
   Future<bool> importFromAsset(String assetPath) async {
     try {
-
       // Load the JSON file from assets
       final jsonString = await rootBundle.loadString(assetPath);
       final Map<String, dynamic> data = json.decode(jsonString);
@@ -42,8 +41,7 @@ class MetadataImportService {
       // Log import summary
       final summary = data['summary'] as Map<String, dynamic>?;
       if (summary != null) {
-        summary.forEach((key, value) {
-        });
+        summary.forEach((key, value) {});
       }
 
       return true;
@@ -82,7 +80,6 @@ class MetadataImportService {
         mode: InsertMode.insertOrReplace,
       );
     });
-
   }
 
   Future<void> _importAlgorithms(List<dynamic>? algorithmsList) async {
@@ -110,7 +107,6 @@ class MetadataImportService {
         mode: InsertMode.insertOrReplace,
       );
     });
-
   }
 
   Future<void> _importSpecifications(List<dynamic>? specsList) async {
@@ -141,7 +137,6 @@ class MetadataImportService {
         mode: InsertMode.insertOrReplace,
       );
     });
-
   }
 
   Future<void> _importParameters(List<dynamic>? paramsList) async {
@@ -174,7 +169,6 @@ class MetadataImportService {
         mode: InsertMode.insertOrReplace,
       );
     });
-
   }
 
   Future<void> _importParameterEnums(List<dynamic>? enumsList) async {
@@ -202,7 +196,6 @@ class MetadataImportService {
         mode: InsertMode.insertOrReplace,
       );
     });
-
   }
 
   Future<void> _importParameterPages(List<dynamic>? pagesList) async {
@@ -229,7 +222,6 @@ class MetadataImportService {
         mode: InsertMode.insertOrReplace,
       );
     });
-
   }
 
   Future<void> _importParameterPageItems(List<dynamic>? itemsList) async {
@@ -256,7 +248,6 @@ class MetadataImportService {
         mode: InsertMode.insertOrReplace,
       );
     });
-
   }
 
   Future<void> _importMetadataCache(List<dynamic>? cacheList) async {
@@ -282,6 +273,5 @@ class MetadataImportService {
         mode: InsertMode.insertOrReplace,
       );
     });
-
   }
 }

@@ -52,17 +52,13 @@ class McpStatusIndicator extends StatelessWidget {
         if (newMcpSetting) {
           // Try to turn ON
           if (!isServerCurrentlyRunning) {
-            await mcpInstance.start().catchError((e) {
-            });
-          } else {
-          }
+            await mcpInstance.start().catchError((e) {});
+          } else {}
         } else {
           // Try to turn OFF
           if (isServerCurrentlyRunning) {
-            await mcpInstance.stop().catchError((e) {
-            });
-          } else {
-          }
+            await mcpInstance.stop().catchError((e) {});
+          } else {}
         }
         // McpServerService.notifyListeners() is called by start()/stop(), which Consumer listens to.
       },

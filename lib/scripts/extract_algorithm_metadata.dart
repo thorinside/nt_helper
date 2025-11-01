@@ -93,7 +93,6 @@ Future<void> main() async {
   // Define the output path for the JSON file
   final outputPath = path.join(projectRoot, 'test', 'doc', 'algorithms.json');
 
-
   // Read the manual content
   final File manualFile = File(manualPath);
   if (!await manualFile.exists()) {
@@ -106,10 +105,8 @@ Future<void> main() async {
   commonFeatures = await extractCommonFeatures(manualContent);
   commonPolysynthFeatures = await extractPolysynthFeatures(manualContent);
 
-
   // Extract all algorithm metadata
   final algorithms = await extractAllAlgorithms(manualContent);
-
 
   // Create the full JSON structure
   final outputJson = {
@@ -123,7 +120,6 @@ Future<void> main() async {
   await outputFile.writeAsString(
     JsonEncoder.withIndent('  ').convert(outputJson),
   );
-
 }
 
 // Function to extract common features from the manual

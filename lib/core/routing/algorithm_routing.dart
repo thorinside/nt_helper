@@ -178,7 +178,6 @@ abstract class AlgorithmRouting {
       connectionType: ConnectionType.algorithmToAlgorithm,
     );
 
-
     return connection;
   }
 
@@ -193,8 +192,7 @@ abstract class AlgorithmRouting {
   bool removeConnection(String connectionId) {
     final removed = connections.any((conn) => conn.id == connectionId);
     if (removed) {
-    } else {
-    }
+    } else {}
     return removed;
   }
 
@@ -253,8 +251,7 @@ abstract class AlgorithmRouting {
   /// Concrete implementations should override this method to clean up
   /// any resources, listeners, or subscriptions they may have created.
   @mustCallSuper
-  void dispose() {
-  }
+  void dispose() {}
 
   /// Factory method to create the appropriate AlgorithmRouting from a Slot.
   ///
@@ -457,8 +454,7 @@ abstract class AlgorithmRouting {
         // The subclass will decide how to handle them
         ioParameters[param.name] = value;
 
-        if (hasMatchingModeParameter) {
-        }
+        if (hasMatchingModeParameter) {}
       }
     }
 
@@ -534,7 +530,6 @@ abstract class AlgorithmRouting {
       for (final e in slot.enums) e.parameterNumber: e.values,
     };
 
-
     for (final param in slot.parameters) {
       // Mode parameters are identified by:
       // - name ending with 'mode' (case-insensitive)
@@ -549,8 +544,7 @@ abstract class AlgorithmRouting {
           enumValues.contains('Add') &&
           enumValues.contains('Replace');
 
-      if (param.name.toLowerCase().contains('output')) {
-      }
+      if (param.name.toLowerCase().contains('output')) {}
 
       if (isModeParameter) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;

@@ -232,6 +232,148 @@ So that we don't maintain duplicate, unused code.
 
 ---
 
+## Epic 5: Preset Template System
+
+**Expanded Goal:**
+
+Enable users to create and manage reusable preset templates in the local database, with the ability to inject template algorithms into the current preset for faster workflow setup and consistency. Templates are tagged offline presets that can be appended to the current hardware preset, adding their algorithms sequentially to the end.
+
+**Value Proposition:**
+
+Users often start new projects with similar algorithm configurations (e.g., "Polyphonic Setup", "Modular Processing Chain", "Performance Rig"). Instead of manually recreating the same setup each time, they can save proven configurations as templates and quickly inject them into new presets. This saves time, ensures consistency, and enables users to build personal libraries of reusable building blocks.
+
+**Story Breakdown:**
+
+**Story E5.1: Extend database schema for template flag**
+
+As a developer maintaining the preset data model,
+I want the presets table to include an `isTemplate` boolean column,
+So that offline presets can be flagged as templates and queried separately.
+
+**Acceptance Criteria:**
+1. Add `isTemplate` boolean column to `presets` table in database schema (default: false)
+2. Generate Drift migration to add column to existing databases
+3. Update `PresetsDao` to expose `isTemplate` in queries
+4. `saveFullPreset()` method accepts optional `isTemplate` parameter
+5. Database migration runs successfully on app upgrade
+6. `flutter analyze` passes with zero warnings
+7. All tests pass
+
+**Prerequisites:** None
+
+**Story E5.2: Add UI to tag/untag presets as templates**
+
+As a user managing my saved presets in the Offline Data screen,
+I want to mark/unmark presets as templates using a checkbox or toggle,
+So that I can designate which presets are reusable templates vs regular saved presets.
+
+**Acceptance Criteria:**
+1. Preset list items in `metadata_sync_page.dart` show template indicator (star icon or badge) when `preset.isTemplate` is true
+2. Long-press or context menu on preset shows "Mark as Template" / "Unmark as Template" option
+3. Toggling template status updates database via `PresetsDao`
+4. UI updates immediately after toggling (optimistic update or refresh)
+5. Template state persists across app restarts
+6. User confirmation dialog shown before unmarking template (optional based on UX preference)
+7. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E5.1
+
+**Story E5.3: Filter presets to show templates only**
+
+As a user browsing templates for injection,
+I want to see a filtered view showing only templates (not all saved presets),
+So that I can quickly find and select the template I want to inject.
+
+**Acceptance Criteria:**
+1. Add "Templates" tab or filter toggle to Offline Data screen preset tab
+2. Templates view shows only presets where `isTemplate` is true
+3. Templates are sorted alphabetically by name
+4. Empty state message shown when no templates exist: "No templates found. Mark saved presets as templates to see them here."
+5. Template count badge or indicator shows number of available templates
+6. Switching between "All Presets" and "Templates" view is instant (no loading delay)
+7. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E5.2
+
+**Story E5.4: Implement template injection logic (append-only)**
+
+As a developer implementing template injection,
+I want to create a service method that appends template algorithms to the current hardware preset,
+So that the UI can trigger template injection with a single method call.
+
+**Acceptance Criteria:**
+1. Create `injectTemplateToDevice(FullPresetDetails template, IDistingMidiManager manager)` method in `MetadataSyncCubit` or new service
+2. Method does NOT call `requestNewPreset()` (preserves current preset)
+3. Method calls `requestAddAlgorithm()` for each template slot, adding them sequentially to the end
+4. Method sets parameter values and mappings for each injected slot (reuse logic from `loadPresetToDevice`)
+5. Method does NOT call `requestSavePreset()` (lets user save manually)
+6. Method validates that current preset + template slots ≤ 32 slots before starting injection
+7. If slot limit exceeded, method throws exception with clear error message
+8. Method emits loading/success/failure states to UI
+9. Unit tests verify slot limit validation and algorithm addition sequence
+10. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E5.3
+
+**Story E5.5: Build template preview dialog**
+
+As a user about to inject a template,
+I want to see a preview showing what algorithms will be added and where they'll go,
+So that I can confirm the injection before modifying my current preset.
+
+**Acceptance Criteria:**
+1. Preview dialog shows current preset summary: "Current: 5 algorithms (slots 1-5)"
+2. Preview shows template algorithms that will be added: List of algorithm names from template
+3. Preview shows result: "After injection: 8 algorithms (current 1-5 + template algorithms in slots 6-8)"
+4. Dialog shows warning if injection would exceed 32 slots (and disables Inject button)
+5. Dialog has "Cancel" and "Inject Template" buttons
+6. "Inject Template" button triggers `injectTemplateToDevice()` method
+7. Dialog shows loading spinner during injection
+8. Dialog auto-closes on successful injection
+9. Error message displayed in dialog if injection fails (stays open for user to read)
+10. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E5.4
+
+**Story E5.6: Add "Inject Template" action to templates view**
+
+As a user browsing templates in online mode,
+I want an "Inject" button next to each template,
+So that I can quickly inject a template into my current hardware preset.
+
+**Acceptance Criteria:**
+1. When in online mode (connected to hardware), template list items show "Inject" icon button (e.g., `Icons.add_circle_outline`)
+2. Clicking "Inject" button opens template preview dialog (Story E5.5)
+3. "Inject" button is disabled when in offline mode (show tooltip: "Connect to device to inject templates")
+4. "Inject" button is disabled during sync operations (same logic as existing Load/Delete buttons)
+5. Successfully injected template shows success snackbar: "Template '[name]' injected (X algorithms added)"
+6. Template injection updates routing editor and parameter views automatically (via existing `_refreshStateFromManager()`)
+7. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E5.5
+
+**Story E5.7: Handle edge cases and error scenarios**
+
+As a user working with templates,
+I want clear error messages and graceful handling when things go wrong,
+So that I understand what happened and can take corrective action.
+
+**Acceptance Criteria:**
+1. Error shown if current preset + template > 32 slots: "Cannot inject: Would exceed 32 slot limit (current: X, template: Y)"
+2. Error shown if hardware connection lost during injection: "Connection lost during injection. Preset may be partially modified."
+3. Error shown if template metadata incomplete: "Template missing algorithm metadata. Sync algorithms first."
+4. Warning shown if template is empty (0 slots): "Cannot inject empty template"
+5. Confirmation dialog shown if injecting large template (> 10 algorithms): "This will add X algorithms. Continue?"
+6. Injection can be cancelled during progress (via cancel button in preview dialog)
+7. Partial injection failure handled gracefully: rollback not possible (NT doesn't support it), but user sees clear error showing which algorithm failed
+8. All error messages include actionable guidance (not just "Error occurred")
+9. `flutter analyze` passes with zero warnings
+10. All tests pass
+
+**Prerequisites:** Story E5.6
+
+---
+
 ## Story Guidelines Reference
 
 **Story Format:**

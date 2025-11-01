@@ -54,7 +54,6 @@ class PluginUpdateChecker {
         );
       }
 
-
       // Get current gallery data
       final galleryPlugins = await _fetchGalleryPlugins();
       if (galleryPlugins.isEmpty) {
@@ -82,7 +81,6 @@ class PluginUpdateChecker {
   /// Check for updates for a specific plugin
   Future<PluginUpdateResult> checkPluginUpdate(String pluginId) async {
     try {
-
       // Get installed plugin info
       final installedVersions = await _database.pluginInstallationsDao
           .getPluginVersions(pluginId);
@@ -180,7 +178,6 @@ class PluginUpdateChecker {
         pluginsToCheck.length,
       );
       final batch = pluginsToCheck.sublist(i, batchEnd);
-
 
       final batchResults = await Future.wait(
         batch.map((installedPlugin) async {

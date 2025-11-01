@@ -194,8 +194,7 @@ class PackedMappingData {
     // --- Decode Performance Page ---
     final perfPageIndex = (version >= 5) ? safeReadByte(offset++) : 0;
 
-    if (version < 5) {
-    }
+    if (version < 5) {}
 
     // Final validation: offset should equal expected length
     if (offset != expectedLength) {
@@ -307,8 +306,7 @@ class PackedMappingData {
     if (version >= 5) {
       // Validate and clamp perfPageIndex to valid range (0-15)
       final clampedIndex = perfPageIndex.clamp(0, 15);
-      if (clampedIndex != perfPageIndex) {
-      }
+      if (clampedIndex != perfPageIndex) {}
       allBytes.add(clampedIndex & 0x7F);
     }
 
@@ -325,8 +323,7 @@ class PackedMappingData {
         ? 25 // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
         : 26; // 7 + 9 + 9 + 1 = CV(7) + MIDI(9) + I2C(9) + Perf(1)
 
-    if (result.length != expectedLength) {
-    }
+    if (result.length != expectedLength) {}
 
     return result;
   }

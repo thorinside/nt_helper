@@ -15,7 +15,7 @@ import 'models/connection.dart';
 /// final cubit = AlgorithmRoutingCubit(myAlgorithm);
 /// cubit.stream.listen((state) {
 ///   // React to state changes
-///   
+///
 /// });
 ///
 /// cubit.initializeRouting();
@@ -44,7 +44,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
           .withStatus(RoutingSystemStatus.ready);
 
       emit(newState);
-
     } catch (e) {
       emit(
         state.withStatus(
@@ -90,7 +89,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
 
         emit(newState);
         _algorithm.updateState(newState);
-
       } else {
         emit(
           state.withStatus(
@@ -162,7 +160,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
         _algorithm.updateState(newState);
 
         // Warnings are part of validationResult but not logged
-
       } else {
         // Connection is invalid - emit error with detailed information
         final errorMessages = validationResult.errors
@@ -220,7 +217,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
 
         emit(newState);
         _algorithm.updateState(newState);
-
       } else {
         emit(
           state.withStatus(
@@ -287,7 +283,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
 
       emit(newState);
       _algorithm.updateState(newState);
-
     } catch (e) {
       emit(
         state.withStatus(
@@ -346,7 +341,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
 
       emit(newState);
       _algorithm.updateState(newState);
-
     } catch (e) {
       emit(
         state.withStatus(

@@ -118,8 +118,7 @@ class FileCollector {
     }
 
     // Log warnings if any
-    if (warnings.isNotEmpty) {
-    }
+    if (warnings.isNotEmpty) {}
 
     return files;
   }

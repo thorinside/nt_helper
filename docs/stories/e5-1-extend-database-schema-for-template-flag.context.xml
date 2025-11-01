@@ -1,0 +1,143 @@
+<story-context id="e5-1-extend-database-schema-for-template-flag" v="1.0">
+  <metadata>
+    <epicId>epic-5</epicId>
+    <storyId>5.1</storyId>
+    <title>Extend database schema for template flag</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e5-1-extend-database-schema-for-template-flag.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer maintaining the preset data model</asA>
+    <iWant>the presets table to include an `isTemplate` boolean column</iWant>
+    <soThat>offline presets can be flagged as templates and queried separately</soThat>
+    <tasks>
+- Add isTemplate boolean column to presets table definition
+- Generate Drift migration
+- Update PresetsDao queries to expose isTemplate
+- Update saveFullPreset() to accept isTemplate parameter
+- Verify migration runs successfully
+- Add tests for new functionality
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Add `isTemplate` boolean column to `presets` table in database schema (default: false)
+2. Generate Drift migration to add column to existing databases
+3. Update `PresetsDao` to expose `isTemplate` in queries
+4. `saveFullPreset()` method accepts optional `isTemplate` parameter
+5. Database migration runs successfully on app upgrade
+6. `flutter analyze` passes with zero warnings
+7. All tests pass
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 5: Preset Template System</title>
+        <section>Story E5.1</section>
+        <snippet>Enables marking saved presets as reusable templates that can be injected into the current hardware preset. Foundation for template injection feature.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Documentation - Database</title>
+        <section>Database Architecture</section>
+        <snippet>Drift ORM for local data persistence. Schema versioning via @DriftDatabase(version: N). Automatic migration generation via build_runner.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5</title>
+        <section>Database Schema</section>
+        <snippet>Presets table requires isTemplate boolean flag to distinguish template presets from regular saved presets.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/db/database.dart</path>
+        <kind>schema</kind>
+        <symbol>AppDatabase</symbol>
+        <lines>1-200</lines>
+        <reason>Main Drift database definition with schema version and migration logic. Currently at version 8.</reason>
+      </file>
+      <file>
+        <path>lib/db/tables.dart</path>
+        <kind>schema</kind>
+        <symbol>Presets</symbol>
+        <lines>N/A</lines>
+        <reason>Table definitions including Presets table where isTemplate column will be added.</reason>
+      </file>
+      <file>
+        <path>lib/db/daos/presets_dao.dart</path>
+        <kind>dao</kind>
+        <symbol>PresetsDao</symbol>
+        <lines>50-200</lines>
+        <reason>Data access object for presets table with query methods and saveFullPreset() that needs updating.</reason>
+      </file>
+      <file>
+        <path>lib/db/daos/presets_dao.dart</path>
+        <kind>model</kind>
+        <symbol>FullPresetDetails</symbol>
+        <lines>12-16</lines>
+        <reason>DTO representing complete preset with slots. Will inherit isTemplate from PresetEntry.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <dart>
+        drift: Database ORM and migration framework
+        drift/native: Native SQLite integration
+        build_runner: Code generation for Drift
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Database schema version must increment from 8 to 9
+- Migration must preserve all existing preset data
+- Default value for isTemplate must be false for backward compatibility
+- Column must be non-nullable with default
+- Build runner must be executed to generate migration code
+- All existing DAO methods must continue to work without modification
+- Testing pattern: test/db/daos/presets_dao_test.dart
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>PresetsDao.saveFullPreset</name>
+      <kind>method</kind>
+      <signature>Future&lt;int&gt; saveFullPreset(FullPresetDetails preset, {bool isTemplate = false})</signature>
+      <path>lib/db/daos/presets_dao.dart</path>
+    </interface>
+    <interface>
+      <name>PresetsDao.getTemplates</name>
+      <kind>method</kind>
+      <signature>Future&lt;List&lt;FullPresetDetails&gt;&gt; getTemplates()</signature>
+      <path>lib/db/daos/presets_dao.dart</path>
+    </interface>
+    <interface>
+      <name>Presets.isTemplate</name>
+      <kind>column</kind>
+      <signature>BoolColumn isTemplate() => boolean().withDefault(const Constant(false))()</signature>
+      <path>lib/db/tables.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Unit tests for DAO methods verify correct query filtering and data persistence. Integration tests validate database migrations across schema versions. Test pattern follows existing test/db/daos/presets_dao_test.dart structure using in-memory database instances.
+    </standards>
+    <locations>
+test/db/daos/presets_dao_test.dart
+    </locations>
+    <ideas>
+- AC#1: Test isTemplate column exists with default false
+- AC#3: Test getTemplates() returns only presets where isTemplate=true
+- AC#3: Test getNonTemplates() returns only presets where isTemplate=false
+- AC#4: Test saveFullPreset() with isTemplate=true persists correctly
+- AC#4: Test saveFullPreset() with isTemplate=false persists correctly
+- AC#5: Test migration from v8 to v9 preserves existing presets with isTemplate=false
+    </ideas>
+  </tests>
+</story-context>

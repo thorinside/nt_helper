@@ -281,7 +281,6 @@ class DistingCubit extends Cubit<DistingState> {
     final List<AlgorithmInfo> factoryResults = [];
     final List<int> backgroundIndices = [];
 
-
     // Quick pass with short timeout to catch fast-responding factory algorithms
     for (int i = 0; i < numAlgorithms; i++) {
       try {
@@ -304,7 +303,6 @@ class DistingCubit extends Cubit<DistingState> {
         backgroundIndices.add(i);
       }
     }
-
 
     // Start background loading for community plugins and timed-out algorithms
     if (backgroundIndices.isNotEmpty) {
@@ -377,7 +375,6 @@ class DistingCubit extends Cubit<DistingState> {
     IDistingMidiManager manager,
     int numAlgorithms,
   ) async {
-
     final List<AlgorithmInfo> factoryResults = [];
     final List<AlgorithmInfo> communityResults = [];
 
@@ -428,7 +425,6 @@ class DistingCubit extends Cubit<DistingState> {
     List<int> communityIndices,
     List<AlgorithmInfo> baseResults,
   ) async {
-
     final List<AlgorithmInfo> communityResults = [];
 
     for (int i in communityIndices) {
@@ -452,8 +448,7 @@ class DistingCubit extends Cubit<DistingState> {
       if (currentState is DistingStateSynchronized && !currentState.offline) {
         emit(currentState.copyWith(algorithms: mergedResults));
       }
-    } else {
-    }
+    } else {}
   }
 
   // Helper to fetch AlgorithmInfo list from mock/offline manager
@@ -586,12 +581,10 @@ class DistingCubit extends Cubit<DistingState> {
             await distingManager.requestNumberOfAlgorithms() ?? 0;
         numInPreset = await distingManager.requestNumAlgorithmsInPreset() ?? 0;
 
-
         // Start background loading for ALL algorithms (slots contain their own algorithm info for UI)
         if (numAlgorithms > 0) {
           _loadAllAlgorithmsInBackground(distingManager, numAlgorithms);
         }
-
       } catch (e, stackTrace) {
         debugPrintStack(stackTrace: stackTrace);
       }
@@ -620,8 +613,7 @@ class DistingCubit extends Cubit<DistingState> {
 
       // Start background retry processing for any failed parameter requests
       if (_parameterRetryQueue.isNotEmpty) {
-        _processParameterRetryQueue(distingManager).catchError((e) {
-        });
+        _processParameterRetryQueue(distingManager).catchError((e) {});
       }
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
@@ -1005,7 +997,6 @@ class DistingCubit extends Cubit<DistingState> {
 
   // Background refresh of algorithm library without blocking the UI
   void _refreshAlgorithmsInBackground() {
-
     // Run asynchronously without awaiting
     () async {
       try {
@@ -1083,7 +1074,6 @@ class DistingCubit extends Cubit<DistingState> {
       updatedSlots[algorithmIndex] = updatedSlot;
 
       emit(currentState.copyWith(slots: updatedSlots));
-
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
     }
@@ -1139,7 +1129,6 @@ class DistingCubit extends Cubit<DistingState> {
     _acquireCommandSemaphore();
 
     try {
-
       switch (state) {
         case DistingStateInitial():
         case DistingStateSelectDevice():
@@ -1265,8 +1254,7 @@ class DistingCubit extends Cubit<DistingState> {
             specsToSend = storedAlgoInfo.specifications
                 .map((s) => s.defaultValue)
                 .toList();
-          } else {
-          }
+          } else {}
         }
 
         // Send the add algorithm request
@@ -1281,7 +1269,6 @@ class DistingCubit extends Cubit<DistingState> {
           // Update state with the new slot appended
           final updatedSlots = [...syncstate.slots, newSlot];
           emit(syncstate.copyWith(slots: updatedSlots, loading: false));
-
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);
           // Fall back to full refresh on error
@@ -1359,8 +1346,7 @@ class DistingCubit extends Cubit<DistingState> {
 
               if (mismatchDetected) {
                 await _refreshStateFromManager(delay: Duration.zero);
-              } else {
-              }
+              } else {}
             } catch (e, stackTrace) {
               debugPrintStack(stackTrace: stackTrace);
               await _refreshStateFromManager(delay: Duration.zero);
@@ -1387,7 +1373,6 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<int> moveAlgorithmUp(int algorithmIndex) async {
-
     final currentState = state;
     if (currentState is! DistingStateSynchronized) return algorithmIndex;
     if (algorithmIndex == 0) return 0;
@@ -1492,8 +1477,7 @@ class DistingCubit extends Cubit<DistingState> {
                 offline: verificationState.offline,
               ),
             );
-          } else {
-          }
+          } else {}
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);
           // Optionally trigger a full refresh on verification error?
@@ -1509,7 +1493,6 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<int> moveAlgorithmDown(int algorithmIndex) async {
-
     final currentState = state;
     if (currentState is! DistingStateSynchronized) return algorithmIndex;
     final syncstate = currentState;
@@ -1608,8 +1591,7 @@ class DistingCubit extends Cubit<DistingState> {
                 offline: verificationState.offline,
               ),
             );
-          } else {
-          }
+          } else {}
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);
           _refreshStateFromManager(delay: Duration.zero);
@@ -1739,7 +1721,6 @@ class DistingCubit extends Cubit<DistingState> {
       ),
     );
 
-
     // 2. Send update to hardware (non-blocking)
     disting
         .setPerformancePageMapping(slotIndex, parameterNumber, perfPageIndex)
@@ -1770,7 +1751,6 @@ class DistingCubit extends Cubit<DistingState> {
         // 4. If hardware value differs from optimistic value, hardware wins
         if (actualMapping.packedMappingData.perfPageIndex !=
             optimisticMapping.packedMappingData.perfPageIndex) {
-
           // Check if this is the last attempt
           if (attempt == maxRetries - 1) {
             // Last attempt - accept hardware value as final
@@ -1811,7 +1791,6 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     if (!verified) {
-
       // Revert to original mapping since we couldn't verify the change
       final revertState = state;
       if (revertState is DistingStateSynchronized) {
@@ -1829,7 +1808,6 @@ class DistingCubit extends Cubit<DistingState> {
           ),
         );
       }
-
     }
   }
 
@@ -1978,7 +1956,6 @@ class DistingCubit extends Cubit<DistingState> {
     _programRefreshSlot = algorithmIndex;
     _programRefreshRetries = 0;
 
-
     // Start new timer with 2 second delay to give hardware time to load the new program
     _programRefreshTimer = Timer(const Duration(seconds: 2), () {
       _executeProgramRefresh();
@@ -1988,7 +1965,6 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> _executeProgramRefresh() async {
     final slotIndex = _programRefreshSlot;
     if (slotIndex == null) return;
-
 
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
@@ -2014,18 +1990,15 @@ class DistingCubit extends Cubit<DistingState> {
         ),
       );
 
-
       // Clear the queue
       _programRefreshTimer = null;
       _programRefreshSlot = null;
       _programRefreshRetries = 0;
     } catch (e, stackTrace) {
-
       // Retry with exponential backoff if we haven't exceeded max retries
       if (_programRefreshRetries < 3) {
         _programRefreshRetries++;
         final delaySeconds = _programRefreshRetries; // 1s, 2s, 3s
-
 
         _programRefreshTimer = Timer(
           Duration(seconds: delaySeconds),
@@ -2250,8 +2223,7 @@ class DistingCubit extends Cubit<DistingState> {
   // Acquire semaphore for active commands (blocks retry queue)
   void _acquireCommandSemaphore() {
     _activeCommandCount++;
-    if (_activeCommandCount == 1) {
-    }
+    if (_activeCommandCount == 1) {}
   }
 
   // Release semaphore for active commands (allows retry queue)
@@ -2288,7 +2260,6 @@ class DistingCubit extends Cubit<DistingState> {
   // Process the retry queue in the background with low priority
   Future<void> _processParameterRetryQueue(IDistingMidiManager disting) async {
     if (_parameterRetryQueue.isEmpty) return;
-
 
     final retryList = List.from(_parameterRetryQueue);
     _parameterRetryQueue.clear();
@@ -2376,7 +2347,6 @@ class DistingCubit extends Cubit<DistingState> {
         await Future.delayed(const Duration(milliseconds: 200));
       }
     }
-
   }
 
   // State update methods for retry results
@@ -2543,7 +2513,6 @@ class DistingCubit extends Cubit<DistingState> {
         );
       }
     }
-
 
     /* Visible-parameter set (built from pages) */
     final visible = pages.pages.expand((p) => p.parameters).toSet();
@@ -2806,7 +2775,6 @@ class DistingCubit extends Cubit<DistingState> {
       return;
     }
     _lastAnomalyRefreshAttempt[algorithmIndex] = now;
-
 
     try {
       final disting = requireDisting();
@@ -3077,7 +3045,6 @@ class DistingCubit extends Cubit<DistingState> {
       updatedSlots[algorithmIndex] = updatedSlot;
 
       emit(currentState.copyWith(slots: updatedSlots));
-
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
     }
@@ -3200,7 +3167,6 @@ class DistingCubit extends Cubit<DistingState> {
 
   // CPU Usage Streaming
   void _startCpuUsagePolling() {
-
     // Cancel any existing timer
     _cpuUsageTimer?.cancel();
 
@@ -3263,10 +3229,8 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     await disting.requestWake();
 
-
     // Send the delete command (fire-and-forget)
     await disting.requestFileDelete(plugin.path);
-
   }
 
   /// Uploads a plugin file to the appropriate directory on the SD card.
@@ -3322,7 +3286,6 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     await disting.requestWake();
 
-
     // Upload in 512-byte chunks (matching JavaScript tool behavior)
     const chunkSize = 512;
     int uploadPos = 0;
@@ -3333,7 +3296,6 @@ class DistingCubit extends Cubit<DistingState> {
           ? remainingBytes
           : chunkSize;
       final chunk = fileData.sublist(uploadPos, uploadPos + currentChunkSize);
-
 
       try {
         await _uploadChunk(targetPath, chunk, uploadPos);
@@ -3351,7 +3313,6 @@ class DistingCubit extends Cubit<DistingState> {
         throw Exception("Upload failed at position $uploadPos: $e");
       }
     }
-
 
     // Refresh algorithm list to include newly installed plugin
     _refreshAlgorithmsInBackground();
@@ -3404,7 +3365,6 @@ class DistingCubit extends Cubit<DistingState> {
     final currentSlot = currentState.slots[algorithmIndex];
     final disting = currentState.disting;
 
-
     try {
       // 1. CAPTURE CURRENT STATE
       final savedValues = List<ParameterValue>.from(currentSlot.values);
@@ -3413,7 +3373,6 @@ class DistingCubit extends Cubit<DistingState> {
         currentSlot.valueStrings,
       );
       // Note: Routing restoration may require additional research for programmatic setting
-
 
       // 2. FORCE SCRIPT UNLOAD (Program = 0)
       await disting.setParameterValue(
@@ -3471,7 +3430,6 @@ class DistingCubit extends Cubit<DistingState> {
           await Future.delayed(const Duration(milliseconds: 10));
         }
       }
-
     } catch (e) {
       // On error, refresh the slot to ensure UI is in sync with hardware
       await _refreshSlotAfterAnomaly(algorithmIndex);
@@ -3496,7 +3454,6 @@ class DistingCubit extends Cubit<DistingState> {
 
     final disting = requireDisting();
     await disting.requestWake();
-
 
     try {
       await disting.backupPlugins(backupDirectory, onProgress: onProgress);
@@ -3551,7 +3508,6 @@ class DistingCubit extends Cubit<DistingState> {
         onFileError?.call(file.filename, errorMsg);
       }
     }
-
   }
 
   /// Install a single file to a specific path on the SD card
@@ -3562,7 +3518,6 @@ class DistingCubit extends Cubit<DistingState> {
   }) async {
     final disting = requireDisting();
     await disting.requestWake();
-
 
     // Upload in 512-byte chunks (matching existing implementation)
     const chunkSize = 512;
@@ -3591,7 +3546,6 @@ class DistingCubit extends Cubit<DistingState> {
         throw Exception("Upload failed at position $uploadPos: $e");
       }
     }
-
   }
 
   /// Load a plugin using the dedicated 0x38 Load Plugin SysEx command
@@ -3620,7 +3574,6 @@ class DistingCubit extends Cubit<DistingState> {
       return algorithm;
     }
 
-
     try {
       // 1. Send load plugin command
       await disting.requestLoadPlugin(guid);
@@ -3629,7 +3582,6 @@ class DistingCubit extends Cubit<DistingState> {
       final updatedInfo = await disting.requestAlgorithmInfo(algorithmIndex);
 
       if (updatedInfo != null) {
-
         // 3. Update only this algorithm in the state
         final updatedAlgorithms = List<AlgorithmInfo>.from(
           currentState.algorithms,

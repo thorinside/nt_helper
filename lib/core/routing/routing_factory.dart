@@ -86,7 +86,6 @@ class RoutingFactory {
     PortCompatibilityValidator? validator,
   }) {
     try {
-
       // Use provided validator, factory default, or null (routing will create its own)
       final effectiveValidator = validator ?? _validator;
 
@@ -108,7 +107,6 @@ class RoutingFactory {
         //   return _createNewTypeRouting(metaeffectiveValidator);
       }
     } catch (e) {
-
       throw RoutingFactoryException(
         'Failed to create routing instance',
         metadata,
@@ -125,7 +123,6 @@ class RoutingFactory {
     AlgorithmRoutingMetadata metadata,
     PortCompatibilityValidator? validator,
   ) {
-
     final config = PolyAlgorithmConfig(
       voiceCount: metadata.voiceCount,
       requiresGateInputs: metadata.requiresGateInputs,
@@ -151,7 +148,6 @@ class RoutingFactory {
     AlgorithmRoutingMetadata metadata,
     PortCompatibilityValidator? validator,
   ) {
-
     // Convert string port types to PortType enum
     final supportedPortTypes = _convertPortTypes(metadata.supportedPortTypes);
 
@@ -190,8 +186,7 @@ class RoutingFactory {
       final portType = _parsePortType(typeName);
       if (portType != null) {
         supportedTypes.add(portType);
-      } else {
-      }
+      } else {}
     }
 
     return supportedTypes.isNotEmpty

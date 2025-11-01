@@ -203,8 +203,7 @@ class MetadataSyncService {
               }),
             );
           }
-        } else {
-        }
+        } else {}
         final fetchProgressMsg =
             "Fetched basic info ${globalAlgoIndex + 1}/$totalAlgorithms";
         reportProgress(
@@ -246,7 +245,6 @@ class MetadataSyncService {
 
       // Process community first for faster testing, then factory
       final orderedAlgorithms = [...communityAlgorithms, ...factoryAlgorithms];
-
 
       final dbUnits = await metadataDao.getAllUnits();
       final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();
@@ -308,8 +306,7 @@ class MetadataSyncService {
                 await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
             attempts++;
 
-            if (numInPreset != 1) {
-            }
+            if (numInPreset != 1) {}
           }
 
           if (checkCancel()) break;
@@ -360,12 +357,10 @@ class MetadataSyncService {
                 await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
             attempts++;
 
-            if (numInPreset != 0) {
-            }
+            if (numInPreset != 0) {}
           }
 
-          if (numInPreset != 0) {
-          }
+          if (numInPreset != 0) {}
 
           reportProgress(mainProgressMsg, "Done.");
         } catch (instantiationError, stackTrace) {
@@ -406,8 +401,7 @@ class MetadataSyncService {
               // Test communication after reboot
               final numAlgos = await _distingManager
                   .requestNumberOfAlgorithms();
-              if (numAlgos == null || numAlgos != totalAlgorithms) {
-              }
+              if (numAlgos == null || numAlgos != totalAlgorithms) {}
             } catch (cleanupError) {
               // Intentionally empty
             }
@@ -560,8 +554,7 @@ class MetadataSyncService {
                 }
 
                 reportProgress(mainProgressMsg, "Retry completed.");
-              } else {
-              }
+              } else {}
             } catch (retryError, stackTrace) {
               debugPrintStack(stackTrace: stackTrace);
 
@@ -613,7 +606,6 @@ class MetadataSyncService {
       return;
     }
 
-
     final parameterInfos = <ParameterInfo>[];
     final parameterPagesResult = await _distingManager.requestParameterPages(0);
     final enumStringsMap = <int, List<String>>{};
@@ -634,8 +626,7 @@ class MetadataSyncService {
             enumStringsMap[pNum] = enumsResult.values;
           }
         }
-      } else {
-      }
+      } else {}
     }
 
     // Process and Store Parameter Definitions (using insertOrIgnore)
@@ -735,15 +726,13 @@ class MetadataSyncService {
                 parameterNumber: paramNumKey,
               ),
             );
-          } else {
-          }
+          } else {}
         }
       });
       // Use replace mode for pages/items within an algorithm, assuming pages are definitive per sync
       await metadataDao.upsertParameterPages(pageEntries);
       await metadataDao.upsertParameterPageItems(pageItemEntries);
-    } else {
-    }
+    } else {}
   }
 
   /// Rescan a single algorithm's parameters
@@ -900,8 +889,7 @@ class MetadataSyncService {
         return;
       }
 
-      for (final _ in newAlgorithms) {
-      }
+      for (final _ in newAlgorithms) {}
 
       // Process community plugins first, then factory algorithms
       final newCommunityAlgorithms = newAlgorithms
@@ -1179,8 +1167,7 @@ class MetadataSyncService {
             // Update the plugin file path
             await metadataDao.updateAlgorithmPluginFilePath(guid, filePath);
             updatedCount++;
-          } else {
-          }
+          } else {}
         } catch (e) {
           onError?.call("Error updating algorithm $guid: $e");
         }

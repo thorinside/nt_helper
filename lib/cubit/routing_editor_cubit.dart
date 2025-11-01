@@ -434,10 +434,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Debug: List all available ports
       for (final algo in currentState.algorithms) {
-        for (final _ in algo.inputPorts) {
-        }
-        for (final _ in algo.outputPorts) {
-        }
+        for (final _ in algo.inputPorts) {}
+        for (final _ in algo.outputPorts) {}
       }
 
       final sourcePort = _findPortById(currentState, sourcePortId);
@@ -450,7 +448,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       if (targetPort == null) {
         throw ArgumentError('Target port not found: $targetPortId');
       }
-
 
       // Validate connection is valid (output -> input)
 
@@ -470,7 +467,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       if (existingConnection != null) {
         throw StateError('Connection already exists between these ports');
       }
-
 
       // Determine connection type and assign bus number
       final connectionType = _determineConnectionType(
@@ -512,7 +508,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       if (busNumber == null) {
         throw StateError('Failed to assign bus - all buses may be in use');
       }
-
 
       // The connection will appear automatically via ConnectionDiscoveryService
       // when the bus parameters are updated
@@ -728,7 +723,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       } else if (targetValue > 8) {
         targetValue = 8;
       }
-
     }
 
     // Set the ES-5 Output parameter
@@ -875,8 +869,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     // Note: We're intentionally ignoring targetBusValue to allow easy overwriting
-    if (targetBusValue != null && targetBusValue > 0) {
-    }
+    if (targetBusValue != null && targetBusValue > 0) {}
 
     // Update both source output and target input bus parameters
     bool sourceUpdated = false;
@@ -898,8 +891,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // Update target input port (if it doesn't already have this bus based on actual hardware value)
     if (targetInputPort.parameterNumber != null && targetBusValue != busToUse) {
-
-
       try {
         await _distingCubit!.updateParameterValue(
           algorithmIndex: targetAlgorithmIndex,
@@ -913,8 +904,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
     } else if (targetBusValue == busToUse) {
       targetUpdated = true; // Already has the correct bus
-    } else {
-    }
+    } else {}
 
     if (sourceUpdated && targetUpdated) {
       return busToUse;
@@ -930,7 +920,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     RoutingEditorStateLoaded state,
     String portId,
   ) {
-
     for (int i = 0; i < state.algorithms.length; i++) {
       final algorithm = state.algorithms[i];
 
@@ -1013,7 +1002,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
     }
 
-
     // Search order: AUX (21–28) → INPUT (1–12) → OUTPUT (13–20)
     // AUX preferred to avoid implicitly tying to physical I/O.
     int? pickFrom(int min, int max) {
@@ -1048,14 +1036,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // The _processSynchronizedState method will rebuild everything from hardware truth
       // DO NOT manually modify the local state here
 
-      _findPortById(
-        currentState,
-        connectionToDelete.sourcePortId,
-      );
-      _findPortById(
-        currentState,
-        connectionToDelete.destinationPortId,
-      );
+      _findPortById(currentState, connectionToDelete.sourcePortId);
+      _findPortById(currentState, connectionToDelete.destinationPortId);
     } catch (e) {
       // Intentionally empty
     }
@@ -1085,7 +1067,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       for (final connection in connectionsToDelete) {
         await deleteConnection(connection.id);
       }
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1110,7 +1091,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
 
       if (connectionIndex == -1) {
-
         return;
       }
 
@@ -1129,7 +1109,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       emit(
         currentState.copyWith(connections: updatedConnections, lastError: null),
       );
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1277,7 +1256,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       emit(currentState.copyWith(buses: updatedBuses, lastError: null));
 
-
       // Mark hardware as out of sync after local changes
       await _autoSyncToHardware();
     } catch (e) {
@@ -1319,7 +1297,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           lastError: null,
         ),
       );
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1343,7 +1320,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
 
       if (connectionIndex == -1) {
-
         return;
       }
 
@@ -1351,7 +1327,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final busIndex = currentState.buses.indexWhere((bus) => bus.id == busId);
 
       if (busIndex == -1) {
-
         return;
       }
 
@@ -1403,7 +1378,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           lastError: null,
         ),
       );
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1423,7 +1397,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
 
       if (connectionIndex == -1) {
-
         return;
       }
 
@@ -1466,7 +1439,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           lastError: null,
         ),
       );
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1531,7 +1503,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final newParamValue = currentParamValue == 0 ? 1 : 0;
       newParamValue == 1 ? OutputMode.replace : OutputMode.add;
 
-
       // Update the hardware parameter via DistingCubit
       await _distingCubit.updateParameterValue(
         algorithmIndex: algorithmIndex,
@@ -1539,7 +1510,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         value: newParamValue,
         userIsChangingTheValue: true,
       );
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1585,7 +1555,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       updatedBuses[busIndex] = updatedBus;
 
       emit(currentState.copyWith(buses: updatedBuses, lastError: null));
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1660,7 +1629,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final updatedBuses = [...currentState.buses, ...newBuses];
 
         emit(currentState.copyWith(buses: updatedBuses, lastError: null));
-
       }
     } catch (e) {
       // Intentionally empty
@@ -1677,7 +1645,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     emit(currentState.copyWith(subState: SubState.syncing));
 
     try {
-
       // Update sync status
       final syncTime = DateTime.now();
 
@@ -1688,7 +1655,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           lastError: null,
         ),
       );
-
     } catch (e) {
       emit(
         currentState.copyWith(
@@ -1709,13 +1675,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     emit(currentState.copyWith(subState: SubState.syncing));
 
     try {
-
       // Trigger hardware routing refresh through DistingCubit
       await _distingCubit?.refreshRouting();
 
       // The state will be updated through the stream subscription
       // when _processSynchronizedState is called
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1863,7 +1827,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           lastError: null,
         ),
       );
-
     } catch (e) {
       // Intentionally empty
     }
@@ -1881,7 +1844,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       if (jsonString == null) {
         return;
       }
-
 
       final stateData = jsonDecode(jsonString) as Map<String, dynamic>;
 
@@ -1962,7 +1924,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // final lastPersistTime = stateData['lastPersistTime'] != null
       //     ? DateTime.parse(stateData['lastPersistTime'] as String)
       //     : null;
-
     } catch (e) {
       // Don't emit error state here, just log and continue with empty state
     }
@@ -1987,7 +1948,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           ),
         );
       }
-
     } catch (e) {
       // Intentionally empty
     }
@@ -2026,14 +1986,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final currentState = state;
     if (currentState is RoutingEditorStateLoaded &&
         currentState.lastError != null) {
-
       try {
         // Try to reload the last known good state
         await _loadPersistedState();
 
         // If no persisted state, return to initial state
         emit(const RoutingEditorState.initial());
-
       } catch (e) {
         // Intentionally empty
       }
@@ -2055,15 +2013,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         throw ArgumentError('Connection not found: $connectionId');
       }
 
-
       // Get connection details before deletion
-      currentState.connections.firstWhere(
-        (conn) => conn.id == connectionId,
-      );
+      currentState.connections.firstWhere((conn) => conn.id == connectionId);
 
       // This just calls deleteConnection which already handles clearing bus assignments
       await deleteConnection(connectionId);
-
     } catch (e) {
       // Intentionally empty
     }
@@ -2077,7 +2031,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     if (_distingCubit == null) return;
 
     try {
-
       // Find the source and destination ports
       final sourcePort = _findPortById(state, connection.sourcePortId);
       final targetPort = _findPortById(state, connection.destinationPortId);
@@ -2130,7 +2083,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           }
         }
       }
-
     } catch (e) {
       // Don't rethrow - we still want to delete the connection from UI
     }
@@ -2154,7 +2106,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     _layoutAlgorithm ??= NodeLayoutAlgorithm();
 
     try {
-
       // Show loading state
       emit(currentState.copyWith(subState: SubState.syncing));
 
@@ -2194,11 +2145,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         ),
       );
 
-
       // Save the new positions to preferences
       await saveNodePositions();
     } catch (e) {
-
       emit(
         currentState.copyWith(
           subState: SubState.error,

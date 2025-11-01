@@ -358,7 +358,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     });
 
     try {
-
       // Read file data
       final fileBytes = await file.readAsBytes();
 
@@ -388,13 +387,11 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         return;
       }
 
-
       // Store analysis results and package data
       setState(() {
         _currentAnalysis = analysis;
         _currentPackageData = fileBytes;
       });
-
 
       // Story E3.3: Detect file conflicts with SD card
       final conflictDetector = FileConflictDetector(widget.distingCubit);
@@ -405,7 +402,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       setState(() {
         _currentAnalysis = analysisWithConflicts;
       });
-
 
       // Story E3.4: Show the install dialog
       if (!mounted) return;

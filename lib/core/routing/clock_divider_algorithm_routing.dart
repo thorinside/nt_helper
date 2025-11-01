@@ -97,7 +97,6 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
             channelNumber: es5OutputValue, // ES-5 port number
           ),
         );
-
       } else {
         // NORMAL MODE: Use Output parameter
         // Need to get both the bus value AND the parameter number for updates
@@ -119,9 +118,7 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
               parameterNumber: outputParam.parameterNumber,
             ),
           );
-
-        } else {
-        }
+        } else {}
       }
     }
 
