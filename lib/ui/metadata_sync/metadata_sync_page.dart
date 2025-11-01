@@ -963,17 +963,31 @@ class _PresetListView extends StatelessWidget {
             selectedTileColor: Theme.of(
               context,
             ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-            leading: preset.isTemplate
-                ? Icon(
-                    Icons.star,
-                    color: Theme.of(context).colorScheme.tertiary,
-                  )
-                : null,
             title: Text(preset.name.trim()),
             subtitle: Text("Saved: $formattedDate"),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Template Toggle Button
+                IconButton(
+                  icon: Icon(
+                    preset.isTemplate ? Icons.star : Icons.star_outline,
+                    color: preset.isTemplate
+                        ? Theme.of(context).colorScheme.tertiary
+                        : Colors.grey,
+                  ),
+                  tooltip: preset.isTemplate
+                      ? 'Unmark as Template'
+                      : 'Mark as Template',
+                  onPressed: !isOperationInProgress
+                      ? () {
+                          context.read<MetadataSyncCubit>().togglePresetTemplate(
+                                preset.id,
+                                !preset.isTemplate,
+                              );
+                        }
+                      : null,
+                ),
                 // Load Button (Calls different cubits based on mode)
                 IconButton(
                   icon: Icon(

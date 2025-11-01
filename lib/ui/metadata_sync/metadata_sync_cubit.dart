@@ -572,7 +572,31 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   Future<void> togglePresetTemplate(int presetId, bool isTemplate) async {
     try {
       await _presetsDao.toggleTemplateStatus(presetId, isTemplate);
-      await loadLocalData(); // Reload data to reflect the change
+
+      // Optimistically update the state without full reload
+      if (state is ViewingLocalData) {
+        final currentState = state as ViewingLocalData;
+        final updatedPresets = currentState.presets.map((preset) {
+          if (preset.id == presetId) {
+            // Create a new PresetEntry with updated isTemplate flag
+            return PresetEntry(
+              id: preset.id,
+              name: preset.name,
+              lastModified: DateTime.now(), // Updated timestamp
+              isTemplate: isTemplate,
+            );
+          }
+          return preset;
+        }).toList();
+
+        emit(
+          MetadataSyncState.viewingLocalData(
+            algorithms: currentState.algorithms,
+            parameterCounts: currentState.parameterCounts,
+            presets: updatedPresets,
+          ),
+        );
+      }
     } catch (e) {
       emit(
         MetadataSyncState.failure(
