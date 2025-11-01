@@ -656,8 +656,15 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   ],
 
                   // --- Action Buttons (fixed at the bottom) ---
-                  Container(
-                    padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    padding: EdgeInsets.only(
+                      top: 16.0,
+                      bottom: 8.0,
+                      // Add extra padding when FAB is visible to prevent overlap
+                      right: _isHelpAvailableForSelected ? 72.0 : 0.0,
+                    ),
                     child: _buildActionButton(isOffline),
                   ),
                 ],
