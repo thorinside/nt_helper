@@ -118,7 +118,6 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
       _cachedInputPorts = null;
       _cachedOutputPorts = null;
     }
-
   }
 
   @override

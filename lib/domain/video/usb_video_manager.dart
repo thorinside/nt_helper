@@ -50,8 +50,7 @@ class UsbVideoManager {
   Future<List<UsbDeviceInfo>> listUsbCameras() async {
     try {
       final devices = await _channel.listUsbCameras();
-      for (var _ in devices) {
-      }
+      for (var _ in devices) {}
       return devices;
     } catch (e) {
       return [];
@@ -112,7 +111,6 @@ class UsbVideoManager {
           fps: 15.0, // Target FPS
         ),
       );
-
     } catch (e) {
       _updateState(
         VideoStreamState.error('Device disconnected or unavailable'),
@@ -146,7 +144,6 @@ class UsbVideoManager {
   }
 
   Future<void> autoConnect() async {
-
     // First check if video is supported on this platform
     final supported = await isSupported();
     if (!supported) {
@@ -189,7 +186,6 @@ class UsbVideoManager {
         _stopRecoveryTimer();
         return;
       }
-
 
       // Try to reconnect to the last known device first
       if (_lastConnectedDeviceId != null) {

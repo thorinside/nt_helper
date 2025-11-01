@@ -136,7 +136,6 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           )
         : null;
 
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
       child: Row(

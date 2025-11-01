@@ -15,7 +15,6 @@ class MappingResponse extends SysexResponse {
     final version = decode8(data.sublist(4, 5));
     final mappingData = data.sublist(5);
 
-
     return Mapping(
       algorithmIndex: algorithmIndex,
       parameterNumber: parameterNumber,

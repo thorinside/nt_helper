@@ -1017,8 +1017,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
             algorithm: _state.presetSlots[algorithmIndex + 1].algorithm
                 .copyWith(algorithmIndex: algorithmIndex + 1),
           );
-    } else {
-    }
+    } else {}
   }
 
   @override
@@ -1043,8 +1042,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
             algorithm: _state.presetSlots[algorithmIndex - 1].algorithm
                 .copyWith(algorithmIndex: algorithmIndex - 1),
           );
-    } else {
-    }
+    } else {}
   }
 
   @override
@@ -1200,12 +1198,9 @@ class MockDistingMidiManager implements IDistingMidiManager {
             values: updatedValues,
           ); // Assuming Slot has copyWith
           _state.presetSlots[algorithmIndex] = updatedSlot;
-        } else {
-        }
-      } else {
-      }
-    } else {
-    }
+        } else {}
+      } else {}
+    } else {}
   }
 
   @override
@@ -1239,12 +1234,9 @@ class MockDistingMidiManager implements IDistingMidiManager {
             valueStrings: updatedValueStrings,
           ); // Assuming Slot has copyWith
           _state.presetSlots[algorithmIndex] = updatedSlot;
-        } else {
-        }
-      } else {
-      }
-    } else {
-    }
+        } else {}
+      } else {}
+    } else {}
   }
 
   @override

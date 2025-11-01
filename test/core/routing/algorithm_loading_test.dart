@@ -57,8 +57,7 @@ void main() {
       // Report results
 
       if (failedAlgorithms.isNotEmpty) {
-        failedAlgorithms.forEach((name, error) {
-        });
+        failedAlgorithms.forEach((name, error) {});
       }
 
       // The test passes if all algorithms load successfully
@@ -116,8 +115,7 @@ void main() {
               algorithmsWithNoIO.add(
                 '$name ($guid) - inputs: ${routing.inputPorts.length}, outputs: ${routing.outputPorts.length}',
               );
-            } else {
-            }
+            } else {}
           } catch (e) {
             // If we can't load the algorithm, that's a different problem
             // that should be caught by the first test
@@ -126,8 +124,7 @@ void main() {
 
         // Report any algorithms with no I/O
         if (algorithmsWithNoIO.isNotEmpty) {
-          for (final _ in algorithmsWithNoIO) {
-          }
+          for (final _ in algorithmsWithNoIO) {}
         }
 
         // The test fails if any factory algorithm (except special cases) has no I/O
@@ -197,8 +194,7 @@ void main() {
           } catch (e) {
             fail('Algorithm ${entry.key} failed specific tests: $e');
           }
-        } else {
-        }
+        } else {}
       }
     });
 

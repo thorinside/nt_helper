@@ -15,7 +15,6 @@ class PluginMetadataExtractor {
     final installation = plugin.installation;
     int count = 0;
 
-
     for (final file in archive) {
       if (!file.isFile) continue;
 
@@ -65,7 +64,6 @@ class PluginMetadataExtractor {
     final plugins = <CollectionPlugin>[];
     final installation = plugin.installation;
 
-
     for (final file in archive) {
       if (!file.isFile) continue;
 
@@ -99,7 +97,6 @@ class PluginMetadataExtractor {
           filePath.endsWith('templateStereo.h')) {
         continue;
       }
-
 
       final fileName = path.basenameWithoutExtension(filePath);
       final fileType = extension.substring(1); // Remove the dot

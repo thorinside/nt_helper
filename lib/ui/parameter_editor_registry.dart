@@ -315,7 +315,6 @@ class ParameterEditorRegistry {
     final parameterName = parameterInfo.name;
     final unit = parameterInfo.unit;
 
-
     // Find first matching rule
     for (final rule in _rules) {
       if (rule.matches(

@@ -37,8 +37,7 @@ class DebugService {
     _debugController.add(message);
 
     // Also print to console in debug mode
-    if (kDebugMode) {
-    }
+    if (kDebugMode) {}
   }
 
   void addLocalMessage(String message) {

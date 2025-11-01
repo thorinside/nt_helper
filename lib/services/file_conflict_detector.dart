@@ -11,7 +11,6 @@ class FileConflictDetector {
 
   /// Check for file conflicts between package files and existing SD card files
   Future<PackageAnalysis> detectConflicts(PackageAnalysis analysis) async {
-
     if (!analysis.isValid) {
       return analysis;
     }
@@ -32,7 +31,6 @@ class FileConflictDetector {
         final directory = entry.key;
         final filesInDir = entry.value;
 
-
         // Get existing files in this directory
         final existingFiles = await _getExistingFilesInDirectory('/$directory');
 
@@ -44,8 +42,7 @@ class FileConflictDetector {
           final updatedFile = file.copyWith(hasConflict: hasConflict);
           updatedFiles.add(updatedFile);
 
-          if (hasConflict) {
-          }
+          if (hasConflict) {}
         }
       }
 
@@ -79,8 +76,7 @@ class FileConflictDetector {
             files.add(entry.name);
           }
         }
-      } else {
-      }
+      } else {}
     } catch (e) {
       // Don't throw - just return empty set to avoid blocking installation
     }

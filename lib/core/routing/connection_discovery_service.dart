@@ -22,7 +22,6 @@ class ConnectionDiscoveryService {
   static List<Connection> discoverConnections(List<AlgorithmRouting> routings) {
     final connections = <Connection>[];
 
-
     // Build a bus registry mapping bus numbers to ports
     final busRegistry = <int, List<_PortAssignment>>{};
 
@@ -30,7 +29,6 @@ class ConnectionDiscoveryService {
     for (int i = 0; i < routings.length; i++) {
       final routing = routings[i];
       final algorithmId = _extractAlgorithmId(routing);
-
 
       // Register input ports
       _registerPorts(routing.inputPorts, algorithmId, i, false, busRegistry);
@@ -236,7 +234,6 @@ class ConnectionDiscoveryService {
     if (BusSpec.isEs5(busNumber)) {
       final es5PortId = busNumber == 29 ? 'es5_L' : 'es5_R';
 
-
       for (final output in outputs) {
         connections.add(
           Connection(
@@ -287,7 +284,6 @@ class ConnectionDiscoveryService {
   ) {
     final connections = <Connection>[];
 
-
     for (final outputPort in routing.outputPorts) {
       if (outputPort.busParam == ES5EncoderAlgorithmRouting.mirrorBusParam &&
           outputPort.channelNumber != null) {
@@ -306,10 +302,8 @@ class ConnectionDiscoveryService {
             description: 'ES-5 Encoder mirror connection',
           ),
         );
-
       }
     }
-
 
     return connections;
   }
@@ -347,13 +341,11 @@ class ConnectionDiscoveryService {
               description: 'ES-5 direct connection',
             ),
           );
-
         }
       }
     }
 
-    if (connections.isNotEmpty) {
-    }
+    if (connections.isNotEmpty) {}
 
     return connections;
   }
@@ -418,7 +410,6 @@ class ConnectionDiscoveryService {
   ) {
     final partialConnections = <Connection>[];
 
-
     // Process each bus to find unmatched ports
     for (final entry in busRegistry.entries) {
       final busNumber = entry.key;
@@ -430,7 +421,6 @@ class ConnectionDiscoveryService {
           .toList();
 
       if (unmatchedPorts.isEmpty) continue;
-
 
       // Create partial connections for each unmatched port
       for (final port in unmatchedPorts) {
@@ -450,7 +440,6 @@ class ConnectionDiscoveryService {
           busLabel,
         );
         partialConnections.add(partialConnection);
-
       }
     }
 

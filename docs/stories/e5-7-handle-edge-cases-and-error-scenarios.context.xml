@@ -1,0 +1,153 @@
+<story-context id="e5-7-handle-edge-cases-and-error-scenarios" v="1.0">
+  <metadata>
+    <epicId>epic-5</epicId>
+    <storyId>5.7</storyId>
+    <title>Handle edge cases and error scenarios</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e5-7-handle-edge-cases-and-error-scenarios.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user working with templates</asA>
+    <iWant>clear error messages and graceful handling when things go wrong</iWant>
+    <soThat>I understand what happened and can take corrective action</soThat>
+    <tasks>
+- Verify slot limit validation error messages
+- Handle connection loss during injection
+- Validate template metadata before injection
+- Handle empty templates
+- Add large template confirmation
+- Implement injection cancellation
+- Handle partial injection failures
+- Ensure all error messages include actionable guidance
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Error shown if current preset + template > 32 slots: "Cannot inject: Would exceed 32 slot limit (current: X, template: Y)"
+2. Error shown if hardware connection lost during injection: "Connection lost during injection. Preset may be partially modified."
+3. Error shown if template metadata incomplete: "Template missing algorithm metadata. Sync algorithms first."
+4. Warning shown if template is empty (0 slots): "Cannot inject empty template"
+5. Confirmation dialog shown if injecting large template (> 10 algorithms): "This will add X algorithms. Continue?"
+6. Injection can be cancelled during progress (via cancel button in preview dialog)
+7. Partial injection failure handled gracefully: rollback not possible (NT doesn't support it), but user sees clear error showing which algorithm failed
+8. All error messages include actionable guidance (not just "Error occurred")
+9. `flutter analyze` passes with zero warnings
+10. All tests pass
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 5: Preset Template System</title>
+        <section>Story E5.7</section>
+        <snippet>Error handling and edge cases. Ensures robust user experience across failure scenarios.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Documentation - Development Standards</title>
+        <section>Code Quality</section>
+        <snippet>Zero tolerance for flutter analyze errors. Proper error handling throughout.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5</title>
+        <section>Error Handling</section>
+        <snippet>Actionable error messages. Graceful degradation. Clear user guidance for recovery.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/ui/metadata_sync/metadata_sync_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>MetadataSyncCubit</symbol>
+        <lines>N/A</lines>
+        <reason>Injection service with error handling try-catch blocks.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/template_preview_dialog.dart</path>
+        <kind>widget</kind>
+        <symbol>TemplatePreviewDialog</symbol>
+        <lines>N/A</lines>
+        <reason>Dialog with error state display and cancellation logic.</reason>
+      </file>
+      <file>
+        <path>lib/services/debug_service.dart</path>
+        <kind>service</kind>
+        <symbol>DebugService</symbol>
+        <lines>N/A</lines>
+        <reason>Error logging for debugging and diagnostics.</reason>
+      </file>
+      <file>
+        <path>lib/domain/i_disting_midi_manager.dart</path>
+        <kind>interface</kind>
+        <symbol>IDistingMidiManager</symbol>
+        <lines>N/A</lines>
+        <reason>MIDI communication with connection monitoring and exception handling.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <dart>
+        flutter: Material Design error display widgets
+        flutter_bloc: Error state management
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Error message structure: What happened + Why + What to do next
+- Avoid technical jargon in user-facing messages
+- Centralize error message strings for consistency
+- Maintain existing error handling patterns
+- Follow Material Design error display guidelines
+- Graceful degradation: system remains stable after errors
+- No rollback support (hardware limitation) - clear communication to user
+- Debug logging for all error scenarios
+- Cancellation: check flag between algorithm additions
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Error Message Pattern</name>
+      <kind>pattern</kind>
+      <signature>"[What happened]. [Optional: Why]. [Actionable guidance]."</signature>
+      <path>N/A</path>
+    </interface>
+    <interface>
+      <name>MetadataSyncCubit.validateTemplateMetadata</name>
+      <kind>method</kind>
+      <signature>Future&lt;bool&gt; validateTemplateMetadata(FullPresetDetails template)</signature>
+      <path>lib/ui/metadata_sync/metadata_sync_cubit.dart</path>
+    </interface>
+    <interface>
+      <name>TemplatePreviewDialog.cancelInjection</name>
+      <kind>method</kind>
+      <signature>void cancelInjection()</signature>
+      <path>lib/ui/widgets/template_preview_dialog.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Unit tests for each error scenario in isolation. Mock MIDI manager to simulate failures. Widget tests for error message display. Integration tests for connection loss and partial injection. Manual testing with real hardware.
+    </standards>
+    <locations>
+test/ui/metadata_sync/metadata_sync_cubit_test.dart
+test/ui/widgets/template_preview_dialog_test.dart
+    </locations>
+    <ideas>
+- AC#1: Test slot limit error message format
+- AC#2: Test connection loss exception handling
+- AC#3: Test metadata validation before injection
+- AC#4: Test empty template warning
+- AC#5: Test large template confirmation (> 10 algorithms)
+- AC#6: Test injection cancellation mid-process
+- AC#7: Test partial injection error reporting
+- AC#8: Review all error messages for actionable guidance
+- AC#10: Run full test suite and verify all pass
+    </ideas>
+  </tests>
+</story-context>

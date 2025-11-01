@@ -898,6 +898,7 @@ class DistingMidiManager implements IDistingMidiManager {
       id: -1, // Use -1 to indicate it's fresh from device, not a DB entry ID
       name: presetName,
       lastModified: DateTime.now(), // Use current time for fetched state
+      isTemplate: false, // Presets fetched from device are not templates by default
     );
 
     // 4. Return the complete details
@@ -1237,9 +1238,7 @@ class DistingMidiManager implements IDistingMidiManager {
 
           // Write file
           await localFile.writeAsBytes(fileData);
-
-        } else {
-        }
+        } else {}
       } catch (e) {
         // Continue with other files
       }

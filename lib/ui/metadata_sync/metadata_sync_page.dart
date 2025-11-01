@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
+import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
@@ -11,6 +12,7 @@ import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/debug_metadata_export_dialog.dart';
+import 'package:nt_helper/ui/widgets/template_preview_dialog.dart';
 
 class MetadataSyncPage extends StatelessWidget {
   // Accept DistingCubit as a parameter
@@ -808,13 +810,30 @@ class MetadataSyncPage extends StatelessWidget {
     int? loadedOfflinePresetId,
   ) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
-          const TabBar(
+          TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.save_alt), text: "Saved Presets"),
-              Tab(icon: Icon(Icons.memory), text: "Synced Algorithms"),
+              const Tab(icon: Icon(Icons.save_alt), text: "Saved Presets"),
+              StreamBuilder<int>(
+                stream: builderContext
+                    .read<AppDatabase>()
+                    .presetsDao
+                    .watchTemplateCount(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  return Tab(
+                    icon: Badge(
+                      label: Text('$count'),
+                      isLabelVisible: count > 0,
+                      child: const Icon(Icons.star),
+                    ),
+                    text: "Templates",
+                  );
+                },
+              ),
+              const Tab(icon: Icon(Icons.memory), text: "Synced Algorithms"),
             ],
           ),
           Expanded(
@@ -833,6 +852,17 @@ class MetadataSyncPage extends StatelessWidget {
                     metadataSyncCubit: BlocProvider.of<MetadataSyncCubit>(
                       builderContext,
                     ),
+                  ),
+                  // --- Templates Tab ---
+                  _TemplateListView(
+                    isOperationInProgress: isOperationInProgress,
+                    isOffline: isOffline,
+                    loadedOfflinePresetId: loadedOfflinePresetId,
+                    distingCubit: BlocProvider.of<DistingCubit>(builderContext),
+                    metadataSyncCubit: BlocProvider.of<MetadataSyncCubit>(
+                      builderContext,
+                    ),
+                    database: builderContext.read<AppDatabase>(),
                   ),
                   // --- Algorithms Tab ---
                   _AlgorithmMetadataListView(
@@ -924,52 +954,72 @@ class _PresetListView extends StatelessWidget {
         final bool canDelete = !isOperationInProgress;
 
         return ListTile(
-          key: ValueKey(preset.id),
-          selected: isCurrentlyLoadedOffline,
-          selectedTileColor: Theme.of(
-            context,
-          ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-          title: Text(preset.name.trim()),
-          subtitle: Text("Saved: $formattedDate"),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Load Button (Calls different cubits based on mode)
-              IconButton(
-                icon: Icon(
-                  isOffline ? Icons.edit_note : Icons.upload_file_outlined,
-                  color: canLoad
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.grey,
+            key: ValueKey(preset.id),
+            selected: isCurrentlyLoadedOffline,
+            selectedTileColor: Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+            title: Text(preset.name.trim()),
+            subtitle: Text("Saved: $formattedDate"),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Template Toggle Button
+                IconButton(
+                  icon: Icon(
+                    preset.isTemplate ? Icons.star : Icons.star_outline,
+                    color: preset.isTemplate
+                        ? Theme.of(context).colorScheme.tertiary
+                        : Colors.grey,
+                  ),
+                  tooltip: preset.isTemplate
+                      ? 'Unmark as Template'
+                      : 'Mark as Template',
+                  onPressed: !isOperationInProgress
+                      ? () {
+                          context.read<MetadataSyncCubit>().togglePresetTemplate(
+                                preset.id,
+                                !preset.isTemplate,
+                              );
+                        }
+                      : null,
                 ),
-                tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
-                onPressed: canLoad
-                    ? () =>
-                          _showLoadConfirmationDialog(
-                            context,
-                            preset,
-                            isOffline,
-                            distingCubit,
-                            metadataSyncCubit,
-                          ) // Pass both cubits
-                    : null,
-              ),
-              // Delete Button (Calls MetadataSyncCubit)
-              IconButton(
-                icon: Icon(
-                  Icons.delete_outline,
-                  color: canDelete
-                      ? Theme.of(context).colorScheme.error
-                      : Colors.grey,
+                // Load Button (Calls different cubits based on mode)
+                IconButton(
+                  icon: Icon(
+                    isOffline ? Icons.edit_note : Icons.upload_file_outlined,
+                    color: canLoad
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey,
+                  ),
+                  tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
+                  onPressed: canLoad
+                      ? () =>
+                            _showLoadConfirmationDialog(
+                              context,
+                              preset,
+                              isOffline,
+                              distingCubit,
+                              metadataSyncCubit,
+                            ) // Pass both cubits
+                      : null,
                 ),
-                tooltip: 'Delete Saved Preset',
-                onPressed: canDelete
-                    ? () => _showDeleteConfirmationDialog(context, preset)
-                    : null,
-              ),
-            ],
-          ),
-        );
+                // Delete Button (Calls MetadataSyncCubit)
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: canDelete
+                        ? Theme.of(context).colorScheme.error
+                        : Colors.grey,
+                  ),
+                  tooltip: 'Delete Saved Preset',
+                  onPressed: canDelete
+                      ? () => _showDeleteConfirmationDialog(context, preset)
+                      : null,
+                ),
+              ],
+            ),
+          );
       },
     );
   }
@@ -1107,6 +1157,358 @@ class _PresetListView extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Helper function for Template Toggle Menu
+}
+
+// --- Widget for Template List View ---
+class _TemplateListView extends StatelessWidget {
+  final bool isOperationInProgress;
+  final bool isOffline;
+  final int? loadedOfflinePresetId;
+  final DistingCubit distingCubit;
+  final MetadataSyncCubit metadataSyncCubit;
+  final AppDatabase database;
+
+  const _TemplateListView({
+    required this.isOperationInProgress,
+    required this.isOffline,
+    this.loadedOfflinePresetId,
+    required this.distingCubit,
+    required this.metadataSyncCubit,
+    required this.database,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<FullPresetDetails>>(
+      future: database.presetsDao.getTemplates(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                "Error loading templates: ${snapshot.error}",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final templates = snapshot.data ?? [];
+
+        if (templates.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.star_border,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "No templates found. Mark saved presets as templates to see them here.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          itemCount: templates.length,
+          separatorBuilder: (context, index) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final template = templates[index];
+            final preset = template.preset;
+            final formattedDate = preset.lastModified.toLocal().toString();
+
+            final bool isCurrentlyLoadedOffline = false;
+
+            // Determine button states
+            final bool canLoad = !isOperationInProgress;
+            final bool canDelete = !isOperationInProgress;
+
+            return ListTile(
+                key: ValueKey(preset.id),
+                selected: isCurrentlyLoadedOffline,
+                selectedTileColor: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                leading: Icon(
+                  Icons.star,
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
+                title: Text(preset.name.trim()),
+                subtitle: Text("Saved: $formattedDate"),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Inject Button
+                    IconButton(
+                      icon: Icon(
+                        Icons.add_circle_outline,
+                        color: canLoad
+                            ? Theme.of(context).colorScheme.secondary
+                            : Colors.grey,
+                      ),
+                      tooltip: isOffline
+                          ? 'Inject Template (Offline)'
+                          : 'Inject Template',
+                      onPressed: canLoad
+                          ? () async => await _showInjectDialog(
+                                context,
+                                template,
+                                distingCubit,
+                                metadataSyncCubit,
+                              )
+                          : null,
+                    ),
+                    // Load Button
+                    IconButton(
+                      icon: Icon(
+                        isOffline ? Icons.edit_note : Icons.upload_file_outlined,
+                        color: canLoad
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
+                      ),
+                      tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
+                      onPressed: canLoad
+                          ? () => _showLoadConfirmationDialog(
+                                context,
+                                template,
+                                isOffline,
+                                distingCubit,
+                                metadataSyncCubit,
+                              )
+                          : null,
+                    ),
+                    // Delete Button
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: canDelete
+                            ? Theme.of(context).colorScheme.error
+                            : Colors.grey,
+                      ),
+                      tooltip: 'Delete Template',
+                      onPressed: canDelete
+                          ? () => _showDeleteConfirmationDialog(context, preset)
+                          : null,
+                    ),
+                  ],
+                ),
+              );
+          },
+        );
+      },
+    );
+  }
+
+  // Helper function for Load Confirmation Dialog
+  void _showLoadConfirmationDialog(
+    BuildContext context,
+    FullPresetDetails template,
+    bool isOffline,
+    DistingCubit distingCubit,
+    MetadataSyncCubit metadataSyncCubit,
+  ) {
+    final preset = template.preset;
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            isOffline ? 'Load Template Offline?' : 'Send Template to NT?',
+          ),
+          content: Text(
+            isOffline
+                ? 'Load "${preset.name}" for offline use?'
+                : 'Send "${preset.name}" to device? This overwrites current device state.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: Text(isOffline ? 'Load Offline' : 'Send'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                if (isOffline) {
+                  distingCubit.loadPresetOffline(template);
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                } else {
+                  final onlineManager = distingCubit.disting();
+                  if (onlineManager != null) {
+                    metadataSyncCubit.loadPresetToDevice(
+                      template,
+                      onlineManager,
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper function for Delete Confirmation Dialog
+  void _showDeleteConfirmationDialog(BuildContext context, PresetEntry preset) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Template?'),
+          content: Text(
+            'Are you sure you want to permanently delete the template "${preset.name}"?',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                metadataSyncCubit.deletePreset(preset.id);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper function for Inject Template Dialog
+  Future<void> _showInjectDialog(
+    BuildContext context,
+    FullPresetDetails template,
+    DistingCubit distingCubit,
+    MetadataSyncCubit metadataSyncCubit,
+  ) async {
+    // Check for empty template first
+    if (template.slots.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot inject empty template'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final manager = distingCubit.disting();
+    if (manager == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Device not connected'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Get current slot count from device
+    int currentSlotCount = 0;
+    try {
+      currentSlotCount = await manager.requestNumAlgorithmsInPreset() ?? 0;
+    } catch (e) {
+      // In offline/demo mode, assume empty preset
+      currentSlotCount = 0;
+    }
+
+    if (!context.mounted) return;
+
+    // Show confirmation dialog for large templates (> 10 algorithms)
+    if (template.slots.length > 10) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Large Template'),
+          content: Text(
+            'This will add ${template.slots.length} algorithms to your preset. Continue?',
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text('Continue'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+      if (!context.mounted) return;
+    }
+
+    // Show the template preview dialog
+    final result = await TemplatePreviewDialog.show(
+      context,
+      template,
+      currentSlotCount,
+      metadataSyncCubit,
+      manager,
+    );
+
+    // If injection succeeded, refresh the DistingCubit and show success snackbar
+    if (result == true) {
+      // Trigger refresh of the DistingCubit to show the newly added algorithms
+      // Use the distingCubit parameter instead of reading from context
+      await distingCubit.refresh();
+
+      if (!context.mounted) return;
+
+      final algorithmsAdded = template.slots.length;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Template '${template.preset.name}' injected ($algorithmsAdded algorithm${algorithmsAdded == 1 ? '' : 's'} added)",
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 }
 

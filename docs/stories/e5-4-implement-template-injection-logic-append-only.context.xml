@@ -1,0 +1,148 @@
+<story-context id="e5-4-implement-template-injection-logic-append-only" v="1.0">
+  <metadata>
+    <epicId>epic-5</epicId>
+    <storyId>5.4</storyId>
+    <title>Implement template injection logic (append-only)</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e5-4-implement-template-injection-logic-append-only.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer implementing template injection</asA>
+    <iWant>to create a service method that appends template algorithms to the current hardware preset</iWant>
+    <soThat>the UI can trigger template injection with a single method call</soThat>
+    <tasks>
+- Create injectTemplateToDevice() method
+- Implement slot limit validation (≤32 total)
+- Implement algorithm addition loop
+- Apply parameter values and mappings
+- Add state management for loading/success/failure
+- Write unit tests for injection logic
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Create `injectTemplateToDevice(FullPresetDetails template, IDistingMidiManager manager)` method in `MetadataSyncCubit` or new service
+2. Method does NOT call `requestNewPreset()` (preserves current preset)
+3. Method calls `requestAddAlgorithm()` for each template slot, adding them sequentially to the end
+4. Method sets parameter values and mappings for each injected slot (reuse logic from `loadPresetToDevice`)
+5. Method does NOT call `requestSavePreset()` (lets user save manually)
+6. Method validates that current preset + template slots ≤ 32 slots before starting injection
+7. If slot limit exceeded, method throws exception with clear error message
+8. Method emits loading/success/failure states to UI
+9. Unit tests verify slot limit validation and algorithm addition sequence
+10. `flutter analyze` passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 5: Preset Template System</title>
+        <section>Story E5.4</section>
+        <snippet>Core injection logic appending template algorithms to current preset without clearing or saving.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Documentation - MIDI Layer</title>
+        <section>MIDI Communication</section>
+        <snippet>Interface-based design with IDistingMidiManager. Methods include requestAddAlgorithm(), requestSetParameter(), requestSetMidiMapping().</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5</title>
+        <section>Template Injection</section>
+        <snippet>Sequential algorithm addition without preset clear. Slot limit validation. Parameter and mapping copy from template.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/ui/metadata_sync/metadata_sync_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>MetadataSyncCubit</symbol>
+        <lines>N/A</lines>
+        <reason>Injection method will be added here. Existing loadPresetToDevice() provides pattern for parameter copying.</reason>
+      </file>
+      <file>
+        <path>lib/domain/i_disting_midi_manager.dart</path>
+        <kind>interface</kind>
+        <symbol>IDistingMidiManager</symbol>
+        <lines>N/A</lines>
+        <reason>MIDI interface defining requestAddAlgorithm(), requestSetParameter(), requestSetMidiMapping() methods.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>N/A</lines>
+        <reason>Source of current preset state and slot count via state.slots.length.</reason>
+      </file>
+      <file>
+        <path>lib/db/database.dart</path>
+        <kind>model</kind>
+        <symbol>FullPresetDetails</symbol>
+        <lines>N/A</lines>
+        <reason>Model containing template data with slots, parameters, and mappings.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <dart>
+        flutter_bloc: Cubit state management
+        drift: Database models
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Do NOT call requestNewPreset() - preserve current preset
+- Do NOT call requestSavePreset() - user saves manually
+- Validate slot limit before any MIDI operations
+- Add algorithms sequentially, not in parallel
+- Reuse parameter copy logic from existing loadPresetToDevice
+- Error handling: throw exceptions for validation, emit states for async errors
+- Slot indexing: template slot 0 → current preset slot N where N = current slot count
+- No rollback support (hardware limitation) - report partial failures clearly
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>MetadataSyncCubit.injectTemplateToDevice</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; injectTemplateToDevice(FullPresetDetails template, IDistingMidiManager manager)</signature>
+      <path>lib/ui/metadata_sync/metadata_sync_cubit.dart</path>
+    </interface>
+    <interface>
+      <name>IDistingMidiManager.requestAddAlgorithm</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; requestAddAlgorithm(String algorithmId)</signature>
+      <path>lib/domain/i_disting_midi_manager.dart</path>
+    </interface>
+    <interface>
+      <name>IDistingMidiManager.requestSetParameter</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; requestSetParameter(int slot, int param, int value)</signature>
+      <path>lib/domain/i_disting_midi_manager.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Mock IDistingMidiManager to avoid hardware dependency. Test all validation edge cases. Verify algorithm addition sequence is correct. Verify parameter mapping is correctly offset for new slot indices.
+    </standards>
+    <locations>
+test/ui/metadata_sync/metadata_sync_cubit_test.dart
+test/services/template_injection_service_test.dart
+    </locations>
+    <ideas>
+- AC#6: Test slot limit validation (0+5, 30+2, 30+3)
+- AC#7: Test exception thrown when limit exceeded
+- AC#2: Test requestNewPreset() is never called
+- AC#3: Test requestAddAlgorithm() called for each template slot
+- AC#4: Test parameter values set correctly with offset slot index
+- AC#5: Test requestSavePreset() is never called
+- AC#8: Test state emissions (loading → success/failure)
+    </ideas>
+  </tests>
+</story-context>

@@ -124,7 +124,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       detectedType = MidiEventType.cc;
       detectedCc = data[1]; // CC number
       detectedNumber = detectedCc;
-      // 
+      //
     }
     // Note On Message (0x90)
     else if (messageType == 0x90) {
@@ -136,7 +136,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
           : MidiEventType.noteOn;
       detectedNote = note;
       detectedNumber = detectedNote;
-      // 
+      //
     }
     // Note Off Message (0x80)
     else if (messageType == 0x80) {
@@ -144,7 +144,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       detectedNote = data[1]; // Note number
       // data[2] is velocity, which we ignore for detection logic
       detectedNumber = detectedNote;
-      // 
+      //
     }
 
     // --- Process if a relevant message was detected ---
@@ -187,8 +187,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
         // --- Debug Print Start ---
         if (thresholdMet) {
-        } else {
-        }
+        } else {}
         // --- Debug Print End ---
 
         emit(nextState);
@@ -198,11 +197,10 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
           _consecutiveCount = 0;
           _lastEventSignature = null;
         }
-      } else {
-      }
+      } else {}
     } else {
       // Optionally log ignored message types
-      // 
+      //
     }
   }
 

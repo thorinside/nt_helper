@@ -181,7 +181,6 @@ class DistingMessageScheduler {
     final request = _currentRequest!;
     request.attemptCount++;
 
-
     // Send the message
     _midi.sendData(request.packet, deviceId: _outputDevice.id);
 
@@ -263,7 +262,6 @@ class DistingMessageScheduler {
     if (!request.key.matches(parsed)) {
       return;
     }
-
 
     // Parse and complete the response
     final response = ResponseFactory.fromMessageType(

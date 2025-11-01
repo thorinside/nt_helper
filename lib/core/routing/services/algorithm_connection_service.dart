@@ -39,7 +39,6 @@ class AlgorithmConnectionService {
       return _cachedConnections!;
     }
 
-
     try {
       // Discover all connections
       final connections = _performConnectionDiscovery(slots);

@@ -1,0 +1,143 @@
+<story-context id="e5-5-build-template-preview-dialog" v="1.0">
+  <metadata>
+    <epicId>epic-5</epicId>
+    <storyId>5.5</storyId>
+    <title>Build template preview dialog</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e5-5-build-template-preview-dialog.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user about to inject a template</asA>
+    <iWant>to see a preview showing what algorithms will be added and where they'll go</iWant>
+    <soThat>I can confirm the injection before modifying my current preset</soThat>
+    <tasks>
+- Create TemplatePreviewDialog widget
+- Display current preset summary, template algorithms, and result
+- Add slot limit validation UI with warning
+- Implement Cancel and Inject Template buttons
+- Add loading state during injection
+- Handle success (auto-close) and error (show message)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Preview dialog shows current preset summary: "Current: 5 algorithms (slots 1-5)"
+2. Preview shows template algorithms that will be added: List of algorithm names from template
+3. Preview shows result: "After injection: 8 algorithms (current 1-5 + template algorithms in slots 6-8)"
+4. Dialog shows warning if injection would exceed 32 slots (and disables Inject button)
+5. Dialog has "Cancel" and "Inject Template" buttons
+6. "Inject Template" button triggers `injectTemplateToDevice()` method
+7. Dialog shows loading spinner during injection
+8. Dialog auto-closes on successful injection
+9. Error message displayed in dialog if injection fails (stays open for user to read)
+10. `flutter analyze` passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 5: Preset Template System</title>
+        <section>Story E5.5</section>
+        <snippet>Preview dialog showing what will be injected. Prevents accidental preset modification.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Documentation - State Management</title>
+        <section>UI Patterns</section>
+        <snippet>Stateless widgets with BLoC state listening. Dialog pattern using showDialog() with Material AlertDialog.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5</title>
+        <section>Template Preview</section>
+        <snippet>Multi-section dialog: current state, template contents, result preview, validation warnings, action buttons.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/ui/widgets/template_preview_dialog.dart</path>
+        <kind>widget</kind>
+        <symbol>TemplatePreviewDialog</symbol>
+        <lines>NEW</lines>
+        <reason>New dialog widget to be created with internal state management for loading/error.</reason>
+      </file>
+      <file>
+        <path>lib/ui/metadata_sync/metadata_sync_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>MetadataSyncCubit</symbol>
+        <lines>N/A</lines>
+        <reason>Injection service from E5.4. Dialog will call injectTemplateToDevice() method.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>N/A</lines>
+        <reason>Current preset state for slot count calculation.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/preset_browser_dialog.dart</path>
+        <kind>widget</kind>
+        <symbol>PresetBrowserDialog</symbol>
+        <lines>N/A</lines>
+        <reason>Existing dialog pattern for reference on Material Design dialog structure.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <dart>
+        flutter: Material Design widgets and dialogs
+        flutter_bloc: State observation for injection status
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Follow Material Design dialog patterns
+- Use existing color schemes and typography
+- Support both light and dark themes
+- Add semantic labels for accessibility
+- Prevent dialog dismissal during injection
+- Show clear, user-friendly error messages
+- Dialog must be responsive to different screen sizes
+- Loading state: disable buttons, show progress indicator
+- Error state: replace action buttons with Close button
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>TemplatePreviewDialog.show</name>
+      <kind>static method</kind>
+      <signature>static Future&lt;bool?&gt; show(BuildContext context, FullPresetDetails template, int currentSlotCount, MetadataSyncCubit syncCubit)</signature>
+      <path>lib/ui/widgets/template_preview_dialog.dart</path>
+    </interface>
+    <interface>
+      <name>TemplatePreviewDialog constructor</name>
+      <kind>constructor</kind>
+      <signature>TemplatePreviewDialog({required FullPresetDetails template, required int currentSlotCount, required MetadataSyncCubit syncCubit})</signature>
+      <path>lib/ui/widgets/template_preview_dialog.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Widget tests for dialog rendering, button states, loading and error states. Integration tests for injection flow. Manual testing with real hardware.
+    </standards>
+    <locations>
+test/ui/widgets/template_preview_dialog_test.dart
+    </locations>
+    <ideas>
+- AC#1: Widget test current preset summary displays correctly
+- AC#2: Widget test template algorithm list displays correctly
+- AC#3: Widget test result preview calculates slot ranges
+- AC#4: Widget test warning shown and button disabled when slots exceed 32
+- AC#5,6: Widget test buttons present and wired correctly
+- AC#7: Widget test loading state shows spinner
+- AC#8: Integration test dialog auto-closes on success
+- AC#9: Widget test error message displayed correctly
+    </ideas>
+  </tests>
+</story-context>

@@ -1058,26 +1058,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       final bool isServerStillRunningBeforeAction =
                           mcpInstance.isRunning;
 
-
                       if (Platform.isMacOS || Platform.isWindows) {
                         if (isMcpEnabledAfterDialog) {
                           if (!isServerStillRunningBeforeAction) {
-                            await mcpInstance.start().catchError((e) {
-                            });
-                          } else {
-                          }
+                            await mcpInstance.start().catchError((e) {});
+                          } else {}
                         } else {
                           // MCP Setting is OFF
                           if (isServerStillRunningBeforeAction) {
-                            await mcpInstance.stop().catchError((e) {
-                            });
-                          } else {
-                          }
+                            await mcpInstance.stop().catchError((e) {});
+                          } else {}
                         }
-                      } else {
-                      }
-                    } else {
-                    }
+                      } else {}
+                    } else {}
                   },
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

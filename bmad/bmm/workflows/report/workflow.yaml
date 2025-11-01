@@ -1,0 +1,33 @@
+name: report
+description: "Generate product status report showing all epics and stories with current development status"
+author: "BMad"
+
+# Critical variables from config
+config_source: "{project-root}/bmad/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Workflow components
+installed_path: "{project-root}/bmad/bmm/workflows/report"
+template: "{installed_path}/template.md"
+instructions: "{installed_path}/instructions.md"
+validation: "{installed_path}/checklist.md"
+
+# Variables and inputs
+variables:
+  sprint_status_file: "{output_folder}/sprint-status.yaml"
+  epics_file: "{output_folder}/epics.md"
+  story_dir: "{config_source}:dev_story_location"
+  include_retrospectives: false # Set to true to include retro status in report
+
+# Output configuration
+default_output_file: "{output_folder}/product-status-report.md"
+
+recommended_inputs:
+  - sprint_status: "Sprint status YAML (auto-discovered)"
+  - epics: "Epic definitions (auto-discovered)"
+
+standalone: true

@@ -43,7 +43,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8; // Incremented schema version
+  int get schemaVersion => 9; // Incremented schema version
 
   // Access DAOs (Drift generates getters)
   // MetadataDao get metadataDao => MetadataDao(this); // This getter is generated
@@ -69,8 +69,7 @@ class AppDatabase extends _$AppDatabase {
 
       // Migration for version 3: Add SdCards and IndexedPresetFiles tables (removed in version 7)
       if (from <= 2) {
-        try {
-        } catch (e) {
+        try {} catch (e) {
           // Intentionally empty
         }
       }
@@ -116,13 +115,11 @@ class AppDatabase extends _$AppDatabase {
       // Migration for version 7: Remove obsolete SD card scanning tables
       if (from <= 6) {
         try {
-
           // Drop tables if they exist (safe for fresh installs)
           await m.database.customStatement(
             'DROP TABLE IF EXISTS indexed_preset_files',
           );
           await m.database.customStatement('DROP TABLE IF EXISTS sd_cards');
-
         } catch (e) {
           // Non-critical error - tables might not exist in some installations
         }
@@ -132,6 +129,15 @@ class AppDatabase extends _$AppDatabase {
       if (from <= 7) {
         try {
           await m.addColumn(presetMappings, presetMappings.perfPageIndex);
+        } catch (e) {
+          // Intentionally empty
+        }
+      }
+
+      // Migration for version 9: Add isTemplate column to presets table
+      if (from <= 8) {
+        try {
+          await m.addColumn(presets, presets.isTemplate);
         } catch (e) {
           // Intentionally empty
         }

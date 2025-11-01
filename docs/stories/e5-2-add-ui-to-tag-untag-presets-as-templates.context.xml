@@ -1,0 +1,138 @@
+<story-context id="e5-2-add-ui-to-tag-untag-presets-as-templates" v="1.0">
+  <metadata>
+    <epicId>epic-5</epicId>
+    <storyId>5.2</storyId>
+    <title>Add UI to tag/untag presets as templates</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e5-2-add-ui-to-tag-untag-presets-as-templates.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user managing my saved presets in the Offline Data screen</asA>
+    <iWant>to mark/unmark presets as templates using a checkbox or toggle</iWant>
+    <soThat>I can designate which presets are reusable templates vs regular saved presets</soThat>
+    <tasks>
+- Add template indicator (star icon) to preset list items
+- Implement long-press/context menu for template toggle
+- Create toggleTemplateStatus() method in PresetsDao
+- Implement optimistic UI update after toggle
+- Add optional confirmation dialog for unmarking templates
+- Test on all platforms
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Preset list items in `metadata_sync_page.dart` show template indicator (star icon or badge) when `preset.isTemplate` is true
+2. Long-press or context menu on preset shows "Mark as Template" / "Unmark as Template" option
+3. Toggling template status updates database via `PresetsDao`
+4. UI updates immediately after toggling (optimistic update or refresh)
+5. Template state persists across app restarts
+6. User confirmation dialog shown before unmarking template (optional based on UX preference)
+7. `flutter analyze` passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 5: Preset Template System</title>
+        <section>Story E5.2</section>
+        <snippet>UI for marking/unmarking presets as templates. Builds on database schema from E5.1.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Documentation - State Management</title>
+        <section>Architecture Patterns</section>
+        <snippet>Cubit pattern for application state. Stateless widgets with BLoC state listening.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5</title>
+        <section>UI Design</section>
+        <snippet>Template indicator using Material Design star icon. Context menu for template toggle action.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/ui/metadata_sync/metadata_sync_page.dart</path>
+        <kind>widget</kind>
+        <symbol>MetadataSyncPage</symbol>
+        <lines>N/A</lines>
+        <reason>Main preset browser UI where template indicators and toggle actions will be added.</reason>
+      </file>
+      <file>
+        <path>lib/ui/metadata_sync/metadata_sync_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>MetadataSyncCubit</symbol>
+        <lines>N/A</lines>
+        <reason>State management for preset operations. Will orchestrate template toggle logic.</reason>
+      </file>
+      <file>
+        <path>lib/db/daos/presets_dao.dart</path>
+        <kind>dao</kind>
+        <symbol>PresetsDao</symbol>
+        <lines>N/A</lines>
+        <reason>Data access layer where toggleTemplateStatus() method will be added.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/preset_browser_dialog.dart</path>
+        <kind>widget</kind>
+        <symbol>PresetBrowserDialog</symbol>
+        <lines>N/A</lines>
+        <reason>Existing preset browser dialog pattern for reference on gesture detection and list item actions.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <dart>
+        flutter: Widget framework
+        flutter_bloc: State management with Cubit pattern
+        drift: Database access
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Follow existing patterns in preset list UI implementation
+- Maintain consistency with other context menu actions (Load, Delete)
+- Use Material Design icons (Icons.star or Icons.label) for template indicator
+- Ensure dark mode compatibility for all UI elements
+- Use GestureDetector with onLongPress for context menu trigger
+- State updates must trigger via cubit emissions, not direct setState
+- Accessibility: proper semantic labels for screen readers
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>PresetsDao.toggleTemplateStatus</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; toggleTemplateStatus(int presetId, bool newStatus)</signature>
+      <path>lib/db/daos/presets_dao.dart</path>
+    </interface>
+    <interface>
+      <name>MetadataSyncCubit.togglePresetTemplate</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; togglePresetTemplate(int presetId, bool isTemplate)</signature>
+      <path>lib/ui/metadata_sync/metadata_sync_cubit.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Widget tests for UI interactions (long-press, menu display). Unit tests for DAO update method. Integration tests for end-to-end template toggle flow. Manual testing on multiple platforms to verify gesture detection.
+    </standards>
+    <locations>
+test/ui/metadata_sync/metadata_sync_page_test.dart
+test/db/daos/presets_dao_test.dart
+    </locations>
+    <ideas>
+- AC#1: Widget test verifying star icon appears when isTemplate=true
+- AC#2: Widget test for long-press gesture triggering context menu
+- AC#3: Unit test for toggleTemplateStatus() database update
+- AC#4: Integration test for optimistic UI update flow
+- AC#5: Integration test for persistence across app restart
+- AC#6: Widget test for confirmation dialog before unmarking
+    </ideas>
+  </tests>
+</story-context>

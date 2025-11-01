@@ -1,0 +1,137 @@
+<story-context id="e5-6-add-inject-template-action-to-templates-view" v="1.0">
+  <metadata>
+    <epicId>epic-5</epicId>
+    <storyId>5.6</storyId>
+    <title>Add "Inject Template" action to templates view</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-10-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e5-6-add-inject-template-action-to-templates-view.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user browsing templates in online mode</asA>
+    <iWant>an "Inject" button next to each template</iWant>
+    <soThat>I can quickly inject a template into my current hardware preset</soThat>
+    <tasks>
+- Add Inject icon button to template list items
+- Wire button to open TemplatePreviewDialog
+- Implement online/offline mode logic
+- Implement sync operation locking
+- Add success feedback snackbar
+- Verify UI auto-refresh after injection
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. When in online mode (connected to hardware), template list items show "Inject" icon button (e.g., `Icons.add_circle_outline`)
+2. Clicking "Inject" button opens template preview dialog (Story E5.5)
+3. "Inject" button is disabled when in offline mode (show tooltip: "Connect to device to inject templates")
+4. "Inject" button is disabled during sync operations (same logic as existing Load/Delete buttons)
+5. Successfully injected template shows success snackbar: "Template '[name]' injected (X algorithms added)"
+6. Template injection updates routing editor and parameter views automatically (via existing `_refreshStateFromManager()`)
+7. `flutter analyze` passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 5: Preset Template System</title>
+        <section>Story E5.6</section>
+        <snippet>Inject button integration into template browser. Completes end-to-end injection workflow.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Documentation - Operation Modes</title>
+        <section>Core Concepts</section>
+        <snippet>Demo (no hardware), Offline (cached data), Connected (live MIDI). Features enabled based on mode.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5</title>
+        <section>Template Actions</section>
+        <snippet>Inject button enabled only in online mode. Success feedback via snackbar. Auto-refresh via cubit listeners.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/ui/metadata_sync/metadata_sync_page.dart</path>
+        <kind>widget</kind>
+        <symbol>MetadataSyncPage</symbol>
+        <lines>N/A</lines>
+        <reason>Template list UI where Inject buttons will be added.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/template_preview_dialog.dart</path>
+        <kind>widget</kind>
+        <symbol>TemplatePreviewDialog</symbol>
+        <lines>N/A</lines>
+        <reason>Preview dialog from E5.5 that will be opened when Inject button clicked.</reason>
+      </file>
+      <file>
+        <path>lib/ui/metadata_sync/metadata_sync_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>MetadataSyncCubit</symbol>
+        <lines>N/A</lines>
+        <reason>Injection service and sync state management.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>N/A</lines>
+        <reason>Connection status and slot count source.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <dart>
+        flutter: Material Design widgets, icons, snackbars
+        flutter_bloc: State management and cubit access
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Maintain consistency with existing Load/Delete button patterns
+- Reuse existing connection status checking logic
+- Follow existing snackbar styling and placement
+- Ensure button is accessible (proper semantic labels)
+- Button state derived from connection and sync status
+- State updates via cubit emissions trigger UI auto-refresh
+- Use Icons.add_circle_outline or similar injection icon
+- Tooltip shows helpful message when button disabled
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>MetadataSyncPage._showInjectDialog</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; _showInjectDialog(FullPresetDetails template)</signature>
+      <path>lib/ui/metadata_sync/metadata_sync_page.dart</path>
+    </interface>
+    <interface>
+      <name>MetadataSyncPage._showSuccessSnackbar</name>
+      <kind>method</kind>
+      <signature>void _showSuccessSnackbar(String templateName, int algorithmsAdded)</signature>
+      <path>lib/ui/metadata_sync/metadata_sync_page.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Widget tests for button rendering and state. Widget tests for tooltip display. Integration tests for full injection flow. Manual testing with hardware connected/disconnected. Manual testing during sync operations.
+    </standards>
+    <locations>
+test/ui/metadata_sync/metadata_sync_page_test.dart
+    </locations>
+    <ideas>
+- AC#1: Widget test Inject button appears in online mode
+- AC#2: Integration test clicking Inject opens preview dialog
+- AC#3: Widget test button disabled in offline mode with tooltip
+- AC#4: Widget test button disabled during sync operations
+- AC#5: Integration test success snackbar appears with correct message
+- AC#6: Integration test UI updates after injection
+    </ideas>
+  </tests>
+</story-context>

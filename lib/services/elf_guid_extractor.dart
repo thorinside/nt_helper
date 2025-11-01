@@ -145,7 +145,6 @@ class ElfGuidExtractor {
         );
       }
 
-
       return PluginGuid(guid: guidString, rawValue: rawGuid);
     } catch (e) {
       if (e is GuidExtractionException) rethrow;
@@ -164,7 +163,6 @@ class ElfGuidExtractor {
     final result = <String, String>{};
 
     try {
-
       // List all files in the plugin directory
       final allFiles = await fileSystem.listFiles(
         directoryPath,
@@ -176,10 +174,8 @@ class ElfGuidExtractor {
           .where((path) => path.endsWith('.o'))
           .toList();
 
-
       for (final filePath in pluginFiles) {
         try {
-
           // Read the file via SYSEX
           final fileBytes = await fileSystem.readFile(filePath);
           if (fileBytes == null) {
@@ -189,12 +185,10 @@ class ElfGuidExtractor {
           // Extract GUID from the file bytes
           final pluginGuid = await extractGuidFromBytes(fileBytes, filePath);
           result[pluginGuid.guid] = filePath;
-
         } catch (e) {
           // Continue processing other files
         }
       }
-
     } catch (e) {
       // Intentionally empty
     }

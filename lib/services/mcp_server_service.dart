@@ -123,8 +123,7 @@ class McpServerService extends ChangeNotifier {
         (HttpRequest request) async {
           await _handleHttpRequest(request);
         },
-        onError: (error, stackTrace) {
-        },
+        onError: (error, stackTrace) {},
         onDone: () {
           _cleanup();
         },
@@ -205,7 +204,6 @@ class McpServerService extends ChangeNotifier {
 
   /// Handle POST requests for JSON-RPC calls
   Future<void> _handlePostRequest(HttpRequest request) async {
-
     try {
       // Parse the request body
       final bodyBytes = await _collectBytes(request);
@@ -288,8 +286,7 @@ class McpServerService extends ChangeNotifier {
     // Check for Last-Event-ID header for resumability
     final lastEventId = request.headers.value('Last-Event-ID');
     if (lastEventId != null) {
-    } else {
-    }
+    } else {}
 
     final transport = _transports[sessionId]!;
     await transport.handleRequest(request);
@@ -306,7 +303,6 @@ class McpServerService extends ChangeNotifier {
       );
       return;
     }
-
 
     try {
       if (_transports.containsKey(sessionId)) {
@@ -380,7 +376,6 @@ class McpServerService extends ChangeNotifier {
       return;
     }
 
-
     await _httpSubscription?.cancel();
     _httpSubscription = null;
 
@@ -414,7 +409,6 @@ class McpServerService extends ChangeNotifier {
 
   /// Pre-load all documentation resources at startup
   Future<void> _preloadResources() async {
-
     // DEBUGGING: Use hardcoded content to test if the resource mechanism works
     // This bypasses asset loading entirely to isolate the issue
     final hardcodedContent = {
@@ -543,10 +537,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       _resourceCache[entry.key] = entry.value;
     }
 
-
     // Debug: Show what's in the cache
-    for (final _ in _resourceCache.entries) {
-    }
+    for (final _ in _resourceCache.entries) {}
   }
 
   McpServer _buildServer() {
@@ -1252,14 +1244,12 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       // Double-check cache state at request time
       final originalContent = _resourceCache[resourceName];
       if (originalContent != null) {
-      } else {
-      }
+      } else {}
 
       // Use real content now that we know the mechanism works
       var rawContent =
           originalContent ??
           'Documentation not available - Resource not found in cache: $resourceName';
-
 
       // SANITIZE: Replace Unicode characters that break MCP JSON serialization
       final originalLength = rawContent.length;
@@ -1275,8 +1265,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
 
       final sanitizedLength = finalContent.length;
       if (originalLength != sanitizedLength) {
-      } else {
-      }
+      } else {}
 
       // Return pre-loaded content immediately - no async operations
       // Try different ways to construct the ResourceContents
@@ -1288,14 +1277,12 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'mimeType': 'text/markdown',
         });
 
-
         final result = ReadResourceResult(contents: [resourceContents]);
 
         DateTime.now().difference(startTime);
 
         return result;
       } catch (e) {
-
         // Last resort: return empty result
         DateTime.now().difference(startTime);
 
@@ -1305,7 +1292,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
   }
 
   void _registerDocumentationResources(McpServer server) {
-
     // Define resource metadata
     final resourceMeta = {
       'bus-mapping': 'IO to Bus conversion rules and routing concepts',
@@ -1321,7 +1307,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       final resourceName = entry.key;
       final description = entry.value;
 
-
       // Get content from cache - fallback to error message if not found
       final content =
           _resourceCache[resourceName] ??
@@ -1330,8 +1315,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       // DEBUGGING: Add more detailed logging for registration
 
       if (_resourceCache.containsKey(resourceName)) {
-      } else {
-      }
+      } else {}
 
       server.resource(
         resourceName,
@@ -1339,9 +1323,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         _createResourceCallback(resourceName, content),
         metadata: (mimeType: 'text/markdown', description: description),
       );
-
     }
-
   }
 
   void _registerHelpfulPrompts(McpServer server) {

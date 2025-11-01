@@ -67,7 +67,6 @@ abstract class Es5DirectOutputAlgorithmRouting
             channelNumber: es5OutputValue, // ES-5 port number
           ),
         );
-
       } else {
         // NORMAL MODE: Use Output parameter
         // Try 'Output' first, then fall back to any parameter ending with 'output' (e.g., 'Clock output')
@@ -93,9 +92,7 @@ abstract class Es5DirectOutputAlgorithmRouting
               parameterNumber: outputBusResult.parameterNumber,
             ),
           );
-
-        } else {
-        }
+        } else {}
       }
     }
 
@@ -362,7 +359,6 @@ abstract class Es5DirectOutputAlgorithmRouting
         }
       }
     }
-
 
     // Use base class to process normal inputs (non-channel-prefixed parameters)
     final baseRouting = MultiChannelAlgorithmRouting.createFromSlot(

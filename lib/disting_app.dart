@@ -132,12 +132,9 @@ class _DistingPageState extends State<DistingPage> {
           final settings = SettingsService();
           if ((Platform.isMacOS || Platform.isWindows) && settings.mcpEnabled) {
             if (!McpServerService.instance.isRunning) {
-              await McpServerService.instance.start().catchError((e) {
-              });
-            } else {
-            }
-          } else {
-          }
+              await McpServerService.instance.start().catchError((e) {});
+            } else {}
+          } else {}
         } catch (e) {
           // Intentionally empty
         }
@@ -160,26 +157,19 @@ class _DistingPageState extends State<DistingPage> {
       final bool isServerStillRunningBeforeAction = mcpInstance
           .isRunning; // Check state *before* explicitly starting/stopping
 
-
       if (Platform.isMacOS || Platform.isWindows) {
         if (isMcpEnabledAfterDialog) {
           if (!isServerStillRunningBeforeAction) {
-            await mcpInstance.start().catchError((e) {
-            });
-          } else {
-          }
+            await mcpInstance.start().catchError((e) {});
+          } else {}
         } else {
           // MCP Setting is OFF
           if (isServerStillRunningBeforeAction) {
-            await mcpInstance.stop().catchError((e) {
-            });
-          } else {
-          }
+            await mcpInstance.stop().catchError((e) {});
+          } else {}
         }
-      } else {
-      }
-    } else {
-    }
+      } else {}
+    } else {}
   }
 
   @override
@@ -187,8 +177,7 @@ class _DistingPageState extends State<DistingPage> {
     // Stop the MCP server when the widget is disposed
     if ((Platform.isMacOS || Platform.isWindows) &&
         McpServerService.instance.isRunning) {
-      McpServerService.instance.stop().catchError((e) {
-      });
+      McpServerService.instance.stop().catchError((e) {});
     }
     super.dispose();
   }

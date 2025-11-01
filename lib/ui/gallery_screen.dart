@@ -90,7 +90,6 @@ class _GalleryViewState extends State<_GalleryView>
     BuildContext context,
     GalleryPlugin plugin,
   ) async {
-
     try {
       // Construct the GitHub README URL
       String readmeUrl = plugin.repository.url;
@@ -101,7 +100,6 @@ class _GalleryViewState extends State<_GalleryView>
             ? '$readmeUrl#readme'
             : '$readmeUrl#readme';
       }
-
 
       final uri = Uri.parse(readmeUrl);
       if (await canLaunchUrl(uri)) {

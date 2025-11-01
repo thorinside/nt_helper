@@ -284,8 +284,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             }
           }
 
-          if (modeParameterNumber != null) {
-          }
+          if (modeParameterNumber != null) {}
 
           ports.add(
             Port(
@@ -474,7 +473,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       _cachedInputPorts = null;
       _cachedOutputPorts = null;
     }
-
   }
 
   /// Validates multi-channel specific connections
@@ -572,7 +570,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       // Clear cached ports to force regeneration
       _cachedInputPorts = null;
       _cachedOutputPorts = null;
-
     }
   }
 
@@ -838,7 +835,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
                 : 'add'; // 0 = Add, 1 = Replace
           } else {
             // Optional: Log if no mode parameter was found for the value
-            // 
+            //
           }
         }
 
@@ -866,7 +863,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             port['modeParameterNumber'] = modeInfo.parameterNumber;
           } else {
             // Optional: Log if no mode parameter was found for the number
-            // 
+            //
           }
         }
 
@@ -953,7 +950,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
 
         // Only duplicate if the original Audio input has a valid bus assignment
         if (baseBusValue > 0) {
-
           // Create virtual ports and insert them right after the original
           final virtualPorts = <Map<String, Object?>>[];
           for (int channel = 2; channel <= channelCount; channel++) {

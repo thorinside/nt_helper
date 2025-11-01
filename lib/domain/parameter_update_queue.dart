@@ -103,7 +103,6 @@ class ParameterUpdateQueue {
       _updatesConsolidated++;
     }
 
-
     // For real-time updates during slider movement, request string update immediately
     if (isRealTimeUpdate && needsStringUpdate) {
       _requestStringUpdateImmediately(algorithmIndex, parameterNumber);
@@ -192,7 +191,6 @@ class ParameterUpdateQueue {
       _pendingUpdates.remove(entry.key);
       final update = entry.value;
 
-
       // Send parameter value (fire-and-forget)
       await _midiManager.setParameterValue(
         update.algorithmIndex,
@@ -215,8 +213,7 @@ class ParameterUpdateQueue {
               update.parameterNumber,
               parameterString.value,
             );
-          } else {
-          }
+          } else {}
         } catch (e) {
           // Continue processing even if string update fails
         }

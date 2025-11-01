@@ -56,7 +56,6 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
       return ports;
     }
 
-
     // Process each channel page
     for (final page in channelPages) {
       // Extract channel number from page name (e.g., "Channel 1" -> 1)
@@ -142,8 +141,7 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
         );
 
         ports.add(port);
-      } else {
-      }
+      } else {}
     }
 
     return ports;
@@ -209,7 +207,6 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
             busParam: mirrorBusParam, // Special marker for connection discovery
           ),
         );
-
       }
     }
 
@@ -236,7 +233,6 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
         .where((page) => page.name.startsWith('Channel '))
         .toList();
     final channelCount = channelPages.length;
-
 
     // Create configuration for the ES-5 Encoder
     final config = MultiChannelAlgorithmConfig(

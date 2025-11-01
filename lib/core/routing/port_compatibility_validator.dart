@@ -169,7 +169,7 @@ typedef ValidationRule =
 /// } else {
 ///   // Handle errors
 ///   for (final error in result.errors) {
-///     
+///
 ///   }
 /// }
 /// ```

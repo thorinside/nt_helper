@@ -107,10 +107,7 @@ class PackageCreator {
       onProgress?.call('Complete!');
 
       // Print summary report
-      PresetAnalyzer.generatePackageReport(
-        dependencies,
-        dependencyFiles,
-      );
+      PresetAnalyzer.generatePackageReport(dependencies, dependencyFiles);
 
       return Uint8List.fromList(zipBytes);
     } catch (e) {
