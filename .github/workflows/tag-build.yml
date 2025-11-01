@@ -39,7 +39,7 @@ jobs:
           tag: ${{ github.ref_name }}
           name: "${{ github.ref_name }} - Automated Release"
           bodyFile: release_notes.md
-          generateReleaseNotes: true
+          generateReleaseNotes: false
 
   android:
     name: Build and Sign Android APK

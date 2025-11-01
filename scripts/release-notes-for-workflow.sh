@@ -66,8 +66,8 @@ echo "Generating release notes for $CURRENT_TAG (comparing with $PREVIOUS_TAG)"
         echo ""
     fi
     
-    # Other changes (excluding the categorized ones)
-    OTHER=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${CURRENT_TAG} --invert-grep --grep="feat:" --grep="add:" --grep="new:" --grep="feature:" --grep="improve:" --grep="enhance:" --grep="update:" --grep="refactor:" --grep="fix:" --grep="bug:" --grep="docs:" --grep="doc:" -i)
+    # Other changes (excluding the categorized ones and version bumps)
+    OTHER=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${CURRENT_TAG} --invert-grep --grep="feat:" --grep="add:" --grep="new:" --grep="feature:" --grep="improve:" --grep="enhance:" --grep="update:" --grep="refactor:" --grep="fix:" --grep="bug:" --grep="docs:" --grep="doc:" --grep="Bump version" --grep="bump version" -i)
     if [ ! -z "$OTHER" ]; then
         echo "### 🔄 Other Changes"
         echo "$OTHER"
