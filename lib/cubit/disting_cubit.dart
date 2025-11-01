@@ -947,26 +947,21 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  /// Refreshes the state from the Disting device (ONLINE ONLY).
+  /// Refreshes the state from the current manager (online or offline).
   /// By default, performs a fast refresh of preset data only.
-  /// Set [fullRefresh] to true to also re-download the algorithm library.
+  /// Set [fullRefresh] to true to also re-download the algorithm library (online only).
   Future<void> refresh({bool fullRefresh = false}) async {
     final currentState = state;
     if (currentState is DistingStateSynchronized) {
-      // *** Add check for offline mode ***
-      if (currentState.offline) {
-        return;
-      }
-
-      if (fullRefresh) {
-        // Full refresh: re-download everything including algorithm library
+      if (fullRefresh && !currentState.offline) {
+        // Full refresh: re-download everything including algorithm library (online only)
         await _performSyncAndEmit();
       } else {
-        // Fast refresh: only update preset then optionally refresh algorithms in background
+        // Fast refresh: only update preset from manager (works in both online and offline)
         await _refreshStateFromManager();
 
-        // Check if we should refresh algorithms in the background
-        if (_shouldRefreshAlgorithms(currentState)) {
+        // Check if we should refresh algorithms in the background (online only)
+        if (!currentState.offline && _shouldRefreshAlgorithms(currentState)) {
           _refreshAlgorithmsInBackground();
         }
       }

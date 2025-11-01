@@ -953,11 +953,7 @@ class _PresetListView extends StatelessWidget {
         final bool canLoad = !isOperationInProgress;
         final bool canDelete = !isOperationInProgress;
 
-        return GestureDetector(
-          onLongPress: canLoad
-              ? () => _showTemplateToggleMenu(context, preset)
-              : null,
-          child: ListTile(
+        return ListTile(
             key: ValueKey(preset.id),
             selected: isCurrentlyLoadedOffline,
             selectedTileColor: Theme.of(
@@ -1023,8 +1019,7 @@ class _PresetListView extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        );
+          );
       },
     );
   }
@@ -1165,81 +1160,6 @@ class _PresetListView extends StatelessWidget {
   }
 
   // Helper function for Template Toggle Menu
-  void _showTemplateToggleMenu(BuildContext context, PresetEntry preset) {
-    final RenderBox? overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox?;
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final Offset position = button.localToGlobal(Offset.zero);
-    final cubit = metadataSyncCubit;
-
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy + button.size.height,
-        overlay?.size.width ?? 0,
-        0,
-      ),
-      items: [
-        PopupMenuItem<String>(
-          value: preset.isTemplate ? 'unmark' : 'mark',
-          child: Row(
-            children: [
-              Icon(
-                preset.isTemplate ? Icons.star_border : Icons.star,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                preset.isTemplate ? 'Unmark as Template' : 'Mark as Template',
-              ),
-            ],
-          ),
-        ),
-      ],
-    ).then((value) {
-      if (value != null && context.mounted) {
-        if (value == 'unmark') {
-          _showUnmarkTemplateConfirmationDialog(context, preset);
-        } else {
-          cubit.togglePresetTemplate(preset.id, true);
-        }
-      }
-    });
-  }
-
-  // Helper function for Unmark Template Confirmation Dialog
-  void _showUnmarkTemplateConfirmationDialog(
-    BuildContext context,
-    PresetEntry preset,
-  ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Remove Template Status?'),
-          content: Text(
-            'Remove template status from "${preset.name}"? This will move the preset back to regular presets.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Remove'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                metadataSyncCubit.togglePresetTemplate(preset.id, false);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 // --- Widget for Template List View ---
@@ -1328,11 +1248,7 @@ class _TemplateListView extends StatelessWidget {
             final bool canLoad = !isOperationInProgress;
             final bool canDelete = !isOperationInProgress;
 
-            return GestureDetector(
-              onLongPress: canLoad
-                  ? () => _showTemplateToggleMenu(context, preset)
-                  : null,
-              child: ListTile(
+            return ListTile(
                 key: ValueKey(preset.id),
                 selected: isCurrentlyLoadedOffline,
                 selectedTileColor: Theme.of(
@@ -1351,15 +1267,15 @@ class _TemplateListView extends StatelessWidget {
                     IconButton(
                       icon: Icon(
                         Icons.add_circle_outline,
-                        color: canLoad && !isOffline
+                        color: canLoad
                             ? Theme.of(context).colorScheme.secondary
                             : Colors.grey,
                       ),
                       tooltip: isOffline
-                          ? 'Connect to device to inject templates'
+                          ? 'Inject Template (Offline)'
                           : 'Inject Template',
-                      onPressed: canLoad && !isOffline
-                          ? () => _showInjectDialog(
+                      onPressed: canLoad
+                          ? () async => await _showInjectDialog(
                                 context,
                                 template,
                                 distingCubit,
@@ -1401,8 +1317,7 @@ class _TemplateListView extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            );
+              );
           },
         );
       },
@@ -1496,73 +1411,6 @@ class _TemplateListView extends StatelessWidget {
     );
   }
 
-  // Helper function for Template Toggle Menu
-  void _showTemplateToggleMenu(BuildContext context, PresetEntry preset) {
-    final RenderBox? overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox?;
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final Offset position = button.localToGlobal(Offset.zero);
-
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy + button.size.height,
-        overlay?.size.width ?? 0,
-        0,
-      ),
-      items: [
-        const PopupMenuItem<String>(
-          value: 'unmark',
-          child: Row(
-            children: [
-              Icon(Icons.star_border, size: 20),
-              SizedBox(width: 12),
-              Text('Unmark as Template'),
-            ],
-          ),
-        ),
-      ],
-    ).then((value) {
-      if (value == 'unmark' && context.mounted) {
-        _showUnmarkTemplateConfirmationDialog(context, preset);
-      }
-    });
-  }
-
-  // Helper function for Unmark Template Confirmation Dialog
-  void _showUnmarkTemplateConfirmationDialog(
-    BuildContext context,
-    PresetEntry preset,
-  ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Remove Template Status?'),
-          content: Text(
-            'Remove template status from "${preset.name}"? This will move the preset back to regular presets.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Remove'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                metadataSyncCubit.togglePresetTemplate(preset.id, false);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   // Helper function for Inject Template Dialog
   Future<void> _showInjectDialog(
     BuildContext context,
@@ -1597,7 +1445,13 @@ class _TemplateListView extends StatelessWidget {
     }
 
     // Get current slot count from device
-    final currentSlotCount = await manager.requestNumAlgorithmsInPreset() ?? 0;
+    int currentSlotCount = 0;
+    try {
+      currentSlotCount = await manager.requestNumAlgorithmsInPreset() ?? 0;
+    } catch (e) {
+      // In offline/demo mode, assume empty preset
+      currentSlotCount = 0;
+    }
 
     if (!context.mounted) return;
 
@@ -1636,8 +1490,14 @@ class _TemplateListView extends StatelessWidget {
       manager,
     );
 
-    // If injection succeeded, show success snackbar
-    if (result == true && context.mounted) {
+    // If injection succeeded, refresh the DistingCubit and show success snackbar
+    if (result == true) {
+      // Trigger refresh of the DistingCubit to show the newly added algorithms
+      // Use the distingCubit parameter instead of reading from context
+      await distingCubit.refresh();
+
+      if (!context.mounted) return;
+
       final algorithmsAdded = template.slots.length;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

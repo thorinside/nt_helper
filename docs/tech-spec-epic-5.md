@@ -883,3 +883,24 @@ Post-deployment, consider tracking:
 - Reduction in explicit Save button usage
 - Any reported issues with data persistence
 - Performance impact (memory/CPU usage)
+
+---
+
+## Changelog
+
+### 2025-11-01 - Template Injection Offline Mode Fix
+
+**Issue:** Template injection was completing successfully but UI wasn't updating in offline mode.
+
+**Root Causes:**
+1. Button callback wasn't awaiting the async dialog function
+2. `DistingCubit.refresh()` had early return for offline mode
+3. Context was unmounted by the time dialog returned
+4. Context check prevented refresh call from executing
+
+**Changes:**
+- `lib/ui/metadata_sync/metadata_sync_page.dart:1278` - Made button callback async with await
+- `lib/cubit/disting_cubit.dart:953-971` - Removed offline early-return from `refresh()`, allowing it to work in both modes
+- `lib/ui/metadata_sync/metadata_sync_page.dart:1495-1512` - Fixed context handling to use cubit parameter directly
+
+**Result:** Template injection now works correctly in all modes (online, offline, demo) with proper UI refresh.

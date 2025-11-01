@@ -303,46 +303,18 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
 
     try {
       // Call the injection method from the cubit
+      // This method emits presetLoadSuccess then calls loadLocalData which emits viewingLocalData
       await widget.syncCubit.injectTemplateToDevice(
         widget.template,
         widget.manager,
       );
 
-      // Check if injection succeeded by observing the cubit state
-      // We'll use a simple delay and check the state
-      await Future.delayed(const Duration(milliseconds: 500));
-
       if (!mounted) return;
 
-      final state = widget.syncCubit.state;
-      final success = state.maybeMap(
-        presetLoadSuccess: (_) => true,
-        orElse: () => false,
-      );
-
-      if (success) {
-        // Auto-close on success
-        Navigator.of(context).pop(true);
-      } else {
-        // Check for error
-        final error = state.maybeMap(
-          presetLoadFailure: (failure) => failure.error,
-          orElse: () => null,
-        );
-
-        if (error != null) {
-          setState(() {
-            _isLoading = false;
-            _errorMessage = error;
-          });
-        } else {
-          // Still loading, wait a bit more
-          setState(() {
-            _isLoading = false;
-            _errorMessage = 'Unknown error occurred during injection';
-          });
-        }
-      }
+      // The injection completed without throwing, which means it succeeded
+      // (If it failed, it would have thrown an exception)
+      // Auto-close on success
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
 

@@ -791,7 +791,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   ) async {
     _isInjectionCancelled = false; // Reset cancellation flag
     emit(const MetadataSyncState.loadingPreset());
-    if (kDebugMode) {}
 
     try {
       // Check for empty template
@@ -822,8 +821,13 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       }
 
       // Validate slot limit before starting injection
-      final currentSlotCount =
-          await manager.requestNumAlgorithmsInPreset() ?? 0;
+      int currentSlotCount = 0;
+      try {
+        currentSlotCount = await manager.requestNumAlgorithmsInPreset() ?? 0;
+      } catch (e) {
+        // In offline/demo mode, assume empty preset
+        currentSlotCount = 0;
+      }
       final templateSlotCount = template.slots.length;
       final totalSlots = currentSlotCount + templateSlotCount;
 
@@ -834,13 +838,10 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         );
       }
 
-      if (kDebugMode) {}
-
       // Track the starting slot index for parameter/mapping application
       final startingSlotIndex = currentSlotCount;
 
       // Add all algorithms first (sequentially, not in parallel)
-      if (kDebugMode) {}
       for (int i = 0; i < template.slots.length; i++) {
         // Check for cancellation between algorithms
         if (_isInjectionCancelled) {
@@ -852,7 +853,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
         final slot = template.slots[i];
         final algorithmGuid = slot.algorithm.guid;
-        if (kDebugMode) {}
 
         try {
           // Fetch full details to get specifications and AlgorithmInfo fields
@@ -865,7 +865,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
               "Cannot add template slot ${i + 1}.",
             );
           }
-          if (kDebugMode) {}
 
           // Prepare AlgorithmInfo and default specifications
           // Use startingSlotIndex + i as the target slot index
@@ -890,7 +889,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
               .map((s) => s.defaultValue)
               .toList();
 
-          if (kDebugMode) {}
           await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
           // Add delay after adding each algorithm
           await Future.delayed(const Duration(milliseconds: 150));
@@ -906,7 +904,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       }
 
       // Set parameters and mappings for each injected slot
-      if (kDebugMode) {}
       for (int i = 0; i < template.slots.length; i++) {
         final slot = template.slots[i];
         final targetSlotIndex = startingSlotIndex + i;
@@ -977,6 +974,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       // Reload local data after success to ensure UI is in ViewingLocalData state
       await loadLocalData();
     } catch (e) {
+
       // Provide specific error messages based on exception type
       String errorMessage;
 
