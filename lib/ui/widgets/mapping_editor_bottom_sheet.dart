@@ -45,7 +45,7 @@ class MappingEditorBottomSheet extends StatelessWidget {
               slots: slots,
               algorithmIndex: algorithmIndex,
               parameterNumber: parameterNumber,
-              onSave: (updatedData) {
+              onSave: (updatedData) async {
                 // Save directly to cubit without closing the dialog
                 distingCubit.saveMapping(algorithmIndex, parameterNumber, updatedData);
               },

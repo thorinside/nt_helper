@@ -19,7 +19,7 @@ void main() {
         home: Scaffold(
           body: PackedMappingDataEditor(
             initialData: initialData ?? testData,
-            onSave: (_) {},
+            onSave: (_) async {},
             slots: mockSlots,
             algorithmIndex: 0,
             parameterNumber: 0,
@@ -67,7 +67,7 @@ void main() {
           home: Scaffold(
             body: PackedMappingDataEditor(
               initialData: data14BitLow,
-              onSave: (_) {},
+              onSave: (_) async {},
               slots: mockSlots,
               algorithmIndex: 0,
               parameterNumber: 0,
@@ -95,7 +95,7 @@ void main() {
           home: Scaffold(
             body: PackedMappingDataEditor(
               initialData: data14BitHigh,
-              onSave: (_) {},
+              onSave: (_) async {},
               slots: mockSlots,
               algorithmIndex: 0,
               parameterNumber: 0,
@@ -274,7 +274,7 @@ void main() {
     });
 
     Widget createTestWidget({
-      required void Function(PackedMappingData) onSave,
+      required Future<void> Function(PackedMappingData) onSave,
       PackedMappingData? initialData,
     }) {
       return MaterialApp(
@@ -298,7 +298,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) {
+          onSave: (data) async {
             saveCount++;
             lastSavedData = data;
           },
@@ -343,7 +343,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) {
+          onSave: (data) async {
             saveCount++;
           },
         ),
@@ -390,12 +390,12 @@ void main() {
       expect(saveCount, 1); // One save after 1 second from last change
     });
 
-    testWidgets('Timer cancelled on dispose', (tester) async {
+    testWidgets('Pending save flushed on dispose', (tester) async {
       int saveCount = 0;
 
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) {
+          onSave: (data) async {
             saveCount++;
           },
         ),
@@ -420,13 +420,10 @@ void main() {
       );
       await tester.pump();
 
-      // Dispose widget
+      // Dispose widget - should flush pending save
       await tester.pumpWidget(Container());
 
-      // Wait to ensure no save happens
-      await tester.pump(Duration(seconds: 2));
-
-      expect(saveCount, 0); // No save should occur after disposal
+      expect(saveCount, 1); // Save should be flushed on disposal
     });
 
     testWidgets('Tab switching does not trigger save', (tester) async {
@@ -434,7 +431,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) {
+          onSave: (data) async {
             saveCount++;
           },
         ),
@@ -464,7 +461,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) {
+          onSave: (data) async {
             saveCount++;
             lastSavedData = data;
           },
@@ -503,7 +500,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) {
+          onSave: (data) async {
             saveCount++;
             lastSavedData = data;
           },
@@ -541,7 +538,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) {
+          onSave: (data) async {
             saveCount++;
             lastSavedData = data;
           },
@@ -582,7 +579,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) {
+          onSave: (data) async {
             saveCount++;
           },
         ),
@@ -647,7 +644,7 @@ void main() {
         home: Scaffold(
           body: PackedMappingDataEditor(
             initialData: initialData ?? testData,
-            onSave: (_) {},
+            onSave: (_) async {},
             slots: mockSlots,
             algorithmIndex: 0,
             parameterNumber: 0,

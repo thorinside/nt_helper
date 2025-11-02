@@ -73,3 +73,6 @@ development_status:
 
   epic-6: contexted
   e6-1-mobile-performance-page-support: review
+
+  # Bug Fixes
+  bug-1-mapping-editor-save-and-input-issues: review

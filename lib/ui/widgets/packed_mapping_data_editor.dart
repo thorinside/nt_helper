@@ -9,7 +9,7 @@ import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart'; // Import 
 
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
-  final ValueChanged<PackedMappingData> onSave;
+  final Future<void> Function(PackedMappingData) onSave;
   final List<Slot> slots;
   final int algorithmIndex;
   final int parameterNumber;
@@ -52,6 +52,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   Timer? _debounceTimer;
   static const _maxRetries = 3;
   static const _debounceDuration = Duration(seconds: 1);
+
+  // Dirty state tracking
+  bool _isDirty = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -98,7 +102,11 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    // Flush pending save synchronously (widget is disposing)
+    if (_debounceTimer != null && _debounceTimer!.isActive) {
+      _debounceTimer?.cancel();
+      _performSaveSync();
+    }
     _tabController.dispose();
 
     // Dispose controllers
@@ -115,10 +123,43 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   }
 
   void _triggerOptimisticSave() {
+    setState(() {
+      _isDirty = true;
+      _isSaving = false;
+    });
     _debounceTimer?.cancel();
     _debounceTimer = Timer(_debounceDuration, () {
+      setState(() {
+        _isSaving = true;
+      });
       _attemptSave();
     });
+  }
+
+  // Synchronous save for disposal - no setState calls
+  void _performSaveSync() {
+    // Update data from controllers without calling setState
+    final volts = int.tryParse(_voltsController.text) ?? _data.volts;
+    final delta = int.tryParse(_deltaController.text) ?? _data.delta;
+    final midiCC = int.tryParse(_midiCcController.text) ?? _data.midiCC;
+    final midiMin = int.tryParse(_midiMinController.text) ?? _data.midiMin;
+    final midiMax = int.tryParse(_midiMaxController.text) ?? _data.midiMax;
+    final i2cCC = int.tryParse(_i2cCcController.text) ?? _data.i2cCC;
+    final i2cMin = int.tryParse(_i2cMinController.text) ?? _data.i2cMin;
+    final i2cMax = int.tryParse(_i2cMaxController.text) ?? _data.i2cMax;
+
+    _data = _data.copyWith(
+      volts: volts,
+      delta: delta,
+      midiCC: midiCC,
+      midiMin: midiMin,
+      midiMax: midiMax,
+      i2cCC: i2cCC,
+      i2cMin: i2cMin,
+      i2cMax: i2cMax,
+    );
+
+    widget.onSave(_data);
   }
 
   Future<void> _attemptSave({int attempt = 0}) async {
@@ -132,14 +173,27 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       _updateI2cMinFromController();
       _updateI2cMaxFromController();
 
-      widget.onSave(_data);
+      await widget.onSave(_data);
+
+      if (mounted) {
+        setState(() {
+          _isDirty = false;
+          _isSaving = false;
+        });
+      }
     } catch (e) {
       if (attempt < _maxRetries) {
         final delay = Duration(milliseconds: 100 * (1 << attempt));
         await Future.delayed(delay);
         await _attemptSave(attempt: attempt + 1);
+      } else {
+        // Silent failure after max retries - reset state
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+          });
+        }
       }
-      // Silent failure after max retries
     }
   }
 
@@ -149,17 +203,41 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       height: 450, // keep the bottom sheet from being too tall
       child: Column(
         children: [
-          TabBar(
-            controller: _tabController,
-            labelColor: Theme.of(context).colorScheme.onSurface,
-            unselectedLabelColor: Theme.of(
-              context,
-            ).colorScheme.onSurface.withAlpha(64),
-            tabs: const [
-              Tab(text: 'CV'),
-              Tab(text: 'MIDI'),
-              Tab(text: 'I2C'),
-              Tab(text: 'Performance'),
+          Stack(
+            children: [
+              TabBar(
+                controller: _tabController,
+                labelColor: Theme.of(context).colorScheme.onSurface,
+                unselectedLabelColor: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withAlpha(64),
+                tabs: const [
+                  Tab(text: 'CV'),
+                  Tab(text: 'MIDI'),
+                  Tab(text: 'I2C'),
+                  Tab(text: 'Performance'),
+                ],
+              ),
+              if (_isDirty || _isSaving)
+                Positioned(
+                  right: 16,
+                  top: 8,
+                  child: Tooltip(
+                    message: _isSaving
+                        ? 'Saving...'
+                        : 'Unsaved changes',
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isSaving
+                            ? Colors.blue
+                            : Colors.amber,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
           Expanded(
@@ -500,6 +578,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               _updateMidiMinFromController();
               _triggerOptimisticSave();
             },
+            signed: true,
           ),
           _buildNumericField(
             label: 'MIDI Max',
@@ -509,6 +588,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               _updateMidiMaxFromController();
               _triggerOptimisticSave();
             },
+            signed: true,
           ),
           // Add the MIDI Detector
           MidiDetectorWidget(
@@ -632,6 +712,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               _updateI2cMinFromController();
               _triggerOptimisticSave();
             },
+            signed: true,
           ),
           _buildNumericField(
             label: 'I2C Max',
@@ -641,6 +722,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               _updateI2cMaxFromController();
               _triggerOptimisticSave();
             },
+            signed: true,
           ),
         ],
       ),
@@ -787,11 +869,14 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     required TextEditingController controller,
     required VoidCallback onSubmit,
     VoidCallback? onChanged,
+    bool signed = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: TextField(
-        keyboardType: TextInputType.number,
+        keyboardType: signed
+            ? const TextInputType.numberWithOptions(signed: true)
+            : TextInputType.number,
         textInputAction: TextInputAction.done,
         controller: controller,
         decoration: InputDecoration(

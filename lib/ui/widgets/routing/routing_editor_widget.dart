@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:convert' as convert;
 
@@ -12,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cross_file/cross_file.dart';
 
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
@@ -585,9 +583,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final platformService = widget.platformService;
       if (platformService?.isMobilePlatform() == true) {
         // Use native sharing on mobile
-        await Share.shareXFiles(
-          [XFile.fromData(bytes, mimeType: 'image/png', name: 'routing_diagram.png')],
-          text: 'Routing diagram from nt_helper',
+        final xFile = XFile.fromData(bytes, mimeType: 'image/png', name: 'routing_diagram.png');
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [xFile],
+            text: 'Routing diagram from nt_helper',
+          ),
         );
         _showFeedback('Routing diagram shared');
       } else {
@@ -608,9 +609,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final platformService = widget.platformService;
       if (platformService?.isMobilePlatform() == true) {
         // Use native sharing on mobile
-        await Share.shareXFiles(
-          [XFile.fromData(bytes, mimeType: 'image/png', name: 'routing_canvas.png')],
-          text: 'Routing canvas from nt_helper',
+        final xFile = XFile.fromData(bytes, mimeType: 'image/png', name: 'routing_canvas.png');
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [xFile],
+            text: 'Routing canvas from nt_helper',
+          ),
         );
         _showFeedback('Routing canvas shared');
       } else {
