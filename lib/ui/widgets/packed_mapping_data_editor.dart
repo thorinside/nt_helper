@@ -220,20 +220,23 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               ),
               if (_isDirty || _isSaving)
                 Positioned(
-                  right: 16,
-                  top: 8,
-                  child: Tooltip(
-                    message: _isSaving
-                        ? 'Saving...'
-                        : 'Unsaved changes',
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _isSaving
-                            ? Colors.blue
-                            : Colors.amber,
+                  left: 16,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Tooltip(
+                      message: _isSaving
+                          ? 'Saving...'
+                          : 'Unsaved changes',
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isSaving
+                              ? Colors.blue
+                              : Colors.amber,
+                        ),
                       ),
                     ),
                   ),
@@ -390,19 +393,13 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               label: 'Volts',
               controller: _voltsController,
               onSubmit: _updateVoltsFromController,
-              onChanged: () {
-                _updateVoltsFromController();
-                _triggerOptimisticSave();
-              },
+              onChanged: _triggerOptimisticSave,
             ),
             _buildNumericField(
               label: 'Delta',
               controller: _deltaController,
               onSubmit: _updateDeltaFromController,
-              onChanged: () {
-                _updateDeltaFromController();
-                _triggerOptimisticSave();
-              },
+              onChanged: _triggerOptimisticSave,
             ),
           ],
         ),
@@ -414,16 +411,20 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final parsed = int.tryParse(_voltsController.text) ?? _data.volts;
     setState(() {
       _data = _data.copyWith(volts: parsed);
-      _voltsController.text = _data.volts.toString();
     });
+    if (_voltsController.text != _data.volts.toString()) {
+      _voltsController.text = _data.volts.toString();
+    }
   }
 
   void _updateDeltaFromController() {
     final parsed = int.tryParse(_deltaController.text) ?? _data.delta;
     setState(() {
       _data = _data.copyWith(delta: parsed);
-      _deltaController.text = _data.delta.toString();
     });
+    if (_deltaController.text != _data.delta.toString()) {
+      _deltaController.text = _data.delta.toString();
+    }
   }
 
   /// ---------------------
@@ -510,10 +511,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'MIDI CC / Note (0–128)',
             controller: _midiCcController,
             onSubmit: _updateMidiCcFromController,
-            onChanged: () {
-              _updateMidiCcFromController();
-              _triggerOptimisticSave();
-            },
+            onChanged: _triggerOptimisticSave,
           ),
           Row(
             children: [
@@ -574,20 +572,14 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'MIDI Min',
             controller: _midiMinController,
             onSubmit: _updateMidiMinFromController,
-            onChanged: () {
-              _updateMidiMinFromController();
-              _triggerOptimisticSave();
-            },
+            onChanged: _triggerOptimisticSave,
             signed: true,
           ),
           _buildNumericField(
             label: 'MIDI Max',
             controller: _midiMaxController,
             onSubmit: _updateMidiMaxFromController,
-            onChanged: () {
-              _updateMidiMaxFromController();
-              _triggerOptimisticSave();
-            },
+            onChanged: _triggerOptimisticSave,
             signed: true,
           ),
           // Add the MIDI Detector
@@ -637,8 +629,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final clamped = parsed.clamp(0, 128);
     setState(() {
       _data = _data.copyWith(midiCC: clamped);
-      _midiCcController.text = _data.midiCC.toString();
     });
+    if (_midiCcController.text != _data.midiCC.toString()) {
+      _midiCcController.text = _data.midiCC.toString();
+    }
   }
 
   void _updateMidiMinFromController() {
@@ -646,8 +640,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final clamped = parsed.clamp(-32768, 32767);
     setState(() {
       _data = _data.copyWith(midiMin: clamped);
-      _midiMinController.text = _data.midiMin.toString();
     });
+    if (_midiMinController.text != _data.midiMin.toString()) {
+      _midiMinController.text = _data.midiMin.toString();
+    }
   }
 
   void _updateMidiMaxFromController() {
@@ -655,8 +651,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final clamped = parsed.clamp(-32768, 32767);
     setState(() {
       _data = _data.copyWith(midiMax: clamped);
-      _midiMaxController.text = _data.midiMax.toString();
     });
+    if (_midiMaxController.text != _data.midiMax.toString()) {
+      _midiMaxController.text = _data.midiMax.toString();
+    }
   }
 
   /// ---------------------
@@ -671,10 +669,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'I2C CC',
             controller: _i2cCcController,
             onSubmit: _updateI2cCcFromController,
-            onChanged: () {
-              _updateI2cCcFromController();
-              _triggerOptimisticSave();
-            },
+            onChanged: _triggerOptimisticSave,
           ),
           Row(
             children: [
@@ -708,20 +703,14 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'I2C Min',
             controller: _i2cMinController,
             onSubmit: _updateI2cMinFromController,
-            onChanged: () {
-              _updateI2cMinFromController();
-              _triggerOptimisticSave();
-            },
+            onChanged: _triggerOptimisticSave,
             signed: true,
           ),
           _buildNumericField(
             label: 'I2C Max',
             controller: _i2cMaxController,
             onSubmit: _updateI2cMaxFromController,
-            onChanged: () {
-              _updateI2cMaxFromController();
-              _triggerOptimisticSave();
-            },
+            onChanged: _triggerOptimisticSave,
             signed: true,
           ),
         ],
@@ -733,24 +722,30 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final parsed = int.tryParse(_i2cCcController.text) ?? _data.i2cCC;
     setState(() {
       _data = _data.copyWith(i2cCC: parsed);
-      _i2cCcController.text = _data.i2cCC.toString();
     });
+    if (_i2cCcController.text != _data.i2cCC.toString()) {
+      _i2cCcController.text = _data.i2cCC.toString();
+    }
   }
 
   void _updateI2cMinFromController() {
     final parsed = int.tryParse(_i2cMinController.text) ?? _data.i2cMin;
     setState(() {
       _data = _data.copyWith(i2cMin: parsed);
-      _i2cMinController.text = _data.i2cMin.toString();
     });
+    if (_i2cMinController.text != _data.i2cMin.toString()) {
+      _i2cMinController.text = _data.i2cMin.toString();
+    }
   }
 
   void _updateI2cMaxFromController() {
     final parsed = int.tryParse(_i2cMaxController.text) ?? _data.i2cMax;
     setState(() {
       _data = _data.copyWith(i2cMax: parsed);
-      _i2cMaxController.text = _data.i2cMax.toString();
     });
+    if (_i2cMaxController.text != _data.i2cMax.toString()) {
+      _i2cMaxController.text = _data.i2cMax.toString();
+    }
   }
 
   /// ---------------------

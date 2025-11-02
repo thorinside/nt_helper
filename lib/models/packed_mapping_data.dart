@@ -114,6 +114,14 @@ class PackedMappingData {
       return decode16Unsigned(data, currentOffset);
     }
 
+    // Helper function for safe signed 16-bit decoding
+    int safeDecode16Signed(int currentOffset) {
+      if (currentOffset + 3 > dataLength) {
+        return 0;
+      }
+      return decode16(data, currentOffset);
+    }
+
     // Helper function for safe byte read
     int safeReadByte(int currentOffset) {
       if (currentOffset >= dataLength) {
@@ -173,9 +181,9 @@ class PackedMappingData {
       midiMappingType = MidiMappingType.cc;
     }
 
-    final midiMin = safeDecode16Unsigned(offset);
+    final midiMin = safeDecode16Signed(offset);
     offset += 3;
-    final midiMax = safeDecode16Unsigned(offset);
+    final midiMax = safeDecode16Signed(offset);
     offset += 3;
 
     // --- Decode I2C Mapping ---
@@ -186,9 +194,9 @@ class PackedMappingData {
     final i2cFlags = safeReadByte(offset++);
     final isI2cEnabled = (i2cFlags & 1) != 0;
     final isI2cSymmetric = (i2cFlags & 2) != 0;
-    final i2cMin = safeDecode16Unsigned(offset);
+    final i2cMin = safeDecode16Signed(offset);
     offset += 3;
-    final i2cMax = safeDecode16Unsigned(offset);
+    final i2cMax = safeDecode16Signed(offset);
     offset += 3;
 
     // --- Decode Performance Page ---
