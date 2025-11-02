@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history and tags for release notes
 
       - name: Extract Version (for the create-release job)
         id: extract_version
