@@ -3262,6 +3262,11 @@ class DistingCubit extends Cubit<DistingState> {
         throw Exception("Unsupported plugin file type: .$extension");
     }
 
+    // Ensure target directory exists before uploading
+    final disting = requireDisting();
+    await disting.requestWake();
+    await _ensureDirectoryExists(targetDirectory, disting);
+
     // Handle paths that already contain directory structure
     String targetPath;
     if (fileName.contains('/')) {
@@ -3278,8 +3283,6 @@ class DistingCubit extends Cubit<DistingState> {
       // Simple filename without directory structure
       targetPath = '$targetDirectory/$fileName';
     }
-    final disting = requireDisting();
-    await disting.requestWake();
 
     // Upload in 512-byte chunks (matching JavaScript tool behavior)
     const chunkSize = 512;
@@ -3334,6 +3337,45 @@ class DistingCubit extends Cubit<DistingState> {
     if (result == null || !result.success) {
       throw Exception(
         "Chunk upload failed: ${result?.message ?? 'Unknown error'}",
+      );
+    }
+  }
+
+  /// Ensures the specified directory exists on the SD card, creating it if necessary.
+  /// Handles parent directory creation as well.
+  Future<void> _ensureDirectoryExists(
+    String directoryPath,
+    IDistingMidiManager disting,
+  ) async {
+    // Check if directory already exists
+    final listing = await disting.requestDirectoryListing(directoryPath);
+
+    // If we got a non-null listing with entries, or an empty listing that could be
+    // a valid empty directory, we need to distinguish from error responses.
+    // The DirectoryListingResponse parser returns an empty DirectoryListing when
+    // status != 0x00 (error case). Since we can't distinguish between an empty
+    // directory and an error response from the listing alone, we treat empty
+    // listings as "directory doesn't exist" to handle first-time installations.
+    // This is safe because:
+    // 1. If directory exists but is empty, creating it again is a no-op (handled by device)
+    // 2. If directory doesn't exist (error response), we correctly create it
+    if (listing != null && listing.entries.isNotEmpty) {
+      return;
+    }
+
+    // Directory doesn't exist - need to create it
+    // First ensure parent directory exists
+    final parentPath = directoryPath.substring(0, directoryPath.lastIndexOf('/'));
+    if (parentPath.isNotEmpty) {
+      await _ensureDirectoryExists(parentPath, disting);
+    }
+
+    // Now create this directory
+    final result = await disting.requestDirectoryCreate(directoryPath);
+
+    if (result == null || !result.success) {
+      throw Exception(
+        "Failed to create directory '$directoryPath': ${result?.message ?? 'Unknown error'}",
       );
     }
   }

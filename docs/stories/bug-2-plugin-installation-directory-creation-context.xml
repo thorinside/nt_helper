@@ -1,0 +1,206 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>BUG</epicId>
+    <storyId>2</storyId>
+    <title>Plugin Installation Directory Creation</title>
+    <status>draft</status>
+    <generatedAt>2025-11-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/bug-2-plugin-installation-directory-creation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user installing plugins from the gallery for the first time</asA>
+    <iWant>the necessary SD card directories (`/programs/plug-ins`, `/programs/lua`, `/programs/three_pot`) to be created automatically if they don't exist</iWant>
+    <soThat>plugin installation succeeds without manual SD card preparation</soThat>
+    <tasks>
+- Task 1: Add directory existence check before plugin upload (AC: #1, #4)
+  - Modify `installPlugin()` in `disting_cubit.dart` to check directory existence before upload
+  - Use `requestDirectoryListing()` to check if target directory exists
+  - Parse `DirectoryListing` response to determine if directory exists
+
+- Task 2: Implement automatic directory creation (AC: #1, #3)
+  - Call `requestDirectoryCreate(targetDirectory)` if directory does not exist
+  - Wait for `SdCardStatus` response to confirm directory creation
+  - Handle the case where parent directory `/programs` may also not exist
+
+- Task 3: Add error handling for directory creation failures (AC: #2)
+  - Check `SdCardStatus.success` after directory creation attempt
+  - Throw descriptive exception if directory creation fails
+  - Include directory path and error message in exception
+  - Ensure error propagates to UI for user feedback
+
+- Task 4: Test first-time installation scenarios (AC: #3)
+  - Manual test: Install `.o` plugin on SD card without `/programs/plug-ins` directory
+  - Manual test: Install `.lua` plugin on SD card without `/programs/lua` directory
+  - Manual test: Install `.3pot` plugin on SD card without `/programs/three_pot` directory
+  - Verify directory creation and successful plugin installation
+
+- Task 5: Test existing installation scenarios (AC: #4)
+  - Manual test: Install plugin when target directory already exists
+  - Verify no duplicate directory creation attempts
+  - Verify existing installation flow is not disrupted
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC1: Automatic Directory Creation
+- Before installing a plugin, check if the target directory exists on the SD card
+- If the directory does not exist, create it using the SD card management SysEx messages
+- Directory creation uses the existing `requestDirectoryCreate(String path)` method from `IDistingMidiManager`
+- All three plugin types are supported: `.o` files → `/programs/plug-ins`, `.lua` files → `/programs/lua`, `.3pot` files → `/programs/three_pot`
+
+AC2: Graceful Error Handling
+- If directory creation fails, surface a clear error message to the user
+- Do not proceed with plugin installation if directory creation fails
+
+AC3: First-Time Installation Support
+- Users with a fresh SD card (no `/programs` subdirectories) can install plugins successfully
+- The installation flow handles missing parent directories appropriately
+- Directory creation happens transparently without requiring user intervention
+
+AC4: No Impact on Existing Installations
+- If the directory already exists, skip directory creation (no-op)
+- Existing plugin installation flow remains unchanged for users who already have the directories
+- No performance degradation for users with properly configured SD cards
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Brownfield Architecture Document</title>
+        <section>MIDI Communication Layer</section>
+        <snippet>Defines IDistingMidiManager hierarchy with Mock, Offline, and Live implementations. SD Card operations are defined in the interface at lines 100-112.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE/development-standards.md</path>
+        <title>Development Standards</title>
+        <section>Code Quality</section>
+        <snippet>Zero tolerance for flutter analyze errors. Always use debugPrint() for debugging.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>installPlugin</symbol>
+        <lines>3234-3314</lines>
+        <reason>Main plugin installation method that needs directory creation logic inserted before upload</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/i_disting_midi_manager.dart</path>
+        <kind>interface</kind>
+        <symbol>IDistingMidiManager</symbol>
+        <lines>100-112</lines>
+        <reason>Defines SD Card operations including requestDirectoryListing and requestDirectoryCreate methods</reason>
+      </artifact>
+      <artifact>
+        <path>lib/models/sd_card_file_system.dart</path>
+        <kind>model</kind>
+        <symbol>DirectoryListing, DirectoryEntry, SdCardStatus</symbol>
+        <lines>1-40</lines>
+        <reason>Data models for SD card operations - DirectoryEntry.isDirectory checks if entry is directory, SdCardStatus.success indicates operation success</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/sysex/requests/request_directory_listing.dart</path>
+        <kind>sysex</kind>
+        <symbol>RequestDirectoryListingMessage</symbol>
+        <lines>8-27</lines>
+        <reason>SysEx message implementation for listing directory contents (opcode 1)</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/sysex/requests/request_directory_create.dart</path>
+        <kind>sysex</kind>
+        <symbol>RequestDirectoryCreateMessage</symbol>
+        <lines>7-29</lines>
+        <reason>SysEx message implementation for creating directories (opcode 7 - kOpNewFolder)</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <sdk>3.8.1+</sdk>
+        <framework>flutter</framework>
+      </flutter>
+      <dart_packages>
+        <package name="flutter_bloc" version="^9.1.1">State management with Cubit pattern</package>
+        <package name="drift" version="^2.28.1">SQLite ORM for database operations</package>
+        <package name="flutter_midi_command" version="^0.5.3">MIDI communication layer</package>
+      </dart_packages>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Zero tolerance for flutter analyze errors
+    - Use debugPrint() for any logging, never print()
+    - All changes must maintain compatibility with Mock, Offline, and Live IDistingMidiManager implementations
+    - Directory operations must be called through IDistingMidiManager interface to support all operation modes
+    - Error handling must propagate to UI with clear user feedback
+    - No performance impact for users with existing directory structures
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>IDistingMidiManager.requestDirectoryListing</name>
+      <kind>async method</kind>
+      <signature>Future&lt;DirectoryListing?&gt; requestDirectoryListing(String path)</signature>
+      <path>lib/domain/i_disting_midi_manager.dart:101</path>
+    </interface>
+    <interface>
+      <name>IDistingMidiManager.requestDirectoryCreate</name>
+      <kind>async method</kind>
+      <signature>Future&lt;SdCardStatus?&gt; requestDirectoryCreate(String path)</signature>
+      <path>lib/domain/i_disting_midi_manager.dart:112</path>
+    </interface>
+    <interface>
+      <name>DirectoryEntry.isDirectory</name>
+      <kind>getter</kind>
+      <signature>bool get isDirectory => (attributes &amp; 0x10) != 0</signature>
+      <path>lib/models/sd_card_file_system.dart:18</path>
+    </interface>
+    <interface>
+      <name>SdCardStatus.success</name>
+      <kind>field</kind>
+      <signature>final bool success</signature>
+      <path>lib/models/sd_card_file_system.dart:35</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+The project uses Flutter's built-in testing framework with extensive widget tests, unit tests, and integration tests.
+Test patterns follow standard Flutter conventions with mockito for mocking dependencies. All tests must pass before commits.
+Widget tests verify UI behavior and user interactions. Unit tests verify business logic. Integration tests verify end-to-end flows.
+Testing emphasis is on maintaining existing test patterns and ensuring zero test failures.
+    </standards>
+    <locations>
+      <location>test/cubit/</location>
+      <location>test/services/</location>
+      <location>test/ui/widgets/</location>
+      <location>test/integration/</location>
+      <location>test/core/routing/</location>
+    </locations>
+    <ideas>
+      <idea ac="AC1">
+        - Manual test: Verify directory listing detects missing /programs/plug-ins directory
+        - Manual test: Verify requestDirectoryCreate successfully creates missing directory
+        - Manual test: Install .o plugin when directory doesn't exist and verify creation
+        - Manual test: Install .lua plugin when directory doesn't exist and verify creation
+        - Manual test: Install .3pot plugin when directory doesn't exist and verify creation
+      </idea>
+      <idea ac="AC2">
+        - Manual test: Simulate directory creation failure and verify error message propagates to UI
+        - Manual test: Verify plugin installation aborts if directory creation fails
+        - Unit test: Test error handling when SdCardStatus.success returns false
+      </idea>
+      <idea ac="AC3">
+        - Manual test: Fresh SD card (no /programs directory) - verify parent directory handling
+        - Integration test: Complete first-time installation flow from empty SD card to successful plugin install
+      </idea>
+      <idea ac="AC4">
+        - Manual test: Install plugin when target directory already exists - verify no directory creation attempt
+        - Performance test: Measure installation time with existing vs. non-existing directories (should be negligible difference)
+        - Manual test: Verify existing users experience no behavioral changes
+      </idea>
+    </ideas>
+  </tests>
+</story-context>
