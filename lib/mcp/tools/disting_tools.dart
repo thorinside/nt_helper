@@ -2977,16 +2977,24 @@ class DistingTools {
         if (cvInput != null) {
           if (cvInput is! int || cvInput < 0 || cvInput > 12) {
             return MCPUtils.buildError(
-              'CV input must be 0-12, got $cvInput',
+              'CV input must be 0-12 (where 0=disabled, 1-12=physical inputs), got $cvInput',
             );
           }
         }
       } else if (key == 'midi' && value is Map<String, dynamic>) {
+        // Check if is_midi_enabled flag is present when MIDI mapping is specified
+        final isMidiEnabled = value['is_midi_enabled'];
+        if (isMidiEnabled == null) {
+          return MCPUtils.buildError(
+            'MIDI mapping requires "is_midi_enabled" field (true/false). Include this field to enable MIDI control.',
+          );
+        }
+
         final midiChannel = value['midi_channel'];
         if (midiChannel != null) {
           if (midiChannel is! int || midiChannel < 0 || midiChannel > 15) {
             return MCPUtils.buildError(
-              'MIDI channel must be 0-15, got $midiChannel',
+              'midi_channel must be 0-15 (where 0=MIDI Channel 1, 15=MIDI Channel 16), got $midiChannel',
             );
           }
         }
@@ -2995,7 +3003,7 @@ class DistingTools {
         if (midiCc != null) {
           if (midiCc is! int || midiCc < 0 || midiCc > 128) {
             return MCPUtils.buildError(
-              'MIDI CC must be 0-128, got $midiCc',
+              'midi_cc must be 0-128 (standard Control Change values), got $midiCc',
             );
           }
         }

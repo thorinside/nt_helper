@@ -71,7 +71,7 @@ development_status:
   4-7-implement-show-tool-for-state-inspection: done
   4-8-create-comprehensive-json-schema-documentation-with-mapping-examples: done
   4-9-remove-old-mcp-tools-and-consolidate-documentation: done
-  4-10-test-with-smaller-llm-and-iterate-on-usability: ready-for-dev
+  4-10-test-with-smaller-llm-and-iterate-on-usability: review
   epic-4-retrospective: optional
 
   epic-5: contexted

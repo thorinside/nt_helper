@@ -30,9 +30,9 @@ STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9]
 
 ## Next Action
 
-NEXT_ACTION: Generate context for story 4-10 (Test with Smaller LLM and Iterate on Usability)
-NEXT_COMMAND: /bmad:bmm:workflows:story-context
-NEXT_AGENT: sm
+NEXT_ACTION: Develop story 4-10 (Test with Smaller LLM and Iterate on Usability)
+NEXT_COMMAND: /bmad:bmm:workflows:dev-story
+NEXT_AGENT: dev
 
 ## Story Backlog
 
