@@ -1,6 +1,6 @@
 # Story 4.14: Implement Specification Passing Through MCP and Controller
 
-**Status:** Testing
+**Status:** Done
 **Implementation Date:** 2025-11-08
 **Commit:** dfe4e7b
 **Priority:** Critical

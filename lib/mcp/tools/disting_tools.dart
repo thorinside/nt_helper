@@ -159,14 +159,23 @@ class DistingTools {
             parametersJsonList.add(paramData);
           }
 
+          // Build algorithm object with specifications if present
+          final algorithmData = {
+            'guid': algorithm.guid,
+            'name': algorithm.name,
+            'algorithm_index': algorithm.algorithmIndex,
+          };
+
+          // Add specifications if the algorithm has them
+          if (algorithm.specifications.isNotEmpty) {
+            algorithmData['specifications'] = algorithm.specifications;
+          }
+
           slotsJsonList[i] = {
             'slot_index': i,
-            'algorithm': {
-              'guid': algorithm.guid,
-              'name': algorithm.name,
-              'algorithm_index': algorithm.algorithmIndex,
-            },
+            'algorithm': algorithmData,
             'parameters': parametersJsonList,
+            'total_parameters': parametersJsonList.length,
           };
         }
       }
@@ -319,11 +328,13 @@ class DistingTools {
           );
         }
       } else if (parameterNameParam != null) {
-        final matchingParam = paramInfos.firstWhereOrNull(
-          (p) => p.name.toLowerCase() == parameterNameParam.toLowerCase(),
-        );
+        final matchingParams = paramInfos
+            .where(
+              (p) => p.name.toLowerCase() == parameterNameParam.toLowerCase(),
+            )
+            .toList();
 
-        if (matchingParam == null) {
+        if (matchingParams.isEmpty) {
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -332,7 +343,20 @@ class DistingTools {
             ),
           );
         }
-        paramInfo = matchingParam;
+
+        if (matchingParams.length > 1) {
+          // Ambiguous parameter name - show all matching parameter numbers
+          final paramNumbers = matchingParams.map((p) => p.parameterNumber).join(', ');
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Parameter name "$parameterNameParam" is ambiguous in slot $slotIndex. Found at parameter numbers: $paramNumbers. Please use parameter_number to disambiguate.',
+              ),
+            ),
+          );
+        }
+
+        paramInfo = matchingParams.first;
         targetParameterNumber = paramInfo.parameterNumber;
       }
 

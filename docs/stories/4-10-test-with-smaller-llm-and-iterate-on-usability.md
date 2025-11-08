@@ -1,6 +1,6 @@
 # Story 4.10: Test with smaller LLM and iterate on usability
 
-Status: review
+Status: done
 
 ## Story
 

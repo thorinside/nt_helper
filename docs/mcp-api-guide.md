@@ -1404,6 +1404,121 @@ If you're familiar with the old 20+ tool API, here's how tools map to the new 4-
 
 ---
 
+## Specifications and Multi-Channel Algorithms
+
+### Understanding Specifications
+
+Some algorithms support **specifications** that modify their behavior when instantiated. For example:
+
+- **Clock Divider** (clkd): `Channels` specification (1-8 channels)
+- **Euclidean** (eucp): `Channels` specification (1-4 channels)
+- **Elements**: Various specifications for different behaviors
+
+When you create an algorithm with specifications, the hardware instantiates it with a specific parameter set based on those specifications.
+
+### Specifications in API Responses
+
+When you call `show` with target="preset" or target="slot", the response includes specifications in the algorithm data:
+
+```json
+{
+  "slot_index": 0,
+  "algorithm": {
+    "guid": "clkd",
+    "name": "Clock Divider",
+    "specifications": [2],
+    "algorithm_index": 0
+  },
+  "parameters": [... list of parameters ...],
+  "total_parameters": 13
+}
+```
+
+The `specifications` array contains the values used to instantiate the algorithm. In this example, `[2]` means Clock Divider was instantiated with Channels=2.
+
+### Parameter Identification: Using Names vs Numbers
+
+Parameters can be identified in two ways:
+
+#### 1. By Parameter Name (Recommended for Single Matches)
+
+For most algorithms, parameter names are unique within a slot:
+
+```json
+{
+  "tool": "edit",
+  "arguments": {
+    "target": "parameter",
+    "slot_index": 0,
+    "parameter": "Speed",
+    "value": 100
+  }
+}
+```
+
+#### 2. By Parameter Number (Required for Ambiguous Names)
+
+**Multi-channel algorithms may have duplicate parameter names.** For example, Clock Divider with Channels=2 has three parameters named "1:Divisor" at parameter numbers 3, 4, and 5:
+
+```
+Parameter Number 3: "1:Divisor" (range 1-32)
+Parameter Number 4: "1:Divisor" (range 0-5)
+Parameter Number 5: "1:Divisor" (range 0-9)
+```
+
+When parameter names are ambiguous, use parameter_number instead:
+
+```json
+{
+  "tool": "edit",
+  "arguments": {
+    "target": "parameter",
+    "slot_index": 0,
+    "parameter": 4,
+    "value": 3
+  }
+}
+```
+
+The `show` tool always returns both name and parameter_number so you know which number to use:
+
+```json
+{
+  "success": true,
+  "data": {
+    "slot_index": 0,
+    "parameter_number": 4,
+    "parameter_name": "1:Divisor",
+    "value": 3,
+    "min": 0,
+    "max": 5
+  }
+}
+```
+
+### Error: Ambiguous Parameter Name
+
+If you try to reference a parameter by name and multiple parameters share that name, you'll get an error like:
+
+```
+Parameter name "1:Divisor" is ambiguous in slot 0. Found at parameter numbers: 3, 4, 5. Please use parameter_number to disambiguate.
+```
+
+This is normal for multi-channel algorithms. Use one of the listed parameter numbers instead.
+
+### Firmware Limitation: Partial Parameter Lists
+
+**Important**: Some multi-channel algorithms with specifications return only the first channel's parameters from the hardware:
+
+- Euclidean with Channels=4: Returns parameters for Channel 1 only (15 parameters)
+- Clock Divider with Channels=8: Returns parameters for Channel 1 only (13 parameters)
+
+This appears to be a firmware design choice. All returned parameters are accessible and functional. The `total_parameters` field in show responses indicates the actual count returned by the hardware.
+
+**Workaround**: Use the `specifications` field to understand which parameters are available for your instantiation.
+
+---
+
 ## Support and Feedback
 
 For issues or questions about the MCP API:

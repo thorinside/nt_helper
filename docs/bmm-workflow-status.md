@@ -21,12 +21,12 @@ PHASE_4_COMPLETE: false
 
 ## Development Queue
 
-STORIES_SEQUENCE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9, 4-10]
+STORIES_SEQUENCE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9, 4-10, 4-13, 4-14, 4-15]
 TODO_STORY: 4-10-test-with-smaller-llm-and-iterate-on-usability
 TODO_TITLE: Test with Smaller LLM and Iterate on Usability
 IN_PROGRESS_STORY: 4-10-test-with-smaller-llm-and-iterate-on-usability
 IN_PROGRESS_TITLE: Test with Smaller LLM and Iterate on Usability
-STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9]
+STORIES_DONE: [4-1, 4-4, 4-6, 4-7, 4-8, 4-12, 4-13, 4-14, 4-15]
 
 ## Next Action
 

@@ -71,7 +71,12 @@ development_status:
   4-7-implement-show-tool-for-state-inspection: done
   4-8-create-comprehensive-json-schema-documentation-with-mapping-examples: done
   4-9-remove-old-mcp-tools-and-consolidate-documentation: done
-  4-10-test-with-smaller-llm-and-iterate-on-usability: in-progress
+  4-10-test-with-smaller-llm-and-iterate-on-usability: done
+  4-11-improve-mcp-tool-usability: done
+  4-12-fix-parameter-numbering-mismatch: done
+  4-13-resolve-specification-parameter-mismatch: done
+  4-14-implement-specification-passing: done
+  4-15-parameter-search-tool: done
   epic-4-retrospective: optional
 
   epic-5: contexted
