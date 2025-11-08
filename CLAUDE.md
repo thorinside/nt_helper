@@ -104,6 +104,13 @@ To connect MCP Dart tooling:
 
 ---
 
+## MCP API Documentation
+
+For working with MCP tools and parameter mappings:
+
+- **[MCP API Guide](./docs/mcp-api-guide.md)** - Complete guide to the 4-tool API (search, new, edit, show) with workflow examples and granularity guidance
+- **[MCP Mapping Guide](./docs/mcp-mapping-guide.md)** - Complete guide to CV, MIDI, i2c, and performance page mappings with field documentation and examples
+
 ## Additional Documentation
 
 For detailed information about BMAD-METHOD agents, tasks, and workflows, see:

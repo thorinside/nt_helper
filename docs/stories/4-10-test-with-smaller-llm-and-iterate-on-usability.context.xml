@@ -1,0 +1,263 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>10</storyId>
+    <title>Test with smaller LLM and iterate on usability</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-08</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-10-test-with-smaller-llm-and-iterate-on-usability.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer validating the "foolproof" goal</asA>
+    <iWant>to test the 4-tool API with mappings using a smaller LLM and measure success rate</iWant>
+    <soThat>I can identify and fix remaining usability issues</soThat>
+    <tasks>
+- Set up test environment (AC: 1)
+  - Identify suitable smaller LLM for testing (GPT-OSS-20B or similar)
+  - Set up MCP server connection (HTTP on port 3000)
+  - Verify LLM can access all 4 tools (search, new, edit, show)
+  - Verify LLM can read JSON schemas
+  - Test basic tool invocation
+- Design test scenarios (AC: 2)
+  - 12 scenarios covering simple, complex, and mapping operations
+- Conduct initial testing round (AC: 3-4)
+  - Run each scenario and record success/failure
+  - Document failure modes
+  - Calculate success rate
+- Analyze results and identify usability issues (AC: 5)
+  - Review failures, group similar issues
+  - Identify top 3 usability issues
+- Implement improvements (AC: 6)
+  - Address root causes of top issues
+- Re-test and measure improvement (AC: 7)
+  - Run all scenarios again
+  - Calculate new success rate
+- Validate success rate targets (AC: 8)
+  - Simple >80%, Complex >60%, Mapping >50%
+- Document findings and recommendations (AC: 9-10)
+  - Add testing results to mcp-api-guide.md
+  - Document mapping usability findings
+- Final validation (AC: 11)
+  - Run flutter analyze
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Set up test environment with smaller LLM (GPT-OSS-20B or similar) connected to nt_helper MCP server
+2. Conduct 12 test scenarios covering: search algorithms, create simple preset, create complex preset, modify preset, add MIDI mappings, add CV mappings, set performance pages, inspect state with mappings, handle errors
+3. Measure success rate: % of scenarios where LLM successfully completes task without human intervention
+4. Document failure modes: tool selection errors, schema misunderstandings, validation errors, mapping field confusion, snake_case issues
+5. Identify top 3 usability issues from testing
+6. Iterate on tool descriptions, JSON schemas, mapping documentation, or error messages to address issues
+7. Re-test after improvements and document success rate change
+8. Target: >80% success rate on simple operations, >60% on complex operations, >50% on mapping operations
+9. Document findings and recommendations in docs/mcp-api-guide.md
+10. Special focus on mapping usability: Are field names clear? Are validation errors helpful? Are examples sufficient? Is snake_case better than camelCase for LLMs?
+11. flutter analyze passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/mcp-api-guide.md</path>
+        <title>MCP API Guide for Disting NT</title>
+        <section>Overview and Design Philosophy</section>
+        <snippet>Four core tools (search/new/edit/show) with snake_case JSON for LLM compatibility. Granular control with three edit levels. Full CV/MIDI/i2c/performance page mapping support. Auto-save on changes.</snippet>
+      </doc>
+      <doc>
+        <path>docs/mcp-api-guide.md</path>
+        <title>MCP API Guide for Disting NT</title>
+        <section>Workflow Examples</section>
+        <snippet>Complete examples for creating presets, modifying with mappings, exploring algorithms, setting up MIDI control, and organizing with performance pages.</snippet>
+      </doc>
+      <doc>
+        <path>docs/mcp-api-guide.md</path>
+        <title>MCP API Guide for Disting NT</title>
+        <section>Troubleshooting</section>
+        <snippet>Common validation errors: MIDI channel 0-15, CV input 0-12, parameter lookup issues, mapping validation errors, fuzzy matching tips.</snippet>
+      </doc>
+      <doc>
+        <path>docs/mcp-mapping-guide.md</path>
+        <title>MCP Mapping Guide for Disting NT</title>
+        <section>Complete Mapping Documentation</section>
+        <snippet>CV mapping (source, cv_input, is_unipolar, is_gate, volts, delta). MIDI mapping (is_midi_enabled, midi_channel 0-15, midi_type, midi_cc 0-128). i2c mapping (is_i2c_enabled, i2c_cc 0-255). Performance pages 1-15. All fields use snake_case.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Story E4.10 - LLM Usability Testing</section>
+        <snippet>Test with smaller LLM (GPT-OSS-20B). 12 scenarios: 6 simple, 2 complex, 4 mapping. Success targets: >80% simple, >60% complex, >50% mapping. Identify top 3 usability issues. Special focus on mapping field clarity, validation errors, examples, snake_case effectiveness. Document in mcp-api-guide.md.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Key Design Principles</section>
+        <snippet>Familiar verbs (search/new/edit/show). Flexible granularity (preset/slot/parameter). Backend diffing. Full mapping support. HTTP transport on port 3000. snake_case JSON for LLM optimization.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/services/mcp_server_service.dart</path>
+        <kind>service</kind>
+        <symbol>McpServerService</symbol>
+        <reason>MCP server implementation using mcp_dart library on HTTP port 3000. Entry point for LLM testing connection.</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/algorithm_tools.dart</path>
+        <kind>tools</kind>
+        <symbol>MCPAlgorithmTools</symbol>
+        <reason>Implementation of search tool for algorithm discovery. Tests tool descriptions and fuzzy matching usability.</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>tools</kind>
+        <symbol>DistingTools</symbol>
+        <reason>Implementation of new, edit, and show tools. Contains JSON schemas and validation logic that LLMs interact with.</reason>
+      </file>
+      <file>
+        <path>lib/services/disting_controller.dart</path>
+        <kind>interface</kind>
+        <symbol>DistingController</symbol>
+        <reason>Abstract controller interface that tools use. Defines operations available to MCP tools.</reason>
+      </file>
+      <file>
+        <path>lib/util/case_converter.dart</path>
+        <kind>utility</kind>
+        <symbol>convertToSnakeCaseKeys</symbol>
+        <reason>Converts JSON responses to snake_case for LLM compatibility. Key usability feature to test.</reason>
+      </file>
+      <file>
+        <path>lib/models/packed_mapping_data.dart</path>
+        <kind>model</kind>
+        <symbol>PackedMappingData</symbol>
+        <reason>Mapping data model with CV/MIDI/i2c/performance page fields. Tests mapping field name clarity and structure.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="mcp_dart" version="0.6.4" source="pub.dev" purpose="Official MCP library for tool registration and HTTP transport" />
+      <package name="flutter" purpose="Flutter framework for cross-platform UI" />
+      <package name="dart" purpose="Dart runtime and core libraries" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- This is a testing and documentation story - no code changes except improvements based on findings
+- Must test with smaller LLM (GPT-OSS-20B or similar) not cutting-edge models
+- Exactly 12 test scenarios required: 6 simple, 2 complex, 4 mapping operations
+- Success rate targets are mandatory: >80% simple, >60% complex, >50% mapping
+- Must identify and document specific failure modes: tool selection, schema understanding, validation, mapping confusion, snake_case issues
+- Must select and address top 3 usability issues based on frequency and impact
+- Must iterate until success rate targets are met or document why they cannot be met
+- All findings must be documented in docs/mcp-api-guide.md in new Testing and Validation section
+- Special focus on mapping usability: field name clarity, validation error helpfulness, example sufficiency, snake_case vs camelCase
+- Zero flutter analyze warnings required
+- Cannot modify tool schemas or error messages without measuring impact via re-testing
+- MCP server must run on HTTP port 3000 for testing
+- Test environment must be reproducible and documented
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>MCP Server HTTP API</name>
+      <kind>HTTP REST</kind>
+      <endpoint>http://localhost:3000/mcp</endpoint>
+      <description>MCP server endpoint for LLM connection. Supports four tools: search, new, edit, show.</description>
+    </interface>
+    <interface>
+      <name>search Tool</name>
+      <kind>MCP Tool</kind>
+      <signature>search(type: "algorithm", query: string) -> { success: bool, results: [...] }</signature>
+      <description>Algorithm discovery with fuzzy matching (≥70% similarity). Tests tool description clarity and query parameter usability.</description>
+    </interface>
+    <interface>
+      <name>new Tool</name>
+      <kind>MCP Tool</kind>
+      <signature>new(name: string, algorithms?: [...]) -> { success: bool, preset: {...} }</signature>
+      <description>Preset initialization. Tests simple vs complex parameter structures and optional array handling.</description>
+    </interface>
+    <interface>
+      <name>edit Tool</name>
+      <kind>MCP Tool</kind>
+      <signature>edit(target: "preset"|"slot"|"parameter", data: {...}) -> { success: bool, ... }</signature>
+      <description>State modification at three granularity levels. Tests mapping field structure, validation errors, partial updates. Critical for mapping usability testing.</description>
+    </interface>
+    <interface>
+      <name>show Tool</name>
+      <kind>MCP Tool</kind>
+      <signature>show(target: "preset"|"slot"|"parameter"|"screen"|"routing", identifier?: ...) -> { success: bool, data: {...} }</signature>
+      <description>State inspection. Tests response structure clarity and mapping representation.</description>
+    </interface>
+    <interface>
+      <name>Test Scenarios</name>
+      <kind>Testing Protocol</kind>
+      <scenarios>
+Simple (6): 1. Search by name, 2. Search by category, 3. Create blank preset, 4. Create preset with 1 algo, 6. Modify parameter value, 10. Inspect preset
+Complex (2): 5. Create preset with 3 algos, 11. Handle validation error
+Mapping (4): 7. Add MIDI mapping, 8. Add CV mapping, 9. Assign performance page, 12. Partial MIDI update
+      </scenarios>
+      <success_criteria>LLM selects correct tool, provides correct parameters, tool executes without error, LLM verifies result, no human intervention</success_criteria>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+This is primarily manual testing with a smaller LLM to measure real-world usability. Testing methodology:
+1. Set up reproducible test environment with smaller LLM connected to MCP server
+2. Execute each scenario with the LLM, recording all tool calls and responses
+3. Record success/failure based on strict criteria (correct tool, correct parameters, no human intervention)
+4. Document failure modes when they occur (tool selection errors, schema misunderstandings, validation errors, mapping field confusion, snake_case issues)
+5. Calculate success rates for simple, complex, and mapping operation categories
+6. Analyze patterns in failures to identify top 3 usability issues
+7. Implement targeted improvements (tool descriptions, schemas, docs, error messages)
+8. Re-test all scenarios to measure improvement
+9. Iterate until success rate targets met or document blockers
+10. Document all findings and recommendations in docs/mcp-api-guide.md
+Testing is not automated - it requires observing LLM behavior and decision-making process.
+    </standards>
+    <locations>
+docs/mcp-api-guide.md - Document all testing results, failure modes, improvements, and recommendations in new Testing and Validation section
+docs/mcp-mapping-guide.md - Reference for mapping field documentation, may need updates based on findings
+lib/mcp/tools/algorithm_tools.dart - Search tool implementation, may need description improvements
+lib/mcp/tools/disting_tools.dart - New/edit/show tool implementations, may need schema or error message improvements
+    </locations>
+    <ideas>
+Test Scenario Execution:
+- For each scenario, provide LLM with goal and observe tool selection
+- Record whether LLM chooses correct tool on first attempt
+- Record whether LLM constructs valid JSON parameters
+- Record whether tool returns success or validation error
+- Note any confusion about field names, types, or structure
+- Track snake_case vs camelCase usage by LLM
+
+Failure Mode Analysis:
+- Tool Selection Errors: LLM picks wrong tool (new instead of edit, wrong granularity level)
+- Schema Misunderstandings: Missing required fields, wrong types, incorrect nesting
+- Validation Errors: MIDI channel 16 (should be 0-15), CV input 13 (should be 0-12), performance page 16 (should be 0-15)
+- Mapping Field Confusion: cv_input vs source, camelCase instead of snake_case, missing is_midi_enabled flag
+- Document which scenarios fail most frequently and why
+
+Usability Improvements:
+- If tool selection errors common: Improve tool descriptions, add more examples, clarify granularity levels
+- If schema errors common: Simplify schemas, add inline docs, highlight required fields, add more examples
+- If validation errors common: Improve error messages with hints (e.g., "MIDI channel 0-15, not 1-16")
+- If mapping confusion common: Add mapping examples, improve field descriptions, add reference table
+- If snake_case issues common: Add prominent reminders, consider validation suggestions for common camelCase mistakes
+
+Success Rate Calculation:
+- Simple operations (scenarios 1-4, 6, 10): Count successes / 6 * 100%
+- Complex operations (scenarios 5, 11): Count successes / 2 * 100%
+- Mapping operations (scenarios 7-9, 12): Count successes / 4 * 100%
+- Overall: Count all successes / 12 * 100%
+- Re-calculate after each improvement iteration
+
+Documentation Updates:
+- Add Testing and Validation section to docs/mcp-api-guide.md
+- Document test scenarios used and results
+- Document initial vs final success rates
+- Document identified usability issues and solutions implemented
+- Document mapping usability findings (field names, validation errors, examples, snake_case)
+- Include recommendations for LLM clients
+- Include recommendations for future API improvements
+    </ideas>
+  </tests>
+</story-context>

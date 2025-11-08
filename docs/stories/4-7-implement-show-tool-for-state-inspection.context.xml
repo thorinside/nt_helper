@@ -1,0 +1,290 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-7" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>7</storyId>
+    <title>Implement show tool for state inspection</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-08</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-7-implement-show-tool-for-state-inspection.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an LLM client inspecting current state</asA>
+    <iWant>a flexible show tool that displays preset, slot, parameter, screen, or routing information with mappings included</iWant>
+    <soThat>I can understand the current configuration before making changes</soThat>
+    <tasks>
+- Define show tool schema (AC: 1, 4, 21)
+  - Create tool definition with target and identifier parameters
+  - Document all five target types with examples
+  - Document mapping structure with snake_case fields
+- Implement preset target (AC: 2-3, 5)
+  - Read complete preset state from DistingCubit
+  - Include all slots with parameters and enabled mappings only
+- Implement mapping inclusion logic (AC: 5-12)
+  - CV mapping if cv_input > 0 OR source > 0
+  - MIDI mapping if is_midi_enabled == true
+  - i2c mapping if is_i2c_enabled == true
+  - Performance page if performance_page > 0 (values 1-15)
+  - Omit mapping object entirely if all types disabled
+- Implement slot target (AC: 13)
+  - Require identifier parameter (int slot_index)
+  - Validate slot_index in range 0-31
+  - Return single slot with all parameters and enabled mappings
+- Implement parameter target (AC: 14)
+  - Require identifier format: "slot_index:parameter_number"
+  - Parse and validate both components
+  - Return single parameter with mapping if enabled
+- Implement screen target (AC: 15)
+  - Reuse existing takeScreenshot() method from DistingCubit
+  - Return base64-encoded JPEG image
+- Implement routing target (AC: 16-18)
+  - Read routing state from RoutingEditorCubit
+  - Return physical names: Input N, Output N, Aux N, None
+  - Support both online and offline modes
+- Implement validation and error handling (AC: 19-20)
+  - Validate identifier presence and format for each target
+  - Validate slot_index and parameter ranges
+  - Return clear error messages with guidance
+- Register tool and test (AC: 22-23)
+  - Add tool registration in mcp_server_service.dart
+  - Write unit tests for each target type
+  - Test mapping inclusion logic for all combinations
+  - Run flutter analyze and flutter test
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Create show tool accepting: target (preset|slot|parameter|screen|routing, required), identifier (string or int, optional)
+2. When target: preset, return complete preset with all slots, parameters, and mappings from SynchronizedState
+3. Parameter structure includes: parameter_number, parameter_name, value, min, max, unit, mapping (optional - only if enabled)
+4. Mapping structure uses snake_case: cv_input, midi_channel, is_midi_enabled, etc.
+5. Disabled mappings omitted from output (only include mapping object if at least one type is enabled)
+6. CV mapping included if: cv_input > 0 OR source > 0
+7. CV mapping fields: source, cv_input, is_unipolar, is_gate, volts, delta
+8. MIDI mapping included if: is_midi_enabled == true
+9. MIDI mapping fields: is_midi_enabled, midi_channel, midi_type (cc|note_momentary|note_toggle|cc_14bit_low|cc_14bit_high), midi_cc, is_midi_symmetric, is_midi_relative, midi_min, midi_max
+10. i2c mapping included if: is_i2c_enabled == true
+11. i2c mapping fields: is_i2c_enabled, i2c_cc, is_i2c_symmetric, i2c_min, i2c_max
+12. Performance page included if: performance_page > 0 (value 1-15)
+13. When target: slot, require identifier (int slot_index), return single slot with all parameters and enabled mappings
+14. When target: parameter, require identifier (format: slot_index:parameter_number), return single parameter with mapping if enabled
+15. When target: screen, return current device screen as base64 JPEG image (reuse existing screenshot logic)
+16. When target: routing, return routing state in same format as current get_routing tool
+17. Routing returns physical names (Input N, Output N, Aux N, None) not internal bus numbers
+18. Routing works in both online and offline modes (uses routing editor state)
+19. Validate identifier format and ranges for each target type
+20. Return clear error if identifier missing when required or invalid
+21. JSON schema documents all target types with complete mapping field descriptions and examples
+22. flutter analyze passes with zero warnings
+23. All tests pass
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Story E4.7: show Tool</section>
+        <snippet>Five target types with flexible granularity. Mapping representation uses snake_case for LLM readability. Disabled mappings omitted from output to reduce noise. CV mapping included if cv_input > 0 OR source > 0. MIDI mapping included if is_midi_enabled == true. i2c mapping included if is_i2c_enabled == true. Performance page included if performance_page > 0 (values 1-15). Routing uses physical names not internal bus numbers.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Mapping Representation</section>
+        <snippet>JSON with snake_case field names for LLM-friendly format. CV fields: source, cv_input, is_unipolar, is_gate, volts, delta. MIDI fields: is_midi_enabled, midi_channel, midi_type, midi_cc, is_midi_symmetric, is_midi_relative, midi_min, midi_max. i2c fields: is_i2c_enabled, i2c_cc, is_i2c_symmetric, i2c_min, i2c_max. Performance page: 1-15 (0 means not assigned).</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Architecture</title>
+        <section>Critical Architecture: State Management</section>
+        <snippet>DistingCubit is central state management (1000+ lines). Manages device state via IDistingMidiManager hierarchy. Exposes synchronized Slot objects with algorithms, parameters, and values. SynchronizedState represents complete preset with all slots (0-31). Each slot contains: algorithm + parameters + values + mappings.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Architecture</title>
+        <section>Critical Architecture: MCP Server</section>
+        <snippet>HTTP-based MCP server on port 3000 with multi-client support. Tool implementations in lib/mcp/tools/. Backend controller interface in lib/services/disting_controller.dart. MCP tools access state via DistingCubit.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/services/mcp_server_service.dart</path>
+        <kind>service</kind>
+        <symbol>McpServerService</symbol>
+        <lines>1-100</lines>
+        <reason>MCP server implementation using mcp_dart library. Shows tool registration pattern and HTTP transport setup on port 3000.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit, Slot, ParameterInfo, SynchronizedState</symbol>
+        <lines>1-150</lines>
+        <reason>Central state management. Source of truth for preset/slot/parameter state. Contains takeScreenshot() method for screen target.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/routing_editor_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>RoutingEditorCubit</symbol>
+        <lines>1-100</lines>
+        <reason>Routing visualization state management. Source for routing target implementation. Works in both online and offline modes.</reason>
+      </file>
+      <file>
+        <path>lib/models/packed_mapping_data.dart</path>
+        <kind>model</kind>
+        <symbol>PackedMappingData, MidiMappingType</symbol>
+        <reason>Mapping data model with all CV/MIDI/i2c/performance fields. Uses camelCase internally but MCP API will translate to snake_case. Shows isMapped() and isPerformance() helper methods.</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>mcp-tools</kind>
+        <symbol>get_routing and other existing tools</symbol>
+        <reason>Existing MCP tool implementations showing patterns for tool registration, state access, and response formatting. get_routing tool shows physical name format for routing.</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/algorithm_tools.dart</path>
+        <kind>mcp-tools</kind>
+        <symbol>search, new tools</symbol>
+        <reason>Recently implemented MCP tools showing current patterns for tool implementation with dart_mcp library (Stories 4.2-4.3).</reason>
+      </file>
+      <file>
+        <path>lib/domain/sysex/requests/take_screenshot.dart</path>
+        <kind>sysex-request</kind>
+        <symbol>TakeScreenshot</symbol>
+        <reason>Screenshot SysEx command implementation showing how device screen capture works. Returns base64 JPEG image data.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter_bloc" version="^9.1.1" purpose="State management with Cubit pattern" />
+        <package name="mcp_dart" version="^0.6.4" purpose="MCP server implementation and tool registration" />
+        <package name="dart_mcp" version="^0.3.3" purpose="MCP protocol support" />
+        <package name="freezed_annotation" version="^3.1.0" purpose="Immutable state classes" />
+      </flutter>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Five target types: preset, slot, parameter, screen, routing
+- All JSON field names must use snake_case (cv_input not cvInput)
+- Disabled mappings MUST be omitted from output (reduces token usage)
+- CV mapping included if: cv_input > 0 OR source > 0
+- MIDI mapping included if: is_midi_enabled == true
+- i2c mapping included if: is_i2c_enabled == true
+- Performance page included if: performance_page > 0 (values 1-15, 0 means not assigned)
+- Routing MUST use physical names (Input N, Output N, Aux N, None) not internal bus numbers (1-42)
+- Slot index range: 0-31 (32 slots total)
+- Parameter number range: varies by algorithm (validate within slot's parameter count)
+- Parameter identifier format: "slot_index:parameter_number" (e.g., "0:5")
+- MidiMappingType enum values: cc, note_momentary, note_toggle, cc_14bit_low, cc_14bit_high
+- MIDI channel: 0-15
+- MIDI CC: 0-128 (128 = aftertouch)
+- CV input: 0-12
+- i2c CC: 0-255
+- Zero tolerance for flutter analyze warnings
+- All tests must pass before completion
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>show tool (preset target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "preset" }</signature>
+      <path>lib/mcp/tools/disting_tools.dart (add show tool)</path>
+      <returns>Complete preset with all slots, parameters, and enabled mappings only. Disabled mappings omitted.</returns>
+      <usage>LLM inspects full preset state before making changes</usage>
+    </interface>
+    <interface>
+      <name>show tool (slot target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "slot", "identifier": 0 }</signature>
+      <path>lib/mcp/tools/disting_tools.dart (add show tool)</path>
+      <returns>Single slot with algorithm, all parameters, and enabled mappings only</returns>
+      <usage>LLM inspects specific slot state without loading entire preset</usage>
+    </interface>
+    <interface>
+      <name>show tool (parameter target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "parameter", "identifier": "0:5" }</signature>
+      <path>lib/mcp/tools/disting_tools.dart (add show tool)</path>
+      <returns>Single parameter with number, name, value, min, max, unit, mapping (if enabled)</returns>
+      <usage>LLM inspects specific parameter before editing</usage>
+    </interface>
+    <interface>
+      <name>show tool (screen target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "screen" }</signature>
+      <path>lib/mcp/tools/disting_tools.dart (add show tool)</path>
+      <returns>Base64-encoded JPEG image of current device screen</returns>
+      <usage>LLM gets visual confirmation of device state (multimodal)</usage>
+    </interface>
+    <interface>
+      <name>show tool (routing target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "routing" }</signature>
+      <path>lib/mcp/tools/disting_tools.dart (add show tool)</path>
+      <returns>Routing state with physical names (Input 1, Output 2, Aux 3, None)</returns>
+      <usage>LLM inspects signal flow connections between algorithms</usage>
+    </interface>
+    <interface>
+      <name>DistingCubit.state (when synchronized)</name>
+      <kind>cubit-state</kind>
+      <signature>DistingStateSynchronized with slots list</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+      <returns>Complete preset state with all slots and parameters</returns>
+      <usage>Read preset/slot/parameter data for show tool</usage>
+    </interface>
+    <interface>
+      <name>DistingCubit.takeScreenshot()</name>
+      <kind>cubit-method</kind>
+      <signature>Future&lt;String?&gt; takeScreenshot()</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+      <returns>Base64-encoded JPEG image or null if not supported</returns>
+      <usage>Reuse for screen target implementation</usage>
+    </interface>
+    <interface>
+      <name>RoutingEditorCubit.state</name>
+      <kind>cubit-state</kind>
+      <signature>RoutingEditorState with routing connections</signature>
+      <path>lib/cubit/routing_editor_cubit.dart</path>
+      <returns>Current routing state with physical port names</returns>
+      <usage>Read routing data for routing target</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Unit tests for each target type using flutter_test and mocktail for mocking. Test mapping inclusion logic for all combinations (CV enabled via cv_input > 0, CV enabled via source > 0, MIDI enabled, i2c enabled, performance page assigned, all disabled). Test identifier validation and parsing (slot_index range 0-31, parameter format "slot:param"). Test in all connection modes (demo, offline, connected). Test error cases (missing identifier, invalid ranges, wrong format). Integration tests verifying state accuracy from real Cubit instances.
+    </standards>
+    <locations>
+test/mcp/tools/show_tool_test.dart (new file to be created)
+test/mcp/ (existing test directory structure)
+    </locations>
+    <ideas>
+- Test preset target returns all slots with enabled mappings only
+- Test preset target omits disabled mappings
+- Test slot target with valid slot_index (0-31)
+- Test slot target with invalid slot_index (32, -1)
+- Test parameter target with valid identifier ("0:5")
+- Test parameter target with invalid identifier format ("0", "abc", "0:abc")
+- Test parameter target with out-of-range slot_index
+- Test parameter target with out-of-range parameter_number
+- Test screen target returns base64 JPEG string
+- Test screen target returns error in offline/demo mode if not supported
+- Test routing target returns physical names not bus numbers
+- Test routing target works in both online and offline modes
+- Test mapping inclusion: CV enabled when cv_input > 0
+- Test mapping inclusion: CV enabled when source > 0
+- Test mapping inclusion: CV enabled when both cv_input > 0 AND source > 0
+- Test mapping inclusion: MIDI enabled when is_midi_enabled == true
+- Test mapping inclusion: i2c enabled when is_i2c_enabled == true
+- Test mapping inclusion: performance_page included when > 0 (values 1-15)
+- Test mapping omission: entire mapping object omitted when all types disabled
+- Test mapping partial: only CV included, MIDI/i2c omitted
+- Test mapping partial: only MIDI included, CV/i2c omitted
+- Test mapping partial: only i2c included, CV/MIDI omitted
+- Test snake_case field naming in all responses
+- Test error messages include actionable guidance
+    </ideas>
+  </tests>
+</story-context>

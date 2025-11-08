@@ -232,6 +232,299 @@ So that we don't maintain duplicate, unused code.
 
 ---
 
+## Epic 4: MCP Library Replacement & Simplified Preset Creation API
+
+**Expanded Goal:**
+
+Replace the current MCP implementation with the official `dart_mcp` library from the Dart/Flutter team and redesign the MCP tool interface around four intuitive operations: search, new, edit, and show. The new design uses familiar CRUD-style verbs, supports multiple granularity levels (preset/slot/parameter), includes full mapping support (CV/MIDI/i2c/performance pages), and provides intelligent backend diffing to hide NT hardware complexities from LLM clients.
+
+**Value Proposition:**
+
+The current MCP tool set fragments operations across 20+ specialized functions, forcing LLMs to navigate complex tool selection and remember intricate workflows. Four core tools (search/new/edit/show) with flexible granularity reduce cognitive load, enable smaller models to succeed, and map to familiar patterns that LLMs already understand from CLI/database contexts. Backend diffing means LLMs declare desired state rather than orchestrating low-level operations. Full mapping support enables LLMs to configure CV/MIDI/i2c control and performance pages without understanding NT's packed binary format.
+
+**Story Breakdown:**
+
+**Story E4.1: Replace MCP server foundation with dart_mcp library**
+
+As a developer maintaining MCP integration,
+I want to migrate from the current MCP library to the official `dart_mcp` package with HTTP streaming transport,
+So that MCP clients can connect via standard HTTP on port 3000 without stdio configuration friction.
+
+**Acceptance Criteria:**
+1. Add `dart_mcp` dependency to `pubspec.yaml` (verify latest stable version from pub.dev)
+2. Remove current MCP library dependency from `pubspec.yaml`
+3. Study example servers in `https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp/example` to understand proper setup patterns
+4. Update `mcp_server_service.dart` to initialize HTTP server on port 3000 with `/mcp` endpoint using `dart_mcp` streamable HTTP transport
+5. Configure server to use `dart_mcp`'s built-in streamable HTTP transport (following dart_mcp example patterns)
+6. Server accepts HTTP POST requests to `/mcp` endpoint with MCP protocol messages
+7. Backend connection handling (cubit access, MIDI manager access) remains functional
+8. Server logs startup message with connection URL: "MCP server running at http://localhost:3000/mcp"
+9. Verify server responds to MCP handshake via HTTP client (curl or Postman test)
+10. Remove all old MCP library imports from codebase
+11. `flutter analyze` passes with zero warnings
+12. All tests pass
+
+**Prerequisites:** None
+
+---
+
+**Story E4.2: Implement search tool for algorithm discovery**
+
+As an LLM client exploring available algorithms,
+I want a search tool that finds algorithms by name/category with fuzzy matching and returns documentation,
+So that I can discover appropriate algorithms without knowing exact names or GUIDs.
+
+**Acceptance Criteria:**
+1. Create `search` tool accepting: `type` ("algorithm" required), `query` (string, required)
+2. When `type: "algorithm"`, search by fuzzy name matching (≥70% similarity) or exact GUID
+3. Search also filters by category if query matches category name
+4. Return array of matching algorithms with: `guid`, `name`, `category`, `description`
+5. Include general parameter description in results (NOT specific parameter numbers - those depend on specifications)
+6. Parameter descriptions explain what kinds of parameters the algorithm has (e.g., "frequency controls", "envelope settings") without mapping to specific indices
+7. Results sorted by relevance score (exact match > high similarity > category match)
+8. Limit results to top 10 matches to avoid overwhelming output
+9. Return empty array with helpful message if no matches found
+10. Tool works in all connection modes (demo, offline, connected)
+11. JSON schema documents the tool with clear examples
+12. `flutter analyze` passes with zero warnings
+13. All tests pass
+
+**Prerequisites:** Story E4.1
+
+---
+
+**Story E4.3: Implement new tool for preset initialization**
+
+As an LLM client starting preset creation,
+I want a tool that creates a new blank preset or preset with initial algorithms,
+So that I have a clean starting point for building my configuration.
+
+**Acceptance Criteria:**
+1. Create `new` tool accepting: `name` (string, required), `algorithms` (array, optional)
+2. When `algorithms` not provided, create blank preset with specified name
+3. When `algorithms` provided, accept array of: `{ "guid": "...", "name": "...", "specifications": [...] }`
+4. Support algorithm identification by GUID or name (fuzzy matching ≥70%)
+5. `specifications` array provides values for algorithm creation (required for some algorithms, optional for others)
+6. Tool validates algorithm existence before creation
+7. Tool validates specification values against algorithm requirements
+8. Tool clears current preset on device (unsaved changes lost - warn in description)
+9. Tool adds algorithms sequentially to slots 0, 1, 2, etc.
+10. New algorithms have default parameter values and all mappings disabled (CV/MIDI/i2c enabled=false, performance_page=0)
+11. Return created preset state with all slots, default parameter values, and disabled mappings
+12. Tool fails with clear error if in offline/demo mode
+13. JSON schema includes examples: blank preset, preset with 1 algorithm, preset with 3 algorithms
+14. `flutter analyze` passes with zero warnings
+15. All tests pass
+
+**Prerequisites:** Story E4.2
+
+---
+
+**Story E4.4: Implement edit tool with preset-level granularity**
+
+As an LLM client modifying a preset,
+I want to send a complete desired preset state and have the backend calculate minimal changes,
+So that I don't need to understand NT hardware slot reordering and algorithm movement.
+
+**Acceptance Criteria:**
+1. Create `edit` tool accepting: `target` ("preset"), `data` (object with preset JSON)
+2. Preset JSON format: `{ "name": "...", "slots": [ { "algorithm": {...}, "parameters": [...] } ] }`
+3. Parameter structure: `{ "parameter_number": N, "value": V, "mapping": {...} }` where mapping is optional
+4. Mapping structure (all fields optional): `{ "cv": {...}, "midi": {...}, "i2c": {...}, "performance_page": N }`
+5. Use snake_case for all JSON field names: `cv_input`, `midi_channel`, `is_midi_enabled`, etc.
+6. When mapping omitted entirely from parameter JSON, existing mapping is preserved unchanged
+7. When creating new parameters (new algorithm), all mapping types default to disabled (cv/midi/i2c enabled=false, performance_page=0)
+8. When mapping included, only specified mapping types are updated, others preserved
+9. Backend diff engine compares desired state vs current device state (reads from SynchronizedState)
+10. Diff engine determines: algorithms to add, algorithms to remove, algorithms to move, parameters to change, mappings to update
+11. Diff validates all changes before applying (fail fast on first validation error)
+12. Mapping validation: MIDI channel 0-15, MIDI CC 0-128 (128=aftertouch), CV input 0-12, i2c CC 0-255, performance_page 0-15, etc.
+13. If validation succeeds, apply changes and auto-save preset
+14. Return updated preset state after successful application
+15. Return detailed error message if validation or application fails (no partial changes)
+16. Tool works only in connected mode (clear error if offline/demo)
+17. JSON schema documents complete preset structure with mapping examples
+18. Unit tests verify diff logic: add algorithm, remove algorithm, reorder algorithms, change parameters, update mappings, combined changes
+19. `flutter analyze` passes with zero warnings
+20. All tests pass
+
+**Prerequisites:** Story E4.3
+
+---
+
+**Story E4.5: Implement edit tool with slot-level granularity**
+
+As an LLM client modifying a single slot,
+I want to send desired slot state without affecting other slots,
+So that I can make targeted changes efficiently.
+
+**Acceptance Criteria:**
+1. Extend `edit` tool to accept: `target` ("slot"), `slot_index` (int, required), `data` (object with slot JSON)
+2. Slot JSON format: `{ "algorithm": { "guid": "...", "specifications": [...] }, "name": "...", "parameters": [...] }`
+3. Parameter structure: `{ "parameter_number": N, "value": V, "mapping": {...} }` where mapping is optional
+4. Mapping fields (all optional): `cv`, `midi`, `i2c`, `performance_page` using snake_case naming
+5. When mapping omitted, existing mapping is preserved
+6. When mapping included, only specified types are updated (partial updates supported)
+7. Backend compares desired slot vs current slot at specified index (reads from SynchronizedState)
+8. If algorithm changes: backend handles parameter/mapping reset automatically (tools just render SynchronizedState)
+9. If algorithm stays same: update only changed parameters and mappings
+10. If slot name provided: update custom slot name
+11. Validate slot_index in range 0-31
+12. Validate algorithm exists and specifications are valid
+13. Validate parameter values against algorithm constraints
+14. Validate mapping fields: MIDI channel 0-15, CC 0-128, type enum valid, CV input 0-12, i2c CC 0-255, performance_page 0-15
+15. Apply changes and auto-save preset
+16. Return updated slot state after successful application
+17. Return error if validation fails (no partial changes)
+18. JSON schema includes mapping examples: MIDI CC, CV input, i2c, performance page, combined mappings
+19. `flutter analyze` passes with zero warnings
+20. All tests pass
+
+**Prerequisites:** Story E4.4
+
+---
+
+**Story E4.6: Implement edit tool with parameter-level granularity**
+
+As an LLM client adjusting specific parameters,
+I want to set parameter values and mappings by name or number without sending full preset/slot data,
+So that I can make quick parameter tweaks efficiently.
+
+**Acceptance Criteria:**
+1. Extend `edit` tool to accept: `target` ("parameter"), `slot_index` (int, required), `parameter` (string or int, required), `value` (number, optional), `mapping` (object, optional)
+2. Support parameter identification by: `parameter_name` (string) OR `parameter_number` (int, 0-based)
+3. When using `parameter_name`, search slot parameters for matching name (exact match required)
+4. When `value` provided: validate and update parameter value
+5. When `mapping` provided: validate and update parameter mapping
+6. When both `value` and `mapping` omitted: return error "Must provide value or mapping"
+7. Mapping object structure (all fields optional, snake_case): `cv`, `midi`, `i2c`, `performance_page`
+8. Partial mapping updates supported - only specified mapping types are updated, others preserved. Example: `{ "midi": {...} }` updates only MIDI, preserves CV/i2c/performance_page
+9. Empty mapping object `{}` is valid and preserves all existing mappings
+10. Validate slot_index in range 0-31
+11. Validate parameter exists in slot
+12. Validate value within parameter min/max range (if provided)
+13. Validate mapping fields strictly: MIDI channel 0-15, MIDI CC 0-128, MIDI type enum values, CV input 0-12, CV source (algorithm output index), i2c CC 0-255, performance_page 0-15
+14. Apply changes and auto-save preset
+15. Return updated parameter state: `{ "slot_index": N, "parameter_number": N, "parameter_name": "...", "value": N, "mapping": {...} }`
+16. Disabled mappings omitted from return value (only enabled mappings included)
+17. Return error if parameter not found, value out of range, or mapping validation fails
+18. JSON schema includes complete mapping field documentation with valid ranges and examples
+19. `flutter analyze` passes with zero warnings
+20. All tests pass
+
+**Prerequisites:** Story E4.5
+
+---
+
+**Story E4.7: Implement show tool for state inspection**
+
+As an LLM client inspecting current state,
+I want a flexible show tool that displays preset, slot, parameter, screen, or routing information with mappings included,
+So that I can understand the current configuration before making changes.
+
+**Acceptance Criteria:**
+1. Create `show` tool accepting: `target` ("preset"|"slot"|"parameter"|"screen"|"routing", required), `identifier` (string or int, optional)
+2. When `target: "preset"`, return complete preset with all slots, parameters, and mappings (rendered from SynchronizedState)
+3. Parameter structure includes: `parameter_number`, `parameter_name`, `value`, `min`, `max`, `unit`, `mapping` (optional - only if enabled)
+4. Mapping structure uses snake_case: `cv_input`, `midi_channel`, `is_midi_enabled`, etc.
+5. Disabled mappings omitted from output (only include mapping object if at least one type is enabled)
+6. CV mapping included if: `cv_input > 0` OR `source > 0`
+7. CV mapping fields: `source`, `cv_input`, `is_unipolar`, `is_gate`, `volts`, `delta`
+8. MIDI mapping included if: `is_midi_enabled == true`
+9. MIDI mapping fields: `is_midi_enabled`, `midi_channel`, `midi_type` ("cc"|"note_momentary"|"note_toggle"|"cc_14bit_low"|"cc_14bit_high"), `midi_cc`, `is_midi_symmetric`, `is_midi_relative`, `midi_min`, `midi_max`
+10. i2c mapping included if: `is_i2c_enabled == true`
+11. i2c mapping fields: `is_i2c_enabled`, `i2c_cc`, `is_i2c_symmetric`, `i2c_min`, `i2c_max`
+12. Performance page included if: `performance_page > 0` (value 1-15)
+13. When `target: "slot"`, require `identifier` (int slot_index), return single slot with all parameters and enabled mappings
+14. When `target: "parameter"`, require `identifier` (format: "slot_index:parameter_number"), return single parameter with mapping (if enabled)
+15. When `target: "screen"`, return current device screen as base64 JPEG image (reuse existing screenshot logic)
+16. When `target: "routing"`, return routing state in same format as current `get_routing` tool
+17. Routing returns physical names (Input N, Output N, Aux N, None) not internal bus numbers
+18. Routing works in both online and offline modes (uses routing editor state)
+19. Validate identifier format and ranges for each target type
+20. Return clear error if identifier missing when required or invalid
+21. JSON schema documents all target types with complete mapping field descriptions and examples
+22. `flutter analyze` passes with zero warnings
+23. All tests pass
+
+**Prerequisites:** Story E4.6
+
+---
+
+**Story E4.8: Create comprehensive JSON schema documentation with mapping examples**
+
+As an LLM client learning the API,
+I want detailed JSON schema documentation with mapping field descriptions and examples,
+So that I understand how to work with CV/MIDI/i2c mappings and performance pages.
+
+**Acceptance Criteria:**
+1. JSON schema for all tools includes complete mapping structure documentation using snake_case
+2. Mapping field descriptions explain purpose and valid ranges for each field
+3. CV mapping documentation explains: `source` (algorithm output for observing other algorithm outputs - advanced usage), `cv_input` (physical CV input 0-12), `is_unipolar` (unipolar vs bipolar), `is_gate` (gate mode), `volts` (voltage scaling), `delta` (sensitivity)
+4. MIDI mapping documentation explains: `midi_type` values (cc, note_momentary, note_toggle, cc_14bit_low, cc_14bit_high), `midi_channel` (0-15), `midi_cc` (0-128, 128=aftertouch), `is_midi_symmetric`, `is_midi_relative`, `midi_min`/`midi_max` (scaling range)
+5. i2c mapping documentation explains: `i2c_cc` (0-255), `is_i2c_symmetric`, `i2c_min`/`i2c_max` (scaling range)
+6. Performance page documentation explains: pages 1-15 for parameter grouping/organization, 0 = not assigned
+7. Schema examples include: preset with MIDI mappings, slot with CV mappings, parameter with i2c mapping, parameter with performance page assignment
+8. Schema examples show partial mapping updates (e.g., update only MIDI, preserve CV/i2c)
+9. Schema examples show common patterns: map filter cutoff to MIDI CC, map envelope to CV input, assign multiple params to performance page, observe algorithm output as CV source
+10. Helper documentation created: `docs/mcp-mapping-guide.md` explaining mapping concepts and use cases
+11. Mapping guide includes troubleshooting: common validation errors, mapping conflicts, performance page best practices
+12. Mapping guide explains that disabled mappings are omitted from `show` output but preserved when editing
+13. Update main `CLAUDE.md` with link to mapping guide
+14. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E4.7
+
+---
+
+**Story E4.9: Remove old MCP tools and consolidate documentation**
+
+As a developer maintaining clean codebase,
+I want to remove all old MCP tool implementations and update documentation,
+So that we have a single source of truth for the new 4-tool API.
+
+**Acceptance Criteria:**
+1. Remove all old tool registrations from `mcp_server_service.dart` (keep only: search, new, edit, show)
+2. Remove old tool implementation files if no longer needed
+3. Keep backend services that are reused by new tools (diffing logic, validation, SynchronizedState rendering, etc.)
+4. Update or remove hardcoded documentation resources to reflect new tool set
+5. Create new `docs/mcp-api-guide.md` documenting the 4-tool API with mapping support
+6. Include workflow examples: "Creating a simple preset", "Modifying existing preset with mappings", "Exploring algorithms", "Setting up MIDI control", "Organizing with performance pages"
+7. Include JSON schema reference for each tool with complete mapping field documentation
+8. Include troubleshooting section for common errors (including mapping validation errors)
+9. Add section on granularity: when to use preset vs slot vs parameter edits
+10. Add section on mapping strategies: when to use CV vs MIDI vs i2c, performance page organization, using CV source for modulation
+11. Update main `CLAUDE.md` with link to new MCP API guide
+12. `flutter analyze` passes with zero warnings
+13. All tests pass
+
+**Prerequisites:** Story E4.8
+
+---
+
+**Story E4.10: Test with smaller LLM and iterate on usability**
+
+As a developer validating the "foolproof" goal,
+I want to test the 4-tool API with mappings using a smaller LLM and measure success rate,
+So that I can identify and fix remaining usability issues.
+
+**Acceptance Criteria:**
+1. Set up test environment with smaller LLM (GPT-OSS-20B or similar) connected to nt_helper MCP server
+2. Conduct 12 test scenarios covering: search algorithms, create simple preset, create complex preset, modify preset, add MIDI mappings, add CV mappings, set performance pages, inspect state with mappings, handle errors
+3. Measure success rate: % of scenarios where LLM successfully completes task without human intervention
+4. Document failure modes: tool selection errors, schema misunderstandings, validation errors, mapping field confusion, snake_case issues
+5. Identify top 3 usability issues from testing
+6. Iterate on tool descriptions, JSON schemas, mapping documentation, or error messages to address issues
+7. Re-test after improvements and document success rate change
+8. Target: >80% success rate on simple operations, >60% on complex operations, >50% on mapping operations
+9. Document findings and recommendations in `docs/mcp-api-guide.md`
+10. Special focus on mapping usability: Are field names clear? Are validation errors helpful? Are examples sufficient? Is snake_case better than camelCase for LLMs?
+11. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E4.9
+
+---
+
 ## Epic 5: Preset Template System
 
 **Expanded Goal:**

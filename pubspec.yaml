@@ -50,8 +50,8 @@ dependencies:
   haptic_feedback: ^0.5.1+1
   bitsdojo_window: 0.1.6
   camera: ^0.11.2
-  mcp_dart: 
-    git: https://github.com/thorinside/mcp_dart
+  dart_mcp: ^0.3.3
+  mcp_dart: ^0.6.4
   collection: ^1.19.1
   uuid: ^4.5.1
   crypto: ^3.0.6

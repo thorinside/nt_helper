@@ -416,10 +416,14 @@ class MCPUtils {
   static Map<String, dynamic> buildError(
     String message, {
     String? helpCommand,
+    Map<String, dynamic>? details,
   }) {
     final error = <String, dynamic>{'success': false, 'error': message};
     if (helpCommand != null) {
       error['help_command'] = helpCommand;
+    }
+    if (details != null && details.isNotEmpty) {
+      error['details'] = details;
     }
     return error;
   }
