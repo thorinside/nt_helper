@@ -195,67 +195,30 @@ class McpServerService extends ChangeNotifier {
     response.headers.set('Access-Control-Expose-Headers', 'mcp-session-id');
   }
 
-  /// Check if request is an initialization request
-  bool _isInitializeRequest(dynamic body) {
-    if (body is Map<String, dynamic> &&
-        body.containsKey('method') &&
-        body['method'] == 'initialize') {
-      return true;
-    }
-    return false;
-  }
 
   /// Handle POST requests for JSON-RPC calls
   Future<void> _handlePostRequest(HttpRequest request) async {
     try {
-      // Parse the request body
-      final bodyBytes = await _collectBytes(request);
-      final bodyString = utf8.decode(bodyBytes);
-      final body = jsonDecode(bodyString);
-
       // Check for existing session ID
       final sessionId = request.headers.value('mcp-session-id');
       StreamableHTTPServerTransport? transport;
 
       if (sessionId != null && _transports.containsKey(sessionId)) {
-        // Reuse existing transport
+        // Reuse existing transport for this session
         transport = _transports[sessionId]!;
-      } else if (_isInitializeRequest(body)) {
-        // New initialization request - create transport and server
-        if (sessionId != null) {
-          // Client provided a session ID - use it for the new transport
-          transport = await _createNewTransport(sessionId: sessionId);
-        } else {
-          // No session ID provided - generate one
-          transport = await _createNewTransport();
-        }
-
-        // Ensure session is fully initialized before proceeding
-        await Future.delayed(const Duration(milliseconds: 1));
-
-        await transport.handleRequest(request, body);
-        return; // Already handled
       } else {
-        // Non-initialization request with unknown session ID - create a new session
-        if (sessionId != null) {
-          transport = await _createNewTransport(sessionId: sessionId);
-        } else {
-          _sendErrorResponse(
-            request,
-            HttpStatus.badRequest,
-            'Bad Request: No session ID provided for non-initialization request',
-          );
-          return;
-        }
+        // Create new transport for new session
+        // If client provided a session ID, use it; otherwise generate one
+        transport = await _createNewTransport(sessionId: sessionId);
       }
 
-      // Handle the request with existing transport
-      await transport.handleRequest(request, body);
+      // Handle the request - transport will parse the body internally
+      await transport.handleRequest(request);
     } catch (e) {
       _sendErrorResponse(
         request,
         HttpStatus.internalServerError,
-        'Internal server error',
+        'Internal server error: ${e.toString()}',
       );
     }
   }
@@ -359,20 +322,6 @@ class McpServerService extends ChangeNotifier {
     }
   }
 
-  /// Helper to collect bytes from HTTP request
-  Future<List<int>> _collectBytes(HttpRequest request) {
-    final completer = Completer<List<int>>();
-    final bytes = <int>[];
-
-    request.listen(
-      bytes.addAll,
-      onDone: () => completer.complete(bytes),
-      onError: completer.completeError,
-      cancelOnError: true,
-    );
-
-    return completer.future;
-  }
 
   Future<void> stop() async {
     if (!isRunning) {
@@ -619,14 +568,14 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     server.tool(
       'show',
       description:
-          'Show preset, slot, parameter, screen, or routing information. Returns mappings for enabled CV/MIDI/i2c/performance page controls. Disabled mappings omitted from output. See docs/mcp-mapping-guide.md for mapping field details.',
+          'Show preset, slot, parameter, screen, routing, or CPU information. Returns mappings for enabled CV/MIDI/i2c/performance page controls. Disabled mappings omitted from output. See docs/mcp-mapping-guide.md for mapping field details.',
       toolInputSchema: const ToolInputSchema(
         properties: {
           'target': {
             'type': 'string',
             'description':
-                'What to display: "preset" (all slots/parameters), "slot" (single slot), "parameter" (single parameter), "screen" (device screenshot), "routing" (signal flow)',
-            'enum': ['preset', 'slot', 'parameter', 'screen', 'routing'],
+                'What to display: "preset" (all slots/parameters), "slot" (single slot), "parameter" (single parameter), "screen" (device screenshot), "routing" (signal flow), "cpu" (CPU usage)',
+            'enum': ['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu'],
           },
           'identifier': {
             'type': ['string', 'integer'],
@@ -715,91 +664,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     server.tool(
       'edit',
       description:
-          'Edit preset with preset-level granularity. Accepts complete preset state and applies only necessary changes. Device must be in connected mode.',
+          'Edit preset, slot, or parameter with appropriate granularity. Target "preset": full preset state. Target "slot": specific slot with algorithm/parameters. Target "parameter": individual parameter value/mapping. Device must be in connected mode.',
       toolInputSchema: const ToolInputSchema(
         properties: {
           'target': {
             'type': 'string',
-            'enum': ['preset'],
-            'description': 'Target type (must be "preset")',
-          },
-          'data': {
-            'type': 'object',
-            'description':
-                'Preset state with name and slots array. Each slot contains algorithm (guid or name) and optional parameters with values and optional mappings.',
-            'properties': {
-              'name': {
-                'type': 'string',
-                'description': 'Preset name',
-              },
-              'slots': {
-                'type': 'array',
-                'description': 'Array of slot objects (indexed by position)',
-                'items': {
-                  'type': 'object',
-                  'properties': {
-                    'algorithm': {
-                      'type': 'object',
-                      'description':
-                          'Algorithm specification (either guid or name)',
-                      'properties': {
-                        'guid': {
-                          'type': 'string',
-                          'description': 'Algorithm GUID',
-                        },
-                        'name': {
-                          'type': 'string',
-                          'description': 'Algorithm name (fuzzy matching)',
-                        },
-                      },
-                    },
-                    'parameters': {
-                      'type': 'array',
-                      'description': 'Array of parameter objects',
-                      'items': {
-                        'type': 'object',
-                        'properties': {
-                          'parameter_number': {
-                            'type': 'integer',
-                            'description': 'Parameter index',
-                          },
-                          'value': {
-                            'type': 'number',
-                            'description': 'Parameter value',
-                          },
-                          'mapping': {
-                            'type': 'object',
-                            'description':
-                                'Optional mapping with cv, midi, i2c, performance_page fields. See docs/mcp-mapping-guide.md for complete field documentation.',
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.editPreset(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'edit',
-      description:
-          'Edit preset, slot, or parameter with varying granularity. For slot-level: target "slot", slot_index (0-31), and data object with algorithm, parameters, and optional name. For parameter-level: target "parameter", slot_index (0-31), parameter (name or number), optional value, optional mapping. Device must be in connected mode.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'target': {
-            'type': 'string',
-            'enum': ['slot', 'parameter'],
-            'description': 'Target type: "slot" for slot-level edits, "parameter" for parameter-level edits',
+            'enum': ['preset', 'slot', 'parameter'],
+            'description': 'Target type: "preset" for full preset, "slot" for slot-level, "parameter" for parameter-level edits',
           },
           'slot_index': {
             'type': 'integer',
@@ -935,7 +806,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'data': {
             'type': 'object',
             'description':
-                'For target "slot": Slot state with optional algorithm, parameters, and name. Algorithm must have guid or name. Parameters array items have parameter_number, optional value, and optional mapping with cv, midi, i2c, performance_page fields.',
+                'Data payload varies by target. For "preset": full preset with name and slots array. For "slot": slot state with optional algorithm, parameters, and name. For "parameter": omit this field (use value/mapping instead).',
             'properties': {
               'algorithm': {
                 'type': 'object',
@@ -1005,10 +876,25 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
             },
           },
         },
-        required: ['target', 'slot_index'],
+        required: ['target'],
       ),
       callback: ({args, extra}) async {
-        final resultJson = await tools.editSlot(args ?? {});
+        final target = args?['target'] as String?;
+        String resultJson;
+
+        if (target == 'preset') {
+          // Edit entire preset
+          resultJson = await tools.editPreset(args ?? {});
+        } else if (target == 'slot' || target == 'parameter') {
+          // Edit slot or parameter
+          resultJson = await tools.editSlot(args ?? {});
+        } else {
+          resultJson = jsonEncode({
+            'success': false,
+            'error': 'Invalid target. Must be "preset", "slot", or "parameter"',
+          });
+        }
+
         return CallToolResult.fromContent(
           content: [TextContent(text: resultJson)],
         );
@@ -1017,18 +903,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
   }
 
   void _registerUtilityTools(McpServer server, DistingTools tools) {
-    server.tool(
-      'get_cpu_usage',
-      description:
-          'Get current CPU usage including per-core and per-slot usage percentages.',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.getCpuUsage(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
+    // Utility tools can be added here as needed
   }
 
   void _registerDiagnosticTools(McpServer server) {

@@ -99,12 +99,12 @@ class DistingTools {
             final pInfo = parameterInfos[paramIndex];
             final int? liveRawValue = await _controller.getParameterValue(
               i,
-              paramIndex,
+              pInfo.parameterNumber,
             );
 
             // Build base parameter object
             final paramData = {
-              'parameter_number': paramIndex,
+              'parameter_number': pInfo.parameterNumber,
               'name': pInfo.name,
               'min_value': _scaleForDisplay(
                 pInfo.min,
@@ -126,7 +126,7 @@ class DistingTools {
 
             // Add enum metadata if this is an enum parameter
             if (_isEnumParameter(pInfo)) {
-              final enumValues = await _getParameterEnumValues(i, paramIndex);
+              final enumValues = await _getParameterEnumValues(i, pInfo.parameterNumber);
               if (enumValues != null) {
                 paramData['is_enum'] = true;
                 paramData['enum_values'] = enumValues;
@@ -143,7 +143,7 @@ class DistingTools {
             try {
               final mapping = await _controller.getParameterMapping(
                 i,
-                paramIndex,
+                pInfo.parameterNumber,
               );
               if (mapping != null) {
                 final perfPageIndex = mapping.packedMappingData.perfPageIndex;
@@ -302,18 +302,21 @@ class DistingTools {
       ParameterInfo? paramInfo;
 
       if (parameterNumberParam != null) {
-        if (parameterNumberParam >= paramInfos.length ||
-            parameterNumberParam < 0) {
+        // Find parameter with matching parameterNumber (not array index)
+        try {
+          paramInfo = paramInfos.firstWhere(
+            (p) => p.parameterNumber == parameterNumberParam,
+          );
+          targetParameterNumber = parameterNumberParam;
+        } catch (e) {
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
-                'Parameter number $parameterNumberParam is out of bounds for slot $slotIndex.',
+                'Parameter number $parameterNumberParam not found in slot $slotIndex.',
               ),
             ),
           );
         }
-        targetParameterNumber = parameterNumberParam;
-        paramInfo = paramInfos[targetParameterNumber];
       } else if (parameterNameParam != null) {
         final matchingParams = paramInfos
             .where(
@@ -340,8 +343,7 @@ class DistingTools {
           );
         }
         paramInfo = matchingParams.first;
-        // We need to find the original index (parameterNumber) of this paramInfo
-        targetParameterNumber = paramInfos.indexOf(paramInfo);
+        targetParameterNumber = paramInfo.parameterNumber;
       }
 
       if (paramInfo == null || targetParameterNumber == null) {
@@ -496,16 +498,22 @@ class DistingTools {
       // Fetch parameter info to get powerOfTen for scaling
       final List<ParameterInfo> paramInfos = await _controller
           .getParametersForSlot(slotIndex);
-      if (parameterNumber >= paramInfos.length || parameterNumber < 0) {
+
+      // Find parameter with matching parameterNumber (not array index)
+      ParameterInfo? paramInfo;
+      try {
+        paramInfo = paramInfos.firstWhere(
+          (p) => p.parameterNumber == parameterNumber,
+        );
+      } catch (e) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'Parameter number $parameterNumber is out of bounds for slot $slotIndex (for scaling info).',
+              'Parameter number $parameterNumber not found in slot $slotIndex.',
             ),
           ),
         );
       }
-      final ParameterInfo paramInfo = paramInfos[parameterNumber];
 
       final responseData = {
         'slot_index': slotIndex,
@@ -1678,19 +1686,37 @@ class DistingTools {
       ParameterInfo? paramInfo;
 
       if (parameterNumber != null) {
-        if (parameterNumber >= 0 && parameterNumber < paramInfos.length) {
+        // Find parameter with matching parameterNumber (not array index)
+        try {
+          paramInfo = paramInfos.firstWhere(
+            (p) => p.parameterNumber == parameterNumber,
+          );
           targetParamNumber = parameterNumber;
-          paramInfo = paramInfos[parameterNumber];
+        } catch (e) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError('Parameter number $parameterNumber not found in slot $slotIndex'),
+            ),
+          );
         }
       } else if (parameterName != null) {
         // Find by name
-        for (int i = 0; i < paramInfos.length; i++) {
-          if (paramInfos[i].name.toLowerCase() == parameterName.toLowerCase()) {
-            targetParamNumber = i;
-            paramInfo = paramInfos[i];
-            break;
-          }
+        final matchingParams = paramInfos
+            .where(
+              (p) => p.name.toLowerCase() == parameterName.toLowerCase(),
+            )
+            .toList();
+
+        if (matchingParams.isEmpty) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError('Parameter name "$parameterName" not found in slot $slotIndex'),
+            ),
+          );
         }
+
+        paramInfo = matchingParams.first;
+        targetParamNumber = paramInfo.parameterNumber;
       }
 
       if (paramInfo == null || targetParamNumber == null) {
@@ -2210,16 +2236,22 @@ class DistingTools {
         );
       }
 
-      // Step 2.5: Validate connection mode (AC #16) - after basic parameter checks
+      // Step 2.5: Check if we're only changing the name
+      final bool isNameOnlyChange = desiredSlotsData == null || desiredSlotsData.isEmpty;
+
+      // Step 2.6: Validate connection mode (AC #16) - after basic parameter checks
       final state = _distingCubit.state;
       if (state is! DistingStateSynchronized) {
-        return jsonEncode(
-          convertToSnakeCaseKeys(
-            MCPUtils.buildError(
-              'Device is not in a synchronized state, cannot edit preset. Current state: ${state.runtimeType}',
+        // Allow name-only changes even when not fully synchronized
+        if (!isNameOnlyChange) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Device is not in a synchronized state, cannot edit preset slots. Current state: ${state.runtimeType}',
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
 
       // Step 3: Get current preset state (requires device connection)
@@ -2229,8 +2261,9 @@ class DistingTools {
           await _controller.getCurrentPresetName();
 
       // Step 4: Build desired slots map from input data
+      // If no slots provided, we're only updating the name
       final Map<int, DesiredSlot> desiredSlots = {};
-      if (desiredSlotsData != null) {
+      if (desiredSlotsData != null && desiredSlotsData.isNotEmpty) {
         for (int i = 0; i < desiredSlotsData.length; i++) {
           final slotData = desiredSlotsData[i];
           if (slotData is! Map<String, dynamic>) {
@@ -3272,8 +3305,15 @@ class DistingTools {
           final algorithmParameters =
               metadataService.getExpandedParameters(resolvedGuid);
           if (paramNumber >= algorithmParameters.length) {
+            final algorithmName = algorithmMetadata.name;
             return MCPUtils.buildError(
-              'Parameter number $paramNumber exceeds algorithm parameter count (${algorithmParameters.length})',
+              'Parameter number $paramNumber exceeds algorithm parameter count',
+              details: {
+                'algorithm': algorithmName,
+                'valid_range': '0-${algorithmParameters.length - 1}',
+                'attempted': paramNumber,
+                'total_parameters': algorithmParameters.length,
+              },
             );
           }
 

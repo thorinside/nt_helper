@@ -24,13 +24,13 @@ PHASE_4_COMPLETE: false
 STORIES_SEQUENCE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9, 4-10]
 TODO_STORY: 4-10-test-with-smaller-llm-and-iterate-on-usability
 TODO_TITLE: Test with Smaller LLM and Iterate on Usability
-IN_PROGRESS_STORY:
-IN_PROGRESS_TITLE:
+IN_PROGRESS_STORY: 4-10-test-with-smaller-llm-and-iterate-on-usability
+IN_PROGRESS_TITLE: Test with Smaller LLM and Iterate on Usability
 STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9]
 
 ## Next Action
 
-NEXT_ACTION: Develop story 4-10 (Test with Smaller LLM and Iterate on Usability)
+NEXT_ACTION: Continue development on story 4-10 (address review feedback)
 NEXT_COMMAND: /bmad:bmm:workflows:dev-story
 NEXT_AGENT: dev
 

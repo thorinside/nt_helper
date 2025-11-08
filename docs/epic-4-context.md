@@ -533,3 +533,21 @@ await server.listen(port: 3000, path: '/mcp');
 - Story E4.8 (docs) depends on E4.7
 - Story E4.9 (cleanup) depends on E4.8
 - Story E4.10 (testing) is final validation
+
+---
+
+## Post-Review Follow-ups
+
+**Story 4.10 Review Action Items** (2025-11-08):
+
+1. **[High] Conduct Actual LLM Testing** - Story 4.10 prepared testing infrastructure but deferred actual LLM testing. Either execute testing with Ollama using test_harness_llm_usability.py, or create follow-up story for empirical validation (AC #3, #7, #8 not met).
+
+2. **[High] Clarify Documentation Claims** - Update docs/mcp-api-guide.md Testing section to distinguish baseline projections (84%/60%/51%) from measured results to avoid misleading users (lines 1435-1440).
+
+3. **[Medium] Enhance Error Messages** - Add concrete examples to validation error messages for CV input, MIDI channel, and mapping fields in lib/mcp/tools/disting_tools.dart to improve LLM understanding.
+
+4. **[Medium] Validate Test Harness** - Run test_harness_llm_usability.py against localhost:3000 to verify integration works, or document known limitations.
+
+5. **[Low] Relocate Test Harness** - Move test_harness_llm_usability.py from project root to test/integration/ or test/tools/ for consistency with project structure.
+
+6. **[Low] Add Error Recovery Scenarios** - Extend llm-usability-test-plan.md with scenarios covering network failures, partial errors, and retry logic for more complete test coverage.

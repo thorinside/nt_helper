@@ -388,3 +388,173 @@ Created files:
 3. Validate that improvements address identified issues
 4. Document actual success rate improvements
 5. Consider additional iterations if targets not met
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer**: Neal
+**Date**: 2025-11-08
+**Outcome**: Changes Requested
+
+### Summary
+
+Story 4.10 aimed to test the 4-tool MCP API with a smaller LLM to validate the "foolproof" goal and achieve specific success rate targets (>80% simple, >60% complex, >50% mapping operations). The implementation delivered a testing framework, comprehensive documentation, and preemptive improvements based on code analysis, but deferred actual LLM testing to a future manual step.
+
+While the preparatory work is solid and the improvements are valuable, the story's core acceptance criteria around measuring actual success rates with a smaller LLM were not met. The baseline assessment is analytical rather than empirical.
+
+### Key Findings
+
+#### High Severity
+
+1. **Acceptance Criteria Not Fully Met - Actual LLM Testing Deferred**
+   - **AC 3**: "Measure success rate" - Only expected rates documented, no actual measurement with LLM
+   - **AC 7**: "Re-test after improvements and document success rate change" - No re-testing conducted
+   - **Impact**: Cannot validate if improvements achieve target success rates
+   - **Evidence**: docs/llm-test-results-baseline.md shows analysis-based expectations (84%/60%/51%) not empirical results
+   - **Recommendation**: Either conduct actual testing with Ollama or adjust story scope to reflect "preparation and baseline analysis"
+
+2. **Test Harness Implementation Gap**
+   - **Issue**: test_harness_llm_usability.py created but not integrated or validated
+   - **Evidence**: 597-line Python script exists but no execution results documented
+   - **Impact**: Cannot verify testing infrastructure works correctly
+   - **Recommendation**: Add integration test or document known limitations of harness
+
+#### Medium Severity
+
+3. **Missing Error Message Context in Validation**
+   - **Issue**: Enhanced error messages in disting_tools.dart are good, but some edge cases lack guidance
+   - **Example**: CV input validation says "0-12 (where 0=disabled, 1-12=physical inputs)" but doesn't explain when to use 0 vs 1-12
+   - **File**: lib/mcp/tools/disting_tools.dart:2997-2998, :3036-3039
+   - **Recommendation**: Add examples to error messages (e.g., "Use 0 to disable CV, or 1-12 for physical inputs")
+
+4. **Documentation Inconsistency - Success Rate Claims**
+   - **Issue**: docs/mcp-api-guide.md Testing section presents "expected" rates as facts
+   - **Evidence**: Table shows "Expected: 84%" without clarifying these are projections
+   - **File**: docs/mcp-api-guide.md:1435-1440
+   - **Impact**: Could mislead users into thinking actual testing was performed
+   - **Recommendation**: Clarify these are baseline projections, not measured results
+
+#### Low Severity
+
+5. **Test Scenario Coverage - Missing Edge Cases**
+   - **Issue**: 12 scenarios cover happy paths but limited error recovery testing
+   - **Evidence**: Only Scenario 11 tests validation errors; no scenarios for partial failures, network issues, or timeout handling
+   - **File**: docs/llm-usability-test-plan.md
+   - **Recommendation**: Add scenarios for common error recovery patterns
+
+6. **Python Test Harness Location**
+   - **Issue**: test_harness_llm_usability.py at project root, not in test/ directory
+   - **Impact**: Deviates from standard project structure
+   - **Recommendation**: Move to test/integration/ or test/tools/ directory
+
+### Acceptance Criteria Coverage
+
+| AC | Status | Evidence |
+|----|--------|----------|
+| AC 1: Test environment setup | ✓ Partial | Configuration documented, but not validated with actual LLM |
+| AC 2: 12 test scenarios | ✓ Complete | All 12 scenarios designed and documented |
+| AC 3: Measure success rate | ✗ Not Met | Expected rates documented, no actual measurement |
+| AC 4: Document failure modes | ✓ Complete | Failure mode taxonomy created |
+| AC 5: Identify top 3 issues | ✓ Complete | Mapping complexity, snake_case, MIDI numbering identified |
+| AC 6: Iterate on improvements | ✓ Complete | Error messages and docs enhanced |
+| AC 7: Re-test and measure change | ✗ Not Met | No re-testing performed |
+| AC 8: Validate targets | ✗ Not Met | Targets documented but not validated empirically |
+| AC 9: Document findings | ✓ Complete | Added to mcp-api-guide.md |
+| AC 10: Mapping usability focus | ✓ Complete | Field names, validation errors, examples addressed |
+| AC 11: flutter analyze passes | ✓ Complete | Zero warnings confirmed |
+
+**Overall**: 7/11 acceptance criteria fully met, 1 partial, 3 not met
+
+### Test Coverage and Gaps
+
+**What Was Tested**:
+- Code analysis of MCP tool implementations
+- JSON schema validation logic review
+- Documentation completeness assessment
+- Error message clarity evaluation
+
+**What Was Not Tested**:
+- Actual LLM tool selection with smaller models
+- Real-world schema understanding by LLMs
+- Mapping field confusion rates with live models
+- snake_case vs camelCase error rates empirically
+
+**Critical Gap**: The story title promises "Test with smaller LLM" but deliverables are limited to test planning and preemptive improvements.
+
+### Architectural Alignment
+
+**Strengths**:
+- Improvements align with existing MCP architecture
+- No breaking changes to API surface
+- Error messages enhance existing validation patterns
+- Documentation structure follows established conventions
+
+**Concerns**:
+- Test harness is Python-based, deviates from Dart/Flutter ecosystem
+- Could have used Dart test framework with mock MCP clients for some validation
+- No integration with existing test/ directory structure
+
+### Security Notes
+
+No security concerns identified. Changes are limited to:
+- Error message text improvements
+- Documentation additions
+- Test planning documents
+- Python test harness (not production code)
+
+### Best-Practices and References
+
+**MCP Protocol Best Practices** ([MCP Specification](https://modelcontextprotocol.io/)):
+- ✓ Tool schemas follow JSON Schema standard
+- ✓ Error responses include helpful context
+- ✓ snake_case aligns with common LLM training data conventions
+- ✓ Validation messages are actionable
+
+**Flutter/Dart Standards**:
+- ✓ Code follows project linting rules (flutter analyze passes)
+- ✓ Consistent with existing error handling patterns
+- ~ Test harness could use Dart instead of Python for ecosystem consistency
+
+**Documentation Quality**:
+- ✓ Examples are clear and complete
+- ✓ Common mistakes section is valuable
+- ~ Could benefit from video/interactive examples for mapping concepts
+
+### Action Items
+
+1. **[High][Testing] Conduct Actual LLM Testing or Redefine Story Scope**
+   - Owner: Dev team
+   - Action: Either run actual testing with Ollama instance using test harness, OR document this story as "preparation phase" and create Story 4.11 for actual testing
+   - Related: AC 3, 7, 8
+   - Files: test_harness_llm_usability.py
+
+2. **[High][Documentation] Clarify Expected vs Measured Results**
+   - Owner: Dev team
+   - Action: Update docs/mcp-api-guide.md Testing section to clearly mark 84%/60%/51% as baseline projections, not measured results
+   - Related: AC 9
+   - Files: docs/mcp-api-guide.md:1435-1440
+
+3. **[Medium][Code] Enhance Error Message Examples**
+   - Owner: Dev team
+   - Action: Add concrete examples to CV input, MIDI channel, and mapping validation error messages
+   - Related: AC 10
+   - Files: lib/mcp/tools/disting_tools.dart
+
+4. **[Medium][Testing] Validate Test Harness Integration**
+   - Owner: Dev team
+   - Action: Run test_harness_llm_usability.py against localhost:3000 to verify it works, or document known issues
+   - Related: AC 1
+   - Files: test_harness_llm_usability.py
+
+5. **[Low][Structure] Relocate Test Harness to Standard Location**
+   - Owner: Dev team
+   - Action: Move test_harness_llm_usability.py to test/integration/ or test/tools/ directory
+   - Related: Project structure consistency
+   - Files: test_harness_llm_usability.py
+
+6. **[Low][Testing] Add Error Recovery Test Scenarios**
+   - Owner: Dev team
+   - Action: Extend llm-usability-test-plan.md with scenarios for network failures, partial errors, and retry logic
+   - Related: AC 2
+   - Files: docs/llm-usability-test-plan.md

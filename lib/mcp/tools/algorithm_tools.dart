@@ -467,7 +467,7 @@ class MCPAlgorithmTools {
           convertToSnakeCaseKeys({
             'success': false,
             'error': 'Missing required parameter: target',
-            'valid_targets': ['preset', 'slot', 'parameter', 'screen', 'routing'],
+            'valid_targets': ['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu'],
           }),
         );
       }
@@ -483,12 +483,14 @@ class MCPAlgorithmTools {
           return _showScreen();
         case 'routing':
           return _showRouting();
+        case 'cpu':
+          return _showCpu();
         default:
           return jsonEncode(
             convertToSnakeCaseKeys({
               'success': false,
               'error': 'Invalid target: $target',
-              'valid_targets': ['preset', 'slot', 'parameter', 'screen', 'routing'],
+              'valid_targets': ['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu'],
             }),
           );
       }
@@ -834,6 +836,54 @@ class MCPAlgorithmTools {
   /// Helper to encode bytes to base64 string.
   String _base64Encode(List<int> bytes) {
     return base64.encode(bytes);
+  }
+
+  Future<String> _showCpu() async {
+    try {
+      final state = _distingCubit.state;
+      if (state is! DistingStateSynchronized) {
+        return jsonEncode(
+          convertToSnakeCaseKeys({
+            'success': false,
+            'error': 'Device not synchronized. Connect to device first.',
+          }),
+        );
+      }
+
+      final cpuUsage = await _distingCubit.getCpuUsage();
+      if (cpuUsage == null) {
+        return jsonEncode(
+          convertToSnakeCaseKeys({
+            'success': false,
+            'error': 'Could not retrieve CPU usage from device',
+          }),
+        );
+      }
+
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': true,
+          'cpu_usage': {
+            'cpu1_percent': cpuUsage.cpu1,
+            'cpu2_percent': cpuUsage.cpu2,
+            'total_usage_percent': (cpuUsage.cpu1 + cpuUsage.cpu2) / 2.0,
+            'slot_usages': cpuUsage.slotUsages.asMap().map((index, usage) =>
+              MapEntry(index.toString(), {
+                'slot_index': index,
+                'usage_percent': usage,
+              })
+            ).values.toList(),
+          },
+        }),
+      );
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Error retrieving CPU usage: ${e.toString()}',
+        }),
+      );
+    }
   }
 }
 

@@ -59,7 +59,7 @@ void main() {
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
         expect(decoded['error'], contains('Invalid target'));
-        expect(decoded['valid_targets'], equals(['preset', 'slot', 'parameter', 'screen', 'routing']));
+        expect(decoded['valid_targets'], equals(['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu']));
       });
     });
 
