@@ -30,7 +30,7 @@ STORIES_DONE: [4-1, 4-2, 4-3]
 
 ## Next Action
 
-NEXT_ACTION: Develop story 4-4 (Implement Edit Tool with Preset-Level Granularity)
+NEXT_ACTION: Address review feedback for story 4-4 (Implement Edit Tool with Preset-Level Granularity)
 NEXT_COMMAND: /bmad:bmm:workflows:dev-story
 NEXT_AGENT: dev
 

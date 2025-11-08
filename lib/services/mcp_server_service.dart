@@ -547,7 +547,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
   McpServer _buildServer() {
     final distingControllerForTools = DistingControllerImpl(_distingCubit);
     final mcpAlgorithmTools = MCPAlgorithmTools(_distingCubit);
-    final distingTools = DistingTools(distingControllerForTools);
+    final distingTools = DistingTools(distingControllerForTools, _distingCubit);
 
     final server = McpServer(
       Implementation(name: 'nt-helper-flutter', version: '1.39.0'),

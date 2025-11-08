@@ -27,7 +27,7 @@ void main() {
     setUp(() {
       distingCubit = DistingCubit(database);
       controller = DistingControllerImpl(distingCubit);
-      tools = DistingTools(controller);
+      tools = DistingTools(controller, distingCubit);
     });
 
     tearDown(() {
