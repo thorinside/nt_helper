@@ -63,8 +63,8 @@ development_status:
 
   epic-4: contexted
   4-1-replace-mcp-server-foundation-with-dart-mcp-library: done
-  4-2-implement-search-tool-for-algorithm-discovery: drafted
-  4-3-implement-new-tool-for-preset-initialization: drafted
+  4-2-implement-search-tool-for-algorithm-discovery: done
+  4-3-implement-new-tool-for-preset-initialization: ready-for-dev
   4-4-implement-edit-tool-with-preset-level-granularity: drafted
   4-5-implement-edit-tool-with-slot-level-granularity: drafted
   4-6-implement-edit-tool-with-parameter-level-granularity: drafted

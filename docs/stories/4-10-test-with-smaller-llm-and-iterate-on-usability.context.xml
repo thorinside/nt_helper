@@ -1,0 +1,137 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-10" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.10</storyId>
+    <title>Test with smaller LLM and iterate on usability</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-10-test-with-smaller-llm-and-iterate-on-usability.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer validating the "foolproof" goal</asA>
+    <iWant>to test the 4-tool API with mappings using a smaller LLM and measure success rate</iWant>
+    <soThat>I can identify and fix remaining usability issues</soThat>
+    <tasks>
+- Set up test environment (AC: 1)
+- Design test scenarios (AC: 2)
+- Conduct initial testing round (AC: 3-4)
+- Analyze results and identify usability issues (AC: 5)
+- Implement improvements (AC: 6)
+- Re-test and measure improvement (AC: 7)
+- Validate success rate targets (AC: 8)
+- Document findings and recommendations (AC: 9-10)
+- Final validation (AC: 11)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Set up test environment with smaller LLM (GPT-OSS-20B or similar) connected to nt_helper MCP server
+2. Conduct 12 test scenarios: search algorithms, create simple preset, create complex preset, modify preset, add MIDI mappings, add CV mappings, set performance pages, inspect state with mappings, handle errors
+3. Measure success rate: % of scenarios where LLM successfully completes task without human intervention
+4. Document failure modes: tool selection errors, schema misunderstandings, validation errors, mapping field confusion, snake_case issues
+5. Identify top 3 usability issues from testing
+6. Iterate on tool descriptions, JSON schemas, mapping documentation, or error messages to address issues
+7. Re-test after improvements and document success rate change
+8. Target: >80% success rate on simple operations, >60% on complex operations, >50% on mapping operations
+9. Document findings and recommendations in docs/mcp-api-guide.md
+10. Special focus on mapping usability: field names clear, validation errors helpful, examples sufficient, snake_case better than camelCase
+11. flutter analyze passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Story E4.10: LLM Usability Testing</section>
+        <snippet>Test with smaller LLM (GPT-OSS-20B). 12 test scenarios covering all operations. Measure success rate (>80% simple, >60% complex, >50% mapping). Identify and fix top 3 usability issues. Special focus on mapping usability. Document findings.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Key Design Principles</section>
+        <snippet>Familiar Verbs - search/new/edit/show. Flexible Granularity - preset/slot/parameter. Backend Diffing - LLMs send desired state. Full Mapping Support - CV/MIDI/i2c/performance pages. HTTP Transport - standard HTTP on port 3000.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/services/mcp_server_service.dart</path>
+        <kind>service</kind>
+        <symbol>McpServerService</symbol>
+        <reason>MCP server running on port 3000 for LLM connection</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/algorithm_tools.dart</path>
+        <kind>tools</kind>
+        <symbol>search tool</symbol>
+        <reason>Tool schemas to test and potentially improve based on LLM feedback</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>tools</kind>
+        <symbol>new, edit, show tools</symbol>
+        <reason>Tool schemas to test and potentially improve based on LLM feedback</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="dart_mcp" source="pub.dev" purpose="MCP server for LLM connection" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Test environment: smaller LLM (GPT-OSS-20B or similar) not cutting-edge
+- 12 test scenarios: 6 simple, 2 complex, 4 mapping
+- Success rate targets: >80% simple, >60% complex, >50% mapping
+- Focus areas: tool selection, schema understanding, validation errors, mapping fields, snake_case vs camelCase
+- Document all failure modes and improvements
+- Iterate until success rate targets met
+- Document findings in docs/mcp-api-guide.md
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Test Scenarios</name>
+      <kind>testing</kind>
+      <scenarios>
+Simple (6): search by name, search by category, create blank preset, create preset with 1 algo, modify parameter value, inspect preset.
+Complex (2): create preset with 3 algos, handle validation error.
+Mapping (4): add MIDI mapping, add CV mapping, assign performance page, partial MIDI update.
+      </scenarios>
+      <usage>Measure LLM success rate and identify usability issues</usage>
+    </interface>
+    <interface>
+      <name>Success Criteria</name>
+      <kind>testing</kind>
+      <definition>LLM selects correct tool, provides correct parameters, tool executes without error, LLM can verify result, no human intervention required</definition>
+      <usage>Determine if scenario is successful</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Manual testing with smaller LLM. Record all tool calls and responses. Track time to completion. Document failure modes. Calculate success rates. Iterate on improvements. Re-test after changes.
+    </standards>
+    <locations>
+docs/mcp-api-guide.md (document findings in testing section)
+test/mcp/integration/llm_usability_test.dart (if automated tests created)
+    </locations>
+    <ideas>
+- Test each scenario manually with smaller LLM
+- Record tool selection decisions
+- Record parameter construction
+- Record validation errors
+- Note snake_case vs camelCase issues
+- Note mapping field confusion
+- Identify patterns in failures
+- Group similar failures
+- Rank issues by frequency and impact
+- Select top 3 issues to address
+- Implement improvements (tool descriptions, schemas, docs, error messages)
+- Re-test all scenarios
+- Calculate before/after success rates
+- Document findings and recommendations
+    </ideas>
+  </tests>
+</story-context>

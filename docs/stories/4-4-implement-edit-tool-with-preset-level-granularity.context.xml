@@ -1,0 +1,134 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-4" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.4</storyId>
+    <title>Implement edit tool with preset-level granularity</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-4-implement-edit-tool-with-preset-level-granularity.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>LLM client modifying a preset</asA>
+    <iWant>to send a complete desired preset state and have the backend calculate minimal changes</iWant>
+    <soThat>I don't need to understand NT hardware slot reordering and algorithm movement</soThat>
+    <tasks>
+- Define edit tool schema for preset target (AC: 1, 5, 17)
+- Implement diff engine for preset comparison (AC: 9-10)
+- Implement validation logic (AC: 11-12, 15)
+- Implement mapping preservation logic (AC: 6-8)
+- Implement apply changes logic (AC: 13-14)
+- Implement mode validation and tool registration (AC: 16, 19-20)
+- Write unit tests for diff logic (AC: 18)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Create `edit` tool accepting: `target` ("preset"), `data` (object with preset JSON)
+2. Preset JSON format: `{ "name": "...", "slots": [ { "algorithm": {...}, "parameters": [...] } ] }`
+3. Parameter structure: `{ "parameter_number": N, "value": V, "mapping": {...} }` where mapping is optional
+4. Mapping structure (all fields optional): `{ "cv": {...}, "midi": {...}, "i2c": {...}, "performance_page": N }`
+5. Use snake_case for all JSON field names: `cv_input`, `midi_channel`, `is_midi_enabled`, etc.
+6. When mapping omitted entirely from parameter JSON, existing mapping is preserved unchanged
+7. When creating new parameters (new algorithm), all mapping types default to disabled
+8. When mapping included, only specified mapping types are updated, others preserved
+9. Backend diff engine compares desired state vs current device state (reads from SynchronizedState)
+10. Diff engine determines: algorithms to add, algorithms to remove, algorithms to move, parameters to change, mappings to update
+11. Diff validates all changes before applying (fail fast on first validation error)
+12. Mapping validation: MIDI channel 0-15, MIDI CC 0-128, CV input 0-12, i2c CC 0-255, performance_page 0-15
+13. If validation succeeds, apply changes and auto-save preset
+14. Return updated preset state after successful application
+15. Return detailed error message if validation or application fails (no partial changes)
+16. Tool works only in connected mode (clear error if offline/demo)
+17. JSON schema documents complete preset structure with mapping examples
+18. Unit tests verify diff logic for all change types
+19. `flutter analyze` passes with zero warnings
+20. All tests pass
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Backend Diff Engine Design</section>
+        <snippet>Input: Desired preset state (JSON from LLM). Output: Sequence of NT hardware operations. Diff Operations: Add Algorithm, Remove Algorithm, Move Algorithm, Change Parameter, Update Mapping. Validation Rules: slot 0-31, MIDI channel 0-15, CC 0-128, CV input 0-12, i2c CC 0-255, performance_page 0-15. Error Handling: Fail fast, no partial changes, clear error messages. Auto-save after success.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Mapping Representation</section>
+        <snippet>snake_case field names. CV: source, cv_input, is_unipolar, is_gate, volts, delta. MIDI: is_midi_enabled, midi_channel, midi_type, midi_cc, is_midi_symmetric, is_midi_relative, midi_min, midi_max. i2c: is_i2c_enabled, i2c_cc, is_i2c_symmetric, i2c_min, i2c_max. performance_page: 1-15 (0=not assigned).</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/cubit/disting_state.dart</path>
+        <kind>model</kind>
+        <symbol>Slot, DistingStateSynchronized</symbol>
+        <reason>Source of truth for current preset state (diff comparison)</reason>
+      </file>
+      <file>
+        <path>lib/services/disting_controller.dart</path>
+        <kind>interface</kind>
+        <symbol>DistingController</symbol>
+        <reason>Methods for add/remove/move algorithms, update parameters, update mappings</reason>
+      </file>
+      <file>
+        <path>lib/models/packed_mapping_data.dart</path>
+        <kind>model</kind>
+        <symbol>PackedMappingData, MidiMappingType</symbol>
+        <reason>Internal mapping structure (camelCase) - must translate to/from snake_case JSON</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Only works in connected mode (synchronized state)
+- Fail fast validation: stop at first error, no partial changes
+- snake_case for all JSON field names (translate from/to camelCase internally)
+- Mapping preservation: omitted = preserved, included = update only specified types
+- New algorithms: all mappings default to disabled
+- Auto-save preset after successful changes
+- Zero tolerance: flutter analyze must pass with zero warnings
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>edit tool (preset target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "preset", "data": { "name": string, "slots": [...] } }</signature>
+      <returns>Updated preset state after changes applied</returns>
+      <usage>Complete preset modification with backend diffing</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Unit tests for diff engine with mock DistingCubit. Test each diff operation separately and combined. Test validation failures. Test mapping preservation and partial updates.
+    </standards>
+    <locations>
+test/mcp/tools/edit_preset_tool_test.dart (new file)
+test/services/preset_diff_engine_test.dart (if separate file created)
+    </locations>
+    <ideas>
+- Test add single algorithm
+- Test remove single algorithm
+- Test reorder algorithms (slot position changes)
+- Test change parameter values only
+- Test update mappings only
+- Test combined changes (add + change params + update mappings)
+- Test mapping preservation when omitted
+- Test partial mapping updates (MIDI only, preserve CV/i2c)
+- Test validation: MIDI channel out of range
+- Test validation: CV input out of range
+- Test validation: i2c CC out of range
+- Test validation: performance_page out of range
+- Test fail fast: no partial changes on error
+    </ideas>
+  </tests>
+</story-context>

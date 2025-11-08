@@ -1,0 +1,123 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-8" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.8</storyId>
+    <title>Create comprehensive JSON schema documentation with mapping examples</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-8-create-comprehensive-json-schema-documentation-with-mapping-examples.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>LLM client learning the API</asA>
+    <iWant>detailed JSON schema documentation with mapping field descriptions and examples</iWant>
+    <soThat>I understand how to work with CV/MIDI/i2c mappings and performance pages</soThat>
+    <tasks>
+- Update JSON schemas for all tools with complete mapping documentation (AC: 1-2)
+- Document CV mapping fields (AC: 3)
+- Document MIDI mapping fields (AC: 4)
+- Document i2c and performance page fields (AC: 5-6)
+- Create schema examples (AC: 7-9)
+- Create mapping guide document (AC: 10-12)
+- Update project documentation (AC: 13-14)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1-14. [See story file for complete field documentation including CV source (advanced usage for observing algorithm outputs), all MIDI types, i2c fields, performance pages 1-15]
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Mapping Representation</section>
+        <snippet>CV Mapping: source (algorithm output for modulation), cv_input (0-12), is_unipolar, is_gate, volts, delta. MIDI Mapping: is_midi_enabled, midi_channel (0-15), midi_type (cc|note_momentary|note_toggle|cc_14bit_low|cc_14bit_high), midi_cc (0-128, 128=aftertouch), is_midi_symmetric, is_midi_relative, midi_min, midi_max. i2c Mapping: is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max. Performance Page: 1-15 (0=not assigned).</snippet>
+      </doc>
+      <doc>
+        <path>docs/manual-1.10.0.md</path>
+        <title>Disting NT Firmware Manual</title>
+        <section>Parameter mappings and CV/MIDI/i2c</section>
+        <snippet>Reference for hardware CV inputs, MIDI implementation, i2c protocol, performance pages</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/models/packed_mapping_data.dart</path>
+        <kind>model</kind>
+        <symbol>PackedMappingData, MidiMappingType</symbol>
+        <reason>Internal mapping structure - reference for field meanings and valid ranges</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/algorithm_tools.dart</path>
+        <kind>tools</kind>
+        <reason>Tool schemas to update with mapping documentation</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>tools</kind>
+        <reason>Tool schemas to update with mapping documentation</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="dart_mcp" source="pub.dev" purpose="JSON schema definitions in tool registration" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- snake_case for all JSON field names throughout documentation
+- Complete field descriptions with valid ranges
+- Examples for all mapping types and common patterns
+- Troubleshooting section for common validation errors
+- Document disabled mappings omitted from show but preserved when editing
+- Create docs/mcp-mapping-guide.md as new file
+- Update CLAUDE.md with link to mapping guide
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>CV Mapping Fields</name>
+      <kind>documentation</kind>
+      <fields>source (algorithm output), cv_input (0-12), is_unipolar, is_gate, volts, delta</fields>
+      <usage>Hardware control voltage and modulation routing</usage>
+    </interface>
+    <interface>
+      <name>MIDI Mapping Fields</name>
+      <kind>documentation</kind>
+      <fields>is_midi_enabled, midi_channel (0-15), midi_type (enum), midi_cc (0-128), is_midi_symmetric, is_midi_relative, midi_min, midi_max</fields>
+      <usage>MIDI controller integration and DAW automation</usage>
+    </interface>
+    <interface>
+      <name>i2c Mapping Fields</name>
+      <kind>documentation</kind>
+      <fields>is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max</fields>
+      <usage>External i2c module control</usage>
+    </interface>
+    <interface>
+      <name>Performance Page</name>
+      <kind>documentation</kind>
+      <fields>performance_page (0-15, where 0=not assigned, 1-15=page number)</fields>
+      <usage>Parameter organization for live performance</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Review all tool schemas for completeness. Validate all examples are syntactically correct. Test examples with actual MCP client. Ensure links work in documentation.
+    </standards>
+    <locations>
+docs/mcp-mapping-guide.md (new file to create)
+lib/mcp/tools/ (schemas to update)
+    </locations>
+    <ideas>
+- Validate all JSON examples are syntactically correct
+- Test each example with MCP client
+- Verify mapping field descriptions are clear
+- Verify valid ranges documented for all fields
+- Verify troubleshooting examples are helpful
+- Test link to mapping guide from CLAUDE.md
+    </ideas>
+  </tests>
+</story-context>

@@ -574,6 +574,49 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
 
   void _registerAlgorithmTools(McpServer server, MCPAlgorithmTools tools) {
     server.tool(
+      'search',
+      description:
+          'Search for algorithms by name or category with fuzzy matching. Returns top 10 matches sorted by relevance.',
+      toolInputSchema: const ToolInputSchema(
+        properties: {
+          'type': {
+            'type': 'string',
+            'description': 'Type of search. Currently only "algorithm" is supported.',
+            'enum': ['algorithm'],
+          },
+          'query': {
+            'type': 'string',
+            'description':
+                'Search query: algorithm name, partial name, or category. Fuzzy matching threshold: 70% similarity.',
+          },
+        },
+        required: ['type', 'query'],
+      ),
+      callback: ({args, extra}) async {
+        try {
+          final resultJson = await tools.searchAlgorithms(args ?? {}).timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 5 seconds',
+                }),
+              );
+          return CallToolResult.fromContent(
+            content: [TextContent(text: resultJson)],
+          );
+        } catch (e) {
+          final errorJson = jsonEncode({
+            'success': false,
+            'error': 'Tool execution failed: ${e.toString()}',
+          });
+          return CallToolResult.fromContent(
+            content: [TextContent(text: errorJson)],
+          );
+        }
+      },
+    );
+
+    server.tool(
       'get_algorithm_details',
       description:
           'Get algorithm metadata by GUID or name. Supports fuzzy matching >=70%.',

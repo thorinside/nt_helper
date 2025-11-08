@@ -1,0 +1,139 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-7" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.7</storyId>
+    <title>Implement show tool for state inspection</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-7-implement-show-tool-for-state-inspection.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>LLM client inspecting current state</asA>
+    <iWant>a flexible show tool that displays preset, slot, parameter, screen, or routing information with mappings included</iWant>
+    <soThat>I can understand the current configuration before making changes</soThat>
+    <tasks>
+- Define show tool schema (AC: 1, 4, 21)
+- Implement preset target (AC: 2-3, 5)
+- Implement mapping inclusion logic (AC: 5-12)
+- Implement slot target (AC: 13)
+- Implement parameter target (AC: 14)
+- Implement screen target (AC: 15)
+- Implement routing target (AC: 16-18)
+- Implement validation and error handling (AC: 19-20)
+- Register tool and test (AC: 22-23)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1-23. [See story file for complete mapping inclusion rules: CV if cv_input>0 OR source>0, MIDI if is_midi_enabled==true, i2c if is_i2c_enabled==true, performance_page if >0]
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Story E4.7: show Tool</section>
+        <snippet>Five target types: preset, slot, parameter, screen, routing. Mapping inclusion rules: only enabled mappings shown. CV fields: source, cv_input, is_unipolar, is_gate, volts, delta. MIDI fields: is_midi_enabled, midi_channel, midi_type, midi_cc, is_midi_symmetric, is_midi_relative, midi_min, midi_max. i2c fields: is_i2c_enabled, i2c_cc, is_i2c_symmetric, i2c_min, i2c_max. Performance page: 1-15 (0=not assigned).</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit, DistingStateSynchronized</symbol>
+        <reason>Source of truth for preset/slot/parameter state</reason>
+      </file>
+      <file>
+        <path>lib/cubit/routing_editor_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>RoutingEditorCubit</symbol>
+        <reason>Routing state for routing target</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit.takeScreenshot</symbol>
+        <reason>Screenshot method for screen target (returns base64 JPEG)</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Five target types: preset, slot, parameter, screen, routing
+- Disabled mappings omitted from output
+- CV mapping included if: cv_input > 0 OR source > 0
+- MIDI mapping included if: is_midi_enabled == true
+- i2c mapping included if: is_i2c_enabled == true
+- Performance page included if: performance_page > 0 (values 1-15)
+- Routing uses physical names (Input N, Output N, Aux N, None) not internal bus numbers
+- snake_case for all JSON fields
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>show tool (preset target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "preset" }</signature>
+      <returns>Complete preset with all slots, parameters, and enabled mappings</returns>
+      <usage>Inspect full preset state</usage>
+    </interface>
+    <interface>
+      <name>show tool (slot target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "slot", "identifier": N }</signature>
+      <returns>Single slot with all parameters and enabled mappings</returns>
+      <usage>Inspect specific slot</usage>
+    </interface>
+    <interface>
+      <name>show tool (parameter target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "parameter", "identifier": "slot_index:parameter_number" }</signature>
+      <returns>Single parameter with value and mapping (if enabled)</returns>
+      <usage>Inspect specific parameter</usage>
+    </interface>
+    <interface>
+      <name>show tool (screen target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "screen" }</signature>
+      <returns>Base64-encoded JPEG image of device screen</returns>
+      <usage>Visual confirmation of device state</usage>
+    </interface>
+    <interface>
+      <name>show tool (routing target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "routing" }</signature>
+      <returns>Routing state with physical names (Input N, Output N, Aux N, None)</returns>
+      <usage>Signal flow inspection</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Unit tests for each target type. Test mapping inclusion logic for all combinations. Test identifier validation and parsing. Test in all connection modes. Test error cases.
+    </standards>
+    <locations>
+test/mcp/tools/show_tool_test.dart (new file)
+    </locations>
+    <ideas>
+- Test preset target with all slots
+- Test slot target with specific slot index
+- Test parameter target with identifier parsing
+- Test screen target (base64 JPEG)
+- Test routing target with physical names
+- Test mapping inclusion: CV enabled (cv_input > 0)
+- Test mapping inclusion: CV enabled (source > 0)
+- Test mapping inclusion: MIDI enabled
+- Test mapping inclusion: i2c enabled
+- Test mapping inclusion: performance_page assigned
+- Test mapping omission: all disabled
+- Test identifier validation (slot_index range)
+- Test identifier parsing (slot_index:parameter_number)
+    </ideas>
+  </tests>
+</story-context>

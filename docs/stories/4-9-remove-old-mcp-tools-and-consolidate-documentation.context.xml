@@ -1,0 +1,142 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-9" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.9</storyId>
+    <title>Remove old MCP tools and consolidate documentation</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-9-remove-old-mcp-tools-and-consolidate-documentation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer maintaining clean codebase</asA>
+    <iWant>to remove all old MCP tool implementations and update documentation</iWant>
+    <soThat>we have a single source of truth for the new 4-tool API</soThat>
+    <tasks>
+- Identify old MCP tools to remove (AC: 1)
+- Remove old tool registrations (AC: 1-2)
+- Preserve reusable backend services (AC: 3)
+- Update documentation resources (AC: 4)
+- Create MCP API guide document (AC: 5-10)
+- Create workflow examples (AC: 6)
+- Create troubleshooting section (AC: 8)
+- Create granularity section (AC: 9)
+- Create mapping strategies section (AC: 10)
+- Update main documentation and test (AC: 11-13)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1-13. [See story file for complete list of old tools to remove: list_algorithms, get_algorithm_details, get_current_preset, add_algorithm, remove_algorithm, set_parameter_value, move_algorithm_up/down, build_preset_from_json, etc. Keep only: search, new, edit, show]
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Four Core Tools</section>
+        <snippet>search - Algorithm discovery. new - Preset initialization. edit - State modification (3 granularity levels). show - State inspection (5 target types).</snippet>
+      </doc>
+      <doc>
+        <path>README.md</path>
+        <title>README</title>
+        <section>MCP tool reference documentation</section>
+        <snippet>Current documentation of 20+ MCP tools to be replaced</snippet>
+      </doc>
+      <doc>
+        <path>assets/mcp_docs/</path>
+        <title>MCP Documentation Resources</title>
+        <section>Pre-loaded documentation</section>
+        <snippet>bus-mapping, usage-guide, algorithm-categories, preset-format, routing-concepts</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/services/mcp_server_service.dart</path>
+        <kind>service</kind>
+        <symbol>McpServerService</symbol>
+        <reason>Tool registrations to update - remove old tools, keep only search/new/edit/show</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/algorithm_tools.dart</path>
+        <kind>tools</kind>
+        <symbol>MCP algorithm tools</symbol>
+        <reason>Old tool implementations to remove or update</reason>
+      </file>
+      <file>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>tools</kind>
+        <symbol>MCP disting tools</symbol>
+        <reason>Old tool implementations to remove or update</reason>
+      </file>
+      <file>
+        <path>lib/services/disting_controller.dart</path>
+        <kind>interface</kind>
+        <symbol>DistingController</symbol>
+        <reason>Backend service to PRESERVE - still used by new tools</reason>
+      </file>
+      <file>
+        <path>lib/services/disting_controller_impl.dart</path>
+        <kind>service</kind>
+        <symbol>DistingControllerImpl</symbol>
+        <reason>Backend service to PRESERVE - still used by new tools</reason>
+      </file>
+      <file>
+        <path>lib/services/algorithm_metadata_service.dart</path>
+        <kind>service</kind>
+        <symbol>AlgorithmMetadataService</symbol>
+        <reason>Backend service to PRESERVE - used by search tool</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Remove only old tool registrations and implementations
+- Preserve all backend services: DistingController, DistingControllerImpl, AlgorithmMetadataService, validation logic, diff engine
+- Keep resource files that are still useful: bus-mapping, routing-concepts
+- Update or remove: usage-guide (update for 4-tool API)
+- Create new docs/mcp-api-guide.md with complete 4-tool documentation
+- Update CLAUDE.md with links to new guides
+- Update README.md MCP section
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Old tools to remove</name>
+      <kind>mcp-tools</kind>
+      <tools>list_algorithms, get_algorithm_details, get_current_preset, add_algorithm, remove_algorithm, set_parameter_value, get_parameter_value, move_algorithm_up, move_algorithm_down, set_preset_name, get_preset_name, new_preset, save_preset, get_module_screenshot, build_preset_from_json, and others</tools>
+      <replacement>Replaced by search, new, edit, show</replacement>
+    </interface>
+    <interface>
+      <name>Tools to keep</name>
+      <kind>mcp-tools</kind>
+      <tools>search, new, edit (3 granularities), show (5 targets)</tools>
+      <usage>New 4-tool API</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Verify all old tool references removed. Verify new tools work as documented. Test all workflow examples. Verify links in documentation work. Remove tests for deleted tools. Update remaining tests.
+    </standards>
+    <locations>
+test/mcp/tools/ (remove old test files, update remaining)
+docs/mcp-api-guide.md (new file to create)
+    </locations>
+    <ideas>
+- Grep for old tool names to find all references
+- Test each workflow example in new API guide
+- Verify all links work (CLAUDE.md → mcp-api-guide.md)
+- Verify all links work (CLAUDE.md → mcp-mapping-guide.md)
+- Test granularity examples (preset vs slot vs parameter)
+- Test mapping strategy examples
+- Remove old tool tests
+- Update existing tests for new API
+    </ideas>
+  </tests>
+</story-context>

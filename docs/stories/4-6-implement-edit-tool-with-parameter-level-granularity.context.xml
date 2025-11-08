@@ -1,0 +1,106 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-6" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.6</storyId>
+    <title>Implement edit tool with parameter-level granularity</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-6-implement-edit-tool-with-parameter-level-granularity.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>LLM client adjusting specific parameters</asA>
+    <iWant>to set parameter values and mappings by name or number without sending full preset/slot data</iWant>
+    <soThat>I can make quick parameter tweaks efficiently</soThat>
+    <tasks>
+- Extend edit tool schema for parameter target (AC: 1-2, 7, 18)
+- Implement parameter lookup logic (AC: 2-3, 11)
+- Implement validation logic (AC: 4-6, 10, 12-13, 17)
+- Implement partial mapping updates (AC: 8-9)
+- Implement apply changes and return state (AC: 14-16)
+- Testing and validation (AC: 19-20)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1-20. [See story file for complete criteria with full mapping field documentation]
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Story E4.6: edit Tool - Parameter Level</section>
+        <snippet>Parameter identification (name or number). Value and/or mapping updates. Partial mapping updates. Strict validation. Disabled mappings omitted from response.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/cubit/disting_state.dart</path>
+        <kind>model</kind>
+        <symbol>ParameterInfo, MappedParameter</symbol>
+        <reason>Parameter model with name, number, value, min, max, unit, mapping</reason>
+      </file>
+      <file>
+        <path>lib/services/disting_controller.dart</path>
+        <kind>interface</kind>
+        <symbol>DistingController</symbol>
+        <reason>Methods: updateParameterValue, getParametersForSlot</reason>
+      </file>
+      <file>
+        <path>lib/models/packed_mapping_data.dart</path>
+        <kind>model</kind>
+        <symbol>PackedMappingData</symbol>
+        <reason>Mapping structure - must translate to/from snake_case JSON</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Parameter identification by name (exact match) or number (0-based)
+- Must provide either value or mapping (or both)
+- Partial mapping updates: only specified types updated
+- Disabled mappings omitted from return value
+- Validation ranges: MIDI channel 0-15, CC 0-128, CV input 0-12, i2c CC 0-255, performance_page 0-15
+- snake_case for all JSON fields
+- Auto-save after changes
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>edit tool (parameter target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "parameter", "slot_index": N, "parameter": string|int, "value": number, "mapping": {...} }</signature>
+      <returns>{ slot_index, parameter_number, parameter_name, value, mapping (if enabled) }</returns>
+      <usage>Quick parameter tweaks by name or number</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Unit tests for parameter lookup (by number and by name). Test value updates, mapping updates, partial updates, validation.
+    </standards>
+    <locations>
+test/mcp/tools/edit_parameter_tool_test.dart (new file)
+    </locations>
+    <ideas>
+- Test parameter lookup by number
+- Test parameter lookup by name (exact match)
+- Test parameter not found error (with available names listed)
+- Test update value only
+- Test update mapping only
+- Test update both value and mapping
+- Test partial mapping update (MIDI only)
+- Test empty mapping object (preserve all)
+- Test validation: value out of range
+- Test validation: MIDI channel out of range
+- Test validation: neither value nor mapping provided
+- Test disabled mappings omitted from return
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,96 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-5" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.5</storyId>
+    <title>Implement edit tool with slot-level granularity</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-5-implement-edit-tool-with-slot-level-granularity.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>LLM client modifying a single slot</asA>
+    <iWant>to send desired slot state without affecting other slots</iWant>
+    <soThat>I can make targeted changes efficiently</soThat>
+    <tasks>
+- Extend edit tool schema for slot target (AC: 1, 4, 18)
+- Implement slot-level diff logic (AC: 7-10)
+- Implement validation logic (AC: 11-14, 17)
+- Implement mapping preservation and partial updates (AC: 5-6)
+- Implement apply changes and return state (AC: 15-16)
+- Testing and validation (AC: 19-20)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1-20. [See story file for complete criteria]
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Story E4.5: edit Tool - Slot Level</section>
+        <snippet>Slot JSON structure with mappings. Partial mapping updates. Slot name updates. Algorithm change handling. Validation.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/cubit/disting_state.dart</path>
+        <kind>model</kind>
+        <symbol>Slot</symbol>
+        <reason>Slot model with index, algorithm, parameters, routing, customName</reason>
+      </file>
+      <file>
+        <path>lib/services/disting_controller.dart</path>
+        <kind>interface</kind>
+        <symbol>DistingController</symbol>
+        <reason>Methods: getAlgorithmInSlot, clearSlot, addAlgorithm, updateParameterValue, setSlotName</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Only updates specified slot, preserves other slots
+- When algorithm changes: auto-resets parameters and mappings
+- When algorithm same: partial updates supported
+- Slot index range: 0-31
+- Custom slot names optional
+- Partial mapping updates: only specified types updated
+- snake_case for all JSON fields
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>edit tool (slot target)</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "target": "slot", "slot_index": N, "data": { "algorithm": {...}, "name": string, "parameters": [...] } }</signature>
+      <returns>Updated slot state</returns>
+      <usage>Modify single slot without affecting others</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Unit tests with mock DistingCubit. Test algorithm change, parameter updates, mapping updates, slot name updates, validation.
+    </standards>
+    <locations>
+test/mcp/tools/edit_slot_tool_test.dart (new file)
+    </locations>
+    <ideas>
+- Test algorithm change (clear + add)
+- Test parameter value changes only
+- Test mapping updates only
+- Test custom slot name update
+- Test mapping preservation when omitted
+- Test partial mapping updates (MIDI only)
+- Test validation: slot_index out of range
+- Test validation: invalid mapping fields
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,157 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-2" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.2</storyId>
+    <title>Implement search tool for algorithm discovery</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/4-2-implement-search-tool-for-algorithm-discovery.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>LLM client exploring available algorithms</asA>
+    <iWant>a search tool that finds algorithms by name/category with fuzzy matching and returns documentation</iWant>
+    <soThat>I can discover appropriate algorithms without knowing exact names or GUIDs</soThat>
+    <tasks>
+- Define search tool schema (AC: 1, 11)
+- Implement fuzzy matching logic (AC: 2-3, 7)
+- Implement algorithm metadata retrieval (AC: 4-6)
+- Implement result filtering and limiting (AC: 8-9)
+- Register tool in MCP server (AC: 10)
+- Testing and validation (AC: 12-13)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Create `search` tool accepting: `type` ("algorithm" required), `query` (string, required)
+2. When `type: "algorithm"`, search by fuzzy name matching (≥70% similarity) or exact GUID
+3. Search also filters by category if query matches category name
+4. Return array of matching algorithms with: `guid`, `name`, `category`, `description`
+5. Include general parameter description in results (NOT specific parameter numbers - those depend on specifications)
+6. Parameter descriptions explain what kinds of parameters the algorithm has without mapping to specific indices
+7. Results sorted by relevance score (exact match > high similarity > category match)
+8. Limit results to top 10 matches to avoid overwhelming output
+9. Return empty array with helpful message if no matches found
+10. Tool works in all connection modes (demo, offline, connected)
+11. JSON schema documents the tool with clear examples
+12. `flutter analyze` passes with zero warnings
+13. All tests pass
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Story E4.2: search Tool</section>
+        <snippet>Fuzzy matching (≥70% similarity), exact GUID lookup, category filtering. Return top 10 sorted by relevance. Works in all connection modes.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Algorithm Metadata Management</section>
+        <snippet>Algorithm metadata describes what each algorithm does, its parameters, categories, and features. Sources: Database (lib/db/), JSON Assets (assets/metadata/), Hardware, Remote API. 190 algorithm documentation files in docs/algorithms/.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/services/algorithm_metadata_service.dart</path>
+        <kind>service</kind>
+        <symbol>AlgorithmMetadataService</symbol>
+        <lines>1-100</lines>
+        <reason>Core metadata service for algorithm lookup and discovery</reason>
+        <snippet>
+class AlgorithmMetadataService {
+  static final AlgorithmMetadataService _instance = AlgorithmMetadataService._internal();
+  factory AlgorithmMetadataService() => _instance;
+
+  final Map&lt;String, AlgorithmMetadata&gt; _algorithms = {};
+  final Map&lt;String, AlgorithmFeature&gt; _features = {};
+  bool _isInitialized = false;
+
+  Future&lt;void&gt; initialize(AppDatabase database) async { ... }
+
+  // Algorithm access methods
+  AlgorithmMetadata? getAlgorithm(String guid) { ... }
+  List&lt;AlgorithmMetadata&gt; getAllAlgorithms() { ... }
+  List&lt;AlgorithmMetadata&gt; getAlgorithmsByCategory(String category) { ... }
+}
+        </snippet>
+      </file>
+      <file>
+        <path>lib/models/algorithm_metadata.dart</path>
+        <kind>model</kind>
+        <symbol>AlgorithmMetadata</symbol>
+        <reason>Data model for algorithm metadata with freezed/json_serializable</reason>
+      </file>
+      <file>
+        <path>lib/services/mcp_server_service.dart</path>
+        <kind>service</kind>
+        <symbol>McpServerService</symbol>
+        <reason>MCP server where search tool will be registered</reason>
+      </file>
+      <file>
+        <path>lib/db/daos/metadata_dao.dart</path>
+        <kind>dao</kind>
+        <symbol>MetadataDao</symbol>
+        <reason>Database access for algorithm metadata queries</reason>
+      </file>
+    </code>
+    <dependencies>
+      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration and handling" />
+      <package name="string_similarity" source="pub.dev" purpose="Fuzzy string matching (or implement Levenshtein)" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Fuzzy matching threshold: ≥70% similarity
+- Maximum results: 10 algorithms
+- General parameter descriptions only (NOT specific indices - those depend on specifications)
+- Works in all connection modes: demo, offline, connected
+- Zero tolerance: flutter analyze must pass with zero warnings
+- Relevance scoring: exact match (100) > high similarity (70-99) > category match (50)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>search tool</name>
+      <kind>mcp-tool</kind>
+      <signature>{ "type": "algorithm", "query": string }</signature>
+      <returns>Array of { guid, name, category, description, generalParameters }</returns>
+      <usage>LLM clients use this to discover algorithms by name, category, or GUID</usage>
+    </interface>
+    <interface>
+      <name>AlgorithmMetadataService.getAllAlgorithms</name>
+      <kind>method</kind>
+      <signature>List&lt;AlgorithmMetadata&gt; getAllAlgorithms()</signature>
+      <path>lib/services/algorithm_metadata_service.dart</path>
+      <usage>Get all available algorithms for searching</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Unit tests with flutter_test framework. Test fuzzy matching with various similarity levels. Integration tests with mock database containing sample algorithms. Test all connection modes.
+    </standards>
+    <locations>
+test/mcp/tools/search_tool_test.dart (new file)
+test/services/algorithm_metadata_service_test.dart (if exists)
+    </locations>
+    <ideas>
+- Test exact algorithm name match (should score 100 and appear first)
+- Test fuzzy name matching at 70% threshold boundary
+- Test fuzzy name matching above 70% threshold
+- Test fuzzy name matching below 70% threshold (should be excluded)
+- Test exact GUID matching
+- Test category filtering (query matches category name)
+- Test relevance scoring order (exact > high similarity > category)
+- Test result limiting to top 10
+- Test empty results with helpful message
+- Test in demo mode (MockDistingMidiManager)
+- Test in offline mode (OfflineDistingMidiManager)
+- Test in connected mode (DistingMidiManager)
+- Test general parameter descriptions (no specific indices)
+    </ideas>
+  </tests>
+</story-context>
