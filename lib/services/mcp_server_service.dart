@@ -510,7 +510,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     );
 
     // Register MCP tools - preserving existing tool definitions
-    _registerAlgorithmTools(server, mcpAlgorithmTools);
+    _registerAlgorithmTools(server, mcpAlgorithmTools, distingTools);
     _registerDistingTools(server, distingTools);
     _registerDiagnosticTools(server);
 
@@ -521,35 +521,70 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     return server;
   }
 
-  void _registerAlgorithmTools(McpServer server, MCPAlgorithmTools tools) {
+  void _registerAlgorithmTools(McpServer server, MCPAlgorithmTools tools, DistingTools distingTools) {
     server.tool(
       'search',
       description:
-          'Search for algorithms by name or category with fuzzy matching. Returns top 10 matches sorted by relevance.',
+          'Search for algorithms by name/category, or search for parameters within preset/slot. Algorithms use fuzzy matching (70% threshold), parameters use exact/partial name matching.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-          'type': {
+          'target': {
             'type': 'string',
-            'description': 'Type of search. Currently only "algorithm" is supported.',
-            'enum': ['algorithm'],
+            'description': 'What to search for: "algorithm" or "parameter"',
+            'enum': ['algorithm', 'parameter'],
           },
           'query': {
             'type': 'string',
             'description':
-                'Search query: algorithm name, partial name, or category. Fuzzy matching threshold: 70% similarity.',
+                'Search query. For algorithms: name, partial name, or category (fuzzy matching). For parameters: parameter name (case-insensitive).',
+          },
+          'scope': {
+            'type': 'string',
+            'description':
+                'Scope for parameter search: "preset" (all slots) or "slot" (specific slot). Required when target="parameter".',
+            'enum': ['preset', 'slot'],
+          },
+          'slot_index': {
+            'type': 'integer',
+            'description':
+                'Slot index (0-31) for parameter search with scope="slot". Required when target="parameter" and scope="slot".',
+          },
+          'partial_match': {
+            'type': 'boolean',
+            'description':
+                'For parameter search: if true, find parameters containing the query. Default: false (exact match).',
           },
         },
-        required: ['type', 'query'],
+        required: ['target', 'query'],
       ),
       callback: ({args, extra}) async {
         try {
-          final resultJson = await tools.searchAlgorithms(args ?? {}).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => jsonEncode({
-                  'success': false,
-                  'error': 'Tool execution timed out after 5 seconds',
-                }),
-              );
+          final target = args?['target'] as String?;
+
+          late String resultJson;
+          if (target == 'algorithm') {
+            resultJson = await tools.searchAlgorithms(args ?? {}).timeout(
+                  const Duration(seconds: 5),
+                  onTimeout: () => jsonEncode({
+                    'success': false,
+                    'error': 'Tool execution timed out after 5 seconds',
+                  }),
+                );
+          } else if (target == 'parameter') {
+            resultJson = await distingTools.searchParameters(args ?? {}).timeout(
+                  const Duration(seconds: 5),
+                  onTimeout: () => jsonEncode({
+                    'success': false,
+                    'error': 'Tool execution timed out after 5 seconds',
+                  }),
+                );
+          } else {
+            resultJson = jsonEncode({
+              'success': false,
+              'error': 'Invalid target. Must be "algorithm" or "parameter".',
+            });
+          }
+
           return CallToolResult.fromContent(
             content: [TextContent(text: resultJson)],
           );

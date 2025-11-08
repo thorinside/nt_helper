@@ -3771,6 +3771,242 @@ class DistingTools {
 
     return null; // No error
   }
+
+  /// MCP Tool: Search for parameters by name
+  /// Parameters:
+  ///   - query (string, required): Parameter name to search for
+  ///   - scope (string, required): "preset" or "slot"
+  ///   - slot_index (int, optional): Required if scope="slot"
+  ///   - partial_match (boolean, optional, default false): If true, find parameters containing the query
+  /// Returns:
+  ///   A JSON string with search results
+  Future<String> searchParameters(Map<String, dynamic> params) async {
+    final String? query = params['query'] as String?;
+    final String? scope = params['scope'] as String?;
+    final int? slotIndex = params['slot_index'] as int?;
+    final bool partialMatch = params['partial_match'] as bool? ?? false;
+
+    // Validate parameters
+    if (query == null || query.isEmpty) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError('Parameter "query" is required and cannot be empty.'),
+        ),
+      );
+    }
+
+    if (scope == null || scope.isEmpty) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'Parameter "scope" is required. Must be "preset" or "slot".',
+          ),
+        ),
+      );
+    }
+
+    if (scope == 'preset') {
+      return searchParametersInPreset(query, partialMatch);
+    } else if (scope == 'slot') {
+      if (slotIndex == null) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'Parameter "slot_index" is required when scope="slot".',
+            ),
+          ),
+        );
+      }
+      return searchParametersInSlot(slotIndex, query, partialMatch);
+    } else {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'Invalid scope "$scope". Must be "preset" or "slot".',
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Helper method to find matching parameters by name
+  /// Returns all parameters where the name matches (exact or partial)
+  List<ParameterInfo> _findMatchingParameters(
+    List<ParameterInfo> parameters,
+    String searchQuery,
+    bool partialMatch,
+  ) {
+    return parameters.where((p) {
+      if (partialMatch) {
+        return p.name.toLowerCase().contains(searchQuery.toLowerCase());
+      } else {
+        return p.name.toLowerCase() == searchQuery.toLowerCase();
+      }
+    }).toList();
+  }
+
+  /// MCP Tool: Search for parameters in the entire preset
+  /// Parameters:
+  ///   - query (string, required): Parameter name to search for
+  ///   - partial_match (boolean, optional, default false): If true, find parameters containing the query
+  /// Returns:
+  ///   A JSON string with results showing which slots have matching parameters
+  Future<String> searchParametersInPreset(
+    String query,
+    bool partialMatch,
+  ) async {
+    try {
+      if (query.isEmpty) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Search query cannot be empty.'),
+          ),
+        );
+      }
+
+      final Map<int, Algorithm?> slotAlgorithms = await _controller
+          .getAllSlots();
+
+      List<Map<String, dynamic>> results = [];
+      int totalMatches = 0;
+
+      for (int i = 0; i < maxSlots; i++) {
+        final algorithm = slotAlgorithms[i];
+        if (algorithm != null) {
+          final List<ParameterInfo> parameterInfos = await _controller
+              .getParametersForSlot(i);
+
+          final matchingParams = _findMatchingParameters(
+            parameterInfos,
+            query,
+            partialMatch,
+          );
+
+          if (matchingParams.isNotEmpty) {
+            totalMatches += matchingParams.length;
+
+            List<Map<String, dynamic>> matches = [];
+            for (final param in matchingParams) {
+              matches.add({
+                'parameter_number': param.parameterNumber,
+                'parameter_name': param.name,
+                'min': param.min,
+                'max': param.max,
+                'unit': param.unit,
+              });
+            }
+
+            results.add({
+              'slot_index': i,
+              'algorithm_name': algorithm.name,
+              'algorithm_guid': algorithm.guid,
+              'matches': matches,
+            });
+          }
+        }
+      }
+
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildSuccess(
+            'Parameter search completed',
+            data: {
+              'target': 'parameter',
+              'scope': 'preset',
+              'query': query,
+              'partial_match': partialMatch,
+              'total_matches': totalMatches,
+              'results': results,
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())),
+      );
+    }
+  }
+
+  /// MCP Tool: Search for parameters within a specific slot
+  /// Parameters:
+  ///   - slot_index (int, required): Which slot to search in
+  ///   - query (string, required): Parameter name to search for
+  ///   - partial_match (boolean, optional, default false): If true, find parameters containing the query
+  /// Returns:
+  ///   A JSON string with all matching parameters in the slot
+  Future<String> searchParametersInSlot(
+    int slotIndex,
+    String query,
+    bool partialMatch,
+  ) async {
+    try {
+      final slotError = MCPUtils.validateSlotIndex(slotIndex);
+      if (slotError != null) {
+        return jsonEncode(convertToSnakeCaseKeys(slotError));
+      }
+
+      if (query.isEmpty) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Search query cannot be empty.'),
+          ),
+        );
+      }
+
+      final algorithm = await _controller.getAlgorithmInSlot(slotIndex);
+      if (algorithm == null) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Slot $slotIndex is empty.'),
+          ),
+        );
+      }
+
+      final List<ParameterInfo> parameterInfos = await _controller
+          .getParametersForSlot(slotIndex);
+
+      final matchingParams = _findMatchingParameters(
+        parameterInfos,
+        query,
+        partialMatch,
+      );
+
+      List<Map<String, dynamic>> matches = [];
+      for (final param in matchingParams) {
+        matches.add({
+          'parameter_number': param.parameterNumber,
+          'parameter_name': param.name,
+          'min': param.min,
+          'max': param.max,
+          'unit': param.unit,
+        });
+      }
+
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildSuccess(
+            'Parameter search in slot completed',
+            data: {
+              'target': 'parameter',
+              'scope': 'slot',
+              'slot_index': slotIndex,
+              'algorithm_name': algorithm.name,
+              'algorithm_guid': algorithm.guid,
+              'query': query,
+              'partial_match': partialMatch,
+              'total_matches': matchingParams.length,
+              'matches': matches,
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())),
+      );
+    }
+  }
 }
 
 /// Helper class to represent a desired slot state
