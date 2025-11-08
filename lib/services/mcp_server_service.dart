@@ -906,6 +906,50 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     );
 
     server.tool(
+      'new',
+      description:
+          'Create new blank preset or preset with initial algorithms. WARNING: Clears current preset (unsaved changes lost). Device must be in connected mode.',
+      toolInputSchema: const ToolInputSchema(
+        properties: {
+          'name': {
+            'type': 'string',
+            'description': 'Name for the new preset (required)',
+          },
+          'algorithms': {
+            'type': 'array',
+            'description':
+                'Array of algorithms to add (optional). Each item: {guid: string, name: string, specifications: array}. Algorithms added sequentially to slots 0, 1, 2, etc.',
+            'items': {
+              'type': 'object',
+              'properties': {
+                'guid': {
+                  'type': 'string',
+                  'description': 'Algorithm GUID (alternative to name)',
+                },
+                'name': {
+                  'type': 'string',
+                  'description':
+                      'Algorithm name (fuzzy matching ≥70%, alternative to guid)',
+                },
+                'specifications': {
+                  'type': 'array',
+                  'description': 'Algorithm-specific specification values (optional)',
+                  'items': {'type': 'object'},
+                },
+              },
+            },
+          },
+        },
+      ),
+      callback: ({args, extra}) async {
+        final resultJson = await tools.newWithAlgorithms(args ?? {});
+        return CallToolResult.fromContent(
+          content: [TextContent(text: resultJson)],
+        );
+      },
+    );
+
+    server.tool(
       'save_preset',
       description: 'Save current preset to device.',
       toolInputSchema: const ToolInputSchema(properties: {}),

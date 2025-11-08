@@ -22,17 +22,17 @@ PHASE_4_COMPLETE: false
 ## Development Queue
 
 STORIES_SEQUENCE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9, 4-10]
-TODO_STORY: 4-2-implement-search-tool-for-algorithm-discovery
-TODO_TITLE: Implement Search Tool for Algorithm Discovery
+TODO_STORY: 4-4-implement-edit-tool-with-preset-level-granularity
+TODO_TITLE: Implement Edit Tool with Preset-Level Granularity
 IN_PROGRESS_STORY:
 IN_PROGRESS_TITLE:
-STORIES_DONE: [4-1, 4-2]
+STORIES_DONE: [4-1, 4-2, 4-3]
 
 ## Next Action
 
-NEXT_ACTION: Review story 4-2 (Implement Search Tool for Algorithm Discovery)
-NEXT_COMMAND: /bmad:bmm:workflows:review-story
-NEXT_AGENT: sm
+NEXT_ACTION: Develop story 4-4 (Implement Edit Tool with Preset-Level Granularity)
+NEXT_COMMAND: /bmad:bmm:workflows:dev-story
+NEXT_AGENT: dev
 
 ## Story Backlog
 

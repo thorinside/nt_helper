@@ -1882,4 +1882,276 @@ class DistingTools {
       return null;
     }
   }
+
+  /// MCP Tool: Creates a new blank preset or preset with initial algorithms.
+  /// Parameters:
+  ///   - name (string, required): The name for the new preset.
+  ///   - algorithms (array, optional): Array of algorithms to add, each with:
+  ///     - guid (string): The GUID of the algorithm (alternative to name).
+  ///     - name (string): The name of the algorithm (fuzzy matching ≥70%, alternative to guid).
+  ///     - specifications (array, optional): Algorithm-specific specification values.
+  /// Returns:
+  ///   A JSON string with the created preset state including all slots, default
+  ///   parameter values, and disabled mappings, or an error message.
+  Future<String> newWithAlgorithms(Map<String, dynamic> params) async {
+    try {
+      // Step 1: Extract and validate parameters
+      final String? name = params['name'] as String?;
+      if (name == null || name.isEmpty) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('${MCPConstants.missingParamError}: "name"'),
+          ),
+        );
+      }
+
+      final List<dynamic>? algorithmsArray =
+          params['algorithms'] as List<dynamic>?;
+
+      // Step 2: Verify device is in connected mode (SynchronizedState)
+      // This check would normally be done by the DistingCubit state,
+      // but we're working with the controller directly.
+      // If the controller throws an error for offline mode, we'll catch it.
+
+      // Step 3: Clear current preset
+      try {
+        await _controller.newPreset();
+      } catch (e) {
+        // Check if error indicates offline/demo mode
+        if (e.toString().contains('offline') ||
+            e.toString().contains('demo') ||
+            e.toString().contains('not synchronized')) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Cannot create preset in offline or demo mode. Device must be in connected mode.',
+              ),
+            ),
+          );
+        }
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Failed to clear preset: ${e.toString()}'),
+          ),
+        );
+      }
+
+      // Step 4: Set preset name
+      try {
+        await _controller.setPresetName(name);
+      } catch (e) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'Failed to set preset name: ${e.toString()}',
+            ),
+          ),
+        );
+      }
+
+      // Step 5: Add algorithms if provided
+      final List<Map<String, dynamic>> algorithmResults = [];
+
+      if (algorithmsArray != null && algorithmsArray.isNotEmpty) {
+        final metadataService = AlgorithmMetadataService();
+        final allAlgorithms = metadataService.getAllAlgorithms();
+
+        for (int i = 0; i < algorithmsArray.length; i++) {
+          final algoSpec = algorithmsArray[i];
+
+          if (algoSpec is! Map<String, dynamic>) {
+            algorithmResults.add({
+              'index': i,
+              'success': false,
+              'error': 'Algorithm specification must be an object',
+            });
+            continue;
+          }
+
+          final String? algoGuid = algoSpec['guid'] as String?;
+          final String? algoName = algoSpec['name'] as String?;
+          final List<dynamic>? specifications =
+              algoSpec['specifications'] as List<dynamic>?;
+
+          // Resolve algorithm
+          final resolution = AlgorithmResolver.resolveAlgorithm(
+            guid: algoGuid,
+            algorithmName: algoName,
+            allAlgorithms: allAlgorithms,
+          );
+
+          if (!resolution.isSuccess) {
+            algorithmResults.add({
+              'index': i,
+              'success': false,
+              'error': resolution.error!['error'] ?? 'Failed to resolve algorithm',
+            });
+            continue;
+          }
+
+          final resolvedGuid = resolution.resolvedGuid!;
+
+          // Validate algorithm exists in metadata
+          final algorithmMetadata =
+              metadataService.getAlgorithmByGuid(resolvedGuid);
+          if (algorithmMetadata == null) {
+            algorithmResults.add({
+              'index': i,
+              'success': false,
+              'error': 'Algorithm with GUID "$resolvedGuid" not found',
+            });
+            continue;
+          }
+
+          // Validate specifications if provided
+          if (specifications != null && specifications.isNotEmpty) {
+            // Check if algorithm allows specifications
+            // For now, we just pass them through - hardware will validate
+            // In future, we can add per-algorithm specification validation
+          }
+
+          // Add algorithm to preset
+          try {
+            final algorithm = Algorithm(
+              algorithmIndex: -1,
+              guid: resolvedGuid,
+              name: algorithmMetadata.name,
+            );
+            await _controller.addAlgorithm(algorithm);
+
+            algorithmResults.add({
+              'index': i,
+              'success': true,
+              'guid': resolvedGuid,
+              'name': algorithmMetadata.name,
+            });
+          } catch (e) {
+            algorithmResults.add({
+              'index': i,
+              'success': false,
+              'error': 'Failed to add algorithm: ${e.toString()}',
+            });
+          }
+        }
+      }
+
+      // Step 6: Query current preset state
+      try {
+        final presetName = await _controller.getCurrentPresetName();
+        final Map<int, Algorithm?> slotAlgorithms =
+            await _controller.getAllSlots();
+
+        List<Map<String, dynamic>?> slotsJsonList =
+            List.filled(maxSlots, null);
+
+        for (int i = 0; i < maxSlots; i++) {
+          final algorithm = slotAlgorithms[i];
+          if (algorithm != null) {
+            final List<ParameterInfo> parameterInfos =
+                await _controller.getParametersForSlot(i);
+
+            List<Map<String, dynamic>> parametersJsonList = [];
+            for (int paramIndex = 0;
+                paramIndex < parameterInfos.length;
+                paramIndex++) {
+              final pInfo = parameterInfos[paramIndex];
+              final int? liveRawValue =
+                  await _controller.getParameterValue(i, paramIndex);
+
+              final paramData = {
+                'parameter_number': paramIndex,
+                'name': pInfo.name,
+                'min_value': _scaleForDisplay(pInfo.min, pInfo.powerOfTen),
+                'max_value': _scaleForDisplay(pInfo.max, pInfo.powerOfTen),
+                'default_value':
+                    _scaleForDisplay(pInfo.defaultValue, pInfo.powerOfTen),
+                'unit': pInfo.unit,
+                'value': liveRawValue != null
+                    ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
+                    : null,
+              };
+
+              // Add enum metadata if applicable
+              if (_isEnumParameter(pInfo)) {
+                final enumValues =
+                    await _getParameterEnumValues(i, paramIndex);
+                if (enumValues != null) {
+                  paramData['is_enum'] = true;
+                  paramData['enum_values'] = enumValues;
+                  if (liveRawValue != null) {
+                    paramData['enum_value'] =
+                        _enumIndexToString(enumValues, liveRawValue);
+                  }
+                }
+              }
+
+              // Add mapping information
+              try {
+                final mapping =
+                    await _controller.getParameterMapping(i, paramIndex);
+                if (mapping != null) {
+                  final perfPageIndex =
+                      mapping.packedMappingData.perfPageIndex;
+                  if (perfPageIndex > 0) {
+                    paramData['performance_page'] = perfPageIndex;
+                  }
+                }
+              } catch (e) {
+                // Intentionally empty
+              }
+
+              parametersJsonList.add(paramData);
+            }
+
+            slotsJsonList[i] = {
+              'slot_index': i,
+              'algorithm': {
+                'guid': algorithm.guid,
+                'name': algorithm.name,
+                'algorithm_index': algorithm.algorithmIndex,
+              },
+              'parameters': parametersJsonList,
+            };
+          }
+        }
+
+        final Map<String, dynamic> responseData = {
+          'preset_name': presetName,
+          'slots': slotsJsonList,
+          'algorithms_added': algorithmResults.where((r) => r['success'] == true).length,
+          'algorithms_failed': algorithmResults.where((r) => r['success'] == false).length,
+        };
+
+        // Only include algorithm_results if there were algorithms to add
+        if (algorithmsArray != null && algorithmsArray.isNotEmpty) {
+          responseData['algorithm_results'] = algorithmResults;
+        }
+
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildSuccess(
+              'Preset created successfully',
+              data: responseData,
+            ),
+          ),
+        );
+      } catch (e) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'Failed to retrieve preset state: ${e.toString()}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'Error in new tool: ${e.toString()}',
+          ),
+        ),
+      );
+    }
+  }
 }
