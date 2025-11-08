@@ -52,13 +52,26 @@ development_status:
   e3-7-remove-obsolete-loadpresetdialog: done
   epic-3-retrospective: completed
 
-  epic-4: contexted
+  epic-4-es5: contexted
   e4-1-add-clock-multiplier-es-5-direct-output-routing: done
   e4-2-add-clock-divider-es-5-direct-output-routing: done
   e4-3-add-poly-cv-es-5-direct-output-routing: done
   e4-4-update-algorithm-metadata-for-es-5-parameters: done
   e4-5-add-tests-for-new-es-5-routing-implementations: done
   e4-6-update-documentation-and-architecture-notes: done
+  epic-4-es5-retrospective: optional
+
+  epic-4: contexted
+  4-1-replace-mcp-server-foundation-with-dart-mcp-library: done
+  4-2-implement-search-tool-for-algorithm-discovery: drafted
+  4-3-implement-new-tool-for-preset-initialization: drafted
+  4-4-implement-edit-tool-with-preset-level-granularity: drafted
+  4-5-implement-edit-tool-with-slot-level-granularity: drafted
+  4-6-implement-edit-tool-with-parameter-level-granularity: drafted
+  4-7-implement-show-tool-for-state-inspection: drafted
+  4-8-create-comprehensive-json-schema-documentation-with-mapping-examples: drafted
+  4-9-remove-old-mcp-tools-and-consolidate-documentation: drafted
+  4-10-test-with-smaller-llm-and-iterate-on-usability: drafted
   epic-4-retrospective: optional
 
   epic-5: contexted

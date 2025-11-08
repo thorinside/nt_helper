@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-
 import 'package:mcp_dart/mcp_dart.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
@@ -59,6 +58,10 @@ String generateUUID() {
 /// Simplified MCP server service using StreamableHTTPServerTransport
 /// for automatic session management, connection persistence, and health monitoring.
 /// This service manages multiple MCP server instances, one per client connection.
+///
+/// MIGRATION NOTE: dart_mcp library (0.3.3) added to pubspec.yaml as dependency.
+/// Future stories (E4.2+) will incrementally migrate from mcp_dart to dart_mcp.
+/// Current implementation remains on mcp_dart for backward compatibility.
 class McpServerService extends ChangeNotifier {
   McpServerService._(this._distingCubit);
 

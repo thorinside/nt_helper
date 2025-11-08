@@ -329,6 +329,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  dart_mcp:
+    dependency: "direct main"
+    description:
+      name: dart_mcp
+      sha256: "2b34cbd60e3b64e7f770a453b84c5f569f096f6044ea343ddffc99f6b366de45"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.3"
   dart_style:
     dependency: transitive
     description:
@@ -641,6 +649,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.9.0"
+  json_rpc_2:
+    dependency: transitive
+    description:
+      name: json_rpc_2
+      sha256: "3c46c2633aec07810c3d6a2eb08d575b5b4072980db08f1344e66aeb53d6e4a7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0"
   json_serializable:
     dependency: "direct dev"
     description:
@@ -708,12 +724,11 @@ packages:
   mcp_dart:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "050caf78847517f464f0a1025d31922b71ea7576"
-      url: "https://github.com/thorinside/mcp_dart"
-    source: git
-    version: "0.6.1"
+      name: mcp_dart
+      sha256: "022d20178e86d336bd1677f568fe2675e79e3ca2175cab5541e7c6f5ca1a0359"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.4"
   meta:
     dependency: transitive
     description:
