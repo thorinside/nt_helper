@@ -1,96 +1,325 @@
-<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-5" v="1.0">
+<story-context id="4-5-implement-edit-tool-with-slot-level-granularity" v="1.0">
   <metadata>
     <epicId>4</epicId>
-    <storyId>4.5</storyId>
+    <storyId>4-5</storyId>
     <title>Implement edit tool with slot-level granularity</title>
     <status>drafted</status>
-    <generatedAt>2025-11-07</generatedAt>
+    <generatedAt>2025-11-08</generatedAt>
     <generator>BMAD Story Context Workflow</generator>
     <sourceStoryPath>docs/stories/4-5-implement-edit-tool-with-slot-level-granularity.md</sourceStoryPath>
   </metadata>
 
   <story>
     <asA>LLM client modifying a single slot</asA>
-    <iWant>to send desired slot state without affecting other slots</iWant>
+    <iWant>send desired slot state without affecting other slots</iWant>
     <soThat>I can make targeted changes efficiently</soThat>
     <tasks>
-- Extend edit tool schema for slot target (AC: 1, 4, 18)
-- Implement slot-level diff logic (AC: 7-10)
-- Implement validation logic (AC: 11-14, 17)
-- Implement mapping preservation and partial updates (AC: 5-6)
-- Implement apply changes and return state (AC: 15-16)
-- Testing and validation (AC: 19-20)
+Extend edit tool schema for slot target (AC: 1, 4, 18) - Add "slot" target option to edit tool schema, add slot_index parameter (required for slot target), document slot JSON structure with snake_case fields, document optional algorithm change with guid/specifications, document optional slot name, create mapping examples for MIDI CC, CV input, i2c, performance page, and combined scenarios.
+
+Implement slot-level diff logic (AC: 7-10) - Read current slot state from DistingCubit at specified index, compare desired algorithm vs current algorithm (GUID match), if algorithm changes clear slot and add new algorithm with specifications, if algorithm same compare parameters and mappings, identify parameter value changes, identify mapping changes (CV, MIDI, i2c, performance_page), if slot name provided update custom slot name.
+
+Implement validation logic (AC: 11-14, 17) - Validate slot_index in range 0-31, validate algorithm GUID exists in metadata, validate specifications against algorithm requirements, validate parameter numbers within algorithm range, validate parameter values within min/max bounds, validate MIDI channel 0-15, validate MIDI CC 0-128, validate MIDI type enum values, validate CV input 0-12, validate i2c CC 0-255, validate performance_page 0-15, return detailed error on validation failure.
+
+Implement mapping preservation and partial updates (AC: 5-6) - When mapping omitted preserve all existing mappings, when mapping included update only specified types, example: update MIDI preserve CV/i2c/performance_page, empty mapping object is valid and preserves all mappings, partial MIDI mapping updates only provided MIDI fields.
+
+Implement apply changes and return state (AC: 15-16) - If algorithm changed call clearSlot() then addAlgorithm() with specifications, if algorithm same call updateParameterValue() for each changed parameter, update mappings via appropriate controller methods, if slot name provided update custom slot name, call auto-save after changes, query updated slot state from DistingCubit, return slot state as JSON with parameters and enabled mappings.
+
+Testing and validation (AC: 19-20) - Write unit tests for slot-level diff logic, test algorithm change (clear + add), test parameter value changes only, test mapping updates only, test custom slot name update, test mapping preservation when omitted, test partial mapping updates, test validation failures (slot_index out of range, invalid mappings), run flutter analyze and fix warnings, run flutter test and ensure all pass.
     </tasks>
   </story>
 
   <acceptanceCriteria>
-1-20. [See story file for complete criteria]
+1. Extend `edit` tool to accept: `target` ("slot"), `slot_index` (int, required), `data` (object with slot JSON)
+2. Slot JSON format: `{ "algorithm": { "guid": "...", "specifications": [...] }, "name": "...", "parameters": [...] }`
+3. Parameter structure: `{ "parameter_number": N, "value": V, "mapping": {...} }` where mapping is optional
+4. Mapping fields (all optional): `cv`, `midi`, `i2c`, `performance_page` using snake_case naming
+5. When mapping omitted, existing mapping is preserved
+6. When mapping included, only specified types are updated (partial updates supported)
+7. Backend compares desired slot vs current slot at specified index (reads from SynchronizedState)
+8. If algorithm changes: backend handles parameter/mapping reset automatically (tools just render SynchronizedState)
+9. If algorithm stays same: update only changed parameters and mappings
+10. If slot name provided: update custom slot name
+11. Validate slot_index in range 0-31
+12. Validate algorithm exists and specifications are valid
+13. Validate parameter values against algorithm constraints
+14. Validate mapping fields: MIDI channel 0-15, CC 0-128, type enum valid, CV input 0-12, i2c CC 0-255, performance_page 0-15
+15. Apply changes and auto-save preset
+16. Return updated slot state after successful application
+17. Return error if validation fails (no partial changes)
+18. JSON schema includes mapping examples: MIDI CC, CV input, i2c, performance page, combined mappings
+19. `flutter analyze` passes with zero warnings
+20. All tests pass
   </acceptanceCriteria>
 
   <artifacts>
     <docs>
       <doc>
-        <path>docs/epic-4-context.md</path>
-        <title>Epic 4 Technical Context</title>
-        <section>Story E4.5: edit Tool - Slot Level</section>
-        <snippet>Slot JSON structure with mappings. Partial mapping updates. Slot name updates. Algorithm change handling. Validation.</snippet>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Critical Architecture: MCP Server</section>
+        <snippet>MCP server exposes app functionality via HTTP. Tool implementations register with McpServer and handle JSON-RPC calls. Four-step process: define schema, implement handler, register in _registerDistingTools(), test via MCP client.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>DistingController Abstract Interface</section>
+        <snippet>Interface for MCP tools to interact with Disting state. Key methods: addAlgorithm(), clearSlot(), moveAlgorithmUp/Down(), updateParameterValue(), getParametersForSlot(), getAllSlots(), setSlotName(), getSlotName().</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 4: MCP Tool Implementation</title>
+        <section>Story 4.5: Implement edit tool with slot-level granularity</section>
+        <snippet>Create edit tool with slot-level target. Accept slot JSON with algorithm, parameters, and optional mappings. Diff engine compares against current slot state and applies only necessary changes while preserving other slots.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/4-4-implement-edit-tool-with-preset-level-granularity.md</path>
+        <title>Story 4-4: Edit Tool Preset-Level Implementation</title>
+        <section>Reference for Preset-Level vs Slot-Level Editing</section>
+        <snippet>Story 4-4 handles multi-slot preset restructuring. Story 4-5 handles targeted single-slot changes. Diff logic patterns from 4-4 can inform slot-level diff implementation.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>MCP Server Integration for External Tool Access</section>
+        <snippet>MCP server allows external clients to control Disting NT via standardized tools. Tools operate within connected mode constraints and maintain data consistency through DistingCubit state management.</snippet>
+      </doc>
+      <doc>
+        <path>lib/cubit/disting_state.dart</path>
+        <title>State Model Documentation</title>
+        <section>Slot Structure</section>
+        <snippet>SynchronizedState contains List&lt;Slot&gt; where each Slot has algorithm, parameters, values, mappings, customName field. Use DistingCubit.state as single source of truth for current preset state.</snippet>
       </doc>
     </docs>
     <code>
-      <file>
-        <path>lib/cubit/disting_state.dart</path>
-        <kind>model</kind>
-        <symbol>Slot</symbol>
-        <reason>Slot model with index, algorithm, parameters, routing, customName</reason>
-      </file>
-      <file>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>state-management</kind>
+        <symbol>DistingCubit, DistingStateSynchronized</symbol>
+        <reason>Primary state container. Read from state.slots[index] for current slot configuration. Used by diff engine to read current state before applying changes.</reason>
+      </artifact>
+      <artifact>
         <path>lib/services/disting_controller.dart</path>
         <kind>interface</kind>
         <symbol>DistingController</symbol>
-        <reason>Methods: getAlgorithmInSlot, clearSlot, addAlgorithm, updateParameterValue, setSlotName</reason>
-      </file>
+        <lines>1-100</lines>
+        <reason>Abstract interface for MCP tools. Key methods: addAlgorithm(), clearSlot(), updateParameterValue(), getParametersForSlot(), setSlotName(), getSlotName(), getAlgorithmInSlot(). Apply changes via these methods.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/services/disting_controller_impl.dart</path>
+        <kind>service</kind>
+        <symbol>DistingControllerImpl</symbol>
+        <reason>Implementation of DistingController. Delegates to DistingCubit for state changes. Use for applying diff-calculated changes.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/services/mcp_server_service.dart</path>
+        <kind>service</kind>
+        <symbol>_registerDistingTools()</symbol>
+        <reason>Tool registration method. Pattern: define schema, create handler, add to server via server.addTool(). Register slot-level edit tool here.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>tool-implementation</kind>
+        <symbol>DistingTools</symbol>
+        <reason>Existing tool implementations for device control. Contains editPreset() method for preset-level editing. Extend with editSlot() method following same patterns.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>model</kind>
+        <symbol>Mapping, ParameterInfo, Algorithm</symbol>
+        <reason>Core data models. Mapping has cv, midi, i2c, perfPageIndex fields. ParameterInfo has min/max/defaultValue for validation. Algorithm has GUID for metadata lookup.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/models/packed_mapping_data.dart</path>
+        <kind>model</kind>
+        <symbol>Mapping structure fields</symbol>
+        <reason>Mapping field definitions for CV, MIDI, i2c, performance_page validation and structure.</reason>
+      </artifact>
+      <artifact>
+        <path>test/mcp/tools/edit_preset_tool_test.dart</path>
+        <kind>test</kind>
+        <symbol>Test setup patterns</symbol>
+        <reason>Reference for test structure: DistingCubit initialization, mock database setup, validation test patterns. Use as template for edit_slot_tool_test.dart.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/services/algorithm_metadata_service.dart</path>
+        <kind>service</kind>
+        <symbol>AlgorithmMetadataService</symbol>
+        <reason>Validates algorithm GUIDs exist in metadata. Use for diff validation to check if desired algorithm is supported.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/util/case_converter.dart</path>
+        <kind>utility</kind>
+        <symbol>Case conversion utilities</symbol>
+        <reason>Used for snake_case to camelCase conversions in parameter/mapping field handling.</reason>
+      </artifact>
     </code>
     <dependencies>
-      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+      <ecosystem>
+        <name>flutter_bloc</name>
+        <packages>
+          <package>flutter_bloc: ^9.1.1</package>
+        </packages>
+        <reason>State management using Cubit pattern throughout the project</reason>
+      </ecosystem>
+      <ecosystem>
+        <name>mcp_dart</name>
+        <packages>
+          <package>mcp_dart: ^0.6.4</package>
+          <package>dart_mcp: ^0.3.3</package>
+        </packages>
+        <reason>MCP protocol support for tool registration and JSON-RPC handling</reason>
+      </ecosystem>
+      <ecosystem>
+        <name>Drift ORM</name>
+        <packages>
+          <package>drift: ^2.28.1</package>
+        </packages>
+        <reason>Database access for algorithm metadata validation</reason>
+      </ecosystem>
+      <ecosystem>
+        <name>Dart Standard Library</name>
+        <packages>
+          <package>dart:convert</package>
+          <package>dart:typed_data</package>
+        </packages>
+        <reason>JSON encoding/decoding and binary data handling</reason>
+      </ecosystem>
     </dependencies>
   </artifacts>
 
   <constraints>
-- Only updates specified slot, preserves other slots
-- When algorithm changes: auto-resets parameters and mappings
-- When algorithm same: partial updates supported
-- Slot index range: 0-31
-- Custom slot names optional
-- Partial mapping updates: only specified types updated
-- snake_case for all JSON fields
+    - Tool registration: Must follow four-step pattern in mcp_server_service.dart (schema → handler → register → test)
+    - State consistency: Changes must be atomic via DistingController; fail on first validation error with no partial state changes
+    - Snake case JSON: All parameter and mapping field names must use snake_case (parameter_number, slot_index, cv_input, midi_channel, is_midi_enabled, i2c_cc, performance_page, etc.)
+    - Mode requirement: Tool only works in Synchronized mode; return clear error if offline or demo mode
+    - Mapping preservation: Omitted mappings must not modify existing values; new algorithms default to disabled mappings
+    - Slot isolation: Slot-level edits affect only the targeted slot (index 0-31); other slots unchanged
+    - Algorithm reset: When algorithm GUID changes, backend automatically resets all parameters to defaults and mappings to disabled
+    - Analysis requirement: flutter analyze must pass with zero warnings before commit
+    - Test coverage: All diff operations must have dedicated unit tests covering algorithm change/parameter-only/mapping-only/name-only scenarios
+    - Parameter validation: Use ParameterInfo min/max bounds for all numeric validations
+    - Algorithm lookup: Validate GUIDs against metadata before applying changes
+    - Error handling: Return detailed error messages indicating which field failed and why (e.g., "slot_index must be 0-31, got 32")
+    - Custom names: Optional field in slot JSON; if provided update via setSlotName(); if omitted preserve existing name
   </constraints>
 
   <interfaces>
     <interface>
-      <name>edit tool (slot target)</name>
-      <kind>mcp-tool</kind>
-      <signature>{ "target": "slot", "slot_index": N, "data": { "algorithm": {...}, "name": string, "parameters": [...] } }</signature>
-      <returns>Updated slot state</returns>
-      <usage>Modify single slot without affecting others</usage>
+      <name>DistingController Methods for Slot Operations</name>
+      <kind>Dart interface methods</kind>
+      <signature>
+        Future&lt;Algorithm?&gt; getAlgorithmInSlot(int slotIndex)
+        Future&lt;void&gt; addAlgorithm(Algorithm algorithm)
+        Future&lt;void&gt; clearSlot(int slotIndex)
+        Future&lt;void&gt; updateParameterValue(int slotIndex, int parameterNumber, dynamic value)
+        Future&lt;List&lt;ParameterInfo&gt;&gt; getParametersForSlot(int slotIndex)
+        Future&lt;void&gt; setSlotName(int slotIndex, String name)
+        Future&lt;String?&gt; getSlotName(int slotIndex)
+      </signature>
+      <path>lib/services/disting_controller.dart</path>
+    </interface>
+    <interface>
+      <name>MCP Tool Handler Pattern</name>
+      <kind>Function signature</kind>
+      <signature>
+        Future&lt;CallToolResult&gt; handler(Map&lt;String, dynamic&gt;? args) async {
+          // Validate connection mode (must be Synchronized)
+          // Parse and validate slot_index parameter
+          // Read current slot state from DistingCubit
+          // Execute diff/apply logic
+          // Return JSON result or error
+        }
+      </signature>
+      <path>lib/services/mcp_server_service.dart</path>
+    </interface>
+    <interface>
+      <name>Tool Input JSON Schema</name>
+      <kind>MCP tool input schema</kind>
+      <signature>
+        {
+          "type": "object",
+          "properties": {
+            "target": {"enum": ["slot"]},
+            "slot_index": {"type": "integer", "minimum": 0, "maximum": 31},
+            "data": {
+              "type": "object",
+              "properties": {
+                "algorithm": {
+                  "type": "object",
+                  "properties": {
+                    "guid": {"type": "string"},
+                    "specifications": {"type": "array"}
+                  }
+                },
+                "name": {"type": "string"},
+                "parameters": {"type": "array"}
+              }
+            }
+          },
+          "required": ["target", "slot_index", "data"]
+        }
+      </signature>
+      <path>lib/mcp/tools/disting_tools.dart</path>
+    </interface>
+    <interface>
+      <name>Slot JSON Input Format</name>
+      <kind>JSON structure</kind>
+      <signature>
+        {
+          "algorithm": {
+            "guid": "clck",
+            "specifications": [...]
+          },
+          "name": "My Clock",
+          "parameters": [
+            {
+              "parameter_number": 0,
+              "value": 1000,
+              "mapping": {
+                "midi": {
+                  "is_midi_enabled": true,
+                  "midi_channel": 0,
+                  "midi_cc": 74
+                }
+              }
+            }
+          ]
+        }
+      </signature>
+      <path>Reference: docs/stories/4-5-implement-edit-tool-with-slot-level-granularity.md</path>
     </interface>
   </interfaces>
 
   <tests>
     <standards>
-Unit tests with mock DistingCubit. Test algorithm change, parameter updates, mapping updates, slot name updates, validation.
+      Unit tests use DistingCubit with mock database (NativeDatabase.memory()). Tests verify slot-level diff logic independently: algorithm change, parameter-only changes, mapping updates, name changes. Mocking patterns from edit_preset_tool_test.dart used for setup. All tests must pass with zero flutter analyze warnings.
     </standards>
     <locations>
-test/mcp/tools/edit_slot_tool_test.dart (new file)
+      test/mcp/tools/ - New test file: test/mcp/tools/edit_slot_tool_test.dart
+      test/ - Root test directory for helper/utility tests
+      lib/mcp/tools/ - Implementation in disting_tools.dart (extend with editSlot method)
     </locations>
     <ideas>
-- Test algorithm change (clear + add)
-- Test parameter value changes only
-- Test mapping updates only
-- Test custom slot name update
-- Test mapping preservation when omitted
-- Test partial mapping updates (MIDI only)
-- Test validation: slot_index out of range
-- Test validation: invalid mapping fields
+      - Test: validate slot_index out of range (negative, &gt;31)
+      - Test: diff with single algorithm change at specified index
+      - Test: diff with parameter value changes only (same algorithm)
+      - Test: diff with mapping updates only (MIDI enabled/disabled)
+      - Test: diff with CV mapping input validation (0-12)
+      - Test: diff with MIDI channel validation (0-15)
+      - Test: diff with MIDI CC validation (0-128)
+      - Test: diff with i2c CC validation (0-255)
+      - Test: diff with performance_page validation (0-15)
+      - Test: mapping preservation when omitted from desired state
+      - Test: partial mapping update (MIDI only, preserve CV/i2c/perf)
+      - Test: custom slot name update
+      - Test: combined changes (algorithm + parameters + mapping + name)
+      - Test: offline/demo mode returns appropriate error
+      - Test: validation catches invalid algorithm GUID
+      - Test: validation catches parameter number out of range
+      - Test: validation catches parameter value outside min/max bounds
+      - Test: successful apply and return of updated slot JSON
+      - Test: algorithm change clears parameters to defaults
+      - Test: algorithm change disables all mappings
     </ideas>
   </tests>
 </story-context>

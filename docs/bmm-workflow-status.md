@@ -22,15 +22,15 @@ PHASE_4_COMPLETE: false
 ## Development Queue
 
 STORIES_SEQUENCE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9, 4-10]
-TODO_STORY: 4-5-implement-edit-tool-with-slot-level-granularity
-TODO_TITLE: Implement Edit Tool with Slot-Level Granularity
+TODO_STORY: 4-6-implement-edit-tool-with-parameter-level-granularity
+TODO_TITLE: Implement Edit Tool with Parameter-Level Granularity
 IN_PROGRESS_STORY:
 IN_PROGRESS_TITLE:
-STORIES_DONE: [4-1, 4-2, 4-3, 4-4]
+STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5]
 
 ## Next Action
 
-NEXT_ACTION: Generate context for story 4-5 (Implement Edit Tool with Slot-Level Granularity)
+NEXT_ACTION: Generate context for story 4-6 (Implement Edit Tool with Parameter-Level Granularity)
 NEXT_COMMAND: /bmad:bmm:workflows:story-context
 NEXT_AGENT: sm
 

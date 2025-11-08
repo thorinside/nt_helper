@@ -1040,6 +1040,106 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     );
 
     server.tool(
+      'edit',
+      description:
+          'Edit slot with slot-level granularity. Accepts target "slot", slot_index (0-31), and data object with algorithm, parameters, and optional name. Applies only necessary changes to specified slot. Device must be in connected mode.',
+      toolInputSchema: const ToolInputSchema(
+        properties: {
+          'target': {
+            'type': 'string',
+            'enum': ['slot'],
+            'description': 'Target type (must be "slot")',
+          },
+          'slot_index': {
+            'type': 'integer',
+            'minimum': 0,
+            'maximum': 31,
+            'description': 'Slot index (0-31)',
+          },
+          'data': {
+            'type': 'object',
+            'description':
+                'Slot state with optional algorithm, parameters, and name. Algorithm must have guid or name. Parameters array items have parameter_number, optional value, and optional mapping with cv, midi, i2c, performance_page fields.',
+            'properties': {
+              'algorithm': {
+                'type': 'object',
+                'description':
+                    'Optional algorithm specification (guid or name, plus optional specifications)',
+                'properties': {
+                  'guid': {
+                    'type': 'string',
+                    'description': 'Algorithm GUID',
+                  },
+                  'name': {
+                    'type': 'string',
+                    'description': 'Algorithm name (fuzzy matching)',
+                  },
+                  'specifications': {
+                    'type': 'array',
+                    'description': 'Algorithm-specific specification values',
+                    'items': {'type': 'object'},
+                  },
+                },
+              },
+              'name': {
+                'type': 'string',
+                'description': 'Optional custom slot name',
+              },
+              'parameters': {
+                'type': 'array',
+                'description': 'Array of parameter objects with optional values and mappings',
+                'items': {
+                  'type': 'object',
+                  'properties': {
+                    'parameter_number': {
+                      'type': 'integer',
+                      'description': 'Parameter index',
+                    },
+                    'value': {
+                      'type': 'number',
+                      'description': 'Optional parameter value',
+                    },
+                    'mapping': {
+                      'type': 'object',
+                      'description':
+                          'Optional mapping with cv, midi, i2c, performance_page fields',
+                      'properties': {
+                        'cv': {
+                          'type': 'object',
+                          'description': 'CV mapping (cv_input 0-12)',
+                        },
+                        'midi': {
+                          'type': 'object',
+                          'description':
+                              'MIDI mapping (midi_channel 0-15, midi_cc 0-128, midi_type enum, is_midi_enabled boolean)',
+                        },
+                        'i2c': {
+                          'type': 'object',
+                          'description': 'i2c mapping (i2c_cc 0-255)',
+                        },
+                        'performance_page': {
+                          'type': 'integer',
+                          'description': 'Performance page index (0-15)',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        required: ['target', 'slot_index', 'data'],
+      ),
+      callback: ({args, extra}) async {
+        final resultJson = await tools.editSlot(args ?? {});
+        return CallToolResult.fromContent(
+          content: [TextContent(text: resultJson)],
+        );
+      },
+    );
+
+    server.tool(
       'get_preset_name',
       description: 'Get current preset name.',
       toolInputSchema: const ToolInputSchema(properties: {}),

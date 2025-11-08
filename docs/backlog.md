@@ -17,3 +17,6 @@ Routing guidance:
 | 2025-11-07 | 4.4 | 4 | TechDebt | Med | TBD | Open | Fix DesiredSlot.mapping field usage or remove - lines 2259, 2648 in disting_tools.dart |
 | 2025-11-07 | 4.4 | 4 | Performance | Med | TBD | Open | Optimize AlgorithmMetadataService access (singleton) - lines 2559, 2578 in disting_tools.dart |
 | 2025-11-07 | 4.4 | 4 | Bug | Med | TBD | Open | Implement atomic change handling (rollback on error) - AC #15, lines 2614-2618 |
+| 2025-11-08 | 4.5 | 4 | TechDebt | Med | TBD | Open | Implement mapping application logic for slot-level edits - AC #6, #9, lib/mcp/tools/disting_tools.dart:2648-2654 |
+| 2025-11-08 | 4.5 | 4 | TechDebt | Low | TBD | Open | Consolidate duplicate AlgorithmMetadataService instantiation - lib/mcp/tools/disting_tools.dart:2471, 2487 |
+| 2025-11-08 | 4.5 | 4 | TechDebt | Low | TBD | Open | Add comment explaining parameter validation sequence requirement - lib/mcp/tools/disting_tools.dart:2543 |
