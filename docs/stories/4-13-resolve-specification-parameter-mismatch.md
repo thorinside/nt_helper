@@ -127,26 +127,31 @@ Once an algorithm is instantiated with specs, the firmware locks the parameter c
 
 ## Acceptance Criteria
 
-1. **AC-1:** MCP `getCurrentPreset()` includes specification values for each algorithm in its response
-   - Format: `"specifications": [{"name": "Channels", "value": 2}]` for each slot algorithm
+1. **AC-1:** `docs/mcp-api-guide.md` documents parameter identification best practices
+   - Clear recommendation: Use `parameter_name` for specification-aware operations
+   - Explanation of why `parameter_number` may not exist in instantiated algorithms
+   - Examples showing both approaches with their trade-offs
 
-2. **AC-2:** Parameter documentation includes expected parameter count per specification value
-   - New metadata field: `"parameter_count_by_spec": {"channels_2": 21, "channels_8": 81}`
-   - Or: Per-channel parameters clearly marked with expansion multiplier
+2. **AC-2:** `getCurrentPreset()` response includes parameter names for all parameters
+   - Every parameter in response must have `"parameter_name"` field
+   - Verify parameter names are unique within each algorithm (or disambiguate if duplicate names exist)
 
-3. **AC-3:** Metadata service tracks which specifications were used to instantiate each algorithm
-   - Cubit/Controller stores specification values with algorithm state
-   - MCP tools can query this information
+3. **AC-3:** `setParameterValue()` parameter-by-name lookup is robust and well-tested
+   - Handles duplicate names gracefully (error message lists all matches)
+   - Works correctly across all specification variants
+   - 100% of unit tests pass
 
-4. **AC-4:** MCP tools validate parameter_number against known count for actual specs
-   - If LLM requests parameter 50 but spec only generates 21 parameters → clear error
-   - Error message: "Parameter 50 invalid for Clock Divider with Channels=2 (max: 21)"
+4. **AC-4:** LLM system prompts prefer parameter_name over parameter_number
+   - Update any Claude Code context that shows example MCP usage
+   - Ensure MCP documentation examples use parameter names
+   - Add guidance on when parameter_number is safe to use
 
-5. **AC-5:** Document updated algorithm metadata schema to support specification-dependent parameter lists
-   - Either template-based expansion rules
-   - Or pre-generated parameter lists for each spec combination
+5. **AC-5:** Optional: Store and expose specification values for transparency
+   - MCP `getCurrentPreset()` may include `"specifications"` field (informational)
+   - Used for debugging and understanding which parameter names exist
+   - Not required for parameter operations
 
-6. **AC-6:** All tests pass, no regression in parameter operations
+6. **AC-6:** All tests pass, documentation complete, no regressions
 
 ---
 
@@ -189,32 +194,51 @@ MCP tool getCurrentPreset()
 
 ## Proposed Solution Outline
 
-### Phase 1: Investigation (This Task)
-- [ ] Confirm hardware behavior with actual testing
-- [ ] Determine if firmware has API to query all channel parameters
-- [ ] Map parameter_number scheme for multi-channel algorithms
-- [ ] Document findings in detailed technical report
+### Critical Design Insight
 
-### Phase 2: Metadata Enhancement
-- [ ] Update algorithm JSON schema to include parameter count per spec
-- [ ] Generate parameter count matrix for all spec combinations
-- [ ] Document which parameter numbers correspond to which channels
+The codebase already has a **specification-agnostic parameter identification mechanism**: **parameter names**.
 
-### Phase 3: MCP Response Enhancement
-- [ ] Include specifications in slot data: `"specifications": [{"name": "Channels", "value": 2}]`
-- [ ] Add parameter count validation: `"total_parameters": 21`
-- [ ] Add metadata linking: `"parameter_count_specification": "Channels=2"`
+**Current Design:**
+- `getAlgorithmDetails()` strips `parameterNumber` intentionally (algorithm_tools.dart:96)
+- `setParameterValue()` supports both `parameter_number` AND `parameter_name`
+- This works because parameter names are stable across specifications
 
-### Phase 4: Controller Enhancement
-- [ ] Store specification values with algorithm state
-- [ ] Support parameter queries with spec awareness
-- [ ] Add validation: reject parameter_number > known_count
+**Better Solution:** Use parameter names instead of numbers for LLM interactions.
 
-### Phase 5: Testing & Documentation
-- [ ] Unit tests for spec-aware parameter validation
-- [ ] Integration tests with multi-channel algorithms
-- [ ] Update MCP documentation with spec examples
-- [ ] Add warnings about parameter availability based on specs
+### Phase 1: Investigation & Documentation (This Task)
+- [x] Confirm hardware behavior with actual testing
+- [x] Discover that parameter numbers are spec-dependent
+- [x] Understand current API design philosophy
+- [ ] Document best practices for LLM parameter operations
+
+### Phase 2: MCP Documentation Enhancement
+- [ ] Update `docs/mcp-api-guide.md` with clear guidance:
+  - "Use parameter_name for specification-aware operations"
+  - "parameter_number is hardware-specific and may not exist for your instantiation"
+  - "Example: `setParameterValue(slot=0, parameter_name="Type", value=1)` works regardless of channel count"
+- [ ] Add warning about specification-dependent parameter counts
+- [ ] Provide examples using parameter names vs numbers
+
+### Phase 3: Strengthen Parameter-by-Name in getCurrentPreset()
+- [ ] Ensure parameter names are always included in preset responses
+- [ ] Verify parameter names are unique per algorithm (or add disambiguation)
+- [ ] Add parameter index hint: `"array_position": 2` (for reference only)
+
+### Phase 4: LLM Prompt Engineering
+- [ ] Update system prompts to prefer `parameter_name` for parameter operations
+- [ ] Add examples: `setParameterValue(parameter_name="Channels", ...)` instead of `parameter_number=5`
+- [ ] Document which algorithms have specification-dependent parameters
+
+### Phase 5: Controller Enhancement (If Needed)
+- [ ] Store specification values with algorithm state (for debugging/transparency)
+- [ ] Add optional `specifications` field to getCurrentPreset() response
+- [ ] Add `total_parameters` hint for validation
+
+### Phase 6: Testing & Validation
+- [ ] Test parameter operations using names across different specs
+- [ ] Verify `setParameterValue(parameter_name=...)` works for multi-channel algorithms
+- [ ] Unit tests for parameter name uniqueness per algorithm
+- [ ] Integration tests with specification variants
 
 ---
 
