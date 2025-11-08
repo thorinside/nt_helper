@@ -69,8 +69,8 @@ development_status:
   4-5-implement-edit-tool-with-slot-level-granularity: done
   4-6-implement-edit-tool-with-parameter-level-granularity: done
   4-7-implement-show-tool-for-state-inspection: done
-  4-8-create-comprehensive-json-schema-documentation-with-mapping-examples: drafted
-  4-9-remove-old-mcp-tools-and-consolidate-documentation: drafted
+  4-8-create-comprehensive-json-schema-documentation-with-mapping-examples: done
+  4-9-remove-old-mcp-tools-and-consolidate-documentation: ready-for-dev
   4-10-test-with-smaller-llm-and-iterate-on-usability: drafted
   epic-4-retrospective: optional
 

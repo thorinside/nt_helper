@@ -1,34 +1,113 @@
 <story-context id="bmad/bmm/workflows/4-implementation/story-context/4-9" v="1.0">
   <metadata>
     <epicId>4</epicId>
-    <storyId>4.9</storyId>
+    <storyId>9</storyId>
     <title>Remove old MCP tools and consolidate documentation</title>
-    <status>drafted</status>
-    <generatedAt>2025-11-07</generatedAt>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-08</generatedAt>
     <generator>BMAD Story Context Workflow</generator>
     <sourceStoryPath>docs/stories/4-9-remove-old-mcp-tools-and-consolidate-documentation.md</sourceStoryPath>
   </metadata>
 
   <story>
-    <asA>developer maintaining clean codebase</asA>
+    <asA>a developer maintaining clean codebase</asA>
     <iWant>to remove all old MCP tool implementations and update documentation</iWant>
     <soThat>we have a single source of truth for the new 4-tool API</soThat>
     <tasks>
-- Identify old MCP tools to remove (AC: 1)
-- Remove old tool registrations (AC: 1-2)
-- Preserve reusable backend services (AC: 3)
-- Update documentation resources (AC: 4)
-- Create MCP API guide document (AC: 5-10)
-- Create workflow examples (AC: 6)
-- Create troubleshooting section (AC: 8)
-- Create granularity section (AC: 9)
-- Create mapping strategies section (AC: 10)
-- Update main documentation and test (AC: 11-13)
+- [ ] Identify old MCP tools to remove (AC: 1)
+  - [ ] Review current tool registrations in `mcp_server_service.dart`
+  - [ ] List all old tools (excluding search, new, edit, show)
+  - [ ] Document which tools are being replaced by new 4-tool API
+  - [ ] Identify any tools that might still be needed
+
+- [ ] Remove old tool registrations (AC: 1-2)
+  - [ ] Remove old tool registrations from `mcp_server_service.dart`
+  - [ ] Keep only: search, new, edit, show
+  - [ ] Identify old tool implementation files
+  - [ ] Remove old implementation files if no longer needed
+  - [ ] Search codebase for any references to removed tools
+
+- [ ] Preserve reusable backend services (AC: 3)
+  - [ ] Identify backend services used by new tools
+  - [ ] Keep: DistingController, DistingControllerImpl
+  - [ ] Keep: AlgorithmMetadataService
+  - [ ] Keep: Validation logic
+  - [ ] Keep: SynchronizedState rendering logic
+  - [ ] Keep: Diff engine (from Story 4.4)
+  - [ ] Remove only tool-specific implementations
+
+- [ ] Update documentation resources (AC: 4)
+  - [ ] Review `assets/mcp_docs/` directory
+  - [ ] Update or remove resources for old tools
+  - [ ] Keep bus-mapping, routing-concepts, etc.
+  - [ ] Update usage-guide to reflect 4-tool API
+  - [ ] Update README MCP section
+
+- [ ] Create MCP API guide document (AC: 5-10)
+  - [ ] Create `docs/mcp-api-guide.md`
+  - [ ] Document 4-tool API overview (search, new, edit, show)
+  - [ ] Include workflow examples (see subtasks below)
+  - [ ] Include JSON schema reference for each tool
+  - [ ] Include complete mapping field documentation
+  - [ ] Include troubleshooting section
+  - [ ] Add granularity section (preset vs slot vs parameter)
+  - [ ] Add mapping strategies section
+
+- [ ] Create workflow examples (AC: 6)
+  - [ ] Example: "Creating a simple preset" (new tool, add algorithms)
+  - [ ] Example: "Modifying existing preset with mappings" (edit tool, update mappings)
+  - [ ] Example: "Exploring algorithms" (search tool, category filtering)
+  - [ ] Example: "Setting up MIDI control" (edit tool, MIDI mapping)
+  - [ ] Example: "Organizing with performance pages" (edit tool, performance_page assignment)
+  - [ ] Include complete JSON requests and responses for each example
+
+- [ ] Create troubleshooting section (AC: 8)
+  - [ ] Common validation errors: MIDI channel out of range, CV input invalid, etc.
+  - [ ] Mapping validation errors: enabled flag missing, CC out of range
+  - [ ] Algorithm not found errors: fuzzy matching tips
+  - [ ] Specification validation errors: required vs optional
+  - [ ] Mode errors: offline/demo mode restrictions
+
+- [ ] Create granularity section (AC: 9)
+  - [ ] When to use preset-level edits: Complete restructuring, reordering algorithms, bulk changes
+  - [ ] When to use slot-level edits: Change algorithm in single slot, update all parameters for one algorithm
+  - [ ] When to use parameter-level edits: Quick parameter tweaks, mapping updates, individual value changes
+  - [ ] Performance considerations: Smaller edits = faster, less error-prone
+  - [ ] Examples for each granularity level
+
+- [ ] Create mapping strategies section (AC: 10)
+  - [ ] When to use CV mapping: Hardware control voltage inputs, modular synthesis integration
+  - [ ] When to use MIDI mapping: MIDI controller integration, DAW automation
+  - [ ] When to use i2c mapping: External i2c modules, ES-5 expander
+  - [ ] Performance page organization: Group by function, by algorithm, or by performance context
+  - [ ] Using CV source for modulation: LFO → filter cutoff, envelope → VCA
+  - [ ] Best practices: Avoid conflicts, use unique CCs, organize performance pages logically
+
+- [ ] Update main documentation and test (AC: 11-13)
+  - [ ] Add link to `mcp-api-guide.md` in `CLAUDE.md`
+  - [ ] Add link to `mcp-mapping-guide.md` (from Story 4.8) in `CLAUDE.md`
+  - [ ] Update README MCP section with link to API guide
+  - [ ] Run `flutter analyze` and fix warnings
+  - [ ] Run `flutter test` and ensure all pass
+  - [ ] Remove tests for deleted tools
+  - [ ] Update remaining tests to reflect new API
     </tasks>
   </story>
 
   <acceptanceCriteria>
-1-13. [See story file for complete list of old tools to remove: list_algorithms, get_algorithm_details, get_current_preset, add_algorithm, remove_algorithm, set_parameter_value, move_algorithm_up/down, build_preset_from_json, etc. Keep only: search, new, edit, show]
+1. Remove all old tool registrations from `mcp_server_service.dart` (keep only: search, new, edit, show)
+2. Remove old tool implementation files if no longer needed
+3. Keep backend services that are reused by new tools (diffing logic, validation, SynchronizedState rendering, etc.)
+4. Update or remove hardcoded documentation resources to reflect new tool set
+5. Create new `docs/mcp-api-guide.md` documenting the 4-tool API with mapping support
+6. Include workflow examples: "Creating a simple preset", "Modifying existing preset with mappings", "Exploring algorithms", "Setting up MIDI control", "Organizing with performance pages"
+7. Include JSON schema reference for each tool with complete mapping field documentation
+8. Include troubleshooting section for common errors (including mapping validation errors)
+9. Add section on granularity: when to use preset vs slot vs parameter edits
+10. Add section on mapping strategies: when to use CV vs MIDI vs i2c, performance page organization, using CV source for modulation
+11. Update main `CLAUDE.md` with link to new MCP API guide
+12. `flutter analyze` passes with zero warnings
+13. All tests pass
   </acceptanceCriteria>
 
   <artifacts>
@@ -36,20 +115,56 @@
       <doc>
         <path>docs/epic-4-context.md</path>
         <title>Epic 4 Technical Context</title>
-        <section>Four Core Tools</section>
-        <snippet>search - Algorithm discovery. new - Preset initialization. edit - State modification (3 granularity levels). show - State inspection (5 target types).</snippet>
+        <section>New API Design - Four Core Tools</section>
+        <snippet>search (algorithm discovery), new (preset initialization), edit (state modification with 3 granularity levels: preset/slot/parameter), show (state inspection with 5 target types: preset/slot/parameter/screen/routing). Backend diff engine, snake_case JSON fields, partial mapping updates, disabled mappings omitted from output.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Mapping Representation</section>
+        <snippet>CV mapping (source, cv_input, is_unipolar, is_gate, volts, delta), MIDI mapping (is_midi_enabled, midi_channel 0-15, midi_type, midi_cc 0-128, scaling), i2c mapping (is_i2c_enabled, i2c_cc 0-255, scaling), performance_page (1-15, 0=not assigned). All fields use snake_case naming.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-4-context.md</path>
+        <title>Epic 4 Technical Context</title>
+        <section>Story E4.9: Cleanup and Consolidation</section>
+        <snippet>Remove old tool registrations, keep reused backend services (DistingController, AlgorithmMetadataService, diff engine, validation), create docs/mcp-api-guide.md with workflow examples, update main CLAUDE.md</snippet>
       </doc>
       <doc>
         <path>README.md</path>
-        <title>README</title>
-        <section>MCP tool reference documentation</section>
-        <snippet>Current documentation of 20+ MCP tools to be replaced</snippet>
+        <title>Project README</title>
+        <section>MCP Tool Reference</section>
+        <snippet>Current 20+ MCP tools documented: get_algorithm_details, list_algorithms, get_routing, get_current_preset, add_algorithm, remove_algorithm, set_parameter_value, get_parameter_value, set_preset_name, get_preset_name. All to be replaced by 4-tool API.</snippet>
       </doc>
       <doc>
-        <path>assets/mcp_docs/</path>
-        <title>MCP Documentation Resources</title>
-        <section>Pre-loaded documentation</section>
-        <snippet>bus-mapping, usage-guide, algorithm-categories, preset-format, routing-concepts</snippet>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>MCP Server</section>
+        <snippet>HTTP-based MCP server (mcp_server_service.dart), multi-client support, tool registrations via mcp_dart library, controller interface (DistingController), algorithm/disting tool implementations</snippet>
+      </doc>
+      <doc>
+        <path>assets/mcp_docs/bus_mapping.md</path>
+        <title>Bus Mapping Documentation</title>
+        <section>Resource file</section>
+        <snippet>Pre-loaded MCP documentation resource explaining bus assignments and signal routing in Disting NT</snippet>
+      </doc>
+      <doc>
+        <path>assets/mcp_docs/routing_concepts.md</path>
+        <title>Routing Concepts Documentation</title>
+        <section>Resource file</section>
+        <snippet>Pre-loaded MCP documentation resource explaining routing concepts and connection discovery</snippet>
+      </doc>
+      <doc>
+        <path>assets/mcp_docs/mcp_usage_guide.md</path>
+        <title>MCP Usage Guide</title>
+        <section>Resource file</section>
+        <snippet>Current usage guide documenting old 20+ tool API - needs update or replacement for new 4-tool API</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/4-8-create-comprehensive-json-schema-documentation-with-mapping-examples.md</path>
+        <title>Story 4.8 - JSON Schema Documentation</title>
+        <section>Mapping documentation</section>
+        <snippet>Creates mcp-mapping-guide.md with complete mapping structure docs, field descriptions with ranges, snake_case naming, examples for all mapping types, partial update examples</snippet>
       </doc>
     </docs>
     <code>
@@ -57,86 +172,206 @@
         <path>lib/services/mcp_server_service.dart</path>
         <kind>service</kind>
         <symbol>McpServerService</symbol>
-        <reason>Tool registrations to update - remove old tools, keep only search/new/edit/show</reason>
+        <lines>1-100</lines>
+        <reason>Main MCP server service - contains tool registrations to update. Remove old tools, keep only search/new/edit/show. Uses mcp_dart library with StreamableHTTPServerTransport on port 3000.</reason>
       </file>
       <file>
         <path>lib/mcp/tools/algorithm_tools.dart</path>
         <kind>tools</kind>
-        <symbol>MCP algorithm tools</symbol>
-        <reason>Old tool implementations to remove or update</reason>
+        <symbol>MCPAlgorithmTools</symbol>
+        <lines>1-100</lines>
+        <reason>Old algorithm tool implementations - contains getAlgorithmDetails and other tools to be replaced by search tool. Review for deletion or migration.</reason>
       </file>
       <file>
         <path>lib/mcp/tools/disting_tools.dart</path>
         <kind>tools</kind>
-        <symbol>MCP disting tools</symbol>
-        <reason>Old tool implementations to remove or update</reason>
+        <symbol>MCPDistingTools</symbol>
+        <reason>Old disting tool implementations - contains preset/parameter manipulation tools to be replaced by new/edit/show tools. Review for deletion or migration.</reason>
       </file>
       <file>
         <path>lib/services/disting_controller.dart</path>
         <kind>interface</kind>
         <symbol>DistingController</symbol>
-        <reason>Backend service to PRESERVE - still used by new tools</reason>
+        <reason>Abstract controller interface used by new tools - PRESERVE, do not remove. Provides backend services for MCP operations.</reason>
       </file>
       <file>
         <path>lib/services/disting_controller_impl.dart</path>
         <kind>service</kind>
         <symbol>DistingControllerImpl</symbol>
-        <reason>Backend service to PRESERVE - still used by new tools</reason>
+        <reason>Controller implementation - PRESERVE, do not remove. Contains diff engine, validation logic, and SynchronizedState rendering used by new tools.</reason>
       </file>
       <file>
         <path>lib/services/algorithm_metadata_service.dart</path>
         <kind>service</kind>
         <symbol>AlgorithmMetadataService</symbol>
-        <reason>Backend service to PRESERVE - used by search tool</reason>
+        <reason>Metadata service - PRESERVE, do not remove. Used by search tool for algorithm discovery and fuzzy matching.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <reason>Primary application state management - PRESERVE. Manages device state, used by all MCP tools via controller interface.</reason>
+      </file>
+      <file>
+        <path>lib/util/case_converter.dart</path>
+        <kind>utility</kind>
+        <symbol>convertToSnakeCaseKeys</symbol>
+        <reason>snake_case conversion utilities - PRESERVE. Used by new tools to convert JSON responses to snake_case format for LLM consumption.</reason>
       </file>
     </code>
     <dependencies>
-      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+      <dart>
+        <package>mcp_dart</package>
+        <version>^0.6.4</version>
+        <purpose>MCP protocol implementation for tool registration and HTTP server transport</purpose>
+      </dart>
+      <dart>
+        <package>dart_mcp</package>
+        <version>^0.3.3</version>
+        <purpose>Alternative MCP library (migration note in code, currently using mcp_dart)</purpose>
+      </dart>
+      <dart>
+        <package>flutter_bloc</package>
+        <version>^9.1.1</version>
+        <purpose>State management via Cubit pattern</purpose>
+      </dart>
+      <dart>
+        <package>crypto</package>
+        <version>^3.0.6</version>
+        <purpose>Secure UUID generation for MCP sessions</purpose>
+      </dart>
     </dependencies>
   </artifacts>
 
   <constraints>
-- Remove only old tool registrations and implementations
-- Preserve all backend services: DistingController, DistingControllerImpl, AlgorithmMetadataService, validation logic, diff engine
-- Keep resource files that are still useful: bus-mapping, routing-concepts
-- Update or remove: usage-guide (update for 4-tool API)
-- Create new docs/mcp-api-guide.md with complete 4-tool documentation
-- Update CLAUDE.md with links to new guides
-- Update README.md MCP section
+- Remove only old tool registrations and implementations that are fully replaced by new 4-tool API
+- PRESERVE all backend services: DistingController, DistingControllerImpl, AlgorithmMetadataService, validation logic, diff engine (from Story 4.4), SynchronizedState rendering
+- PRESERVE utility functions: case_converter.dart for snake_case conversion
+- Keep resource files that remain useful: bus-mapping.md, routing-concepts.md, algorithm_categories.md, preset_format.md
+- Update or replace: mcp_usage_guide.md to reflect 4-tool API
+- Create new comprehensive guide: docs/mcp-api-guide.md with workflow examples, JSON schemas, troubleshooting, granularity guidance, mapping strategies
+- Update CLAUDE.md with links to both mcp-api-guide.md and mcp-mapping-guide.md (from Story 4.8)
+- Update README.md MCP section to reference new API guide
+- All changes must pass `flutter analyze` with zero warnings
+- All tests must pass
+- Remove or update tests for deleted tools
+- Zero tolerance for debug logging - do not add any debug prints
+- Follow existing code patterns and naming conventions
   </constraints>
 
   <interfaces>
     <interface>
-      <name>Old tools to remove</name>
+      <name>Old MCP Tools to Remove</name>
       <kind>mcp-tools</kind>
-      <tools>list_algorithms, get_algorithm_details, get_current_preset, add_algorithm, remove_algorithm, set_parameter_value, get_parameter_value, move_algorithm_up, move_algorithm_down, set_preset_name, get_preset_name, new_preset, save_preset, get_module_screenshot, build_preset_from_json, and others</tools>
-      <replacement>Replaced by search, new, edit, show</replacement>
+      <signature>Tools likely to be removed based on replacement by 4-tool API:
+- list_algorithms (replaced by search with type="algorithm")
+- get_algorithm_details (replaced by search with exact match or fuzzy)
+- get_current_preset (replaced by show with target="preset")
+- add_algorithm (replaced by new or edit)
+- remove_algorithm (replaced by edit)
+- set_parameter_value (replaced by edit with target="parameter")
+- get_parameter_value (replaced by show with target="parameter")
+- move_algorithm_up/down (replaced by edit with slot reordering)
+- set_preset_name (replaced by edit with preset name)
+- get_preset_name (replaced by show with target="preset")
+- new_preset (replaced by new)
+- save_preset (auto-save in new tools)
+- get_module_screenshot (replaced by show with target="screen")
+- build_preset_from_json (replaced by new or edit)
+May keep temporarily:
+- get_cpu_usage (not replaced, still useful)
+- get_routing (replaced by show with target="routing" in Story 4.7)</signature>
+      <path>lib/services/mcp_server_service.dart, lib/mcp/tools/*.dart</path>
     </interface>
     <interface>
-      <name>Tools to keep</name>
+      <name>New 4-Tool API to Keep</name>
       <kind>mcp-tools</kind>
-      <tools>search, new, edit (3 granularities), show (5 targets)</tools>
-      <usage>New 4-tool API</usage>
+      <signature>Tools to PRESERVE:
+- search: Algorithm discovery with fuzzy matching, category filtering
+- new: Preset initialization (blank or with algorithms)
+- edit: State modification (3 granularities: preset, slot, parameter)
+- show: State inspection (5 targets: preset, slot, parameter, screen, routing)</signature>
+      <path>lib/services/disting_controller.dart, lib/services/disting_controller_impl.dart</path>
+    </interface>
+    <interface>
+      <name>DistingController Backend Interface</name>
+      <kind>interface</kind>
+      <signature>Abstract controller providing backend services:
+- searchAlgorithms(query, type, category)
+- createPreset(name, algorithms, specifications)
+- editPreset(target, data, slotIndex, parameter, value, mapping)
+- showState(target, identifier, includeScreen, includeRouting)
+- Validation, diffing, snake_case conversion, auto-save</signature>
+      <path>lib/services/disting_controller.dart</path>
     </interface>
   </interfaces>
 
   <tests>
     <standards>
-Verify all old tool references removed. Verify new tools work as documented. Test all workflow examples. Verify links in documentation work. Remove tests for deleted tools. Update remaining tests.
+Flutter project using flutter_test framework. Existing test patterns:
+- Unit tests for tool implementations (test/mcp/*)
+- Integration tests for tool workflows
+- Mock-based testing with mocktail
+- Test files mirror source structure
+- Tests verify: input validation, error handling, JSON response format, snake_case conversion
+- All tests must pass before commit
+- flutter analyze must show zero warnings
+Standards for this story:
+- Remove tests for deleted old tools
+- Update remaining tests to use new 4-tool API
+- Verify all workflow examples in new docs work correctly
+- Test documentation links (CLAUDE.md → guides)
+- Verify granularity examples
+- Verify mapping strategy examples
     </standards>
     <locations>
-test/mcp/tools/ (remove old test files, update remaining)
-docs/mcp-api-guide.md (new file to create)
+test/mcp/ - MCP tool tests (remove old tool tests, keep new tool tests)
+test/mcp/tools/ - Tool-specific tests (edit, show, search, new tests)
+test/mcp/algorithm_tools_test.dart - Old algorithm tools tests to review/remove
+test/services/ - Service tests (preserve controller and metadata service tests)
+docs/mcp-api-guide.md - New file to create with testable workflow examples
     </locations>
     <ideas>
-- Grep for old tool names to find all references
-- Test each workflow example in new API guide
-- Verify all links work (CLAUDE.md → mcp-api-guide.md)
-- Verify all links work (CLAUDE.md → mcp-mapping-guide.md)
-- Test granularity examples (preset vs slot vs parameter)
-- Test mapping strategy examples
-- Remove old tool tests
-- Update existing tests for new API
+AC 1-2: Remove old tools and files
+- Use Grep to find all references to old tool names in codebase
+- Identify and list all old tool registrations in mcp_server_service.dart
+- Remove old tool files from lib/mcp/tools/ if fully replaced
+- Remove corresponding test files from test/mcp/
+- Verify no broken references remain
+
+AC 3: Preserve backend services
+- Verify DistingController interface still intact
+- Verify DistingControllerImpl implementation preserved
+- Verify AlgorithmMetadataService preserved
+- Verify diff engine from Story 4.4 preserved
+- Verify validation logic preserved
+- Verify case_converter utilities preserved
+
+AC 4: Update documentation resources
+- Review assets/mcp_docs/ directory contents
+- Keep: bus_mapping.md, routing_concepts.md, algorithm_categories.md, preset_format.md
+- Update or remove: mcp_usage_guide.md
+- Update README.md MCP section
+
+AC 5-10: Create MCP API guide
+- Create docs/mcp-api-guide.md
+- Document all 4 tools with complete schemas
+- Include 5 workflow examples with full JSON
+- Include troubleshooting section
+- Include granularity section (when to use preset/slot/parameter)
+- Include mapping strategies section
+- Reference mcp-mapping-guide.md from Story 4.8
+
+AC 11: Update main documentation
+- Add link in CLAUDE.md to mcp-api-guide.md
+- Add link in CLAUDE.md to mcp-mapping-guide.md
+- Verify links work correctly
+
+AC 12-13: Testing and quality
+- Run flutter analyze, fix any warnings
+- Run flutter test, ensure all pass
+- Update or remove old tool tests
+- Verify new tool tests still pass
     </ideas>
   </tests>
 </story-context>

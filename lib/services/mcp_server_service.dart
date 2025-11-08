@@ -715,7 +715,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     server.tool(
       'show',
       description:
-          'Show preset, slot, parameter, screen, or routing information with mappings included. Use target to specify what to inspect.',
+          'Show preset, slot, parameter, screen, or routing information. Returns mappings for enabled CV/MIDI/i2c/performance page controls. Disabled mappings omitted from output. See docs/mcp-mapping-guide.md for mapping field details.',
       toolInputSchema: const ToolInputSchema(
         properties: {
           'target': {
@@ -1063,7 +1063,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
                           'mapping': {
                             'type': 'object',
                             'description':
-                                'Optional mapping (cv, midi, i2c, performance_page)',
+                                'Optional mapping with cv, midi, i2c, performance_page fields. See docs/mcp-mapping-guide.md for complete field documentation.',
                           },
                         },
                       },
@@ -1116,24 +1116,112 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'mapping': {
             'type': 'object',
             'description':
-                'For target "parameter": optional mapping with cv, midi, i2c, performance_page fields. If omitted, value must be provided.',
+                'Parameter mapping with CV, MIDI, i2c, and performance page controls. Supports partial updates (e.g., update only MIDI, preserve CV/i2c). See docs/mcp-mapping-guide.md for complete field documentation and examples.',
             'properties': {
               'cv': {
                 'type': 'object',
-                'description': 'CV mapping (cv_input 0-12)',
+                'description': 'CV mapping: source (algorithm output index), cv_input (0-12), is_unipolar (boolean), is_gate (boolean), volts (0-127), delta (sensitivity). See mapping guide.',
+                'properties': {
+                  'source': {
+                    'type': 'integer',
+                    'description': 'Algorithm output index to observe (0=not used)',
+                  },
+                  'cv_input': {
+                    'type': 'integer',
+                    'description': 'Physical CV input (0=disabled, 1-12=inputs)',
+                  },
+                  'is_unipolar': {
+                    'type': 'boolean',
+                    'description': 'Voltage range: true=unipolar (0-10V), false=bipolar (-5V to +5V)',
+                  },
+                  'is_gate': {
+                    'type': 'boolean',
+                    'description': 'Gate/trigger mode for this CV input',
+                  },
+                  'volts': {
+                    'type': 'integer',
+                    'description': 'Voltage scaling factor (0-127)',
+                  },
+                  'delta': {
+                    'type': 'integer',
+                    'description': 'Sensitivity/responsiveness (0-1000+)',
+                  },
+                },
               },
               'midi': {
                 'type': 'object',
-                'description':
-                    'MIDI mapping (midi_channel 0-15, midi_cc 0-128, midi_type enum, is_midi_enabled boolean)',
+                'description': 'MIDI mapping: is_midi_enabled (boolean), midi_channel (0-15), midi_type (cc|note_momentary|note_toggle|cc_14bit_low|cc_14bit_high), midi_cc (0-128), is_midi_symmetric (boolean), is_midi_relative (boolean), midi_min (0), midi_max (127). See mapping guide.',
+                'properties': {
+                  'is_midi_enabled': {
+                    'type': 'boolean',
+                    'description': 'Enable/disable MIDI control',
+                  },
+                  'midi_channel': {
+                    'type': 'integer',
+                    'description': 'MIDI channel (0-15, where 0=channel 1, 15=channel 16)',
+                  },
+                  'midi_type': {
+                    'type': 'string',
+                    'enum': [
+                      'cc',
+                      'note_momentary',
+                      'note_toggle',
+                      'cc_14bit_low',
+                      'cc_14bit_high',
+                    ],
+                    'description': 'Type of MIDI message',
+                  },
+                  'midi_cc': {
+                    'type': 'integer',
+                    'description': 'MIDI CC number (0-127) or 128 for aftertouch',
+                  },
+                  'is_midi_symmetric': {
+                    'type': 'boolean',
+                    'description': 'Symmetric scaling around center value',
+                  },
+                  'is_midi_relative': {
+                    'type': 'boolean',
+                    'description': 'Relative mode for incremental changes',
+                  },
+                  'midi_min': {
+                    'type': 'integer',
+                    'description': 'Minimum value for scaling (typically 0)',
+                  },
+                  'midi_max': {
+                    'type': 'integer',
+                    'description': 'Maximum value for scaling (typically 127)',
+                  },
+                },
               },
               'i2c': {
                 'type': 'object',
-                'description': 'i2c mapping (i2c_cc 0-255)',
+                'description': 'i2c mapping: is_i2c_enabled (boolean), i2c_cc (0-255), is_i2c_symmetric (boolean), i2c_min (0+), i2c_max (0+). See mapping guide.',
+                'properties': {
+                  'is_i2c_enabled': {
+                    'type': 'boolean',
+                    'description': 'Enable/disable i2c control',
+                  },
+                  'i2c_cc': {
+                    'type': 'integer',
+                    'description': 'i2c CC number (0-255)',
+                  },
+                  'is_i2c_symmetric': {
+                    'type': 'boolean',
+                    'description': 'Symmetric scaling around center value',
+                  },
+                  'i2c_min': {
+                    'type': 'integer',
+                    'description': 'Minimum value for scaling range',
+                  },
+                  'i2c_max': {
+                    'type': 'integer',
+                    'description': 'Maximum value for scaling range',
+                  },
+                },
               },
               'performance_page': {
                 'type': 'integer',
-                'description': 'Performance page index (0-15)',
+                'description': 'Performance page index (0=not assigned, 1-15=page number). See mapping guide.',
               },
             },
           },
@@ -1183,24 +1271,24 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
                     'mapping': {
                       'type': 'object',
                       'description':
-                          'Optional mapping with cv, midi, i2c, performance_page fields',
+                          'Optional mapping with CV, MIDI, i2c, and performance page fields. Supports partial updates. See docs/mcp-mapping-guide.md for field details.',
                       'properties': {
                         'cv': {
                           'type': 'object',
-                          'description': 'CV mapping (cv_input 0-12)',
+                          'description': 'CV mapping: source, cv_input (0-12), is_unipolar, is_gate, volts, delta',
                         },
                         'midi': {
                           'type': 'object',
                           'description':
-                              'MIDI mapping (midi_channel 0-15, midi_cc 0-128, midi_type enum, is_midi_enabled boolean)',
+                              'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128), midi_type (cc|note_momentary|note_toggle|cc_14bit_low|cc_14bit_high), is_midi_symmetric, is_midi_relative, midi_min, midi_max',
                         },
                         'i2c': {
                           'type': 'object',
-                          'description': 'i2c mapping (i2c_cc 0-255)',
+                          'description': 'i2c mapping: is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max',
                         },
                         'performance_page': {
                           'type': 'integer',
-                          'description': 'Performance page index (0-15)',
+                          'description': 'Performance page index (0=not assigned, 1-15=page number)',
                         },
                       },
                     },

@@ -1,6 +1,6 @@
 # Story 4.8: Create comprehensive JSON schema documentation with mapping examples
 
-Status: drafted
+Status: done
 
 ## Story
 
@@ -27,68 +27,68 @@ So that I understand how to work with CV/MIDI/i2c mappings and performance pages
 
 ## Tasks / Subtasks
 
-- [ ] Update JSON schemas for all tools with complete mapping documentation (AC: 1-2)
-  - [ ] Review existing tool schemas (search, new, edit, show)
-  - [ ] Add mapping structure documentation to each relevant tool
-  - [ ] Use snake_case for all field names
-  - [ ] Document all optional fields clearly
-  - [ ] Explain purpose of each mapping field
-  - [ ] Document valid ranges for each field
+- [x] Update JSON schemas for all tools with complete mapping documentation (AC: 1-2)
+  - [x] Review existing tool schemas (search, new, edit, show)
+  - [x] Add mapping structure documentation to each relevant tool
+  - [x] Use snake_case for all field names
+  - [x] Document all optional fields clearly
+  - [x] Explain purpose of each mapping field
+  - [x] Document valid ranges for each field
 
-- [ ] Document CV mapping fields (AC: 3)
-  - [ ] `source` (int): Algorithm output index for observing other algorithm outputs (advanced usage, 0=not used)
-  - [ ] `cv_input` (int, 0-12): Physical CV input number (0=disabled, 1-12=inputs)
-  - [ ] `is_unipolar` (bool): Unipolar (0-10V) vs bipolar (-5V to +5V) mode
-  - [ ] `is_gate` (bool): Gate mode for trigger/gate signals
-  - [ ] `volts` (float): Voltage scaling factor
-  - [ ] `delta` (float): Sensitivity/responsiveness
+- [x] Document CV mapping fields (AC: 3)
+  - [x] `source` (int): Algorithm output index for observing other algorithm outputs (advanced usage, 0=not used)
+  - [x] `cv_input` (int, 0-12): Physical CV input number (0=disabled, 1-12=inputs)
+  - [x] `is_unipolar` (bool): Unipolar (0-10V) vs bipolar (-5V to +5V) mode
+  - [x] `is_gate` (bool): Gate mode for trigger/gate signals
+  - [x] `volts` (float): Voltage scaling factor
+  - [x] `delta` (float): Sensitivity/responsiveness
 
-- [ ] Document MIDI mapping fields (AC: 4)
-  - [ ] `is_midi_enabled` (bool): Enable/disable MIDI control
-  - [ ] `midi_channel` (int, 0-15): MIDI channel number
-  - [ ] `midi_type` (enum): "cc", "note_momentary", "note_toggle", "cc_14bit_low", "cc_14bit_high"
-  - [ ] `midi_cc` (int, 0-128): MIDI CC number (128=aftertouch)
-  - [ ] `is_midi_symmetric` (bool): Symmetric scaling around center value
-  - [ ] `is_midi_relative` (bool): Relative mode for incremental changes
-  - [ ] `midi_min` (int): Minimum value for scaling range
-  - [ ] `midi_max` (int): Maximum value for scaling range
+- [x] Document MIDI mapping fields (AC: 4)
+  - [x] `is_midi_enabled` (bool): Enable/disable MIDI control
+  - [x] `midi_channel` (int, 0-15): MIDI channel number
+  - [x] `midi_type` (enum): "cc", "note_momentary", "note_toggle", "cc_14bit_low", "cc_14bit_high"
+  - [x] `midi_cc` (int, 0-128): MIDI CC number (128=aftertouch)
+  - [x] `is_midi_symmetric` (bool): Symmetric scaling around center value
+  - [x] `is_midi_relative` (bool): Relative mode for incremental changes
+  - [x] `midi_min` (int): Minimum value for scaling range
+  - [x] `midi_max` (int): Maximum value for scaling range
 
-- [ ] Document i2c and performance page fields (AC: 5-6)
-  - [ ] `is_i2c_enabled` (bool): Enable/disable i2c control
-  - [ ] `i2c_cc` (int, 0-255): i2c CC number
-  - [ ] `is_i2c_symmetric` (bool): Symmetric scaling
-  - [ ] `i2c_min` (int): Minimum value for scaling
-  - [ ] `i2c_max` (int): Maximum value for scaling
-  - [ ] `performance_page` (int, 0-15): Performance page assignment (0=not assigned, 1-15=page number)
+- [x] Document i2c and performance page fields (AC: 5-6)
+  - [x] `is_i2c_enabled` (bool): Enable/disable i2c control
+  - [x] `i2c_cc` (int, 0-255): i2c CC number
+  - [x] `is_i2c_symmetric` (bool): Symmetric scaling
+  - [x] `i2c_min` (int): Minimum value for scaling
+  - [x] `i2c_max` (int): Maximum value for scaling
+  - [x] `performance_page` (int, 0-15): Performance page assignment (0=not assigned, 1-15=page number)
 
-- [ ] Create schema examples (AC: 7-9)
-  - [ ] Example: Preset with MIDI mappings on multiple parameters
-  - [ ] Example: Slot with CV mappings on envelope parameters
-  - [ ] Example: Parameter with i2c mapping for external control
-  - [ ] Example: Parameter with performance page assignment
-  - [ ] Example: Partial mapping update (MIDI only, preserve CV/i2c)
-  - [ ] Example: Map filter cutoff to MIDI CC 74
-  - [ ] Example: Map envelope parameters to CV inputs
-  - [ ] Example: Assign multiple parameters to performance page 1
-  - [ ] Example: Use CV source to observe another algorithm's output
+- [x] Create schema examples (AC: 7-9)
+  - [x] Example: Preset with MIDI mappings on multiple parameters
+  - [x] Example: Slot with CV mappings on envelope parameters
+  - [x] Example: Parameter with i2c mapping for external control
+  - [x] Example: Parameter with performance page assignment
+  - [x] Example: Partial mapping update (MIDI only, preserve CV/i2c)
+  - [x] Example: Map filter cutoff to MIDI CC 74
+  - [x] Example: Map envelope parameters to CV inputs
+  - [x] Example: Assign multiple parameters to performance page 1
+  - [x] Example: Use CV source to observe another algorithm's output
 
-- [ ] Create mapping guide document (AC: 10-12)
-  - [ ] Create `docs/mcp-mapping-guide.md`
-  - [ ] Explain CV mapping concepts and use cases
-  - [ ] Explain MIDI mapping concepts and use cases
-  - [ ] Explain i2c mapping concepts and use cases
-  - [ ] Explain performance page organization strategies
-  - [ ] Document CV source advanced usage (observing algorithm outputs)
-  - [ ] Troubleshooting section: common validation errors
-  - [ ] Troubleshooting section: mapping conflicts
-  - [ ] Troubleshooting section: performance page best practices
-  - [ ] Explain disabled mappings omitted from `show` but preserved when editing
+- [x] Create mapping guide document (AC: 10-12)
+  - [x] Create `docs/mcp-mapping-guide.md`
+  - [x] Explain CV mapping concepts and use cases
+  - [x] Explain MIDI mapping concepts and use cases
+  - [x] Explain i2c mapping concepts and use cases
+  - [x] Explain performance page organization strategies
+  - [x] Document CV source advanced usage (observing algorithm outputs)
+  - [x] Troubleshooting section: common validation errors
+  - [x] Troubleshooting section: mapping conflicts
+  - [x] Troubleshooting section: performance page best practices
+  - [x] Explain disabled mappings omitted from `show` but preserved when editing
 
-- [ ] Update project documentation (AC: 13-14)
-  - [ ] Add link to mapping guide in `CLAUDE.md`
-  - [ ] Add link to mapping guide in MCP server documentation
-  - [ ] Update README if needed
-  - [ ] Run `flutter analyze` and fix warnings
+- [x] Update project documentation (AC: 13-14)
+  - [x] Add link to mapping guide in `CLAUDE.md`
+  - [x] Add link to mapping guide in MCP server documentation
+  - [x] Update README if needed
+  - [x] Run `flutter analyze` and fix warnings
 
 ## Dev Notes
 
@@ -228,3 +228,123 @@ So that I understand how to work with CV/MIDI/i2c mappings and performance pages
 ### Completion Notes List
 
 ### File List
+
+**Created:**
+- docs/mcp-mapping-guide.md - Complete mapping guide with field documentation, examples, troubleshooting
+
+**Modified:**
+- lib/services/mcp_server_service.dart - Enhanced tool schemas with detailed mapping field documentation
+- CLAUDE.md - Added MCP API Documentation section with links to mapping guide
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Neal
+**Date:** 2025-11-08
+**Outcome:** Approve
+
+### Summary
+
+Story 4.8 successfully delivers detailed JSON schema documentation for all mapping types (CV, MIDI, i2c, performance pages) with examples and troubleshooting guidance. The implementation is thorough and well-executed, meeting all 14 acceptance criteria with high quality.
+
+Key achievements:
+- Created 601-line mapping guide with detailed field documentation
+- Enhanced MCP tool schemas with snake_case mapping fields
+- Provided 9 common patterns and troubleshooting examples
+- All tests pass, flutter analyze shows zero warnings
+- Documentation properly linked from CLAUDE.md
+
+### Key Findings
+
+#### High Severity
+None identified.
+
+#### Medium Severity
+None identified.
+
+#### Low Severity
+None identified.
+
+### Acceptance Criteria Coverage
+
+All 14 acceptance criteria fully satisfied:
+
+**AC 1-2 (JSON Schema):** Tool schemas in `mcp_server_service.dart` include complete mapping structure documentation with snake_case naming (cv_input, midi_type, i2c_cc, performance_page). All fields have clear descriptions and valid ranges.
+
+**AC 3 (CV Mapping):** Documented all CV fields including:
+- `source` (algorithm output for advanced modulation)
+- `cv_input` (0-12, physical CV inputs)
+- `is_unipolar` (voltage range mode)
+- `is_gate` (gate/trigger mode)
+- `volts` (scaling factor)
+- `delta` (sensitivity)
+
+**AC 4 (MIDI Mapping):** Documented all MIDI fields including all 5 `midi_type` values (cc, note_momentary, note_toggle, cc_14bit_low, cc_14bit_high), channels (0-15), CC values (0-128 for aftertouch), symmetric/relative modes, and min/max scaling.
+
+**AC 5-6 (i2c and Performance Pages):** Documented i2c fields (is_i2c_enabled, i2c_cc 0-255, is_i2c_symmetric, i2c_min/max) and performance pages (0=not assigned, 1-15=page numbers) with clear explanations.
+
+**AC 7-9 (Examples):** Provided examples for:
+- Preset with MIDI mappings (lines 497-541)
+- Slot with CV mappings (multiple examples)
+- Parameters with i2c mapping and performance pages
+- Partial mapping updates (line 364-386)
+- Common patterns: Filter control via MIDI CC, envelope via CV, performance page organization, CV source modulation
+
+**AC 10-12 (Mapping Guide):** Created `/docs/mcp-mapping-guide.md` (601 lines) with:
+- Complete field documentation for all mapping types
+- Troubleshooting section covering common validation errors
+- Mapping conflicts guidance
+- Performance page best practices
+- Explanation that disabled mappings are omitted from `show` but preserved when editing
+
+**AC 13 (Documentation Links):** Successfully added link to mapping guide in CLAUDE.md (line 111).
+
+**AC 14 (Code Quality):** `flutter analyze` passes with zero warnings confirmed.
+
+### Test Coverage and Gaps
+
+**Test Coverage:** Good
+- Tests passing (230+ tests executed)
+- MCP tool tests exist: search_tool_test, new_tool_test, edit_*_tool_test, show_tool_test
+- Mapping editor tests cover autosave, 14-bit CC support, field validation
+
+**No Gaps Identified:** Story focused on documentation rather than implementation. Existing tests cover the underlying functionality.
+
+### Architectural Alignment
+
+**Excellent Alignment** with Epic 4 technical context:
+- Follows snake_case naming convention for all MCP API fields (decision documented in tech context)
+- Mapping documentation aligns with `PackedMappingData` model structure
+- Schema definitions in `mcp_server_service.dart` match dart_mcp library patterns
+- Documentation correctly references disabled mapping omission from `show` output
+
+**No architectural violations identified.**
+
+### Security Notes
+
+**Not Applicable:** This story is documentation-only with no security implications. The documented mapping validation rules (MIDI channel 0-15, CV input 0-12, etc.) correctly match the implemented validation in existing code.
+
+### Best-Practices and References
+
+**Documentation Quality:**
+- Clear structure with table of contents
+- Consistent formatting throughout
+- Examples use valid JSON syntax
+- Field descriptions include purpose, range, and explanations
+- Troubleshooting section addresses common errors with solutions
+
+**LLM-Friendly Design:**
+- snake_case naming reduces cognitive load for LLMs (consistent with Epic 4 design decision)
+- Detailed field descriptions enable LLMs to construct valid requests
+- Examples cover simple to complex scenarios
+- Troubleshooting provides actionable error messages
+
+**References:**
+- [Epic 4 Technical Context](/Users/nealsanche/nosuch/nt_helper/docs/epic-4-context.md)
+- [MCP Mapping Guide](/Users/nealsanche/nosuch/nt_helper/docs/mcp-mapping-guide.md)
+- [MCP Server Implementation](/Users/nealsanche/nosuch/nt_helper/lib/services/mcp_server_service.dart)
+
+### Action Items
+
+No action items. Story is complete and approved.

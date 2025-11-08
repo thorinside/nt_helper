@@ -1,6 +1,6 @@
 # Story 4.9: Remove old MCP tools and consolidate documentation
 
-Status: drafted
+Status: ready-for-dev
 
 ## Story
 
@@ -318,7 +318,7 @@ Example:
 
 ### Context Reference
 
-<!-- Path(s) to story context XML will be added here by context workflow -->
+- `docs/stories/4-9-remove-old-mcp-tools-and-consolidate-documentation.context.xml`
 
 ### Agent Model Used
 

@@ -22,16 +22,16 @@ PHASE_4_COMPLETE: false
 ## Development Queue
 
 STORIES_SEQUENCE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9, 4-10]
-TODO_STORY: 4-8-create-comprehensive-json-schema-documentation-with-mapping-examples
-TODO_TITLE: Create Comprehensive JSON Schema Documentation with Mapping Examples
+TODO_STORY: 4-9-remove-old-mcp-tools-and-consolidate-documentation
+TODO_TITLE: Remove Old MCP Tools and Consolidate Documentation
 IN_PROGRESS_STORY:
 IN_PROGRESS_TITLE:
-STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7]
+STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8]
 
 ## Next Action
 
-NEXT_ACTION: Generate context for story 4-8 (Create Comprehensive JSON Schema Documentation with Mapping Examples)
-NEXT_COMMAND: /bmad:bmm:workflows:story-context
+NEXT_ACTION: Mark story 4-9-remove-old-mcp-tools-and-consolidate-documentation ready for development
+NEXT_COMMAND: /bmad:bmm:workflows:story-ready
 NEXT_AGENT: sm
 
 ## Story Backlog
