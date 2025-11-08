@@ -309,8 +309,16 @@ Since parameter names alone cannot work, we must:
 |-----------|------|-------|-----------------|----------|--------|
 | Clock Divider | clkd | Channels=2 | 13 | ~21 | ❌ MISMATCH |
 | Clock Divider | clkd | Channels=8 | 13 | ~81 | ❌ MISMATCH |
+| Euclidean | eucp | Channels=1 | 15 | 15 | ✅ OK |
+| Euclidean | eucp | Channels=4 | 15 | ~51 | ❌ MISMATCH |
 | Clock Multiplier | clkm | (none) | 9 | 9 | ✅ OK |
 | Elements | nt_elements | (none) | 30 | 30 | ✅ OK |
+
+**Critical Discovery:** Firmware returns **ONLY Channel 1 parameters** regardless of specification:
+- Euclidean with Channels=1: Returns "1:Output", "1:Steps", "1:Pulses", etc. (15 params)
+- Euclidean with Channels=4: Returns **same 15 parameters** with "1:" prefix (channels 2-4 parameters missing!)
+- This appears to be a **firmware design choice**: Only expose Channel 1 parameters for UI/parameter access
+- Suggests channels 2-4 may be controlled indirectly (e.g., via shared parameters or different API)
 
 ---
 

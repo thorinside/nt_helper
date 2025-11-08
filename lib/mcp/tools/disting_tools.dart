@@ -2034,10 +2034,12 @@ class DistingTools {
           }
 
           // Validate specifications if provided
+          final List<int> specValues = [];
           if (specifications != null && specifications.isNotEmpty) {
-            // Check if algorithm allows specifications
-            // For now, we just pass them through - hardware will validate
-            // In future, we can add per-algorithm specification validation
+            // Convert dynamic list to int list
+            specValues.addAll(
+              specifications.whereType<int>(),
+            );
           }
 
           // Add algorithm to preset
@@ -2046,6 +2048,7 @@ class DistingTools {
               algorithmIndex: -1,
               guid: resolvedGuid,
               name: algorithmMetadata.name,
+              specifications: specValues,
             );
             await _controller.addAlgorithm(algorithm);
 
@@ -2086,10 +2089,10 @@ class DistingTools {
                 paramIndex++) {
               final pInfo = parameterInfos[paramIndex];
               final int? liveRawValue =
-                  await _controller.getParameterValue(i, paramIndex);
+                  await _controller.getParameterValue(i, pInfo.parameterNumber);
 
               final paramData = {
-                'parameter_number': paramIndex,
+                'parameter_number': pInfo.parameterNumber,
                 'name': pInfo.name,
                 'min_value': _scaleForDisplay(pInfo.min, pInfo.powerOfTen),
                 'max_value': _scaleForDisplay(pInfo.max, pInfo.powerOfTen),

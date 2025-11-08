@@ -317,18 +317,21 @@ class Algorithm {
   final int algorithmIndex;
   final String guid;
   final String name;
+  final List<int> specifications;
 
   Algorithm({
     required this.algorithmIndex,
     required this.guid,
     required this.name,
+    this.specifications = const [],
   });
 
-  Algorithm copyWith({int? algorithmIndex}) {
+  Algorithm copyWith({int? algorithmIndex, List<int>? specifications}) {
     return Algorithm(
       algorithmIndex: algorithmIndex ?? this.algorithmIndex,
       guid: guid,
       name: name,
+      specifications: specifications ?? this.specifications,
     );
   }
 }

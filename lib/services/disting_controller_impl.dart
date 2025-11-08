@@ -100,9 +100,12 @@ class DistingControllerImpl implements DistingController {
         'Algorithm with GUID ${algorithm.guid} not found in the list of available algorithms.',
       );
     }
-    final specs = algorithmInfo.specifications
-        .map((s) => s.defaultValue)
-        .toList();
+    // Use specifications from Algorithm if provided, otherwise use defaults
+    final specs = algorithm.specifications.isNotEmpty
+        ? algorithm.specifications
+        : algorithmInfo.specifications
+            .map((s) => s.defaultValue)
+            .toList();
     await _distingCubit.onAlgorithmSelected(algorithmInfo, specs);
   }
 
