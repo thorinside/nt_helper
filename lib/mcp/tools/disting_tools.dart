@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math'; // For min, pow functions
 import 'dart:typed_data'; // Added for Uint8List
 
+import 'package:collection/collection.dart';
 import 'package:image/image.dart' as img; // For image processing
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show Algorithm, ParameterInfo, Mapping;
@@ -318,13 +319,11 @@ class DistingTools {
           );
         }
       } else if (parameterNameParam != null) {
-        final matchingParams = paramInfos
-            .where(
-              (p) => p.name.toLowerCase() == parameterNameParam.toLowerCase(),
-            )
-            .toList();
+        final matchingParam = paramInfos.firstWhereOrNull(
+          (p) => p.name.toLowerCase() == parameterNameParam.toLowerCase(),
+        );
 
-        if (matchingParams.isEmpty) {
+        if (matchingParam == null) {
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -333,16 +332,7 @@ class DistingTools {
             ),
           );
         }
-        if (matchingParams.length > 1) {
-          return jsonEncode(
-            convertToSnakeCaseKeys(
-              MCPUtils.buildError(
-                'Parameter name "$parameterNameParam" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.',
-              ),
-            ),
-          );
-        }
-        paramInfo = matchingParams.first;
+        paramInfo = matchingParam;
         targetParameterNumber = paramInfo.parameterNumber;
       }
 
@@ -457,12 +447,14 @@ class DistingTools {
   /// MCP Tool: Gets the value of a specific parameter.
   /// Parameters:
   ///   - slot_index (int, required): The 0-based index of the slot.
-  ///   - parameter_number (int, required): The 0-based index of the parameter within the algorithm.
+  ///   - parameter_number (int, optional): The parameter number.
+  ///   - parameter_name (string, optional): The parameter name (matches first occurrence if duplicates exist).
   /// Returns:
   ///   A JSON string with the parameter value or an error.
   Future<String> getParameterValue(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
     final int? parameterNumber = params['parameter_number'] as int?;
+    final String? parameterName = params['parameter_name'] as String?;
 
     // Validate slot index
     final slotError = MCPUtils.validateSlotIndex(slotIndex);
@@ -470,19 +462,41 @@ class DistingTools {
       return jsonEncode(convertToSnakeCaseKeys(slotError));
     }
 
-    // Validate parameter number
-    final paramError = MCPUtils.validateRequiredParam(
-      parameterNumber,
-      'parameter_number',
-    );
-    if (paramError != null) {
-      return jsonEncode(convertToSnakeCaseKeys(paramError));
+    // Validate that at least one of parameter_number or parameter_name is provided
+    if (parameterNumber == null && parameterName == null) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'Either "parameter_number" or "parameter_name" must be provided.',
+          ),
+        ),
+      );
     }
 
     try {
+      // Resolve parameter number from name if needed
+      int resolvedParameterNumber = parameterNumber ?? -1;
+      if (parameterName != null) {
+        final List<ParameterInfo> paramInfos = await _controller
+            .getParametersForSlot(slotIndex!);
+        final matchingParam = paramInfos.firstWhereOrNull(
+          (p) => p.name.toLowerCase() == parameterName.toLowerCase(),
+        );
+        if (matchingParam == null) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Parameter with name "$parameterName" not found in slot $slotIndex.',
+              ),
+            ),
+          );
+        }
+        resolvedParameterNumber = matchingParam.parameterNumber;
+      }
+
       final int? liveRawValue = await _controller.getParameterValue(
         slotIndex!,
-        parameterNumber!,
+        resolvedParameterNumber,
       );
 
       if (liveRawValue == null) {
@@ -503,13 +517,13 @@ class DistingTools {
       ParameterInfo? paramInfo;
       try {
         paramInfo = paramInfos.firstWhere(
-          (p) => p.parameterNumber == parameterNumber,
+          (p) => p.parameterNumber == resolvedParameterNumber,
         );
       } catch (e) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'Parameter number $parameterNumber not found in slot $slotIndex.',
+              'Parameter number $resolvedParameterNumber not found in slot $slotIndex.',
             ),
           ),
         );
@@ -517,7 +531,7 @@ class DistingTools {
 
       final responseData = {
         'slot_index': slotIndex,
-        'parameter_number': parameterNumber,
+        'parameter_number': resolvedParameterNumber,
         'parameter_name': paramInfo.name,
         'value': _scaleForDisplay(
           liveRawValue,
@@ -529,7 +543,7 @@ class DistingTools {
       if (_isEnumParameter(paramInfo)) {
         final enumValues = await _getParameterEnumValues(
           slotIndex,
-          parameterNumber,
+          resolvedParameterNumber,
         );
         if (enumValues != null) {
           responseData['is_enum'] = true;
