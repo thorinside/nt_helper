@@ -130,6 +130,7 @@ Story {{TODO_STORY}} is in 'drafted' status but needs 'ready-for-dev' status.
 
     <action>Determine appropriate model based on command type:
       - If command contains "review": use {{review_model}}
+      - If command contains "story-context": use {{review_model}}
       - Otherwise: use {{dev_model}}
     </action>
 

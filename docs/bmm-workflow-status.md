@@ -22,15 +22,15 @@ PHASE_4_COMPLETE: false
 ## Development Queue
 
 STORIES_SEQUENCE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8, 4-9, 4-10]
-TODO_STORY: 4-7-implement-show-tool-for-state-inspection
-TODO_TITLE: Implement Show Tool for State Inspection
+TODO_STORY: 4-8-create-comprehensive-json-schema-documentation-with-mapping-examples
+TODO_TITLE: Create Comprehensive JSON Schema Documentation with Mapping Examples
 IN_PROGRESS_STORY:
 IN_PROGRESS_TITLE:
-STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6]
+STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7]
 
 ## Next Action
 
-NEXT_ACTION: Generate context for story 4-7 (Implement Show Tool for State Inspection)
+NEXT_ACTION: Generate context for story 4-8 (Create Comprehensive JSON Schema Documentation with Mapping Examples)
 NEXT_COMMAND: /bmad:bmm:workflows:story-context
 NEXT_AGENT: sm
 

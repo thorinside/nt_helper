@@ -711,6 +711,50 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         }
       },
     );
+
+    server.tool(
+      'show',
+      description:
+          'Show preset, slot, parameter, screen, or routing information with mappings included. Use target to specify what to inspect.',
+      toolInputSchema: const ToolInputSchema(
+        properties: {
+          'target': {
+            'type': 'string',
+            'description':
+                'What to display: "preset" (all slots/parameters), "slot" (single slot), "parameter" (single parameter), "screen" (device screenshot), "routing" (signal flow)',
+            'enum': ['preset', 'slot', 'parameter', 'screen', 'routing'],
+          },
+          'identifier': {
+            'type': ['string', 'integer'],
+            'description':
+                'Required for slot/parameter targets. For slot: integer index (0-31). For parameter: "slot_index:parameter_number" (e.g., "0:5")',
+          },
+        },
+        required: ['target'],
+      ),
+      callback: ({args, extra}) async {
+        try {
+          final resultJson = await tools.show(args ?? {}).timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 10 seconds',
+                }),
+              );
+          return CallToolResult.fromContent(
+            content: [TextContent(text: resultJson)],
+          );
+        } catch (e) {
+          final errorJson = jsonEncode({
+            'success': false,
+            'error': 'Tool execution failed: ${e.toString()}',
+          });
+          return CallToolResult.fromContent(
+            content: [TextContent(text: errorJson)],
+          );
+        }
+      },
+    );
   }
 
   void _registerDistingTools(McpServer server, DistingTools tools) {
