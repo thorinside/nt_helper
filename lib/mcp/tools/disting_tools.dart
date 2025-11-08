@@ -5,6 +5,7 @@ import 'dart:typed_data'; // Added for Uint8List
 import 'package:image/image.dart' as img; // For image processing
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show Algorithm, ParameterInfo, Mapping;
+import 'package:nt_helper/models/packed_mapping_data.dart' show MidiMappingType;
 import 'package:nt_helper/cubit/disting_cubit.dart'
     show DistingCubit, DistingStateSynchronized;
 // Re-added for Algorithm, ParameterInfo etc.
@@ -2378,8 +2379,8 @@ class DistingTools {
     }
   }
 
-  /// Edits a single slot with slot-level granularity
-  /// Applies only necessary changes to the specified slot while preserving other slots
+  /// Edits a single slot with slot-level or parameter-level granularity
+  /// Applies only necessary changes to the specified slot or parameter while preserving other data
   Future<String> editSlot(Map<String, dynamic> params) async {
     try {
       // Step 1: Validate input parameters BEFORE accessing device
@@ -2392,10 +2393,14 @@ class DistingTools {
         );
       }
 
+      if (target == 'parameter') {
+        return editParameter(params);
+      }
+
       if (target != 'slot') {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('Invalid target "$target". Must be "slot".'),
+            MCPUtils.buildError('Invalid target "$target". Must be "slot" or "parameter".'),
           ),
         );
       }
@@ -2745,6 +2750,444 @@ class DistingTools {
         ),
       );
     }
+  }
+
+  /// Edits a single parameter with parameter-level granularity
+  /// Allows updating parameter value and/or mapping without sending full slot data
+  Future<String> editParameter(Map<String, dynamic> params) async {
+    try {
+      // Step 1: Validate input parameters
+      final int? slotIndex = params['slot_index'] as int?;
+      if (slotIndex == null) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('${MCPConstants.missingParamError}: "slot_index"'),
+          ),
+        );
+      }
+
+      // Validate slot_index range
+      if (slotIndex < 0 || slotIndex >= maxSlots) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'slot_index must be 0-${maxSlots - 1}, got $slotIndex',
+            ),
+          ),
+        );
+      }
+
+      // Get parameter identifier (name or number)
+      final dynamic parameterIdent = params['parameter'];
+      if (parameterIdent == null) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('${MCPConstants.missingParamError}: "parameter"'),
+          ),
+        );
+      }
+
+      // Get value and mapping (at least one must be provided)
+      final dynamic value = params['value'];
+      final Map<String, dynamic>? mapping = params['mapping'] as Map<String, dynamic>?;
+
+      if (value == null && (mapping == null || mapping.isEmpty)) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Must provide either "value" or "mapping"'),
+          ),
+        );
+      }
+
+      // Step 2: Validate connection mode
+      final state = _distingCubit.state;
+      if (state is! DistingStateSynchronized) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'Device is not in a synchronized state, cannot edit parameter. Current state: ${state.runtimeType}',
+            ),
+          ),
+        );
+      }
+
+      // Step 3: Get current slot state and parameter info
+      final Algorithm? algorithm = await _controller.getAlgorithmInSlot(slotIndex);
+      if (algorithm == null) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Slot $slotIndex is empty, no algorithm loaded'),
+          ),
+        );
+      }
+
+      // Step 4: Resolve parameter identifier (by number or by name)
+      final List<ParameterInfo> parameters =
+          await _controller.getParametersForSlot(slotIndex);
+
+      int? parameterNumber;
+      String? parameterName;
+
+      if (parameterIdent is int) {
+        // Parameter identified by number
+        parameterNumber = parameterIdent;
+        if (parameterNumber < 0 || parameterNumber >= parameters.length) {
+          final availableNames =
+              parameters.map((p) => p.name).toList().join(', ');
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Parameter number $parameterNumber out of range (0-${parameters.length - 1}). Available parameters: $availableNames',
+              ),
+            ),
+          );
+        }
+        parameterName = parameters[parameterNumber].name;
+      } else if (parameterIdent is String) {
+        // Parameter identified by name (exact match)
+        bool found = false;
+        for (int i = 0; i < parameters.length; i++) {
+          if (parameters[i].name == parameterIdent) {
+            parameterNumber = i;
+            parameterName = parameterIdent;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          final availableNames =
+              parameters.map((p) => p.name).toList().join(', ');
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Parameter "$parameterIdent" not found. Available parameters: $availableNames',
+              ),
+            ),
+          );
+        }
+      } else {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Parameter must be a string name or integer number'),
+          ),
+        );
+      }
+
+      final ParameterInfo paramInfo = parameters[parameterNumber!];
+
+      // Step 5: Validate value (if provided)
+      if (value != null) {
+        if (value is! num) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError('Value must be a number'),
+            ),
+          );
+        }
+
+        final numValue = value.toInt();
+        if (numValue < paramInfo.min || numValue > paramInfo.max) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Value $numValue out of range for parameter "$parameterName" (${paramInfo.min}-${paramInfo.max})',
+              ),
+            ),
+          );
+        }
+      }
+
+      // Step 6: Validate mapping (if provided)
+      if (mapping != null && mapping.isNotEmpty) {
+        final validationError =
+            await _validateMappingFields(slotIndex, parameterNumber, mapping);
+        if (validationError != null) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              validationError,
+            ),
+          );
+        }
+      }
+
+      // Step 7: Apply changes
+      // Update value if provided
+      if (value != null) {
+        await _controller.updateParameterValue(
+          slotIndex,
+          parameterNumber,
+          value.toInt(),
+        );
+      }
+
+      // Update mappings if provided
+      if (mapping != null && mapping.isNotEmpty) {
+        await _applyMappingUpdates(
+          slotIndex,
+          parameterNumber,
+          mapping,
+        );
+      }
+
+      // Auto-save preset
+      await _controller.savePreset();
+
+      // Step 8: Format return value
+      final updatedValue =
+          await _controller.getParameterValue(slotIndex, parameterNumber);
+      final scaledValue = _scaleForDisplay(updatedValue ?? 0, paramInfo.powerOfTen);
+
+      final Map<String, dynamic> result = {
+        'slot_index': slotIndex,
+        'parameter_number': parameterNumber,
+        'parameter_name': parameterName,
+        'value': scaledValue,
+      };
+
+      // Include mappings if any are enabled
+      final updatedMapping =
+          await _controller.getParameterMapping(slotIndex, parameterNumber);
+      final mappingJson = await _buildMappingJson(updatedMapping);
+      if (mappingJson != null && (mappingJson as Map).isNotEmpty) {
+        result['mapping'] = mappingJson;
+      }
+
+      return jsonEncode(convertToSnakeCaseKeys(result));
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError('Error in editParameter tool: ${e.toString()}'),
+        ),
+      );
+    }
+  }
+
+  /// Validates all mapping fields
+  Future<Map<String, dynamic>?> _validateMappingFields(
+    int slotIndex,
+    int parameterNumber,
+    Map<String, dynamic> mapping,
+  ) async {
+    for (final entry in mapping.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      if (key == 'cv' && value is Map<String, dynamic>) {
+        final cvInput = value['cv_input'];
+        if (cvInput != null) {
+          if (cvInput is! int || cvInput < 0 || cvInput > 12) {
+            return MCPUtils.buildError(
+              'CV input must be 0-12, got $cvInput',
+            );
+          }
+        }
+      } else if (key == 'midi' && value is Map<String, dynamic>) {
+        final midiChannel = value['midi_channel'];
+        if (midiChannel != null) {
+          if (midiChannel is! int || midiChannel < 0 || midiChannel > 15) {
+            return MCPUtils.buildError(
+              'MIDI channel must be 0-15, got $midiChannel',
+            );
+          }
+        }
+
+        final midiCc = value['midi_cc'];
+        if (midiCc != null) {
+          if (midiCc is! int || midiCc < 0 || midiCc > 128) {
+            return MCPUtils.buildError(
+              'MIDI CC must be 0-128, got $midiCc',
+            );
+          }
+        }
+
+        final midiType = value['midi_type'];
+        if (midiType != null) {
+          final validTypes = [
+            'cc',
+            'note_momentary',
+            'note_toggle',
+            'cc_14bit_low',
+            'cc_14bit_high'
+          ];
+          if (!validTypes.contains(midiType)) {
+            return MCPUtils.buildError(
+              'MIDI type must be one of: ${validTypes.join(", ")}, got "$midiType"',
+            );
+          }
+        }
+      } else if (key == 'i2c' && value is Map<String, dynamic>) {
+        final i2cCc = value['i2c_cc'];
+        if (i2cCc != null) {
+          if (i2cCc is! int || i2cCc < 0 || i2cCc > 255) {
+            return MCPUtils.buildError(
+              'i2c CC must be 0-255, got $i2cCc',
+            );
+          }
+        }
+      } else if (key == 'performance_page' && value != null) {
+        if (value is! int || value < 0 || value > 15) {
+          return MCPUtils.buildError(
+            'Performance page must be 0-15, got $value',
+          );
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Applies mapping updates while preserving unspecified mappings
+  Future<void> _applyMappingUpdates(
+    int slotIndex,
+    int parameterNumber,
+    Map<String, dynamic> desiredMapping,
+  ) async {
+    // If empty mapping object, preserve all existing mappings
+    if (desiredMapping.isEmpty) {
+      return;
+    }
+
+    // Get the current mapping to use as base for preservation
+    final Mapping? existing =
+        await _controller.getParameterMapping(slotIndex, parameterNumber);
+
+    if (existing == null) {
+      return; // No current mapping to update
+    }
+
+    // Build updated mapping by preserving omitted fields
+    var updatedPacked = existing.packedMappingData;
+
+    // Apply CV mapping updates if provided
+    if (desiredMapping.containsKey('cv')) {
+      final cvData = desiredMapping['cv'] as Map<String, dynamic>?;
+      if (cvData != null) {
+        updatedPacked = updatedPacked.copyWith(
+          source: cvData['source'] as int? ?? updatedPacked.source,
+          cvInput: cvData['cv_input'] as int? ?? updatedPacked.cvInput,
+          isUnipolar: cvData['is_unipolar'] as bool? ?? updatedPacked.isUnipolar,
+          isGate: cvData['is_gate'] as bool? ?? updatedPacked.isGate,
+          volts: cvData['volts'] as int? ?? updatedPacked.volts,
+          delta: cvData['delta'] as int? ?? updatedPacked.delta,
+        );
+      }
+    }
+
+    // Apply MIDI mapping updates if provided
+    if (desiredMapping.containsKey('midi')) {
+      final midiData = desiredMapping['midi'] as Map<String, dynamic>?;
+      if (midiData != null) {
+        updatedPacked = updatedPacked.copyWith(
+          midiChannel: midiData['midi_channel'] as int? ?? updatedPacked.midiChannel,
+          midiCC: midiData['midi_cc'] as int? ?? updatedPacked.midiCC,
+          isMidiEnabled: midiData['is_midi_enabled'] as bool? ?? updatedPacked.isMidiEnabled,
+          isMidiSymmetric: midiData['is_midi_symmetric'] as bool? ?? updatedPacked.isMidiSymmetric,
+          isMidiRelative: midiData['is_midi_relative'] as bool? ?? updatedPacked.isMidiRelative,
+          midiMin: midiData['midi_min'] as int? ?? updatedPacked.midiMin,
+          midiMax: midiData['midi_max'] as int? ?? updatedPacked.midiMax,
+        );
+
+        // Handle midi_type conversion if provided
+        if (midiData.containsKey('midi_type')) {
+          final midiType = midiData['midi_type'] as String?;
+          if (midiType != null) {
+            final mappingTypeValue = _midiTypeStringToValue(midiType);
+            if (mappingTypeValue >= 0) {
+              updatedPacked = updatedPacked.copyWith(
+                midiMappingType: MidiMappingType.values[mappingTypeValue],
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Apply i2c mapping updates if provided
+    if (desiredMapping.containsKey('i2c')) {
+      final i2cData = desiredMapping['i2c'] as Map<String, dynamic>?;
+      if (i2cData != null) {
+        updatedPacked = updatedPacked.copyWith(
+          i2cCC: i2cData['i2c_cc'] as int? ?? updatedPacked.i2cCC,
+          isI2cEnabled: i2cData['is_i2c_enabled'] as bool? ?? updatedPacked.isI2cEnabled,
+          isI2cSymmetric: i2cData['is_i2c_symmetric'] as bool? ?? updatedPacked.isI2cSymmetric,
+          i2cMin: i2cData['i2c_min'] as int? ?? updatedPacked.i2cMin,
+          i2cMax: i2cData['i2c_max'] as int? ?? updatedPacked.i2cMax,
+        );
+      }
+    }
+
+    // Apply performance page update if provided
+    if (desiredMapping.containsKey('performance_page')) {
+      final perfPage = desiredMapping['performance_page'] as int?;
+      if (perfPage != null) {
+        updatedPacked = updatedPacked.copyWith(
+          perfPageIndex: perfPage,
+        );
+      }
+    }
+
+    // Save the updated mapping via DistingCubit
+    await _distingCubit.saveMapping(
+      existing.algorithmIndex,
+      existing.parameterNumber,
+      updatedPacked,
+    );
+  }
+
+  /// Builds mapping JSON object from current mapping state
+  /// Only includes enabled mappings (disabled mappings omitted per AC #16)
+  Future<Map<String, dynamic>?> _buildMappingJson(
+    Mapping? mapping,
+  ) async {
+    if (mapping == null) {
+      return null;
+    }
+
+    final result = <String, dynamic>{};
+    final packed = mapping.packedMappingData;
+
+    // Include CV mapping if enabled
+    if (packed.cvInput >= 0) {
+      result['cv'] = {
+        'source': packed.source,
+        'cv_input': packed.cvInput,
+        'is_unipolar': packed.isUnipolar,
+        'is_gate': packed.isGate,
+        'volts': packed.volts,
+        'delta': packed.delta,
+      };
+    }
+
+    // Include MIDI mapping if enabled
+    if (packed.isMidiEnabled) {
+      result['midi'] = {
+        'is_midi_enabled': packed.isMidiEnabled,
+        'midi_channel': packed.midiChannel,
+        'midi_type': _midiTypeValueToString(packed.midiMappingType.value),
+        'midi_cc': packed.midiCC,
+        'is_midi_symmetric': packed.isMidiSymmetric,
+        'is_midi_relative': packed.isMidiRelative,
+        'midi_min': packed.midiMin,
+        'midi_max': packed.midiMax,
+      };
+    }
+
+    // Include i2c mapping if enabled
+    if (packed.isI2cEnabled) {
+      result['i2c'] = {
+        'is_i2c_enabled': packed.isI2cEnabled,
+        'i2c_cc': packed.i2cCC,
+        'is_i2c_symmetric': packed.isI2cSymmetric,
+        'i2c_min': packed.i2cMin,
+        'i2c_max': packed.i2cMax,
+      };
+    }
+
+    // Include performance page if assigned
+    if (packed.perfPageIndex > 0) {
+      result['performance_page'] = packed.perfPageIndex;
+    }
+
+    return result.isNotEmpty ? result : null;
   }
 
   /// Validates the diff before applying changes
@@ -3151,6 +3594,42 @@ class DistingTools {
       existing.parameterNumber,
       updatedPacked,
     );
+  }
+
+  /// Converts MIDI type string (snake_case) to enum value
+  int _midiTypeStringToValue(String typeString) {
+    switch (typeString) {
+      case 'cc':
+        return 0;
+      case 'note_momentary':
+        return 1;
+      case 'note_toggle':
+        return 2;
+      case 'cc_14bit_low':
+        return 3;
+      case 'cc_14bit_high':
+        return 4;
+      default:
+        return -1; // Invalid type
+    }
+  }
+
+  /// Converts MIDI type enum value to string (snake_case)
+  String _midiTypeValueToString(int typeValue) {
+    switch (typeValue) {
+      case 0:
+        return 'cc';
+      case 1:
+        return 'note_momentary';
+      case 2:
+        return 'note_toggle';
+      case 3:
+        return 'cc_14bit_low';
+      case 4:
+        return 'cc_14bit_high';
+      default:
+        return 'cc'; // Default fallback
+    }
   }
 
   /// Handles algorithm reordering to match desired slot positions (AC #10)

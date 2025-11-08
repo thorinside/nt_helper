@@ -1042,13 +1042,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     server.tool(
       'edit',
       description:
-          'Edit slot with slot-level granularity. Accepts target "slot", slot_index (0-31), and data object with algorithm, parameters, and optional name. Applies only necessary changes to specified slot. Device must be in connected mode.',
+          'Edit preset, slot, or parameter with varying granularity. For slot-level: target "slot", slot_index (0-31), and data object with algorithm, parameters, and optional name. For parameter-level: target "parameter", slot_index (0-31), parameter (name or number), optional value, optional mapping. Device must be in connected mode.',
       toolInputSchema: const ToolInputSchema(
         properties: {
           'target': {
             'type': 'string',
-            'enum': ['slot'],
-            'description': 'Target type (must be "slot")',
+            'enum': ['slot', 'parameter'],
+            'description': 'Target type: "slot" for slot-level edits, "parameter" for parameter-level edits',
           },
           'slot_index': {
             'type': 'integer',
@@ -1056,10 +1056,47 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
             'maximum': 31,
             'description': 'Slot index (0-31)',
           },
+          'parameter': {
+            'description':
+                'For target "parameter": parameter identifier (string name or integer number, 0-based). Required for parameter target.',
+            'oneOf': [
+              {'type': 'string'},
+              {'type': 'integer'},
+            ],
+          },
+          'value': {
+            'type': 'number',
+            'description':
+                'For target "parameter": optional parameter value. If omitted, mapping must be provided.',
+          },
+          'mapping': {
+            'type': 'object',
+            'description':
+                'For target "parameter": optional mapping with cv, midi, i2c, performance_page fields. If omitted, value must be provided.',
+            'properties': {
+              'cv': {
+                'type': 'object',
+                'description': 'CV mapping (cv_input 0-12)',
+              },
+              'midi': {
+                'type': 'object',
+                'description':
+                    'MIDI mapping (midi_channel 0-15, midi_cc 0-128, midi_type enum, is_midi_enabled boolean)',
+              },
+              'i2c': {
+                'type': 'object',
+                'description': 'i2c mapping (i2c_cc 0-255)',
+              },
+              'performance_page': {
+                'type': 'integer',
+                'description': 'Performance page index (0-15)',
+              },
+            },
+          },
           'data': {
             'type': 'object',
             'description':
-                'Slot state with optional algorithm, parameters, and name. Algorithm must have guid or name. Parameters array items have parameter_number, optional value, and optional mapping with cv, midi, i2c, performance_page fields.',
+                'For target "slot": Slot state with optional algorithm, parameters, and name. Algorithm must have guid or name. Parameters array items have parameter_number, optional value, and optional mapping with cv, midi, i2c, performance_page fields.',
             'properties': {
               'algorithm': {
                 'type': 'object',
@@ -1129,7 +1166,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
             },
           },
         },
-        required: ['target', 'slot_index', 'data'],
+        required: ['target', 'slot_index'],
       ),
       callback: ({args, extra}) async {
         final resultJson = await tools.editSlot(args ?? {});

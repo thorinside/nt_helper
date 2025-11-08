@@ -4,7 +4,7 @@
     <storyId>4.6</storyId>
     <title>Implement edit tool with parameter-level granularity</title>
     <status>drafted</status>
-    <generatedAt>2025-11-07</generatedAt>
+    <generatedAt>2025-11-08</generatedAt>
     <generator>BMAD Story Context Workflow</generator>
     <sourceStoryPath>docs/stories/4-6-implement-edit-tool-with-parameter-level-granularity.md</sourceStoryPath>
   </metadata>
@@ -15,16 +15,61 @@
     <soThat>I can make quick parameter tweaks efficiently</soThat>
     <tasks>
 - Extend edit tool schema for parameter target (AC: 1-2, 7, 18)
+  - Add "parameter" target option to edit tool in tool schema
+  - Add slot_index, parameter, value, mapping parameters with proper documentation
+  - Document all mapping fields and valid ranges (CV, MIDI, i2c, performance_page)
+
 - Implement parameter lookup logic (AC: 2-3, 11)
+  - Read slot state from DistingCubit at specified index
+  - Support parameter lookup by number (int, 0-based)
+  - Support parameter lookup by name (string, exact match)
+  - Return error with available names if lookup fails
+
 - Implement validation logic (AC: 4-6, 10, 12-13, 17)
+  - Validate slot_index in range 0-31
+  - Validate at least one of value or mapping is provided
+  - Validate value within parameter min/max range if provided
+  - Validate all mapping fields per AC 13 ranges
+  - Return detailed error messages for validation failures
+
 - Implement partial mapping updates (AC: 8-9)
+  - Support empty mapping object {} (preserve all existing)
+  - Support partial updates: only specified mapping types updated
+  - Examples: {midi: {...}}, {cv: {...}, performance_page: 1}
+
 - Implement apply changes and return state (AC: 14-16)
+  - Call updateParameterValue() if value provided
+  - Update mapping via controller methods if mapping provided
+  - Call auto-save after successful changes
+  - Query updated state and format return with disabled mappings omitted
+
 - Testing and validation (AC: 19-20)
+  - Unit tests for parameter lookup (number and name)
+  - Test value/mapping/combined updates
+  - Test partial mapping updates
+  - Test validation failures and error messages
+  - Run flutter analyze and flutter test
     </tasks>
   </story>
 
   <acceptanceCriteria>
-1-20. [See story file for complete criteria with full mapping field documentation]
+1. Parameter identification by name (exact match) or number (0-based)
+2. Support both value and/or mapping updates
+3. Partial mapping updates: only specified types updated, others preserved
+4. Validation ranges: MIDI channel 0-15, CC 0-128, CV input 0-12, i2c CC 0-255, performance_page 0-15
+5. Empty mapping object {} is valid and preserves all existing mappings
+6. Must provide either value or mapping (or both), error if both omitted
+7. snake_case JSON field names throughout
+8. Auto-save preset after successful changes
+9. Return parameter state with disabled mappings omitted
+10. Slot index validation: 0-31
+11. Parameter value validation: within min/max range
+12. MIDI type validation: "cc", "note_momentary", "note_toggle", "cc_14bit_low", "cc_14bit_high"
+13. CV source validation for algorithm output index references
+14. Error messages clear and actionable (list available names if not found)
+15. JSON schema complete with all mapping field docs and examples
+16. flutter analyze passes with zero warnings
+17. All tests pass
   </acceptanceCriteria>
 
   <artifacts>
@@ -35,72 +80,177 @@
         <section>Story E4.6: edit Tool - Parameter Level</section>
         <snippet>Parameter identification (name or number). Value and/or mapping updates. Partial mapping updates. Strict validation. Disabled mappings omitted from response.</snippet>
       </doc>
+      <doc>
+        <path>docs/stories/4-5-implement-edit-tool-with-slot-level-granularity.md</path>
+        <title>Story 4.5: Implement edit tool with slot-level granularity</title>
+        <section>Acceptance Criteria and mapping update patterns</section>
+        <snippet>Partial mapping updates reference implementation. Mapping field structure and validation patterns.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/4-4-implement-edit-tool-with-preset-level-granularity.md</path>
+        <title>Story 4.4: Implement edit tool with preset-level granularity</title>
+        <section>Edit tool design patterns</section>
+        <snippet>Foundation for edit tool implementation with value/mapping handling.</snippet>
+      </doc>
     </docs>
     <code>
       <file>
-        <path>lib/cubit/disting_state.dart</path>
-        <kind>model</kind>
-        <symbol>ParameterInfo, MappedParameter</symbol>
-        <reason>Parameter model with name, number, value, min, max, unit, mapping</reason>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>tool-implementation</kind>
+        <symbol>DistingTools class, editSlot method (reference)</symbol>
+        <lines>1-50, 200-400</lines>
+        <reason>Contains tool implementation pattern, parameter scaling, and enum handling. Will extend with editParameter method.</reason>
       </file>
       <file>
         <path>lib/services/disting_controller.dart</path>
         <kind>interface</kind>
-        <symbol>DistingController</symbol>
-        <reason>Methods: updateParameterValue, getParametersForSlot</reason>
+        <symbol>DistingController abstract interface</symbol>
+        <lines>1-150</lines>
+        <reason>Defines controller methods: getParametersForSlot, updateParameterValue, getParameterValue, getParameterMapping</reason>
+      </file>
+      <file>
+        <path>lib/services/disting_controller_impl.dart</path>
+        <kind>implementation</kind>
+        <symbol>DistingControllerImpl class</symbol>
+        <reason>Implementation of controller methods for parameter value/mapping updates and retrieval</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_state.dart</path>
+        <kind>model</kind>
+        <symbol>Slot, MappedParameter, ParameterInfo</symbol>
+        <reason>State structure with parameters, values, and mappings. MappedParameter provides access to parameter details.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>state-management</kind>
+        <symbol>DistingCubit class</symbol>
+        <reason>Central state access. Provides synchronized Slots with parameters, values, and mappings for lookup and return value formatting.</reason>
       </file>
       <file>
         <path>lib/models/packed_mapping_data.dart</path>
         <kind>model</kind>
-        <symbol>PackedMappingData</symbol>
-        <reason>Mapping structure - must translate to/from snake_case JSON</reason>
+        <symbol>PackedMappingData, MidiMappingType enum</symbol>
+        <reason>Internal mapping representation (camelCase). Must translate to/from snake_case JSON in tool schema.</reason>
+      </file>
+      <file>
+        <path>lib/util/case_converter.dart</path>
+        <kind>utility</kind>
+        <symbol>CaseConverter class</symbol>
+        <reason>Converts between camelCase (internal) and snake_case (MCP API)</reason>
+      </file>
+      <file>
+        <path>test/mcp/tools/edit_slot_tool_test.dart</path>
+        <kind>test</kind>
+        <symbol>Test patterns and setup</symbol>
+        <reason>Reference for test structure, fixtures, mock database initialization, and assertion patterns</reason>
+      </file>
+      <file>
+        <path>test/mcp/tools/edit_preset_tool_test.dart</path>
+        <kind>test</kind>
+        <symbol>Parameter validation test patterns</symbol>
+        <reason>Reference for parameter validation and error handling tests</reason>
       </file>
     </code>
     <dependencies>
-      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+      <package name="flutter" source="sdk" purpose="Flutter framework" />
+      <package name="flutter_test" source="sdk" purpose="Test framework" />
+      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration and schema" />
+      <package name="freezed_annotation" source="pub.dev" purpose="State models" />
+      <package name="json_annotation" source="pub.dev" purpose="JSON serialization" />
     </dependencies>
   </artifacts>
 
   <constraints>
-- Parameter identification by name (exact match) or number (0-based)
-- Must provide either value or mapping (or both)
-- Partial mapping updates: only specified types updated
-- Disabled mappings omitted from return value
-- Validation ranges: MIDI channel 0-15, CC 0-128, CV input 0-12, i2c CC 0-255, performance_page 0-15
-- snake_case for all JSON fields
-- Auto-save after changes
+- Parameter identification: Support both name (exact match, case-sensitive) and number (0-based index)
+- Mapping updates: Only update specified mapping types, preserve others
+- Empty mapping object {} valid and preserves all existing mappings
+- Partial updates example: {midi: {...}} updates MIDI only, preserves CV/i2c/performance_page
+- Validation: Must validate all ranges (MIDI channel 0-15, CC 0-128, CV input 0-12, i2c CC 0-255, performance_page 0-15)
+- Disabled mappings: Omitted from return value. Only enabled mappings (is_enabled=true or field > 0) included.
+- snake_case: All JSON fields in request and response use snake_case naming
+- Auto-save: Successful edits trigger automatic preset save to keep hardware in sync
+- Parameter lookup: If name not found, error message lists available parameter names for that slot
+- Value scaling: May need to apply powerOfTen scaling for display (see disting_tools.dart _scaleForDisplay)
+- Error handling: Fail fast on first validation error, no partial changes applied
   </constraints>
 
   <interfaces>
     <interface>
       <name>edit tool (parameter target)</name>
       <kind>mcp-tool</kind>
-      <signature>{ "target": "parameter", "slot_index": N, "parameter": string|int, "value": number, "mapping": {...} }</signature>
-      <returns>{ slot_index, parameter_number, parameter_name, value, mapping (if enabled) }</returns>
-      <usage>Quick parameter tweaks by name or number</usage>
+      <signature>{
+  "target": "parameter",
+  "slot_index": N,
+  "parameter": string|int,
+  "value": number (optional),
+  "mapping": {...} (optional)
+}</signature>
+      <returns>{
+  "slot_index": N,
+  "parameter_number": N,
+  "parameter_name": "...",
+  "value": N,
+  "mapping": {
+    "cv": {...},
+    "midi": {...},
+    "i2c": {...},
+    "performance_page": N
+  } (only if enabled mappings exist)
+}</returns>
+      <usage>Quick parameter tweaks: edit tool edit --target=parameter --slot_index=0 --parameter=5 --value=64</usage>
+    </interface>
+    <interface>
+      <name>DistingController.updateParameterValue()</name>
+      <kind>backend-method</kind>
+      <signature>Future&lt;void&gt; updateParameterValue(int slotIndex, int parameterNumber, dynamic value)</signature>
+      <path>lib/services/disting_controller.dart</path>
+    </interface>
+    <interface>
+      <name>DistingController.getParametersForSlot()</name>
+      <kind>backend-method</kind>
+      <signature>Future&lt;List&lt;ParameterInfo&gt;&gt; getParametersForSlot(int slotIndex)</signature>
+      <path>lib/services/disting_controller.dart</path>
+    </interface>
+    <interface>
+      <name>DistingCubit.state (synchronized)</name>
+      <kind>state-access</kind>
+      <signature>DistingStateSynchronized with slots, parameters, values, mappings</signature>
+      <usage>Lookup parameter by name/number, format return value with current state</usage>
     </interface>
   </interfaces>
 
   <tests>
     <standards>
-Unit tests for parameter lookup (by number and by name). Test value updates, mapping updates, partial updates, validation.
+Unit tests for all parameter operations. Test fixtures use in-memory database and mock DistingCubit. Tests cover parameter lookup by number and name, value updates, mapping updates (full and partial), validation boundaries, and error messages. Integration tests verify end-to-end parameter modifications.
     </standards>
     <locations>
 test/mcp/tools/edit_parameter_tool_test.dart (new file)
+test/mcp/tools/ (existing patterns for fixtures and setup)
     </locations>
     <ideas>
-- Test parameter lookup by number
-- Test parameter lookup by name (exact match)
-- Test parameter not found error (with available names listed)
-- Test update value only
-- Test update mapping only
-- Test update both value and mapping
-- Test partial mapping update (MIDI only)
-- Test empty mapping object (preserve all)
-- Test validation: value out of range
-- Test validation: MIDI channel out of range
-- Test validation: neither value nor mapping provided
-- Test disabled mappings omitted from return
+- Test parameter lookup by number (0-based indexing)
+- Test parameter lookup by name (exact case-sensitive match)
+- Test parameter not found error (lists available names)
+- Test update value only (verify mapping preserved)
+- Test update mapping only (verify value preserved)
+- Test update value and mapping together
+- Test partial mapping update - MIDI only (preserve CV/i2c/performance_page)
+- Test partial mapping update - CV only (preserve MIDI/i2c/performance_page)
+- Test partial mapping update - combined {midi: {...}, performance_page: 1}
+- Test empty mapping object {} (preserve all existing mappings)
+- Test validation: slot_index out of range (negative, > 31)
+- Test validation: value out of range (below min or above max)
+- Test validation: MIDI channel out of range (< 0 or > 15)
+- Test validation: MIDI CC out of range (< 0 or > 128)
+- Test validation: CV input out of range (< 0 or > 12)
+- Test validation: i2c CC out of range (< 0 or > 255)
+- Test validation: performance_page out of range (< 0 or > 15)
+- Test error when both value and mapping omitted
+- Test disabled mappings omitted from return value
+- Test enabled mappings included in return value
+- Test return value format: slot_index, parameter_number, parameter_name, value
+- Test snake_case in JSON request and response
+- Test auto-save triggered after successful update
     </ideas>
   </tests>
 </story-context>
