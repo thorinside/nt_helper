@@ -30,9 +30,9 @@ STORIES_DONE: [4-1, 4-2, 4-3, 4-4, 4-5, 4-6, 4-7, 4-8]
 
 ## Next Action
 
-NEXT_ACTION: Mark story 4-9-remove-old-mcp-tools-and-consolidate-documentation ready for development
-NEXT_COMMAND: /bmad:bmm:workflows:story-ready
-NEXT_AGENT: sm
+NEXT_ACTION: Develop story 4-9 (Remove Old MCP Tools and Consolidate Documentation)
+NEXT_COMMAND: /bmad:bmm:workflows:dev-story
+NEXT_AGENT: dev
 
 ## Story Backlog
 

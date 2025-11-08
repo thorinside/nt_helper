@@ -617,102 +617,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     );
 
     server.tool(
-      'get_algorithm_details',
-      description:
-          'Get algorithm metadata by GUID or name. Supports fuzzy matching >=70%.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'algorithm_guid': {'type': 'string', 'description': 'Algorithm GUID'},
-          'algorithm_name': {'type': 'string', 'description': 'Algorithm name'},
-          'expand_features': {
-            'type': 'boolean',
-            'description': 'Expand parameters',
-            'default': false,
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        try {
-          // Add a timeout to prevent hanging
-          final resultJson = await tools
-              .getAlgorithmDetails(args ?? {})
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => jsonEncode({
-                  'success': false,
-                  'error': 'Tool execution timed out after 5 seconds',
-                  'requested_algorithm':
-                      args?['algorithm_guid'] ??
-                      args?['algorithm_name'] ??
-                      'unknown',
-                }),
-              );
-          return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)],
-          );
-        } catch (e) {
-          final errorJson = jsonEncode({
-            'success': false,
-            'error': 'Tool execution failed: ${e.toString()}',
-          });
-          return CallToolResult.fromContent(
-            content: [TextContent(text: errorJson)],
-          );
-        }
-      },
-    );
-
-    server.tool(
-      'list_algorithms',
-      description: 'List algorithms with optional category/text filtering.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'category': {'type': 'string', 'description': 'Filter by category'},
-          'query': {'type': 'string', 'description': 'Text search filter'},
-        },
-      ),
-      callback: ({args, extra}) async {
-        try {
-          final resultJson = await tools.listAlgorithms(args ?? {});
-          return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)],
-          );
-        } catch (e) {
-          final errorJson = jsonEncode({
-            'success': false,
-            'error': 'Tool execution failed: ${e.toString()}',
-          });
-          return CallToolResult.fromContent(
-            content: [TextContent(text: errorJson)],
-          );
-        }
-      },
-    );
-
-    server.tool(
-      'get_routing',
-      description:
-          'Get current routing state. Always use physical names (Input N, Output N, Aux N, None).',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        try {
-          final resultJson = await tools.getCurrentRoutingState(args ?? {});
-          return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)],
-          );
-        } catch (e) {
-          final errorJson = jsonEncode({
-            'success': false,
-            'error': 'Tool execution failed: ${e.toString()}',
-          });
-          return CallToolResult.fromContent(
-            content: [TextContent(text: errorJson)],
-          );
-        }
-      },
-    );
-
-    server.tool(
       'show',
       description:
           'Show preset, slot, parameter, screen, or routing information. Returns mappings for enabled CV/MIDI/i2c/performance page controls. Disabled mappings omitted from output. See docs/mcp-mapping-guide.md for mapping field details.',
@@ -758,197 +662,12 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
   }
 
   void _registerDistingTools(McpServer server, DistingTools tools) {
-    server.tool(
-      'get_current_preset',
-      description:
-          'Get preset with slots and parameters. Use parameter_number from this for set/get_parameter_value.',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.getCurrentPreset(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'add_algorithm',
-      description:
-          'Add algorithm to first available slot. Use GUID or name (fuzzy matching >=70%).',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'algorithm_guid': {'type': 'string', 'description': 'Algorithm GUID'},
-          'algorithm_name': {'type': 'string', 'description': 'Algorithm name'},
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.addAlgorithm(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'remove_algorithm',
-      description:
-          'Remove algorithm from slot. WARNING: Subsequent algorithms shift down.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.removeAlgorithm(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'set_parameter_value',
-      description:
-          'Set parameter value. Use parameter_number from get_current_preset OR parameter_name.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-          'parameter_number': {
-            'type': 'integer',
-            'description': 'From get_current_preset',
-          },
-          'parameter_name': {
-            'type': 'string',
-            'description': 'Parameter name (must be unique)',
-          },
-          'value': {
-            'type': 'number',
-            'description': 'Value within parameter min/max',
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.setParameterValue(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'get_parameter_value',
-      description:
-          'Get parameter value. Use parameter_number from get_current_preset.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-          'parameter_number': {
-            'type': 'integer',
-            'description': 'From get_current_preset',
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.getParameterValue(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'get_parameter_enum_values',
-      description: 'Get available enum values for an enum parameter',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-          'parameter_number': {
-            'type': 'integer',
-            'description': 'Parameter number (0-based)',
-          },
-          'parameter_name': {
-            'type': 'string',
-            'description': 'Parameter name (alternative to number)',
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.getParameterEnumValues(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    // Register additional tools (continuing with existing pattern)
+    // Register new/edit tools
     _registerPresetTools(server, tools);
-    _registerMovementTools(server, tools);
-    _registerBatchTools(server, tools);
     _registerUtilityTools(server, tools);
   }
 
   void _registerPresetTools(McpServer server, DistingTools tools) {
-    server.tool(
-      'set_preset_name',
-      description: 'Set preset name. Use save_preset to persist.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'name': {'type': 'string', 'description': 'Preset name'},
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.setPresetName(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'set_slot_name',
-      description: 'Set custom slot name. Use save_preset to persist.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-          'name': {'type': 'string', 'description': 'Custom slot name'},
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.setSlotName(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'new_preset',
-      description:
-          'Clear current preset and start new empty one. Unsaved changes lost.',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.newPreset(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
     server.tool(
       'new',
       description:
@@ -987,18 +706,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       ),
       callback: ({args, extra}) async {
         final resultJson = await tools.newWithAlgorithms(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'save_preset',
-      description: 'Save current preset to device.',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.savePreset(args ?? {});
         return CallToolResult.fromContent(
           content: [TextContent(text: resultJson)],
         );
@@ -1307,237 +1014,9 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         );
       },
     );
-
-    server.tool(
-      'get_preset_name',
-      description: 'Get current preset name.',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.getPresetName(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'get_slot_name',
-      description: 'Get custom slot name for specified slot.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.getSlotName(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-  }
-
-  void _registerMovementTools(McpServer server, DistingTools tools) {
-    server.tool(
-      'move_algorithm_up',
-      description:
-          'Move algorithm up one slot. Algorithms evaluate top to bottom.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.moveAlgorithmUp(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'move_algorithm_down',
-      description:
-          'Move algorithm down one slot. Algorithms evaluate top to bottom.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.moveAlgorithmDown(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'move_algorithm',
-      description:
-          'Move algorithm in specified direction with optional step count. More flexible than individual up/down tools.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-          'direction': {
-            'type': 'string',
-            'description': 'Direction to move: "up" or "down"',
-          },
-          'steps': {
-            'type': 'integer',
-            'description': 'Number of steps to move (default: 1)',
-            'default': 1,
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.moveAlgorithm(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-  }
-
-  void _registerBatchTools(McpServer server, DistingTools tools) {
-    server.tool(
-      'set_multiple_parameters',
-      description:
-          'Set multiple parameters in one operation. More efficient than individual calls.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-          'parameters': {
-            'type': 'array',
-            'description': 'Array of parameter objects',
-            'items': {
-              'type': 'object',
-              'properties': {
-                'parameter_number': {
-                  'type': 'integer',
-                  'description': 'Parameter number (0-based)',
-                },
-                'parameter_name': {
-                  'type': 'string',
-                  'description': 'Parameter name (alternative to number)',
-                },
-                'value': {'type': 'number', 'description': 'Parameter value'},
-              },
-            },
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.setMultipleParameters(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'get_multiple_parameters',
-      description:
-          'Get multiple parameter values in one operation. More efficient than individual calls.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'slot_index': {
-            'type': 'integer',
-            'description': '0-based slot index',
-          },
-          'parameter_numbers': {
-            'type': 'array',
-            'description': 'Array of parameter numbers to retrieve',
-            'items': {'type': 'integer'},
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.getMultipleParameters(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'build_preset_from_json',
-      description:
-          'Build complete preset from JSON data. Supports algorithms and parameters.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'preset_data': {
-            'type': 'object',
-            'description': 'JSON object with preset_name and slots array',
-            'properties': {
-              'preset_name': {'type': 'string'},
-              'slots': {'type': 'array'},
-            },
-            'required': ['preset_name', 'slots'],
-          },
-          'clear_existing': {
-            'type': 'boolean',
-            'description': 'Clear existing preset first (default: true)',
-            'default': true,
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.buildPresetFromJson(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
   }
 
   void _registerUtilityTools(McpServer server, DistingTools tools) {
-    server.tool(
-      'get_module_screenshot',
-      description: 'Get current module screenshot as base64 JPEG.',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        final Map<String, dynamic> result = await tools.getModuleScreenshot(
-          args ?? {},
-        );
-        if (result['success'] == true) {
-          return CallToolResult.fromContent(
-            content: [
-              ImageContent(
-                data: result['screenshot_base64'] as String,
-                mimeType: 'image/jpeg',
-              ),
-            ],
-          );
-        } else {
-          return CallToolResult.fromContent(
-            content: [
-              TextContent(
-                text:
-                    result['error'] as String? ??
-                    'Unknown error retrieving screenshot',
-              ),
-            ],
-          );
-        }
-      },
-    );
-
     server.tool(
       'get_cpu_usage',
       description:
@@ -1545,57 +1024,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       toolInputSchema: const ToolInputSchema(properties: {}),
       callback: ({args, extra}) async {
         final resultJson = await tools.getCpuUsage(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'set_notes',
-      description:
-          'Add/update Notes algorithm at slot 0. Max 7 lines of 31 chars each.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'text': {
-            'type': 'string',
-            'description': 'Note text (auto-wrapped at 31 chars)',
-          },
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.setNotes(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'get_notes',
-      description:
-          'Get current notes content from Notes algorithm if it exists.',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.getNotes(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
-      },
-    );
-
-    server.tool(
-      'find_algorithm_in_preset',
-      description:
-          'Find if specific algorithm exists in current preset. Returns slot locations.',
-      toolInputSchema: const ToolInputSchema(
-        properties: {
-          'algorithm_guid': {'type': 'string', 'description': 'Algorithm GUID'},
-          'algorithm_name': {'type': 'string', 'description': 'Algorithm name'},
-        },
-      ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.findAlgorithmInPreset(args ?? {});
         return CallToolResult.fromContent(
           content: [TextContent(text: resultJson)],
         );
@@ -1790,7 +1218,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
               role: PromptMessageRole.user,
               content: TextContent(
                 text:
-                    'I want to build a Disting NT preset for: "$useCase"\n\nMy skill level is: $skillLevel\n\nPlease help me build this preset step by step. Start by:\n1. Understanding the current state with get_current_preset\n2. Suggesting appropriate algorithms from the right categories\n3. Setting up the signal routing properly\n4. Configuring parameters for the desired sound/behavior\n\nUse the MCP tools available to inspect the current state and build the preset interactively. Explain each step clearly and ask for feedback before proceeding to the next step.',
+                    'I want to build a Disting NT preset for: "$useCase"\n\nMy skill level is: $skillLevel\n\nPlease help me build this preset step by step. Start by:\n1. Understanding the current state with show tool (target="preset")\n2. Suggesting appropriate algorithms from search results\n3. Setting up the signal routing properly\n4. Configuring parameters for the desired sound/behavior\n\nUse the 4-tool MCP API to build the preset interactively: search (find algorithms), new (create preset), edit (modify state), show (inspect state). Explain each step clearly and ask for feedback before proceeding.',
               ),
             ),
           ],
@@ -1828,7 +1256,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
               role: PromptMessageRole.user,
               content: TextContent(
                 text:
-                    'I need an algorithm that can: "$requirement"$contextText\n\nPlease help me find the best algorithm(s) for this by:\n1. Searching through appropriate categories using list_algorithms\n2. Getting detailed information about promising candidates with get_algorithm_details\n3. Explaining the pros and cons of each option\n4. Recommending the best choice with reasoning\n5. Suggesting how to integrate it into a preset effectively\n\nFocus on practical recommendations that will work well for my specific use case.',
+                    'I need an algorithm that can: "$requirement"$contextText\n\nPlease help me find the best algorithm(s) for this by:\n1. Using search tool with relevant query and optional category filter\n2. Analyzing the results and explaining each option\n3. Recommending the best choice with reasoning\n4. Suggesting how to integrate it into a preset effectively\n\nFocus on practical recommendations that will work well for my specific use case.',
               ),
             ),
           ],
@@ -1875,7 +1303,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
               role: PromptMessageRole.user,
               content: TextContent(
                 text:
-                    'Please analyze the current routing configuration of my Disting NT preset.\n\n$focusInstructions\n\nSteps to follow:\n1. Get the current preset state with get_current_preset\n2. Get the routing information with get_routing\n3. Analyze the signal flow between algorithms\n4. Explain how signals move through the bus system\n5. Identify any issues or suggest improvements\n\nPlease use the physical names (Input N, Output N, Aux N) when explaining the routing, not internal bus numbers. Make the explanation clear and educational.',
+                    'Please analyze the current routing configuration of my Disting NT preset.\n\n$focusInstructions\n\nSteps to follow:\n1. Get the current preset state with show tool (target="preset")\n2. Get the routing information with show tool (target="routing")\n3. Analyze the signal flow between algorithms\n4. Explain how signals move through the bus system\n5. Identify any issues or suggest improvements\n\nPlease use the physical names (Input N, Output N, Aux N) when explaining the routing, not internal bus numbers. Make the explanation clear and educational.',
               ),
             ),
           ],
@@ -1918,7 +1346,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
               role: PromptMessageRole.user,
               content: TextContent(
                 text:
-                    'I want to tune the algorithm in slot $slotIndex to achieve: "$desiredSound"$issueText\n\nPlease help me tune the parameters by:\n1. Getting the current preset state to see what algorithm is in slot $slotIndex\n2. Getting detailed information about the algorithm and its parameters\n3. Understanding the current parameter values and their ranges\n4. Suggesting specific parameter changes to achieve the desired sound\n5. Explaining what each parameter does and how it affects the sound\n6. Making the changes step by step with explanations\n\nBe specific about parameter values and explain the reasoning behind each suggestion.',
+                    'I want to tune the algorithm in slot $slotIndex to achieve: "$desiredSound"$issueText\n\nPlease help me tune the parameters by:\n1. Getting the current preset state to see what algorithm is in slot $slotIndex using show (target="preset")\n2. Using search to get detailed information about the algorithm and its parameters\n3. Understanding the current parameter values and their ranges\n4. Suggesting specific parameter changes using edit tool (target="parameter")\n5. Explaining what each parameter does and how it affects the sound\n6. Making the changes step by step with explanations\n\nBe specific about parameter values and explain the reasoning behind each suggestion.',
               ),
             ),
           ],
@@ -1954,7 +1382,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
               role: PromptMessageRole.user,
               content: TextContent(
                 text:
-                    'I am having this problem with my Disting NT: "$problem"$symptomsText\n\nPlease help me troubleshoot this by:\n1. Checking the connection status with mcp_diagnostics\n2. Getting the current preset state to understand the configuration\n3. Checking routing and signal flow if audio-related\n4. Looking at CPU usage if performance-related\n5. Suggesting step-by-step solutions to try\n6. Explaining what each diagnostic step reveals\n\nWork through the troubleshooting systematically and explain what we are checking at each step.',
+                    'I am having this problem with my Disting NT: "$problem"$symptomsText\n\nPlease help me troubleshoot this by:\n1. Checking the connection status with mcp_diagnostics\n2. Getting the current preset state to understand the configuration using show (target="preset")\n3. Checking routing and signal flow if audio-related using show (target="routing")\n4. Looking at CPU usage if performance-related using get_cpu_usage\n5. Suggesting step-by-step solutions to try\n6. Explaining what each diagnostic step reveals\n\nWork through the troubleshooting systematically and explain what we are checking at each step.',
               ),
             ),
           ],

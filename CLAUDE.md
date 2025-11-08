@@ -108,8 +108,8 @@ To connect MCP Dart tooling:
 
 For working with MCP tools and parameter mappings:
 
-- **[MCP Mapping Guide](./docs/mcp-mapping-guide.md)** - Complete guide to CV, MIDI, i2c, and performance page mappings
-- **[MCP Usage Guide](./assets/mcp_docs/mcp_usage_guide.md)** - Overview of all MCP tools
+- **[MCP API Guide](./docs/mcp-api-guide.md)** - Complete guide to the 4-tool API (search, new, edit, show) with workflow examples and granularity guidance
+- **[MCP Mapping Guide](./docs/mcp-mapping-guide.md)** - Complete guide to CV, MIDI, i2c, and performance page mappings with field documentation and examples
 
 ## Additional Documentation
 
