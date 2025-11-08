@@ -366,3 +366,151 @@ Claude Haiku 4.5
   - Troubleshooting section
   - Migration guide from old API
   - Complete examples
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Neal
+**Date:** 2025-11-08
+**Outcome:** Approve
+
+### Summary
+
+Story 4.9 successfully removed old MCP tools and consolidated documentation into a new 4-tool API (search, new, edit, show). The implementation preserves all backend services while creating complete documentation with workflow examples, JSON schemas, troubleshooting guidance, and mapping strategies. All acceptance criteria were met with excellent code quality.
+
+### Key Findings
+
+**HIGH SEVERITY:**
+None
+
+**MEDIUM SEVERITY:**
+None
+
+**LOW SEVERITY:**
+1. **Minor: Prompt documentation could reference new API guide** - The prompts in mcp_server_service.dart reference the mcp-mapping-guide.md, but could also reference mcp-api-guide.md for complete context. This is optional but would improve LLM tool usage. (File: lib/services/mcp_server_service.dart, around lines 622, 675)
+
+### Acceptance Criteria Coverage
+
+All 13 acceptance criteria fully met:
+
+1. ✅ **AC1**: Old tool registrations removed from mcp_server_service.dart, only search/new/edit/show remain
+2. ✅ **AC2**: Old tool implementation files removed (no broken references found)
+3. ✅ **AC3**: Backend services preserved (DistingController, DistingControllerImpl, AlgorithmMetadataService, validation logic, diff engine, SynchronizedState rendering)
+4. ✅ **AC4**: Documentation resources updated/removed appropriately
+5. ✅ **AC5**: Created docs/mcp-api-guide.md documenting 4-tool API with mapping support (1381 lines)
+6. ✅ **AC6**: Workflow examples included: "Creating a simple preset", "Modifying existing preset with mappings", "Exploring algorithms", "Setting up MIDI control", "Organizing with performance pages"
+7. ✅ **AC7**: JSON schema reference included for each tool with complete mapping field documentation
+8. ✅ **AC8**: Troubleshooting section included with common errors and mapping validation errors
+9. ✅ **AC9**: Granularity section included: when to use preset vs slot vs parameter edits with examples
+10. ✅ **AC10**: Mapping strategies section included: CV/MIDI/i2c use cases, performance page organization, modulation examples
+11. ✅ **AC11**: CLAUDE.md updated with links to both mcp-api-guide.md and mcp-mapping-guide.md
+12. ✅ **AC12**: flutter analyze passes with zero warnings
+13. ✅ **AC13**: All tests pass (325 tests pass, 13 skipped widget warnings are pre-existing UI layer issues unrelated to this story)
+
+### Test Coverage and Gaps
+
+**Existing Tests**: All existing tests pass successfully. The 13 skipped widget tests are pre-existing UI layer warnings unrelated to this story's changes.
+
+**New Tests**: No new tests were added for this story. This is acceptable because:
+- The story primarily removes code and consolidates documentation
+- Existing tool tests (search, new, edit, show from Stories 4.2-4.7) already validate the 4-tool API functionality
+- No new business logic was introduced beyond documentation consolidation
+- Tool removal is verified by flutter analyze passing (no broken references)
+
+**Test Gap (Low Priority)**: Could add integration tests validating that old tools are truly removed and not accessible via MCP protocol. This is low priority as:
+- The removal is straightforward (deleted registrations)
+- flutter analyze confirms no broken references remain
+- Existing tests validate the 4-tool API works correctly
+
+### Architectural Alignment
+
+**Excellent alignment** with existing patterns:
+
+**✅ Tool Registration Pattern**:
+- Follows established pattern in mcp_server_service.dart with _registerAlgorithmTools, _registerDistingTools, _registerUtilityTools
+- Preserved get_cpu_usage and mcp_diagnostics tools (not replaced by 4-tool API)
+- Clean separation between algorithm tools (search, show) and preset tools (new, edit)
+
+**✅ Backend Services Preservation**:
+- DistingController interface untouched (lib/services/disting_controller.dart)
+- DistingControllerImpl implementation preserved (lib/services/disting_controller_impl.dart)
+- AlgorithmMetadataService preserved for search tool
+- Diff engine from Story 4.4 preserved for edit tool
+- Validation logic preserved across all tools
+- SynchronizedState rendering logic preserved
+
+**✅ Documentation Structure**:
+- New mcp-api-guide.md follows project documentation standards
+- Consistent with existing docs/architecture.md and docs/epic-4-context.md
+- Cross-references mcp-mapping-guide.md from Story 4.8
+- Integrated into CLAUDE.md project documentation hierarchy
+
+**No architectural violations detected.**
+
+### Security Notes
+
+**No security concerns identified:**
+
+- **MCP Server**: Remains on localhost:3000 with no changes to transport layer
+- **Authentication**: No changes to authentication/authorization logic
+- **Data Exposure**: No new exposure of sensitive data or credentials
+- **SysEx Communication**: No changes to MIDI layer or SysEx message handling
+- **Input Validation**: Tool registration maintains existing validation patterns
+
+The changes are purely organizational (removing tools, consolidating documentation) with no impact on security posture.
+
+### Best-Practices and References
+
+**Documentation Quality**: The new mcp-api-guide.md is comprehensive and well-structured:
+- **Length**: 1381 lines of detailed documentation
+- **Structure**: Clear sections for each tool with parameters, schemas, and examples
+- **Workflow Examples**: 5 complete examples with JSON requests/responses
+- **Granularity Guidance**: When to use preset/slot/parameter edits with performance considerations
+- **Mapping Strategies**: CV/MIDI/i2c use cases with best practices
+- **Troubleshooting**: Common errors with actionable solutions
+- **Migration Guide**: Mapping from old 20+ tool API to new 4-tool API
+
+**Code Quality**: Excellent adherence to project standards:
+- **Zero Warnings**: flutter analyze passes completely (no warnings/errors)
+- **Service Reuse**: Properly leverages existing DistingController services
+- **Clean Registration**: Tool registration follows established patterns
+- **No Debug Logging**: Adheres to project standard of no debug prints in committed code
+- **Consistent Naming**: snake_case for JSON fields, camelCase for Dart code
+
+**LLM Optimization**: Implementation optimized for LLM consumption:
+- **snake_case JSON**: All tool parameters and responses use snake_case naming
+- **Clear Descriptions**: Tool descriptions are concise and actionable
+- **Complete Examples**: All workflow examples include full JSON request/response
+- **Field Documentation**: Complete mapping field documentation with ranges and types
+- **Cross-References**: Proper linking between mcp-api-guide.md and mcp-mapping-guide.md
+
+**References**:
+- [Flutter Best Practices](https://flutter.dev/docs/development/best-practices) - Followed for code organization and naming
+- [MCP Protocol Spec](https://modelcontextprotocol.io/) - Tool registration complies with MCP standard
+- Project docs/architecture.md - MCP Server section documents overall design
+- Project docs/epic-4-context.md - Story E4.9 section provides implementation context
+
+### Action Items
+
+**Optional Improvements** (not blockers for approval):
+
+1. **[Optional][Low]** Consider adding prompt resource references to mcp-api-guide.md
+   - **Context**: Prompts in mcp_server_service.dart currently reference mcp-mapping-guide.md
+   - **Suggestion**: Could also reference mcp-api-guide.md for complete LLM context
+   - **Files**: lib/services/mcp_server_service.dart (around lines 622, 675)
+   - **Rationale**: Would improve LLM understanding of complete API surface
+   - **Owner**: Future maintenance task
+
+2. **[Optional][Low]** Consider adding integration test validating old tools are not accessible
+   - **Context**: Old tool registrations removed but no explicit test confirms unavailability
+   - **Suggestion**: Integration test attempting to call old tool names and expecting error
+   - **Files**: test/mcp/ directory
+   - **Rationale**: Explicit confirmation of removal, though flutter analyze already validates this
+   - **Owner**: Future testing improvement task
+
+**Both action items are optional improvements, not blockers for story approval.**
+
+### Change Log Entry
+
+- **2025-11-08**: Story 4.9 completed and approved via senior developer review (AI). All acceptance criteria met. Zero code quality issues. Removed 20+ old MCP tools, created complete mcp-api-guide.md (1381 lines), updated CLAUDE.md. flutter analyze passes, all tests pass.
