@@ -1,6 +1,7 @@
 # Story 4.13: Resolve Specification-Based Parameter Count Mismatch
 
 **Status:** Approved
+**Updated:** 2025-11-08 - Critical finding: Parameter names are NOT unique per specification
 **Priority:** Critical
 **Epic:** Epic 4 - MCP Integration & Improvements
 **Assignee:** TBD
@@ -73,6 +74,39 @@ Once an algorithm is instantiated with specs, the firmware locks the parameter c
 - Clock Divider with Channels=8: parameters 0-80 (fixed)
 - But our MCP tools return the same parameter set for both!
 
+### Issue 5: Parameter Names Are NOT Unique (Critical Blocker!)
+**Discovered 2025-11-08:** The firmware returns duplicate parameter names:
+
+Clock Divider Channel 1 parameters:
+```json
+{
+  "parameter_number": 3,
+  "parameter_name": "1:Divisor",
+  "min": 1,
+  "max": 32
+},
+{
+  "parameter_number": 4,
+  "parameter_name": "1:Divisor",  // ← DUPLICATE NAME!
+  "min": 0,
+  "max": 5
+},
+{
+  "parameter_number": 5,
+  "parameter_name": "1:Divisor",  // ← DUPLICATE NAME!
+  "min": 0,
+  "max": 9
+}
+```
+
+**Impact on parameter-by-name solution:**
+- `setParameterValue(parameter_name="1:Divisor", ...)` is **ambiguous**
+- Current code returns error: "Parameter name is ambiguous. Please use parameter_number." (disting_tools.dart:340)
+- **But parameter_number doesn't exist for this instantiation!**
+- LLM is stuck: can't use names (ambiguous) and can't use numbers (don't exist)
+
+This means the original parameter-by-name solution **will not work** for multi-channel algorithms!
+
 ---
 
 ## Current Behavior (Broken)
@@ -127,31 +161,36 @@ Once an algorithm is instantiated with specs, the firmware locks the parameter c
 
 ## Acceptance Criteria
 
-1. **AC-1:** `docs/mcp-api-guide.md` documents parameter identification best practices
-   - Clear recommendation: Use `parameter_name` for specification-aware operations
-   - Explanation of why `parameter_number` may not exist in instantiated algorithms
-   - Examples showing both approaches with their trade-offs
+1. **AC-1:** MCP `getCurrentPreset()` includes specification values for each slot
+   - Format: `"specifications": [{"name": "Channels", "value": 2}]`
+   - This is REQUIRED (not optional) for understanding available parameters
+   - Specification format matches what was used to instantiate the algorithm
 
-2. **AC-2:** `getCurrentPreset()` response includes parameter names for all parameters
-   - Every parameter in response must have `"parameter_name"` field
-   - Verify parameter names are unique within each algorithm (or disambiguate if duplicate names exist)
+2. **AC-2:** MCP `getCurrentPreset()` includes total parameter count hint
+   - Field: `"total_parameters": 13` (actual count returned by hardware)
+   - Helps LLM understand if any parameters might be missing due to firmware limitations
 
-3. **AC-3:** `setParameterValue()` parameter-by-name lookup is robust and well-tested
-   - Handles duplicate names gracefully (error message lists all matches)
-   - Works correctly across all specification variants
-   - 100% of unit tests pass
+3. **AC-3:** `docs/mcp-api-guide.md` documents specification-dependent parameter behavior
+   - Explain that parameter_number is the only unique identifier
+   - Show real example: Clock Divider with duplicate "1:Divisor" names
+   - Document that parameter_name lookup fails for duplicate names
+   - Recommended approach: Use parameter_number WITH specification context
+   - Warning: Some specifications may cause firmware to return fewer parameters than documented
 
-4. **AC-4:** LLM system prompts prefer parameter_name over parameter_number
-   - Update any Claude Code context that shows example MCP usage
-   - Ensure MCP documentation examples use parameter names
-   - Add guidance on when parameter_number is safe to use
+4. **AC-4:** MCP tools include specifications in responses where relevant
+   - `getCurrentPreset()` includes `specifications` per slot
+   - `getSlot()` includes `specifications` if added
+   - Enables LLM to make spec-aware parameter decisions
 
-5. **AC-5:** Optional: Store and expose specification values for transparency
-   - MCP `getCurrentPreset()` may include `"specifications"` field (informational)
-   - Used for debugging and understanding which parameter names exist
-   - Not required for parameter operations
+5. **AC-5:** Parameter lookup logic handles ambiguous names gracefully
+   - When duplicate names detected, error message includes parameter_number for each
+   - Helps LLM understand it must use parameter_number to disambiguate
+   - Example: "Parameter '1:Divisor' found at numbers 3, 4, 5. Use parameter_number to disambiguate."
 
 6. **AC-6:** All tests pass, documentation complete, no regressions
+   - Unit tests verify specification tracking
+   - Integration tests with multi-channel algorithms
+   - Documentation accurate and comprehensive
 
 ---
 
@@ -194,51 +233,71 @@ MCP tool getCurrentPreset()
 
 ## Proposed Solution Outline
 
-### Critical Design Insight
+### Critical Realization: Previous Solution is Blocked
 
-The codebase already has a **specification-agnostic parameter identification mechanism**: **parameter names**.
+Earlier analysis proposed using **parameter names** for specification-agnostic operations. **This does not work** because:
 
-**Current Design:**
-- `getAlgorithmDetails()` strips `parameterNumber` intentionally (algorithm_tools.dart:96)
-- `setParameterValue()` supports both `parameter_number` AND `parameter_name`
-- This works because parameter names are stable across specifications
+1. Parameter names are NOT unique when specifications create duplicates (1:Divisor, 1:Divisor, 1:Divisor)
+2. Current code rejects ambiguous names: "Please use parameter_number" (disting_tools.dart:340)
+3. But parameter_number is specification-dependent and unreliable
+4. **Result: LLM cannot reference parameters in multi-channel algorithms at all**
 
-**Better Solution:** Use parameter names instead of numbers for LLM interactions.
+### Real Solution: Accept parameter_number + Include Specifications
 
-### Phase 1: Investigation & Documentation (This Task)
+Since parameter names alone cannot work, we must:
+1. Accept that **parameter_number is the only unique identifier**
+2. **Always provide specification values** so LLM knows which parameters exist
+3. Use parameter_number WITH specification context
+
+**New Design:**
+- Include `specifications` in MCP responses (required, not optional)
+- Include `total_parameters` count based on actual specs
+- Validate parameter_number against expected count
+- Document which spec values enable which parameter numbers
+
+### Phase 1: Investigation & Documentation (This Task - COMPLETED)
 - [x] Confirm hardware behavior with actual testing
 - [x] Discover that parameter numbers are spec-dependent
+- [x] **Discover critical blocker: Parameter names are NOT unique for multi-channel algorithms**
 - [x] Understand current API design philosophy
-- [ ] Document best practices for LLM parameter operations
+- [x] Determine that parameter_number is the only reliable identifier
+- [x] Document findings and revised solution approach
 
-### Phase 2: MCP Documentation Enhancement
-- [ ] Update `docs/mcp-api-guide.md` with clear guidance:
-  - "Use parameter_name for specification-aware operations"
-  - "parameter_number is hardware-specific and may not exist for your instantiation"
-  - "Example: `setParameterValue(slot=0, parameter_name="Type", value=1)` works regardless of channel count"
-- [ ] Add warning about specification-dependent parameter counts
-- [ ] Provide examples using parameter names vs numbers
+### Phase 2: Controller Enhancement - Store Specifications
+- [ ] Modify `DistingController` to store specification values with algorithm state
+  - When algorithm added with specs, store them alongside the algorithm
+  - Make them queryable via controller interface
+- [ ] Update Cubit to maintain specification values
+- [ ] Ensure specifications survive preset save/load cycles
 
-### Phase 3: Strengthen Parameter-by-Name in getCurrentPreset()
-- [ ] Ensure parameter names are always included in preset responses
-- [ ] Verify parameter names are unique per algorithm (or add disambiguation)
-- [ ] Add parameter index hint: `"array_position": 2` (for reference only)
+### Phase 3: MCP Response Enhancement - Include Specifications
+- [ ] Update `getCurrentPreset()` to include `specifications` field per slot
+  - Format: `"specifications": [{"name": "Channels", "value": 2}]`
+- [ ] Add `total_parameters` field to indicate actual parameter count
+- [ ] Update `getSlot()` to include specifications
+- [ ] Test with multi-channel algorithms
 
-### Phase 4: LLM Prompt Engineering
-- [ ] Update system prompts to prefer `parameter_name` for parameter operations
-- [ ] Add examples: `setParameterValue(parameter_name="Channels", ...)` instead of `parameter_number=5`
-- [ ] Document which algorithms have specification-dependent parameters
+### Phase 4: Improve Ambiguous Name Error Messages
+- [ ] When `parameter_name` lookup finds duplicates, improve error message
+  - Include which parameter_numbers correspond to the ambiguous name
+  - Help LLM understand it must use parameter_number
+  - Example: "Parameter '1:Divisor' found at numbers 3, 4, 5. Use parameter_number to disambiguate."
+- [ ] Make the error actionable
 
-### Phase 5: Controller Enhancement (If Needed)
-- [ ] Store specification values with algorithm state (for debugging/transparency)
-- [ ] Add optional `specifications` field to getCurrentPreset() response
-- [ ] Add `total_parameters` hint for validation
+### Phase 5: Documentation Update
+- [ ] Update `docs/mcp-api-guide.md` with real examples from Clock Divider
+  - Show duplicate "1:Divisor" parameter names
+  - Explain why parameter_number is required
+  - Show complete workflow with specifications
+- [ ] Add warning about firmware limitations (missing per-channel parameters)
+- [ ] Document specification value constraints (min/max for each spec)
 
 ### Phase 6: Testing & Validation
-- [ ] Test parameter operations using names across different specs
-- [ ] Verify `setParameterValue(parameter_name=...)` works for multi-channel algorithms
-- [ ] Unit tests for parameter name uniqueness per algorithm
-- [ ] Integration tests with specification variants
+- [ ] Unit tests for specification storage and retrieval
+- [ ] Test getSlot/getCurrentPreset with algorithms that have specifications
+- [ ] Integration tests with multi-channel algorithms (2, 4, 8 channels)
+- [ ] Verify duplicate name error messages are helpful
+- [ ] Documentation accuracy review
 
 ---
 
