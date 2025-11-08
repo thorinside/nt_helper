@@ -2154,4 +2154,503 @@ class DistingTools {
       );
     }
   }
+
+  /// MCP Tool: Edit preset with preset-level granularity
+  /// Accepts a complete preset state and applies only necessary changes
+  /// Parameters:
+  ///   - target (string, required): Must be "preset"
+  ///   - data (object, required): Preset JSON with name and slots array
+  /// Returns:
+  ///   Updated preset state after successful application or detailed error
+  Future<String> editPreset(Map<String, dynamic> params) async {
+    try {
+      // Step 1: Validate input parameters BEFORE accessing device
+      final String? target = params['target'] as String?;
+      if (target == null || target.isEmpty) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('${MCPConstants.missingParamError}: "target"'),
+          ),
+        );
+      }
+
+      if (target != 'preset') {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Invalid target "$target". Must be "preset".'),
+          ),
+        );
+      }
+
+      final Map<String, dynamic>? data =
+          params['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('${MCPConstants.missingParamError}: "data"'),
+          ),
+        );
+      }
+
+      // Step 2: Parse and validate desired preset data
+      final String? desiredName = data['name'] as String?;
+      final List<dynamic>? desiredSlotsData = data['slots'] as List<dynamic>?;
+
+      if (desiredName == null || desiredName.isEmpty) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'Preset name is required and must not be empty',
+            ),
+          ),
+        );
+      }
+
+      // Step 3: Get current preset state (requires device connection)
+      final Map<int, Algorithm?> currentSlotAlgorithms =
+          await _controller.getAllSlots();
+      final String currentPresetName =
+          await _controller.getCurrentPresetName();
+
+      // Step 4: Build desired slots map from input data
+      final Map<int, DesiredSlot> desiredSlots = {};
+      if (desiredSlotsData != null) {
+        for (int i = 0; i < desiredSlotsData.length; i++) {
+          final slotData = desiredSlotsData[i];
+          if (slotData is! Map<String, dynamic>) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Slot at index $i must be an object',
+                ),
+              ),
+            );
+          }
+
+          final Map<String, dynamic>? algoData =
+              slotData['algorithm'] as Map<String, dynamic>?;
+          if (algoData == null) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Slot at index $i is missing algorithm object',
+                ),
+              ),
+            );
+          }
+
+          final String? algoGuid = algoData['guid'] as String?;
+          final String? algoName = algoData['name'] as String?;
+
+          if (algoGuid == null && algoName == null) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Algorithm in slot $i must have either guid or name',
+                ),
+              ),
+            );
+          }
+
+          desiredSlots[i] = DesiredSlot(
+            guid: algoGuid,
+            name: algoName,
+            parameters: slotData['parameters'] as List<dynamic>?,
+            mapping: slotData['mapping'] as Map<String, dynamic>?,
+          );
+        }
+      }
+
+      // Step 5: Validate diff
+      final validationError = await _validateDiff(
+        currentSlotAlgorithms,
+        desiredSlots,
+        desiredName,
+      );
+      if (validationError != null) {
+        return jsonEncode(convertToSnakeCaseKeys(validationError));
+      }
+
+      // Step 6: Apply diff changes
+      final applyError = await _applyDiff(
+        currentSlotAlgorithms,
+        desiredSlots,
+        desiredName,
+        currentPresetName,
+      );
+      if (applyError != null) {
+        return jsonEncode(convertToSnakeCaseKeys(applyError));
+      }
+
+      // Step 7: Save preset
+      try {
+        await _controller.savePreset();
+      } catch (e) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Failed to save preset: ${e.toString()}'),
+          ),
+        );
+      }
+
+      // Step 8: Get updated state and return
+      try {
+        final presetName = await _controller.getCurrentPresetName();
+        final Map<int, Algorithm?> slotAlgorithms =
+            await _controller.getAllSlots();
+
+        List<Map<String, dynamic>?> slotsJsonList =
+            List.filled(maxSlots, null);
+
+        for (int i = 0; i < maxSlots; i++) {
+          final algorithm = slotAlgorithms[i];
+          if (algorithm != null) {
+            final List<ParameterInfo> parameterInfos =
+                await _controller.getParametersForSlot(i);
+
+            List<Map<String, dynamic>> parametersJsonList = [];
+            for (int paramIndex = 0;
+                paramIndex < parameterInfos.length;
+                paramIndex++) {
+              final pInfo = parameterInfos[paramIndex];
+              final int? liveRawValue =
+                  await _controller.getParameterValue(i, paramIndex);
+
+              final paramData = {
+                'parameter_number': paramIndex,
+                'name': pInfo.name,
+                'value': liveRawValue != null
+                    ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
+                    : null,
+              };
+
+              parametersJsonList.add(paramData);
+            }
+
+            slotsJsonList[i] = {
+              'slot_index': i,
+              'algorithm': {
+                'guid': algorithm.guid,
+                'name': algorithm.name,
+              },
+              'parameters': parametersJsonList,
+            };
+          }
+        }
+
+        return jsonEncode(
+          convertToSnakeCaseKeys({
+            'success': true,
+            'preset_name': presetName,
+            'slots': slotsJsonList,
+          }),
+        );
+      } catch (e) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'Failed to retrieve updated preset state: ${e.toString()}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError('Error in edit tool: ${e.toString()}'),
+        ),
+      );
+    }
+  }
+
+  /// Validates the diff before applying changes
+  Future<Map<String, dynamic>?> _validateDiff(
+    Map<int, Algorithm?> currentSlots,
+    Map<int, DesiredSlot> desiredSlots,
+    String desiredName,
+  ) async {
+    // Validate preset name
+    if (desiredName.isEmpty) {
+      return MCPUtils.buildError('Preset name cannot be empty');
+    }
+
+    final metadataService = AlgorithmMetadataService();
+    final allAlgorithms = metadataService.getAllAlgorithms();
+
+    // Validate algorithms in desired slots
+    for (final entry in desiredSlots.entries) {
+      final slotIndex = entry.key;
+      final desiredSlot = entry.value;
+
+      if (slotIndex < 0 || slotIndex >= maxSlots) {
+        return MCPUtils.buildError(
+          'Slot index $slotIndex is out of valid range (0-${maxSlots - 1})',
+        );
+      }
+
+      // Resolve algorithm
+      final resolution = AlgorithmResolver.resolveAlgorithm(
+        guid: desiredSlot.guid,
+        algorithmName: desiredSlot.name,
+        allAlgorithms: allAlgorithms,
+      );
+
+      if (!resolution.isSuccess) {
+        return resolution.error;
+      }
+
+      final resolvedGuid = resolution.resolvedGuid!;
+
+      // Validate algorithm exists in metadata
+      final algorithmMetadata =
+          metadataService.getAlgorithmByGuid(resolvedGuid);
+      if (algorithmMetadata == null) {
+        return MCPUtils.buildError(
+          'Algorithm with GUID "$resolvedGuid" not found in metadata',
+        );
+      }
+
+      // Validate parameters if provided
+      if (desiredSlot.parameters != null &&
+          desiredSlot.parameters!.isNotEmpty) {
+        for (int i = 0; i < desiredSlot.parameters!.length; i++) {
+          final paramData = desiredSlot.parameters![i];
+          if (paramData is! Map<String, dynamic>) {
+            return MCPUtils.buildError(
+              'Parameter at index $i in slot $slotIndex must be an object',
+            );
+          }
+
+          final int? paramNumber =
+              paramData['parameter_number'] as int?;
+          final dynamic paramValue = paramData['value'];
+          final Map<String, dynamic>? mappingData =
+              paramData['mapping'] as Map<String, dynamic>?;
+
+          if (paramNumber == null) {
+            return MCPUtils.buildError(
+              'Parameter in slot $slotIndex must have parameter_number',
+            );
+          }
+
+          // Get algorithm parameters for validation
+          final algorithmParameters =
+              metadataService.getExpandedParameters(resolvedGuid);
+          if (paramNumber >= algorithmParameters.length) {
+            return MCPUtils.buildError(
+              'Parameter number $paramNumber exceeds algorithm parameter count (${algorithmParameters.length})',
+            );
+          }
+
+          final paramInfo = algorithmParameters[paramNumber];
+
+          // Validate parameter value bounds
+          if (paramValue != null && paramValue is num) {
+            if (paramValue < paramInfo.min || paramValue > paramInfo.max) {
+              return MCPUtils.buildError(
+                'Parameter $paramNumber value $paramValue exceeds bounds (${paramInfo.min}-${paramInfo.max})',
+              );
+            }
+          }
+
+          // Validate mapping if provided
+          if (mappingData != null) {
+            final mappingError =
+                _validateMapping(mappingData, slotIndex, paramNumber);
+            if (mappingError != null) {
+              return mappingError;
+            }
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /// Validates mapping structure
+  Map<String, dynamic>? _validateMapping(
+    Map<String, dynamic> mappingData,
+    int slotIndex,
+    int paramNumber,
+  ) {
+    // Validate MIDI mapping if present
+    if (mappingData.containsKey('midi')) {
+      final midi = mappingData['midi'] as Map<String, dynamic>?;
+      if (midi != null) {
+        if (midi.containsKey('midi_channel')) {
+          final channel = midi['midi_channel'] as int?;
+          if (channel != null && (channel < 0 || channel > 15)) {
+            return MCPUtils.buildError(
+              'MIDI channel must be 0-15, got $channel at slot $slotIndex parameter $paramNumber',
+            );
+          }
+        }
+        if (midi.containsKey('midi_cc')) {
+          final cc = midi['midi_cc'] as int?;
+          if (cc != null && (cc < 0 || cc > 128)) {
+            return MCPUtils.buildError(
+              'MIDI CC must be 0-128, got $cc at slot $slotIndex parameter $paramNumber',
+            );
+          }
+        }
+      }
+    }
+
+    // Validate CV mapping if present
+    if (mappingData.containsKey('cv')) {
+      final cv = mappingData['cv'] as Map<String, dynamic>?;
+      if (cv != null) {
+        if (cv.containsKey('cv_input')) {
+          final input = cv['cv_input'] as int?;
+          if (input != null && (input < 0 || input > 12)) {
+            return MCPUtils.buildError(
+              'CV input must be 0-12, got $input at slot $slotIndex parameter $paramNumber',
+            );
+          }
+        }
+      }
+    }
+
+    // Validate i2c mapping if present
+    if (mappingData.containsKey('i2c')) {
+      final i2c = mappingData['i2c'] as Map<String, dynamic>?;
+      if (i2c != null) {
+        if (i2c.containsKey('i2c_cc')) {
+          final cc = i2c['i2c_cc'] as int?;
+          if (cc != null && (cc < 0 || cc > 255)) {
+            return MCPUtils.buildError(
+              'i2c CC must be 0-255, got $cc at slot $slotIndex parameter $paramNumber',
+            );
+          }
+        }
+      }
+    }
+
+    // Validate performance_page
+    if (mappingData.containsKey('performance_page')) {
+      final perfPage = mappingData['performance_page'] as int?;
+      if (perfPage != null && (perfPage < 0 || perfPage > 15)) {
+        return MCPUtils.buildError(
+          'Performance page must be 0-15, got $perfPage at slot $slotIndex parameter $paramNumber',
+        );
+      }
+    }
+
+    return null;
+  }
+
+  /// Applies the diff to the device
+  Future<Map<String, dynamic>?> _applyDiff(
+    Map<int, Algorithm?> currentSlots,
+    Map<int, DesiredSlot> desiredSlots,
+    String desiredName,
+    String currentPresetName,
+  ) async {
+    try {
+      // Step 1: Clear slots that should be empty in desired state but aren't in current
+      for (int i = 0; i < maxSlots; i++) {
+        if (!desiredSlots.containsKey(i) && currentSlots[i] != null) {
+          await _controller.clearSlot(i);
+        }
+      }
+
+      // Step 2: Add or update algorithms in desired slots
+      final metadataService = AlgorithmMetadataService();
+      final allAlgorithms = metadataService.getAllAlgorithms();
+
+      for (final entry in desiredSlots.entries) {
+        final slotIndex = entry.key;
+        final desiredSlot = entry.value;
+
+        // Resolve algorithm
+        final resolution = AlgorithmResolver.resolveAlgorithm(
+          guid: desiredSlot.guid,
+          algorithmName: desiredSlot.name,
+          allAlgorithms: allAlgorithms,
+        );
+
+        if (!resolution.isSuccess) {
+          return resolution.error;
+        }
+
+        final resolvedGuid = resolution.resolvedGuid!;
+        final algorithmMetadata =
+            metadataService.getAlgorithmByGuid(resolvedGuid);
+
+        // Check if we need to add this algorithm
+        final currentAlgo = currentSlots[slotIndex];
+        if (currentAlgo == null || currentAlgo.guid != resolvedGuid) {
+          // Clear if different algorithm is there
+          if (currentAlgo != null) {
+            await _controller.clearSlot(slotIndex);
+          }
+
+          // Add new algorithm
+          final algorithm = Algorithm(
+            algorithmIndex: -1,
+            guid: resolvedGuid,
+            name: algorithmMetadata!.name,
+          );
+          await _controller.addAlgorithm(algorithm);
+        }
+
+        // Step 3: Update parameters if provided
+        if (desiredSlot.parameters != null &&
+            desiredSlot.parameters!.isNotEmpty) {
+          for (final paramData in desiredSlot.parameters!) {
+            if (paramData is Map<String, dynamic>) {
+              final int? paramNumber =
+                  paramData['parameter_number'] as int?;
+              final dynamic paramValue = paramData['value'];
+
+              if (paramNumber != null && paramValue != null) {
+                try {
+                  await _controller.updateParameterValue(
+                    slotIndex,
+                    paramNumber,
+                    paramValue,
+                  );
+                } catch (e) {
+                  return MCPUtils.buildError(
+                    'Failed to update parameter $paramNumber in slot $slotIndex: ${e.toString()}',
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Step 4: Update preset name if different
+      if (desiredName != currentPresetName) {
+        try {
+          await _controller.setPresetName(desiredName);
+        } catch (e) {
+          return MCPUtils.buildError(
+            'Failed to set preset name: ${e.toString()}',
+          );
+        }
+      }
+
+      return null; // No error
+    } catch (e) {
+      return MCPUtils.buildError('Failed to apply changes: ${e.toString()}');
+    }
+  }
+}
+
+/// Helper class to represent a desired slot state
+class DesiredSlot {
+  final String? guid;
+  final String? name;
+  final List<dynamic>? parameters;
+  final Map<String, dynamic>? mapping;
+
+  DesiredSlot({
+    this.guid,
+    this.name,
+    this.parameters,
+    this.mapping,
+  });
 }

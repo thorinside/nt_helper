@@ -1,7 +1,7 @@
-<story-context id="bmad/bmm/workflows/4-implementation/story-context/4-4" v="1.0">
+<story-context id="4-4-implement-edit-tool-with-preset-level-granularity" v="1.0">
   <metadata>
     <epicId>4</epicId>
-    <storyId>4.4</storyId>
+    <storyId>4-4</storyId>
     <title>Implement edit tool with preset-level granularity</title>
     <status>drafted</status>
     <generatedAt>2025-11-07</generatedAt>
@@ -11,16 +11,22 @@
 
   <story>
     <asA>LLM client modifying a preset</asA>
-    <iWant>to send a complete desired preset state and have the backend calculate minimal changes</iWant>
+    <iWant>send a complete desired preset state and have the backend calculate minimal changes</iWant>
     <soThat>I don't need to understand NT hardware slot reordering and algorithm movement</soThat>
     <tasks>
-- Define edit tool schema for preset target (AC: 1, 5, 17)
-- Implement diff engine for preset comparison (AC: 9-10)
-- Implement validation logic (AC: 11-12, 15)
-- Implement mapping preservation logic (AC: 6-8)
-- Implement apply changes logic (AC: 13-14)
-- Implement mode validation and tool registration (AC: 16, 19-20)
-- Write unit tests for diff logic (AC: 18)
+Define edit tool schema for preset target (AC: 1, 5, 17) - Create tool definition with target and data parameters, document preset JSON structure with snake_case fields, document mapping structure with all optional fields, create JSON schema with mapping examples, add examples for rename/add/change/update operations.
+
+Implement diff engine for preset comparison (AC: 9-10) - Read current preset state from DistingCubit (SynchronizedState), compare desired slots vs current slots, identify algorithms to add/remove/move, identify parameter value changes, identify mapping changes (CV, MIDI, i2c, performance_page).
+
+Implement validation logic (AC: 11-12, 15) - Validate preset name (non-empty string), validate algorithm GUIDs exist in metadata, validate parameter numbers within algorithm range, validate parameter values within min/max bounds, validate MIDI channel 0-15, validate MIDI CC 0-128, validate CV input 0-12, validate i2c CC 0-255, validate performance_page 0-15, return detailed error on validation failure.
+
+Implement mapping preservation logic (AC: 6-8) - When mapping omitted: preserve existing mapping, when creating new algorithm: default all mappings to disabled, when mapping included: update only specified types (partial updates), handle CV/MIDI/i2c/performance_page disabled states.
+
+Implement apply changes logic (AC: 13-14) - Execute diff operations in correct order (remove, add, move, update params, update mappings), use DistingController methods for each operation, call auto-save after all changes applied, query updated preset state from DistingCubit, format and return updated state as JSON.
+
+Implement mode validation and tool registration (AC: 16, 19-20) - Check connection mode (must be Synchronized), return error if offline/demo mode, register tool in mcp_server_service.dart, implement tool handler function, run flutter analyze and fix warnings, run flutter test and ensure all pass.
+
+Write unit tests for diff logic (AC: 18) - Test add single algorithm, remove single algorithm, reorder algorithms (slot position changes), change parameter values only, update mappings only, combined changes, mapping preservation when omitted, partial mapping updates.
     </tasks>
   </story>
 
@@ -31,18 +37,18 @@
 4. Mapping structure (all fields optional): `{ "cv": {...}, "midi": {...}, "i2c": {...}, "performance_page": N }`
 5. Use snake_case for all JSON field names: `cv_input`, `midi_channel`, `is_midi_enabled`, etc.
 6. When mapping omitted entirely from parameter JSON, existing mapping is preserved unchanged
-7. When creating new parameters (new algorithm), all mapping types default to disabled
+7. When creating new parameters (new algorithm), all mapping types default to disabled (cv/midi/i2c enabled=false, performance_page=0)
 8. When mapping included, only specified mapping types are updated, others preserved
 9. Backend diff engine compares desired state vs current device state (reads from SynchronizedState)
 10. Diff engine determines: algorithms to add, algorithms to remove, algorithms to move, parameters to change, mappings to update
 11. Diff validates all changes before applying (fail fast on first validation error)
-12. Mapping validation: MIDI channel 0-15, MIDI CC 0-128, CV input 0-12, i2c CC 0-255, performance_page 0-15
+12. Mapping validation: MIDI channel 0-15, MIDI CC 0-128 (128=aftertouch), CV input 0-12, i2c CC 0-255, performance_page 0-15, etc.
 13. If validation succeeds, apply changes and auto-save preset
 14. Return updated preset state after successful application
 15. Return detailed error message if validation or application fails (no partial changes)
 16. Tool works only in connected mode (clear error if offline/demo)
 17. JSON schema documents complete preset structure with mapping examples
-18. Unit tests verify diff logic for all change types
+18. Unit tests verify diff logic: add algorithm, remove algorithm, reorder algorithms, change parameters, update mappings, combined changes
 19. `flutter analyze` passes with zero warnings
 20. All tests pass
   </acceptanceCriteria>
@@ -50,85 +56,215 @@
   <artifacts>
     <docs>
       <doc>
-        <path>docs/epic-4-context.md</path>
-        <title>Epic 4 Technical Context</title>
-        <section>Backend Diff Engine Design</section>
-        <snippet>Input: Desired preset state (JSON from LLM). Output: Sequence of NT hardware operations. Diff Operations: Add Algorithm, Remove Algorithm, Move Algorithm, Change Parameter, Update Mapping. Validation Rules: slot 0-31, MIDI channel 0-15, CC 0-128, CV input 0-12, i2c CC 0-255, performance_page 0-15. Error Handling: Fail fast, no partial changes, clear error messages. Auto-save after success.</snippet>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Critical Architecture: MCP Server</section>
+        <snippet>MCP server exposes app functionality via HTTP. Tool implementations register with McpServer and handle JSON-RPC calls. Four-step process: define schema, implement handler, register in _registerDistingTools(), test via MCP client.</snippet>
       </doc>
       <doc>
-        <path>docs/epic-4-context.md</path>
-        <title>Epic 4 Technical Context</title>
-        <section>Mapping Representation</section>
-        <snippet>snake_case field names. CV: source, cv_input, is_unipolar, is_gate, volts, delta. MIDI: is_midi_enabled, midi_channel, midi_type, midi_cc, is_midi_symmetric, is_midi_relative, midi_min, midi_max. i2c: is_i2c_enabled, i2c_cc, is_i2c_symmetric, i2c_min, i2c_max. performance_page: 1-15 (0=not assigned).</snippet>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>DistingController Abstract Interface</section>
+        <snippet>Interface for MCP tools to interact with Disting state. Key methods: addAlgorithm(), clearSlot(), moveAlgorithmUp/Down(), updateParameterValue(), getParametersForSlot(), getAllSlots().</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 4: MCP Tool Implementation</title>
+        <section>Story E4.4: Implement edit tool with preset-level granularity</section>
+        <snippet>Create edit tool with preset-level target. Accept preset JSON with slots, algorithms, parameters, and optional mappings. Diff engine compares against current state and applies only necessary changes.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>MCP Server Integration for External Tool Access</section>
+        <snippet>MCP server allows external clients to control Disting NT via standardized tools. Tools operate within connected mode constraints and maintain data consistency through DistingCubit state management.</snippet>
+      </doc>
+      <doc>
+        <path>lib/cubit/disting_state.dart</path>
+        <title>State Model Documentation</title>
+        <section>Slot and DistingStateSynchronized Structure</section>
+        <snippet>SynchronizedState contains List&lt;Slot&gt; where each Slot has algorithm, parameters, values, mappings. Use DistingCubit.state as single source of truth for current preset state.</snippet>
       </doc>
     </docs>
     <code>
-      <file>
-        <path>lib/cubit/disting_state.dart</path>
-        <kind>model</kind>
-        <symbol>Slot, DistingStateSynchronized</symbol>
-        <reason>Source of truth for current preset state (diff comparison)</reason>
-      </file>
-      <file>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>state-management</kind>
+        <symbol>DistingCubit, DistingStateSynchronized</symbol>
+        <reason>Primary state container. Read from state.slots for current preset configuration. Used by diff engine to determine changes needed.</reason>
+      </artifact>
+      <artifact>
         <path>lib/services/disting_controller.dart</path>
         <kind>interface</kind>
         <symbol>DistingController</symbol>
-        <reason>Methods for add/remove/move algorithms, update parameters, update mappings</reason>
-      </file>
-      <file>
+        <lines>1-100</lines>
+        <reason>Abstract interface for MCP tools. Defines methods: addAlgorithm(), clearSlot(), moveAlgorithmUp/Down(), updateParameterValue(), getParametersForSlot(). Apply changes via these methods.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/services/disting_controller_impl.dart</path>
+        <kind>service</kind>
+        <symbol>DistingControllerImpl</symbol>
+        <reason>Implementation of DistingController. Delegates to DistingCubit for state changes. Use for applying diff-calculated changes.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/services/mcp_server_service.dart</path>
+        <kind>service</kind>
+        <symbol>_registerDistingTools()</symbol>
+        <reason>Tool registration method. Pattern: define schema, create handler, add to server via server.addTool(). Register new edit tool here.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>tool-implementation</kind>
+        <symbol>DistingTools</symbol>
+        <reason>Existing tool implementations for device control. Reference for tool structure and error handling patterns.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>model</kind>
+        <symbol>Mapping, ParameterInfo, Algorithm</symbol>
+        <reason>Core data models. Mapping has cv, midi, i2c fields. ParameterInfo has min/max for validation. Algorithm has GUID for metadata lookup.</reason>
+      </artifact>
+      <artifact>
         <path>lib/models/packed_mapping_data.dart</path>
         <kind>model</kind>
-        <symbol>PackedMappingData, MidiMappingType</symbol>
-        <reason>Internal mapping structure (camelCase) - must translate to/from snake_case JSON</reason>
-      </file>
+        <symbol>Mapping structure fields</symbol>
+        <reason>Mapping field definitions for CV, MIDI, i2c, performance_page validation and structure.</reason>
+      </artifact>
+      <artifact>
+        <path>test/mcp/algorithm_tools_test.dart</path>
+        <kind>test</kind>
+        <symbol>Test setup patterns</symbol>
+        <reason>Reference for test structure: DistingCubit initialization, mock database, shared preferences setup.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/services/algorithm_metadata_service.dart</path>
+        <kind>service</kind>
+        <symbol>AlgorithmMetadataService</symbol>
+        <reason>Validates algorithm GUIDs exist in metadata. Use for diff validation step.</reason>
+      </artifact>
     </code>
     <dependencies>
-      <package name="dart_mcp" source="pub.dev" purpose="MCP tool registration" />
+      <ecosystem>
+        <name>flutter_bloc</name>
+        <packages>
+          <package>flutter_bloc: ^9.1.1</package>
+        </packages>
+        <reason>State management using Cubit pattern throughout the project</reason>
+      </ecosystem>
+      <ecosystem>
+        <name>mcp_dart</name>
+        <packages>
+          <package>mcp_dart: ^0.6.4</package>
+          <package>dart_mcp: ^0.3.3</package>
+        </packages>
+        <reason>MCP protocol support for tool registration and JSON-RPC handling</reason>
+      </ecosystem>
+      <ecosystem>
+        <name>Drift ORM</name>
+        <packages>
+          <package>drift: ^2.28.1</package>
+        </packages>
+        <reason>Database access for algorithm metadata validation</reason>
+      </ecosystem>
+      <ecosystem>
+        <name>Dart Standard Library</name>
+        <packages>
+          <package>dart:convert</package>
+          <package>dart:typed_data</package>
+        </packages>
+        <reason>JSON encoding/decoding and binary data handling</reason>
+      </ecosystem>
     </dependencies>
   </artifacts>
 
   <constraints>
-- Only works in connected mode (synchronized state)
-- Fail fast validation: stop at first error, no partial changes
-- snake_case for all JSON field names (translate from/to camelCase internally)
-- Mapping preservation: omitted = preserved, included = update only specified types
-- New algorithms: all mappings default to disabled
-- Auto-save preset after successful changes
-- Zero tolerance: flutter analyze must pass with zero warnings
+    - Tool registration: Must follow four-step pattern established in mcp_server_service.dart (schema → handler → register → test)
+    - State consistency: Changes must be atomic via DistingController; fail on first validation error with no partial state changes
+    - Snake case JSON: All parameter and mapping field names must use snake_case (parameter_number, cv_input, is_midi_enabled, etc.)
+    - Mode requirement: Tool only works in Synchronized mode; return clear error if offline or demo mode
+    - Mapping preservation: Omitted mappings must not modify existing values; new algorithms default to disabled mappings
+    - Analysis requirement: flutter analyze must pass with zero warnings before commit
+    - Test coverage: All diff operations must have dedicated unit tests covering add/remove/reorder/change/update scenarios
+    - Parameter validation: Use ParameterInfo min/max bounds for all numeric validations
+    - Algorithm lookup: Validate GUIDs against metadata before applying changes
+    - Error handling: Return detailed error messages indicating which field failed and why (e.g., "MIDI channel must be 0-15, got 16")
   </constraints>
 
   <interfaces>
     <interface>
-      <name>edit tool (preset target)</name>
-      <kind>mcp-tool</kind>
-      <signature>{ "target": "preset", "data": { "name": string, "slots": [...] } }</signature>
-      <returns>Updated preset state after changes applied</returns>
-      <usage>Complete preset modification with backend diffing</usage>
+      <name>DistingController Methods</name>
+      <kind>Dart interface methods</kind>
+      <signature>
+        Future&lt;void&gt; addAlgorithm(Algorithm algorithm)
+        Future&lt;void&gt; clearSlot(int slotIndex)
+        Future&lt;void&gt; moveAlgorithmUp(int slotIndex)
+        Future&lt;void&gt; moveAlgorithmDown(int slotIndex)
+        Future&lt;void&gt; updateParameterValue(int slotIndex, int parameterNumber, dynamic value)
+        Future&lt;List&lt;ParameterInfo&gt;&gt; getParametersForSlot(int slotIndex)
+        Future&lt;Map&lt;int, Algorithm?&gt;&gt; getAllSlots()
+      </signature>
+      <path>lib/services/disting_controller.dart</path>
+    </interface>
+    <interface>
+      <name>MCP Tool Handler Pattern</name>
+      <kind>Function signature</kind>
+      <signature>
+        Future&lt;CallToolResult&gt; handler(Map&lt;String, dynamic&gt;? args) async {
+          // Validate connection mode
+          // Parse JSON input
+          // Execute diff/apply logic
+          // Return JSON result or error
+        }
+      </signature>
+      <path>lib/services/mcp_server_service.dart lines 716-770</path>
+    </interface>
+    <interface>
+      <name>Tool Input JSON Schema</name>
+      <kind>MCP tool input schema</kind>
+      <signature>
+        {
+          "type": "object",
+          "properties": {
+            "target": {"enum": ["preset"]},
+            "data": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "slots": {"type": "array", "items": {...}}
+              }
+            }
+          },
+          "required": ["target", "data"]
+        }
+      </signature>
+      <path>lib/mcp/tools/disting_tools.dart (reference existing pattern)</path>
     </interface>
   </interfaces>
 
   <tests>
     <standards>
-Unit tests for diff engine with mock DistingCubit. Test each diff operation separately and combined. Test validation failures. Test mapping preservation and partial updates.
+      Unit tests use DistingCubit with mock database (NativeDatabase.memory()). Tests verify diff logic operations independently: algorithm add/remove/reorder, parameter changes, mapping updates. Mocking patterns from algorithm_tools_test.dart used for setup. All tests must pass with zero flutter analyze warnings.
     </standards>
     <locations>
-test/mcp/tools/edit_preset_tool_test.dart (new file)
-test/services/preset_diff_engine_test.dart (if separate file created)
+      test/mcp/tools/ - New test file: test/mcp/tools/edit_preset_tool_test.dart
+      test/ - Root test directory for helper/utility tests
+      test/services/ - Service-level tests (if creating preset_diff_engine.dart service)
     </locations>
     <ideas>
-- Test add single algorithm
-- Test remove single algorithm
-- Test reorder algorithms (slot position changes)
-- Test change parameter values only
-- Test update mappings only
-- Test combined changes (add + change params + update mappings)
-- Test mapping preservation when omitted
-- Test partial mapping updates (MIDI only, preserve CV/i2c)
-- Test validation: MIDI channel out of range
-- Test validation: CV input out of range
-- Test validation: i2c CC out of range
-- Test validation: performance_page out of range
-- Test fail fast: no partial changes on error
+      - Test: diff engine with single algorithm add to empty preset
+      - Test: diff engine with single algorithm remove from preset
+      - Test: diff engine with slot reordering (algorithms stay same, positions change)
+      - Test: diff engine with parameter value changes only (algorithms/mappings unchanged)
+      - Test: diff engine with mapping updates to existing parameters
+      - Test: diff engine combining add + remove + reorder + param changes + mapping updates
+      - Test: mapping preservation when parameter mapping field omitted from desired state
+      - Test: partial mapping update (e.g., update CV mapping only, preserve MIDI/i2c)
+      - Test: validation catches invalid MIDI channel (e.g., 16 instead of 0-15)
+      - Test: validation catches parameter value outside min/max bounds
+      - Test: validation catches missing algorithm GUID in metadata
+      - Test: diff returns clear error message on first validation failure (no partial state)
+      - Test: offline/demo mode returns appropriate error (not Synchronized state)
+      - Test: successful apply and return of updated preset JSON
     </ideas>
   </tests>
 </story-context>

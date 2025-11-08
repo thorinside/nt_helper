@@ -962,6 +962,84 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     );
 
     server.tool(
+      'edit',
+      description:
+          'Edit preset with preset-level granularity. Accepts complete preset state and applies only necessary changes. Device must be in connected mode.',
+      toolInputSchema: const ToolInputSchema(
+        properties: {
+          'target': {
+            'type': 'string',
+            'enum': ['preset'],
+            'description': 'Target type (must be "preset")',
+          },
+          'data': {
+            'type': 'object',
+            'description':
+                'Preset state with name and slots array. Each slot contains algorithm (guid or name) and optional parameters with values and optional mappings.',
+            'properties': {
+              'name': {
+                'type': 'string',
+                'description': 'Preset name',
+              },
+              'slots': {
+                'type': 'array',
+                'description': 'Array of slot objects (indexed by position)',
+                'items': {
+                  'type': 'object',
+                  'properties': {
+                    'algorithm': {
+                      'type': 'object',
+                      'description':
+                          'Algorithm specification (either guid or name)',
+                      'properties': {
+                        'guid': {
+                          'type': 'string',
+                          'description': 'Algorithm GUID',
+                        },
+                        'name': {
+                          'type': 'string',
+                          'description': 'Algorithm name (fuzzy matching)',
+                        },
+                      },
+                    },
+                    'parameters': {
+                      'type': 'array',
+                      'description': 'Array of parameter objects',
+                      'items': {
+                        'type': 'object',
+                        'properties': {
+                          'parameter_number': {
+                            'type': 'integer',
+                            'description': 'Parameter index',
+                          },
+                          'value': {
+                            'type': 'number',
+                            'description': 'Parameter value',
+                          },
+                          'mapping': {
+                            'type': 'object',
+                            'description':
+                                'Optional mapping (cv, midi, i2c, performance_page)',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ),
+      callback: ({args, extra}) async {
+        final resultJson = await tools.editPreset(args ?? {});
+        return CallToolResult.fromContent(
+          content: [TextContent(text: resultJson)],
+        );
+      },
+    );
+
+    server.tool(
       'get_preset_name',
       description: 'Get current preset name.',
       toolInputSchema: const ToolInputSchema(properties: {}),
