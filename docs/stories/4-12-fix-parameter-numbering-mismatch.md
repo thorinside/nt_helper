@@ -1,6 +1,6 @@
 # Story 4.12: Fix Parameter Numbering Mismatch in MCP Tools
 
-**Status:** Approved
+**Status:** Done
 **Priority:** High
 **Epic:** Epic 4 - MCP Integration & Improvements
 **Assignee:** Amelia (Dev Agent)
@@ -80,10 +80,33 @@ for (int paramIndex = 0; paramIndex < parameterInfos.length; paramIndex++) {
 
 ## Dev Agent Record
 
-### Context Reference
-None yet (will update after investigation)
+### Implementation Summary
+**Commit:** `6d70edc` - fix: Use actual parameter numbers instead of array indices in MCP tools
+
+### Changes Made
+1. **disting_tools.dart - getCurrentPreset()** (line 108): Changed `'parameter_number': paramIndex` to `'parameter_number': pInfo.parameterNumber`
+2. **disting_tools.dart - setParameterValue()** (lines 305-347): Replaced array-based parameter lookup with proper search by `pInfo.parameterNumber`
+3. **disting_tools.dart - getParameterValue()** (lines 503-517): Fixed parameter info lookup to use `pInfo.parameterNumber` instead of array indexing
+4. **disting_tools.dart - getParameterEnumValues()** (lines 1689-1720): Updated to properly search parameters by actual parameter number
+5. **test/mcp/tools/show_tool_test.dart** (line 62): Updated test to expect 'cpu' in valid targets list
+6. **Removed unused import** (line 16): Removed `bus_mapping.dart` import
+
+### Root Cause
+MCP tools were treating `paramIndex` (position in the `parameterInfos` array returned from device) as the parameter number, when they should have been using `pInfo.parameterNumber` (the actual hardware parameter number). When a hardware algorithm returns parameters in a different order, array indices no longer match the true parameter numbers.
+
+### Why This Matters
+- Parameter documentation lists parameters by their true `parameterNumber` (0-255 range, device-specific)
+- Hardware may return parameters in any order; array position is just an implementation detail
+- The controller interface correctly uses `parameterNumber`, but MCP was misusing it
+- This caused every parameter operation to potentially target the wrong parameter
+
+### Testing
+- All MCP tool tests pass: `test/mcp/tools/` (100% pass rate)
+- flutter analyze: No issues found
+- Build: Successful
 
 ### Notes
-- Parameter numbers are 0-based, matching array indices only by coincidence
-- Hardware uses true parameter numbers; array order can vary
-- This fix affects all parameter-related MCP operations
+- Parameter numbers are 0-based and hardware-specific
+- Array indices are ephemeral and only valid during the current device query
+- All parameter operations now correctly use `pInfo.parameterNumber` from hardware
+- The fix maintains backward compatibility with parameter name-based lookups
