@@ -4,21 +4,24 @@ import AVFoundation
 
 public class UsbVideoCapturePlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
+    var debugEventSink: FlutterEventSink?
     private var captureSession: AVCaptureSession?
     private var videoOutput: AVCaptureVideoDataOutput?
     private let sessionQueue = DispatchQueue(label: "com.example.nt_helper.videoCaptureQueue")
     private let ciContext = CIContext(options: [.workingColorSpace: NSNull()])
     private let processingQueue = DispatchQueue(label: "com.example.nt_helper.frameProcessingQueue", qos: .userInitiated)
-    
+
     private static let DISTING_VENDOR_ID = 0x16C0  // Expert Sleepers vendor ID
-    
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "com.example.nt_helper/usb_video", binaryMessenger: registrar.messenger)
         let eventChannel = FlutterEventChannel(name: "com.example.nt_helper/usb_video_stream", binaryMessenger: registrar.messenger)
-        
+        let debugChannel = FlutterEventChannel(name: "com.example.nt_helper/usb_video_debug", binaryMessenger: registrar.messenger)
+
         let instance = UsbVideoCapturePlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
         eventChannel.setStreamHandler(instance)
+        debugChannel.setStreamHandler(UsbVideoDebugHandler(plugin: instance))
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -309,31 +312,166 @@ public class UsbVideoCapturePlugin: NSObject, FlutterPlugin, FlutterStreamHandle
         self.eventSink = nil
         return nil
     }
+
+    // MARK: - Debug Logging
+
+    func debugLog(_ message: String) {
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let logMessage = "[\(timestamp)] [NATIVE] \(message)"
+        debugEventSink?(logMessage)
+    }
 }
 
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
 
 extension UsbVideoCapturePlugin: AVCaptureVideoDataOutputSampleBufferDelegate {
     public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Convert sample buffer to PNG quickly and efficiently
-        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { 
-            return 
+        // Convert sample buffer to BMP data (matching iOS implementation)
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            return
         }
-        
+
         autoreleasepool {
             let ciImage = CIImage(cvPixelBuffer: imageBuffer)
-            
+
             if let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) {
-                let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
-                bitmapRep.size = NSSize(width: CGFloat(cgImage.width), height: CGFloat(cgImage.height))
-                
-                if let pngData = bitmapRep.representation(using: .png, properties: [
-                    .compressionFactor: 0.0
-                ]) {
-                    // Send directly to Flutter (no main queue dispatch)
-                    self.eventSink?(FlutterStandardTypedData(bytes: pngData))
+                // Convert CGImage to RGB data then encode as BMP
+                if let bmpData = encodeBMP(from: cgImage) {
+                    // Send BMP data to Flutter on the main thread
+                    DispatchQueue.main.async {
+                        self.eventSink?(FlutterStandardTypedData(bytes: bmpData))
+                    }
                 }
             }
         }
+    }
+
+    // BMP encoding function (matching iOS implementation)
+    private func encodeBMP(from cgImage: CGImage) -> Data? {
+        let width = cgImage.width
+        let height = cgImage.height
+
+        // Create RGB data from CGImage
+        let bytesPerPixel = 3
+        let bytesPerRow = width * bytesPerPixel
+        let rowPadding = (4 - (bytesPerRow % 4)) % 4
+        let paddedBytesPerRow = bytesPerRow + rowPadding
+        let dataSize = paddedBytesPerRow * height
+        let fileSize = 54 + dataSize
+
+        // Create BMP header
+        var bmpData = Data(count: fileSize)
+
+        bmpData.withUnsafeMutableBytes { bytes in
+            let buffer = bytes.bindMemory(to: UInt8.self)
+
+            // BMP File Header
+            buffer[0] = 0x42  // 'B'
+            buffer[1] = 0x4D  // 'M'
+
+            // File size (little endian)
+            buffer[2] = UInt8(fileSize & 0xFF)
+            buffer[3] = UInt8((fileSize >> 8) & 0xFF)
+            buffer[4] = UInt8((fileSize >> 16) & 0xFF)
+            buffer[5] = UInt8((fileSize >> 24) & 0xFF)
+
+            // Reserved fields
+            buffer[6] = 0; buffer[7] = 0; buffer[8] = 0; buffer[9] = 0
+
+            // Offset to pixel data
+            buffer[10] = 54; buffer[11] = 0; buffer[12] = 0; buffer[13] = 0
+
+            // DIB Header
+            buffer[14] = 40; buffer[15] = 0; buffer[16] = 0; buffer[17] = 0  // Header size
+
+            // Width (little endian)
+            buffer[18] = UInt8(width & 0xFF)
+            buffer[19] = UInt8((width >> 8) & 0xFF)
+            buffer[20] = UInt8((width >> 16) & 0xFF)
+            buffer[21] = UInt8((width >> 24) & 0xFF)
+
+            // Height (negative for top-down, little endian)
+            let negHeight = -height
+            buffer[22] = UInt8(negHeight & 0xFF)
+            buffer[23] = UInt8((negHeight >> 8) & 0xFF)
+            buffer[24] = UInt8((negHeight >> 16) & 0xFF)
+            buffer[25] = UInt8((negHeight >> 24) & 0xFF)
+
+            // Planes
+            buffer[26] = 1; buffer[27] = 0
+
+            // Bits per pixel
+            buffer[28] = 24; buffer[29] = 0
+
+            // Compression and other fields (all zeros)
+            for i in 30..<54 {
+                buffer[i] = 0
+            }
+        }
+
+        // Extract RGB data from CGImage
+        guard let dataProvider = cgImage.dataProvider,
+              let pixelData = dataProvider.data else {
+            return nil
+        }
+
+        let pixelBytes = CFDataGetBytePtr(pixelData)
+        let cgBytesPerPixel = cgImage.bitsPerPixel / 8
+        let cgBytesPerRow = cgImage.bytesPerRow
+
+        // Copy pixel data to BMP format (BGR order with padding)
+        bmpData.withUnsafeMutableBytes { bytes in
+            let buffer = bytes.bindMemory(to: UInt8.self)
+            var bmpIndex = 54  // Start after header
+
+            for y in 0..<height {
+                for x in 0..<width {
+                    let pixelIndex = y * cgBytesPerRow + x * cgBytesPerPixel
+
+                    // Convert from RGB to BGR for BMP format
+                    if cgBytesPerPixel >= 3 {
+                        buffer[bmpIndex] = pixelBytes![pixelIndex + 2]     // B
+                        buffer[bmpIndex + 1] = pixelBytes![pixelIndex + 1] // G
+                        buffer[bmpIndex + 2] = pixelBytes![pixelIndex]     // R
+                    } else {
+                        // Handle grayscale or other formats
+                        let gray = pixelBytes![pixelIndex]
+                        buffer[bmpIndex] = gray     // B
+                        buffer[bmpIndex + 1] = gray // G
+                        buffer[bmpIndex + 2] = gray // R
+                    }
+                    bmpIndex += 3
+                }
+
+                // Add row padding
+                for _ in 0..<rowPadding {
+                    buffer[bmpIndex] = 0
+                    bmpIndex += 1
+                }
+            }
+        }
+
+        return bmpData
+    }
+}
+
+// MARK: - Debug Stream Handler
+
+class UsbVideoDebugHandler: NSObject, FlutterStreamHandler {
+    private weak var plugin: UsbVideoCapturePlugin?
+
+    init(plugin: UsbVideoCapturePlugin) {
+        self.plugin = plugin
+    }
+
+    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        plugin?.debugEventSink = events
+        plugin?.debugLog("USB Video Debug channel connected")
+        return nil
+    }
+
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        plugin?.debugEventSink = nil
+        return nil
     }
 }
