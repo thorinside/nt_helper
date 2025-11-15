@@ -98,7 +98,7 @@ development_status:
 
   epic-8: contexted
   e8-1-complete-uvccamera-fork-eventchannel-implementation: done
-  e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device: backlog
+  e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device: in-progress  # BLOCKED: Requires physical Android hardware testing
   epic-8-retrospective: optional
 
   # Bug Fixes
