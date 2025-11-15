@@ -89,7 +89,7 @@ dependencies:
   uvccamera:
     git:
       url: https://github.com/thorinside/UVCCamera
-      ref: feature/frame-streaming-api
+      ref: d4f744efb2d045b0efd56a8dcf242f1827c6f05b
       path: flutter
 
 dev_dependencies:

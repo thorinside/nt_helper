@@ -1322,8 +1322,8 @@ packages:
     dependency: "direct main"
     description:
       path: flutter
-      ref: "feature/frame-streaming-api"
-      resolved-ref: "229a32329b3500f24ea5f60a45487a81f74c9bda"
+      ref: d4f744efb2d045b0efd56a8dcf242f1827c6f05b
+      resolved-ref: d4f744efb2d045b0efd56a8dcf242f1827c6f05b
       url: "https://github.com/thorinside/UVCCamera"
     source: git
     version: "0.0.0-SNAPSHOT"
