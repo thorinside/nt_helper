@@ -770,6 +770,7 @@ class MCPAlgorithmTools {
       'min': parameter.min,
       'max': parameter.max,
       'unit': parameter.unit,
+      'is_disabled': value.isDisabled,
     };
 
     // Include mapping only if at least one type is enabled

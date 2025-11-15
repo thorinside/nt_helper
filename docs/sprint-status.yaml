@@ -95,3 +95,7 @@ development_status:
   # Bug Fixes
   bug-1-mapping-editor-save-and-input-issues: done
   bug-2-plugin-installation-directory-creation: done
+
+  epic-7: backlog
+  7-1-implement-parameter-disabled-grayed-out-state-in-ui: done
+  epic-7-retrospective: optional

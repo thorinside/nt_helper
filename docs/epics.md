@@ -696,4 +696,59 @@ So that [benefit/value].
 
 ---
 
+## Epic 7: Sysex Updates
+
+**Expanded Goal:**
+
+Implement new features based on SysEx protocol enhancements and hardware firmware updates. This epic focuses on extracting and utilizing additional data fields from SysEx responses that provide richer state information about parameter behavior, routing configurations, and hardware capabilities.
+
+**Value Proposition:**
+
+As the Disting NT firmware evolves and exposes more detailed state information via SysEx messages, nt_helper needs to extract and present this data to users. The parameter disabled flag (bits 16-20 in 0x44/0x45 responses) is the first example: it tells users which parameters are currently active vs inactive based on their configuration, preventing confusion about why parameter changes have no effect. Future SysEx updates will enable additional features like dynamic routing visualization, output state detection, and configuration-aware UX improvements.
+
+**Story Breakdown:**
+
+**Story E7.1: Implement Parameter Disabled/Grayed-Out State in UI**
+
+As a user editing parameters in online mode,
+I want to see which parameters are disabled (grayed out) based on my current configuration,
+So that I can focus on relevant parameters and understand why certain controls have no effect.
+
+**Acceptance Criteria:**
+
+1. **Data Model:** Add `isDisabled` boolean field to `ParameterValue` class with default value `false` for backward compatibility
+2. **Data Model:** Update `ParameterValue` equality, hashCode, and toString methods to include `isDisabled` field
+3. **SysEx Parsing:** Extract disabled flag from 0x44 (All Parameter Values) response using formula: `flag = (byte0 >> 2) & 0x1F; isDisabled = (flag == 1)`
+4. **SysEx Parsing:** Extract disabled flag from 0x45 (Single Parameter Value) response using same formula
+5. **SysEx Parsing:** Add private `_extractDisabledFlag(int byte0)` helper method to both response parsers
+6. **Offline Mode:** MockDistingMIDIManager and OfflineDistingMIDIManager always return `isDisabled = false` (flag only available from live hardware)
+7. **State Management:** DistingCubit propagates `isDisabled` state through Slot model to UI
+8. **State Management:** Parameter updates trigger UI rebuild when disabled state changes
+9. **UI Visual Feedback:** Parameter editor widgets display disabled parameters with 0.5 opacity (50% transparency)
+10. **UI Visual Feedback:** Parameter list/grid views show disabled parameters with grayed-out text and reduced opacity
+11. **UI Behavior:** Disabled parameters are read-only (cannot be edited) with clear visual indication
+12. **UI Behavior:** Tooltip or help text explains why parameter is disabled when user hovers/taps
+13. **MCP Integration:** `get_parameter_value` response includes `is_disabled` boolean field in JSON
+14. **MCP Integration:** `get_multiple_parameters` includes `is_disabled` for each parameter
+15. **MCP Integration:** Parameter search results include `is_disabled` field
+16. **Testing:** Unit tests verify flag extraction for various byte0 values (0x00→false, 0x04→true, 0x08→false)
+17. **Testing:** Unit tests verify ParameterValue equality with different disabled states
+18. **Testing:** Integration test verifies Clock algorithm with Internal source shows Clock input parameter as disabled
+19. **Testing:** Integration test verifies changing Source from Internal to External updates disabled state
+20. **Testing:** Widget tests verify disabled parameters show reduced opacity and cannot be edited
+21. **Testing:** Offline mode test verifies all parameters appear enabled (isDisabled=false)
+22. **Documentation:** Update parameter flag analysis report (docs/parameter-flag-analysis-report.md) with implementation status
+23. **Documentation:** Add inline code comments explaining flag extraction bit manipulation
+24. **Code Quality:** `flutter analyze` passes with zero warnings
+25. **Code Quality:** All existing tests pass with no regressions
+
+**Prerequisites:** None
+
+**Technical Notes:**
+- Files to modify: `lib/domain/disting_nt_sysex.dart`, `lib/domain/sysex/responses/all_parameter_values_response.dart`, `lib/domain/sysex/responses/parameter_value_response.dart`, `lib/domain/mock_disting_midi_manager.dart`, `lib/domain/offline_disting_midi_manager.dart`, `lib/cubit/disting_cubit.dart`, `lib/models/slot.dart`, `lib/ui/widgets/parameter_editor_widget.dart`, `lib/ui/widgets/parameter_list_widget.dart`, `lib/mcp/tools/disting_tools.dart`
+- Reference documents: `docs/parameter-flag-findings.md`, `docs/parameter-flag-analysis-report.md`
+- Test files: Create `test/integration/parameter_disabled_state_test.dart`, update existing response parser tests
+
+---
+
 **For implementation:** Use the `create-story` workflow to generate individual story implementation plans from this epic breakdown.

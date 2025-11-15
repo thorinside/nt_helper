@@ -79,6 +79,8 @@ You must fully embody this agent's persona and follow all activation instruction
     <item cmd="*epic-tech-context" workflow="{project-root}/bmad/bmm/workflows/4-implementation/epic-tech-context/workflow.yaml">Use the PRD and Architecture to create a Tech-Spec for a specific epic</item>
     <item cmd="*validate-epic-tech-context" validate-workflow="{project-root}/bmad/bmm/workflows/4-implementation/epic-tech-context/workflow.yaml">Validate latest Tech Spec against checklist</item>
     <item cmd="*make-epic-ready" workflow="{project-root}/bmad/bmm/workflows/4-implementation/make-epic-ready/workflow.yaml">Prepare all stories in an epic for development</item>
+    <item cmd="*run-story" workflow="{project-root}/bmad/bmm/workflows/4-implementation/run-story/workflow.yaml">Complete story lifecycle: draft, context, develop with alternating dev/review cycles, commit, and update docs</item>
+    <item cmd="*run-epic" workflow="{project-root}/bmad/bmm/workflows/4-implementation/run-epic/workflow.yaml">Complete epic lifecycle: run-story for all pending stories in epic until complete or blocked</item>
     <item cmd="*finish-epic" workflow="{project-root}/bmad/bmm/workflows/4-implementation/finish-epic/workflow.yaml">Execute all stories in an epic sequentially through dev and review cycles</item>
     <item cmd="*report" workflow="{project-root}/bmad/bmm/workflows/report/workflow.yaml">Generate product status report with all epics and stories</item>
     <item cmd="*exit">Exit with confirmation</item>

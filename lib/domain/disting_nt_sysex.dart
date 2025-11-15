@@ -146,11 +146,13 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
   @override
   final int parameterNumber;
   final int value;
+  final bool isDisabled;
 
   ParameterValue({
     required this.algorithmIndex,
     required this.parameterNumber,
     required this.value,
+    this.isDisabled = false,
   });
 
   /// Factory constructor for default `filler` instance
@@ -160,7 +162,7 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
 
   @override
   String toString() {
-    return "ParameterValue(algorithmIndex=$algorithmIndex, parameterNumber=$parameterNumber, value=$value)";
+    return "ParameterValue(algorithmIndex=$algorithmIndex, parameterNumber=$parameterNumber, value=$value, isDisabled=$isDisabled)";
   }
 
   /// Override == operator for equality comparison
@@ -172,12 +174,13 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
 
     return algorithmIndex == other.algorithmIndex &&
         parameterNumber == other.parameterNumber &&
-        value == other.value;
+        value == other.value &&
+        isDisabled == other.isDisabled;
   }
 
   /// Override hashCode for using instances in hash-based collections
   @override
-  int get hashCode => Object.hash(algorithmIndex, parameterNumber, value);
+  int get hashCode => Object.hash(algorithmIndex, parameterNumber, value, isDisabled);
 }
 
 class ParameterEnumStrings implements HasAlgorithmIndex, HasParameterNumber {

@@ -427,5 +427,122 @@ void main() {
         expect(parameterViewRow.unit, equals('dB'));
       },
     );
+
+    testWidgets('Disabled parameters render with reduced opacity', (
+      tester,
+    ) async {
+      // Create a slot with a disabled parameter
+      final slot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'test-guid',
+          name: 'Test Algorithm',
+        ),
+        routing: RoutingInfo(
+          algorithmIndex: 0,
+          routingInfo: List.filled(6, 0),
+        ),
+        pages: ParameterPages(algorithmIndex: 0, pages: []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            min: 0,
+            max: 100,
+            defaultValue: 50,
+            unit: 0,
+            name: 'Disabled Parameter',
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 50,
+            isDisabled: true, // Mark as disabled
+          ),
+        ],
+        enums: [
+          ParameterEnumStrings(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            values: [],
+          ),
+        ],
+        mappings: [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: PackedMappingData.filler().copyWith(
+              perfPageIndex: 0,
+            ),
+          ),
+        ],
+        valueStrings: [
+          ParameterValueString(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: '',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ParameterEditorView(
+              slot: slot,
+              parameterInfo: slot.parameters[0],
+              value: slot.values[0],
+              enumStrings: slot.enums[0],
+              mapping: slot.mappings[0],
+              valueString: slot.valueStrings[0],
+              unit: 'Hz',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final parameterViewRow = tester.widget<ParameterViewRow>(
+        find.byType(ParameterViewRow),
+      );
+      expect(parameterViewRow.isDisabled, isTrue);
+    });
+
+    testWidgets('Enabled parameters render with full opacity', (tester) async {
+      final slot = createTestSlot(
+        algorithmIndex: 0,
+        unit: 0,
+        currentValue: 50,
+        valueString: '',
+        enumValues: [],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ParameterEditorView(
+              slot: slot,
+              parameterInfo: slot.parameters[0],
+              value: slot.values[0],
+              enumStrings: slot.enums[0],
+              mapping: slot.mappings[0],
+              valueString: slot.valueStrings[0],
+              unit: 'Hz',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final parameterViewRow = tester.widget<ParameterViewRow>(
+        find.byType(ParameterViewRow),
+      );
+      expect(parameterViewRow.isDisabled, isFalse);
+    });
   });
 }

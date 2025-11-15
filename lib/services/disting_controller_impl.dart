@@ -200,7 +200,7 @@ class DistingControllerImpl implements DistingController {
   }
 
   @override
-  Future<int?> getParameterValue(int slotIndex, int parameterNumber) async {
+  Future<ParameterValue?> getParameterValue(int slotIndex, int parameterNumber) async {
     final state = _getSynchronizedState();
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
@@ -212,7 +212,7 @@ class DistingControllerImpl implements DistingController {
     try {
       final ParameterValue? paramValueResponse = await _getManager()
           .requestParameterValue(actualAlgorithmIndex, parameterNumber);
-      return paramValueResponse?.value;
+      return paramValueResponse;
     } catch (e) {
       return null;
     }

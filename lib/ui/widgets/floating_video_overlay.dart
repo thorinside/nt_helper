@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -9,7 +8,6 @@ import 'package:nt_helper/cubit/video_frame_state.dart';
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/ui/widgets/draggable_resizable_overlay.dart';
 import 'package:pasteboard/pasteboard.dart';
-import 'package:uvccamera/uvccamera.dart';
 
 class FloatingVideoOverlay extends StatefulWidget {
   final OverlayEntry overlayEntry;
@@ -39,10 +37,7 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
     widget.cubit.startVideoStream();
 
     // Connect VideoFrameCubit to the raw video stream when it becomes available
-    // Only for non-Android platforms (Android uses UvcCameraPreview widget directly)
-    if (!Platform.isAndroid) {
-      _connectVideoFrameCubit();
-    }
+    _connectVideoFrameCubit();
   }
 
   void _connectVideoFrameCubit() {
@@ -55,12 +50,6 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
     // Get the video manager directly from the DistingCubit
     final videoManager = widget.cubit.videoManager;
     if (videoManager != null) {
-      // Check if we have an Android controller first
-      final androidController = videoManager.getAndroidCameraController();
-      if (androidController != null) {
-        return; // Don't connect VideoFrameCubit on Android when using UvcCameraPreview
-      }
-
       final rawStream = videoManager.getRawVideoStream();
       if (rawStream != null) {
         widget.videoFrameCubit.connectToStream(rawStream);
@@ -143,40 +132,7 @@ class FloatingVideoContent extends StatelessWidget {
     required this.onFrameUpdate,
   });
 
-  Widget _buildAndroidCameraPreview(UvcCameraController controller) {
-    // Use ValueListenableBuilder to react to controller state changes
-    return ValueListenableBuilder(
-      valueListenable: controller,
-      builder: (context, value, child) {
-        value.device.name;
-
-        if (value.isInitialized) {
-          // Wrap in a Container to ensure proper sizing
-          return Container(
-            color: Colors.black, // Add background to see if widget is there
-            child: UvcCameraPreview(controller),
-          );
-        } else {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 8),
-                Text(
-                  'Initializing camera...\n'
-                  'Device: ${value.device.name}\n'
-                  'Initialized: ${value.isInitialized}',
-                ),
-              ],
-            ),
-          );
-        }
-      },
-    );
-  }
-
-  Widget _buildCrossPlatformVideoContent(BuildContext context) {
+  Widget _buildVideoContent(BuildContext context) {
     // Use VideoFrameCubit for all other platforms
     return BlocBuilder<VideoFrameCubit, VideoFrameState>(
       bloc: videoFrameCubit,
@@ -310,20 +266,6 @@ class FloatingVideoContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check if we're on Android and have a UvcCameraController
-    UvcCameraController? androidController;
-    bool useAndroidPreview = false;
-
-    if (Platform.isAndroid) {
-      androidController = cubit.videoManager?.getAndroidCameraController();
-      useAndroidPreview = androidController != null;
-
-      // Additional debug info about the controller state
-      if (androidController != null) {
-        androidController.value;
-      }
-    }
-
     return Material(
       elevation: 8,
       borderRadius: BorderRadius.circular(6),
@@ -334,12 +276,10 @@ class FloatingVideoContent extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Main video content
+            // Main video content - use VideoFrameCubit for all platforms
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: useAndroidPreview
-                  ? _buildAndroidCameraPreview(androidController!)
-                  : _buildCrossPlatformVideoContent(context),
+              child: _buildVideoContent(context),
             ),
 
             // Close button positioned on the right side
