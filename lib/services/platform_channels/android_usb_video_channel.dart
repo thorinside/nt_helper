@@ -11,6 +11,7 @@ class AndroidUsbVideoChannel {
   static const frameChannel = EventChannel(
     'com.example.nt_helper/usb_video_stream',
   );
+  static const uvccameraFrameChannel = EventChannel('uvccamera/frames');
 
   final DebugService _debugService = DebugService();
 
@@ -251,11 +252,27 @@ class AndroidUsbVideoChannel {
         'cameraId': _controller!.cameraId,
       });
 
-      // Subscribe to real frame stream
-      _frameSubscription = frameChannel.receiveBroadcastStream().listen(
-        (data) {
+      // Subscribe to uvccamera's NV21 frame stream and convert to BMP
+      _frameSubscription = uvccameraFrameChannel.receiveBroadcastStream().listen(
+        (data) async {
           if (data is Uint8List) {
-            _frameStreamController?.add(data);
+            try {
+              // Convert NV21 to BMP using native method
+              final bmpData = await methodChannel.invokeMethod<Uint8List>(
+                'convertNV21ToBMP',
+                {
+                  'nv21Data': data,
+                  'width': 256,
+                  'height': 64,
+                },
+              );
+
+              if (bmpData != null) {
+                _frameStreamController?.add(bmpData);
+              }
+            } catch (e) {
+              _debugLog('Frame conversion error: $e');
+            }
           }
         },
         onError: (error) {

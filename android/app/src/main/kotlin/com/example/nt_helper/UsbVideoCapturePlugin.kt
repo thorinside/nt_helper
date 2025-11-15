@@ -172,7 +172,25 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
                 // Android supports USB video with proper libraries
                 result.success(true)
             }
-            
+
+            "convertNV21ToBMP" -> {
+                val nv21Data = call.argument<ByteArray>("nv21Data")
+                val width = call.argument<Int>("width") ?: VIDEO_WIDTH
+                val height = call.argument<Int>("height") ?: VIDEO_HEIGHT
+
+                if (nv21Data == null) {
+                    result.error("INVALID_ARGUMENT", "nv21Data is required", null)
+                    return
+                }
+
+                try {
+                    val bmpData = convertNV21ToBMP(nv21Data, width, height)
+                    result.success(bmpData)
+                } catch (e: Exception) {
+                    result.error("CONVERSION_ERROR", "Failed to convert NV21 to BMP: ${e.message}", null)
+                }
+            }
+
             else -> {
                 result.notImplemented()
             }
@@ -339,6 +357,28 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
             }
         }
 
+        return bmpData
+    }
+
+    private fun nv21ToBitmap(nv21: ByteArray, width: Int, height: Int): Bitmap {
+        val yuvImage = YuvImage(
+            nv21,
+            ImageFormat.NV21,
+            width,
+            height,
+            null
+        )
+
+        val out = ByteArrayOutputStream()
+        yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)
+        val imageBytes = out.toByteArray()
+        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+    }
+
+    private fun convertNV21ToBMP(nv21Data: ByteArray, width: Int, height: Int): ByteArray {
+        val bitmap = nv21ToBitmap(nv21Data, width, height)
+        val bmpData = encodeBMP(bitmap)
+        bitmap.recycle()
         return bmpData
     }
 
