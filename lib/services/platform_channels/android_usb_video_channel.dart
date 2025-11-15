@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/domain/video/usb_device_info.dart';
 import 'package:nt_helper/services/debug_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:uvccamera/uvccamera.dart';
 
 /// Android-specific implementation using uvccamera package
@@ -176,6 +177,19 @@ class AndroidUsbVideoChannel {
 
       // Store device for later use when connected
       _currentDevice = device;
+
+      // Request camera permission (required for USB video class devices on Android)
+      _debugLog('Requesting camera permission for USB video access...');
+      final cameraPermissionStatus = await Permission.camera.request();
+      _debugLog('Camera permission result: $cameraPermissionStatus');
+
+      if (!cameraPermissionStatus.isGranted) {
+        _debugLog('Camera permission denied - required for USB video devices');
+        _frameStreamController?.addError(
+          'Camera permission required for USB video. Please grant permission in settings.',
+        );
+        return;
+      }
 
       // Request device permission to trigger connection (like in the example)
       _debugLog('Requesting device permission to trigger connection...');
