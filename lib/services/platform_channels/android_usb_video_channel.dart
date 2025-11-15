@@ -308,13 +308,12 @@ class AndroidUsbVideoChannel {
       _debugLog('Opening camera for device: ${device.name}');
 
       // Open camera directly via method channel to get cameraId
-      // This bypasses the controller which requires preview modes
       const uvccameraChannel = MethodChannel('uvccamera/native');
 
       try {
         final result = await uvccameraChannel.invokeMethod('openCamera', {
           'deviceName': device.name,
-          'resolutionPreset': 'low', // Start with low resolution
+          'resolutionPreset': 'low', // Preset doesn't matter, fork uses first available size
         });
 
         _cameraId = result as int;
