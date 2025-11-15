@@ -88,8 +88,8 @@ dependencies:
   webview_flutter: ^4.10.0
   uvccamera:
     git:
-      url: https://github.com/DigifinityLtd/UVCCamera
-      ref: feature/16kb-page-size-compliance
+      url: https://github.com/thorinside/UVCCamera
+      ref: feature/frame-streaming-api
       path: flutter
 
 dev_dependencies:

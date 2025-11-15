@@ -26,12 +26,20 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.Executors
+import com.serenegiant.usb.IFrameCallback
+import android.graphics.YuvImage
+import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.graphics.BitmapFactory
 
 class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler {
     private lateinit var channel: MethodChannel
     private lateinit var eventChannel: EventChannel
+    private lateinit var debugEventChannel: EventChannel
     private lateinit var context: Context
+    private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     private var eventSink: EventChannel.EventSink? = null
+    var debugEventSink: EventChannel.EventSink? = null
     // Use high-priority thread for video capture callbacks to prevent frame drops
     private val executor = Executors.newSingleThreadExecutor { r ->
         Thread(r, "VideoCapture").apply {
@@ -41,6 +49,8 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
 
     private var isStreamingActive = false
     private var frameCount = 0
+    private var frameCallback: VideoFrameCallback? = null
+    private var currentCameraId: Int? = null
 
     // For texture-based frame extraction
     private var textureRegistry: TextureRegistry? = null
@@ -57,13 +67,73 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
         private const val FRAME_INTERVAL_MS = 1000L / TARGET_FPS  // ~67ms
     }
 
+    // Frame callback that receives frames from UVCCamera
+    private class VideoFrameCallback(
+        private val plugin: UsbVideoCapturePlugin,
+        private val width: Int,
+        private val height: Int
+    ) : IFrameCallback {
+        private var frameCount = 0
+        private var lastFrameTime = System.currentTimeMillis()
+
+        override fun onFrame(frame: ByteBuffer) {
+            // Throttle to target FPS
+            val currentTime = System.currentTimeMillis()
+            val elapsed = currentTime - lastFrameTime
+
+            if (elapsed < FRAME_INTERVAL_MS) {
+                return  // Skip frame
+            }
+
+            lastFrameTime = currentTime
+            frameCount++
+
+            try {
+                // Convert NV21 → Bitmap → BMP
+                val bitmap = nv21ToBitmap(frame, width, height)
+                val bmpData = plugin.encodeBMP(bitmap)
+                bitmap.recycle()
+
+                if (frameCount % TARGET_FPS == 0) {
+                    plugin.debugLog("Real camera frame #$frameCount (${bmpData.size} bytes)")
+                }
+
+                // Send on main thread
+                plugin.mainHandler.post {
+                    plugin.eventSink?.success(bmpData)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("VideoCapture", "Frame error: ${e.message}", e)
+            }
+        }
+
+        private fun nv21ToBitmap(nv21: ByteBuffer, width: Int, height: Int): Bitmap {
+            val yuvImage = YuvImage(
+                nv21.array(),
+                ImageFormat.NV21,
+                width,
+                height,
+                null
+            )
+
+            val out = ByteArrayOutputStream()
+            yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)
+            val imageBytes = out.toByteArray()
+            return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        }
+    }
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        this.flutterPluginBinding = flutterPluginBinding
         context = flutterPluginBinding.applicationContext
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "com.example.nt_helper/usb_video")
         channel.setMethodCallHandler(this)
 
         eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "com.example.nt_helper/usb_video_stream")
         eventChannel.setStreamHandler(this)
+
+        debugEventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "com.example.nt_helper/usb_video_debug")
+        debugEventChannel.setStreamHandler(UsbVideoDebugHandler(this))
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
@@ -123,21 +193,36 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
             
             "startVideoStream" -> {
                 val deviceId = call.argument<String>("deviceId")
+                val cameraId = call.argument<Int>("cameraId")
+
                 if (deviceId == null) {
                     result.error("INVALID_ARGUMENT", "deviceId is required", null)
                     return
                 }
 
-                // For now, use test frames
-                // TODO: Extract real frames from UvcCameraController texture
-                // The texture ID is available from the controller in Dart
-                // We need to pass it here and read pixels from it
-                startVideoStream()
-                result.success(true)
+                if (cameraId != null) {
+                    try {
+                        startRealCameraFrameCapture(cameraId)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        debugLog("Failed to start real camera: ${e.message}")
+                        // Fallback to test frames
+                        startVideoStream()
+                        result.success(true)
+                    }
+                } else {
+                    // Test mode
+                    startVideoStream()
+                    result.success(true)
+                }
             }
 
             "stopVideoStream" -> {
-                stopVideoStream()
+                if (currentCameraId != null) {
+                    stopRealCameraFrameCapture()
+                } else {
+                    stopVideoStream()
+                }
                 result.success(null)
             }
             
@@ -315,9 +400,87 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
         return bmpData
     }
 
+    // Debug logging method
+    fun debugLog(message: String) {
+        val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(java.util.Date())
+        val logMessage = "[$timestamp] [NATIVE] $message"
+        mainHandler.post {
+            debugEventSink?.success(logMessage)
+        }
+    }
+
+    private fun startRealCameraFrameCapture(cameraId: Int) {
+        if (isStreamingActive) {
+            return
+        }
+
+        debugLog("Starting real camera frame capture for cameraId: $cameraId")
+
+        try {
+            // Call uvccamera's new startFrameStreaming API via method channel
+            val uvccameraChannel = MethodChannel(
+                flutterPluginBinding.binaryMessenger,
+                "uvccamera"
+            )
+
+            // Create callback
+            frameCallback = VideoFrameCallback(this, VIDEO_WIDTH, VIDEO_HEIGHT)
+            currentCameraId = cameraId
+
+            // Register with uvccamera
+            uvccameraChannel.invokeMethod("startFrameStreaming", mapOf(
+                "cameraId" to cameraId,
+                "pixelFormat" to 5  // NV21
+            ))
+
+            isStreamingActive = true
+            debugLog("Real camera streaming started successfully")
+
+        } catch (e: Exception) {
+            debugLog("ERROR starting real camera: ${e.message}")
+            throw e
+        }
+    }
+
+    private fun stopRealCameraFrameCapture() {
+        val cameraId = currentCameraId ?: return
+
+        try {
+            val uvccameraChannel = MethodChannel(
+                flutterPluginBinding.binaryMessenger,
+                "uvccamera"
+            )
+
+            uvccameraChannel.invokeMethod("stopFrameStreaming", mapOf(
+                "cameraId" to cameraId
+            ))
+
+            frameCallback = null
+            currentCameraId = null
+            isStreamingActive = false
+            debugLog("Real camera streaming stopped")
+
+        } catch (e: Exception) {
+            debugLog("ERROR stopping real camera: ${e.message}")
+        }
+    }
+
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
+        debugEventChannel.setMethodCallHandler(null)
         executor.shutdown()
+    }
+}
+
+// Debug Stream Handler
+class UsbVideoDebugHandler(private val plugin: UsbVideoCapturePlugin) : EventChannel.StreamHandler {
+    override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+        plugin.debugEventSink = events
+        plugin.debugLog("USB Video Debug channel connected")
+    }
+
+    override fun onCancel(arguments: Any?) {
+        plugin.debugEventSink = null
     }
 }

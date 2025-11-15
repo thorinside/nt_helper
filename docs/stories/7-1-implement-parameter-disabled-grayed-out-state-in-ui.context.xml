@@ -1,0 +1,316 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>1</storyId>
+    <title>Implement Parameter Disabled/Grayed-Out State in UI</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-14</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/7-1-implement-parameter-disabled-grayed-out-state-in-ui.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user editing parameters in online mode</asA>
+    <iWant>see which parameters are disabled (grayed out) based on my current configuration</iWant>
+    <soThat>I can focus on relevant parameters and understand why certain controls have no effect</soThat>
+    <tasks>
+- Update ParameterValue data model (AC-1, AC-2)
+  - Add isDisabled field to ParameterValue class with default false
+  - Update equality operator to include isDisabled
+  - Update hashCode to include isDisabled
+  - Update toString method to include isDisabled for debugging
+  - Add _extractDisabledFlag helper: bool _extractDisabledFlag(int byte0) => ((byte0 >> 2) &amp; 0x1F) == 1
+- Update SysEx response parsers (AC-2, AC-3)
+  - Modify AllParameterValuesResponse.parse() to extract disabled flag from byte0
+  - Modify ParameterValueResponse.parse() to extract disabled flag from byte0
+  - Ensure MockDistingMIDIManager returns isDisabled=false for all parameters
+  - Ensure OfflineDistingMIDIManager returns isDisabled=false for all parameters
+- Update state management layer (AC-4)
+  - Verify Slot model includes isDisabled in parameter representation
+  - Ensure DistingCubit emits new state when parameter disabled state changes
+  - Test state propagation from SysEx response through cubit to UI
+- Implement UI visual feedback (AC-5, AC-6)
+  - Update parameter_editor_view.dart to apply 0.5 opacity to disabled parameters
+  - Update parameter_list_view.dart to show grayed-out text for disabled parameters
+  - Make disabled parameters read-only (prevent editing)
+  - Add tooltip/help text explaining why parameter is disabled
+  - Test visual appearance on both light and dark themes
+- Update MCP tools (AC-7)
+  - Add is_disabled field to get_parameter_value JSON response
+  - Add is_disabled field to get_multiple_parameters JSON response
+  - Add is_disabled field to parameter search results
+  - Update case_converter.dart if needed for isDisabled → is_disabled conversion
+- Write unit tests (AC-8)
+  - Test _extractDisabledFlag with byte0=0x00 expects false
+  - Test _extractDisabledFlag with byte0=0x04 expects true (flag=1)
+  - Test _extractDisabledFlag with byte0=0x08 expects false (flag=2)
+  - Test _extractDisabledFlag with byte0=0x0C expects false (flag=3)
+  - Test ParameterValue equality with same isDisabled value
+  - Test ParameterValue inequality with different isDisabled values
+- Write integration tests (AC-9)
+  - Create test: Clock algorithm with Internal source → Clock input disabled
+  - Create test: Change Source Internal→External → Clock input enabled
+  - Verify disabled state updates in real-time during parameter changes
+- Write widget tests (AC-10)
+  - Test disabled parameter shows reduced opacity
+  - Test disabled parameter cannot be edited (read-only)
+  - Test enabled parameter has normal opacity and is editable
+- Write offline mode test (AC-11)
+  - Test offline mode shows all parameters as enabled (isDisabled=false)
+  - Verify no disabled styling appears in offline mode
+- Update documentation (AC-12)
+  - Add implementation notes to docs/parameter-flag-analysis-report.md
+  - Add code comments explaining bit manipulation: (byte0 >> 2) &amp; 0x1F
+  - Document that flag=1 means disabled, other values mean enabled
+- Final validation (AC-13)
+  - Run flutter analyze and fix all warnings
+  - Run all tests and fix failures
+  - Manual test with real hardware: Clock algorithm parameter disabled state
+  - Manual test mode transitions: Internal↔External source
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC-1: Data Model Updates
+1. Add isDisabled boolean field to ParameterValue class with default value false for backward compatibility
+2. Update ParameterValue equality, hashCode, and toString methods to include isDisabled field
+
+AC-2: SysEx Response Parsing
+3. Extract disabled flag from 0x44 (All Parameter Values) response using formula: flag = (byte0 >> 2) &amp; 0x1F; isDisabled = (flag == 1)
+4. Extract disabled flag from 0x45 (Single Parameter Value) response using same formula
+5. Add private _extractDisabledFlag(int byte0) helper method to both response parsers
+
+AC-3: Offline Mode Behavior
+6. MockDistingMIDIManager and OfflineDistingMIDIManager always return isDisabled = false (flag only available from live hardware)
+
+AC-4: State Management
+7. DistingCubit propagates isDisabled state through Slot model to UI
+8. Parameter updates trigger UI rebuild when disabled state changes
+
+AC-5: UI Visual Feedback
+9. Parameter editor widgets display disabled parameters with 0.5 opacity (50% transparency)
+10. Parameter list/grid views show disabled parameters with grayed-out text and reduced opacity
+
+AC-6: UI Behavior
+11. Disabled parameters are read-only (cannot be edited) with clear visual indication
+12. Tooltip or help text explains why parameter is disabled when user hovers/taps
+
+AC-7: MCP Integration
+13. get_parameter_value response includes is_disabled boolean field in JSON
+14. get_multiple_parameters includes is_disabled for each parameter
+15. Parameter search results include is_disabled field
+
+AC-8: Unit Testing
+16. Unit tests verify flag extraction for various byte0 values (0x00→false, 0x04→true, 0x08→false)
+17. Unit tests verify ParameterValue equality with different disabled states
+
+AC-9: Integration Testing
+18. Integration test verifies Clock algorithm with Internal source shows Clock input parameter as disabled
+19. Integration test verifies changing Source from Internal to External updates disabled state
+
+AC-10: Widget Testing
+20. Widget tests verify disabled parameters show reduced opacity and cannot be edited
+
+AC-11: Offline Mode Testing
+21. Offline mode test verifies all parameters appear enabled (isDisabled=false)
+
+AC-12: Documentation
+22. Update parameter flag analysis report (docs/parameter-flag-analysis-report.md) with implementation status
+23. Add inline code comments explaining flag extraction bit manipulation
+
+AC-13: Code Quality
+24. flutter analyze passes with zero warnings
+25. All existing tests pass with no regressions
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/parameter-flag-findings.md</path>
+        <title>Parameter Flag Findings - Grayed Out/Disabled Parameters</title>
+        <section>Summary and Flag Location</section>
+        <snippet>Expert Sleepers added a flag to parameter value messages (0x44/0x45) to indicate grayed out/disabled parameters. Flag is in bits 16-20 of 21-bit encoding. Extraction: flag = (byte0 >> 2) &amp; 0x1F. Flag value 1 means disabled, 0 means enabled.</snippet>
+      </doc>
+      <doc>
+        <path>docs/parameter-flag-analysis-report.md</path>
+        <title>Parameter Flag Analysis Report</title>
+        <section>Detailed Protocol Analysis</section>
+        <snippet>Detailed analysis of parameter flag protocol with test results from Clock algorithm showing 17 disabled parameters out of 72 total. Includes bit-level encoding details and implementation recommendations.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>MIDI Communication Layer</section>
+        <snippet>SysEx command architecture with request/response pattern. All responses parsed in lib/domain/sysex/responses/. DistingCubit is single source of truth for application state. Interface-based design with Mock, Offline, and Live implementations.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>nt_helper Project Instructions</title>
+        <section>Development Standards</section>
+        <snippet>Zero tolerance for flutter analyze errors. Never add debug logging to code unless explicitly asked. Run tests before commits. Check for existing test patterns.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>model</kind>
+        <symbol>ParameterValue</symbol>
+        <lines>143-181</lines>
+        <reason>Core data model that needs isDisabled field added. Currently has algorithmIndex, parameterNumber, value. Includes equality, hashCode, toString that must be updated.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/sysex/responses/parameter_value_response.dart</path>
+        <kind>parser</kind>
+        <symbol>ParameterValueResponse.parse()</symbol>
+        <lines>10-17</lines>
+        <reason>0x45 Single Parameter Value response parser. Needs to extract disabled flag from data[4] (byte0) using (byte0 >> 2) &amp; 0x1F and pass to ParameterValue constructor.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/sysex/responses/all_parameter_values_response.dart</path>
+        <kind>parser</kind>
+        <symbol>AllParameterValuesResponse.parse()</symbol>
+        <lines>all</lines>
+        <reason>0x44 All Parameter Values response parser. Iterates through parameter data, needs to extract disabled flag from each parameter's byte0.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/mock_disting_midi_manager.dart</path>
+        <kind>service</kind>
+        <symbol>MockDistingMIDIManager</symbol>
+        <lines>all</lines>
+        <reason>Demo mode MIDI manager. Must return ParameterValue instances with isDisabled=false since flag is only available from live hardware.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/offline_disting_midi_manager.dart</path>
+        <kind>service</kind>
+        <symbol>OfflineDistingMIDIManager</symbol>
+        <lines>all</lines>
+        <reason>Offline mode MIDI manager. Must return ParameterValue instances with isDisabled=false since flag is only available from live hardware.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>all</lines>
+        <reason>Primary application state manager. Verify that isDisabled state propagates from SysEx responses through Slot model to UI. May need updates if Slot model doesn't include disabled state.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/widgets/parameter_editor_view.dart</path>
+        <kind>widget</kind>
+        <symbol>ParameterEditorView</symbol>
+        <lines>all</lines>
+        <reason>Parameter editor UI widget. Needs to apply 0.5 opacity to disabled parameters and make them read-only. Add tooltip explaining disabled state.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/widgets/parameter_list_view.dart</path>
+        <kind>widget</kind>
+        <symbol>ParameterListView</symbol>
+        <lines>all</lines>
+        <reason>Parameter list/grid view widget. Needs to show disabled parameters with grayed-out text and reduced opacity.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>mcp_tools</kind>
+        <symbol>get_parameter_value, get_multiple_parameters</symbol>
+        <lines>all</lines>
+        <reason>MCP tool implementations. Need to include is_disabled field in JSON responses for parameter queries and searches.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter" ecosystem="Flutter SDK" />
+        <package name="flutter_bloc" version="^9.1.1" />
+        <package name="flutter_midi_command" version="^0.5.3" />
+      </flutter>
+      <dart>
+        <package name="sdk" version=">=3.8.1 &lt;4.0.0" />
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- All SysEx response parsers must follow existing pattern: decode bytes, construct domain models, return to caller
+- ParameterValue class changes must maintain backward compatibility (use default value for isDisabled)
+- Zero tolerance for flutter analyze warnings - code must pass analysis before commit
+- Flag extraction uses bit manipulation: (byte0 >> 2) &amp; 0x1F to isolate bits 16-20
+- Flag value 1 means disabled, all other values mean enabled
+- Offline/Demo modes always show isDisabled=false (flag only available from live hardware)
+- UI must work on both light and dark themes
+- Disabled parameters should be read-only with clear visual indication (0.5 opacity)
+- MCP responses use snake_case: isDisabled → is_disabled
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ParameterValue</name>
+      <kind>data class</kind>
+      <signature>class ParameterValue {
+  final int algorithmIndex;
+  final int parameterNumber;
+  final int value;
+  final bool isDisabled; // NEW FIELD
+
+  ParameterValue({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.value,
+    this.isDisabled = false, // DEFAULT VALUE
+  });
+
+  @override
+  bool operator ==(Object other) {
+    // MUST INCLUDE isDisabled
+  }
+
+  @override
+  int get hashCode {
+    // MUST INCLUDE isDisabled
+  }
+
+  @override
+  String toString() {
+    // SHOULD INCLUDE isDisabled
+  }
+}</signature>
+      <path>lib/domain/disting_nt_sysex.dart</path>
+    </interface>
+    <interface>
+      <name>_extractDisabledFlag</name>
+      <kind>helper function</kind>
+      <signature>bool _extractDisabledFlag(int byte0) {
+  final flag = (byte0 >> 2) &amp; 0x1F;  // Extract bits 16-20
+  return flag == 1;  // flag=1 means disabled
+}</signature>
+      <path>lib/domain/sysex/responses/parameter_value_response.dart</path>
+    </interface>
+    <interface>
+      <name>IDistingMidiManager</name>
+      <kind>interface</kind>
+      <signature>Abstract interface defining all MIDI operations. Mock and Offline implementations must return ParameterValue with isDisabled=false.</signature>
+      <path>lib/domain/i_disting_midi_manager.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Flutter testing framework with flutter_test package. Unit tests for parsers and models in test/ directory. Integration tests for hardware interaction. Widget tests for UI components. Follow existing test patterns in test/ui/widgets/parameter_editor_view_test.dart and test/parameter_flag_test.dart.</standards>
+    <locations>
+- test/domain/ - Unit tests for models and parsers
+- test/ui/widgets/ - Widget tests for UI components
+- test/integration/ - Integration tests for hardware interaction
+- test/services/ - Service layer tests
+    </locations>
+    <ideas>
+- Unit test: _extractDisabledFlag(0x00) returns false (flag=0)
+- Unit test: _extractDisabledFlag(0x04) returns true (flag=1, disabled)
+- Unit test: _extractDisabledFlag(0x08) returns false (flag=2)
+- Unit test: _extractDisabledFlag(0x0C) returns false (flag=3)
+- Unit test: ParameterValue equality with same isDisabled value
+- Unit test: ParameterValue inequality with different isDisabled values
+- Integration test: Clock algorithm with Internal source shows Clock input (param 6) as disabled
+- Integration test: Changing Source from Internal to External updates Clock input disabled state
+- Widget test: Disabled parameter shows 0.5 opacity and is read-only
+- Widget test: Enabled parameter shows normal opacity and is editable
+- Offline mode test: All parameters show isDisabled=false in offline/demo mode
+- MCP test: get_parameter_value response includes is_disabled field
+    </ideas>
+  </tests>
+</story-context>

@@ -207,7 +207,9 @@ class AndroidUsbVideoChannel {
     }
 
     try {
-      _debugLog('Frame capture setup for UvcCameraController');
+      _debugLog(
+        'Starting frame capture with cameraId: ${_controller!.cameraId}',
+      );
 
       // Subscribe to camera error and status events (optional - may not be available)
       if (_controller != null) {
@@ -243,14 +245,25 @@ class AndroidUsbVideoChannel {
         }
       }
 
-      // When we have a real UvcCameraController, we don't need test frames
-      // The UvcCameraPreview widget will handle displaying the camera feed directly
-      _debugLog(
-        'UvcCameraController ready - frames will be displayed via UvcCameraPreview widget',
+      // Pass cameraId to native plugin to start real frame capture
+      await methodChannel.invokeMethod('startVideoStream', {
+        'deviceId': _currentDevice!.name,
+        'cameraId': _controller!.cameraId,
+      });
+
+      // Subscribe to real frame stream
+      _frameSubscription = frameChannel.receiveBroadcastStream().listen(
+        (data) {
+          if (data is Uint8List) {
+            _frameStreamController?.add(data);
+          }
+        },
+        onError: (error) {
+          _debugLog('Frame stream error: $error');
+        },
       );
 
-      // Don't start native test frame streaming when we have a real controller
-      // The frames come directly through the controller's texture
+      _debugLog('Frame capture started successfully');
     } catch (e) {
       _debugLog('ERROR during frame capture setup: $e');
       _frameStreamController?.addError('Failed to start frame capture: $e');
@@ -395,7 +408,14 @@ class AndroidUsbVideoChannel {
   Future<void> _stopCurrentStream() async {
     _debugLog('Stopping current stream...');
 
-    // Cancel all subscriptions first
+    // Stop native video stream first
+    try {
+      await methodChannel.invokeMethod('stopVideoStream');
+    } catch (e) {
+      _debugLog('ERROR stopping native video stream: $e');
+    }
+
+    // Cancel all subscriptions
     _frameSubscription?.cancel();
     _frameSubscription = null;
 

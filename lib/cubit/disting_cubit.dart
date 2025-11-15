@@ -1152,10 +1152,13 @@ class DistingCubit extends Cubit<DistingState> {
 
           if (userIsChangingTheValue) {
             // Optimistic update during slider movement - just update the UI
+            // Preserve isDisabled state from current value
+            final currentValue = currentSlot.values.elementAtOrNull(parameterNumber);
             final newValue = ParameterValue(
               algorithmIndex: algorithmIndex,
               parameterNumber: parameterNumber,
               value: value,
+              isDisabled: currentValue?.isDisabled ?? false,
             );
 
             emit(
@@ -1195,10 +1198,13 @@ class DistingCubit extends Cubit<DistingState> {
             }
 
             // Update UI with the final value immediately (optimistic)
+            // Preserve isDisabled state from current value
+            final currentValue = currentSlot.values.elementAtOrNull(parameterNumber);
             final newValue = ParameterValue(
               algorithmIndex: algorithmIndex,
               parameterNumber: parameterNumber,
               value: value,
+              isDisabled: currentValue?.isDisabled ?? false,
             );
 
             emit(
@@ -1909,6 +1915,7 @@ class DistingCubit extends Cubit<DistingState> {
               algorithmIndex: algorithmIndex,
               parameterNumber: value.parameterNumber,
               value: value.value,
+              isDisabled: value.isDisabled,
             ),
           )
           .toList(),
@@ -2124,8 +2131,9 @@ class DistingCubit extends Cubit<DistingState> {
         }
         final currentValue =
             currentSlot.values[mapped.parameter.parameterNumber];
-        if (newValue.value != currentValue.value) {
-          // A change was detected: update state and reset no-change count.
+        if (newValue.value != currentValue.value ||
+            newValue.isDisabled != currentValue.isDisabled) {
+          // A change was detected (value or disabled state): update state and reset no-change count.
           final updatedSlots = updateSlot(
             mapped.parameter.algorithmIndex,
             currentState.slots,

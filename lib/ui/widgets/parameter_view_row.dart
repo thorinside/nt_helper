@@ -30,6 +30,7 @@ class ParameterViewRow extends StatefulWidget {
   final int parameterNumber;
   final PackedMappingData? mappingData;
   final Slot slot;
+  final bool isDisabled;
 
   const ParameterViewRow({
     super.key,
@@ -47,6 +48,7 @@ class ParameterViewRow extends StatefulWidget {
     this.mappingData,
     required this.initialValue,
     required this.slot,
+    this.isDisabled = false,
   });
 
   @override
@@ -136,9 +138,13 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           )
         : null;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
-      child: Row(
+    final rowContent = Opacity(
+      opacity: widget.isDisabled ? 0.5 : 1.0,
+      child: IgnorePointer(
+        ignoring: widget.isDisabled,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
+          child: Row(
         key: ValueKey(widescreen),
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -326,8 +332,18 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
+    ),
     );
+
+    // Wrap in tooltip when disabled to explain why parameter cannot be edited
+    return widget.isDisabled
+        ? Tooltip(
+            message: 'This parameter is disabled by the current configuration',
+            child: rowContent,
+          )
+        : rowContent;
   }
 }

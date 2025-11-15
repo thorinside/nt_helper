@@ -5,7 +5,7 @@ import 'dart:typed_data'; // Added for Uint8List
 import 'package:collection/collection.dart';
 import 'package:image/image.dart' as img; // For image processing
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, Mapping;
+    show Algorithm, ParameterInfo, Mapping, ParameterValue;
 import 'package:nt_helper/models/packed_mapping_data.dart' show MidiMappingType;
 import 'package:nt_helper/cubit/disting_cubit.dart'
     show DistingCubit, DistingStateSynchronized;
@@ -98,10 +98,11 @@ class DistingTools {
             paramIndex++
           ) {
             final pInfo = parameterInfos[paramIndex];
-            final int? liveRawValue = await _controller.getParameterValue(
+            final ParameterValue? paramValue = await _controller.getParameterValue(
               i,
               pInfo.parameterNumber,
             );
+            final int? liveRawValue = paramValue?.value;
 
             // Build base parameter object
             final paramData = {
@@ -123,6 +124,7 @@ class DistingTools {
               'value': liveRawValue != null
                   ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                   : null, // Scaled
+              'is_disabled': paramValue?.isDisabled ?? false,
             };
 
             // Add enum metadata if this is an enum parameter
@@ -518,12 +520,12 @@ class DistingTools {
         resolvedParameterNumber = matchingParam.parameterNumber;
       }
 
-      final int? liveRawValue = await _controller.getParameterValue(
+      final ParameterValue? paramValue = await _controller.getParameterValue(
         slotIndex!,
         resolvedParameterNumber,
       );
 
-      if (liveRawValue == null) {
+      if (paramValue == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
@@ -532,6 +534,8 @@ class DistingTools {
           ),
         );
       }
+
+      final int liveRawValue = paramValue.value;
 
       // Fetch parameter info to get powerOfTen for scaling
       final List<ParameterInfo> paramInfos = await _controller
@@ -561,6 +565,7 @@ class DistingTools {
           liveRawValue,
           paramInfo.powerOfTen,
         ), // Scaled value
+        'is_disabled': paramValue.isDisabled,
       };
 
       // Add enum metadata if applicable
@@ -2126,8 +2131,9 @@ class DistingTools {
                 paramIndex < parameterInfos.length;
                 paramIndex++) {
               final pInfo = parameterInfos[paramIndex];
-              final int? liveRawValue =
+              final ParameterValue? paramValue =
                   await _controller.getParameterValue(i, pInfo.parameterNumber);
+              final int? liveRawValue = paramValue?.value;
 
               final paramData = {
                 'parameter_number': pInfo.parameterNumber,
@@ -2140,6 +2146,7 @@ class DistingTools {
                 'value': liveRawValue != null
                     ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                     : null,
+                'is_disabled': paramValue?.isDisabled ?? false,
               };
 
               // Add enum metadata if applicable
@@ -2403,8 +2410,9 @@ class DistingTools {
                 paramIndex < parameterInfos.length;
                 paramIndex++) {
               final pInfo = parameterInfos[paramIndex];
-              final int? liveRawValue =
+              final ParameterValue? paramValue =
                   await _controller.getParameterValue(i, paramIndex);
+              final int? liveRawValue = paramValue?.value;
 
               final paramData = {
                 'parameter_number': paramIndex,
@@ -2412,6 +2420,7 @@ class DistingTools {
                 'value': liveRawValue != null
                     ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                     : null,
+                'is_disabled': paramValue?.isDisabled ?? false,
               };
 
               parametersJsonList.add(paramData);
@@ -2780,8 +2789,9 @@ class DistingTools {
         List<Map<String, dynamic>> parametersJsonList = [];
         for (int i = 0; i < updatedParameterInfos.length; i++) {
           final pInfo = updatedParameterInfos[i];
-          final int? liveRawValue =
+          final ParameterValue? paramValue =
               await _controller.getParameterValue(slotIndex, i);
+          final int? liveRawValue = paramValue?.value;
 
           final paramData = {
             'parameter_number': i,
@@ -2789,6 +2799,7 @@ class DistingTools {
             'value': liveRawValue != null
                 ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                 : null,
+            'is_disabled': paramValue?.isDisabled ?? false,
           };
 
           parametersJsonList.add(paramData);
@@ -3007,15 +3018,17 @@ class DistingTools {
       await _controller.savePreset();
 
       // Step 8: Format return value
-      final updatedValue =
+      final updatedParamValue =
           await _controller.getParameterValue(slotIndex, parameterNumber);
-      final scaledValue = _scaleForDisplay(updatedValue ?? 0, paramInfo.powerOfTen);
+      final updatedValue = updatedParamValue?.value ?? 0;
+      final scaledValue = _scaleForDisplay(updatedValue, paramInfo.powerOfTen);
 
       final Map<String, dynamic> result = {
         'slot_index': slotIndex,
         'parameter_number': parameterNumber,
         'parameter_name': parameterName,
         'value': scaledValue,
+        'is_disabled': updatedParamValue?.isDisabled ?? false,
       };
 
       // Include mappings if any are enabled
@@ -3911,12 +3924,18 @@ class DistingTools {
 
             List<Map<String, dynamic>> matches = [];
             for (final param in matchingParams) {
+              final ParameterValue? paramValue = await _controller.getParameterValue(
+                i,
+                param.parameterNumber,
+              );
               matches.add({
                 'parameter_number': param.parameterNumber,
                 'parameter_name': param.name,
                 'min': param.min,
                 'max': param.max,
                 'unit': param.unit,
+                'value': paramValue?.value,
+                'is_disabled': paramValue?.isDisabled ?? false,
               });
             }
 
@@ -3998,12 +4017,18 @@ class DistingTools {
 
       List<Map<String, dynamic>> matches = [];
       for (final param in matchingParams) {
+        final ParameterValue? paramValue = await _controller.getParameterValue(
+          slotIndex,
+          param.parameterNumber,
+        );
         matches.add({
           'parameter_number': param.parameterNumber,
           'parameter_name': param.name,
           'min': param.min,
           'max': param.max,
           'unit': param.unit,
+          'value': paramValue?.value,
+          'is_disabled': paramValue?.isDisabled ?? false,
         });
       }
 

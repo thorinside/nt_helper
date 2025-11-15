@@ -1322,9 +1322,9 @@ packages:
     dependency: "direct main"
     description:
       path: flutter
-      ref: "feature/16kb-page-size-compliance"
-      resolved-ref: d1f483f1dcd21d98c2beb5e3422233edc7244154
-      url: "https://github.com/DigifinityLtd/UVCCamera"
+      ref: "feature/frame-streaming-api"
+      resolved-ref: "229a32329b3500f24ea5f60a45487a81f74c9bda"
+      url: "https://github.com/thorinside/UVCCamera"
     source: git
     version: "0.0.0-SNAPSHOT"
   vector_math:

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, ParameterEnumStrings, Mapping;
+    show Algorithm, ParameterInfo, ParameterEnumStrings, Mapping, ParameterValue;
 import 'package:nt_helper/models/cpu_usage.dart';
 
 /// Abstract interface defining operations to control the Disting state,
@@ -73,10 +73,11 @@ abstract class DistingController {
   Future<Map<int, Algorithm?>> getAllSlots();
 
   /// Retrieves the current value of a specific parameter from the device.
+  /// Returns ParameterValue with value and metadata (including isDisabled flag).
   /// Returns null if the value cannot be fetched (e.g., slot empty, parameter invalid, or MIDI error).
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index or parameterNumber is invalid.
-  Future<int?> getParameterValue(int slotIndex, int parameterNumber);
+  Future<ParameterValue?> getParameterValue(int slotIndex, int parameterNumber);
 
   /// Retrieves the current string value of a specific parameter from the device.
   /// Used for text-based parameters like those in the Notes algorithm.

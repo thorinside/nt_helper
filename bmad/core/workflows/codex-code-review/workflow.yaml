@@ -1,0 +1,24 @@
+name: "codex-code-review"
+description: "Execute a Codex-powered code review with developer agent persona. Reviews story completion, updates BMAD docs, returns pass/fail summary."
+author: "BMad Master"
+version: 1.0.0
+
+# This is an action workflow - no template output
+template: false
+
+# Configuration
+config_source: "{project-root}/bmad/core/config.yaml"
+
+# Instructions path
+instructions: "{project-root}/bmad/core/workflows/codex-code-review/instructions.md"
+
+# Inputs
+inputs:
+  story_file:
+    description: "Path to the story file to review (relative to project root)"
+    required: true
+    example: "docs/stories/my-story.md"
+
+# Standalone workflow
+standalone: true
+web_bundle: false

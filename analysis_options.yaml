@@ -10,6 +10,8 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  exclude:
+    - tools/**
   errors:
     invalid_annotation_target: ignore
 

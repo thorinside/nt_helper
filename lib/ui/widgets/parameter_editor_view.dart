@@ -81,6 +81,7 @@ class ParameterEditorView extends StatelessWidget {
       unit: shouldShowUnit ? unit : null,
       mappingData: mapping?.packedMappingData,
       slot: slot,
+      isDisabled: value.isDisabled,
     );
   }
 }
