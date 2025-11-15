@@ -97,7 +97,7 @@ development_status:
   epic-7-retrospective: optional
 
   epic-8: contexted
-  e8-1-complete-uvccamera-fork-eventchannel-implementation: ready-for-dev
+  e8-1-complete-uvccamera-fork-eventchannel-implementation: done
   e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device: backlog
   epic-8-retrospective: optional
 
