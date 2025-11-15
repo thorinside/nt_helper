@@ -751,4 +751,71 @@ So that I can focus on relevant parameters and understand why certain controls h
 
 ---
 
+## Epic 8: Android Video Implementation
+
+**Expanded Goal:**
+
+Enable real camera video streaming on Android by completing the uvccamera fork's EventChannel implementation and integrating it with nt_helper's existing unified video architecture.
+
+**Value Proposition:**
+
+Android is the only platform where video doesn't work. iOS and macOS use a unified BMP → EventChannel → VideoFrameCubit architecture that works perfectly. Completing Android support achieves feature parity across all platforms, allowing Android users to view the Disting NT's 256x64 display in the floating video overlay.
+
+**Story Breakdown:**
+
+**Story E8.1: Complete uvccamera fork EventChannel implementation**
+
+As a developer maintaining the uvccamera fork,
+I want to add EventChannel and MethodChannel handlers for continuous frame streaming,
+So that nt_helper can subscribe to frame data following the fork's established EventChannel patterns.
+
+**Acceptance Criteria:**
+1. Create `UvcCameraFrameEventStreamHandler.java` following existing handler patterns
+2. Add `frameEventChannel` to `UvcCameraPlugin.java` with "uvccamera/frames" channel name
+3. Pass `frameEventStreamHandler` to `UvcCameraPlatform` constructor
+4. Update `UvcCameraPlatform.startFrameStreaming()` to create IFrameCallback calling `frameEventStreamHandler.sendFrame()`
+5. Add "startFrameStreaming" and "stopFrameStreaming" cases to `UvcCameraNativeMethodCallHandler`
+6. Method handlers extract `cameraId` and `pixelFormat`, validate arguments, call platform methods
+7. EventStreamHandler dispatches frames to main thread before calling `eventSink.success()`
+8. Proper error handling with try/catch and `result.error()` calls
+9. Fork builds successfully
+10. Pattern matches existing EventChannel implementations (error, status, button, device handlers)
+
+**Prerequisites:** None (fork foundation already exists)
+
+**Story E8.2: Integrate fork frame streaming with nt_helper and test on Android device**
+
+As a user running nt_helper on Android,
+I want video to display in the floating overlay just like iOS/macOS,
+So that I have feature parity across all platforms.
+
+**Acceptance Criteria:**
+1. Update pubspec.yaml to point to latest fork commit with EventChannel implementation
+2. Remove `VideoFrameCallback` class from `UsbVideoCapturePlugin.kt` (no longer needed)
+3. Update `startRealCameraFrameCapture` to call fork's startFrameStreaming via MethodChannel
+4. Subscribe to "uvccamera/frames" EventChannel in native plugin
+5. Convert NV21 frames to Bitmap using `YuvImage` helper
+6. Encode Bitmap to BMP using existing `encodeBMP()` method
+7. Forward BMP data via nt_helper's EventChannel to Dart layer
+8. `flutter analyze` passes with zero warnings
+9. Build APK succeeds: `flutter build apk`
+10. Deploy to Android device, connect Disting NT via USB OTG
+11. Video displays correctly in floating overlay
+12. Frame rate stable at 10-15 FPS
+13. No memory leaks (verified via Android Studio profiler)
+14. Camera reconnection works after disconnect/reconnect
+15. App backgrounding/foregrounding handled gracefully
+16. Video quality matches iOS/macOS
+
+**Prerequisites:** Story E8.1
+
+**Technical Notes:**
+- Fork location: `https://github.com/thorinside/UVCCamera` branch `feature/frame-streaming-api`
+- Files to modify (fork): `UvcCameraFrameEventStreamHandler.java` (NEW), `UvcCameraPlugin.java`, `UvcCameraPlatform.java`, `UvcCameraNativeMethodCallHandler.java`
+- Files to modify (nt_helper): `pubspec.yaml`, `android/app/src/main/kotlin/com/example/nt_helper/UsbVideoCapturePlugin.kt`
+- Reference documents: `docs/epic-8-android-video-implementation-context.md`, `docs/uvccamera-fork-frame-streaming-story.md`
+- Testing: Requires Android device with USB OTG support and Disting NT hardware
+
+---
+
 **For implementation:** Use the `create-story` workflow to generate individual story implementation plans from this epic breakdown.
