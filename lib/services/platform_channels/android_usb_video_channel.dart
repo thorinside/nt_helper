@@ -70,7 +70,7 @@ class AndroidUsbVideoChannel {
               device.name, // UvcCameraDevice doesn't have productName, use name
           vendorId: device.vendorId,
           productId: device.productId,
-          isDistingNT: device.vendorId == 0x16C0, // Expert Sleepers vendor ID
+          isDistingNT: device.vendorId == 0x3773, // Expert Sleepers vendor ID (14195 decimal)
         );
       }).toList();
     } catch (e, stack) {
