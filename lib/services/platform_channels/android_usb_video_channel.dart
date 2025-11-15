@@ -12,7 +12,12 @@ class AndroidUsbVideoChannel {
   static const frameChannel = EventChannel(
     'com.example.nt_helper/usb_video_stream',
   );
-  static const uvccameraFrameChannel = EventChannel('uvccamera/frames');
+  // Lazy-initialize to avoid creating EventChannel on non-Android platforms
+  static EventChannel? _uvccameraFrameChannel;
+  static EventChannel get uvccameraFrameChannel {
+    _uvccameraFrameChannel ??= const EventChannel('uvccamera/frames');
+    return _uvccameraFrameChannel!;
+  }
 
   final DebugService _debugService = DebugService();
 
