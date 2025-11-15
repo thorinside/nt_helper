@@ -90,7 +90,7 @@ dependencies:
   uvccamera:
     git:
       url: https://github.com/thorinside/UVCCamera
-      ref: dbf4ad82e915d2df649a34b139ca4e8c875e91fc
+      ref: 3bbbaee637448620f9bff7d7645b24d934ebd10b
       path: flutter
 
 dev_dependencies:

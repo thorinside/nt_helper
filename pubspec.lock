@@ -1370,8 +1370,8 @@ packages:
     dependency: "direct main"
     description:
       path: flutter
-      ref: ea994fd69286ab847e47169e8e4a6e970afff39d
-      resolved-ref: ea994fd69286ab847e47169e8e4a6e970afff39d
+      ref: "3bbbaee637448620f9bff7d7645b24d934ebd10b"
+      resolved-ref: "3bbbaee637448620f9bff7d7645b24d934ebd10b"
       url: "https://github.com/thorinside/UVCCamera"
     source: git
     version: "0.0.0-SNAPSHOT"
