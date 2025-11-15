@@ -12,7 +12,7 @@ public class UsbVideoCapturePlugin: NSObject, FlutterPlugin, FlutterStreamHandle
     private let processingQueue = DispatchQueue(label: "com.example.nt_helper.frameProcessingQueue", qos: .userInitiated)
 
     // Frame rate limiting
-    private var lastFrameTime: TimeInterval = 0
+    private var nextFrameTime: TimeInterval = 0
     private static let TARGET_FPS = 30.0
     private static let FRAME_INTERVAL = 1.0 / TARGET_FPS  // ~0.033 seconds
 
@@ -333,13 +333,14 @@ extension UsbVideoCapturePlugin: AVCaptureVideoDataOutputSampleBufferDelegate {
     public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         // Throttle frame rate to TARGET_FPS
         let currentTime = CACurrentMediaTime()
-        let timeSinceLastFrame = currentTime - lastFrameTime
 
-        guard timeSinceLastFrame >= UsbVideoCapturePlugin.FRAME_INTERVAL else {
+        // Check if enough time has passed since we last sent a frame
+        guard currentTime >= nextFrameTime else {
             return  // Skip this frame to maintain target FPS
         }
 
-        lastFrameTime = currentTime
+        // Schedule next frame (add interval to maintain consistent rate)
+        nextFrameTime = currentTime + UsbVideoCapturePlugin.FRAME_INTERVAL
 
         // Convert sample buffer to BMP data (matching iOS implementation)
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {

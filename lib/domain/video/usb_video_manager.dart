@@ -108,7 +108,7 @@ class UsbVideoManager {
           videoStream: monitoredStream,
           width: 256, // Disting NT display width
           height: 64, // Disting NT display height
-          fps: 15.0, // Target FPS
+          fps: 30.0, // Target FPS (matches native throttling)
         ),
       );
     } catch (e) {
