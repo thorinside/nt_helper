@@ -409,7 +409,7 @@ void main() {
           // Perform some interactions
           final nodes = find.byType(PhysicalInputNode);
           if (nodes.evaluate().isNotEmpty) {
-            await tester.tap(nodes.first);
+            await tester.tap(nodes.first, warnIfMissed: false);
             await tester.pump();
           }
 

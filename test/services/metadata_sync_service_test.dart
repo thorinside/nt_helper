@@ -4,6 +4,7 @@ import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/native.dart';
 
 class TestMockDistingMidiManager implements IDistingMidiManager {
   final List<AlgorithmInfo> testAlgorithms;
@@ -42,6 +43,12 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   bool get isConnected => true;
 
   @override
+  Future<void> requestWake() async {}
+
+  @override
+  Future<void> requestNewPreset() async {}
+
+  @override
   void noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -64,7 +71,7 @@ void main() {
     late MetadataSyncService service;
 
     setUpAll(() async {
-      database = AppDatabase();
+      database = AppDatabase.forTesting(NativeDatabase.memory());
     });
 
     tearDownAll(() async {

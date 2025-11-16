@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/services/metadata_import_service.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
@@ -8,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as path;
 
 void main() {
   group('CLCK Algorithm Specific Tests', () {
@@ -36,6 +38,27 @@ void main() {
       final database = AppDatabase.forTesting(NativeDatabase.memory());
 
       try {
+        // Load metadata from file and import into test database
+        var current = Directory.current;
+        while (!File(path.join(current.path, 'pubspec.yaml')).existsSync()) {
+          final parent = current.parent;
+          if (parent.path == current.path) {
+            throw Exception('Could not find project root');
+          }
+          current = parent;
+        }
+        final metadataPath = path.join(
+          current.path,
+          'assets',
+          'metadata',
+          'full_metadata.json',
+        );
+        final file = File(metadataPath);
+        final jsonString = file.readAsStringSync();
+
+        final importService = MetadataImportService(database);
+        await importService.importFromJson(jsonString);
+
         await AlgorithmMetadataService().initialize(database);
 
         final service = AlgorithmMetadataService();
@@ -54,6 +77,27 @@ void main() {
       final database = AppDatabase.forTesting(NativeDatabase.memory());
 
       try {
+        // Load metadata from file and import into test database
+        var current = Directory.current;
+        while (!File(path.join(current.path, 'pubspec.yaml')).existsSync()) {
+          final parent = current.parent;
+          if (parent.path == current.path) {
+            throw Exception('Could not find project root');
+          }
+          current = parent;
+        }
+        final metadataPath = path.join(
+          current.path,
+          'assets',
+          'metadata',
+          'full_metadata.json',
+        );
+        final file = File(metadataPath);
+        final jsonString = file.readAsStringSync();
+
+        final importService = MetadataImportService(database);
+        await importService.importFromJson(jsonString);
+
         await AlgorithmMetadataService().initialize(database);
 
         final cubit = DistingCubit(database);

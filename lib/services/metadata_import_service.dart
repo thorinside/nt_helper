@@ -14,6 +14,16 @@ class MetadataImportService {
     try {
       // Load the JSON file from assets
       final jsonString = await rootBundle.loadString(assetPath);
+      return await importFromJson(jsonString);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Imports metadata from a JSON string
+  /// This is useful for tests where assets aren't available
+  Future<bool> importFromJson(String jsonString) async {
+    try {
       final Map<String, dynamic> data = json.decode(jsonString);
 
       // Validate the export format

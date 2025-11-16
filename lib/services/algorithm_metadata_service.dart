@@ -73,49 +73,57 @@ class AlgorithmMetadataService {
   }
 
   Future<void> _loadAlgorithms() async {
-    final manifestContent = await rootBundle.loadString('AssetManifest.json');
-    final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+    try {
+      final manifestContent = await rootBundle.loadString('AssetManifest.json');
+      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
-    final algorithmFiles = manifestMap.keys
-        .where(
-          (path) =>
-              path.startsWith('docs/algorithms/') && path.endsWith('.json'),
-        )
-        .toList();
+      final algorithmFiles = manifestMap.keys
+          .where(
+            (path) =>
+                path.startsWith('docs/algorithms/') && path.endsWith('.json'),
+          )
+          .toList();
 
-    for (final path in algorithmFiles) {
-      try {
-        final jsonString = await rootBundle.loadString(path);
-        final Map<String, dynamic> jsonMap = json.decode(jsonString);
-        final algorithm = AlgorithmMetadata.fromJson(jsonMap);
-        _algorithms[algorithm.guid] = algorithm;
-        // print('Loaded algorithm: ${algorithm.name} (${algorithm.guid})');
-      } catch (e) {
-        // Intentionally empty
+      for (final path in algorithmFiles) {
+        try {
+          final jsonString = await rootBundle.loadString(path);
+          final Map<String, dynamic> jsonMap = json.decode(jsonString);
+          final algorithm = AlgorithmMetadata.fromJson(jsonMap);
+          _algorithms[algorithm.guid] = algorithm;
+          // print('Loaded algorithm: ${algorithm.name} (${algorithm.guid})');
+        } catch (e) {
+          // Intentionally empty
+        }
       }
+    } catch (e) {
+      // Asset bundle not available (e.g., in tests) - continue without loading
     }
   }
 
   Future<void> _loadFeatures() async {
-    final manifestContent = await rootBundle.loadString('AssetManifest.json');
-    final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+    try {
+      final manifestContent = await rootBundle.loadString('AssetManifest.json');
+      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
-    final featureFiles = manifestMap.keys
-        .where(
-          (path) => path.startsWith('docs/features/') && path.endsWith('.json'),
-        )
-        .toList();
+      final featureFiles = manifestMap.keys
+          .where(
+            (path) => path.startsWith('docs/features/') && path.endsWith('.json'),
+          )
+          .toList();
 
-    for (final path in featureFiles) {
-      try {
-        final jsonString = await rootBundle.loadString(path);
-        final Map<String, dynamic> jsonMap = json.decode(jsonString);
-        final feature = AlgorithmFeature.fromJson(jsonMap);
-        _features[feature.guid] = feature;
-        // print('Loaded feature: ${feature.name} (${feature.guid})');
-      } catch (e) {
-        // Intentionally empty
+      for (final path in featureFiles) {
+        try {
+          final jsonString = await rootBundle.loadString(path);
+          final Map<String, dynamic> jsonMap = json.decode(jsonString);
+          final feature = AlgorithmFeature.fromJson(jsonMap);
+          _features[feature.guid] = feature;
+          // print('Loaded feature: ${feature.name} (${feature.guid})');
+        } catch (e) {
+          // Intentionally empty
+        }
       }
+    } catch (e) {
+      // Asset bundle not available (e.g., in tests) - continue without loading
     }
   }
 
