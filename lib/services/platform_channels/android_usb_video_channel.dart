@@ -22,6 +22,7 @@ class AndroidUsbVideoChannel {
   final DebugService _debugService = DebugService();
 
   int? _cameraId; // Store camera ID from openCamera
+  bool _isOpeningCamera = false; // Flag to prevent concurrent opens
   StreamSubscription<UvcCameraDeviceEvent>? _deviceEventSubscription;
   StreamSubscription? _errorEventSubscription;
   StreamSubscription? _statusEventSubscription;
@@ -208,12 +209,19 @@ class AndroidUsbVideoChannel {
         return;
       }
 
-      // Permission granted - open camera immediately if not already open
+      // Permission granted - open camera immediately if not already opening/open
       // On first open: permission dialog triggers connected event, but we open here too (guarded)
       // On subsequent opens: permission already granted, no event fires, so we must open here
-      if (_cameraId == null) {
+      if (_cameraId == null && !_isOpeningCamera) {
         _debugLog('Permission granted - opening camera');
-        await _createAndInitializeController(device);
+        _isOpeningCamera = true;
+        try {
+          await _createAndInitializeController(device);
+        } finally {
+          _isOpeningCamera = false;
+        }
+      } else if (_isOpeningCamera) {
+        _debugLog('Permission granted but camera is already being opened');
       } else {
         _debugLog('Permission granted but camera already open (cameraId: $_cameraId)');
       }
@@ -291,9 +299,17 @@ class AndroidUsbVideoChannel {
         // This event fires on first permission grant (when dialog is shown)
         // We handle opening in _connectToDevice after requestDevicePermission, but this
         // serves as a fallback in case the permission was granted another way
-        if (event.device.name == _currentDevice?.name && _cameraId == null) {
+        if (event.device.name == _currentDevice?.name && _cameraId == null && !_isOpeningCamera) {
           _debugLog('Opening camera from connected event (fallback path)');
-          _createAndInitializeController(event.device);
+          _isOpeningCamera = true;
+          _createAndInitializeController(event.device).then((_) {
+            _isOpeningCamera = false;
+          }).catchError((error) {
+            _isOpeningCamera = false;
+            _debugLog('ERROR in connected event handler: $error');
+          });
+        } else if (event.device.name == _currentDevice?.name && _isOpeningCamera) {
+          _debugLog('Camera is already being opened, ignoring connected event');
         } else if (event.device.name == _currentDevice?.name) {
           _debugLog('Camera already open (cameraId: $_cameraId), ignoring connected event');
         }
@@ -441,6 +457,7 @@ class AndroidUsbVideoChannel {
 
     // Reset state but keep device info for reconnection
     _isInitialized = false;
+    _isOpeningCamera = false; // Reset opening flag
     // Keep _currentDevice for potential reconnection
     _resetInitializationAttempts();
 
