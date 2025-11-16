@@ -749,6 +749,37 @@ So that I can focus on relevant parameters and understand why certain controls h
 - Reference documents: `docs/parameter-flag-findings.md`, `docs/parameter-flag-analysis-report.md`
 - Test files: Create `test/integration/parameter_disabled_state_test.dart`, update existing response parser tests
 
+**Story E7.2: Auto-refresh parameter state after edits and remove disabled parameter tooltip**
+
+As a user editing algorithm parameters,
+I want the parameter disabled states to automatically update when I change a parameter that affects other parameters,
+So that I can immediately see which parameters become available or unavailable without manually refreshing.
+
+**Acceptance Criteria:**
+1. **Auto-refresh Logic:** When user finishes editing a parameter value (on value commit, not during drag), schedule a single `requestAllParameterValues` message
+2. **Debouncing:** Use debounce/throttle mechanism to ensure only one refresh request is queued at a time (prevent request flooding)
+3. **Debounce Timing:** Wait 300ms after last parameter edit before sending refresh request (allows batch edits without multiple refreshes)
+4. **State Management:** DistingCubit or parameter editor manages debounced refresh timer
+5. **Cancel Pending:** If new parameter edit occurs before timer expires, cancel pending refresh and restart timer
+6. **UI Feedback:** No loading spinner needed (refresh is fast and non-blocking)
+7. **Remove Tooltip:** Remove tooltip/help text that explains why parameter is disabled
+8. **Visual Clarity:** Grayed-out appearance (0.5 opacity) and read-only state are sufficient visual feedback
+9. **UI Polish:** Ensure disabled parameters remain clearly distinguishable without tooltip clutter
+10. **Testing:** Integration test verifies changing Clock algorithm Source parameter triggers auto-refresh
+11. **Testing:** Integration test verifies Clock Input parameter disabled state updates automatically after Source change
+12. **Testing:** Unit test verifies debounce logic prevents request flooding when editing multiple parameters rapidly
+13. **Testing:** Widget test verifies tooltip is removed from disabled parameters
+14. **Code Quality:** `flutter analyze` passes with zero warnings
+15. **Code Quality:** All existing tests pass with no regressions
+
+**Prerequisites:** Story E7.1
+
+**Technical Notes:**
+- Files to modify: `lib/cubit/disting_cubit.dart` or `lib/ui/widgets/parameter_editor_widget.dart` (add debounced refresh logic), `lib/ui/widgets/parameter_editor_widget.dart` or equivalent (remove tooltip)
+- Debounce implementation: Use `Timer` with cancel/restart pattern or rxdart `debounceTime` operator
+- Reference: Story E7.1 implementation for disabled state handling
+- Test files: Update `test/integration/parameter_disabled_state_test.dart`, add debounce unit tests
+
 ---
 
 ## Epic 8: Android Video Implementation
