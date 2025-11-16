@@ -348,6 +348,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   .toList();
             }
           });
+          // Trigger filtering to update the display
+          _filterAlgorithms();
         }
       } else if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -389,6 +391,23 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         _allAlgorithms = List<AlgorithmInfo>.from(
           algorithms,
         )..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        
+        // If we have a currently selected algorithm, update it to reflect the latest state
+        if (selectedAlgorithmGuid != null) {
+          final updatedAlgo = _allAlgorithms.firstWhereOrNull(
+            (a) => a.guid == selectedAlgorithmGuid,
+          );
+          if (updatedAlgo != null && _currentAlgoInfo != null) {
+            _currentAlgoInfo = updatedAlgo;
+            // Update specValues if the number of specifications changed
+            if (_currentAlgoInfo!.specifications.length != (specValues?.length ?? 0)) {
+              specValues = _currentAlgoInfo!.specifications
+                  .map((s) => s.defaultValue)
+                  .toList();
+            }
+          }
+        }
+        
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _filterAlgorithms();
