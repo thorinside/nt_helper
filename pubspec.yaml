@@ -47,11 +47,11 @@ dependencies:
   pasteboard: ^0.4.0
   retry: ^3.1.2
   async: ^2.13.0
-  haptic_feedback: ^0.5.1+1
+  haptic_feedback: ^0.6.0
   bitsdojo_window: 0.1.6
   camera: ^0.11.2
-  dart_mcp: ^0.3.3
-  mcp_dart: ^0.6.4
+  dart_mcp: ^0.4.0
+  mcp_dart: ^1.0.2
   collection: ^1.19.1
   uuid: ^4.5.1
   crypto: ^3.0.6
@@ -60,7 +60,7 @@ dependencies:
   drift: ^2.28.1
   sqlite3_flutter_libs: ^0.5.39
   path_provider: ^2.1.5
-  permission_handler: ^11.3.1
+  permission_handler: ^12.0.1
   path: ^1.9.1
   intl: ^0.20.2
   file_picker: ^10.3.2
@@ -73,12 +73,12 @@ dependencies:
   json_annotation: ^4.9.0
   docman: ^1.2.0
   security_scoped_resource: ^0.0.2
-  desktop_drop: ^0.6.1
+  desktop_drop: ^0.7.0
   cross_file: ^0.3.4+2
 
   archive: ^4.0.7
   provider: ^6.1.5+1
-  get_it: ^8.0.3
+  get_it: ^9.0.5
   dart_elf: ^1.0.1
   http: ^1.5.0
   pub_semver: ^2.2.0

@@ -8,7 +8,7 @@ on:
       - macos-build
 
 env:
-  FLUTTER_VERSION: "3.35.7"
+  FLUTTER_VERSION: "3.38.1"
 
 permissions:
   contents: write # Needed for creating/updating GitHub releases
