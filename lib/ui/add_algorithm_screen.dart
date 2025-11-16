@@ -333,20 +333,14 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           ),
         );
 
-        // Update the algorithm info in our local list
-        final index = _allAlgorithms.indexWhere(
-          (algo) => algo.guid == algorithmGuid,
-        );
-        if (index != -1) {
+        // The cubit has already updated the global state, no need for manual local updates
+        // Just update the currently selected algorithm info if it matches
+        if (selectedAlgorithmGuid == algorithmGuid) {
           setState(() {
-            _allAlgorithms[index] = loadedInfo;
-            // If this algorithm is currently selected, update the current info too
-            if (selectedAlgorithmGuid == algorithmGuid) {
-              _currentAlgoInfo = loadedInfo;
-              specValues = loadedInfo.specifications
-                  .map((s) => s.defaultValue)
-                  .toList();
-            }
+            _currentAlgoInfo = loadedInfo;
+            specValues = loadedInfo.specifications
+                .map((s) => s.defaultValue)
+                .toList();
           });
         }
       } else if (mounted) {
