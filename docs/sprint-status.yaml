@@ -94,7 +94,7 @@ development_status:
 
   epic-7: backlog
   7-1-implement-parameter-disabled-grayed-out-state-in-ui: done
-  7-2-auto-refresh-parameter-state-after-edits-and-remove-disabled-parameter-tooltip: drafted
+  7-2-auto-refresh-parameter-state-after-edits-and-remove-disabled-parameter-tooltip: review
   epic-7-retrospective: optional
 
   epic-8: contexted

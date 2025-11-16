@@ -80,6 +80,10 @@ class DistingCubit extends Cubit<DistingState> {
   int? _programRefreshSlot;
   int _programRefreshRetries = 0;
 
+  // Parameter refresh debounce timer (300ms)
+  Timer? _parameterRefreshTimer;
+  static const Duration _parameterRefreshDebounceDelay = Duration(milliseconds: 300);
+
   CancelableOperation<void>?
   _moveVerificationOperation; // Add verification operation tracker
   // Keep track of the offline manager instance when offline
@@ -137,8 +141,9 @@ class DistingCubit extends Cubit<DistingState> {
     _parameterQueue?.dispose(); // Dispose parameter queue
     _midiCommand.dispose();
 
-    // Cancel program refresh timer
+    // Cancel timers
     _programRefreshTimer?.cancel();
+    _parameterRefreshTimer?.cancel();
 
     // Dispose CPU usage streaming resources
     _cpuUsageTimer?.cancel();
@@ -1231,6 +1236,33 @@ class DistingCubit extends Cubit<DistingState> {
       // Always release semaphore to allow retry queue to proceed
       _releaseCommandSemaphore();
     }
+  }
+
+  /// Schedules a debounced parameter refresh (requestAllParameterValues).
+  /// If a refresh is already scheduled, the existing timer is cancelled and restarted.
+  /// This ensures only one refresh request is sent after a batch of parameter edits.
+  /// The actual refresh occurs 300ms after the last call to this method.
+  void scheduleParameterRefresh() {
+    final syncState = state;
+    if (syncState is! DistingStateSynchronized) {
+      return; // Only schedule refresh when synchronized
+    }
+
+    // Cancel any pending timer
+    _parameterRefreshTimer?.cancel();
+
+    // Schedule a new refresh after the debounce delay
+    _parameterRefreshTimer = Timer(_parameterRefreshDebounceDelay, () {
+      final manager = disting();
+      if (manager != null) {
+        // Get the first slot index (typically algorithmIndex 0)
+        final firstSlot = syncState.slots.isNotEmpty ? 0 : null;
+        if (firstSlot != null) {
+          manager.requestAllParameterValues(firstSlot);
+        }
+      }
+      _parameterRefreshTimer = null; // Clear timer reference
+    });
   }
 
   Future<void> onAlgorithmSelected(

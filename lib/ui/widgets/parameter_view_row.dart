@@ -95,6 +95,11 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     );
   }
 
+  void _scheduleParameterRefresh() {
+    // Schedule a debounced refresh after parameter commit
+    context.read<DistingCubit>().scheduleParameterRefresh();
+  }
+
   DateTime? _lastSent;
   final Duration throttleDuration = const Duration(milliseconds: 100);
 
@@ -134,6 +139,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                 currentValue = newValue;
               });
               _updateCubitValue(newValue);
+              _scheduleParameterRefresh();
             },
           )
         : null;
@@ -220,6 +226,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                               currentValue = newBpm;
                             });
                             _updateCubitValue(newBpm);
+                            _scheduleParameterRefresh();
                           },
                           onEditingStatusChanged: (isEditing) {
                             setState(() {
@@ -242,6 +249,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                             );
                                           });
                                           _updateCubitValue(currentValue);
+                                          _scheduleParameterRefresh();
                                         },
                                         child: const Text("-"),
                                       ),
@@ -254,6 +262,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                             );
                                           });
                                           _updateCubitValue(currentValue);
+                                          _scheduleParameterRefresh();
                                         },
                                         child: const Text("+"),
                                       ),
@@ -279,6 +288,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                         }
                                       });
                                       _updateCubitValue(currentValue);
+                                      _scheduleParameterRefresh();
                                     },
                                     onChanged: (value) {
                                       setState(() {
@@ -322,6 +332,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                     }
                   });
                   _updateCubitValue(newValue);
+                  _scheduleParameterRefresh();
                 },
                 onLongPress: () => setState(() {
                   // Show alternate editor only if not BPM or file editor
@@ -338,12 +349,6 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     ),
     );
 
-    // Wrap in tooltip when disabled to explain why parameter cannot be edited
-    return widget.isDisabled
-        ? Tooltip(
-            message: 'This parameter is disabled by the current configuration',
-            child: rowContent,
-          )
-        : rowContent;
+    return rowContent;
   }
 }

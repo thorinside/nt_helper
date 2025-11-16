@@ -1,0 +1,245 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>2</storyId>
+    <title>Auto-Refresh Parameter State After Edits and Remove Disabled Parameter Tooltip</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-15</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/nealsanche/nosuch/nt_helper/docs/stories/7-2-auto-refresh-parameter-state-after-edits-and-remove-disabled-parameter-tooltip.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user editing algorithm parameters</asA>
+    <iWant>the parameter disabled states to automatically update when I change a parameter that affects other parameters</iWant>
+    <soThat>I can immediately see which parameters become available or unavailable without manually refreshing</soThat>
+    <tasks>
+      <task id="1" status="pending">
+        <title>Implement debounced refresh mechanism</title>
+        <acs>1, 2, 3</acs>
+        <subtasks>
+          <subtask>Add Timer field to DistingCubit or parameter editor for debounce management</subtask>
+          <subtask>Create method to schedule debounced requestAllParameterValues call</subtask>
+          <subtask>Implement cancel logic for pending timer when new edit occurs</subtask>
+          <subtask>Set debounce delay to 300ms</subtask>
+          <subtask>Add unit test verifying debounce prevents request flooding</subtask>
+        </subtasks>
+      </task>
+      <task id="2" status="pending">
+        <title>Integrate refresh trigger into parameter edit flow</title>
+        <acs>1, 4</acs>
+        <subtasks>
+          <subtask>Identify parameter value commit points in UI widgets (slider onChangeEnd, text field onSubmitted, etc.)</subtask>
+          <subtask>Call debounced refresh method after each parameter commit</subtask>
+          <subtask>Verify refresh does not trigger during drag operations (only on commit)</subtask>
+          <subtask>Test with various parameter editor widgets (sliders, text fields, dropdowns)</subtask>
+        </subtasks>
+      </task>
+      <task id="3" status="pending">
+        <title>Remove disabled parameter tooltips</title>
+        <acs>5</acs>
+        <subtasks>
+          <subtask>Locate tooltip implementation in parameter editor widgets</subtask>
+          <subtask>Remove tooltip code for disabled parameters</subtask>
+          <subtask>Verify grayed-out appearance (0.5 opacity) remains intact</subtask>
+          <subtask>Add widget test verifying tooltip is removed</subtask>
+        </subtasks>
+      </task>
+      <task id="4" status="pending">
+        <title>Integration testing</title>
+        <acs>1, 2, 3, 4</acs>
+        <subtasks>
+          <subtask>Create integration test changing Clock algorithm Source parameter</subtask>
+          <subtask>Verify auto-refresh triggers after Source parameter change</subtask>
+          <subtask>Verify Clock Input parameter disabled state updates automatically</subtask>
+          <subtask>Test rapid parameter edits verify debounce prevents flooding</subtask>
+          <subtask>Test parameter state updates reflect in UI without manual refresh</subtask>
+        </subtasks>
+      </task>
+      <task id="5" status="pending">
+        <title>Code quality validation</title>
+        <acs>6</acs>
+        <subtasks>
+          <subtask>Run flutter analyze and fix any warnings</subtask>
+          <subtask>Run all existing tests</subtask>
+          <subtask>Verify no regressions in parameter editing behavior</subtask>
+          <subtask>Verify no regressions in disabled state display</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">
+      <title>Auto-refresh Logic</title>
+      <description>When user finishes editing a parameter value (on value commit, not during drag), schedule a single requestAllParameterValues message. Refresh occurs after user completes parameter edit action (slider release, text input commit, etc.)</description>
+    </criterion>
+    <criterion id="2">
+      <title>Debouncing Mechanism</title>
+      <description>Implement debounce/throttle to ensure only one refresh request is queued at a time. Debounce timing: Wait 300ms after last parameter edit before sending refresh request. Allows batch edits without flooding system with multiple refresh requests.</description>
+    </criterion>
+    <criterion id="3">
+      <title>Debounce State Management</title>
+      <description>DistingCubit or parameter editor widget manages debounced refresh timer. If new parameter edit occurs before timer expires, cancel pending refresh and restart timer. No partial or duplicate requests sent to hardware.</description>
+    </criterion>
+    <criterion id="4">
+      <title>UI Behavior</title>
+      <description>No loading spinner needed (refresh is fast and non-blocking). Parameter disabled states update automatically after refresh completes. UI remains responsive during refresh operation.</description>
+    </criterion>
+    <criterion id="5">
+      <title>Remove Tooltip</title>
+      <description>Remove tooltip/help text that previously explained why parameter is disabled. Grayed-out appearance (0.5 opacity from Story 7.1) and read-only state provide sufficient visual feedback. Disabled parameters remain clearly distinguishable without tooltip clutter.</description>
+    </criterion>
+    <criterion id="6">
+      <title>Code Quality</title>
+      <description>flutter analyze passes with zero warnings. All existing tests pass with no regressions.</description>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 7: Sysex Updates</title>
+        <section>Story E7.2: Auto-Refresh Parameter State After Edits</section>
+        <snippet>Implement new features based on SysEx protocol enhancements. Story E7.2 focuses on automatically refreshing parameter disabled states when parameter changes affect other parameters, eliminating the need for manual refresh.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/7-1-implement-parameter-disabled-grayed-out-state-in-ui.md</path>
+        <title>Story 7.1: Implement Parameter Disabled/Grayed-Out State in UI</title>
+        <section>Foundation Story</section>
+        <snippet>Completed story that implemented the parameter disabled state extraction from SysEx flags and UI grayed-out rendering with 0.5 opacity. Story 7.2 builds on this foundation by adding automatic state refresh when parameters change.</snippet>
+      </doc>
+      <doc>
+        <path>docs/parameter-flag-analysis-report.md</path>
+        <title>Parameter Flag Analysis Report</title>
+        <section>Flag Extraction Implementation</section>
+        <snippet>Documents the bit manipulation formula for extracting disabled flags from SysEx parameter responses: flag = (byte0 >> 2) & 0x1F; isDisabled = (flag == 1). Provides technical context for parameter state management.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Instructions</title>
+        <section>Development Standards</section>
+        <snippet>Zero tolerance for flutter analyze errors. Debugging: Ask user to set breakpoints and debug with MCP tools. Never add debug logging to code unless explicitly asked. Testing: Run tests before commits.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>1-100</lines>
+        <reason>Core state management class that manages all application state. Location for implementing debounced parameter refresh timer and scheduleParameterRefresh method.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/i_disting_midi_manager.dart</path>
+        <kind>interface</kind>
+        <symbol>IDistingMidiManager.requestAllParameterValues</symbol>
+        <lines>29</lines>
+        <reason>Interface method signature for requesting all parameter values. This is the method that will be called after the debounce timer expires to refresh parameter states.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/widgets/parameter_view_row.dart</path>
+        <kind>widget</kind>
+        <symbol>ParameterViewRow</symbol>
+        <lines>1-100</lines>
+        <reason>Main parameter editing widget that renders individual parameter controls (sliders, dropdowns, switches). Contains parameter commit logic and disabled state rendering with 0.5 opacity. Location for removing tooltip code.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/widgets/parameter_view_row.dart</path>
+        <kind>widget</kind>
+        <symbol>_ParameterViewRowState._updateCubitValue</symbol>
+        <lines>85-95</lines>
+        <reason>Method that sends parameter value changes to DistingCubit. Integration point for triggering debounced refresh after parameter commits.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/widgets/parameter_editor_view.dart</path>
+        <kind>widget</kind>
+        <symbol>ParameterEditorView</symbol>
+        <lines>N/A</lines>
+        <reason>Parameter editor container widget that may contain parameter commit event handlers for various widget types (sliders, text fields).</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter_bloc" version="^9.1.1">State management with Cubit pattern</package>
+        <package name="bloc" version="^9.0.0">Core BLoC library for state management</package>
+        <package name="async" version="^2.13.0">Async utilities (already available, Timer is from dart:async core)</package>
+      </flutter>
+      <dart>
+        <sdk version=">=3.8.1 &lt;4.0.0">Dart SDK with Timer class in dart:async</sdk>
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Must use Dart Timer class for debounce mechanism, not third-party debounce libraries</constraint>
+    <constraint>Debounce delay must be exactly 300ms as specified in acceptance criteria</constraint>
+    <constraint>Refresh must only trigger on parameter value commit (slider release, text submit), never during drag operations</constraint>
+    <constraint>Timer must be properly disposed in DistingCubit.dispose() to prevent memory leaks</constraint>
+    <constraint>Must not add any loading spinners or UI blocking during refresh operation</constraint>
+    <constraint>Must preserve existing 0.5 opacity visual treatment for disabled parameters from Story 7.1</constraint>
+    <constraint>Zero tolerance for flutter analyze warnings</constraint>
+    <constraint>All existing tests must pass with no regressions</constraint>
+    <constraint>No debug logging (debugPrint) unless explicitly requested by user</constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>IDistingMidiManager.requestAllParameterValues</name>
+      <kind>async method</kind>
+      <signature>Future&lt;AllParameterValues?&gt; requestAllParameterValues(int algorithmIndex)</signature>
+      <path>lib/domain/i_disting_midi_manager.dart</path>
+    </interface>
+    <interface>
+      <name>DistingCubit.updateParameterValue</name>
+      <kind>method</kind>
+      <signature>void updateParameterValue({required int algorithmIndex, required int parameterNumber, required int value, bool userIsChangingTheValue})</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+    </interface>
+    <interface>
+      <name>Timer (Dart core)</name>
+      <kind>class</kind>
+      <signature>Timer(Duration duration, void callback())</signature>
+      <path>dart:async</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>Project uses Flutter test framework with three test types: unit tests (test/domain/, test/cubit/, test/services/), widget tests (test/ui/widgets/), and integration tests (test/integration/). Follow existing patterns: use flutter_test package, check for existing test patterns in related test files, run 'flutter test' before commits, ensure zero flutter analyze warnings.</standards>
+    <locations>
+      <location>test/cubit/disting_cubit_test.dart - Unit tests for DistingCubit debounce logic</location>
+      <location>test/ui/widgets/parameter_editor_view_test.dart - Widget tests for parameter editor</location>
+      <location>test/integration/ - Integration tests for parameter refresh behavior</location>
+      <location>test/domain/sysex/responses/parameter_disabled_flag_test.dart - Existing tests for disabled state (Story 7.1)</location>
+    </locations>
+    <ideas>
+      <idea ac="1,2,3">
+        <description>Unit test: Verify debounce mechanism cancels pending timer when new parameter edit occurs within 300ms window</description>
+        <location>test/cubit/disting_cubit_test.dart</location>
+      </idea>
+      <idea ac="1,2,3">
+        <description>Unit test: Verify debounce timer calls requestAllParameterValues exactly once after 300ms delay</description>
+        <location>test/cubit/disting_cubit_test.dart</location>
+      </idea>
+      <idea ac="1,2,3">
+        <description>Unit test: Verify rapid parameter edits (5+ edits within 300ms) result in only one requestAllParameterValues call</description>
+        <location>test/cubit/disting_cubit_test.dart</location>
+      </idea>
+      <idea ac="4">
+        <description>Integration test: Verify UI remains responsive during parameter refresh operation (no blocking)</description>
+        <location>test/integration/parameter_refresh_test.dart</location>
+      </idea>
+      <idea ac="1,4">
+        <description>Integration test: Change Clock algorithm Source parameter and verify auto-refresh triggers, Clock Input disabled state updates automatically</description>
+        <location>test/integration/parameter_disabled_state_test.dart</location>
+      </idea>
+      <idea ac="5">
+        <description>Widget test: Verify disabled parameter tooltip is removed from ParameterViewRow widget</description>
+        <location>test/ui/widgets/parameter_editor_view_test.dart</location>
+      </idea>
+      <idea ac="5">
+        <description>Widget test: Verify disabled parameters still render with 0.5 opacity after tooltip removal</description>
+        <location>test/ui/widgets/parameter_editor_view_test.dart</location>
+      </idea>
+    </ideas>
+  </tests>
+</story-context>
