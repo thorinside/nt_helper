@@ -3335,13 +3335,8 @@ class DistingCubit extends Cubit<DistingState> {
         throw Exception("Unsupported plugin file type: .$extension");
     }
 
-    // Ensure target directory exists before uploading
-    final disting = requireDisting();
-    await disting.requestWake();
-    await _ensureDirectoryExists(targetDirectory, disting);
-
     // Handle paths that already contain directory structure
-    String targetPath;
+    final String targetPath;
     if (fileName.contains('/')) {
       // Check if the fileName already starts with the expected directory structure
       final expectedPrefix = targetDirectory.substring(1); // Remove leading /
@@ -3356,6 +3351,12 @@ class DistingCubit extends Cubit<DistingState> {
       // Simple filename without directory structure
       targetPath = '$targetDirectory/$fileName';
     }
+
+    // Ensure the parent directory of the final target path exists before uploading
+    final disting = requireDisting();
+    await disting.requestWake();
+    final parentPath = targetPath.substring(0, targetPath.lastIndexOf('/'));
+    await _ensureDirectoryExists(parentPath, disting);
 
     // Upload in 512-byte chunks (matching JavaScript tool behavior)
     const chunkSize = 512;
