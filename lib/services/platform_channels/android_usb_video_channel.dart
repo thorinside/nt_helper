@@ -228,11 +228,8 @@ class AndroidUsbVideoChannel {
         'Starting frame capture with cameraId: $_cameraId',
       );
 
-      // Pass cameraId to native plugin to start real frame capture
-      await methodChannel.invokeMethod('startVideoStream', {
-        'deviceId': _currentDevice!.name,
-        'cameraId': _cameraId,
-      });
+      // Call UvcCamera Dart API to start frame streaming
+      await UvcCamera.startFrameStreaming(_cameraId!, 5); // 5 = NV21 pixel format
 
       // Subscribe to uvccamera's NV21 frame stream and convert to BMP
       _frameSubscription = uvccameraFrameChannel.receiveBroadcastStream().listen(
@@ -373,13 +370,6 @@ class AndroidUsbVideoChannel {
   Future<void> _stopCurrentStream() async {
     _debugLog('Stopping current stream...');
 
-    // Stop native video stream first
-    try {
-      await methodChannel.invokeMethod('stopVideoStream');
-    } catch (e) {
-      _debugLog('ERROR stopping native video stream: $e');
-    }
-
     // Cancel all subscriptions
     _frameSubscription?.cancel();
     _frameSubscription = null;
@@ -394,7 +384,16 @@ class AndroidUsbVideoChannel {
     // _deviceEventSubscription?.cancel();
     // _deviceEventSubscription = null;
 
-    // Dispose controller
+    // Stop frame streaming if active
+    if (_cameraId != null) {
+      try {
+        await UvcCamera.stopFrameStreaming(_cameraId!);
+        _debugLog('Frame streaming stopped for camera: $_cameraId');
+      } catch (e) {
+        _debugLog('ERROR stopping frame streaming: $e');
+      }
+    }
+
     // Close camera if open
     if (_cameraId != null) {
       try {
