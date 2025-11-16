@@ -1,6 +1,6 @@
 # Story 7.2: Auto-Refresh Parameter State After Edits and Remove Disabled Parameter Tooltip
 
-Status: review
+Status: done
 
 ## Story
 

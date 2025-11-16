@@ -21,20 +21,25 @@ PHASE_4_COMPLETE: false
 
 ## Development Queue
 
-STORIES_SEQUENCE: [8-1, 8-2]
+STORIES_SEQUENCE: [7-1, 7-2, 8-1, 8-2]
 TODO_STORY: none
 TODO_TITLE: none
 IN_PROGRESS_STORY: none
 IN_PROGRESS_TITLE: none
-STORIES_DONE: [e8-1-complete-uvccamera-fork-eventchannel-implementation, e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device]
+STORIES_DONE: [7-1-implement-parameter-disabled-grayed-out-state-in-ui, 7-2-auto-refresh-parameter-state-after-edits-and-remove-disabled-parameter-tooltip, e8-1-complete-uvccamera-fork-eventchannel-implementation, e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device]
 
 ## Next Action
 
-NEXT_ACTION: Epic 8 complete - All stories finished
+NEXT_ACTION: Multiple epics complete - Epic 7 and Epic 8 finished
 NEXT_COMMAND: none
 NEXT_AGENT: none
 
 ## Story Backlog
+
+### Epic 7: SysEx Updates
+- Status: ✅ COMPLETE (2 of 2 stories complete)
+- Stories: 7.1 (Parameter disabled state UI) and 7.2 (Auto-refresh and tooltip removal)
+- Completion: Parameter disabled states fully functional with auto-refresh
 
 ### Epic 8: Android Video Implementation
 - Status: ✅ COMPLETE (2 of 2 stories complete)
@@ -47,5 +52,5 @@ NEXT_AGENT: none
 
 ---
 
-_Last Updated: 2025-11-15 (Epic 8 Complete)_
+_Last Updated: 2025-11-15 (Epic 7 & 8 Complete)_
 _Status Version: 2.1_
