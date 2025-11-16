@@ -27,7 +27,7 @@ class SectionParameterListView extends StatefulWidget {
 }
 
 class _SectionParameterListViewState extends State<SectionParameterListView> {
-  late final List<ExpansibleController> _tileControllers;
+  late List<ExpansibleController> _tileControllers;
   late bool _isCollapsed;
   // Track optimistic performance page assignments for immediate UI updates
   final Map<int, int> _optimisticPerfPageAssignments = {};
@@ -48,6 +48,28 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     // Clear optimistic assignments when slot changes (state has been updated)
     if (oldWidget.slot != widget.slot) {
       _optimisticPerfPageAssignments.clear();
+    }
+
+    // Rebuild tile controllers if page count changed (e.g., Lua script program change)
+    if (oldWidget.pages.pages.length != widget.pages.pages.length) {
+      // Dispose old controllers
+      for (var controller in _tileControllers) {
+        controller.dispose();
+      }
+      // Create new controllers matching new page count and current collapse state
+      _tileControllers = List.generate(
+        widget.pages.pages.length,
+        (_) {
+          final controller = ExpansibleController();
+          // Match current collapse state
+          if (_isCollapsed) {
+            controller.collapse();
+          } else {
+            controller.expand();
+          }
+          return controller;
+        },
+      );
     }
   }
 

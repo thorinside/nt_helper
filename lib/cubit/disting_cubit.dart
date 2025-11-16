@@ -82,7 +82,9 @@ class DistingCubit extends Cubit<DistingState> {
 
   // Parameter refresh debounce timer (300ms)
   Timer? _parameterRefreshTimer;
-  static const Duration _parameterRefreshDebounceDelay = Duration(milliseconds: 300);
+  static const Duration _parameterRefreshDebounceDelay = Duration(
+    milliseconds: 300,
+  );
 
   CancelableOperation<void>?
   _moveVerificationOperation; // Add verification operation tracker
@@ -1158,7 +1160,9 @@ class DistingCubit extends Cubit<DistingState> {
           if (userIsChangingTheValue) {
             // Optimistic update during slider movement - just update the UI
             // Preserve isDisabled state from current value
-            final currentValue = currentSlot.values.elementAtOrNull(parameterNumber);
+            final currentValue = currentSlot.values.elementAtOrNull(
+              parameterNumber,
+            );
             final newValue = ParameterValue(
               algorithmIndex: algorithmIndex,
               parameterNumber: parameterNumber,
@@ -1204,7 +1208,9 @@ class DistingCubit extends Cubit<DistingState> {
 
             // Update UI with the final value immediately (optimistic)
             // Preserve isDisabled state from current value
-            final currentValue = currentSlot.values.elementAtOrNull(parameterNumber);
+            final currentValue = currentSlot.values.elementAtOrNull(
+              parameterNumber,
+            );
             final newValue = ParameterValue(
               algorithmIndex: algorithmIndex,
               parameterNumber: parameterNumber,
@@ -1232,7 +1238,14 @@ class DistingCubit extends Cubit<DistingState> {
             // 3. Rate limiting and consolidation
 
             // Trigger a debounced refresh to re-sync state after the user lets go
-            scheduleParameterRefresh(algorithmIndex);
+            // Skip if we're already doing a full program refresh (which includes all values)
+            if (!_isProgramParameter(
+              syncstate,
+              algorithmIndex,
+              parameterNumber,
+            )) {
+              scheduleParameterRefresh(algorithmIndex);
+            }
           }
       }
     } finally {
@@ -1255,10 +1268,31 @@ class DistingCubit extends Cubit<DistingState> {
     _parameterRefreshTimer?.cancel();
 
     // Schedule a new refresh after the debounce delay
-    _parameterRefreshTimer = Timer(_parameterRefreshDebounceDelay, () {
+    _parameterRefreshTimer = Timer(_parameterRefreshDebounceDelay, () async {
       final manager = disting();
       if (manager != null) {
-        manager.requestAllParameterValues(algorithmIndex);
+        final allParameterValues = await manager.requestAllParameterValues(
+          algorithmIndex,
+        );
+
+        if (allParameterValues != null) {
+          // Get current state (might have changed since timer was scheduled)
+          final currentState = state;
+          if (currentState is DistingStateSynchronized) {
+            // Update the slot with the refreshed parameter values
+            final currentSlot = currentState.slots[algorithmIndex];
+            final updatedSlot = currentSlot.copyWith(
+              values: allParameterValues.values,
+            );
+
+            // Create new slots list with the updated slot
+            final updatedSlots = List<Slot>.from(currentState.slots);
+            updatedSlots[algorithmIndex] = updatedSlot;
+
+            // Emit the updated state
+            emit(currentState.copyWith(slots: updatedSlots));
+          }
+        }
       }
       _parameterRefreshTimer = null; // Clear timer reference
     });
@@ -3404,7 +3438,10 @@ class DistingCubit extends Cubit<DistingState> {
 
     // Directory doesn't exist - need to create it
     // First ensure parent directory exists
-    final parentPath = directoryPath.substring(0, directoryPath.lastIndexOf('/'));
+    final parentPath = directoryPath.substring(
+      0,
+      directoryPath.lastIndexOf('/'),
+    );
     if (parentPath.isNotEmpty) {
       await _ensureDirectoryExists(parentPath, disting);
     }
