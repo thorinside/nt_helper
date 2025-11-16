@@ -119,9 +119,17 @@ class AndroidUsbVideoChannel {
       return _frameStreamController!.stream;
     }
 
-    // Clean up any existing stream (async, but we don't wait)
-    _stopCurrentStream().then((_) {
+    // Clean up any existing stream (async, with timeout)
+    _stopCurrentStream().timeout(
+      const Duration(seconds: 2),
+      onTimeout: () {
+        _debugLog('Stop stream timed out, proceeding anyway');
+      },
+    ).then((_) {
       // Start the connection process after cleanup
+      _connectToDevice(deviceId);
+    }).catchError((error) {
+      _debugLog('ERROR during stream cleanup: $error, proceeding anyway');
       _connectToDevice(deviceId);
     });
 
@@ -384,34 +392,51 @@ class AndroidUsbVideoChannel {
     // _deviceEventSubscription?.cancel();
     // _deviceEventSubscription = null;
 
-    // Stop frame streaming if active
-    if (_cameraId != null) {
+    // Stop frame streaming and close camera only if initialized
+    if (_isInitialized && _cameraId != null) {
+      // Stop frame streaming if active
       try {
-        await UvcCamera.stopFrameStreaming(_cameraId!);
+        await UvcCamera.stopFrameStreaming(_cameraId!).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {
+            _debugLog('WARNING: stopFrameStreaming timed out');
+          },
+        );
         _debugLog('Frame streaming stopped for camera: $_cameraId');
       } catch (e) {
         _debugLog('ERROR stopping frame streaming: $e');
       }
-    }
 
-    // Close camera if open
-    if (_cameraId != null) {
+      // Close camera if open
       try {
         const uvccameraChannel = MethodChannel('uvccamera/native');
         await uvccameraChannel.invokeMethod('closeCamera', {
           'cameraId': _cameraId,
-        });
+        }).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {
+            _debugLog('WARNING: closeCamera timed out');
+            return null;
+          },
+        );
         _debugLog('Camera closed: $_cameraId');
       } catch (e) {
         _debugLog('ERROR closing camera: $e');
       }
       _cameraId = null;
+    } else if (_cameraId != null) {
+      _debugLog('Camera not initialized, skipping stop/close (_cameraId: $_cameraId)');
+      _cameraId = null;
+    } else {
+      _debugLog('No camera to stop/close');
     }
 
     // Reset state but keep device info for reconnection
     _isInitialized = false;
     // Keep _currentDevice for potential reconnection
     _resetInitializationAttempts();
+
+    _debugLog('Current stream stopped');
   }
 
   Future<void> stopVideoStream() async {

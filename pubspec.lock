@@ -1369,9 +1369,11 @@ packages:
   uvccamera:
     dependency: "direct main"
     description:
-      path: "/tmp/UVCCamera/flutter"
-      relative: false
-    source: path
+      path: flutter
+      ref: "31bdb66472a0cde05ee6ab3de426661c96f3bb45"
+      resolved-ref: "31bdb66472a0cde05ee6ab3de426661c96f3bb45"
+      url: "https://github.com/thorinside/UVCCamera"
+    source: git
     version: "0.0.0-SNAPSHOT"
   vector_math:
     dependency: "direct main"
