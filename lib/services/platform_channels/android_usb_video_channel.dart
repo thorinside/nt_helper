@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/domain/video/usb_device_info.dart';
 import 'package:nt_helper/services/debug_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:uvccamera/uvccamera.dart';
 
 /// Android-specific implementation using uvccamera package
@@ -11,13 +12,17 @@ class AndroidUsbVideoChannel {
   static const frameChannel = EventChannel(
     'com.example.nt_helper/usb_video_stream',
   );
+  // Lazy-initialize to avoid creating EventChannel on non-Android platforms
+  static EventChannel? _uvccameraFrameChannel;
+  static EventChannel get uvccameraFrameChannel {
+    _uvccameraFrameChannel ??= const EventChannel('uvccamera/frames');
+    return _uvccameraFrameChannel!;
+  }
 
   final DebugService _debugService = DebugService();
 
-  UvcCameraController? _controller;
-
-  /// Expose the controller for direct widget access on Android
-  UvcCameraController? get cameraController => _controller;
+  int? _cameraId; // Store camera ID from openCamera
+  bool _isOpeningCamera = false; // Flag to prevent concurrent opens
   StreamSubscription<UvcCameraDeviceEvent>? _deviceEventSubscription;
   StreamSubscription? _errorEventSubscription;
   StreamSubscription? _statusEventSubscription;
@@ -32,14 +37,10 @@ class AndroidUsbVideoChannel {
   String? _lastConnectedDeviceId;
   bool _isPaused = false;
   int _initializationAttempts = 0;
-  bool _isRecovering = false;
   Timer? _recoveryTimer;
 
   // Recovery configuration
   static const int _maxInitializationAttempts = 3;
-  static const Duration _previewInterruptionRecoveryDelay = Duration(
-    milliseconds: 500,
-  );
 
   void _debugLog(String message) {
     _debugService.addLocalMessage('[AndroidUsbVideoChannel] $message');
@@ -71,7 +72,7 @@ class AndroidUsbVideoChannel {
               device.name, // UvcCameraDevice doesn't have productName, use name
           vendorId: device.vendorId,
           productId: device.productId,
-          isDistingNT: device.vendorId == 0x16C0, // Expert Sleepers vendor ID
+          isDistingNT: device.vendorId == 0x3773, // Expert Sleepers vendor ID (14195 decimal)
         );
       }).toList();
     } catch (e, stack) {
@@ -106,18 +107,26 @@ class AndroidUsbVideoChannel {
   Stream<Uint8List> startVideoStream(String deviceId) {
     _debugLog('Starting video stream for device: $deviceId');
 
-    // If we already have a controller for this device, just return the stream
-    if (_controller != null && _currentDevice?.name == deviceId) {
-      _debugLog('Controller already exists for device, reusing');
+    // If we already have a camera open for this device, just return the stream
+    if (_cameraId != null && _currentDevice?.name == deviceId) {
+      _debugLog('Camera already open for device (cameraId: $_cameraId), reusing stream');
       if (_frameStreamController == null || _frameStreamController!.isClosed) {
         _frameStreamController = StreamController<Uint8List>.broadcast();
       }
       return _frameStreamController!.stream;
     }
 
-    // Clean up any existing stream (async, but we don't wait)
-    _stopCurrentStream().then((_) {
+    // Clean up any existing stream (async, with timeout)
+    _stopCurrentStream().timeout(
+      const Duration(seconds: 2),
+      onTimeout: () {
+        _debugLog('Stop stream timed out, proceeding anyway');
+      },
+    ).then((_) {
       // Start the connection process after cleanup
+      _connectToDevice(deviceId);
+    }).catchError((error) {
+      _debugLog('ERROR during stream cleanup: $error, proceeding anyway');
       _connectToDevice(deviceId);
     });
 
@@ -176,8 +185,21 @@ class AndroidUsbVideoChannel {
       // Store device for later use when connected
       _currentDevice = device;
 
-      // Request device permission to trigger connection (like in the example)
-      _debugLog('Requesting device permission to trigger connection...');
+      // Request camera permission (required for USB video class devices on Android)
+      _debugLog('Requesting camera permission for USB video access...');
+      final cameraPermissionStatus = await Permission.camera.request();
+      _debugLog('Camera permission result: $cameraPermissionStatus');
+
+      if (!cameraPermissionStatus.isGranted) {
+        _debugLog('Camera permission denied - required for USB video devices');
+        _frameStreamController?.addError(
+          'Camera permission required for USB video. Please grant permission in settings.',
+        );
+        return;
+      }
+
+      // Request device permission
+      _debugLog('Requesting device permission...');
       final hasPermission = await UvcCamera.requestDevicePermission(device);
       _debugLog('Device permission result: $hasPermission');
 
@@ -187,8 +209,22 @@ class AndroidUsbVideoChannel {
         return;
       }
 
-      // The controller will be created in _handleDeviceEvent when we get the connected event
-      // For now, just wait for the connection
+      // Permission granted - open camera immediately if not already opening/open
+      // On first open: permission dialog triggers connected event, but we open here too (guarded)
+      // On subsequent opens: permission already granted, no event fires, so we must open here
+      if (_cameraId == null && !_isOpeningCamera) {
+        _debugLog('Permission granted - opening camera');
+        _isOpeningCamera = true;
+        try {
+          await _createAndInitializeController(device);
+        } finally {
+          _isOpeningCamera = false;
+        }
+      } else if (_isOpeningCamera) {
+        _debugLog('Permission granted but camera is already being opened');
+      } else {
+        _debugLog('Permission granted but camera already open (cameraId: $_cameraId)');
+      }
     } catch (e, stack) {
       _debugLog('ERROR connecting to device: $e');
       _debugLog('Stack trace: $stack');
@@ -201,61 +237,40 @@ class AndroidUsbVideoChannel {
   }
 
   Future<void> _startFrameCapture() async {
-    if (_controller == null || !_isInitialized) {
-      _debugLog('Cannot start frame capture - controller not initialized');
+    if (_cameraId == null || !_isInitialized) {
+      _debugLog('Cannot start frame capture - camera not opened');
       return;
     }
 
     try {
       _debugLog(
-        'Starting frame capture with cameraId: ${_controller!.cameraId}',
+        'Starting frame capture with cameraId: $_cameraId',
       );
 
-      // Subscribe to camera error and status events (optional - may not be available)
-      if (_controller != null) {
-        try {
-          // Attempt to subscribe to error events
-          try {
-            _errorEventSubscription = _controller!.cameraErrorEvents.listen((
-              error,
-            ) {
-              _debugLog('Camera error: ${error.error}');
-              if (error.error.toString().contains('previewInterrupted')) {
-                _debugLog('Preview interrupted - attempting recovery');
-                _handlePreviewInterruptionRecovery();
-              }
-            });
-          } catch (e) {
-            _debugLog('WARNING: Camera error events not available: $e');
-          }
+      // Call UvcCamera Dart API to start frame streaming
+      await UvcCamera.startFrameStreaming(_cameraId!, 5); // 5 = NV21 pixel format
 
-          // Attempt to subscribe to status events
-          try {
-            _statusEventSubscription = _controller!.cameraStatusEvents.listen((
-              status,
-            ) {
-              _debugLog('Camera status: $status');
-            });
-          } catch (e) {
-            _debugLog('WARNING: Camera status events not available: $e');
-          }
-        } catch (e) {
-          _debugLog('WARNING: Camera event subscription failed: $e');
-          // Continue anyway - frame capture doesn't depend on these events
-        }
-      }
-
-      // Pass cameraId to native plugin to start real frame capture
-      await methodChannel.invokeMethod('startVideoStream', {
-        'deviceId': _currentDevice!.name,
-        'cameraId': _controller!.cameraId,
-      });
-
-      // Subscribe to real frame stream
-      _frameSubscription = frameChannel.receiveBroadcastStream().listen(
-        (data) {
+      // Subscribe to uvccamera's NV21 frame stream and convert to BMP
+      _frameSubscription = uvccameraFrameChannel.receiveBroadcastStream().listen(
+        (data) async {
           if (data is Uint8List) {
-            _frameStreamController?.add(data);
+            try {
+              // Convert NV21 to BMP using native method
+              final bmpData = await methodChannel.invokeMethod<Uint8List>(
+                'convertNV21ToBMP',
+                {
+                  'nv21Data': data,
+                  'width': 256,
+                  'height': 64,
+                },
+              );
+
+              if (bmpData != null) {
+                _frameStreamController?.add(bmpData);
+              }
+            } catch (e) {
+              _debugLog('Frame conversion error: $e');
+            }
           }
         },
         onError: (error) {
@@ -270,43 +285,6 @@ class AndroidUsbVideoChannel {
     }
   }
 
-  Future<void> _handlePreviewInterruptionRecovery() async {
-    if (_isRecovering) {
-      _debugLog('Recovery already in progress, skipping duplicate');
-      return;
-    }
-
-    _isRecovering = true;
-    try {
-      _debugLog('Starting preview interruption recovery...');
-
-      // Detach controller
-      if (_controller != null) {
-        try {
-          await _controller!.dispose();
-        } catch (e) {
-          _debugLog('Error disposing controller during recovery: $e');
-        }
-        _controller = null;
-        _isInitialized = false;
-      }
-
-      // Wait before reattach
-      await Future.delayed(_previewInterruptionRecoveryDelay);
-
-      // Attempt reattach if we still have a device
-      if (_lastConnectedDeviceId != null) {
-        _debugLog('Attempting to reinitialize after preview interruption');
-        await _connectToDevice(_lastConnectedDeviceId!);
-      }
-    } catch (e) {
-      _debugLog('ERROR during preview interruption recovery: $e');
-      _frameStreamController?.addError('Preview recovery failed: $e');
-    } finally {
-      _isRecovering = false;
-    }
-  }
-
   void _handleDeviceEvent(UvcCameraDeviceEvent event) {
     _debugLog('Device event: ${event.type} for ${event.device.name}');
 
@@ -317,10 +295,23 @@ class AndroidUsbVideoChannel {
         break;
 
       case UvcCameraDeviceEventType.connected:
-        _debugLog('Device connected successfully - creating controller');
-        // Device is now authorized and ready - create controller following the example pattern
-        if (event.device.name == _currentDevice?.name && _controller == null) {
-          _createAndInitializeController(event.device);
+        _debugLog('Device connected event received');
+        // This event fires on first permission grant (when dialog is shown)
+        // We handle opening in _connectToDevice after requestDevicePermission, but this
+        // serves as a fallback in case the permission was granted another way
+        if (event.device.name == _currentDevice?.name && _cameraId == null && !_isOpeningCamera) {
+          _debugLog('Opening camera from connected event (fallback path)');
+          _isOpeningCamera = true;
+          _createAndInitializeController(event.device).then((_) {
+            _isOpeningCamera = false;
+          }).catchError((error) {
+            _isOpeningCamera = false;
+            _debugLog('ERROR in connected event handler: $error');
+          });
+        } else if (event.device.name == _currentDevice?.name && _isOpeningCamera) {
+          _debugLog('Camera is already being opened, ignoring connected event');
+        } else if (event.device.name == _currentDevice?.name) {
+          _debugLog('Camera already open (cameraId: $_cameraId), ignoring connected event');
         }
         break;
 
@@ -348,30 +339,33 @@ class AndroidUsbVideoChannel {
 
   Future<void> _createAndInitializeController(UvcCameraDevice device) async {
     try {
-      _debugLog('Creating controller for connected device');
+      _debugLog('Opening camera for device: ${device.name}');
 
-      // Create controller for the device
-      _controller = UvcCameraController(
-        device: device,
-        resolutionPreset: UvcCameraResolutionPreset
-            .low, // Start with low res for Disting NT (256x64)
-      );
+      // Open camera directly via method channel to get cameraId
+      const uvccameraChannel = MethodChannel('uvccamera/native');
 
-      // Initialize the controller (this automatically starts the preview)
-      _debugLog('Initializing camera controller...');
-      await _controller!.initialize();
-      _isInitialized = true;
-      _debugLog(
-        'Controller initialized successfully - preview should be active',
-      );
+      try {
+        final result = await uvccameraChannel.invokeMethod('openCamera', {
+          'deviceName': device.name,
+          'resolutionPreset': 'low', // Preset doesn't matter, fork uses first available size
+        });
+
+        _cameraId = result as int;
+        _isInitialized = true;
+        _debugLog('Camera opened successfully with ID: $_cameraId');
+      } catch (openError) {
+        _debugLog('ERROR opening camera: $openError');
+        _debugLog('Device info: ${device.name}, VID: ${device.vendorId}, PID: ${device.productId}');
+
+        throw Exception('Camera open failed: $openError');
+      }
 
       // Start capturing frames
       await _startFrameCapture();
     } catch (e) {
-      _debugLog('ERROR initializing controller: $e');
-      _frameStreamController?.addError('Failed to initialize controller: $e');
-      _controller?.dispose();
-      _controller = null;
+      _debugLog('ERROR opening camera: $e');
+      _frameStreamController?.addError('Failed to open camera: $e');
+      _cameraId = null;
       _isInitialized = false;
     }
   }
@@ -408,13 +402,6 @@ class AndroidUsbVideoChannel {
   Future<void> _stopCurrentStream() async {
     _debugLog('Stopping current stream...');
 
-    // Stop native video stream first
-    try {
-      await methodChannel.invokeMethod('stopVideoStream');
-    } catch (e) {
-      _debugLog('ERROR stopping native video stream: $e');
-    }
-
     // Cancel all subscriptions
     _frameSubscription?.cancel();
     _frameSubscription = null;
@@ -429,22 +416,52 @@ class AndroidUsbVideoChannel {
     // _deviceEventSubscription?.cancel();
     // _deviceEventSubscription = null;
 
-    // Dispose controller
-    if (_controller != null) {
+    // Stop frame streaming and close camera only if initialized
+    if (_isInitialized && _cameraId != null) {
+      // Stop frame streaming if active
       try {
-        // Disposing controller will stop preview automatically
-        _debugLog('Disposing camera controller...');
-        _controller!.dispose();
+        await UvcCamera.stopFrameStreaming(_cameraId!).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {
+            _debugLog('WARNING: stopFrameStreaming timed out');
+          },
+        );
+        _debugLog('Frame streaming stopped for camera: $_cameraId');
       } catch (e) {
-        _debugLog('ERROR disposing controller: $e');
+        _debugLog('ERROR stopping frame streaming: $e');
       }
-      _controller = null;
+
+      // Close camera if open
+      try {
+        const uvccameraChannel = MethodChannel('uvccamera/native');
+        await uvccameraChannel.invokeMethod('closeCamera', {
+          'cameraId': _cameraId,
+        }).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {
+            _debugLog('WARNING: closeCamera timed out');
+            return null;
+          },
+        );
+        _debugLog('Camera closed: $_cameraId');
+      } catch (e) {
+        _debugLog('ERROR closing camera: $e');
+      }
+      _cameraId = null;
+    } else if (_cameraId != null) {
+      _debugLog('Camera not initialized, skipping stop/close (_cameraId: $_cameraId)');
+      _cameraId = null;
+    } else {
+      _debugLog('No camera to stop/close');
     }
 
     // Reset state but keep device info for reconnection
     _isInitialized = false;
+    _isOpeningCamera = false; // Reset opening flag
     // Keep _currentDevice for potential reconnection
     _resetInitializationAttempts();
+
+    _debugLog('Current stream stopped');
   }
 
   Future<void> stopVideoStream() async {
@@ -494,7 +511,6 @@ class AndroidUsbVideoChannel {
     _currentDevice = null;
     _lastConnectedDeviceId = null;
     _isPaused = false;
-    _isRecovering = false;
     _resetInitializationAttempts();
 
     _debugLog('AndroidUsbVideoChannel disposed completely');

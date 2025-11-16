@@ -1,0 +1,180 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>8.1</storyId>
+    <title>Complete UVCCamera Fork EventChannel Implementation</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-15</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e8-1-complete-uvccamera-fork-eventchannel-implementation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer integrating Android video support</asA>
+    <iWant>the uvccamera fork to expose frame streaming via EventChannel</iWant>
+    <soThat>nt_helper can receive camera frames using the same unified architecture as iOS/macOS</soThat>
+    <tasks>
+      - Task 1: Create UvcCameraFrameEventStreamHandler (AC: #1)
+      - Task 2: Register EventChannel in Plugin (AC: #3)
+      - Task 3: Add MethodChannel Handlers (AC: #2)
+      - Task 4: Update UvcCameraPlatform (AC: #1, #3)
+      - Task 5: Build and Verify (AC: #5)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. EventChannel Implementation
+       - UvcCameraFrameEventStreamHandler.java created following existing handler patterns
+       - Implements EventChannel.StreamHandler interface
+       - Sends frames from IFrameCallback to Flutter via EventSink
+       - Handles thread safety (camera thread → main thread via Handler)
+       - Proper cleanup on cancel/dispose
+
+    2. MethodChannel Integration
+       - startFrameStreaming method handler added to UvcCameraNativeMethodCallHandler.java
+       - stopFrameStreaming method handler added to UvcCameraNativeMethodCallHandler.java
+       - Methods route to existing UvcCameraPlatform startFrameStreaming/stopFrameStreaming
+       - Proper error handling and result callbacks
+
+    3. Plugin Registration
+       - Frame EventChannel registered in UvcCameraPlugin.onAttachedToEngine
+       - Channel name: uvccamera/frames
+       - Stream handler properly connected to UvcCameraPlatform
+       - Channel cleanup in onDetachedFromEngine
+
+    4. Code Quality
+       - Follows existing uvccamera patterns (matches UvcCameraErrorEventStreamHandler style)
+       - Minimal changes (~90 lines total)
+       - No breaking changes to existing API
+       - Proper error handling throughout
+
+    5. Testing Verification
+       - Fork builds successfully
+       - Method calls route correctly (verify with logs)
+       - EventChannel registration confirmed
+       - Ready for integration testing with nt_helper
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-8-android-video-implementation-context.md</path>
+        <title>Epic 8: Android Video Implementation - Technical Context</title>
+        <section>Existing uvccamera Architecture</section>
+        <snippet>The fork already has established patterns for EventChannels: UvcCameraPlugin.java handles Flutter engine attachment/detachment, creates channels for method and event communication. Existing EventStreamHandlers include UvcCameraDeviceEventStreamHandler, UvcCameraErrorEventStreamHandler, UvcCameraStatusEventStreamHandler, and UvcCameraButtonEventStreamHandler.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-8-android-video-implementation-context.md</path>
+        <title>Epic 8: Android Video Implementation - Technical Context</title>
+        <section>Android Video Architecture</section>
+        <snippet>Complete flow from UvcCamera Hardware through IFrameCallback.onFrame (NV21 format), to UvcCameraFrameEventStreamHandler.sendFrame, through EventChannel: uvccamera/frames, to nt_helper UsbVideoCapturePlugin.kt for NV21 to Bitmap conversion, then Bitmap to BMP encoding, finally to VideoFrameCubit for display.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-8-android-video-implementation-context.md</path>
+        <title>Epic 8: Android Video Implementation - Technical Context</title>
+        <section>File Locations</section>
+        <snippet>uvccamera Fork (/tmp/UVCCamera - feature/frame-streaming-api branch). Files to create: UvcCameraFrameEventStreamHandler.java. Files to edit: UvcCameraPlugin.java, UvcCameraNativeMethodCallHandler.java, UvcCameraPlatform.java with specific line numbers provided.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>android/app/src/main/kotlin/com/example/nt_helper/UsbVideoCapturePlugin.kt</path>
+        <kind>service</kind>
+        <symbol>VideoFrameCallback</symbol>
+        <lines>71-124</lines>
+        <reason>Reference implementation of IFrameCallback that shows how nt_helper expects to receive frames from uvccamera - demonstrates NV21 to Bitmap conversion and thread safety pattern</reason>
+      </artifact>
+      <artifact>
+        <path>pubspec.yaml</path>
+        <kind>config</kind>
+        <symbol>uvccamera dependency</symbol>
+        <lines>89-93</lines>
+        <reason>Shows nt_helper's dependency on the fork at https://github.com/thorinside/UVCCamera ref feature/frame-streaming-api - this is where the changes will be integrated</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter" note="Flutter SDK for EventChannel and MethodChannel APIs" />
+      </flutter>
+      <android>
+        <package name="android.os.Handler" note="For main thread dispatch from camera thread" />
+        <package name="android.os.Looper" note="For getting main looper" />
+      </android>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Follow existing uvccamera plugin patterns (UvcCameraErrorEventStreamHandler, UvcCameraDeviceEventStreamHandler)
+    - Implement EventChannel.StreamHandler interface (onListen, onCancel)
+    - Thread safety: Camera callbacks on camera thread, EventChannel messages on main thread via Handler
+    - Minimal changes: Target ~90 lines total
+    - No breaking changes to existing uvccamera API
+    - Error handling: Use result.error() for MethodChannel, eventSink.error() for EventChannel
+    - Null checks for eventSink before sending
+    - Proper cleanup in onCancel and onDetachedFromEngine
+    - Fork repository location: /tmp/UVCCamera branch: feature/frame-streaming-api
+    - Java package structure: org.uvccamera.flutter.*
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>EventChannel.StreamHandler</name>
+      <kind>Flutter platform interface</kind>
+      <signature>
+        public interface StreamHandler {
+          void onListen(Object arguments, EventChannel.EventSink events);
+          void onCancel(Object arguments);
+        }
+      </signature>
+      <path>flutter/packages/flutter/lib/src/services/platform_channel.dart</path>
+    </interface>
+    <interface>
+      <name>IFrameCallback</name>
+      <kind>Native camera interface</kind>
+      <signature>
+        public interface IFrameCallback {
+          void onFrame(ByteBuffer frame);
+        }
+      </signature>
+      <path>External: uvccamera native library interface</path>
+    </interface>
+    <interface>
+      <name>uvccamera/frames EventChannel</name>
+      <kind>EventChannel</kind>
+      <signature>Channel name: "uvccamera/frames", sends byte[] containing NV21 pixel data from camera</signature>
+      <path>To be created in UvcCameraPlugin.java</path>
+    </interface>
+    <interface>
+      <name>startFrameStreaming MethodChannel</name>
+      <kind>MethodChannel call</kind>
+      <signature>Method: "startFrameStreaming", Arguments: {cameraId: int, pixelFormat: int}</signature>
+      <path>To be added in UvcCameraNativeMethodCallHandler.java</path>
+    </interface>
+    <interface>
+      <name>stopFrameStreaming MethodChannel</name>
+      <kind>MethodChannel call</kind>
+      <signature>Method: "stopFrameStreaming", Arguments: none or {cameraId: int}</signature>
+      <path>To be added in UvcCameraNativeMethodCallHandler.java</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      This is a Flutter plugin fork modification. Testing will be done via:
+      1. Build verification: ./gradlew build in flutter/android directory
+      2. Manual integration testing with nt_helper on physical Android device
+      3. Debug log verification to confirm method routing and EventChannel registration
+      No automated unit tests required for this story - focus is on build success and integration readiness.
+    </standards>
+    <locations>
+      - Fork build: /tmp/UVCCamera/flutter/android
+      - Integration testing: Physical Android device with USB OTG support
+    </locations>
+    <ideas>
+      - AC #5: Verify fork builds without errors using ./gradlew build
+      - AC #5: Add debug logs to verify startFrameStreaming/stopFrameStreaming method routing
+      - AC #3: Verify EventChannel registration in logs during plugin initialization
+      - Integration test (Story 8.2): Deploy to Android device and verify frame streaming works with nt_helper
+    </ideas>
+  </tests>
+</story-context>

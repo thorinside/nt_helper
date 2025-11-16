@@ -60,6 +60,7 @@ dependencies:
   drift: ^2.28.1
   sqlite3_flutter_libs: ^0.5.39
   path_provider: ^2.1.5
+  permission_handler: ^11.3.1
   path: ^1.9.1
   intl: ^0.20.2
   file_picker: ^10.3.2
@@ -89,7 +90,7 @@ dependencies:
   uvccamera:
     git:
       url: https://github.com/thorinside/UVCCamera
-      ref: feature/frame-streaming-api
+      ref: 31bdb66472a0cde05ee6ab3de426661c96f3bb45
       path: flutter
 
 dev_dependencies:

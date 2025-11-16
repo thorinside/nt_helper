@@ -1,0 +1,221 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>2</storyId>
+    <title>Integrate Fork Frame Streaming with nt_helper and Test on Android Device</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-15</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an Android user of nt_helper</asA>
+    <iWant>the uvccamera fork's EventChannel frame streaming integrated with the existing BMP → VideoFrameCubit architecture</iWant>
+    <soThat>I can view real-time video from the Disting NT module on Android with the same quality and reliability as iOS/macOS</soThat>
+    <tasks>
+      - Task 1: Update uvccamera dependency (AC: 1)
+        - Check latest commit hash on thorinside/UVCCamera feature/frame-streaming-api branch
+        - Update pubspec.yaml with correct git ref
+        - Run flutter pub get and verify no dependency conflicts
+        - Verify uvccamera plugin files are updated in .pub-cache
+      - Task 2: Build and deploy to Android (AC: 2)
+        - Build Android APK: flutter build apk --debug
+        - Deploy to test device via ADB
+        - Launch app and verify startup
+        - Check for any runtime errors in logcat
+      - Task 3: Test video streaming integration (AC: 3)
+        - Connect Disting NT via USB OTG cable
+        - Grant USB permissions in Android
+        - Open floating video overlay
+        - Verify frames display without errors
+        - Monitor frame rate via debug logs
+        - Compare visual quality with iOS/macOS video
+      - Task 4: Test stability and edge cases (AC: 4)
+        - Monitor memory usage with Android Profiler
+        - Test camera disconnect/reconnect cycle
+        - Test app backgrounding (home button)
+        - Test app foregrounding (return to app)
+        - Run for 5+ minutes to check for leaks or degradation
+        - Verify stream cleanup on overlay close
+      - Task 5: Validate code quality (AC: 5)
+        - Run flutter analyze and fix any warnings
+        - Run all existing tests
+        - Review debug logs for expected frame flow
+        - Verify no regression in existing functionality
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Fork Integration
+       - Update nt_helper's pubspec.yaml to point to the latest commit of thorinside/UVCCamera fork (feature/frame-streaming-api branch)
+       - Run flutter pub get successfully
+       - Verify uvccamera plugin includes the EventChannel frame streaming implementation
+
+    2. Android Build and Deployment
+       - Build nt_helper for Android platform
+       - Deploy to physical Android device with USB OTG support
+       - Connect Disting NT module via USB
+       - App launches without crashes
+
+    3. Video Display Functionality
+       - Open floating video overlay in nt_helper
+       - Video frames display correctly
+       - Frame rate is stable at ~15 FPS
+       - No "Invalid BMP header" errors in logs
+       - Image quality matches iOS/macOS
+
+    4. Stability and Resource Management
+       - Memory usage remains stable (no leaks)
+       - Camera reconnection works after disconnect/reconnect
+       - App backgrounding/foregrounding handled correctly
+       - No crashes during extended use
+
+    5. Code Quality
+       - flutter analyze passes with zero warnings
+       - Debug logs show proper frame flow from fork → plugin → VideoFrameCubit
+       - All existing tests pass
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/epic-8-android-video-implementation-context.md"
+           title="Epic 8 Technical Context"
+           section="Complete Architecture"
+           snippet="Complete technical context for Epic 8 including architecture, current state analysis, file locations, testing strategy, and success criteria. Defines unified video architecture: UvcCamera → EventChannel → nt_helper Plugin → BMP → VideoFrameCubit → UI." />
+
+      <doc path="docs/android-video-implementation-story.md"
+           title="Android Video Implementation Notes"
+           section="Original Implementation"
+           snippet="Original implementation notes for Android video streaming. Documents NV21 format handling, BMP encoding, and EventChannel integration patterns." />
+
+      <doc path="docs/uvccamera-fork-frame-streaming-story.md"
+           title="Fork Implementation Guide"
+           section="Story 8.1 Details"
+           snippet="Detailed implementation guide for uvccamera fork's EventChannel frame streaming. Covers UvcCameraFrameEventStreamHandler implementation and integration patterns." />
+
+      <doc path="CLAUDE.md"
+           title="Project Instructions"
+           section="Development Standards"
+           snippet="Code quality: Zero tolerance for flutter analyze errors. Run tests before commits. No debug logging unless requested." />
+    </docs>
+
+    <code>
+      <artifact path="android/app/src/main/kotlin/com/example/nt_helper/UsbVideoCapturePlugin.kt"
+                kind="plugin"
+                symbol="VideoFrameCallback"
+                lines="67-121"
+                reason="IFrameCallback implementation that converts NV21 frames to BMP. Handles frame throttling (15 FPS), NV21→Bitmap→BMP conversion, and sends to EventChannel. Already implemented and complete." />
+
+      <artifact path="android/app/src/main/kotlin/com/example/nt_helper/UsbVideoCapturePlugin.kt"
+                kind="plugin"
+                symbol="startRealCameraFrameCapture, stopRealCameraFrameCapture"
+                lines="408-462"
+                reason="Native methods that interface with uvccamera fork. Passes cameraId to fork and manages VideoFrameCallback lifecycle. Already implemented." />
+
+      <artifact path="lib/services/platform_channels/android_usb_video_channel.dart"
+                kind="service"
+                symbol="_startFrameCapture"
+                lines="203-271"
+                reason="Dart integration that subscribes to frame EventChannel and passes cameraId to native plugin. Handles error/status events and stream management. Already implemented." />
+
+      <artifact path="lib/services/platform_channels/android_usb_video_channel.dart"
+                kind="service"
+                symbol="_stopCurrentStream"
+                lines="408-448"
+                reason="Stream cleanup and resource disposal. Cancels subscriptions and stops native frame capture. Already implemented." />
+
+      <artifact path="lib/cubit/video_frame_cubit.dart"
+                kind="cubit"
+                symbol="VideoFrameCubit"
+                reason="State management for video frames. Unified across all platforms (iOS, macOS, Android). Receives BMP data and triggers UI updates." />
+
+      <artifact path="lib/ui/widgets/floating_video_overlay.dart"
+                kind="widget"
+                symbol="FloatingVideoOverlay"
+                reason="Video display widget using VideoFrameCubit. Platform-agnostic implementation that displays BMP frames via Image.memory(). Already unified for all platforms." />
+
+      <artifact path="pubspec.yaml"
+                kind="config"
+                symbol="uvccamera dependency"
+                lines="89-93"
+                reason="Current uvccamera fork dependency configuration. Points to thorinside/UVCCamera feature/frame-streaming-api branch. This is the primary file to update with latest commit hash." />
+    </code>
+
+    <dependencies>
+      <flutter>
+        <package name="uvccamera"
+                 git="https://github.com/thorinside/UVCCamera"
+                 ref="feature/frame-streaming-api"
+                 path="flutter"
+                 note="Fork with EventChannel frame streaming implementation (Story 8.1). Update ref to latest commit hash for integration." />
+        <package name="flutter_bloc" version="^9.1.1" note="State management for VideoFrameCubit" />
+        <package name="image" version="^4.5.4" note="BMP decoding/encoding utilities" />
+      </flutter>
+
+      <android>
+        <api level="24+" note="Android 7.0+ required for USB OTG and camera APIs" />
+        <permission name="USB_PERMISSION" note="Required for Disting NT USB connection" />
+      </android>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - NO CODE CHANGES EXPECTED: This is primarily an integration and validation story. All implementation is complete.
+    - UPDATE ONLY pubspec.yaml: Update uvccamera git ref to latest commit from feature/frame-streaming-api branch
+    - ZERO FLUTTER ANALYZE WARNINGS: Must pass with zero warnings before completion
+    - PHYSICAL DEVICE TESTING REQUIRED: Must test on real Android hardware with USB OTG support
+    - FRAME RATE TARGET: 15 FPS sustained, minimum 10 FPS acceptable
+    - MEMORY STABILITY: No leaks, stable memory usage during extended operation
+    - PLATFORM PARITY: Video quality and reliability must match iOS/macOS implementations
+    - DEBUG LOG VERIFICATION: Must show proper frame flow: [uvccamera] → [NATIVE] → [AndroidUsbVideoChannel] → [VideoFrameCubit]
+  </constraints>
+
+  <interfaces>
+    <interface name="IFrameCallback.onFrame"
+               kind="Java interface"
+               signature="void onFrame(ByteBuffer frame)"
+               path="android/app/src/main/kotlin/com/example/nt_helper/UsbVideoCapturePlugin.kt#L79"
+               note="Called by uvccamera fork with NV21 frame data. Implemented by VideoFrameCallback." />
+
+    <interface name="EventChannel: com.example.nt_helper/usb_video_stream"
+               kind="Flutter EventChannel"
+               signature="Stream&lt;Uint8List&gt;"
+               path="lib/services/platform_channels/android_usb_video_channel.dart#L255"
+               note="Delivers BMP frame data from native plugin to Dart. Subscribed in _startFrameCapture." />
+
+    <interface name="MethodChannel: startVideoStream"
+               kind="Flutter MethodChannel"
+               signature="Future&lt;void&gt; invokeMethod('startVideoStream', {deviceId, cameraId})"
+               path="lib/services/platform_channels/android_usb_video_channel.dart#L249"
+               note="Triggers native frame capture with cameraId parameter." />
+
+    <interface name="VideoFrameCubit.updateFrameData"
+               kind="Cubit method"
+               signature="void updateFrameData(Uint8List bmpData)"
+               path="lib/cubit/video_frame_cubit.dart"
+               note="Receives BMP data from platform channel and triggers UI update. Platform-agnostic." />
+  </interfaces>
+
+  <tests>
+    <standards>
+      Flutter testing framework with flutter_test package. Run 'flutter test' to execute all tests. 'flutter analyze' must pass with zero warnings. Manual testing on physical Android device required for video streaming validation. Use Android Profiler for memory leak detection. ADB logcat for debug log verification.
+    </standards>
+
+    <locations>
+      - test/ (unit tests)
+      - integration_test/ (integration tests if present)
+      - Manual testing on physical Android device with USB OTG
+    </locations>
+
+    <ideas>
+      - AC1: Verify pubspec.yaml update and flutter pub get success (manual)
+      - AC2: Build Android APK and deploy to device, verify no crashes (manual + logcat)
+      - AC3: Open video overlay and verify frame display, check frame rate in logs (manual + logcat)
+      - AC4: Memory profiling with Android Studio, test disconnect/reconnect, backgrounding (manual + profiler)
+      - AC5: Run flutter analyze and flutter test, verify debug log sequence (automated + manual)
+      - Integration: End-to-end test of frame flow from fork → plugin → Dart → UI (manual)
+      - Regression: Verify no impact on iOS/macOS video functionality (manual on other platforms)
+    </ideas>
+  </tests>
+</story-context>
