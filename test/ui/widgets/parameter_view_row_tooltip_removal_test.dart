@@ -14,7 +14,7 @@ void main() {
 
     setUp(() {
       mockCubit = MockDistingCubit();
-      when(() => mockCubit.scheduleParameterRefresh()).thenReturn(null);
+      when(() => mockCubit.scheduleParameterRefresh(any())).thenReturn(null);
       when(() => mockCubit.disting()).thenReturn(null);
       when(() => mockCubit.updateParameterValue(
             algorithmIndex: any(named: 'algorithmIndex'),

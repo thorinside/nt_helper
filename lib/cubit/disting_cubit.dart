@@ -1230,6 +1230,9 @@ class DistingCubit extends Cubit<DistingState> {
             // 1. Sending the parameter value to device
             // 2. Querying parameter string if needed
             // 3. Rate limiting and consolidation
+
+            // Trigger a debounced refresh to re-sync state after the user lets go
+            scheduleParameterRefresh(algorithmIndex);
           }
       }
     } finally {
@@ -1242,7 +1245,7 @@ class DistingCubit extends Cubit<DistingState> {
   /// If a refresh is already scheduled, the existing timer is cancelled and restarted.
   /// This ensures only one refresh request is sent after a batch of parameter edits.
   /// The actual refresh occurs 300ms after the last call to this method.
-  void scheduleParameterRefresh() {
+  void scheduleParameterRefresh(int algorithmIndex) {
     final syncState = state;
     if (syncState is! DistingStateSynchronized) {
       return; // Only schedule refresh when synchronized
@@ -1255,11 +1258,7 @@ class DistingCubit extends Cubit<DistingState> {
     _parameterRefreshTimer = Timer(_parameterRefreshDebounceDelay, () {
       final manager = disting();
       if (manager != null) {
-        // Get the first slot index (typically algorithmIndex 0)
-        final firstSlot = syncState.slots.isNotEmpty ? 0 : null;
-        if (firstSlot != null) {
-          manager.requestAllParameterValues(firstSlot);
-        }
+        manager.requestAllParameterValues(algorithmIndex);
       }
       _parameterRefreshTimer = null; // Clear timer reference
     });

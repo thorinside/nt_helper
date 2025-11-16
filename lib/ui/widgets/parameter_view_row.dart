@@ -97,7 +97,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
   void _scheduleParameterRefresh() {
     // Schedule a debounced refresh after parameter commit
-    context.read<DistingCubit>().scheduleParameterRefresh();
+    context.read<DistingCubit>().scheduleParameterRefresh(widget.algorithmIndex);
   }
 
   DateTime? _lastSent;
