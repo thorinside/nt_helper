@@ -21,11 +21,7 @@ class AndroidUsbVideoChannel {
 
   final DebugService _debugService = DebugService();
 
-  UvcCameraController? _controller;
   int? _cameraId; // Store camera ID from openCamera
-
-  /// Expose the controller for direct widget access on Android
-  UvcCameraController? get cameraController => _controller;
   StreamSubscription<UvcCameraDeviceEvent>? _deviceEventSubscription;
   StreamSubscription? _errorEventSubscription;
   StreamSubscription? _statusEventSubscription;
@@ -110,9 +106,9 @@ class AndroidUsbVideoChannel {
   Stream<Uint8List> startVideoStream(String deviceId) {
     _debugLog('Starting video stream for device: $deviceId');
 
-    // If we already have a controller for this device, just return the stream
-    if (_controller != null && _currentDevice?.name == deviceId) {
-      _debugLog('Controller already exists for device, reusing');
+    // If we already have a camera open for this device, just return the stream
+    if (_cameraId != null && _currentDevice?.name == deviceId) {
+      _debugLog('Camera already open for device (cameraId: $_cameraId), reusing stream');
       if (_frameStreamController == null || _frameStreamController!.isClosed) {
         _frameStreamController = StreamController<Uint8List>.broadcast();
       }
@@ -284,10 +280,12 @@ class AndroidUsbVideoChannel {
         break;
 
       case UvcCameraDeviceEventType.connected:
-        _debugLog('Device connected successfully - creating controller');
-        // Device is now authorized and ready - create controller following the example pattern
-        if (event.device.name == _currentDevice?.name && _controller == null) {
+        _debugLog('Device connected successfully - opening camera');
+        // Device is now authorized and ready - open camera if not already open
+        if (event.device.name == _currentDevice?.name && _cameraId == null) {
           _createAndInitializeController(event.device);
+        } else if (event.device.name == _currentDevice?.name) {
+          _debugLog('Camera already open (cameraId: $_cameraId), ignoring duplicate connect event');
         }
         break;
 
