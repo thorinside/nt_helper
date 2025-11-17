@@ -103,10 +103,10 @@ development_status:
   epic-8-retrospective: optional
 
   epic-9: backlog
-  9-1-platform-detection-and-conditional-layout: review
-  9-2-bottom-sheet-component-implementation: review
+  9-1-platform-detection-and-conditional-layout: done
+  9-2-bottom-sheet-component-implementation: done
   9-3-accessibility-and-polish: done
-  9-4-cross-platform-testing-and-validation: drafted
+  9-4-cross-platform-testing-and-validation: done
   epic-9-retrospective: optional
 
   # Bug Fixes

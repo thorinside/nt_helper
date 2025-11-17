@@ -1,6 +1,6 @@
 # Story 9.4: Cross-Platform Testing and Validation
 
-Status: drafted
+Status: done
 
 ## Story
 
