@@ -849,4 +849,184 @@ So that I have feature parity across all platforms.
 
 ---
 
+## Epic 9: Mobile Bottom Bar Optimization
+
+**Expanded Goal:**
+
+Implement platform-adaptive bottom bar that solves mobile squashing while maintaining desktop workflow. The bottom navigation bar on mobile devices is squashed in connected mode, displaying 6+ interactive controls that compete for limited horizontal space. This epic delivers a clean mobile experience using Material 3 bottom sheet pattern while preserving desktop power-user workflow.
+
+**Value Proposition:**
+
+Musicians using mobile devices report difficulty tapping display mode buttons accurately due to cramped spacing. The 4 hardware display mode controls (Parameter View, Algorithm UI, Overview UI, Overview VU Meters) plus mode switcher and FAB spacer create 6+ interactive elements competing for limited screen width. Desktop users have adequate space and should maintain current one-tap workflow. This epic uses platform-adaptive design to give each platform an optimal experience: desktop keeps fast icon buttons, mobile gets a clean "View Options" button that opens a bottom sheet with clearly labeled options.
+
+**Story Breakdown:**
+
+**Story E9.1: Platform Detection and Conditional Layout**
+
+As a developer implementing platform-adaptive UI,
+I want the bottom bar to conditionally render based on platform using PlatformInteractionService,
+So that mobile and desktop users each get optimal layouts without maintaining separate codebases.
+
+**Acceptance Criteria:**
+1. Bottom bar builder calls `_platformService.isMobilePlatform()` to detect platform
+2. Platform detection result stored in local boolean variable `isMobile`
+3. Detection happens on every rebuild (no caching issues)
+4. When `!isMobile` AND connected mode (`!isOffline`): Row with 4 icon buttons renders (existing code path)
+5. When `!isMobile` AND connected mode: All 4 display mode buttons visible with correct icons and tooltips
+6. When `!isMobile` AND connected mode: Clicking button triggers `setDisplayMode()` correctly
+7. When `isMobile` AND connected mode (`!isOffline`): Single IconButton with "View Options" label renders
+8. When `isMobile` AND connected mode: Button uses `Icons.view_list` icon
+9. When `isMobile` AND connected mode: Button has tooltip "View Options"
+10. When `isMobile` AND connected mode: Button `onPressed` handler defined (can be no-op for this story)
+11. Offline mode shows "Offline Data" button on both mobile and desktop (unchanged)
+12. Demo mode shows appropriate button on both mobile and desktop (unchanged)
+13. Bottom bar height remains consistent across modes
+14. Mode switcher (Parameters/Routing) still renders correctly on all platforms
+15. Platform-conditional elements (MCP status, version, CPU) still render correctly
+16. FAB spacer (80px) still present on all platforms
+17. `flutter analyze` passes with zero warnings
+18. Widget test verifies desktop layout renders 4 buttons
+19. Widget test verifies mobile layout renders 1 button
+20. Widget test verifies offline mode renders correctly on both platforms
+
+**Prerequisites:** None
+
+**Story E9.2: Bottom Sheet Component Implementation**
+
+As a mobile user tapping "View Options",
+I want to see clearly labeled display mode choices in a bottom sheet,
+So that I can easily select the hardware display mode I need without squinting at tiny icons.
+
+**Acceptance Criteria:**
+1. Method `_showDisplayModeBottomSheet(BuildContext context)` created in `_SynchronizedScreenState`
+2. Uses `showModalBottomSheet()` from Material framework
+3. Bottom sheet wrapped in SafeArea for notch/home indicator safety
+4. Bottom sheet has visual handle indicator at top (40px wide, 4px tall, gray, centered)
+5. Bottom sheet has header text "Hardware Display Mode" (16px, weight 600, padding 16px)
+6. Bottom sheet contains 4 options using ListTile widget
+7. Option 1: Parameter View - icon `Icons.list_alt_rounded`, subtitle "Hardware parameter list"
+8. Option 2: Algorithm UI - icon `Icons.line_axis_rounded`, subtitle "Custom algorithm interface"
+9. Option 3: Overview UI - icon `Icons.line_weight_rounded`, subtitle "All slots overview"
+10. Option 4: Overview VU Meters - icon `Icons.leaderboard_rounded`, subtitle "VU meter display"
+11. Each option has leading icon, title text, and subtitle text
+12. Options have horizontal padding 24px, vertical padding 8px
+13. Each option's `onTap` calls `context.read<DistingCubit>().setDisplayMode(mode)` with correct mode
+14. Each option's `onTap` calls `Navigator.pop(context)` to auto-dismiss sheet
+15. Display mode changes propagate to hardware correctly (same behavior as desktop buttons)
+16. Tapping outside bottom sheet dismisses it (Material default behavior)
+17. Swiping down dismisses bottom sheet (Material default behavior)
+18. Android back button dismisses bottom sheet (Material default behavior)
+19. Bottom sheet animates smoothly with slide-up animation (Material default)
+20. Background dims when bottom sheet opens (Material default scrim)
+21. Option tiles show visual feedback on tap (Material ripple effect)
+22. Options meet minimum 56px touch target height
+23. "View Options" button `onPressed` now calls `_showDisplayModeBottomSheet(context)`
+24. No errors in debug console when opening/closing bottom sheet
+25. Manual test on iOS simulator: sheet opens, options work, auto-dismisses
+26. Manual test on Android emulator: sheet opens, options work, back button dismisses
+27. Manual test on desktop: verify 4 buttons still visible (sheet not used)
+28. Edge case: rapid tapping "View Options" doesn't cause crashes
+29. Edge case: opening sheet then switching to offline mode doesn't crash
+30. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E9.1
+
+**Story E9.3: Accessibility and Polish**
+
+As a user with accessibility needs,
+I want the bottom sheet to work with screen readers and keyboard navigation,
+So that I can access all display mode options regardless of my abilities.
+
+**Acceptance Criteria:**
+1. "View Options" button has semantic label "View Options, opens display mode menu"
+2. Each bottom sheet option announces "[Title]. [Subtitle]" to screen readers
+3. Screen reader announces when bottom sheet opens (Material default behavior)
+4. Screen reader announces when bottom sheet closes (Material default behavior)
+5. Tab key moves focus through bottom bar controls on desktop (if applicable)
+6. Enter/Space on focused "View Options" button opens bottom sheet (desktop)
+7. Escape key closes bottom sheet (Material default behavior)
+8. ListTile heights measured and verified >= 56px
+9. Touch targets verified to meet WCAG 2.1 Level AA (44x44dp minimum)
+10. No overlap between tappable areas in bottom sheet
+11. Text contrast ratios meet WCAG AA (4.5:1 for normal text)
+12. Icon colors meet contrast requirements (3:1 for large elements)
+13. Focus indicators visible when keyboard navigating (desktop)
+14. iOS VoiceOver test: Enable, navigate to "View Options", verify announcement
+15. iOS VoiceOver test: Open sheet, verify each option announces correctly
+16. iOS VoiceOver test: Double-tap to activate option works
+17. Android TalkBack test: Enable, verify same functionality as VoiceOver
+18. Contrast test: Use browser dev tools to measure text/background ratios
+19. Touch target test: Use Android layout bounds debugging to verify sizes
+20. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E9.2
+
+**Story E9.4: Cross-Platform Testing and Validation**
+
+As a QA engineer validating the implementation,
+I want to thoroughly test across all platforms and modes to ensure no regressions,
+So that we can confidently release without breaking existing functionality.
+
+**Acceptance Criteria:**
+1. Test on physical iPhone: connected mode shows "View Options", sheet works, auto-dismisses
+2. Test on physical iPhone: verify Parameter View mode change works
+3. Test on physical iPhone: verify Algorithm UI mode change works
+4. Test on physical iPhone: verify Overview UI mode change works
+5. Test on physical iPhone: verify Overview VU Meters mode change works
+6. Test on physical Android phone: all 5 tests from iPhone repeated
+7. Test on macOS desktop: verify 4 buttons visible, one-tap switching works
+8. Test on Windows desktop (if applicable): verify 4 buttons visible
+9. Test on Linux desktop (if applicable): verify 4 buttons visible
+10. Test connected mode on all platforms: verify correct layout
+11. Test offline mode on all platforms: verify "Offline Data" button unchanged
+12. Test demo mode on all platforms: verify appropriate button shows
+13. Bottom sheet animation smooth (60fps) on older devices
+14. No jank when opening/closing sheet rapidly
+15. No memory leaks: open/close sheet 20+ times, check memory stable
+16. No impact to app startup time measured
+17. Desktop: all 4 buttons visible with correct icons
+18. Desktop: tooltips show on hover for each button
+19. Desktop: one-tap mode switching works for all 4 modes
+20. Mobile: no squashing in bottom bar
+21. Mobile: adequate spacing between controls
+22. All modes: FAB functions correctly
+23. All modes: mode switcher (Parameters/Routing) works
+24. Offline: "Offline Data" button works
+25. Demo: appropriate button shows
+26. Performance: bottom sheet open time < 300ms
+27. Performance: animation frame rate 60fps
+28. Performance: memory stable after 20 open/close cycles
+29. Performance: no console warnings or errors
+30. Rotate device while sheet open: no crashes, sheet adjusts or closes gracefully
+31. Switch between apps while sheet open: no crashes
+32. Rapid opening/closing of sheet: no crashes
+33. Multiple quick taps on options: no double-triggers
+34. Sheet open during preset change: no crashes
+35. Sheet open during algorithm change: no crashes
+36. Zero desktop regressions detected
+37. Mobile bottom bar no longer squashed (visual inspection)
+38. All display modes accessible on mobile
+39. Accessibility audit passes (screen reader, keyboard nav, touch targets)
+40. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Stories E9.1, E9.2, E9.3
+
+**Technical Notes:**
+- Primary file: `lib/ui/synchronized_screen.dart` (lines 509-646)
+- Method to modify: `_buildBottomAppBar()`
+- New methods to add: `_showDisplayModeBottomSheet()`, `_buildDisplayModeOption()`, `_buildBottomSheetHeader()`
+- Platform detection: Use existing `_platformService.isMobilePlatform()`
+- Display modes: Use existing `DisplayMode` enum and `DistingCubit.setDisplayMode()`
+- Material components: `showModalBottomSheet`, `ListTile`, `SafeArea`
+- Touch target specs: Material 3 guideline 56px minimum height
+- Accessibility: WCAG 2.1 Level AA compliance (44x44dp minimum touch targets)
+
+**Testing Requirements:**
+- Requires physical iOS device for VoiceOver testing
+- Requires physical Android device for TalkBack testing and accurate touch target validation
+- Desktop testing on macOS required (Windows/Linux optional but recommended)
+- Integration with Disting NT hardware for display mode verification
+
+---
+
 **For implementation:** Use the `create-story` workflow to generate individual story implementation plans from this epic breakdown.

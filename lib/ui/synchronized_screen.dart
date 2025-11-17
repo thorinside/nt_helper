@@ -574,10 +574,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               } else {
                 // Show platform-adaptive view mode buttons when online
                 return isMobile
-                    ? IconButton(
-                        tooltip: "View Options",
-                        icon: const Icon(Icons.view_list),
-                        onPressed: () => _showDisplayModeBottomSheet(context),
+                    ? Semantics(
+                        label: 'View Options',
+                        hint: 'Opens display mode menu',
+                        button: true,
+                        child: IconButton(
+                          tooltip: "View Options",
+                          icon: const Icon(Icons.view_list),
+                          onPressed: () => _showDisplayModeBottomSheet(context),
+                        ),
                       )
                     : Row(
                         children: [
@@ -705,15 +710,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     required String subtitle,
     required DisplayMode mode,
   }) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      onTap: () {
-        Navigator.pop(context);
-        context.read<DistingCubit>().setDisplayMode(mode);
-      },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+    return Semantics(
+      label: '$title. $subtitle',
+      button: true,
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        onTap: () {
+          Navigator.pop(context);
+          context.read<DistingCubit>().setDisplayMode(mode);
+        },
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      ),
     );
   }
 
