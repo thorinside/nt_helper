@@ -660,37 +660,43 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   void _showDisplayModeBottomSheet(BuildContext context) {
+    // Capture the cubit instance before the builder (bottom sheet creates new overlay route)
+    final distingCubit = context.read<DistingCubit>();
     showModalBottomSheet<void>(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext sheetContext) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildBottomSheetHeader(),
               _buildDisplayModeOption(
-                context,
+                distingCubit,
+                sheetContext,
                 icon: Icons.list_alt_rounded,
                 title: 'Parameter View',
                 subtitle: 'Hardware parameter list',
                 mode: DisplayMode.parameters,
               ),
               _buildDisplayModeOption(
-                context,
+                distingCubit,
+                sheetContext,
                 icon: Icons.line_axis_rounded,
                 title: 'Algorithm UI',
                 subtitle: 'Custom algorithm interface',
                 mode: DisplayMode.algorithmUI,
               ),
               _buildDisplayModeOption(
-                context,
+                distingCubit,
+                sheetContext,
                 icon: Icons.line_weight_rounded,
                 title: 'Overview UI',
                 subtitle: 'All slots overview',
                 mode: DisplayMode.overview,
               ),
               _buildDisplayModeOption(
-                context,
+                distingCubit,
+                sheetContext,
                 icon: Icons.leaderboard_rounded,
                 title: 'Overview VU Meters',
                 subtitle: 'VU meter display',
@@ -704,7 +710,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   Widget _buildDisplayModeOption(
-    BuildContext context, {
+    DistingCubit distingCubit,
+    BuildContext sheetContext, {
     required IconData icon,
     required String title,
     required String subtitle,
@@ -718,8 +725,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         title: Text(title),
         subtitle: Text(subtitle),
         onTap: () {
-          Navigator.pop(context);
-          context.read<DistingCubit>().setDisplayMode(mode);
+          Navigator.pop(sheetContext);
+          distingCubit.setDisplayMode(mode);
         },
         contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       ),
