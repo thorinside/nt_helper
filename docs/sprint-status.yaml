@@ -102,6 +102,13 @@ development_status:
   e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device: in-progress  # BLOCKED: Requires physical Android hardware testing
   epic-8-retrospective: optional
 
+  epic-9: backlog
+  9-1-platform-detection-and-conditional-layout: done
+  9-2-bottom-sheet-component-implementation: done
+  9-3-accessibility-and-polish: done
+  9-4-cross-platform-testing-and-validation: done
+  epic-9-retrospective: optional
+
   # Bug Fixes
   bug-1-mapping-editor-save-and-input-issues: done
   bug-2-plugin-installation-directory-creation: done

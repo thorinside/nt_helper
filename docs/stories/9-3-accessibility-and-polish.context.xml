@@ -1,0 +1,190 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>9</epicId>
+    <storyId>3</storyId>
+    <title>Accessibility and Polish</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-16</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/9-3-accessibility-and-polish.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user with accessibility needs</asA>
+    <iWant>the bottom sheet to work with screen readers and keyboard navigation</iWant>
+    <soThat>I can access all display mode options regardless of my abilities</soThat>
+    <tasks>
+      - Add semantic labels to "View Options" button
+      - Verify ListTile semantic announcements
+      - Test keyboard navigation (desktop)
+      - Measure touch targets and verify WCAG compliance
+      - Verify contrast ratios for text and icons
+      - Test focus indicators
+      - iOS VoiceOver testing
+      - Android TalkBack testing
+      - Contrast testing with tools
+      - Touch target testing with layout bounds
+      - Code quality (flutter analyze)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. "View Options" button has semantic label "View Options, opens display mode menu"
+    2. Each bottom sheet option announces "[Title]. [Subtitle]" to screen readers
+    3. Screen reader announces when bottom sheet opens (Material default behavior)
+    4. Screen reader announces when bottom sheet closes (Material default behavior)
+    5. Tab key moves focus through bottom bar controls on desktop (if applicable)
+    6. Enter/Space on focused "View Options" button opens bottom sheet (desktop)
+    7. Escape key closes bottom sheet (Material default behavior)
+    8. ListTile heights measured and verified >= 56px
+    9. Touch targets verified to meet WCAG 2.1 Level AA (44x44dp minimum)
+    10. No overlap between tappable areas in bottom sheet
+    11. Text contrast ratios meet WCAG AA (4.5:1 for normal text)
+    12. Icon colors meet contrast requirements (3:1 for large elements)
+    13. Focus indicators visible when keyboard navigating (desktop)
+    14-16. iOS VoiceOver testing: Enable, navigate, verify announcements, double-tap activation
+    17. Android TalkBack testing: Same functionality as VoiceOver
+    18. Contrast testing using browser dev tools
+    19. Touch target testing using Android layout bounds debugging
+    20. flutter analyze passes with zero warnings
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/mobile-bottom-bar-epic.md</path>
+        <title>Epic 9: Mobile Bottom Bar Optimization</title>
+        <section>Story 3: Accessibility and Polish</section>
+        <snippet>Covers screen reader support, keyboard navigation, touch target compliance (WCAG 2.1 Level AA), visual accessibility with contrast ratios, and haptic feedback. Includes semantic label implementation examples and testing procedures for iOS VoiceOver and Android TalkBack.</snippet>
+      </doc>
+      <doc>
+        <path>docs/mobile-bottom-bar-prd.md</path>
+        <title>Mobile Bottom Bar PRD</title>
+        <section>Accessibility Requirements</section>
+        <snippet>Defines accessibility requirements for the bottom bar and bottom sheet implementation, including WCAG compliance levels and platform-specific accessibility features.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Accessibility Guidelines</section>
+        <snippet>Contains design guidelines for accessible UI components including color contrast, touch targets, and semantic labeling.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/9-2-bottom-sheet-component-implementation.context.xml</path>
+        <title>Story 9.2 Context</title>
+        <section>Bottom Sheet Implementation</section>
+        <snippet>Previous story that implemented the bottom sheet structure. Accessibility story builds on this foundation by adding semantic labels and testing.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/ui/synchronized_screen.dart</path>
+        <kind>screen</kind>
+        <symbol>_SynchronizedScreenState._buildBottomAppBar</symbol>
+        <lines>512-655</lines>
+        <reason>Main bottom bar implementation where "View Options" button needs semantic labeling</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/synchronized_screen.dart</path>
+        <kind>screen</kind>
+        <symbol>_SynchronizedScreenState._showDisplayModeBottomSheet</symbol>
+        <lines>657-699</lines>
+        <reason>Bottom sheet implementation that needs accessibility enhancements for ListTile semantics</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/platform/platform_interaction_service.dart</path>
+        <kind>service</kind>
+        <symbol>PlatformInteractionService.isMobilePlatform</symbol>
+        <lines>N/A</lines>
+        <reason>Used to determine platform for conditional accessibility features</reason>
+      </artifact>
+      <artifact>
+        <path>test/ui/synchronized_screen_bottom_bar_test.dart</path>
+        <kind>test</kind>
+        <symbol>MockPlatformInteractionService</symbol>
+        <lines>1-50</lines>
+        <reason>Existing test structure for bottom bar that can be extended for accessibility tests</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>model</kind>
+        <symbol>DisplayMode</symbol>
+        <lines>22</lines>
+        <reason>DisplayMode enum used in bottom sheet options</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        - flutter SDK (>=3.8.1)
+        - material widgets (Semantics, ListTile, showModalBottomSheet)
+      </flutter>
+      <packages>
+        - haptic_feedback: ^0.6.0 (already in use for haptic feedback if needed)
+        - flutter_bloc: ^9.1.1 (state management)
+        - provider: ^6.1.5+1 (dependency injection)
+      </packages>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Must maintain existing functionality - accessibility is additive only
+    - Must not break desktop layout or existing tests
+    - Semantic labels must follow Material Design guidelines
+    - Must test on real devices (iOS and Android) for screen reader verification
+    - All changes must pass flutter analyze with zero warnings
+    - ListTile default semantics are good - only enhance if testing reveals issues
+    - Focus on platform-appropriate features (screen readers on mobile, keyboard on desktop)
+    - Touch targets must meet WCAG 2.1 Level AA (44x44dp minimum)
+    - Text contrast must meet WCAG AA (4.5:1 ratio)
+    - No new dependencies should be added
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Semantics Widget API</name>
+      <kind>Flutter Widget</kind>
+      <signature>Semantics({Key? key, Widget? child, bool button = false, String? label, String? hint, ...})</signature>
+      <path>Flutter SDK (material.dart)</path>
+    </interface>
+    <interface>
+      <name>ListTile Widget</name>
+      <kind>Flutter Widget</kind>
+      <signature>ListTile({Key? key, Widget? leading, Widget? title, Widget? subtitle, VoidCallback? onTap, EdgeInsets? contentPadding, ...})</signature>
+      <path>Flutter SDK (material.dart)</path>
+    </interface>
+    <interface>
+      <name>PlatformInteractionService.isMobilePlatform</name>
+      <kind>method</kind>
+      <signature>bool isMobilePlatform()</signature>
+      <path>lib/core/platform/platform_interaction_service.dart</path>
+    </interface>
+    <interface>
+      <name>DistingCubit.setDisplayMode</name>
+      <kind>method</kind>
+      <signature>void setDisplayMode(DisplayMode mode)</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Tests use flutter_test framework with mocktail for mocking. Widget tests verify UI behavior, semantic tests verify screen reader announcements. Testing pattern: Arrange (mock setup), Act (user interaction), Assert (verify behavior). Manual testing required for VoiceOver, TalkBack, contrast ratios, and touch target measurements using real devices.
+    </standards>
+    <locations>
+      - test/ui/synchronized_screen_bottom_bar_test.dart (existing bottom bar tests)
+      - test/ui/widgets/ (widget-level tests)
+      - Manual testing on iOS/Android devices for VoiceOver/TalkBack
+      - Browser dev tools for contrast testing
+      - Android Developer Options layout bounds for touch targets
+    </locations>
+    <ideas>
+      - AC1: Test Semantics wrapper on "View Options" button with semantic label and hint
+      - AC2: Test ListTile semantic announcements (or verify Material defaults are sufficient)
+      - AC5-7: Desktop keyboard navigation tests (Tab, Enter, Escape keys)
+      - AC8-10: Automated tests to measure widget dimensions and verify touch target sizes
+      - AC13: Focus indicator visibility tests on desktop
+      - AC14-19: Manual testing checklists for VoiceOver, TalkBack, contrast, and touch targets
+      - AC20: Automated flutter analyze verification in CI
+    </ideas>
+  </tests>
+</story-context>
