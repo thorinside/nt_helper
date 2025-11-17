@@ -3692,10 +3692,13 @@ class DistingCubit extends Cubit<DistingState> {
       // 1. Send load plugin command
       await disting.requestLoadPlugin(guid);
 
+      // Wait a bit
+      await Future.delayed(const Duration(milliseconds: 1000));
+
       // 2. Request updated info for just this algorithm
       final updatedInfo = await disting.requestAlgorithmInfo(algorithmIndex);
 
-      if (updatedInfo != null) {
+      if (updatedInfo != null && updatedInfo.isLoaded) {
         // 3. Update only this algorithm in the state
         final updatedAlgorithms = List<AlgorithmInfo>.from(
           currentState.algorithms,
@@ -3705,6 +3708,7 @@ class DistingCubit extends Cubit<DistingState> {
         emit(currentState.copyWith(algorithms: updatedAlgorithms));
         return updatedInfo;
       } else {
+        // Loading failed - either couldn't get info or plugin didn't load
         return null;
       }
     } catch (e, stackTrace) {

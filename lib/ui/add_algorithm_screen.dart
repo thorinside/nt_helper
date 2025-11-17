@@ -1,8 +1,8 @@
 import 'dart:async'; // Added for Timer
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 
 import 'package:collection/collection.dart';
@@ -385,7 +385,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         _allAlgorithms = List<AlgorithmInfo>.from(
           algorithms,
         )..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        
+
         // If we have a currently selected algorithm, update it to reflect the latest state
         if (selectedAlgorithmGuid != null) {
           final updatedAlgo = _allAlgorithms.firstWhereOrNull(
@@ -401,7 +401,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             }
           }
         }
-        
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _filterAlgorithms();

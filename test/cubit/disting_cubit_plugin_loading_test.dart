@@ -5,6 +5,8 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
+import 'package:nt_helper/models/firmware_version.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
@@ -23,6 +25,8 @@ void main() {
   late AlgorithmInfo factoryAlgorithm;
 
   setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
     registerFallbackValue(DistingState.initial());
   });
 
@@ -38,31 +42,33 @@ void main() {
     cubit = DistingCubit(mockDatabase);
 
     // Create test algorithm data
-    unloadedPlugin = const AlgorithmInfo(
+    unloadedPlugin = AlgorithmInfo(
+      algorithmIndex: 0,
       guid: 'TestPlugin',
       name: 'Test Plugin',
-      numSpecifications: 0,
-      specifications: [],
+      specifications: const [],
+      isPlugin: true,
       isLoaded: false,
     );
 
-    loadedPlugin = const AlgorithmInfo(
+    loadedPlugin = AlgorithmInfo(
+      algorithmIndex: 1,
       guid: 'TestPlugin',
       name: 'Test Plugin',
-      numSpecifications: 2,
       specifications: [
-        SpecificationInfo(name: 'Param 1', min: 0, max: 100, defaultValue: 50),
-        SpecificationInfo(name: 'Param 2', min: -10, max: 10, defaultValue: 0),
+        Specification(name: 'Param 1', min: 0, max: 100, defaultValue: 50, type: 0),
+        Specification(name: 'Param 2', min: -10, max: 10, defaultValue: 0, type: 0),
       ],
+      isPlugin: true,
       isLoaded: true,
     );
 
-    factoryAlgorithm = const AlgorithmInfo(
+    factoryAlgorithm = AlgorithmInfo(
+      algorithmIndex: 2,
       guid: 'clck',
       name: 'Clock',
-      numSpecifications: 1,
       specifications: [
-        SpecificationInfo(name: 'Rate', min: 0, max: 255, defaultValue: 128),
+        Specification(name: 'Rate', min: 0, max: 255, defaultValue: 128, type: 0),
       ],
       isLoaded: true,
     );
@@ -90,7 +96,7 @@ void main() {
         DistingState.synchronized(
           disting: mockDisting,
           distingVersion: '1.0',
-          firmwareVersion: null,
+          firmwareVersion: FirmwareVersion('1.10.0'),
           presetName: 'Test',
           algorithms: [factoryAlgorithm],
           slots: const [],
@@ -118,7 +124,7 @@ void main() {
         DistingState.synchronized(
           disting: mockDisting,
           distingVersion: '1.0',
-          firmwareVersion: null,
+          firmwareVersion: FirmwareVersion('1.10.0'),
           presetName: 'Test',
           algorithms: [loadedPlugin], // Already loaded
           slots: const [],
@@ -147,7 +153,7 @@ void main() {
         DistingState.synchronized(
           disting: mockDisting,
           distingVersion: '1.0',
-          firmwareVersion: null,
+          firmwareVersion: FirmwareVersion('1.10.0'),
           presetName: 'Test',
           algorithms: [factoryAlgorithm, unloadedPlugin],
           slots: const [],
@@ -191,7 +197,7 @@ void main() {
         DistingState.synchronized(
           disting: mockDisting,
           distingVersion: '1.0',
-          firmwareVersion: null,
+          firmwareVersion: FirmwareVersion('1.10.0'),
           presetName: 'Test',
           algorithms: [unloadedPlugin],
           slots: const [],
@@ -231,7 +237,7 @@ void main() {
         DistingState.synchronized(
           disting: mockDisting,
           distingVersion: '1.0',
-          firmwareVersion: null,
+          firmwareVersion: FirmwareVersion('1.10.0'),
           presetName: 'Test',
           algorithms: [unloadedPlugin],
           slots: const [],
@@ -267,11 +273,12 @@ void main() {
 
     test('preserves other algorithms when loading one plugin', () async {
       // Arrange
-      final anotherPlugin = const AlgorithmInfo(
+      final anotherPlugin = AlgorithmInfo(
+        algorithmIndex: 3,
         guid: 'AnotherPlugin',
         name: 'Another Plugin',
-        numSpecifications: 0,
-        specifications: [],
+        specifications: const [],
+        isPlugin: true,
         isLoaded: false,
       );
 
@@ -279,7 +286,7 @@ void main() {
         DistingState.synchronized(
           disting: mockDisting,
           distingVersion: '1.0',
-          firmwareVersion: null,
+          firmwareVersion: FirmwareVersion('1.10.0'),
           presetName: 'Test',
           algorithms: [factoryAlgorithm, unloadedPlugin, anotherPlugin],
           slots: const [],
@@ -322,7 +329,7 @@ void main() {
           DistingState.synchronized(
             disting: mockDisting,
             distingVersion: '1.0',
-            firmwareVersion: null,
+            firmwareVersion: FirmwareVersion('1.10.0'),
             presetName: 'Test',
             algorithms: [unloadedPlugin],
             slots: const [],

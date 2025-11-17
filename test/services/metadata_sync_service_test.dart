@@ -49,6 +49,11 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   Future<void> requestNewPreset() async {}
 
   @override
+  Future<int?> requestNumAlgorithmsInPreset() async {
+    return 0;
+  }
+
+  @override
   void noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
