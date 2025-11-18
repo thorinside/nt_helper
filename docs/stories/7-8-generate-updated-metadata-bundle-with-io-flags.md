@@ -1,6 +1,6 @@
 # Story 7.8: Generate Updated Metadata Bundle with I/O Flags
 
-Status: pending
+Status: blocked
 
 ## Story
 
@@ -343,29 +343,68 @@ class MetadataCollector {
 - `lib/services/metadata_import_service.dart` - Import verification
 - distingNT firmware documentation (I/O flag support)
 
+## Blocking Conditions
+
+### Status: BLOCKED
+
+**Blocking Reason:** Story cannot proceed due to missing prerequisites and hardware requirements.
+
+**Prerequisite Stories Not Complete:**
+1. **Story 7.3** (Add I/O Flags to Parameter Info) - Status: review
+   - Required: SysEx parsing must support I/O flags in parameter info responses
+   - Current: Story is under review, not yet merged/completed
+
+2. **Story 7.7** (Add I/O Flags to Offline Metadata) - Status: review
+   - Required: Database schema and JSON export/import must support I/O flags
+   - Current: Story is under review, not yet merged/completed
+
+**Hardware Requirements Not Met:**
+3. **Firmware Update Required**
+   - Required: disting NT firmware must support I/O flags in SysEx 0x43 responses
+   - Current: User reports firmware needs update before proceeding
+   - Action: Update disting NT to latest firmware that includes I/O flag support
+
+**To Unblock:**
+1. Complete and merge Story 7.3 (move from review → done)
+2. Complete and merge Story 7.7 (move from review → done)
+3. Update disting NT hardware firmware to version that supports I/O flags
+4. Verify hardware connection is stable
+5. Allocate 1-2 hours for metadata collection process
+
+**Timeline Impact:**
+- Cannot proceed until prerequisites are complete
+- Firmware update is external dependency (user action required)
+- Estimated time to unblock: Dependent on review completion + firmware update time
+
 ## Dev Agent Record
 
 ### Context Reference
 
-- TBD: docs/stories/7-8-generate-updated-metadata-bundle-with-io-flags.context.xml
+- N/A - Story blocked before context generation
 
 ### Agent Model Used
 
-TBD
+Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 
 ### Completion Notes List
 
-- TBD
+- **2025-11-18:** Story analysis completed - identified blocking conditions
+- Story cannot proceed without completing prerequisite stories 7.3 and 7.7
+- Hardware firmware update required before metadata collection
+- Infrastructure is in place (AlgorithmJsonExporter already supports v2 export with ioFlags)
+- No code changes needed - this is a metadata regeneration task only
 
 ### File List
 
 **Modified:**
-- assets/metadata/full_metadata.json (replaced with new version)
+- docs/stories/7-8-generate-updated-metadata-bundle-with-io-flags.md (status updated to blocked)
+- docs/sprint-status.yaml (story status updated to blocked)
 
-**Added:**
-- tools/metadata_collector.dart (if new script created)
-- assets/metadata/full_metadata_v1_backup.json (backup of old version)
+**Pending (when unblocked):**
+- assets/metadata/full_metadata.json (will replace with new v2 version)
+- assets/metadata/full_metadata_v1_backup.json (backup of current v1 version)
 
 ### Change Log
 
 - **2025-11-18:** Story created by Business Analyst (Mary)
+- **2025-11-18:** Story analysis by Dev Agent - identified blocking conditions, updated status to blocked

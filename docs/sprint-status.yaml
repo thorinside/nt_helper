@@ -1,4 +1,4 @@
-# generated: 2025-11-15
+# generated: 2025-11-18
 # project: nt_helper
 # project_key: nt_helper
 # tracking_system: file-system
@@ -29,7 +29,7 @@
 # - SM typically drafts next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
-generated: 2025-11-15
+generated: 2025-11-18
 project: nt_helper
 project_key: nt_helper
 tracking_system: file-system
@@ -92,14 +92,21 @@ development_status:
   epic-6: contexted
   e6-1-mobile-performance-page-support: review
 
-  epic-7: backlog
+  epic-7: contexted
   7-1-implement-parameter-disabled-grayed-out-state-in-ui: done
   7-2-auto-refresh-parameter-state-after-edits-and-remove-disabled-parameter-tooltip: done
+  7-3-add-io-flags-to-parameter-info: review
+  7-4-synchronize-output-mode-usage-data: review
+  7-5-replace-io-pattern-matching-with-flag-data: in-progress
+  7-6-replace-output-mode-pattern-matching-with-usage-data: drafted
+  7-7-add-io-flags-to-offline-metadata: review
+  7-8-generate-updated-metadata-bundle-with-io-flags: blocked
+  7-9-upgrade-existing-databases-with-io-flags: drafted
   epic-7-retrospective: optional
 
   epic-8: contexted
   e8-1-complete-uvccamera-fork-eventchannel-implementation: done
-  e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device: in-progress  # BLOCKED: Requires physical Android hardware testing
+  e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device: done
   epic-8-retrospective: optional
 
   epic-9: backlog
@@ -108,7 +115,3 @@ development_status:
   9-3-accessibility-and-polish: done
   9-4-cross-platform-testing-and-validation: done
   epic-9-retrospective: optional
-
-  # Bug Fixes
-  bug-1-mapping-editor-save-and-input-issues: done
-  bug-2-plugin-installation-directory-creation: done
