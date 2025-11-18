@@ -5,6 +5,7 @@ import 'package:nt_helper/models/algorithm_feature.dart';
 import 'package:nt_helper/models/algorithm_parameter.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/metadata_import_service.dart';
+import 'package:nt_helper/services/metadata_upgrade_service.dart';
 
 class AlgorithmMetadataService {
   // Singleton pattern
@@ -24,6 +25,9 @@ class AlgorithmMetadataService {
 
     // Check if database is empty and we have a bundled metadata asset
     await _checkAndImportBundledMetadata(database);
+
+    // Upgrade existing databases with I/O flags from bundled metadata if needed
+    await _upgradeIoFlagsIfNeeded(database);
 
     await _loadFeatures();
     await _loadAlgorithms();
@@ -69,6 +73,25 @@ class AlgorithmMetadataService {
       }
     } catch (e) {
       // Continue initialization even if import fails
+    }
+  }
+
+  /// Upgrades existing databases with I/O flags from bundled metadata if needed.
+  ///
+  /// This runs after the initial import check to handle existing installations
+  /// that were upgraded from older versions without I/O flag support.
+  /// Only runs if all parameters have null ioFlags (indicating upgrade needed).
+  Future<void> _upgradeIoFlagsIfNeeded(AppDatabase database) async {
+    try {
+      final upgradeService = MetadataUpgradeService();
+      final updateCount = await upgradeService.performUpgradeIfNeeded(database);
+
+      if (updateCount > 0) {
+        // Upgrade was performed
+      }
+    } catch (e) {
+      // Log error but don't fail initialization
+      // App should continue to function even if upgrade fails
     }
   }
 

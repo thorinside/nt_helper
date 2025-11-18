@@ -1,6 +1,6 @@
 # Story 7.9: Upgrade Existing Databases with I/O Flags
 
-Status: pending
+Status: done
 
 ## Story
 
@@ -422,12 +422,14 @@ TBD
 ### File List
 
 **Modified:**
-- lib/services/algorithm_metadata_service.dart - Add upgrade check to initialization
+- lib/services/algorithm_metadata_service.dart - Added upgrade check to initialization flow
 
 **Added:**
-- lib/services/metadata_upgrade_service.dart - New upgrade service
-- test/services/metadata_upgrade_service_test.dart - Unit tests
+- lib/services/metadata_upgrade_service.dart - New upgrade service with detection and selective update
+- test/services/metadata_upgrade_service_test.dart - Unit tests for upgrade service
+- test/integration/metadata_upgrade_integration_test.dart - Integration tests for full upgrade flow
 
 ### Change Log
 
 - **2025-11-18:** Story created by Business Analyst (Mary)
+- **2025-11-18:** Story completed - Implemented metadata upgrade service with detection and selective I/O flags update
