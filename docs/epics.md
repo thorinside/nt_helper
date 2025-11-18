@@ -780,6 +780,43 @@ So that I can immediately see which parameters become available or unavailable w
 - Reference: Story E7.1 implementation for disabled state handling
 - Test files: Update `test/integration/parameter_disabled_state_test.dart`, add debounce unit tests
 
+**Story E7.3: Add I/O Flags to Parameter Info** (See `docs/stories/7-3-add-io-flags-to-parameter-info.md`)
+
+**Story E7.4: Synchronize Output Mode Usage Data** (See `docs/stories/7-4-synchronize-output-mode-usage-data.md`)
+
+**Story E7.5: Replace I/O Pattern Matching with Flag Data** (See `docs/stories/7-5-replace-io-pattern-matching-with-flag-data.md`)
+
+**Story E7.6: Replace Output Mode Pattern Matching with Usage Data** (See `docs/stories/7-6-replace-output-mode-pattern-matching-with-usage-data.md`)
+
+**Story E7.7: Add I/O Flags to Offline Metadata** (See `docs/stories/7-7-add-io-flags-to-offline-metadata.md`)
+
+**Story E7.8: Generate Updated Metadata Bundle with I/O Flags** (See `docs/stories/7-8-generate-updated-metadata-bundle-with-io-flags.md`)
+
+**Story E7.9: Upgrade Existing Databases with I/O Flags** (See `docs/stories/7-9-upgrade-existing-databases-with-io-flags.md`)
+
+**Epic 7 Implementation Sequence:**
+
+Stories must be implemented sequentially to avoid code conflicts and ensure proper dependency resolution:
+
+1. **7.3** - Add I/O Flags to Parameter Info (Runtime foundation)
+2. **7.4** - Synchronize Output Mode Usage Data (Depends on 7.3 for `isOutputMode` flag)
+3. **7.7** - Add I/O Flags to Offline Metadata (Depends on 7.3 for `ParameterInfo` with `ioFlags`)
+4. **7.8** - Generate Updated Metadata Bundle (Depends on 7.3 + 7.7 for export capability)
+5. **7.9** - Upgrade Existing Databases (Depends on 7.7 + 7.8 for schema and bundled data)
+6. **7.5** - Replace I/O Pattern Matching (Depends on 7.3 for runtime + 7.9 for offline support)
+7. **7.6** - Replace Output Mode Pattern Matching (Depends on 7.4 + 7.5 for complete routing refactor)
+
+**Dependency Graph:**
+```
+7.3 (I/O Flags - Runtime)
+ ├─> 7.4 (Output Mode - Runtime)
+ └─> 7.7 (I/O Flags - Database)
+      └─> 7.8 (Generate Bundle)
+           └─> 7.9 (Upgrade Existing DBs)
+                └─> 7.5 (Routing I/O Refactor)
+                     └─> 7.6 (Routing Mode Refactor)
+```
+
 ---
 
 ## Epic 8: Android Video Implementation

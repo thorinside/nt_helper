@@ -19,6 +19,7 @@ Comprehensive documentation of the entire system with emphasis on:
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-09-30 | 1.0 | Initial brownfield analysis | BMad Master |
+| 2025-11-18 | 1.1 | Epic 7 I/O metadata architecture updates | Winston (Architect) |
 
 ## Quick Reference - Key Files and Entry Points
 
@@ -430,6 +431,77 @@ abstract class AlgorithmRouting {
 
 **Test Coverage**: `test/core/routing/clock_euclidean_es5_test.dart` and related test files provide comprehensive coverage of ES-5 routing behavior, dual-mode switching, and per-channel configuration.
 
+### Epic 7: I/O Metadata Infrastructure (In Development)
+
+**Goal**: Transition routing framework from pattern matching to hardware-provided I/O metadata.
+
+**Current State (Pattern Matching - To Be Replaced)**:
+
+The routing framework currently infers port properties via parameter name patterns:
+
+```dart
+// lib/core/routing/multi_channel_algorithm_routing.dart (to be removed)
+final lowerName = paramName.toLowerCase();
+final isOutput = lowerName.contains('output') ||
+                 (lowerName.contains('out') && !lowerName.contains('input'));
+
+String portType = 'audio';
+if (lowerName.contains('cv') || lowerName.contains('gate') || lowerName.contains('clock')) {
+  portType = 'cv';
+}
+
+final hasMatchingModeParameter = modeParameters?.containsKey('$paramName mode') ?? false;
+```
+
+**Problems:**
+- Fragile: Breaks if parameter names change
+- Incomplete: Can't handle non-standard naming
+- Artificial: `gate`/`clock` types don't exist in hardware
+- No offline support: Pattern matching requires parameter names only available online
+
+**Future State (Hardware I/O Flags - Epic 7)**:
+
+SysEx 0x43 (Parameter Info) now provides I/O metadata in the last byte:
+
+**Bit Layout:**
+```
+Bits 0-1: powerOfTen (10^n scaling where n = 0-3)
+Bits 2-5: ioFlags (4-bit field):
+  Bit 0 (value 1): isInput - Parameter is an input
+  Bit 1 (value 2): isOutput - Parameter is an output
+  Bit 2 (value 4): isAudio - Audio signal (true) vs CV (false)
+  Bit 3 (value 8): isOutputMode - Parameter controls output mode
+```
+
+**Output Mode Usage (SysEx 0x55 - New)**:
+
+Explicitly maps mode control parameters to affected outputs:
+
+```
+Request:  [0xF0, 0x00, 0x21, 0x27, 0x6D, sysExId, 0x55, slot, p_high, p_mid, p_low, 0xF7]
+Response: [0xF0, ..., 0x55, slot, source_param, count, affected_1, affected_2, ..., 0xF7]
+```
+
+**Epic 7 Implementation Sequence:**
+
+1. **Story 7.3**: Extract I/O flags from SysEx into `ParameterInfo` (runtime)
+2. **Story 7.4**: Query output mode usage via SysEx 0x55 and store in `Slot.outputModeMap`
+3. **Story 7.7**: Add `ioFlags` column to database schema
+4. **Story 7.8**: Generate metadata bundle with I/O flags from hardware
+5. **Story 7.9**: Upgrade existing databases with I/O flags
+6. **Story 7.5**: Replace I/O pattern matching with flag-based logic
+7. **Story 7.6**: Replace output mode pattern matching with usage data
+
+**Benefits:**
+- Data-driven port configuration (no heuristics)
+- Accurate routing for all algorithms
+- Offline mode support via bundled metadata
+- Future-proof as firmware evolves
+
+**Status**: Stories 7.1-7.2 completed (parameter disabled state). Stories 7.3-7.9 documented and ready for implementation.
+
+**Reference**: See `docs/epic-7-context.md` for complete technical details.
+
 ### Important Files
 
 - `lib/core/routing/algorithm_routing.dart` - Base class and factory
@@ -439,6 +511,7 @@ abstract class AlgorithmRouting {
 - `lib/ui/widgets/routing/routing_editor_widget.dart` - Visualization only
 - `docs/routing_editor_implementation.md` - Implementation details
 - `docs/routing_special_cases.md` - Edge cases and workarounds
+- `docs/epic-7-context.md` - Epic 7 I/O metadata technical context
 
 ## Critical Architecture: SysEx Command System
 
@@ -463,6 +536,31 @@ All communication with the Disting NT hardware uses MIDI SysEx (System Exclusive
 - `kSysExEnd` = 0xF7
 - `kExpertSleepersManufacturerId` = [0x00, 0x21, 0x27]
 - `kDistingNTPrefix` = 0x6D
+
+**Epic 7 Addition - Output Mode Usage Query (SysEx 0x55)**:
+
+New message type for querying which parameters are affected by mode control parameters:
+
+**Request Format:**
+```
+[0xF0, 0x00, 0x21, 0x27, 0x6D, sysExId, 0x55, slot, p_high, p_mid, p_low, 0xF7]
+```
+- Queries which parameters are affected by a mode control parameter
+- Parameter number encoded as 16-bit value in three 7-bit bytes
+
+**Response Format:**
+```
+[0xF0, 0x00, 0x21, 0x27, 0x6D, sysExId, 0x55, slot,
+ source_high, source_mid, source_low,  // Mode control parameter
+ count,                                 // Number of affected parameters
+ affected_1_high, affected_1_mid, affected_1_low,  // First affected param
+ ...
+ 0xF7]
+```
+
+**Purpose**: Explicitly maps mode parameters to their controlled outputs, replacing pattern matching like `'$paramName mode'`. Enables accurate Add/Replace mode visualization in routing editor.
+
+**Implementation**: See Story 7.4 in Epic 7 (docs/epic-7-context.md)
 
 ### How to Add a New SysEx Command
 
@@ -871,6 +969,7 @@ Use MCP client (e.g., Claude Desktop) to test the new tool:
 
 **File**: `lib/db/database.dart`
 **Current Schema Version**: 7
+**Next Version (Epic 7)**: 8 - adds `ioFlags` column to Parameters table
 
 **Tables**:
 
@@ -878,10 +977,15 @@ Use MCP client (e.g., Claude Desktop) to test the new tool:
 - `Algorithms` - Algorithm definitions (name, GUID, category, description)
 - `Specifications` - Algorithm specifications
 - `Units` - Unit definitions for parameters
-- `Parameters` - Parameter definitions
+- `Parameters` - Parameter definitions (Epic 7: adds `ioFlags` integer column for I/O metadata)
 - `ParameterEnums` - Enum values for parameters
 - `ParameterPages` - UI pages grouping parameters
 - `ParameterPageItems` - Items within parameter pages
+
+**Epic 7 Schema Changes (Story 7.7)**:
+- `Parameters` table gains nullable `ioFlags` column (4-bit field encoding input/output/audio/mode flags)
+- Migration from schema v7 → v8 adds column with null default
+- Story 7.9 populates flags from bundled metadata for existing databases
 
 **Preset Data**:
 - `Presets` - Preset metadata
@@ -928,9 +1032,15 @@ class Slot {
   final List<int> parameterValues;
   final RoutingInfo routing;
   final String? customName;
+  final Map<int, OutputModeUsage>? outputModeMap;  // Epic 7: Story 7.4
   // ...
 }
 ```
+
+**Epic 7 Addition (Story 7.4)**:
+- `outputModeMap`: Maps mode control parameter numbers to lists of affected output parameters
+- Populated by querying SysEx 0x55 when `isOutputMode` flag detected
+- Used by routing framework to determine Add/Replace mode for output ports
 
 **Models use Freezed + json_serializable**:
 - Immutable data classes
