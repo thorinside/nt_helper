@@ -2017,6 +2017,7 @@ class DistingCubit extends Cubit<DistingState> {
             ),
           )
           .toList(),
+      outputModeMap: slot.outputModeMap,
     );
   }
 
@@ -2822,6 +2823,7 @@ class DistingCubit extends Cubit<DistingState> {
       mappings: mappings,
       valueStrings: valueStrings,
       routing: RoutingInfo.filler(), // unchanged – still skipped
+      outputModeMap: _outputModeUsageMap[algorithmIndex] ?? {},
     );
   }
 

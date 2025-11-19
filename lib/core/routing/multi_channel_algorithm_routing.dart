@@ -609,6 +609,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   ///
   /// Checks multiple common parameter names that indicate width or channel count.
   /// Returns 1 if no width parameter is found.
+  ///
+  /// **IMPORTANT**: This is an exception to the flag-driven approach used for I/O
+  /// detection. Width parameters control routing behavior (channel count) but are
+  /// not themselves I/O parameters, so they don't have I/O flags. We must use
+  /// pattern matching on parameter names to find width/channel count settings.
   static int getWidthFromSlot(Slot slot) {
     // List of possible width parameter names (in priority order)
     final widthParameterNames = [
@@ -795,70 +800,71 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           port['channel'] = 'mono';
         }
 
-        // Determine possible mode names
-        final List<String> possibleModeNames = [
-          '$paramName mode',
-        ]; // Full name mode
-        final firstWord = paramName.split(' ').first;
-        if (firstWord.isNotEmpty && firstWord != paramName) {
-          possibleModeNames.add('$firstWord mode'); // First word mode
-        }
-        // Add generic "Output mode" as fallback for any output parameter
-        // This handles cases like Reverb (Clouds) where a single "Output mode"
-        // controls both "Left output" and "Right output"
-        if (isOutput) {
-          possibleModeNames.add('Output mode');
-        }
-        final uniquePossibleModeNames = possibleModeNames.toSet().toList();
+        // Determine output mode from hardware data (Story 7.6)
+        // Use outputModeMap from SysEx 0x55 responses instead of pattern matching
+        int? modeParameterNumber;
+        String? outputMode;
 
-        // Apply output mode if available
-        if (modeParameters != null) {
-          String? actualModeName;
-          int? modeValue;
+        // Check if this output parameter is controlled by any mode parameter
+        // by iterating through the output mode map
+        for (final entry in slot.outputModeMap.entries) {
+          final sourceParam = entry.key;  // Mode control parameter number
+          final affectedParams = entry.value;  // List of affected output parameters
 
-          for (final name in uniquePossibleModeNames) {
+          if (affectedParams.contains(paramNumber)) {
+            // This output is controlled by a mode parameter
+            modeParameterNumber = sourceParam;
+
+            // Get the current value of the mode parameter (0 = Add, 1 = Replace)
+            final modeValue = slot.values
+                .firstWhere(
+                  (v) => v.parameterNumber == sourceParam,
+                  orElse: () => ParameterValue(
+                    algorithmIndex: 0,
+                    parameterNumber: sourceParam,
+                    value: 0, // Default to Add mode
+                  ),
+                )
+                .value;
+
+            outputMode = (modeValue == 1) ? 'replace' : 'add';
+            break; // Found the mode parameter for this output
+          }
+        }
+
+        // Apply output mode to port if found
+        if (outputMode != null) {
+          port['outputMode'] = outputMode;
+        }
+
+        // Store mode parameter number if found
+        if (modeParameterNumber != null) {
+          port['modeParameterNumber'] = modeParameterNumber;
+        }
+
+        // Fallback for offline/mock mode when no outputModeMap data (Story 7.6 AC-6)
+        // When ioFlags == 0, use pattern matching as temporary fallback
+        if (slot.outputModeMap.isEmpty && modeParameters != null) {
+          // Offline mode fallback: use pattern matching temporarily
+          final List<String> possibleModeNames = [
+            '$paramName mode',
+            '${paramName.split(' ').first} mode',
+            'Output mode',
+          ];
+
+          for (final name in possibleModeNames) {
             if (modeParameters.containsKey(name)) {
-              actualModeName = name;
-              modeValue = modeParameters[name];
-              break; // Found the mode parameter
+              final modeValue = modeParameters[name];
+              port['outputMode'] = (modeValue == 1) ? 'replace' : 'add';
+
+              // Also try to get the parameter number for offline mode
+              if (modeParametersWithNumbers != null &&
+                  modeParametersWithNumbers.containsKey(name)) {
+                final modeInfo = modeParametersWithNumbers[name];
+                port['modeParameterNumber'] = modeInfo!.parameterNumber;
+              }
+              break;
             }
-          }
-
-          if (actualModeName != null && modeValue != null) {
-            port['outputMode'] = (modeValue == 1)
-                ? 'replace'
-                : 'add'; // 0 = Add, 1 = Replace
-          } else {
-            // Optional: Log if no mode parameter was found for the value
-            //
-          }
-        }
-
-        // Store mode parameter number if available
-        if (modeParametersWithNumbers != null) {
-          String? actualModeNameForNumber;
-          ({int parameterNumber, int value})? modeInfo;
-
-          // Use the same list of possible mode names that we built above
-          // This ensures we check for generic "Output mode" as well
-          for (final name in uniquePossibleModeNames) {
-            if (modeParametersWithNumbers.containsKey(name)) {
-              actualModeNameForNumber = name;
-              modeInfo = modeParametersWithNumbers[name];
-              break; // Found the mode parameter for its number
-            }
-          }
-
-          // Debugging log to see what's being searched for and what's available
-          // Can be noisy, so enable when debugging mode parameter discovery
-          /*
-          */
-
-          if (actualModeNameForNumber != null && modeInfo != null) {
-            port['modeParameterNumber'] = modeInfo.parameterNumber;
-          } else {
-            // Optional: Log if no mode parameter was found for the number
-            //
           }
         }
 

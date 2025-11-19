@@ -1,0 +1,214 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>6</storyId>
+    <title>Replace Output Mode Pattern Matching with Usage Data</title>
+    <status>pending</status>
+    <generatedAt>2025-11-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/nealsanche/nosuch/nt_helper/docs/stories/7-6-replace-output-mode-pattern-matching-with-usage-data.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer maintaining the nt_helper routing system</asA>
+    <iWant>output mode parameters and their controlled outputs identified using hardware-provided usage data instead of parameter name pattern matching</iWant>
+    <soThat>connection labels and output modes reflect actual hardware relationships as the single source of truth</soThat>
+    <tasks>
+      - Remove mode parameter pattern matching from multi_channel_algorithm_routing.dart (lines 752, 817-818)
+      - Replace pattern matching with isOutputMode flag checks (bit 3 of ioFlags)
+      - Use OutputModeUsage data from Story 7.4 (outputModeMap)
+      - Map output parameters to their controlling mode parameters
+      - Determine output mode from mode parameter value (0=Add, 1=Replace)
+      - Update connection visualization to distinguish Add vs Replace modes
+      - Handle missing output mode data fallbacks (offline/mock mode)
+      - Update all routing classes in lib/core/routing/
+      - Integrate with state management (slot.outputModeMap)
+      - Write unit and integration tests
+      - Update documentation
+      - Verify code quality (flutter analyze, all tests pass)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-1: Remove mode parameter pattern matching from multi_channel_algorithm_routing.dart:752 and replace with ParameterInfo.isOutputMode flag check
+    AC-2: Remove mode parameter discovery logic (lines 817-818) and replace with OutputModeUsage data lookup
+    AC-3: Access OutputModeUsage from slot.outputModeMap and map outputs to controlling mode parameters
+    AC-4: Determine output mode (Add vs Replace) from mode parameter value (0 or 1)
+    AC-5: Update connection visualization to distinguish Add vs Replace modes
+    AC-6: Handle missing output mode data with warnings and fallbacks (default to Add, offline uses pattern matching)
+    AC-7: Update all routing classes to remove pattern matching and use usage data
+    AC-8: Ensure output mode relationships accessible from routing framework via slot.outputModeMap
+    AC-9: Unit tests for mode parameter identification, usage lookup, Add/Replace modes, fallbacks
+    AC-10: Integration tests with real hardware, mode parameter changes, connection visualization
+    AC-11: Update documentation explaining output mode usage and pattern matching removal
+    AC-12: flutter analyze passes, all tests pass, routing editor visualizes correctly
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-7-context.md</path>
+        <title>Epic 7 Context - I/O Flags and Hardware Data</title>
+        <section>Output Mode Usage Data Structure</section>
+        <snippet>Provides OutputModeUsage data structure and slot.outputModeMap field definition. Maps mode control parameter numbers to lists of affected output parameters.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Project Architecture</title>
+        <section>Routing System - Output Mode Usage</section>
+        <snippet>Documents Story 7.4 implementation of SysEx 0x55 queries and Slot.outputModeMap storage. Explains mode control identification and affected parameter lookup.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/7-4-synchronize-output-mode-usage-data.context.xml</path>
+        <title>Story 7.4 Context - Output Mode Usage</title>
+        <section>Prerequisites and Data Structures</section>
+        <snippet>Context for Story 7.4 which provides the outputModeMap infrastructure. Shows OutputModeUsageResponse parsing and cubit state updates.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Instructions</title>
+        <section>Routing System</section>
+        <snippet>Routing editor uses OO framework for data-driven visualization. Connections discovered via bus assignments. ES-5 algorithms use dual-mode output.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/core/routing/multi_channel_algorithm_routing.dart</path>
+        <kind>routing</kind>
+        <symbol>MultiChannelAlgorithmRouting</symbol>
+        <lines>752, 817-818</lines>
+        <reason>Contains mode parameter pattern matching to be removed. Line 752: containsKey check, Lines 817-818: mode name generation and search.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/models/port.dart</path>
+        <kind>model</kind>
+        <symbol>Port, OutputMode</symbol>
+        <lines>23-31, 84-85, 123-124</lines>
+        <reason>Defines OutputMode enum (add/replace), outputMode field, and modeParameterNumber field. These fields store the output mode data for visualization.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/sysex/responses/output_mode_usage_response.dart</path>
+        <kind>sysex</kind>
+        <symbol>OutputModeUsageResponse, OutputModeUsage</symbol>
+        <lines>all</lines>
+        <reason>Parses SysEx 0x55 responses containing output mode usage data. Provides source parameter number and affected parameter numbers list.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/cubit/disting_state.dart</path>
+        <kind>state</kind>
+        <symbol>Slot</symbol>
+        <lines>3-14</lines>
+        <reason>Slot model contains parameters, values, and routing info. Must verify outputModeMap is accessible (added in Story 7.4).</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/algorithm_routing.dart</path>
+        <kind>routing</kind>
+        <symbol>AlgorithmRouting</symbol>
+        <lines>all</lines>
+        <reason>Base class for routing framework. Factory creates routing instances from Slot data.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/core/routing/connection_discovery_service.dart</path>
+        <kind>service</kind>
+        <symbol>ConnectionDiscoveryService</symbol>
+        <lines>all</lines>
+        <reason>Discovers connections via bus assignments. May need updates to use output mode from Port.outputMode field.</reason>
+      </artifact>
+      <artifact>
+        <path>test/core/routing/mode_parameter_detection_test.dart</path>
+        <kind>test</kind>
+        <symbol>mode parameter detection tests</symbol>
+        <lines>all</lines>
+        <reason>Existing tests for mode parameter detection. Need updates to test isOutputMode flag instead of pattern matching.</reason>
+      </artifact>
+      <artifact>
+        <path>test/core/routing/io_flags_test.dart</path>
+        <kind>test</kind>
+        <symbol>I/O flags tests</symbol>
+        <lines>all</lines>
+        <reason>Tests for I/O flag handling including isOutputMode. Reference for testing flag-based mode detection.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="freezed_annotation" version="^2.0.0" />
+        <package name="flutter_bloc" version="^8.0.0" />
+      </flutter>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Zero tolerance for flutter analyze errors (CLAUDE.md)
+    - Never add debug logging unless explicitly requested (CLAUDE.md)
+    - Run tests before commits (CLAUDE.md)
+    - All routing logic lives in OO framework lib/core/routing/ (CLAUDE.md)
+    - Connections discovered automatically via shared bus assignments (CLAUDE.md)
+    - Port model uses typesafe direct properties, no generic metadata maps (CLAUDE.md)
+    - Visualization layer contains no business logic (CLAUDE.md)
+    - Online mode must prefer usage data over pattern matching (Story requirement)
+    - Offline mode uses pattern matching fallback temporarily (Story requirement)
+    - Output mode determination: 0=Add, 1=Replace (Hardware specification)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ParameterInfo.isOutputMode</name>
+      <kind>property</kind>
+      <signature>bool get isOutputMode => (ioFlags & 0x08) != 0; // Bit 3</signature>
+      <path>lib/domain/parameter_info.dart</path>
+    </interface>
+    <interface>
+      <name>OutputModeUsage</name>
+      <kind>class</kind>
+      <signature>class OutputModeUsage { int algorithmIndex; int parameterNumber; List&lt;int&gt; affectedParameterNumbers; }</signature>
+      <path>lib/domain/sysex/responses/output_mode_usage_response.dart</path>
+    </interface>
+    <interface>
+      <name>Slot.outputModeMap</name>
+      <kind>property</kind>
+      <signature>Map&lt;int, OutputModeUsage&gt;? outputModeMap</signature>
+      <path>lib/cubit/disting_state.dart</path>
+    </interface>
+    <interface>
+      <name>Port.outputMode</name>
+      <kind>property</kind>
+      <signature>OutputMode? outputMode</signature>
+      <path>lib/core/routing/models/port.dart</path>
+    </interface>
+    <interface>
+      <name>Port.modeParameterNumber</name>
+      <kind>property</kind>
+      <signature>int? modeParameterNumber</signature>
+      <path>lib/core/routing/models/port.dart</path>
+    </interface>
+    <interface>
+      <name>OutputMode enum</name>
+      <kind>enum</kind>
+      <signature>enum OutputMode { add, replace }</signature>
+      <path>lib/core/routing/models/port.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Flutter test framework with bloc_test for cubit testing. Tests organized by feature under test/core/routing/. Pattern: Create test data, execute operation, verify results. Existing mode parameter detection tests in mode_parameter_detection_test.dart and io_flags_test.dart provide patterns.
+    </standards>
+    <locations>
+      test/core/routing/ - All routing-related tests
+      test/core/routing/mode_parameter_detection_test.dart - Mode parameter tests
+      test/core/routing/io_flags_test.dart - I/O flag tests
+      test/core/routing/models/ - Port and routing state model tests
+    </locations>
+    <ideas>
+      AC-9: Unit test mode parameter identification via isOutputMode flag check
+      AC-9: Unit test OutputModeUsage lookup from slot.outputModeMap
+      AC-9: Unit test Add mode (value 0) creates port with OutputMode.add
+      AC-9: Unit test Replace mode (value 1) creates port with OutputMode.replace
+      AC-9: Unit test fallback when isOutputMode=true but no usage data available
+      AC-9: Unit test offline mode uses pattern matching fallback
+      AC-10: Integration test with mock hardware verifies mode parameter detection
+      AC-10: Integration test changing mode parameter value updates visualization
+      AC-10: Integration test output mode relationships match expected hardware behavior
+    </ideas>
+  </tests>
+</story-context>

@@ -268,6 +268,9 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             }
           }
 
+          // Get mode parameter number from the item metadata (already stored during createFromSlot)
+          int? modeParameterNumber = item['modeParameterNumber'] as int?;
+
           ports.add(
             Port(
               id: id,
@@ -284,6 +287,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               parameterNumber: item['parameterNumber'] is int
                   ? item['parameterNumber'] as int?
                   : int.tryParse(item['parameterNumber']?.toString() ?? ''),
+              modeParameterNumber: modeParameterNumber,
               channelNumber: item['channel'] is int
                   ? item['channel'] as int?
                   : (item['channel'] is String
@@ -534,27 +538,71 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           port['channel'] = 'mono';
         }
 
-        // Apply output mode if available
-        if (modeParameters != null) {
-          // Look for corresponding mode parameter (e.g., "Output 1 mode" for "Output 1")
-          final modeName = '$paramName mode';
-          if (modeParameters.containsKey(modeName)) {
-            final modeValue = modeParameters[modeName];
-            // 0 = Add, 1 = Replace
-            if (modeValue == 1) {
-              port['outputMode'] = 'replace';
-            } else {
-              port['outputMode'] = 'add';
-            }
+        // Determine output mode from hardware data (Story 7.6)
+        // Use outputModeMap from SysEx 0x55 responses instead of pattern matching
+        int? modeParameterNumber;
+        String? outputMode;
+
+        // Check if this output parameter is controlled by any mode parameter
+        // by iterating through the output mode map
+        for (final entry in slot.outputModeMap.entries) {
+          final sourceParam = entry.key;  // Mode control parameter number
+          final affectedParams = entry.value;  // List of affected output parameters
+
+          if (affectedParams.contains(paramNumber)) {
+            // This output is controlled by a mode parameter
+            modeParameterNumber = sourceParam;
+
+            // Get the current value of the mode parameter (0 = Add, 1 = Replace)
+            final modeValue = slot.values
+                .firstWhere(
+                  (v) => v.parameterNumber == sourceParam,
+                  orElse: () => ParameterValue(
+                    algorithmIndex: 0,
+                    parameterNumber: sourceParam,
+                    value: 0, // Default to Add mode
+                  ),
+                )
+                .value;
+
+            outputMode = (modeValue == 1) ? 'replace' : 'add';
+            break; // Found the mode parameter for this output
           }
         }
 
-        // Store mode parameter number if available
-        if (modeParametersWithNumbers != null) {
-          final modeName = '$paramName mode';
-          if (modeParametersWithNumbers.containsKey(modeName)) {
-            port['modeParameterNumber'] =
-                modeParametersWithNumbers[modeName]!.parameterNumber;
+        // Apply output mode to port if found
+        if (outputMode != null) {
+          port['outputMode'] = outputMode;
+        }
+
+        // Store mode parameter number if found
+        if (modeParameterNumber != null) {
+          port['modeParameterNumber'] = modeParameterNumber;
+        }
+
+        // Fallback for offline/mock mode when no outputModeMap data (Story 7.6 AC-6)
+        // When ioFlags == 0, use pattern matching as temporary fallback
+        if (slot.outputModeMap.isEmpty && modeParameters != null) {
+          // Offline mode fallback: use pattern matching temporarily
+          final List<String> possibleModeNames = [
+            '$paramName mode',
+            '${paramName.split(' ').first} mode',
+            'Output mode',
+          ];
+
+          for (final name in possibleModeNames) {
+            if (modeParameters.containsKey(name)) {
+              final modeValue = modeParameters[name];
+              port['outputMode'] = (modeValue == 1) ? 'replace' : 'add';
+
+              // Also try to get the parameter number for offline mode
+              if (modeParametersWithNumbers != null &&
+                  modeParametersWithNumbers.containsKey(name)) {
+                final modeInfo = modeParametersWithNumbers[name];
+                port['modeParameterNumber'] = modeInfo!.parameterNumber;
+              }
+              break;
+            }
           }
         }
 

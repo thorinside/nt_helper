@@ -14,7 +14,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Slot implements DiagnosticableTreeMixin {
 
- Algorithm get algorithm; RoutingInfo get routing; ParameterPages get pages; List<ParameterInfo> get parameters; List<ParameterValue> get values; List<ParameterEnumStrings> get enums; List<Mapping> get mappings; List<ParameterValueString> get valueStrings;
+ Algorithm get algorithm; RoutingInfo get routing; ParameterPages get pages; List<ParameterInfo> get parameters; List<ParameterValue> get values; List<ParameterEnumStrings> get enums; List<Mapping> get mappings; List<ParameterValueString> get valueStrings;/// Output mode usage map: parameter number -> list of affected parameter numbers
+/// Populated from SysEx 0x55 responses (Story 7.4)
+ Map<int, List<int>> get outputModeMap;
 /// Create a copy of Slot
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,21 +28,21 @@ $SlotCopyWith<Slot> get copyWith => _$SlotCopyWithImpl<Slot>(this as Slot, _$ide
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'Slot'))
-    ..add(DiagnosticsProperty('algorithm', algorithm))..add(DiagnosticsProperty('routing', routing))..add(DiagnosticsProperty('pages', pages))..add(DiagnosticsProperty('parameters', parameters))..add(DiagnosticsProperty('values', values))..add(DiagnosticsProperty('enums', enums))..add(DiagnosticsProperty('mappings', mappings))..add(DiagnosticsProperty('valueStrings', valueStrings));
+    ..add(DiagnosticsProperty('algorithm', algorithm))..add(DiagnosticsProperty('routing', routing))..add(DiagnosticsProperty('pages', pages))..add(DiagnosticsProperty('parameters', parameters))..add(DiagnosticsProperty('values', values))..add(DiagnosticsProperty('enums', enums))..add(DiagnosticsProperty('mappings', mappings))..add(DiagnosticsProperty('valueStrings', valueStrings))..add(DiagnosticsProperty('outputModeMap', outputModeMap));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Slot&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&(identical(other.routing, routing) || other.routing == routing)&&(identical(other.pages, pages) || other.pages == pages)&&const DeepCollectionEquality().equals(other.parameters, parameters)&&const DeepCollectionEquality().equals(other.values, values)&&const DeepCollectionEquality().equals(other.enums, enums)&&const DeepCollectionEquality().equals(other.mappings, mappings)&&const DeepCollectionEquality().equals(other.valueStrings, valueStrings));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Slot&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&(identical(other.routing, routing) || other.routing == routing)&&(identical(other.pages, pages) || other.pages == pages)&&const DeepCollectionEquality().equals(other.parameters, parameters)&&const DeepCollectionEquality().equals(other.values, values)&&const DeepCollectionEquality().equals(other.enums, enums)&&const DeepCollectionEquality().equals(other.mappings, mappings)&&const DeepCollectionEquality().equals(other.valueStrings, valueStrings)&&const DeepCollectionEquality().equals(other.outputModeMap, outputModeMap));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,algorithm,routing,pages,const DeepCollectionEquality().hash(parameters),const DeepCollectionEquality().hash(values),const DeepCollectionEquality().hash(enums),const DeepCollectionEquality().hash(mappings),const DeepCollectionEquality().hash(valueStrings));
+int get hashCode => Object.hash(runtimeType,algorithm,routing,pages,const DeepCollectionEquality().hash(parameters),const DeepCollectionEquality().hash(values),const DeepCollectionEquality().hash(enums),const DeepCollectionEquality().hash(mappings),const DeepCollectionEquality().hash(valueStrings),const DeepCollectionEquality().hash(outputModeMap));
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
+  return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings, outputModeMap: $outputModeMap)';
 }
 
 
@@ -51,7 +53,7 @@ abstract mixin class $SlotCopyWith<$Res>  {
   factory $SlotCopyWith(Slot value, $Res Function(Slot) _then) = _$SlotCopyWithImpl;
 @useResult
 $Res call({
- Algorithm algorithm, RoutingInfo routing, ParameterPages pages, List<ParameterInfo> parameters, List<ParameterValue> values, List<ParameterEnumStrings> enums, List<Mapping> mappings, List<ParameterValueString> valueStrings
+ Algorithm algorithm, RoutingInfo routing, ParameterPages pages, List<ParameterInfo> parameters, List<ParameterValue> values, List<ParameterEnumStrings> enums, List<Mapping> mappings, List<ParameterValueString> valueStrings, Map<int, List<int>> outputModeMap
 });
 
 
@@ -68,7 +70,7 @@ class _$SlotCopyWithImpl<$Res>
 
 /// Create a copy of Slot
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? algorithm = null,Object? routing = null,Object? pages = null,Object? parameters = null,Object? values = null,Object? enums = null,Object? mappings = null,Object? valueStrings = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? algorithm = null,Object? routing = null,Object? pages = null,Object? parameters = null,Object? values = null,Object? enums = null,Object? mappings = null,Object? valueStrings = null,Object? outputModeMap = null,}) {
   return _then(_self.copyWith(
 algorithm: null == algorithm ? _self.algorithm : algorithm // ignore: cast_nullable_to_non_nullable
 as Algorithm,routing: null == routing ? _self.routing : routing // ignore: cast_nullable_to_non_nullable
@@ -78,7 +80,8 @@ as List<ParameterInfo>,values: null == values ? _self.values : values // ignore:
 as List<ParameterValue>,enums: null == enums ? _self.enums : enums // ignore: cast_nullable_to_non_nullable
 as List<ParameterEnumStrings>,mappings: null == mappings ? _self.mappings : mappings // ignore: cast_nullable_to_non_nullable
 as List<Mapping>,valueStrings: null == valueStrings ? _self.valueStrings : valueStrings // ignore: cast_nullable_to_non_nullable
-as List<ParameterValueString>,
+as List<ParameterValueString>,outputModeMap: null == outputModeMap ? _self.outputModeMap : outputModeMap // ignore: cast_nullable_to_non_nullable
+as Map<int, List<int>>,
   ));
 }
 
@@ -160,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Algorithm algorithm,  RoutingInfo routing,  ParameterPages pages,  List<ParameterInfo> parameters,  List<ParameterValue> values,  List<ParameterEnumStrings> enums,  List<Mapping> mappings,  List<ParameterValueString> valueStrings)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Algorithm algorithm,  RoutingInfo routing,  ParameterPages pages,  List<ParameterInfo> parameters,  List<ParameterValue> values,  List<ParameterEnumStrings> enums,  List<Mapping> mappings,  List<ParameterValueString> valueStrings,  Map<int, List<int>> outputModeMap)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Slot() when $default != null:
-return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that.values,_that.enums,_that.mappings,_that.valueStrings);case _:
+return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that.values,_that.enums,_that.mappings,_that.valueStrings,_that.outputModeMap);case _:
   return orElse();
 
 }
@@ -181,10 +184,10 @@ return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Algorithm algorithm,  RoutingInfo routing,  ParameterPages pages,  List<ParameterInfo> parameters,  List<ParameterValue> values,  List<ParameterEnumStrings> enums,  List<Mapping> mappings,  List<ParameterValueString> valueStrings)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Algorithm algorithm,  RoutingInfo routing,  ParameterPages pages,  List<ParameterInfo> parameters,  List<ParameterValue> values,  List<ParameterEnumStrings> enums,  List<Mapping> mappings,  List<ParameterValueString> valueStrings,  Map<int, List<int>> outputModeMap)  $default,) {final _that = this;
 switch (_that) {
 case _Slot():
-return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that.values,_that.enums,_that.mappings,_that.valueStrings);}
+return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that.values,_that.enums,_that.mappings,_that.valueStrings,_that.outputModeMap);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -198,10 +201,10 @@ return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Algorithm algorithm,  RoutingInfo routing,  ParameterPages pages,  List<ParameterInfo> parameters,  List<ParameterValue> values,  List<ParameterEnumStrings> enums,  List<Mapping> mappings,  List<ParameterValueString> valueStrings)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Algorithm algorithm,  RoutingInfo routing,  ParameterPages pages,  List<ParameterInfo> parameters,  List<ParameterValue> values,  List<ParameterEnumStrings> enums,  List<Mapping> mappings,  List<ParameterValueString> valueStrings,  Map<int, List<int>> outputModeMap)?  $default,) {final _that = this;
 switch (_that) {
 case _Slot() when $default != null:
-return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that.values,_that.enums,_that.mappings,_that.valueStrings);case _:
+return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that.values,_that.enums,_that.mappings,_that.valueStrings,_that.outputModeMap);case _:
   return null;
 
 }
@@ -213,7 +216,7 @@ return $default(_that.algorithm,_that.routing,_that.pages,_that.parameters,_that
 
 
 class _Slot with DiagnosticableTreeMixin implements Slot {
-  const _Slot({required this.algorithm, required this.routing, required this.pages, required final  List<ParameterInfo> parameters, required final  List<ParameterValue> values, required final  List<ParameterEnumStrings> enums, required final  List<Mapping> mappings, required final  List<ParameterValueString> valueStrings}): _parameters = parameters,_values = values,_enums = enums,_mappings = mappings,_valueStrings = valueStrings;
+  const _Slot({required this.algorithm, required this.routing, required this.pages, required final  List<ParameterInfo> parameters, required final  List<ParameterValue> values, required final  List<ParameterEnumStrings> enums, required final  List<Mapping> mappings, required final  List<ParameterValueString> valueStrings, final  Map<int, List<int>> outputModeMap = const {}}): _parameters = parameters,_values = values,_enums = enums,_mappings = mappings,_valueStrings = valueStrings,_outputModeMap = outputModeMap;
   
 
 @override final  Algorithm algorithm;
@@ -254,6 +257,17 @@ class _Slot with DiagnosticableTreeMixin implements Slot {
   return EqualUnmodifiableListView(_valueStrings);
 }
 
+/// Output mode usage map: parameter number -> list of affected parameter numbers
+/// Populated from SysEx 0x55 responses (Story 7.4)
+ final  Map<int, List<int>> _outputModeMap;
+/// Output mode usage map: parameter number -> list of affected parameter numbers
+/// Populated from SysEx 0x55 responses (Story 7.4)
+@override@JsonKey() Map<int, List<int>> get outputModeMap {
+  if (_outputModeMap is EqualUnmodifiableMapView) return _outputModeMap;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_outputModeMap);
+}
+
 
 /// Create a copy of Slot
 /// with the given fields replaced by the non-null parameter values.
@@ -266,21 +280,21 @@ _$SlotCopyWith<_Slot> get copyWith => __$SlotCopyWithImpl<_Slot>(this, _$identit
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'Slot'))
-    ..add(DiagnosticsProperty('algorithm', algorithm))..add(DiagnosticsProperty('routing', routing))..add(DiagnosticsProperty('pages', pages))..add(DiagnosticsProperty('parameters', parameters))..add(DiagnosticsProperty('values', values))..add(DiagnosticsProperty('enums', enums))..add(DiagnosticsProperty('mappings', mappings))..add(DiagnosticsProperty('valueStrings', valueStrings));
+    ..add(DiagnosticsProperty('algorithm', algorithm))..add(DiagnosticsProperty('routing', routing))..add(DiagnosticsProperty('pages', pages))..add(DiagnosticsProperty('parameters', parameters))..add(DiagnosticsProperty('values', values))..add(DiagnosticsProperty('enums', enums))..add(DiagnosticsProperty('mappings', mappings))..add(DiagnosticsProperty('valueStrings', valueStrings))..add(DiagnosticsProperty('outputModeMap', outputModeMap));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Slot&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&(identical(other.routing, routing) || other.routing == routing)&&(identical(other.pages, pages) || other.pages == pages)&&const DeepCollectionEquality().equals(other._parameters, _parameters)&&const DeepCollectionEquality().equals(other._values, _values)&&const DeepCollectionEquality().equals(other._enums, _enums)&&const DeepCollectionEquality().equals(other._mappings, _mappings)&&const DeepCollectionEquality().equals(other._valueStrings, _valueStrings));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Slot&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&(identical(other.routing, routing) || other.routing == routing)&&(identical(other.pages, pages) || other.pages == pages)&&const DeepCollectionEquality().equals(other._parameters, _parameters)&&const DeepCollectionEquality().equals(other._values, _values)&&const DeepCollectionEquality().equals(other._enums, _enums)&&const DeepCollectionEquality().equals(other._mappings, _mappings)&&const DeepCollectionEquality().equals(other._valueStrings, _valueStrings)&&const DeepCollectionEquality().equals(other._outputModeMap, _outputModeMap));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,algorithm,routing,pages,const DeepCollectionEquality().hash(_parameters),const DeepCollectionEquality().hash(_values),const DeepCollectionEquality().hash(_enums),const DeepCollectionEquality().hash(_mappings),const DeepCollectionEquality().hash(_valueStrings));
+int get hashCode => Object.hash(runtimeType,algorithm,routing,pages,const DeepCollectionEquality().hash(_parameters),const DeepCollectionEquality().hash(_values),const DeepCollectionEquality().hash(_enums),const DeepCollectionEquality().hash(_mappings),const DeepCollectionEquality().hash(_valueStrings),const DeepCollectionEquality().hash(_outputModeMap));
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
+  return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings, outputModeMap: $outputModeMap)';
 }
 
 
@@ -291,7 +305,7 @@ abstract mixin class _$SlotCopyWith<$Res> implements $SlotCopyWith<$Res> {
   factory _$SlotCopyWith(_Slot value, $Res Function(_Slot) _then) = __$SlotCopyWithImpl;
 @override @useResult
 $Res call({
- Algorithm algorithm, RoutingInfo routing, ParameterPages pages, List<ParameterInfo> parameters, List<ParameterValue> values, List<ParameterEnumStrings> enums, List<Mapping> mappings, List<ParameterValueString> valueStrings
+ Algorithm algorithm, RoutingInfo routing, ParameterPages pages, List<ParameterInfo> parameters, List<ParameterValue> values, List<ParameterEnumStrings> enums, List<Mapping> mappings, List<ParameterValueString> valueStrings, Map<int, List<int>> outputModeMap
 });
 
 
@@ -308,7 +322,7 @@ class __$SlotCopyWithImpl<$Res>
 
 /// Create a copy of Slot
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? algorithm = null,Object? routing = null,Object? pages = null,Object? parameters = null,Object? values = null,Object? enums = null,Object? mappings = null,Object? valueStrings = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? algorithm = null,Object? routing = null,Object? pages = null,Object? parameters = null,Object? values = null,Object? enums = null,Object? mappings = null,Object? valueStrings = null,Object? outputModeMap = null,}) {
   return _then(_Slot(
 algorithm: null == algorithm ? _self.algorithm : algorithm // ignore: cast_nullable_to_non_nullable
 as Algorithm,routing: null == routing ? _self.routing : routing // ignore: cast_nullable_to_non_nullable
@@ -318,7 +332,8 @@ as List<ParameterInfo>,values: null == values ? _self._values : values // ignore
 as List<ParameterValue>,enums: null == enums ? _self._enums : enums // ignore: cast_nullable_to_non_nullable
 as List<ParameterEnumStrings>,mappings: null == mappings ? _self._mappings : mappings // ignore: cast_nullable_to_non_nullable
 as List<Mapping>,valueStrings: null == valueStrings ? _self._valueStrings : valueStrings // ignore: cast_nullable_to_non_nullable
-as List<ParameterValueString>,
+as List<ParameterValueString>,outputModeMap: null == outputModeMap ? _self._outputModeMap : outputModeMap // ignore: cast_nullable_to_non_nullable
+as Map<int, List<int>>,
   ));
 }
 

@@ -11,6 +11,9 @@ sealed class Slot with _$Slot {
     required List<ParameterEnumStrings> enums,
     required List<Mapping> mappings,
     required List<ParameterValueString> valueStrings,
+    /// Output mode usage map: parameter number -> list of affected parameter numbers
+    /// Populated from SysEx 0x55 responses (Story 7.4)
+    @Default({}) Map<int, List<int>> outputModeMap,
   }) = _Slot;
 }
 

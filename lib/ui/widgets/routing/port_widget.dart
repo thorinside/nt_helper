@@ -174,6 +174,8 @@ class _PortWidgetState extends State<PortWidget> {
     // For now, use a simpler jack representation
     // This could be enhanced to use the full JackConnectionWidget functionality
 
+    final portColor = _getPortColor(theme);
+
     Widget jackDot = AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       key: _dotKey,
@@ -181,26 +183,17 @@ class _PortWidgetState extends State<PortWidget> {
       height: 16,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: widget.isInput
-            ? theme.colorScheme.primary
-            : theme.colorScheme.secondary,
+        color: portColor,
         border: Border.all(
           color: widget.isHighlighted
-              ? (widget.isInput
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.secondary)
-                    .withValues(alpha: 0.8)
+              ? portColor.withValues(alpha: 0.8)
               : theme.colorScheme.outline,
           width: widget.isHighlighted ? 3 : 2,
         ),
         boxShadow: widget.isHighlighted
             ? [
                 BoxShadow(
-                  color:
-                      (widget.isInput
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.secondary)
-                          .withValues(alpha: 0.3),
+                  color: portColor.withValues(alpha: 0.3),
                   blurRadius: 6,
                   spreadRadius: 1,
                 ),
@@ -269,6 +262,51 @@ class _PortWidgetState extends State<PortWidget> {
     _schedulePortPositionResolution();
   }
 
+  /// Gets the appropriate color for the port based on its type and direction.
+  ///
+  /// Audio/CV distinction is cosmetic only - affects port circle color but not
+  /// connection compatibility. All port types can connect to each other.
+  ///
+  /// Color scheme:
+  /// - Audio ports: Warm colors (orange) - displayed as VU meters on hardware
+  /// - CV ports: Cool colors (blue) - displayed as voltage values on hardware
+  /// - Direction affects color brightness (input vs output)
+  Color _getPortColor(ThemeData theme) {
+    // If no port model provided, fall back to direction-based coloring
+    if (widget.port == null) {
+      return widget.isInput
+          ? theme.colorScheme.primary
+          : theme.colorScheme.secondary;
+    }
+
+    // Use port type to determine base color (audio vs CV)
+    final baseColor = switch (widget.port!.type) {
+      PortType.audio => HSLColor.fromAHSL(
+          1.0,
+          30, // Orange hue (warm)
+          0.70, // 70% saturation
+          theme.brightness == Brightness.dark ? 0.55 : 0.50, // Adjusted lightness for theme
+        ).toColor(),
+      PortType.cv => HSLColor.fromAHSL(
+          1.0,
+          210, // Blue hue (cool)
+          0.70, // 70% saturation
+          theme.brightness == Brightness.dark ? 0.55 : 0.50, // Adjusted lightness for theme
+        ).toColor(),
+    };
+
+    // Slightly adjust brightness based on direction for additional distinction
+    if (widget.isInput) {
+      return HSLColor.fromColor(baseColor)
+          .withLightness(
+            theme.brightness == Brightness.dark ? 0.60 : 0.45,
+          )
+          .toColor();
+    } else {
+      return baseColor;
+    }
+  }
+
   /// Builds the port elements based on label position
   List<Widget> _buildPortElements(ThemeData theme) {
     final portDot = _buildPortDot(theme);
@@ -284,16 +322,14 @@ class _PortWidgetState extends State<PortWidget> {
 
   /// Builds the visual port dot/circle
   Widget _buildPortDot(ThemeData theme) {
-    // Base port circle
+    // Base port circle with type-based coloring
     final Widget base = Container(
       key: _dotKey,
       width: 12,
       height: 12,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: widget.isInput
-            ? theme.colorScheme.primary
-            : theme.colorScheme.secondary,
+        color: _getPortColor(theme),
         border: Border.all(color: theme.colorScheme.outline, width: 1),
       ),
     );
