@@ -1,6 +1,6 @@
 # Story 7.7: Add I/O Flags to Offline Metadata
 
-Status: review
+Status: done
 
 ## Story
 

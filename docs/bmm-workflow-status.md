@@ -21,18 +21,18 @@ PHASE_4_COMPLETE: false
 
 ## Development Queue
 
-STORIES_SEQUENCE: [7-1, 7-2, 8-1, 8-2, 9-2]
-TODO_STORY: 9-4-cross-platform-testing-and-validation
-TODO_TITLE: Cross-Platform Testing and Validation
+STORIES_SEQUENCE: [7-1, 7-2, 7-4, 7-7, 7-8, 7-9, 8-1, 8-2, 9-2, 9-3]
+TODO_STORY: 7-5-replace-io-pattern-matching-with-flag-data
+TODO_TITLE: Replace I/O Pattern Matching with Flag Data
 IN_PROGRESS_STORY: none
 IN_PROGRESS_TITLE: none
 STORIES_DONE: [7-1-implement-parameter-disabled-grayed-out-state-in-ui, 7-2-auto-refresh-parameter-state-after-edits-and-remove-disabled-parameter-tooltip, 7-4-synchronize-output-mode-usage-data, 7-7-add-io-flags-to-offline-metadata, 7-8-generate-updated-metadata-bundle-with-io-flags, 7-9-upgrade-existing-databases-with-io-flags, e8-1-complete-uvccamera-fork-eventchannel-implementation, e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device, 9-2-bottom-sheet-component-implementation, 9-3-accessibility-and-polish]
 
 ## Next Action
 
-NEXT_ACTION: Continue Epic 9 - Story 9.3 complete, Story 9.4 ready for development
-NEXT_COMMAND: /bmad:bmm:workflows:run-story or /bmad:bmm:workflows:story-context
-NEXT_AGENT: sm
+NEXT_ACTION: Continue Epic 7 - Story 7.7 complete, Story 7.5 in progress, review and complete 7.5 or work on 7.3/7.6
+NEXT_COMMAND: /bmad:bmm:workflows:run-story 7.5
+NEXT_AGENT: dev
 
 ## Story Backlog
 
@@ -64,5 +64,5 @@ NEXT_AGENT: sm
 
 ---
 
-_Last Updated: 2025-11-16 (Epic 9 Story 3 Complete)_
-_Status Version: 2.3_
+_Last Updated: 2025-11-18 (Epic 7 Story 7.7 Complete)_
+_Status Version: 2.4_
