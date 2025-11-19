@@ -1,6 +1,6 @@
 # Story 7.6: Replace Output Mode Pattern Matching with Usage Data
 
-Status: ready-for-review
+Status: done
 
 ## Story
 
