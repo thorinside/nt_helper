@@ -660,6 +660,7 @@ class MetadataSyncService {
           unitId: unitId,
           powerOfTen: paramInfo.powerOfTen,
           rawUnitIndex: paramInfo.unit,
+          ioFlags: paramInfo.ioFlags,
         ),
       );
     }

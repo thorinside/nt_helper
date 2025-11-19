@@ -544,8 +544,6 @@ abstract class AlgorithmRouting {
           enumValues.contains('Add') &&
           enumValues.contains('Replace');
 
-      if (param.name.toLowerCase().contains('output')) {}
-
       if (isModeParameter) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
         modeParameters[param.name] = (

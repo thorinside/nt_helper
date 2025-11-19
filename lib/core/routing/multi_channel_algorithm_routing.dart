@@ -431,10 +431,12 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         return PortType.audio;
       case 'cv':
         return PortType.cv;
+      // Note: gate and clock types were removed in Story 7.5
+      // They were artificial types not present in hardware
+      // All gate/clock ports are now CV type (isAudio=false)
       case 'gate':
-        return PortType.gate;
       case 'clock':
-        return PortType.clock;
+        return PortType.cv;
     }
     return null;
   }
@@ -532,10 +534,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         return 'Audio';
       case PortType.cv:
         return 'CV';
-      case PortType.gate:
-        return 'Gate';
-      case PortType.clock:
-        return 'Clock';
     }
   }
 
@@ -745,29 +743,24 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         continue;
       }
 
-      // Determine if this is an input or output based on parameter name
-      final lowerName = paramName.toLowerCase();
-      // Check if this parameter has a matching mode parameter (definitive output indicator)
-      final hasMatchingModeParameter =
-          modeParameters?.containsKey('$paramName mode') ?? false;
-      final isOutput =
-          hasMatchingModeParameter ||
-          (lowerName.contains('output') && !lowerName.contains('mode')) ||
-          lowerName.contains('out') && !lowerName.contains('input');
+      // Determine if this is an input or output based on I/O flags from hardware
+      // I/O flags come from firmware SysEx messages (Story 7.3)
+      // Bit 0: isInput, Bit 1: isOutput, Bit 2: isAudio, Bit 3: isOutputMode
+      final bool isOutputFlag = paramInfo?.isOutput ?? false;
+      final bool isInputFlag = paramInfo?.isInput ?? false;
 
-      // Infer port type from parameter name
-      String portType = 'audio';
-      if (lowerName.contains('cv') ||
-          lowerName.contains('pitchbend') ||
-          lowerName.contains('wave')) {
-        portType = 'cv';
-      } else if (lowerName.contains('gate') ||
-          lowerName.contains('reset') ||
-          lowerName.contains('trigger')) {
-        portType = 'gate';
-      } else if (lowerName.contains('clock')) {
-        portType = 'clock';
-      }
+      // Fallback logic for offline/mock mode (ioFlags = 0)
+      // When no flags are set, infer direction from bus range:
+      // Buses 1-12 are inputs, buses 13-20 are outputs
+      final bool isOutput = isOutputFlag ||
+          (!isInputFlag && !isOutputFlag && busValue >= 13 && busValue <= 20);
+
+      // Infer port type from isAudio flag
+      // Audio/CV distinction is cosmetic only - affects port color, not connectivity
+      // Audio (isAudio=true): VU meter on hardware, warm color in UI
+      // CV (isAudio=false): Voltage value on hardware, cool color in UI
+      final bool isAudioFlag = paramInfo?.isAudio ?? false;
+      final PortType portType = isAudioFlag ? PortType.audio : PortType.cv;
 
       // Create a sanitized version of the parameter name for the port ID
       // This preserves numbered prefixes like "1:" in "1:Trigger input"
@@ -782,7 +775,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         'id': '${algorithmUuid ?? 'algo'}_${sanitizedName}_$paramNumber',
         // Use algorithm UUID, sanitized name, and parameter number for uniqueness
         'name': paramName, // Keep original name for display
-        'type': portType,
+        'type': portType == PortType.audio ? 'audio' : 'cv', // Store as string for parsing
         'busParam': paramName,
         'busValue': busValue,
         // Store bus value for connection discovery
@@ -792,6 +785,8 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
 
       if (isOutput) {
         // Add channel metadata for stereo outputs
+        // Note: Stereo detection still uses name matching as there's no hardware flag for this
+        final lowerName = paramName.toLowerCase();
         if (lowerName.contains('left')) {
           port['channel'] = 'left';
         } else if (lowerName.contains('right')) {

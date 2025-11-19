@@ -74,7 +74,7 @@ void main() {
             Port(
               id: 'alg_3_input_1',
               name: 'Input 1',
-              type: PortType.gate,
+              type: PortType.cv,
               direction: PortDirection.input,
             ),
           ],
@@ -82,7 +82,7 @@ void main() {
             Port(
               id: 'alg_3_output_1',
               name: 'Output 1',
-              type: PortType.gate,
+              type: PortType.cv,
               direction: PortDirection.output,
             ),
           ],

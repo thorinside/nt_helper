@@ -60,12 +60,7 @@ Map<String, dynamic> _$PortToJson(_Port instance) => <String, dynamic>{
   'nodeId': instance.nodeId,
 };
 
-const _$PortTypeEnumMap = {
-  PortType.audio: 'audio',
-  PortType.cv: 'cv',
-  PortType.gate: 'gate',
-  PortType.clock: 'clock',
-};
+const _$PortTypeEnumMap = {PortType.audio: 'audio', PortType.cv: 'cv'};
 
 const _$PortDirectionEnumMap = {
   PortDirection.input: 'input',

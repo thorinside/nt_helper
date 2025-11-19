@@ -101,6 +101,39 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<OutputModeUsage?> requestOutputModeUsage(
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
+    try {
+      // Validate algorithm index
+      if (algorithmIndex < 0 || algorithmIndex >= _presetAlgorithmGuids.length) {
+        return null;
+      }
+
+      final algorithmGuid = _presetAlgorithmGuids[algorithmIndex];
+
+      // Query database for output mode usage
+      final affectedOutputs =
+          await _metadataDao.getOutputModeUsage(algorithmGuid, parameterNumber);
+
+      // If no data, return null
+      if (affectedOutputs == null || affectedOutputs.isEmpty) {
+        return null;
+      }
+
+      // Construct OutputModeUsage object
+      return OutputModeUsage(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: parameterNumber,
+        affectedParameterNumbers: affectedOutputs,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
   Future<AlgorithmInfo?> requestAlgorithmInfo(int algorithmIndex) async {
     try {
       final algorithms = await _metadataDao.getAllAlgorithms();
@@ -190,6 +223,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
           unit: paramEntry.rawUnitIndex ?? 0,
           name: paramEntry.name,
           powerOfTen: paramEntry.powerOfTen ?? 0,
+          ioFlags: paramEntry.ioFlags ?? 0, // Default null to 0 (no flags set)
         );
       } else {
         return null;

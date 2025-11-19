@@ -459,7 +459,7 @@ final hasMatchingModeParameter = modeParameters?.containsKey('$paramName mode') 
 - Artificial: `gate`/`clock` types don't exist in hardware
 - No offline support: Pattern matching requires parameter names only available online
 
-**Future State (Hardware I/O Flags - Epic 7)**:
+**Hardware I/O Flags - Epic 7 Progress**:
 
 SysEx 0x43 (Parameter Info) now provides I/O metadata in the last byte:
 
@@ -498,7 +498,7 @@ Response: [0xF0, ..., 0x55, slot, source_param, count, affected_1, affected_2, .
 - Offline mode support via bundled metadata
 - Future-proof as firmware evolves
 
-**Status**: Stories 7.1-7.2 completed (parameter disabled state). Stories 7.3-7.9 documented and ready for implementation.
+**Status**: Stories 7.1-7.7 are implemented (runtime parsing plus offline storage via the new `ioFlags` column). Stories 7.8-7.9 remain outstanding to regenerate the bundled metadata and backfill existing installs, so offline mode still sees `ioFlags = 0` until those stories land.
 
 **Reference**: See `docs/epic-7-context.md` for complete technical details.
 
@@ -968,8 +968,10 @@ Use MCP client (e.g., Claude Desktop) to test the new tool:
 ### Database Schema (Drift ORM)
 
 **File**: `lib/db/database.dart`
-**Current Schema Version**: 7
-**Next Version (Epic 7)**: 8 - adds `ioFlags` column to Parameters table
+**Current Schema Version**: 10
+**Recent Changes**:
+- v10 (Story 7.7) added the nullable `ioFlags` column to the `Parameters` table to persist firmware I/O metadata.
+- Exported metadata bumped to `exportVersion = 2` to include `ioFlags`. Importers remain backward-compatible with version 1 files, and the shipping bundled metadata is still version 1 until Story 7.8 regenerates it.
 
 **Tables**:
 
@@ -983,9 +985,9 @@ Use MCP client (e.g., Claude Desktop) to test the new tool:
 - `ParameterPageItems` - Items within parameter pages
 
 **Epic 7 Schema Changes (Story 7.7)**:
-- `Parameters` table gains nullable `ioFlags` column (4-bit field encoding input/output/audio/mode flags)
-- Migration from schema v7 → v8 adds column with null default
-- Story 7.9 populates flags from bundled metadata for existing databases
+- `Parameters` table now includes a nullable `ioFlags` column (4-bit field encoding input/output/audio/mode flags, `null` meaning no cached data yet).
+- Migration history covers schema versions 1-10; upgrading from any version ≤9 automatically adds the column without touching existing parameter data.
+- Story 7.8/7.9 will regenerate and re-import the bundled metadata so databases populated before v10 can receive real flag values.
 
 **Preset Data**:
 - `Presets` - Preset metadata

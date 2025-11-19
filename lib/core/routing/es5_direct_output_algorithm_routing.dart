@@ -60,7 +60,7 @@ abstract class Es5DirectOutputAlgorithmRouting
           Port(
             id: '${algorithmUuid}_channel_${channel}_es5_output',
             name: 'Ch$channel → ES-5 $es5OutputValue',
-            type: PortType.gate,
+            type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
             direction: PortDirection.output,
             description: 'Direct to ES-5 Output $es5OutputValue',
             busParam: es5DirectBusParam, // Special marker
@@ -84,7 +84,7 @@ abstract class Es5DirectOutputAlgorithmRouting
             Port(
               id: '${algorithmUuid}_channel_${channel}_output',
               name: portName,
-              type: PortType.gate,
+              type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
               direction: PortDirection.output,
               description: 'Gate output for channel $channel',
               busValue: outputBusResult.busValue,
@@ -377,7 +377,7 @@ abstract class Es5DirectOutputAlgorithmRouting
       channelCount: channelCount > 0 ? channelCount : 1,
       supportsStereoChannels: false, // Gate outputs, not stereo
       allowsIndependentChannels: true,
-      supportedPortTypes: [PortType.gate],
+      supportedPortTypes: [PortType.cv], // Gate signals are CV (Story 7.5)
       portNamePrefix: 'Channel',
       createMasterMix: false, // No master mix for gate outputs
       algorithmProperties: {

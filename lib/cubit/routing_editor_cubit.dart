@@ -268,15 +268,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Convert core port type (routing) to UI port type
   PortType _toUiPortType(PortType type) {
+    // After Story 7.5, only audio and CV types exist
+    // Both are directly mapped
     switch (type) {
       case PortType.audio:
         return PortType.audio;
       case PortType.cv:
         return PortType.cv;
-      case PortType.gate:
-        return PortType.gate;
-      case PortType.clock:
-        return PortType.gate; // closest match in UI enum
     }
   }
 

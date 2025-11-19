@@ -99,7 +99,7 @@ development_status:
   7-4-synchronize-output-mode-usage-data: done
   7-5-replace-io-pattern-matching-with-flag-data: in-progress
   7-6-replace-output-mode-pattern-matching-with-usage-data: drafted
-  7-7-add-io-flags-to-offline-metadata: in-progress
+  7-7-add-io-flags-to-offline-metadata: drafted
   7-8-generate-updated-metadata-bundle-with-io-flags: done
   7-9-upgrade-existing-databases-with-io-flags: done
   epic-7-retrospective: optional

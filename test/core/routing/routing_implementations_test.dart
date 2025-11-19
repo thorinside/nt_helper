@@ -31,7 +31,7 @@ void main() {
 
           // Verify gate ports have correct direct properties
           final gatePorts = inputPorts
-              .where((p) => p.type == PortType.gate)
+              .where((p) => p.type == PortType.cv && p.name.startsWith('Gate ') && !p.name.contains('CV'))
               .toList();
           expect(gatePorts, hasLength(3)); // Gates 1, 2, 4
 
@@ -47,7 +47,7 @@ void main() {
 
           // Verify CV ports have correct direct properties
           final cvPorts = inputPorts
-              .where((p) => p.type == PortType.cv)
+              .where((p) => p.type == PortType.cv && p.name.contains('CV'))
               .toList();
           expect(cvPorts, hasLength(6)); // 2+1+3 CV inputs
 
@@ -169,7 +169,7 @@ void main() {
 
         // Verify gate outputs
         final gateOutputs = outputPorts
-            .where((p) => p.type == PortType.gate)
+            .where((p) => p.type == PortType.cv && p.name.contains('Gate'))
             .toList();
         expect(gateOutputs, hasLength(2));
 
@@ -182,7 +182,7 @@ void main() {
 
         // Verify pitch outputs
         final pitchOutputs = outputPorts
-            .where((p) => p.type == PortType.cv)
+            .where((p) => p.type == PortType.cv && p.name.contains('Pitch'))
             .toList();
         expect(pitchOutputs, hasLength(2));
 
@@ -468,7 +468,7 @@ void main() {
         final originalPort = Port(
           id: 'serialization_test',
           name: 'Serialization Test',
-          type: PortType.gate,
+          type: PortType.cv,
           direction: PortDirection.output,
           isPolyVoice: true,
           voiceNumber: 4,

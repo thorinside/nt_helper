@@ -43,6 +43,10 @@ abstract class IDistingMidiManager {
     int parameterNumber,
   );
   Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex);
+  Future<OutputModeUsage?> requestOutputModeUsage(
+    int algorithmIndex,
+    int parameterNumber,
+  );
   Future<Uint8List?>
   encodeTakeScreenshot(); // Assuming this belongs here, might need adjustment
   Future<CpuUsage?> requestCpuUsage();

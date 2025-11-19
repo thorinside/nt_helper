@@ -95,6 +95,12 @@ class DistingCubit extends Cubit<DistingState> {
   // Parameter update queue for consolidated parameter changes
   ParameterUpdateQueue? _parameterQueue;
 
+  // Output mode usage tracking
+  // Maps slot index -> parameter number -> list of affected parameters
+  final Map<int, Map<int, List<int>>> _outputModeUsageMap = {};
+  // Track which output mode parameters we've already queried to avoid duplicates
+  final Map<int, Set<int>> _queriedOutputModeParameters = {};
+
   // CPU Usage Streaming
   late final StreamController<CpuUsage> _cpuUsageController;
   Timer? _cpuUsageTimer;
@@ -2442,6 +2448,59 @@ class DistingCubit extends Cubit<DistingState> {
     updatedSlots[slotIndex] = updatedSlot;
 
     emit(currentState.copyWith(slots: updatedSlots));
+
+    // Automatically query output mode usage if parameter has isOutputMode flag
+    if (info.isOutputMode) {
+      await _queryOutputModeUsage(slotIndex, paramIndex);
+    }
+  }
+
+  /// Query output mode usage for a parameter with isOutputMode flag.
+  /// Uses debounce logic to avoid duplicate queries during sync operations.
+  Future<void> _queryOutputModeUsage(int slotIndex, int paramIndex) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) {
+      return;
+    }
+
+    // Check if we've already queried this parameter
+    final queriedParams = _queriedOutputModeParameters[slotIndex] ?? {};
+    if (queriedParams.contains(paramIndex)) {
+      return; // Already queried, skip
+    }
+
+    try {
+      final disting = currentState.disting;
+      final outputModeUsage = await disting.requestOutputModeUsage(
+        slotIndex,
+        paramIndex,
+      );
+
+      if (outputModeUsage != null) {
+        // Store the output mode usage data
+        final slotMap = _outputModeUsageMap[slotIndex] ?? {};
+        slotMap[paramIndex] = outputModeUsage.affectedParameterNumbers;
+        _outputModeUsageMap[slotIndex] = slotMap;
+
+        // Mark as queried
+        queriedParams.add(paramIndex);
+        _queriedOutputModeParameters[slotIndex] = queriedParams;
+      }
+    } catch (e) {
+      // Silently fail - output mode usage is optional data
+      debugPrint('Failed to query output mode usage for slot $slotIndex param $paramIndex: $e');
+    }
+  }
+
+  /// Get output mode usage data for a parameter.
+  /// Returns list of affected parameter numbers, or null if not available.
+  List<int>? getOutputModeUsage(int slotIndex, int paramIndex) {
+    return _outputModeUsageMap[slotIndex]?[paramIndex];
+  }
+
+  /// Get all output mode usage data for a slot.
+  Map<int, List<int>>? getSlotOutputModeUsage(int slotIndex) {
+    return _outputModeUsageMap[slotIndex];
   }
 
   Future<void> _updateSlotParameterEnums(

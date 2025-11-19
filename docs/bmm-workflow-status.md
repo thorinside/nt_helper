@@ -26,7 +26,7 @@ TODO_STORY: 9-4-cross-platform-testing-and-validation
 TODO_TITLE: Cross-Platform Testing and Validation
 IN_PROGRESS_STORY: none
 IN_PROGRESS_TITLE: none
-STORIES_DONE: [7-1-implement-parameter-disabled-grayed-out-state-in-ui, 7-2-auto-refresh-parameter-state-after-edits-and-remove-disabled-parameter-tooltip, e8-1-complete-uvccamera-fork-eventchannel-implementation, e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device, 9-2-bottom-sheet-component-implementation, 9-3-accessibility-and-polish]
+STORIES_DONE: [7-1-implement-parameter-disabled-grayed-out-state-in-ui, 7-2-auto-refresh-parameter-state-after-edits-and-remove-disabled-parameter-tooltip, 7-4-synchronize-output-mode-usage-data, 7-7-add-io-flags-to-offline-metadata, 7-8-generate-updated-metadata-bundle-with-io-flags, 7-9-upgrade-existing-databases-with-io-flags, e8-1-complete-uvccamera-fork-eventchannel-implementation, e8-2-integrate-fork-frame-streaming-with-nt-helper-and-test-on-android-device, 9-2-bottom-sheet-component-implementation, 9-3-accessibility-and-polish]
 
 ## Next Action
 
@@ -36,10 +36,11 @@ NEXT_AGENT: sm
 
 ## Story Backlog
 
-### Epic 7: SysEx Updates
-- Status: ✅ COMPLETE (2 of 2 stories complete)
-- Stories: 7.1 (Parameter disabled state UI) and 7.2 (Auto-refresh and tooltip removal)
-- Completion: Parameter disabled states fully functional with auto-refresh
+### Epic 7: I/O Flags and Offline Metadata
+- Status: ✅ MOSTLY COMPLETE (6 of 9 stories complete, 3 in review/progress)
+- Stories: 7.1, 7.2, 7.4, 7.7, 7.8, 7.9 complete; 7.3 in review; 7.5 in progress; 7.6 drafted
+- Key achievements: I/O flags infrastructure, output mode usage data, offline metadata, database migration
+- Remaining: Stories 7.3 (review), 7.5 (in progress), 7.6 (drafted)
 
 ### Epic 8: Android Video Implementation
 - Status: ✅ COMPLETE (2 of 2 stories complete)

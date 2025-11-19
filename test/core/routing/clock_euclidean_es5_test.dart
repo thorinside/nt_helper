@@ -239,7 +239,7 @@ void main() {
             final channel = i + 1;
 
             expect(port.id, equals('clock_test_channel_${channel}_output'));
-            expect(port.type, equals(PortType.gate));
+            expect(port.type, equals(PortType.cv));
             expect(port.direction, equals(PortDirection.output));
             expect(port.busValue, equals(13 + i));
             expect(port.busParam, isNull);
@@ -323,7 +323,7 @@ void main() {
             final channel = i + 1;
 
             expect(port.id, equals('clock_test_channel_${channel}_es5_output'));
-            expect(port.type, equals(PortType.gate));
+            expect(port.type, equals(PortType.cv));
             expect(port.direction, equals(PortDirection.output));
             expect(port.busParam, equals('es5_direct'));
             expect(port.channelNumber, equals(channel)); // ES-5 Output value

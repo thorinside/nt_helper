@@ -49,6 +49,7 @@ void main() {
                 defaultValue: 0,
                 unit: 1,
                 powerOfTen: 0,
+                ioFlags: 2, // isOutput
               ),
             for (int i = 1; i <= 8; i++)
               ParameterInfo(
@@ -60,6 +61,7 @@ void main() {
                 defaultValue: 0,
                 unit: 1,
                 powerOfTen: 0,
+                ioFlags: 8, // isOutputMode
               ),
           ],
           values: [
@@ -115,6 +117,7 @@ void main() {
                 defaultValue: 0,
                 unit: 1,
                 powerOfTen: 0,
+                ioFlags: 2, // isOutput
               ),
             for (int i = 1; i <= 8; i++)
               ParameterInfo(
@@ -126,6 +129,7 @@ void main() {
                 defaultValue: 0,
                 unit: 1,
                 powerOfTen: 0,
+                ioFlags: 8, // isOutputMode
               ),
           ],
           values: [
@@ -180,6 +184,7 @@ void main() {
               defaultValue: 29,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 6, // isOutput | isAudio
             ),
           ],
           values: [
@@ -208,6 +213,7 @@ void main() {
               defaultValue: 29,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 5, // isInput | isAudio
             ),
           ],
           values: [

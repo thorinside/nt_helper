@@ -188,6 +188,6 @@ nt_helper/
 - **MetadataSyncService** - Syncs algorithm metadata from hardware or remote API
 
 **Database** (`lib/db/`):
-- **AppDatabase** - Drift ORM, schema version 7
-- Tables: Algorithms, Parameters, Presets, PluginInstallations, MetadataCache
+- **AppDatabase** - Drift ORM, schema version 10 (Story 7.7 adds `ioFlags` to `Parameters`)
+- Tables: Algorithms, Parameters (with `ioFlags`), Presets, PluginInstallations, MetadataCache
 - DAOs provide typed queries and operations

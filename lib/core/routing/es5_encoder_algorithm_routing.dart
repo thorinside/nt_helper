@@ -128,7 +128,7 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
         final port = Port(
           id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_input',
           name: 'Channel $channelNumber',
-          type: PortType.gate, // ES-5 handles gates/triggers
+          type: PortType.cv, // All gate/trigger signals are CV (Story 7.5) // ES-5 handles gates/triggers
           direction: PortDirection.input,
           description:
               'ES-5 Channel $channelNumber (Expander $expanderValue, Output $outputValue)',
@@ -200,7 +200,7 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
           Port(
             id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_output',
             name: 'To ES-5 $outputValue',
-            type: PortType.gate,
+            type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
             direction: PortDirection.output,
             description: 'Channel $channelNumber → ES-5 Output $outputValue',
             channelNumber: outputValue, // FIX: Use Output parameter value
@@ -239,7 +239,7 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
       channelCount: channelCount > 0 ? channelCount : 1,
       supportsStereoChannels: false, // ES-5 handles gates, not stereo audio
       allowsIndependentChannels: true,
-      supportedPortTypes: [PortType.gate],
+      supportedPortTypes: [PortType.cv], // Gate signals are CV (Story 7.5)
       portNamePrefix: 'Channel',
       createMasterMix: false, // No master mix for gate outputs
       algorithmProperties: {

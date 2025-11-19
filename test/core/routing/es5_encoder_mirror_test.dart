@@ -145,7 +145,7 @@ void main() {
 
           expect(port.id, equals('es5e_test_channel_${channelNumber}_output'));
           expect(port.name, equals('To ES-5 $channelNumber'));
-          expect(port.type, equals(PortType.gate));
+          expect(port.type, equals(PortType.cv));
           expect(port.direction, equals(PortDirection.output));
           expect(port.channelNumber, equals(channelNumber));
           expect(port.busParam, equals('es5_encoder_mirror'));

@@ -182,7 +182,7 @@ void main() {
           expect(outputPorts[i].name, equals('Ch${i + 1} → ES-5 ${i + 1}'));
           expect(outputPorts[i].busParam, equals('es5_direct'));
           expect(outputPorts[i].channelNumber, equals(i + 1));
-          expect(outputPorts[i].type, equals(PortType.gate));
+          expect(outputPorts[i].type, equals(PortType.cv));
         }
       });
 
@@ -213,7 +213,7 @@ void main() {
         for (int i = 0; i < 8; i++) {
           expect(outputPorts[i].name, equals('Channel ${i + 1}'));
           expect(outputPorts[i].busValue, equals(13 + i));
-          expect(outputPorts[i].type, equals(PortType.gate));
+          expect(outputPorts[i].type, equals(PortType.cv));
         }
       });
 
@@ -381,7 +381,7 @@ void main() {
         expect(inputPorts, hasLength(1));
         expect(inputPorts[0].name, equals('Clock input'));
         expect(inputPorts[0].busValue, equals(1));
-        expect(inputPorts[0].type, equals(PortType.clock));
+        expect(inputPorts[0].type, equals(PortType.cv));
         expect(inputPorts[0].direction, equals(PortDirection.input));
       });
     });

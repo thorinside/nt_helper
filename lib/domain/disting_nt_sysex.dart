@@ -75,6 +75,7 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
   final int unit;
   final String name;
   final int powerOfTen;
+  final int ioFlags;
 
   ParameterInfo({
     required this.algorithmIndex,
@@ -85,7 +86,21 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
     required this.unit,
     required this.name,
     required this.powerOfTen,
+    this.ioFlags = 0,
   });
+
+  /// I/O flag helper getters
+  /// Bit 0: Parameter is an input
+  bool get isInput => (ioFlags & 1) != 0;
+
+  /// Bit 1: Parameter is an output
+  bool get isOutput => (ioFlags & 2) != 0;
+
+  /// Bit 2: Audio signal (true) vs CV signal (false)
+  bool get isAudio => (ioFlags & 4) != 0;
+
+  /// Bit 3: Parameter controls output mode
+  bool get isOutputMode => (ioFlags & 8) != 0;
 
   /// Factory constructor for default `filler` instance
   factory ParameterInfo.filler() {
@@ -103,7 +118,7 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
 
   @override
   String toString() {
-    return "ParameterInfo: min=$min, max=$max, defaultValue=$defaultValue, unit=$unit, name=$name, powerOfTen=$powerOfTen";
+    return "ParameterInfo: min=$min, max=$max, defaultValue=$defaultValue, unit=$unit, name=$name, powerOfTen=$powerOfTen, ioFlags=$ioFlags";
   }
 
   @override
@@ -119,7 +134,8 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
         other.defaultValue == defaultValue &&
         other.unit == unit &&
         other.name == name &&
-        other.powerOfTen == powerOfTen;
+        other.powerOfTen == powerOfTen &&
+        other.ioFlags == ioFlags;
   }
 
   @override
@@ -132,6 +148,7 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
     unit,
     name,
     powerOfTen,
+    ioFlags,
   );
 
   String? getUnitString(List<String> units) {
@@ -351,6 +368,27 @@ class RoutingInfo implements HasAlgorithmIndex {
   }
 }
 
+/// Output mode usage data returned by SysEx 0x55 response.
+/// Describes which parameters are affected by an output mode control parameter.
+class OutputModeUsage implements HasAlgorithmIndex, HasParameterNumber {
+  @override
+  final int algorithmIndex;
+  @override
+  final int parameterNumber; // The source parameter (mode control)
+  final List<int> affectedParameterNumbers; // Parameters controlled by this mode
+
+  OutputModeUsage({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.affectedParameterNumbers,
+  });
+
+  @override
+  String toString() {
+    return "OutputModeUsage(algorithmIndex=$algorithmIndex, parameterNumber=$parameterNumber, affectedParameters=$affectedParameterNumbers)";
+  }
+}
+
 /// Enum of all known 'Sent SysEx messages' (requests)
 enum DistingNTRequestMessageType {
   // Sent messages (going TO the disting)
@@ -392,6 +430,8 @@ enum DistingNTRequestMessageType {
   requestParameterPages(0x52),
   setParameterString(0x53),
   setPerformancePageMapping(0x54),
+  /// Request output mode usage for a parameter (SysEx 0x55)
+  requestOutputModeUsage(0x55),
   requestNumAlgorithmsInPreset(0x60),
   requestRouting(0x61),
   requestCpuUsage(0x62),
@@ -434,6 +474,9 @@ enum DistingNTRespMessageType {
   respMapping(0x4B),
   respParameterValueString(0x50),
   respParameterPages(0x52),
+  /// Response to output mode usage query (SysEx 0x55)
+  /// Returns list of parameters affected by an output mode control parameter
+  respOutputModeUsage(0x55),
   respNumAlgorithmsInPreset(0x60),
   respRouting(0x61),
   respCpuUsage(0x62),

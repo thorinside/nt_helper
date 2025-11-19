@@ -29,6 +29,11 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
     return [];
   }
 
+  @override
+  Future<List<String>?> requestUnitStrings() async {
+    return [];
+  }
+
   Stream<Map<String, dynamic>> get slotUpdateStream =>
       Stream<Map<String, dynamic>>.empty();
 

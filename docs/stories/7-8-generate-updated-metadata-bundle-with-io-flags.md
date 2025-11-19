@@ -1,6 +1,6 @@
 # Story 7.8: Generate Updated Metadata Bundle with I/O Flags
 
-Status: blocked
+Status: done
 
 ## Story
 
@@ -380,7 +380,7 @@ class MetadataCollector {
 
 ### Context Reference
 
-- N/A - Story blocked before context generation
+- docs/stories/7-8-generate-updated-metadata-bundle-with-io-flags.context.xml
 
 ### Agent Model Used
 

@@ -35,7 +35,7 @@ void main() {
         const Port(
           id: 'output2',
           name: 'Gate Output 1',
-          type: PortType.gate,
+          type: PortType.cv,
           direction: PortDirection.output,
         ),
       ];

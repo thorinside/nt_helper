@@ -79,7 +79,7 @@ class ES5HardwareNode {
         Port(
           id: 'es5_$i',
           name: '$i',
-          type: PortType.gate,
+          type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
           direction: PortDirection.input,
           description: 'ES-5 Output $i',
           isPhysical: true,
@@ -148,7 +148,7 @@ class ES5HardwareNode {
     return Port(
       id: 'es5_$portNumber',
       name: '$portNumber',
-      type: PortType.gate,
+      type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
       direction: PortDirection.input,
       description: 'ES-5 Output $portNumber',
       isPhysical: true,

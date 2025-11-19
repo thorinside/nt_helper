@@ -10,6 +10,18 @@ class ParameterInfoResponse extends SysexResponse {
 
   @override
   ParameterInfo parse() {
+    // Extract both powerOfTen and ioFlags from the last byte
+    // Bit layout of last byte:
+    //   Bits 0-1: powerOfTen (scaling: 10^n where n=0-3)
+    //   Bits 2-5: ioFlags (I/O metadata):
+    //     - Bit 2 (value 1): Parameter is an input
+    //     - Bit 3 (value 2): Parameter is an output
+    //     - Bit 4 (value 4): Audio signal (true) vs CV signal (false)
+    //     - Bit 5 (value 8): Parameter controls output mode
+    final lastByte = data.last;
+    final powerOfTen = lastByte & 0x3;           // Bits 0-1
+    final ioFlags = (lastByte >> 2) & 0xF;       // Bits 2-5
+
     return ParameterInfo(
       algorithmIndex: decode8(data.sublist(0, 1)),
       parameterNumber: decode16(data, 1),
@@ -18,7 +30,8 @@ class ParameterInfoResponse extends SysexResponse {
       defaultValue: decode16(data, 10),
       unit: decode8(data.sublist(13, 14)),
       name: decodeNullTerminatedAscii(data, 14).value,
-      powerOfTen: data.last,
+      powerOfTen: powerOfTen,
+      ioFlags: ioFlags,
     );
   }
 }

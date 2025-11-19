@@ -822,6 +822,15 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<OutputModeUsage?> requestOutputModeUsage(
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
+    // Mock mode doesn't have output mode usage data
+    return null;
+  }
+
+  @override
   Future<AlgorithmInfo?> requestAlgorithmInfo(int index) async {
     if (index >= 0 && index < _state.availableAlgorithms.length) {
       return _state.availableAlgorithms[index];

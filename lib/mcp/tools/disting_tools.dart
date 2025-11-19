@@ -125,6 +125,10 @@ class DistingTools {
                   ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                   : null, // Scaled
               'is_disabled': paramValue?.isDisabled ?? false,
+              'is_input': pInfo.isInput,
+              'is_output': pInfo.isOutput,
+              'is_audio': pInfo.isAudio,
+              'is_output_mode': pInfo.isOutputMode,
             };
 
             // Add enum metadata if this is an enum parameter
@@ -566,6 +570,10 @@ class DistingTools {
           paramInfo.powerOfTen,
         ), // Scaled value
         'is_disabled': paramValue.isDisabled,
+        'is_input': paramInfo.isInput,
+        'is_output': paramInfo.isOutput,
+        'is_audio': paramInfo.isAudio,
+        'is_output_mode': paramInfo.isOutputMode,
       };
 
       // Add enum metadata if applicable

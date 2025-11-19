@@ -93,7 +93,7 @@ void main() {
       const originalPort = Port(
         id: 'test_port',
         name: 'Test Port',
-        type: PortType.gate,
+        type: PortType.cv,
         direction: PortDirection.bidirectional,
         description: 'Test description',
         isActive: true,
@@ -298,14 +298,14 @@ void main() {
         const clockPort = Port(
           id: 'clock',
           name: 'Clock',
-          type: PortType.clock,
+          type: PortType.cv,
           direction: PortDirection.output,
         );
 
         const gatePort = Port(
           id: 'gate',
           name: 'Gate',
-          type: PortType.gate,
+          type: PortType.cv,
           direction: PortDirection.input,
         );
 
@@ -324,7 +324,7 @@ void main() {
         const gatePort = Port(
           id: 'gate',
           name: 'Gate',
-          type: PortType.gate,
+          type: PortType.cv,
           direction: PortDirection.input,
         );
 

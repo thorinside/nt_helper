@@ -1,0 +1,131 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>3</storyId>
+    <title>Add I/O Flags to Parameter Info</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/7-3-add-io-flags-to-parameter-info.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer maintaining the nt_helper routing system</asA>
+    <iWant>parameter I/O flags extracted from SysEx messages and stored in the ParameterInfo model</iWant>
+    <soThat>routing logic can determine input/output direction, audio/CV type, and output mode parameters from hardware data instead of pattern matching</soThat>
+    <tasks>
+- Task 1: Update ParameterInfo data model (AC-1)
+- Task 2: Update SysEx response parser (AC-2)
+- Task 3: Verify offline/mock behavior (AC-3)
+- Task 4: Update state management (AC-4)
+- Task 5: Update MCP tools (AC-5)
+- Task 6: Write unit tests (AC-6)
+- Task 7: Write integration tests (AC-7)
+- Task 8: Update documentation (AC-8)
+- Task 9: Code quality validation (AC-9)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC-1: Data Model Updates - Add ioFlags field to ParameterInfo with helper getters (isInput, isOutput, isAudio, isOutputMode), update equality/hashCode/toString, update filler() factory
+AC-2: SysEx Response Parsing - Extract powerOfTen from bits 0-1 and ioFlags from bits 2-5 of last byte in ParameterInfoResponse.parse()
+AC-3: Offline/Mock Mode Behavior - MockDistingMidiManager and OfflineDistingMidiManager return ioFlags = 0
+AC-4: State Management - DistingCubit propagates ioFlags through Slot model, parameter updates preserve ioFlags
+AC-5: MCP Integration - Add is_input, is_output, is_audio, is_output_mode fields to all MCP tool responses
+AC-6: Unit Testing - Test bit extraction, helper getters, equality, offline mode defaults
+AC-7: Integration Testing - Test with real hardware, verify Clock and Poly CV parameters
+AC-8: Documentation - Add inline comments explaining bit layout, update MCP API docs
+AC-9: Code Quality - flutter analyze passes, all tests pass
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/epic-7-context.md" title="Epic 7 Technical Context" section="Current State Analysis">
+        Firmware now encodes parameter I/O metadata in SysEx responses (commit 71bf796). Current ParameterInfo parsing extracts only powerOfTen from last byte; I/O flags in bits 2-5 are not extracted.
+      </doc>
+      <doc path="docs/parameter-flag-analysis-report.md" title="Parameter Flag Analysis" section="Protocol Analysis">
+        Documents flag encoding in parameter value messages (0x44/0x45). This story focuses on parameter info messages (0x43) which use similar bit-packing in the last byte.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture Document" section="SysEx Command Architecture">
+        MIDI communication layer with IDistingMidiManager hierarchy (Mock, Offline, Live implementations). SysEx parser dispatches messages to response handlers.
+      </doc>
+      <doc path="docs/architecture/coding-standards.md" title="Coding Standards" section="Code Quality">
+        Zero tolerance for flutter analyze warnings. Use debugPrint() not print(). Cubit pattern with freezed states.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/domain/disting_nt_sysex.dart" kind="data model" symbol="ParameterInfo" lines="67-141" reason="Data class that needs ioFlags field added">
+        Current implementation has powerOfTen field but missing ioFlags. Includes equality operator, hashCode, toString, and filler() factory that all need updates.
+      </artifact>
+      <artifact path="lib/domain/sysex/responses/parameter_info_response.dart" kind="parser" symbol="ParameterInfoResponse.parse" lines="12-23" reason="SysEx parser that extracts parameter info from hardware messages">
+        Currently extracts powerOfTen from data.last but doesn't extract I/O flags from bits 2-5. Needs bit extraction logic added.
+      </artifact>
+      <artifact path="lib/domain/mock_disting_midi_manager.dart" kind="service" symbol="MockDistingMidiManager" reason="Demo mode implementation - must return ioFlags=0">
+        Mock implementation for demo mode. Must ensure ioFlags defaults to 0 for all parameters.
+      </artifact>
+      <artifact path="lib/domain/offline_disting_midi_manager.dart" kind="service" symbol="OfflineDistingMidiManager" reason="Offline mode implementation - must return ioFlags=0">
+        Offline implementation with cached data. Must ensure ioFlags defaults to 0 until metadata is bundled.
+      </artifact>
+      <artifact path="lib/mcp/tools/disting_tools.dart" kind="mcp tool" symbol="DistingTools" lines="1-100" reason="MCP tool implementations that expose parameter data">
+        Contains get_parameter_value and related tools that need to include I/O flag fields in JSON responses.
+      </artifact>
+      <artifact path="lib/services/disting_controller.dart" kind="interface" symbol="DistingController" reason="Abstract interface for MCP operations">
+        Interface definition for controller operations. May need updates if parameter info structure changes.
+      </artifact>
+      <artifact path="lib/cubit/disting_cubit.dart" kind="state management" symbol="DistingCubit" reason="Primary state management - propagates parameter info">
+        Central state manager that receives ParameterInfo and propagates through Slot model to UI/routing layers.
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>SDK ^3.8.1</flutter>
+      <dart>flutter_bloc, freezed (state management)</dart>
+      <testing>flutter_test, mockito</testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - flutter analyze MUST pass with zero warnings before commit (zero tolerance policy)
+    - Use Cubit pattern with freezed for state management
+    - Use debugPrint() not print() for debugging
+    - Follow existing SysEx parsing patterns in response handlers
+    - Maintain backward compatibility - existing code must continue working
+    - Offline/Mock modes return ioFlags=0 (no metadata until future story bundles it)
+    - Bit extraction formula: powerOfTen = data.last &amp; 0x3; ioFlags = (data.last >> 2) &amp; 0xF
+    - Do not yet replace pattern matching in routing (Story 7.5 handles that)
+  </constraints>
+
+  <interfaces>
+    <interface name="ParameterInfo" kind="data class" signature="class ParameterInfo" path="lib/domain/disting_nt_sysex.dart">
+      Data model for parameter metadata. Must add ioFlags field and helper getters (isInput, isOutput, isAudio, isOutputMode). Update equality, hashCode, toString, filler() factory.
+    </interface>
+    <interface name="ParameterInfoResponse.parse()" kind="parser method" signature="ParameterInfo parse()" path="lib/domain/sysex/responses/parameter_info_response.dart">
+      SysEx response parser. Must extract both powerOfTen (bits 0-1) and ioFlags (bits 2-5) from last byte of data payload.
+    </interface>
+    <interface name="MCP get_parameter_value" kind="MCP tool" signature="Future&lt;String&gt; get_parameter_value(Map&lt;String,dynamic&gt;)" path="lib/mcp/tools/disting_tools.dart">
+      MCP tool that returns parameter info as JSON. Must add is_input, is_output, is_audio, is_output_mode boolean fields.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Uses flutter_test framework. Tests organized by layer: domain/sysex/responses/ for parsers, domain/ for data models, mcp/tools/ for MCP tools. Pattern: Create test data, call parser/method, assert results. Use mockito for mocking when needed.
+    </standards>
+    <locations>
+      test/domain/sysex/responses/ - SysEx response parser tests
+      test/domain/ - Data model tests (equality, hashCode, toString)
+      test/mcp/tools/ - MCP tool tests
+      test/services/ - Service layer tests
+    </locations>
+    <ideas>
+      - AC-6: Test powerOfTen extraction for values 0-3 (bits 0-1)
+      - AC-6: Test ioFlags extraction for values 0-15 (bits 2-5)
+      - AC-6: Test combined byte: 0x15 should yield powerOfTen=1, ioFlags=5
+      - AC-6: Test ParameterInfo equality with different ioFlags values
+      - AC-6: Test helper getters: isInput, isOutput, isAudio, isOutputMode
+      - AC-6: Test offline/mock managers return ioFlags=0
+      - AC-7: Integration test with real hardware (if available)
+      - AC-7: Test Clock algorithm input parameters have correct flags
+      - AC-7: Test output parameters have correct flags
+    </ideas>
+  </tests>
+</story-context>

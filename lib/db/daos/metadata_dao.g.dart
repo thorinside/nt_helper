@@ -12,5 +12,7 @@ mixin _$MetadataDaoMixin on DatabaseAccessor<AppDatabase> {
   $ParameterPagesTable get parameterPages => attachedDatabase.parameterPages;
   $ParameterPageItemsTable get parameterPageItems =>
       attachedDatabase.parameterPageItems;
+  $ParameterOutputModeUsageTable get parameterOutputModeUsage =>
+      attachedDatabase.parameterOutputModeUsage;
   $MetadataCacheTable get metadataCache => attachedDatabase.metadataCache;
 }

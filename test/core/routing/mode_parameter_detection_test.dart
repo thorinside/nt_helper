@@ -171,6 +171,7 @@ Slot _createLuaScriptSlot() {
       unit: 1, // enum
       name: 'Clock In',
       powerOfTen: 0,
+      ioFlags: 1, // isInput
     ),
     ParameterInfo(
       algorithmIndex: 0,
@@ -181,6 +182,7 @@ Slot _createLuaScriptSlot() {
       unit: 1, // enum
       name: 'Reset',
       powerOfTen: 0,
+      ioFlags: 1, // isInput
     ),
     // Output parameters with mode
     ParameterInfo(
@@ -192,6 +194,7 @@ Slot _createLuaScriptSlot() {
       unit: 1, // enum
       name: 'Gate Out',
       powerOfTen: 0,
+      ioFlags: 2, // isOutput
     ),
     ParameterInfo(
       algorithmIndex: 0,
@@ -202,6 +205,7 @@ Slot _createLuaScriptSlot() {
       unit: 1, // enum
       name: 'Pitch CV',
       powerOfTen: 0,
+      ioFlags: 6, // isOutput | isAudio
     ),
     // Mode parameters
     ParameterInfo(
@@ -213,6 +217,7 @@ Slot _createLuaScriptSlot() {
       unit: 1, // enum
       name: 'Gate Out mode',
       powerOfTen: 0,
+      ioFlags: 8, // isOutputMode
     ),
     ParameterInfo(
       algorithmIndex: 0,
@@ -223,6 +228,7 @@ Slot _createLuaScriptSlot() {
       unit: 1, // enum
       name: 'Pitch CV mode',
       powerOfTen: 0,
+      ioFlags: 8, // isOutputMode
     ),
   ];
 
@@ -288,6 +294,7 @@ Slot _createSimpleAlgorithmSlot() {
       unit: 1, // enum
       name: 'Input',
       powerOfTen: 0,
+      ioFlags: 1, // isInput
     ),
     ParameterInfo(
       algorithmIndex: 0,
@@ -298,6 +305,7 @@ Slot _createSimpleAlgorithmSlot() {
       unit: 1, // enum
       name: 'Output',
       powerOfTen: 0,
+      ioFlags: 2, // isOutput
     ),
   ];
 

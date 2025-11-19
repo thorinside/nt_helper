@@ -89,7 +89,7 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
           Port(
             id: '${algorithmUuid}_channel_${channel}_es5_output',
             name: 'Ch$channel → ES-5 $es5OutputValue',
-            type: PortType.gate,
+            type: PortType.cv, // Clock divider outputs are CV (Story 7.5)
             direction: PortDirection.output,
             description: 'Direct to ES-5 Output $es5OutputValue',
             busParam: Es5DirectOutputAlgorithmRouting
@@ -110,7 +110,7 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
             Port(
               id: '${algorithmUuid}_channel_${channel}_output',
               name: 'Channel $channel',
-              type: PortType.gate,
+              type: PortType.cv, // Clock divider outputs are CV (Story 7.5)
               direction: PortDirection.output,
               description: 'Gate output for channel $channel',
               busValue: outputParam.value,

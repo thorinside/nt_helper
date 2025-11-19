@@ -210,10 +210,12 @@ class RoutingFactory {
         return PortType.audio;
       case 'cv':
         return PortType.cv;
+      // Note: gate and clock types were removed in Story 7.5
+      // They were artificial types not present in hardware
+      // All gate/clock ports are now CV type (isAudio=false)
       case 'gate':
-        return PortType.gate;
       case 'clock':
-        return PortType.clock;
+        return PortType.cv;
       default:
         return null;
     }

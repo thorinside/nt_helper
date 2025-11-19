@@ -83,7 +83,7 @@ void main() {
         final json = {
           'id': 'deserialize_test',
           'name': 'Deserialize Test',
-          'type': 'gate',
+          'type': 'cv',
           'direction': 'bidirectional',
           'isActive': false,
           'isPolyVoice': true,
@@ -104,7 +104,7 @@ void main() {
         // Verify all properties are correctly deserialized
         expect(port.id, equals('deserialize_test'));
         expect(port.name, equals('Deserialize Test'));
-        expect(port.type, equals(PortType.gate));
+        expect(port.type, equals(PortType.cv));
         expect(port.direction, equals(PortDirection.bidirectional));
         expect(port.isActive, isFalse);
         expect(port.isPolyVoice, isTrue);
@@ -198,7 +198,7 @@ void main() {
         const maximalPort = Port(
           id: 'maximal',
           name: 'Maximal Port',
-          type: PortType.gate,
+          type: PortType.cv,
           direction: PortDirection.output,
           outputMode: OutputMode.replace,
           isPolyVoice: true,
@@ -311,7 +311,7 @@ void main() {
         const port = Port(
           id: 'type_safety_test',
           name: 'Type Safety Test',
-          type: PortType.gate,
+          type: PortType.cv,
           direction: PortDirection.bidirectional,
           isPolyVoice: true,
           voiceNumber: 6,

@@ -169,7 +169,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             Port(
               id: gatePortId,
               name: 'Gate $gateNumber',
-              type: PortType.gate,
+              type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
               direction: PortDirection.input,
               description: 'Gate/trigger input for gate $gateNumber',
               // Direct properties
@@ -312,24 +312,20 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
         return PortType.audio;
       case 'cv':
         return PortType.cv;
+      // Note: gate and clock types were removed in Story 7.5
+      // They were artificial types not present in hardware
+      // All gate/clock ports are now CV type (isAudio=false)
       case 'gate':
-        return PortType.gate;
       case 'clock':
-        return PortType.clock;
+        return PortType.cv;
     }
     return null;
   }
 
   @override
   bool validateConnection(Port source, Port destination) {
-    // Gate connections have special rules that override base validation
-    if (source.type == PortType.gate || destination.type == PortType.gate) {
-      if (!_validateGateConnection(source, destination)) {
-        return false;
-      }
-    }
     // Virtual CV connections need special handling
-    else if (_isVirtualCvPort(source) || _isVirtualCvPort(destination)) {
+    if (_isVirtualCvPort(source) || _isVirtualCvPort(destination)) {
       if (!_validateVirtualCvConnection(source, destination)) {
         return false;
       }
@@ -366,39 +362,18 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     }
   }
 
-  /// Validates gate-specific connections
-  bool _validateGateConnection(Port source, Port destination) {
-    // Gate outputs can connect to gate inputs
-    if (source.type == PortType.gate && destination.type == PortType.gate) {
-      return source.isOutput && destination.isInput;
-    }
-
-    // Gate signals can also trigger CV inputs (gate-to-CV conversion)
-    if (source.type == PortType.gate && destination.type == PortType.cv) {
-      return source.isOutput && destination.isInput;
-    }
-
-    // Clock signals can trigger gates
-    if (source.type == PortType.clock && destination.type == PortType.gate) {
-      return source.isOutput && destination.isInput;
-    }
-
-    return false;
-  }
-
   /// Validates virtual CV connections
   bool _validateVirtualCvConnection(Port source, Port destination) {
     // Virtual CV ports should only connect to CV or audio ports
+    // Note: In Eurorack, all signals are voltage-based, so CV and audio are compatible
     if (_isVirtualCvPort(source)) {
       return destination.type == PortType.cv ||
-          destination.type == PortType.audio ||
-          destination.type == PortType.gate;
+          destination.type == PortType.audio;
     }
 
     if (_isVirtualCvPort(destination)) {
       return source.type == PortType.cv ||
-          source.type == PortType.audio ||
-          source.type == PortType.gate;
+          source.type == PortType.audio;
     }
 
     return true;
@@ -519,31 +494,24 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
         continue;
       }
 
-      // Determine if this is an input or output based on parameter name
-      final lowerName = paramName.toLowerCase();
-      final isOutput =
-          lowerName.contains('output') && !lowerName.contains('mode');
+      // Get parameter info to access I/O flags
+      final paramInfo = paramsByName[paramName];
+      if (paramInfo == null) continue;
+
+      // Use I/O flags from hardware metadata to determine direction
+      final isOutput = paramInfo.isOutput;
+      final isInput = paramInfo.isInput;
+
+      // Skip parameters that are not I/O parameters (no I/O flags set)
+      if (!isOutput && !isInput) continue;
 
       // Skip unconnected parameters only for inputs (outputs should always be shown)
       if (busValue == 0 && !isOutput) continue;
 
-      // Get parameter number for unique ID generation
-      final paramInfo = paramsByName[paramName];
-      final paramNumber = paramInfo?.parameterNumber ?? 0;
+      final paramNumber = paramInfo.parameterNumber;
 
-      // Infer port type from parameter name
-      String portType = 'audio';
-      if (lowerName.contains('cv') ||
-          lowerName.contains('pitchbend') ||
-          lowerName.contains('wave')) {
-        portType = 'cv';
-      } else if (lowerName.contains('gate') ||
-          lowerName.contains('reset') ||
-          lowerName.contains('trigger')) {
-        portType = 'gate';
-      } else if (lowerName.contains('clock')) {
-        portType = 'clock';
-      }
+      // Determine port type from isAudio flag (cosmetic only - affects port color)
+      String portType = paramInfo.isAudio ? 'audio' : 'cv';
 
       final port = {
         'id':
@@ -556,7 +524,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       };
 
       if (isOutput) {
-        // Add channel metadata for stereo outputs
+        // Add channel metadata for stereo outputs (still uses name pattern - not I/O related)
+        final lowerName = paramName.toLowerCase();
         if (lowerName.contains('left')) {
           port['channel'] = 'left';
         } else if (lowerName.contains('right')) {

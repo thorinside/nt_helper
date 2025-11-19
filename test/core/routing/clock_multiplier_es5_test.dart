@@ -136,7 +136,7 @@ void main() {
         expect(outputPorts[0].name, equals('Ch1 → ES-5 3'));
         expect(outputPorts[0].busParam, equals('es5_direct'));
         expect(outputPorts[0].channelNumber, equals(3));
-        expect(outputPorts[0].type, equals(PortType.gate));
+        expect(outputPorts[0].type, equals(PortType.cv));
         expect(outputPorts[0].direction, equals(PortDirection.output));
       });
 
@@ -208,7 +208,7 @@ void main() {
           equals('Output'),
         ); // Single-channel uses parameter name
         expect(outputPorts[0].busValue, equals(13));
-        expect(outputPorts[0].type, equals(PortType.gate));
+        expect(outputPorts[0].type, equals(PortType.cv));
         expect(outputPorts[0].direction, equals(PortDirection.output));
         // busParam should NOT be set in normal mode
         expect(outputPorts[0].busParam, isNull);
@@ -258,7 +258,7 @@ void main() {
         expect(inputPorts, hasLength(1));
         expect(inputPorts[0].name, equals('Clock input'));
         expect(inputPorts[0].busValue, equals(1));
-        expect(inputPorts[0].type, equals(PortType.clock));
+        expect(inputPorts[0].type, equals(PortType.cv));
         expect(inputPorts[0].direction, equals(PortDirection.input));
       });
     });

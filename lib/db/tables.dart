@@ -56,7 +56,6 @@ class Parameters extends Table {
   // null = no data available, 0 = all flags off, 1-15 = various flag combinations
   IntColumn get ioFlags => integer().nullable()();
 
-  // --- NEW COLUMN ---
   // Stores the original unit index (0, 1, 2, etc.) from the device protocol
   IntColumn get rawUnitIndex => integer().nullable()();
 

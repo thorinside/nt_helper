@@ -23,7 +23,7 @@ void main() {
         const port = core_port.Port(
           id: 'gate_port',
           name: 'Gate Input',
-          type: core_port.PortType.gate,
+          type: core_port.PortType.cv,
           direction: core_port.PortDirection.input,
           isPolyVoice: true,
           busValue: 9,
@@ -106,7 +106,7 @@ void main() {
         const gatePort = core_port.Port(
           id: 'gate_example',
           name: 'Gate Example',
-          type: core_port.PortType.gate,
+          type: core_port.PortType.cv,
           direction: core_port.PortDirection.input,
           isPolyVoice: true,
           busValue: 9, // Gate 1 on bus 9
@@ -196,7 +196,7 @@ void main() {
         const precedencePort = core_port.Port(
           id: 'precedence_port',
           name: 'Precedence Port',
-          type: core_port.PortType.gate,
+          type: core_port.PortType.cv,
           direction: core_port.PortDirection.input,
           busParam: 'Gate input', // Strategy 1 - should take precedence
           isPolyVoice: true,

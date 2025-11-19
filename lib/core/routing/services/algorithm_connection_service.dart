@@ -144,20 +144,22 @@ class AlgorithmConnectionService {
     final inputBuses = <String, int>{};
     final outputBuses = <String, int>{};
 
-    // Extract bus assignments from common parameter patterns
+    // Extract bus assignments using I/O flags from hardware metadata
     for (final param in slot.parameters) {
-      final paramName = param.name.toLowerCase();
       final busValue =
           valueByParam[param.parameterNumber] ?? param.defaultValue;
 
       // Skip "None" bus assignments (typically 0)
       if (busValue < _minBusNumber || busValue > _maxBusNumber) continue;
 
-      if (_isOutputParameter(paramName)) {
+      // Use I/O flags to determine parameter direction
+      // Only create bus assignments for parameters explicitly marked as I/O
+      if (param.isOutput) {
         outputBuses[param.name] = busValue;
-      } else if (_isInputParameter(paramName)) {
+      } else if (param.isInput) {
         inputBuses[param.name] = busValue;
       }
+      // Parameters without I/O flags are not I/O parameters, skip them
     }
 
     return _SlotBusInfo(
@@ -166,18 +168,6 @@ class AlgorithmConnectionService {
       inputBuses: inputBuses,
       outputBuses: outputBuses,
     );
-  }
-
-  /// Determines if a parameter name indicates an output parameter.
-  bool _isOutputParameter(String paramName) {
-    final lower = paramName.toLowerCase();
-    return lower.contains('output') && !lower.contains('input');
-  }
-
-  /// Determines if a parameter name indicates an input parameter.
-  bool _isInputParameter(String paramName) {
-    final lower = paramName.toLowerCase();
-    return lower.contains('input') && !lower.contains('output');
   }
 
   /// Finds connections between source outputs and target inputs that share bus numbers.

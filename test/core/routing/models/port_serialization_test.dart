@@ -121,7 +121,7 @@ void main() {
         final originalPort = Port(
           id: 'edge_case_test',
           name: 'Edge Case Test',
-          type: PortType.gate,
+          type: PortType.cv,
           direction: PortDirection.bidirectional,
           // Edge case values
           voiceNumber: 0, // Zero voice number
@@ -286,7 +286,7 @@ void main() {
           final originalPort = Port(
             id: 'round_trip_test',
             name: 'Round Trip Test',
-            type: PortType.gate,
+            type: PortType.cv,
             direction: PortDirection.bidirectional,
             description: 'Testing round-trip serialization',
             outputMode: OutputMode.add,

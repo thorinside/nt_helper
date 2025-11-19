@@ -4,19 +4,20 @@ part 'port.freezed.dart';
 part 'port.g.dart';
 
 /// Enum representing the different types of ports in the routing system
+///
+/// In Eurorack systems, all signals are voltage-based. The distinction between
+/// audio and CV is cosmetic only - it affects visualization (port colors) but
+/// not connectivity or signal processing.
+///
+/// - audio: Displayed with warm colors (e.g., orange), typically shown as VU meters on hardware
+/// - cv: Displayed with cool colors (e.g., blue), typically shown as voltage values on hardware
 @JsonEnum()
 enum PortType {
-  /// Audio signal port
+  /// Audio signal port (warm color visualization)
   audio,
 
-  /// Control Voltage (CV) port
+  /// Control Voltage (CV) port (cool color visualization)
   cv,
-
-  /// Gate/trigger signal port
-  gate,
-
-  /// Digital/clock signal port
-  clock,
 }
 
 /// Enum representing the output mode for output ports

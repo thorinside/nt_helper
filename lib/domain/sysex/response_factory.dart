@@ -23,6 +23,7 @@ import 'package:nt_helper/domain/sysex/responses/directory_listing_response.dart
 import 'package:nt_helper/domain/sysex/responses/file_chunk_response.dart';
 import 'package:nt_helper/domain/sysex/responses/sd_status_response.dart';
 import 'package:nt_helper/domain/sysex/responses/lua_output_response.dart';
+import 'package:nt_helper/domain/sysex/responses/output_mode_usage_response.dart';
 
 class ResponseFactory {
   static SysexResponse? fromMessageType(
@@ -62,6 +63,8 @@ class ResponseFactory {
         return ParameterValueStringResponse(payload);
       case DistingNTRespMessageType.respParameterPages:
         return ParameterPagesResponse(payload);
+      case DistingNTRespMessageType.respOutputModeUsage:
+        return OutputModeUsageResponse(payload);
       case DistingNTRespMessageType.respNumAlgorithmsInPreset:
         return NumberOfAlgorithmsInPresetResponse(payload);
       case DistingNTRespMessageType.respRouting:

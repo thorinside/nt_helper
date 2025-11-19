@@ -1,0 +1,350 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>4</storyId>
+    <title>Synchronize Output Mode Usage Data</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/7-4-synchronize-output-mode-usage-data.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer maintaining the nt_helper routing system</asA>
+    <iWant>output mode usage relationships synchronized from the hardware via SysEx 0x55 messages</iWant>
+    <soThat>the routing editor can determine which parameters control output mode and which parameters are affected by those controls using hardware data instead of pattern matching</soThat>
+    <tasks>
+- Task 1: Add SysEx message type (AC-1)
+  - Add `respOutputModeUsage(0x55)` to `DistingNTRespMessageType` enum
+  - Add documentation comment for message type
+- Task 2: Implement request message (AC-2)
+  - Create `lib/domain/sysex/requests/request_output_mode_usage.dart`
+  - Implement constructor accepting slot and parameter number
+  - Implement 16-bit to three 7-bit byte encoding
+  - Generate complete SysEx message with proper framing
+  - Add unit tests for message generation
+- Task 3: Implement response message (AC-3)
+  - Create `lib/domain/sysex/responses/output_mode_usage_response.dart`
+  - Create `OutputModeUsage` data class
+  - Implement parsing of source parameter number
+  - Implement parsing of affected parameter count
+  - Implement parsing of affected parameter list
+  - Add unit tests for response parsing
+- Task 4: Update response factory (AC-4)
+  - Add case for `respOutputModeUsage` in `ResponseFactory`
+  - Return `OutputModeUsageResponse` instance
+  - Verify factory dispatch works correctly
+- Task 5: Implement automatic query mechanism (AC-5)
+  - Detect when `ParameterInfo.isOutputMode == true`
+  - Schedule `RequestOutputModeUsage` for that parameter
+  - Implement debounce to prevent duplicate queries
+  - Trigger queries during algorithm load and parameter sync
+  - Add unit tests for query triggering logic
+- Task 6: Update state management (AC-6)
+  - Add `outputModeMap` to slot/cubit state
+  - Store output mode relationships when response received
+  - Preserve data across parameter value updates
+  - Clear data when algorithm changes
+  - Add unit tests for state updates
+- Task 7: Verify offline/mock behavior (AC-7)
+  - Confirm mock manager doesn't trigger 0x55 queries
+  - Confirm offline manager doesn't trigger 0x55 queries
+  - Return empty relationships in offline modes
+  - Add code comments documenting offline behavior
+- Task 8: Implement MCP tools (AC-8)
+  - Create `get_output_mode_usage` tool
+  - Update `show` tool to include output mode data
+  - Update parameter search to include `controls_output_mode` flag
+  - Add MCP tool tests
+- Task 9: Write unit tests (AC-9)
+  - Test request message encoding for various parameter numbers
+  - Test response parsing with 0, 1, multiple affected parameters
+  - Test state updates when responses received
+  - Test offline/mock behavior
+  - Test debounce mechanism prevents duplicate queries
+- Task 10: Write integration tests (AC-10)
+  - Create hardware integration test for output mode queries
+  - Verify automatic querying when algorithm loads
+  - Verify relationships stored correctly
+  - Manual testing with various algorithms
+- Task 11: Update documentation (AC-11)
+  - Add inline comments explaining 0x55 format
+  - Document output mode usage concept
+  - Update MCP API guide with new tool
+  - Document online-only availability
+- Task 12: Code quality validation (AC-12)
+  - Run `flutter analyze` and fix warnings
+  - Run all tests and verify no regressions
+  - Verify SysEx patterns match existing code
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC-1: SysEx Message Type Definition
+1. Add `respOutputModeUsage(0x55)` to `DistingNTRespMessageType` enum
+2. Add corresponding enum value with proper documentation
+
+AC-2: Request Message Implementation
+3. Create `RequestOutputModeUsage` class in `lib/domain/sysex/requests/`
+4. Constructor accepts `slotIndex` and `parameterNumber`
+5. Generates SysEx message: `[0xF0, 0x00, 0x21, 0x27, 0x6D, sysExId, 0x55, slot, (p>>14)&3, (p>>7)&0x7f, p&0x7f, 0xF7]`
+6. Parameter number encoded as 16-bit value split into three 7-bit bytes
+7. Follows existing SysEx request patterns in codebase
+
+AC-3: Response Message Implementation
+8. Create `OutputModeUsageResponse` class in `lib/domain/sysex/responses/`
+9. Parses response payload:
+   - Bytes 0-2: Source parameter number (16-bit, 7-bit encoded)
+   - Byte 3: Number of affected parameters
+   - Bytes 4+: List of affected parameter numbers (each 3 bytes, 7-bit encoded)
+10. Returns structured data: `OutputModeUsage` class with:
+    - `int sourceParameterNumber` - The mode control parameter
+    - `List<int> affectedParameterNumbers` - Parameters controlled by this mode
+11. Follows existing SysEx response patterns in codebase
+
+AC-4: Response Factory Integration
+12. Update `ResponseFactory` to handle `respOutputModeUsage` message type
+13. Return `OutputModeUsageResponse` instance for 0x55 messages
+14. Follow existing factory pattern for message type dispatch
+
+AC-5: Automatic Query Mechanism
+15. When `ParameterInfo` with `isOutputMode=true` is received, automatically queue request for output mode usage
+16. `DistingCubit` or MIDI manager schedules `RequestOutputModeUsage` for that parameter
+17. Debounce mechanism ensures only one query per parameter during sync operations
+18. Queries triggered during initial algorithm load and parameter info refresh
+
+AC-6: State Management
+19. Add `OutputModeUsage` data structure to store relationships:
+    - `Map<int, List<int>> outputModeMap` - Maps mode parameter number to affected parameter numbers
+20. `DistingCubit` stores output mode relationships per slot
+21. State updates when `OutputModeUsageResponse` is received
+22. Output mode data persists across parameter value updates
+23. Clear output mode data when algorithm changes or slot is cleared
+
+AC-7: Offline/Mock Mode Behavior
+24. `MockDistingMidiManager` returns empty output mode relationships (no data in mock mode)
+25. `OfflineDistingMidiManager` returns empty output mode relationships (no data in offline mode)
+26. Offline behavior does not trigger 0x55 queries (no hardware available)
+27. Offline behavior documented in code comments
+
+AC-8: MCP Integration
+28. Add `get_output_mode_usage` MCP tool accepting `slot` and `parameter_number`
+29. Returns JSON with:
+    - `source_parameter_number: int`
+    - `affected_parameters: array of int`
+30. Update `show` tool to include output mode relationships in slot details
+31. Parameter search results include `controls_output_mode: boolean` flag
+
+AC-9: Unit Testing
+32. Unit test verifies 0x55 request message generation with correct encoding
+33. Unit test verifies response parsing for single affected parameter
+34. Unit test verifies response parsing for multiple affected parameters
+35. Unit test verifies empty response (no affected parameters)
+36. Unit test verifies state updates when response received
+37. Unit test verifies offline/mock managers don't trigger queries
+
+AC-10: Integration Testing
+38. Integration test with real hardware verifies automatic querying
+39. Test algorithm with output mode parameters triggers 0x55 requests
+40. Test output mode relationships stored correctly in state
+41. Manual testing confirms data matches hardware behavior
+
+AC-11: Documentation
+42. Add inline code comments explaining 0x55 message format
+43. Document output mode usage concept: "mode parameter controls routing for affected parameters"
+44. Update MCP API documentation with `get_output_mode_usage` tool
+45. Document that output mode data is only available in online mode
+
+AC-12: Code Quality
+46. `flutter analyze` passes with zero warnings
+47. All existing tests pass with no regressions
+48. New code follows existing SysEx patterns
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epic-7-context.md</path>
+        <title>Epic 7: SysEx Updates - Technical Context</title>
+        <section>Current SysEx Infrastructure</section>
+        <snippet>Comprehensive overview of existing SysEx parser, response factory, and parameter info parsing. Shows current implementation extracts powerOfTen from last byte but misses I/O flags from bits 2-5.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epic-7-context.md</path>
+        <title>Epic 7: SysEx Updates - Technical Context</title>
+        <section>Routing Framework Architecture</section>
+        <snippet>Documents current pattern matching approach in routing (lines 748-766 of multi_channel_algorithm_routing.dart) that will be replaced by explicit hardware data in later stories.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Critical Files for Understanding the System</section>
+        <snippet>Entry points and key files: DistingCubit (primary state), IDistingMidiManager hierarchy (Mock/Offline/Live), SysEx request/response implementations, MCP server integration.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/7-3-add-io-flags-to-parameter-info.md</path>
+        <title>Story 7.3: Add I/O Flags to Parameter Info</title>
+        <section>Story Context</section>
+        <snippet>Prerequisite story that provides isOutputMode flag (bit 3 of I/O flags). Story 7.4 uses this flag to trigger 0x55 queries for output mode usage data.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>enum</kind>
+        <symbol>DistingNTRespMessageType</symbol>
+        <lines>all</lines>
+        <reason>Target location for adding respOutputModeUsage(0x55) enum value. Contains all SysEx response message type definitions.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>class</kind>
+        <symbol>ParameterInfo</symbol>
+        <lines>67-100</lines>
+        <reason>Data class with ioFlags field and isOutputMode getter (from Story 7.3). This flag triggers automatic 0x55 queries in Story 7.4.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/sysex/response_factory.dart</path>
+        <kind>factory</kind>
+        <symbol>ResponseFactory.fromMessageType</symbol>
+        <lines>28-95</lines>
+        <reason>Switch statement that dispatches message types to response classes. Must add case for respOutputModeUsage(0x55) → OutputModeUsageResponse.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/sysex/requests/request_parameter_info.dart</path>
+        <kind>class</kind>
+        <symbol>RequestParameterInfoMessage</symbol>
+        <lines>all</lines>
+        <reason>Reference implementation for SysEx request messages. Shows pattern for encoding 16-bit parameter numbers using encode16() utility.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/sysex/responses/parameter_info_response.dart</path>
+        <kind>class</kind>
+        <symbol>ParameterInfoResponse</symbol>
+        <lines>all</lines>
+        <reason>Reference implementation for SysEx response parsing. Shows pattern for decoding multi-byte values and extracting bitfields from payload.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>all</lines>
+        <reason>Primary application state management. Must add outputModeMap storage, automatic query triggering when isOutputMode=true, and state updates when responses received.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/mcp/tools/disting_tools.dart</path>
+        <kind>mcp-tools</kind>
+        <symbol>various MCP tool implementations</symbol>
+        <lines>all</lines>
+        <reason>MCP tool implementations for device control. Must add get_output_mode_usage tool and update show tool to expose output mode relationships.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/mock_disting_midi_manager.dart</path>
+        <kind>mock-manager</kind>
+        <symbol>MockDistingMidiManager</symbol>
+        <lines>all</lines>
+        <reason>Demo mode MIDI manager implementation. Should not trigger 0x55 queries and returns empty output mode relationships.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/offline_disting_midi_manager.dart</path>
+        <kind>offline-manager</kind>
+        <symbol>OfflineDistingMidiManager</symbol>
+        <lines>all</lines>
+        <reason>Offline mode MIDI manager with cached data. Should not trigger 0x55 queries and returns empty output mode relationships.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter" version="sdk" />
+        <package name="flutter_bloc" version="^9.1.1" />
+        <package name="equatable" version="^2.0.7" />
+        <package name="collection" version="^1.19.1" />
+      </flutter>
+      <dart>
+        <package name="freezed" version="^3.2.0" />
+        <package name="json_serializable" version="^6.10.0" />
+        <package name="build_runner" version="^2.7.1" />
+      </dart>
+      <testing>
+        <package name="mocktail" version="^1.0.4" />
+        <package name="bloc_test" version="^10.0.0" />
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Follow existing SysEx request/response patterns in lib/domain/sysex/
+- Use encode16() and decode16() utilities from sysex_utils.dart for 16-bit parameter encoding
+- Use buildHeader() and buildFooter() from SysexMessage for message framing
+- All SysEx messages must use 7-bit encoding (values 0-127 only, no 0x80-0xFF)
+- Parameter numbers are 16-bit values encoded as three 7-bit bytes: p_high (bits 14-15), p_mid (bits 7-13), p_low (bits 0-6)
+- DistingCubit is central state manager - all output mode data stored per slot in cubit state
+- Cubit pattern throughout: use BlocBuilder/BlocListener, emit new states via copyWith
+- Mock and Offline managers must never trigger hardware queries (online-only feature)
+- flutter analyze must pass with zero warnings
+- All tests must pass before commit
+- Use freezed for immutable state classes where appropriate
+- MCP tools return JSON, use camelCase for JSON keys
+- Code comments required for complex SysEx parsing logic
+  </constraints>
+
+  <interfaces>
+- interface: IDistingMidiManager
+  kind: abstract-class
+  signature: Future<void> sendMessage(SysexMessage message); Stream<SysexResponse> get responseStream;
+  path: lib/domain/i_disting_midi_manager.dart
+
+- interface: SysexMessage.encode()
+  kind: method
+  signature: Uint8List encode(); // Returns complete SysEx message bytes including 0xF0 start and 0xF7 end
+  path: lib/domain/sysex/sysex_message.dart
+
+- interface: SysexResponse.parse()
+  kind: method
+  signature: T parse(); // Parses payload data and returns typed data structure
+  path: lib/domain/sysex/responses/sysex_response.dart
+
+- interface: ResponseFactory.fromMessageType
+  kind: factory-method
+  signature: static SysexResponse? fromMessageType(DistingNTRespMessageType type, Uint8List payload);
+  path: lib/domain/sysex/response_factory.dart
+
+- interface: DistingCubit state management
+  kind: cubit-pattern
+  signature: void emit(DistingState newState); // Emit state updates via copyWith pattern
+  path: lib/cubit/disting_cubit.dart
+
+- interface: MCP Tool JSON schema
+  kind: json-api
+  signature: { "source_parameter_number": int, "affected_parameters": [int, ...] }
+  path: lib/mcp/tools/disting_tools.dart
+  </interfaces>
+
+  <tests>
+    <standards>
+Uses flutter test framework with mocktail for mocking and bloc_test for cubit testing. Tests are organized in test/ directory mirroring lib/ structure. Unit tests focus on individual classes (request encoding, response parsing, state updates). Integration tests verify end-to-end flows with real or simulated hardware. All tests must pass before commit. Use arrange-act-assert pattern. Mock external dependencies (MIDI managers, hardware responses).
+    </standards>
+    <locations>
+test/domain/sysex/requests/ - Request message unit tests
+test/domain/sysex/responses/ - Response parsing unit tests
+test/cubit/ - Cubit state management tests
+test/integration/ - Hardware integration tests
+test/mcp/ - MCP tool tests
+    </locations>
+    <ideas>
+AC-2 Tests: Test RequestOutputModeUsage encoding for parameter numbers: 0, 1, 42, 100, 1000, 16383 (max). Verify correct 3-byte 7-bit encoding: p_high=(p>>14)&3, p_mid=(p>>7)&0x7F, p_low=p&0x7F. Verify SysEx framing (0xF0 start, 0xF7 end).
+
+AC-3 Tests: Test OutputModeUsageResponse parsing for: empty list (count=0), single affected parameter (count=1), multiple parameters (count=4). Verify sourceParameterNumber decoded correctly. Verify affectedParameterNumbers list length matches count. Test malformed payload handling.
+
+AC-5 Tests: Mock ParameterInfo with isOutputMode=true, verify RequestOutputModeUsage queued. Mock rapid parameter info responses, verify debounce prevents duplicate queries. Test algorithm change clears debounce cache.
+
+AC-6 Tests: Mock OutputModeUsageResponse received, verify cubit state updated with outputModeMap entry. Test parameter value change preserves output mode data. Test algorithm change clears output mode data. Test slot clear removes output mode data.
+
+AC-7 Tests: Verify MockDistingMidiManager doesn't send 0x55 requests when isOutputMode=true. Verify OfflineDistingMidiManager doesn't send 0x55 requests. Verify both return empty Map for output mode queries.
+
+AC-8 Tests: Test get_output_mode_usage MCP tool returns correct JSON structure. Test show tool includes outputModeRelationships in slot JSON. Test parameter search includes controls_output_mode boolean. Mock cubit state with output mode data, verify MCP tools return it correctly.
+
+Integration Test: Load algorithm with known output mode parameter (e.g., "Poly CV" algorithm). Verify 0x55 request sent automatically. Inject mock 0x55 response. Verify outputModeMap updated in cubit. Query via MCP tool, verify data returned.
+    </ideas>
+  </tests>
+</story-context>

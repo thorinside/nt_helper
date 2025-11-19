@@ -384,10 +384,6 @@ class ConnectionDiscoveryService {
         return SignalType.audio;
       case PortType.cv:
         return SignalType.cv;
-      case PortType.gate:
-        return SignalType.gate;
-      case PortType.clock:
-        return SignalType.trigger; // Map clock to trigger
     }
   }
 

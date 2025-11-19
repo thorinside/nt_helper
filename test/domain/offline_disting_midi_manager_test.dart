@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/db/database.dart';
@@ -400,6 +400,222 @@ void main() {
       expect(paramInfo.unit, 3); // rawUnitIndex
       expect(paramInfo.powerOfTen, 2);
       expect(paramInfo.ioFlags, 12);
+    });
+  });
+
+  group('OfflineDistingMidiManager requestOutputModeUsage Tests', () {
+    late AppDatabase database;
+    late OfflineDistingMidiManager manager;
+
+    setUp(() {
+      database = AppDatabase.forTesting(NativeDatabase.memory());
+      manager = OfflineDistingMidiManager(database);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test('DAO getOutputModeUsage retrieves data correctly from database', () async {
+      // Insert test algorithm
+      await database.into(database.algorithms).insert(
+            AlgorithmsCompanion(
+              guid: const Value('test'),
+              name: const Value('Test Algorithm'),
+              numSpecifications: const Value(0),
+            ),
+          );
+
+      // Insert output mode usage data
+      await database.into(database.parameterOutputModeUsage).insert(
+            ParameterOutputModeUsageCompanion(
+              algorithmGuid: const Value('test'),
+              parameterNumber: const Value(0),
+              affectedOutputNumbers: const Value([1, 2, 3]),
+            ),
+          );
+
+      // Query via DAO
+      final result = await database.metadataDao.getOutputModeUsage('test', 0);
+
+      // Verify data is retrieved correctly
+      expect(result, isNotNull);
+      expect(result, equals([1, 2, 3]));
+    });
+
+    test('DAO getOutputModeUsage returns null when no data exists', () async {
+      // Query for non-existent data
+      final result = await database.metadataDao.getOutputModeUsage('test', 0);
+
+      // Verify null is returned
+      expect(result, isNull);
+    });
+
+    test('requestOutputModeUsage returns OutputModeUsage when data exists', () async {
+      // Insert test algorithm
+      await database.into(database.algorithms).insert(
+            AlgorithmsCompanion(
+              guid: const Value('test'),
+              name: const Value('Test Algorithm'),
+              numSpecifications: const Value(0),
+            ),
+          );
+
+      // Insert output mode usage data
+      await database.into(database.parameterOutputModeUsage).insert(
+            ParameterOutputModeUsageCompanion(
+              algorithmGuid: const Value('test'),
+              parameterNumber: const Value(2),
+              affectedOutputNumbers: const Value([5, 6]),
+            ),
+          );
+
+      // Initialize manager with preset
+      final preset = await database.presetsDao.saveFullPreset(
+        FullPresetDetails(
+          preset: PresetEntry(
+            id: -1,
+            name: 'Test Preset',
+            lastModified: DateTime.now(),
+            isTemplate: false,
+          ),
+          slots: [
+            FullPresetSlot(
+              slot: PresetSlotEntry(
+                id: -1,
+                presetId: -1,
+                slotIndex: 0,
+                algorithmGuid: 'test',
+                customName: null,
+              ),
+              algorithm: AlgorithmEntry(
+                guid: 'test',
+                name: 'Test Algorithm',
+                numSpecifications: 0,
+                pluginFilePath: null,
+              ),
+              parameterValues: {},
+              parameterStringValues: {},
+              mappings: {},
+            ),
+          ],
+        ),
+      );
+
+      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
+      await manager.initializeFromDb(presetDetails);
+
+      // Request output mode usage
+      final result = await manager.requestOutputModeUsage(0, 2);
+
+      // Verify OutputModeUsage is returned with correct data
+      expect(result, isNotNull);
+      expect(result!.parameterNumber, equals(2));
+      expect(result.affectedParameterNumbers, equals([5, 6]));
+    });
+
+    test('requestOutputModeUsage returns null when no data in database', () async {
+      // Insert test algorithm with no output mode usage data
+      await database.into(database.algorithms).insert(
+            AlgorithmsCompanion(
+              guid: const Value('test'),
+              name: const Value('Test Algorithm'),
+              numSpecifications: const Value(0),
+            ),
+          );
+
+      // Initialize manager with preset
+      final preset = await database.presetsDao.saveFullPreset(
+        FullPresetDetails(
+          preset: PresetEntry(
+            id: -1,
+            name: 'Test Preset',
+            lastModified: DateTime.now(),
+            isTemplate: false,
+          ),
+          slots: [
+            FullPresetSlot(
+              slot: PresetSlotEntry(
+                id: -1,
+                presetId: -1,
+                slotIndex: 0,
+                algorithmGuid: 'test',
+                customName: null,
+              ),
+              algorithm: AlgorithmEntry(
+                guid: 'test',
+                name: 'Test Algorithm',
+                numSpecifications: 0,
+                pluginFilePath: null,
+              ),
+              parameterValues: {},
+              parameterStringValues: {},
+              mappings: {},
+            ),
+          ],
+        ),
+      );
+
+      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
+      await manager.initializeFromDb(presetDetails);
+
+      // Request output mode usage for non-existent parameter
+      final result = await manager.requestOutputModeUsage(0, 99);
+
+      // Verify null is returned (graceful fallback)
+      expect(result, isNull);
+    });
+
+    test('requestOutputModeUsage returns invalid index handling', () async {
+      // Insert test algorithm
+      await database.into(database.algorithms).insert(
+            AlgorithmsCompanion(
+              guid: const Value('test'),
+              name: const Value('Test Algorithm'),
+              numSpecifications: const Value(0),
+            ),
+          );
+
+      // Initialize manager with preset
+      final preset = await database.presetsDao.saveFullPreset(
+        FullPresetDetails(
+          preset: PresetEntry(
+            id: -1,
+            name: 'Test Preset',
+            lastModified: DateTime.now(),
+            isTemplate: false,
+          ),
+          slots: [
+            FullPresetSlot(
+              slot: PresetSlotEntry(
+                id: -1,
+                presetId: -1,
+                slotIndex: 0,
+                algorithmGuid: 'test',
+                customName: null,
+              ),
+              algorithm: AlgorithmEntry(
+                guid: 'test',
+                name: 'Test Algorithm',
+                numSpecifications: 0,
+                pluginFilePath: null,
+              ),
+              parameterValues: {},
+              parameterStringValues: {},
+              mappings: {},
+            ),
+          ],
+        ),
+      );
+
+      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
+      await manager.initializeFromDb(presetDetails);
+
+      // Request with invalid algorithm index
+      final result = await manager.requestOutputModeUsage(999, 0);
+
+      // Verify graceful handling (null or exception caught)
+      expect(result, isNull);
     });
   });
 }

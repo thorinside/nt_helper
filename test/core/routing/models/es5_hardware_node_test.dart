@@ -64,7 +64,7 @@ void main() {
         for (int i = 1; i <= 8; i++) {
           final port = ports.firstWhere((p) => p.id == 'es5_$i');
           expect(port.name, equals('$i'));
-          expect(port.type, equals(PortType.gate));
+          expect(port.type, equals(PortType.cv));
           expect(port.direction, equals(PortDirection.input));
           expect(port.description, equals('ES-5 Output $i'));
           expect(port.busValue, isNull);
@@ -170,7 +170,7 @@ void main() {
           final port = ES5HardwareNode.getNumberedPort(i);
           expect(port.id, equals('es5_$i'));
           expect(port.name, equals('$i'));
-          expect(port.type, equals(PortType.gate));
+          expect(port.type, equals(PortType.cv));
           expect(port.direction, equals(PortDirection.input));
           expect(port.busValue, isNull);
           expect(port.isPhysical, isTrue);
@@ -244,7 +244,7 @@ void main() {
         final gatePorts = ports.skip(2);
 
         expect(audioPorts.every((p) => p.type == PortType.audio), isTrue);
-        expect(gatePorts.every((p) => p.type == PortType.gate), isTrue);
+        expect(gatePorts.every((p) => p.type == PortType.cv), isTrue);
       });
     });
   });

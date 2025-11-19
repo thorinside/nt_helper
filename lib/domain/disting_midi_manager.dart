@@ -28,6 +28,7 @@ import 'package:nt_helper/domain/sysex/requests/request_parameter_info.dart';
 import 'package:nt_helper/domain/sysex/requests/request_parameter_pages.dart';
 import 'package:nt_helper/domain/sysex/requests/request_parameter_value.dart';
 import 'package:nt_helper/domain/sysex/requests/request_parameter_value_string.dart';
+import 'package:nt_helper/domain/sysex/requests/request_output_mode_usage.dart';
 import 'package:nt_helper/domain/sysex/requests/request_preset_name.dart';
 import 'package:nt_helper/domain/sysex/requests/request_routing_information.dart';
 import 'package:nt_helper/domain/sysex/requests/request_unit_strings.dart';
@@ -386,6 +387,31 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       key,
       responseExpectation: ResponseExpectation.required,
+    );
+  }
+
+  @override
+  Future<OutputModeUsage?> requestOutputModeUsage(
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
+    final message = RequestOutputModeUsageMessage(
+      sysExId: sysExId,
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+    );
+    final packet = message.encode();
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respOutputModeUsage,
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+    );
+
+    return await _scheduler.sendRequest<OutputModeUsage>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.optional,
     );
   }
 
