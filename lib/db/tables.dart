@@ -51,6 +51,11 @@ class Parameters extends Table {
       integer().nullable().references(Units, #id)(); // FK to Units table
   IntColumn get powerOfTen => integer().nullable()();
 
+  // Stores I/O flags from firmware (bits 2-5 of last byte in parameter info SysEx)
+  // Bit 2: isInput, Bit 3: isOutput, Bit 4: isAudio, Bit 5: isOutputMode
+  // null = no data available, 0 = all flags off, 1-15 = various flag combinations
+  IntColumn get ioFlags => integer().nullable()();
+
   // --- NEW COLUMN ---
   // Stores the original unit index (0, 1, 2, etc.) from the device protocol
   IntColumn get rawUnitIndex => integer().nullable()();
@@ -98,6 +103,25 @@ class ParameterPageItems extends Table {
   @override
   List<String> get customConstraints => [
     'FOREIGN KEY (algorithm_guid, page_index) REFERENCES parameter_pages (algorithm_guid, page_index)',
+    'FOREIGN KEY (algorithm_guid, parameter_number) REFERENCES parameters (algorithm_guid, parameter_number)',
+  ];
+}
+
+// Stores which output numbers are affected by parameters with isOutputMode flag
+// Used to track parameter-to-output relationships for offline metadata
+@DataClassName('ParameterOutputModeUsageEntry')
+class ParameterOutputModeUsage extends Table {
+  TextColumn get algorithmGuid =>
+      text().references(Algorithms, #guid)(); // FK to Algorithms
+  IntColumn get parameterNumber => integer()(); // Parameter number
+  // JSON array of output numbers affected by this parameter (e.g., "[1, 2, 3]")
+  TextColumn get affectedOutputNumbers => text().map(const IntListConverter())();
+
+  @override
+  Set<Column> get primaryKey => {algorithmGuid, parameterNumber};
+
+  @override
+  List<String> get customConstraints => [
     'FOREIGN KEY (algorithm_guid, parameter_number) REFERENCES parameters (algorithm_guid, parameter_number)',
   ];
 }

@@ -46,6 +46,9 @@ class MetadataImportService {
       await _importParameterPageItems(
         tables['parameterPageItems'] as List<dynamic>?,
       );
+      await _importParameterOutputModeUsage(
+        tables['parameterOutputModeUsage'] as List<dynamic>?,
+      );
       await _importMetadataCache(tables['metadataCache'] as List<dynamic>?);
 
       // Log import summary
@@ -157,6 +160,15 @@ class MetadataImportService {
     final entries = <ParametersCompanion>[];
 
     for (final paramData in paramsList) {
+      // Read and validate ioFlags field (version 2+ export format)
+      // null = no data available, 0-15 = valid flag combinations
+      // Missing field (old v1 format) is treated as null
+      int? ioFlags = paramData['ioFlags'] as int?;
+      if (ioFlags != null && (ioFlags < 0 || ioFlags > 15)) {
+        // Invalid flag value outside valid range - treat as null (no data)
+        ioFlags = null;
+      }
+
       entries.add(
         ParametersCompanion(
           algorithmGuid: Value(paramData['algorithmGuid'] as String),
@@ -168,6 +180,7 @@ class MetadataImportService {
           unitId: Value(paramData['unitId'] as int?),
           powerOfTen: Value(paramData['powerOfTen'] as int?),
           rawUnitIndex: Value(paramData['rawUnitIndex'] as int?),
+          ioFlags: Value(ioFlags), // I/O flags from firmware (null or 0-15)
         ),
       );
     }
@@ -254,6 +267,36 @@ class MetadataImportService {
     await database.batch((batch) {
       batch.insertAll(
         database.parameterPageItems,
+        entries,
+        mode: InsertMode.insertOrReplace,
+      );
+    });
+  }
+
+  Future<void> _importParameterOutputModeUsage(
+    List<dynamic>? usageList,
+  ) async {
+    if (usageList == null || usageList.isEmpty) {
+      return;
+    }
+
+    final entries = <ParameterOutputModeUsageCompanion>[];
+
+    for (final usageData in usageList) {
+      entries.add(
+        ParameterOutputModeUsageCompanion(
+          algorithmGuid: Value(usageData['algorithmGuid'] as String),
+          parameterNumber: Value(usageData['parameterNumber'] as int),
+          affectedOutputNumbers: Value(
+            usageData['affectedOutputNumbers'] as List<int>,
+          ),
+        ),
+      );
+    }
+
+    await database.batch((batch) {
+      batch.insertAll(
+        database.parameterOutputModeUsage,
         entries,
         mode: InsertMode.insertOrReplace,
       );

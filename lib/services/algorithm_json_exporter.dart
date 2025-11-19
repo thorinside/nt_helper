@@ -119,12 +119,14 @@ class AlgorithmJsonExporter {
       final parameterEnums = await dao.getAllParameterEnums();
       final parameterPages = await dao.getAllParameterPages();
       final parameterPageItems = await dao.getAllParameterPageItems();
+      final parameterOutputModeUsage =
+          await database.select(database.parameterOutputModeUsage).get();
       final metadataCache = await dao.getMetadataCacheEntries();
 
       // Build the complete export structure
       final Map<String, dynamic> exportJson = {
         'exportDate': DateTime.now().toIso8601String(),
-        'exportVersion': 1,
+        'exportVersion': 2, // Incremented for ioFlags column in Parameters table
         'exportType': 'full_metadata',
         'debugExport': true,
         'tables': {
@@ -173,6 +175,7 @@ class AlgorithmJsonExporter {
                   'unitId': p.unitId,
                   'powerOfTen': p.powerOfTen,
                   'rawUnitIndex': p.rawUnitIndex,
+                  'ioFlags': p.ioFlags, // I/O flags from firmware (null or 0-15)
                 },
               )
               .toList(),
@@ -211,6 +214,17 @@ class AlgorithmJsonExporter {
               )
               .toList(),
 
+          // Parameter output mode usage tracks which outputs are affected by output mode parameters
+          'parameterOutputModeUsage': parameterOutputModeUsage
+              .map(
+                (p) => {
+                  'algorithmGuid': p.algorithmGuid,
+                  'parameterNumber': p.parameterNumber,
+                  'affectedOutputNumbers': p.affectedOutputNumbers,
+                },
+              )
+              .toList(),
+
           // Metadata cache (no references)
           'metadataCache': metadataCache
               .map((c) => {'cacheKey': c.cacheKey, 'cacheValue': c.cacheValue})
@@ -224,6 +238,7 @@ class AlgorithmJsonExporter {
           'totalParameterEnums': parameterEnums.length,
           'totalParameterPages': parameterPages.length,
           'totalParameterPageItems': parameterPageItems.length,
+          'totalParameterOutputModeUsage': parameterOutputModeUsage.length,
           'totalCacheEntries': metadataCache.length,
         },
       };
@@ -258,6 +273,8 @@ class AlgorithmJsonExporter {
       final parameterEnums = await dao.getAllParameterEnums();
       final parameterPages = await dao.getAllParameterPages();
       final parameterPageItems = await dao.getAllParameterPageItems();
+      final parameterOutputModeUsage =
+          await database.select(database.parameterOutputModeUsage).get();
       final metadataCache = await dao.getMetadataCacheEntries();
 
       // Estimate size (rough approximation)
@@ -269,6 +286,7 @@ class AlgorithmJsonExporter {
           parameterEnums.length * 0.2 +
           parameterPages.length * 0.2 +
           parameterPageItems.length * 0.1 +
+          parameterOutputModeUsage.length * 0.15 +
           metadataCache.length * 0.5);
 
       return {
@@ -282,6 +300,7 @@ class AlgorithmJsonExporter {
           'parameterEnums': parameterEnums.length,
           'parameterPages': parameterPages.length,
           'parameterPageItems': parameterPageItems.length,
+          'parameterOutputModeUsage': parameterOutputModeUsage.length,
           'metadataCache': metadataCache.length,
         },
         'estimatedSizeKB': estimatedSizeKB.toStringAsFixed(1),

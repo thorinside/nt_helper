@@ -1104,6 +1104,17 @@ class $ParametersTable extends Parameters
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _ioFlagsMeta = const VerificationMeta(
+    'ioFlags',
+  );
+  @override
+  late final GeneratedColumn<int> ioFlags = GeneratedColumn<int>(
+    'io_flags',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _rawUnitIndexMeta = const VerificationMeta(
     'rawUnitIndex',
   );
@@ -1125,6 +1136,7 @@ class $ParametersTable extends Parameters
     defaultValue,
     unitId,
     powerOfTen,
+    ioFlags,
     rawUnitIndex,
   ];
   @override
@@ -1205,6 +1217,12 @@ class $ParametersTable extends Parameters
         ),
       );
     }
+    if (data.containsKey('io_flags')) {
+      context.handle(
+        _ioFlagsMeta,
+        ioFlags.isAcceptableOrUnknown(data['io_flags']!, _ioFlagsMeta),
+      );
+    }
     if (data.containsKey('raw_unit_index')) {
       context.handle(
         _rawUnitIndexMeta,
@@ -1255,6 +1273,10 @@ class $ParametersTable extends Parameters
         DriftSqlType.int,
         data['${effectivePrefix}power_of_ten'],
       ),
+      ioFlags: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}io_flags'],
+      ),
       rawUnitIndex: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}raw_unit_index'],
@@ -1277,6 +1299,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
   final int? defaultValue;
   final int? unitId;
   final int? powerOfTen;
+  final int? ioFlags;
   final int? rawUnitIndex;
   const ParameterEntry({
     required this.algorithmGuid,
@@ -1287,6 +1310,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
     this.defaultValue,
     this.unitId,
     this.powerOfTen,
+    this.ioFlags,
     this.rawUnitIndex,
   });
   @override
@@ -1309,6 +1333,9 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
     }
     if (!nullToAbsent || powerOfTen != null) {
       map['power_of_ten'] = Variable<int>(powerOfTen);
+    }
+    if (!nullToAbsent || ioFlags != null) {
+      map['io_flags'] = Variable<int>(ioFlags);
     }
     if (!nullToAbsent || rawUnitIndex != null) {
       map['raw_unit_index'] = Variable<int>(rawUnitIndex);
@@ -1336,6 +1363,9 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       powerOfTen: powerOfTen == null && nullToAbsent
           ? const Value.absent()
           : Value(powerOfTen),
+      ioFlags: ioFlags == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ioFlags),
       rawUnitIndex: rawUnitIndex == null && nullToAbsent
           ? const Value.absent()
           : Value(rawUnitIndex),
@@ -1356,6 +1386,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       defaultValue: serializer.fromJson<int?>(json['defaultValue']),
       unitId: serializer.fromJson<int?>(json['unitId']),
       powerOfTen: serializer.fromJson<int?>(json['powerOfTen']),
+      ioFlags: serializer.fromJson<int?>(json['ioFlags']),
       rawUnitIndex: serializer.fromJson<int?>(json['rawUnitIndex']),
     );
   }
@@ -1371,6 +1402,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       'defaultValue': serializer.toJson<int?>(defaultValue),
       'unitId': serializer.toJson<int?>(unitId),
       'powerOfTen': serializer.toJson<int?>(powerOfTen),
+      'ioFlags': serializer.toJson<int?>(ioFlags),
       'rawUnitIndex': serializer.toJson<int?>(rawUnitIndex),
     };
   }
@@ -1384,6 +1416,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
     Value<int?> defaultValue = const Value.absent(),
     Value<int?> unitId = const Value.absent(),
     Value<int?> powerOfTen = const Value.absent(),
+    Value<int?> ioFlags = const Value.absent(),
     Value<int?> rawUnitIndex = const Value.absent(),
   }) => ParameterEntry(
     algorithmGuid: algorithmGuid ?? this.algorithmGuid,
@@ -1394,6 +1427,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
     defaultValue: defaultValue.present ? defaultValue.value : this.defaultValue,
     unitId: unitId.present ? unitId.value : this.unitId,
     powerOfTen: powerOfTen.present ? powerOfTen.value : this.powerOfTen,
+    ioFlags: ioFlags.present ? ioFlags.value : this.ioFlags,
     rawUnitIndex: rawUnitIndex.present ? rawUnitIndex.value : this.rawUnitIndex,
   );
   ParameterEntry copyWithCompanion(ParametersCompanion data) {
@@ -1414,6 +1448,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       powerOfTen: data.powerOfTen.present
           ? data.powerOfTen.value
           : this.powerOfTen,
+      ioFlags: data.ioFlags.present ? data.ioFlags.value : this.ioFlags,
       rawUnitIndex: data.rawUnitIndex.present
           ? data.rawUnitIndex.value
           : this.rawUnitIndex,
@@ -1431,6 +1466,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
           ..write('defaultValue: $defaultValue, ')
           ..write('unitId: $unitId, ')
           ..write('powerOfTen: $powerOfTen, ')
+          ..write('ioFlags: $ioFlags, ')
           ..write('rawUnitIndex: $rawUnitIndex')
           ..write(')'))
         .toString();
@@ -1446,6 +1482,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
     defaultValue,
     unitId,
     powerOfTen,
+    ioFlags,
     rawUnitIndex,
   );
   @override
@@ -1460,6 +1497,7 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
           other.defaultValue == this.defaultValue &&
           other.unitId == this.unitId &&
           other.powerOfTen == this.powerOfTen &&
+          other.ioFlags == this.ioFlags &&
           other.rawUnitIndex == this.rawUnitIndex);
 }
 
@@ -1472,6 +1510,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
   final Value<int?> defaultValue;
   final Value<int?> unitId;
   final Value<int?> powerOfTen;
+  final Value<int?> ioFlags;
   final Value<int?> rawUnitIndex;
   final Value<int> rowid;
   const ParametersCompanion({
@@ -1483,6 +1522,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     this.defaultValue = const Value.absent(),
     this.unitId = const Value.absent(),
     this.powerOfTen = const Value.absent(),
+    this.ioFlags = const Value.absent(),
     this.rawUnitIndex = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1495,6 +1535,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     this.defaultValue = const Value.absent(),
     this.unitId = const Value.absent(),
     this.powerOfTen = const Value.absent(),
+    this.ioFlags = const Value.absent(),
     this.rawUnitIndex = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : algorithmGuid = Value(algorithmGuid),
@@ -1509,6 +1550,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     Expression<int>? defaultValue,
     Expression<int>? unitId,
     Expression<int>? powerOfTen,
+    Expression<int>? ioFlags,
     Expression<int>? rawUnitIndex,
     Expression<int>? rowid,
   }) {
@@ -1521,6 +1563,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
       if (defaultValue != null) 'default_value': defaultValue,
       if (unitId != null) 'unit_id': unitId,
       if (powerOfTen != null) 'power_of_ten': powerOfTen,
+      if (ioFlags != null) 'io_flags': ioFlags,
       if (rawUnitIndex != null) 'raw_unit_index': rawUnitIndex,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1535,6 +1578,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     Value<int?>? defaultValue,
     Value<int?>? unitId,
     Value<int?>? powerOfTen,
+    Value<int?>? ioFlags,
     Value<int?>? rawUnitIndex,
     Value<int>? rowid,
   }) {
@@ -1547,6 +1591,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
       defaultValue: defaultValue ?? this.defaultValue,
       unitId: unitId ?? this.unitId,
       powerOfTen: powerOfTen ?? this.powerOfTen,
+      ioFlags: ioFlags ?? this.ioFlags,
       rawUnitIndex: rawUnitIndex ?? this.rawUnitIndex,
       rowid: rowid ?? this.rowid,
     );
@@ -1579,6 +1624,9 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     if (powerOfTen.present) {
       map['power_of_ten'] = Variable<int>(powerOfTen.value);
     }
+    if (ioFlags.present) {
+      map['io_flags'] = Variable<int>(ioFlags.value);
+    }
     if (rawUnitIndex.present) {
       map['raw_unit_index'] = Variable<int>(rawUnitIndex.value);
     }
@@ -1599,6 +1647,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
           ..write('defaultValue: $defaultValue, ')
           ..write('unitId: $unitId, ')
           ..write('powerOfTen: $powerOfTen, ')
+          ..write('ioFlags: $ioFlags, ')
           ..write('rawUnitIndex: $rawUnitIndex, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2503,6 +2552,322 @@ class ParameterPageItemsCompanion
           ..write('algorithmGuid: $algorithmGuid, ')
           ..write('pageIndex: $pageIndex, ')
           ..write('parameterNumber: $parameterNumber, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ParameterOutputModeUsageTable extends ParameterOutputModeUsage
+    with
+        TableInfo<
+          $ParameterOutputModeUsageTable,
+          ParameterOutputModeUsageEntry
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ParameterOutputModeUsageTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _algorithmGuidMeta = const VerificationMeta(
+    'algorithmGuid',
+  );
+  @override
+  late final GeneratedColumn<String> algorithmGuid = GeneratedColumn<String>(
+    'algorithm_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES algorithms (guid)',
+    ),
+  );
+  static const VerificationMeta _parameterNumberMeta = const VerificationMeta(
+    'parameterNumber',
+  );
+  @override
+  late final GeneratedColumn<int> parameterNumber = GeneratedColumn<int>(
+    'parameter_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<List<int>, String>
+  affectedOutputNumbers =
+      GeneratedColumn<String>(
+        'affected_output_numbers',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<List<int>>(
+        $ParameterOutputModeUsageTable.$converteraffectedOutputNumbers,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    algorithmGuid,
+    parameterNumber,
+    affectedOutputNumbers,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'parameter_output_mode_usage';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ParameterOutputModeUsageEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('algorithm_guid')) {
+      context.handle(
+        _algorithmGuidMeta,
+        algorithmGuid.isAcceptableOrUnknown(
+          data['algorithm_guid']!,
+          _algorithmGuidMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_algorithmGuidMeta);
+    }
+    if (data.containsKey('parameter_number')) {
+      context.handle(
+        _parameterNumberMeta,
+        parameterNumber.isAcceptableOrUnknown(
+          data['parameter_number']!,
+          _parameterNumberMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_parameterNumberMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {algorithmGuid, parameterNumber};
+  @override
+  ParameterOutputModeUsageEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ParameterOutputModeUsageEntry(
+      algorithmGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_guid'],
+      )!,
+      parameterNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parameter_number'],
+      )!,
+      affectedOutputNumbers: $ParameterOutputModeUsageTable
+          .$converteraffectedOutputNumbers
+          .fromSql(
+            attachedDatabase.typeMapping.read(
+              DriftSqlType.string,
+              data['${effectivePrefix}affected_output_numbers'],
+            )!,
+          ),
+    );
+  }
+
+  @override
+  $ParameterOutputModeUsageTable createAlias(String alias) {
+    return $ParameterOutputModeUsageTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<List<int>, String> $converteraffectedOutputNumbers =
+      const IntListConverter();
+}
+
+class ParameterOutputModeUsageEntry extends DataClass
+    implements Insertable<ParameterOutputModeUsageEntry> {
+  final String algorithmGuid;
+  final int parameterNumber;
+  final List<int> affectedOutputNumbers;
+  const ParameterOutputModeUsageEntry({
+    required this.algorithmGuid,
+    required this.parameterNumber,
+    required this.affectedOutputNumbers,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['algorithm_guid'] = Variable<String>(algorithmGuid);
+    map['parameter_number'] = Variable<int>(parameterNumber);
+    {
+      map['affected_output_numbers'] = Variable<String>(
+        $ParameterOutputModeUsageTable.$converteraffectedOutputNumbers.toSql(
+          affectedOutputNumbers,
+        ),
+      );
+    }
+    return map;
+  }
+
+  ParameterOutputModeUsageCompanion toCompanion(bool nullToAbsent) {
+    return ParameterOutputModeUsageCompanion(
+      algorithmGuid: Value(algorithmGuid),
+      parameterNumber: Value(parameterNumber),
+      affectedOutputNumbers: Value(affectedOutputNumbers),
+    );
+  }
+
+  factory ParameterOutputModeUsageEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ParameterOutputModeUsageEntry(
+      algorithmGuid: serializer.fromJson<String>(json['algorithmGuid']),
+      parameterNumber: serializer.fromJson<int>(json['parameterNumber']),
+      affectedOutputNumbers: serializer.fromJson<List<int>>(
+        json['affectedOutputNumbers'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'algorithmGuid': serializer.toJson<String>(algorithmGuid),
+      'parameterNumber': serializer.toJson<int>(parameterNumber),
+      'affectedOutputNumbers': serializer.toJson<List<int>>(
+        affectedOutputNumbers,
+      ),
+    };
+  }
+
+  ParameterOutputModeUsageEntry copyWith({
+    String? algorithmGuid,
+    int? parameterNumber,
+    List<int>? affectedOutputNumbers,
+  }) => ParameterOutputModeUsageEntry(
+    algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+    parameterNumber: parameterNumber ?? this.parameterNumber,
+    affectedOutputNumbers: affectedOutputNumbers ?? this.affectedOutputNumbers,
+  );
+  ParameterOutputModeUsageEntry copyWithCompanion(
+    ParameterOutputModeUsageCompanion data,
+  ) {
+    return ParameterOutputModeUsageEntry(
+      algorithmGuid: data.algorithmGuid.present
+          ? data.algorithmGuid.value
+          : this.algorithmGuid,
+      parameterNumber: data.parameterNumber.present
+          ? data.parameterNumber.value
+          : this.parameterNumber,
+      affectedOutputNumbers: data.affectedOutputNumbers.present
+          ? data.affectedOutputNumbers.value
+          : this.affectedOutputNumbers,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ParameterOutputModeUsageEntry(')
+          ..write('algorithmGuid: $algorithmGuid, ')
+          ..write('parameterNumber: $parameterNumber, ')
+          ..write('affectedOutputNumbers: $affectedOutputNumbers')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(algorithmGuid, parameterNumber, affectedOutputNumbers);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ParameterOutputModeUsageEntry &&
+          other.algorithmGuid == this.algorithmGuid &&
+          other.parameterNumber == this.parameterNumber &&
+          other.affectedOutputNumbers == this.affectedOutputNumbers);
+}
+
+class ParameterOutputModeUsageCompanion
+    extends UpdateCompanion<ParameterOutputModeUsageEntry> {
+  final Value<String> algorithmGuid;
+  final Value<int> parameterNumber;
+  final Value<List<int>> affectedOutputNumbers;
+  final Value<int> rowid;
+  const ParameterOutputModeUsageCompanion({
+    this.algorithmGuid = const Value.absent(),
+    this.parameterNumber = const Value.absent(),
+    this.affectedOutputNumbers = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ParameterOutputModeUsageCompanion.insert({
+    required String algorithmGuid,
+    required int parameterNumber,
+    required List<int> affectedOutputNumbers,
+    this.rowid = const Value.absent(),
+  }) : algorithmGuid = Value(algorithmGuid),
+       parameterNumber = Value(parameterNumber),
+       affectedOutputNumbers = Value(affectedOutputNumbers);
+  static Insertable<ParameterOutputModeUsageEntry> custom({
+    Expression<String>? algorithmGuid,
+    Expression<int>? parameterNumber,
+    Expression<String>? affectedOutputNumbers,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (algorithmGuid != null) 'algorithm_guid': algorithmGuid,
+      if (parameterNumber != null) 'parameter_number': parameterNumber,
+      if (affectedOutputNumbers != null)
+        'affected_output_numbers': affectedOutputNumbers,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ParameterOutputModeUsageCompanion copyWith({
+    Value<String>? algorithmGuid,
+    Value<int>? parameterNumber,
+    Value<List<int>>? affectedOutputNumbers,
+    Value<int>? rowid,
+  }) {
+    return ParameterOutputModeUsageCompanion(
+      algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+      parameterNumber: parameterNumber ?? this.parameterNumber,
+      affectedOutputNumbers:
+          affectedOutputNumbers ?? this.affectedOutputNumbers,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (algorithmGuid.present) {
+      map['algorithm_guid'] = Variable<String>(algorithmGuid.value);
+    }
+    if (parameterNumber.present) {
+      map['parameter_number'] = Variable<int>(parameterNumber.value);
+    }
+    if (affectedOutputNumbers.present) {
+      map['affected_output_numbers'] = Variable<String>(
+        $ParameterOutputModeUsageTable.$converteraffectedOutputNumbers.toSql(
+          affectedOutputNumbers.value,
+        ),
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ParameterOutputModeUsageCompanion(')
+          ..write('algorithmGuid: $algorithmGuid, ')
+          ..write('parameterNumber: $parameterNumber, ')
+          ..write('affectedOutputNumbers: $affectedOutputNumbers, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5783,6 +6148,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ParameterPagesTable parameterPages = $ParameterPagesTable(this);
   late final $ParameterPageItemsTable parameterPageItems =
       $ParameterPageItemsTable(this);
+  late final $ParameterOutputModeUsageTable parameterOutputModeUsage =
+      $ParameterOutputModeUsageTable(this);
   late final $PresetsTable presets = $PresetsTable(this);
   late final $PresetSlotsTable presetSlots = $PresetSlotsTable(this);
   late final $PresetParameterValuesTable presetParameterValues =
@@ -5810,6 +6177,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     parameterEnums,
     parameterPages,
     parameterPageItems,
+    parameterOutputModeUsage,
     presets,
     presetSlots,
     presetParameterValues,
@@ -5918,6 +6286,37 @@ final class $$AlgorithmsTableReferences
         );
 
     final cache = $_typedResult.readTableOrNull(_parameterPagesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ParameterOutputModeUsageTable,
+    List<ParameterOutputModeUsageEntry>
+  >
+  _parameterOutputModeUsageRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.parameterOutputModeUsage,
+        aliasName: $_aliasNameGenerator(
+          db.algorithms.guid,
+          db.parameterOutputModeUsage.algorithmGuid,
+        ),
+      );
+
+  $$ParameterOutputModeUsageTableProcessedTableManager
+  get parameterOutputModeUsageRefs {
+    final manager =
+        $$ParameterOutputModeUsageTableTableManager(
+          $_db,
+          $_db.parameterOutputModeUsage,
+        ).filter(
+          (f) => f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _parameterOutputModeUsageRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -6046,6 +6445,33 @@ class $$AlgorithmsTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> parameterOutputModeUsageRefs(
+    Expression<bool> Function($$ParameterOutputModeUsageTableFilterComposer f)
+    f,
+  ) {
+    final $$ParameterOutputModeUsageTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.guid,
+          referencedTable: $db.parameterOutputModeUsage,
+          getReferencedColumn: (t) => t.algorithmGuid,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ParameterOutputModeUsageTableFilterComposer(
+                $db: $db,
+                $table: $db.parameterOutputModeUsage,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
@@ -6205,6 +6631,33 @@ class $$AlgorithmsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> parameterOutputModeUsageRefs<T extends Object>(
+    Expression<T> Function($$ParameterOutputModeUsageTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ParameterOutputModeUsageTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.guid,
+          referencedTable: $db.parameterOutputModeUsage,
+          getReferencedColumn: (t) => t.algorithmGuid,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ParameterOutputModeUsageTableAnnotationComposer(
+                $db: $db,
+                $table: $db.parameterOutputModeUsage,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> presetSlotsRefs<T extends Object>(
     Expression<T> Function($$PresetSlotsTableAnnotationComposer a) f,
   ) {
@@ -6248,6 +6701,7 @@ class $$AlgorithmsTableTableManager
             bool specificationsRefs,
             bool parametersRefs,
             bool parameterPagesRefs,
+            bool parameterOutputModeUsageRefs,
             bool presetSlotsRefs,
           })
         > {
@@ -6303,6 +6757,7 @@ class $$AlgorithmsTableTableManager
                 specificationsRefs = false,
                 parametersRefs = false,
                 parameterPagesRefs = false,
+                parameterOutputModeUsageRefs = false,
                 presetSlotsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -6311,6 +6766,8 @@ class $$AlgorithmsTableTableManager
                     if (specificationsRefs) db.specifications,
                     if (parametersRefs) db.parameters,
                     if (parameterPagesRefs) db.parameterPages,
+                    if (parameterOutputModeUsageRefs)
+                      db.parameterOutputModeUsage,
                     if (presetSlotsRefs) db.presetSlots,
                   ],
                   addJoins: null,
@@ -6379,6 +6836,27 @@ class $$AlgorithmsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (parameterOutputModeUsageRefs)
+                        await $_getPrefetchedData<
+                          AlgorithmEntry,
+                          $AlgorithmsTable,
+                          ParameterOutputModeUsageEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AlgorithmsTableReferences
+                              ._parameterOutputModeUsageRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AlgorithmsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).parameterOutputModeUsageRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.algorithmGuid == item.guid,
+                              ),
+                          typedResults: items,
+                        ),
                       if (presetSlotsRefs)
                         await $_getPrefetchedData<
                           AlgorithmEntry,
@@ -6424,6 +6902,7 @@ typedef $$AlgorithmsTableProcessedTableManager =
         bool specificationsRefs,
         bool parametersRefs,
         bool parameterPagesRefs,
+        bool parameterOutputModeUsageRefs,
         bool presetSlotsRefs,
       })
     >;
@@ -7032,6 +7511,7 @@ typedef $$ParametersTableCreateCompanionBuilder =
       Value<int?> defaultValue,
       Value<int?> unitId,
       Value<int?> powerOfTen,
+      Value<int?> ioFlags,
       Value<int?> rawUnitIndex,
       Value<int> rowid,
     });
@@ -7045,6 +7525,7 @@ typedef $$ParametersTableUpdateCompanionBuilder =
       Value<int?> defaultValue,
       Value<int?> unitId,
       Value<int?> powerOfTen,
+      Value<int?> ioFlags,
       Value<int?> rawUnitIndex,
       Value<int> rowid,
     });
@@ -7127,6 +7608,11 @@ class $$ParametersTableFilterComposer
 
   ColumnFilters<int> get powerOfTen => $composableBuilder(
     column: $table.powerOfTen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ioFlags => $composableBuilder(
+    column: $table.ioFlags,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7221,6 +7707,11 @@ class $$ParametersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get ioFlags => $composableBuilder(
+    column: $table.ioFlags,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get rawUnitIndex => $composableBuilder(
     column: $table.rawUnitIndex,
     builder: (column) => ColumnOrderings(column),
@@ -7305,6 +7796,9 @@ class $$ParametersTableAnnotationComposer
     column: $table.powerOfTen,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get ioFlags =>
+      $composableBuilder(column: $table.ioFlags, builder: (column) => column);
 
   GeneratedColumn<int> get rawUnitIndex => $composableBuilder(
     column: $table.rawUnitIndex,
@@ -7394,6 +7888,7 @@ class $$ParametersTableTableManager
                 Value<int?> defaultValue = const Value.absent(),
                 Value<int?> unitId = const Value.absent(),
                 Value<int?> powerOfTen = const Value.absent(),
+                Value<int?> ioFlags = const Value.absent(),
                 Value<int?> rawUnitIndex = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ParametersCompanion(
@@ -7405,6 +7900,7 @@ class $$ParametersTableTableManager
                 defaultValue: defaultValue,
                 unitId: unitId,
                 powerOfTen: powerOfTen,
+                ioFlags: ioFlags,
                 rawUnitIndex: rawUnitIndex,
                 rowid: rowid,
               ),
@@ -7418,6 +7914,7 @@ class $$ParametersTableTableManager
                 Value<int?> defaultValue = const Value.absent(),
                 Value<int?> unitId = const Value.absent(),
                 Value<int?> powerOfTen = const Value.absent(),
+                Value<int?> ioFlags = const Value.absent(),
                 Value<int?> rawUnitIndex = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ParametersCompanion.insert(
@@ -7429,6 +7926,7 @@ class $$ParametersTableTableManager
                 defaultValue: defaultValue,
                 unitId: unitId,
                 powerOfTen: powerOfTen,
+                ioFlags: ioFlags,
                 rawUnitIndex: rawUnitIndex,
                 rowid: rowid,
               ),
@@ -8179,6 +8677,324 @@ typedef $$ParameterPageItemsTableProcessedTableManager =
       ),
       ParameterPageItemEntry,
       PrefetchHooks Function()
+    >;
+typedef $$ParameterOutputModeUsageTableCreateCompanionBuilder =
+    ParameterOutputModeUsageCompanion Function({
+      required String algorithmGuid,
+      required int parameterNumber,
+      required List<int> affectedOutputNumbers,
+      Value<int> rowid,
+    });
+typedef $$ParameterOutputModeUsageTableUpdateCompanionBuilder =
+    ParameterOutputModeUsageCompanion Function({
+      Value<String> algorithmGuid,
+      Value<int> parameterNumber,
+      Value<List<int>> affectedOutputNumbers,
+      Value<int> rowid,
+    });
+
+final class $$ParameterOutputModeUsageTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ParameterOutputModeUsageTable,
+          ParameterOutputModeUsageEntry
+        > {
+  $$ParameterOutputModeUsageTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
+      db.algorithms.createAlias(
+        $_aliasNameGenerator(
+          db.parameterOutputModeUsage.algorithmGuid,
+          db.algorithms.guid,
+        ),
+      );
+
+  $$AlgorithmsTableProcessedTableManager get algorithmGuid {
+    final $_column = $_itemColumn<String>('algorithm_guid')!;
+
+    final manager = $$AlgorithmsTableTableManager(
+      $_db,
+      $_db.algorithms,
+    ).filter((f) => f.guid.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_algorithmGuidTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ParameterOutputModeUsageTableFilterComposer
+    extends Composer<_$AppDatabase, $ParameterOutputModeUsageTable> {
+  $$ParameterOutputModeUsageTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get parameterNumber => $composableBuilder(
+    column: $table.parameterNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<List<int>, List<int>, String>
+  get affectedOutputNumbers => $composableBuilder(
+    column: $table.affectedOutputNumbers,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  $$AlgorithmsTableFilterComposer get algorithmGuid {
+    final $$AlgorithmsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableFilterComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ParameterOutputModeUsageTableOrderingComposer
+    extends Composer<_$AppDatabase, $ParameterOutputModeUsageTable> {
+  $$ParameterOutputModeUsageTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get parameterNumber => $composableBuilder(
+    column: $table.parameterNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get affectedOutputNumbers => $composableBuilder(
+    column: $table.affectedOutputNumbers,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AlgorithmsTableOrderingComposer get algorithmGuid {
+    final $$AlgorithmsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableOrderingComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ParameterOutputModeUsageTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ParameterOutputModeUsageTable> {
+  $$ParameterOutputModeUsageTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get parameterNumber => $composableBuilder(
+    column: $table.parameterNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<List<int>, String>
+  get affectedOutputNumbers => $composableBuilder(
+    column: $table.affectedOutputNumbers,
+    builder: (column) => column,
+  );
+
+  $$AlgorithmsTableAnnotationComposer get algorithmGuid {
+    final $$AlgorithmsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ParameterOutputModeUsageTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ParameterOutputModeUsageTable,
+          ParameterOutputModeUsageEntry,
+          $$ParameterOutputModeUsageTableFilterComposer,
+          $$ParameterOutputModeUsageTableOrderingComposer,
+          $$ParameterOutputModeUsageTableAnnotationComposer,
+          $$ParameterOutputModeUsageTableCreateCompanionBuilder,
+          $$ParameterOutputModeUsageTableUpdateCompanionBuilder,
+          (
+            ParameterOutputModeUsageEntry,
+            $$ParameterOutputModeUsageTableReferences,
+          ),
+          ParameterOutputModeUsageEntry,
+          PrefetchHooks Function({bool algorithmGuid})
+        > {
+  $$ParameterOutputModeUsageTableTableManager(
+    _$AppDatabase db,
+    $ParameterOutputModeUsageTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ParameterOutputModeUsageTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ParameterOutputModeUsageTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ParameterOutputModeUsageTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> algorithmGuid = const Value.absent(),
+                Value<int> parameterNumber = const Value.absent(),
+                Value<List<int>> affectedOutputNumbers = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ParameterOutputModeUsageCompanion(
+                algorithmGuid: algorithmGuid,
+                parameterNumber: parameterNumber,
+                affectedOutputNumbers: affectedOutputNumbers,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String algorithmGuid,
+                required int parameterNumber,
+                required List<int> affectedOutputNumbers,
+                Value<int> rowid = const Value.absent(),
+              }) => ParameterOutputModeUsageCompanion.insert(
+                algorithmGuid: algorithmGuid,
+                parameterNumber: parameterNumber,
+                affectedOutputNumbers: affectedOutputNumbers,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ParameterOutputModeUsageTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({algorithmGuid = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (algorithmGuid) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.algorithmGuid,
+                                referencedTable:
+                                    $$ParameterOutputModeUsageTableReferences
+                                        ._algorithmGuidTable(db),
+                                referencedColumn:
+                                    $$ParameterOutputModeUsageTableReferences
+                                        ._algorithmGuidTable(db)
+                                        .guid,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ParameterOutputModeUsageTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ParameterOutputModeUsageTable,
+      ParameterOutputModeUsageEntry,
+      $$ParameterOutputModeUsageTableFilterComposer,
+      $$ParameterOutputModeUsageTableOrderingComposer,
+      $$ParameterOutputModeUsageTableAnnotationComposer,
+      $$ParameterOutputModeUsageTableCreateCompanionBuilder,
+      $$ParameterOutputModeUsageTableUpdateCompanionBuilder,
+      (
+        ParameterOutputModeUsageEntry,
+        $$ParameterOutputModeUsageTableReferences,
+      ),
+      ParameterOutputModeUsageEntry,
+      PrefetchHooks Function({bool algorithmGuid})
     >;
 typedef $$PresetsTableCreateCompanionBuilder =
     PresetsCompanion Function({
@@ -11216,6 +12032,11 @@ class $AppDatabaseManager {
       $$ParameterPagesTableTableManager(_db, _db.parameterPages);
   $$ParameterPageItemsTableTableManager get parameterPageItems =>
       $$ParameterPageItemsTableTableManager(_db, _db.parameterPageItems);
+  $$ParameterOutputModeUsageTableTableManager get parameterOutputModeUsage =>
+      $$ParameterOutputModeUsageTableTableManager(
+        _db,
+        _db.parameterOutputModeUsage,
+      );
   $$PresetsTableTableManager get presets =>
       $$PresetsTableTableManager(_db, _db.presets);
   $$PresetSlotsTableTableManager get presetSlots =>
