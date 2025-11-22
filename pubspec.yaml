@@ -49,44 +49,44 @@ dependencies:
   async: ^2.13.0
   haptic_feedback: ^0.6.0
   bitsdojo_window: 0.1.6
-  camera: ^0.11.2
+  camera: ^0.11.3
   dart_mcp: ^0.4.0
   mcp_dart: ^1.0.2
   collection: ^1.19.1
-  uuid: ^4.5.1
-  crypto: ^3.0.6
+  uuid: ^4.5.2
+  crypto: ^3.0.7
 
   # Drift dependencies
-  drift: ^2.28.1
-  sqlite3_flutter_libs: ^0.5.39
+  drift: ^2.29.0
+  sqlite3_flutter_libs: ^0.5.40
   path_provider: ^2.1.5
   permission_handler: ^12.0.1
   path: ^1.9.1
   intl: ^0.20.2
-  file_picker: ^10.3.2
+  file_picker: ^10.3.6
 
   # UI & State Management
   flutter_bloc: ^9.1.1
-  bloc: ^9.0.0
+  bloc: ^9.1.0
   equatable: ^2.0.7
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
   docman: ^1.2.0
   security_scoped_resource: ^0.0.2
   desktop_drop: ^0.7.0
-  cross_file: ^0.3.4+2
+  cross_file: ^0.3.5+1
 
   archive: ^4.0.7
   provider: ^6.1.5+1
-  get_it: ^9.0.5
+  get_it: ^9.1.0
   dart_elf: ^1.0.1
-  http: ^1.5.0
+  http: ^1.6.0
   pub_semver: ^2.2.0
   url_launcher: ^6.3.2
-  share_plus: ^12.0.0
+  share_plus: ^12.0.1
   universal_ble: ^0.9.11
-  vector_math: ^2.1.4
-  webview_flutter: ^4.10.0
+  vector_math: ^2.2.0
+  webview_flutter: ^4.13.0
   uvccamera:
     git:
       url: https://github.com/thorinside/UVCCamera
@@ -103,16 +103,16 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  build_runner: ^2.7.1
-  json_serializable: ^6.10.0
-  mockito: ^5.5.0
+  build_runner: ^2.10.4
+  json_serializable: ^6.11.2
+  mockito: ^5.5.1
   mocktail: ^1.0.4
-  freezed: ^3.2.0
-  test: ^1.26.2
+  freezed: ^3.2.3
+  test: ^1.26.3
   bloc_test: ^10.0.0
 
   # Drift dev dependencies
-  drift_dev: ^2.28.1
+  drift_dev: ^2.29.0
 
 dependency_overrides:
   flutter_midi_command_linux:
