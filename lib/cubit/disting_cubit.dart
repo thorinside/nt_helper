@@ -1977,6 +1977,7 @@ class DistingCubit extends Cubit<DistingState> {
               unit: parameter.unit,
               name: parameter.name,
               powerOfTen: parameter.powerOfTen,
+              ioFlags: parameter.ioFlags,
             ),
           )
           .toList(),

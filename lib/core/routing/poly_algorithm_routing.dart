@@ -509,9 +509,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       // Skip parameters that are not I/O parameters (no I/O flags set)
       if (!isOutput && !isInput) continue;
 
-      // Skip unconnected parameters only for inputs (outputs should always be shown)
-      if (busValue == 0 && !isOutput) continue;
-
       final paramNumber = paramInfo.parameterNumber;
 
       // Determine port type from isAudio flag (cosmetic only - affects port color)
