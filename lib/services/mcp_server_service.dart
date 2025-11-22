@@ -617,6 +617,12 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
             'description':
                 'Required for slot/parameter targets. For slot: integer index (0-31). For parameter: "slot_index:parameter_number" (e.g., "0:5")',
           },
+          'display_mode': {
+            'type': 'string',
+            'description':
+                'Optional display mode for screen target. Changes hardware display mode before capturing screenshot. Options: "parameter" (hardware parameter list), "algorithm" (custom algorithm interface), "overview" (all slots overview), "vu_meters" (VU meter display)',
+            'enum': ['parameter', 'algorithm', 'overview', 'vu_meters'],
+          },
         },
         required: ['target'],
       ),

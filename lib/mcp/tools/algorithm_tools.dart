@@ -3,7 +3,7 @@ import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show ParameterInfo, ParameterValue, Mapping;
+    show ParameterInfo, ParameterValue, Mapping, DisplayMode;
 import 'package:nt_helper/util/case_converter.dart';
 import 'package:nt_helper/util/routing_analyzer.dart';
 import 'package:nt_helper/mcp/mcp_constants.dart';
@@ -460,6 +460,7 @@ class MCPAlgorithmTools {
     try {
       final String? target = params['target'];
       final dynamic identifier = params['identifier'];
+      final dynamic displayMode = params['display_mode'];
 
       // Validate target parameter
       if (target == null || target.isEmpty) {
@@ -480,7 +481,7 @@ class MCPAlgorithmTools {
         case 'parameter':
           return _showParameter(identifier);
         case 'screen':
-          return _showScreen();
+          return _showScreen(displayMode: displayMode);
         case 'routing':
           return _showRouting();
         case 'cpu':
@@ -677,18 +678,43 @@ class MCPAlgorithmTools {
   }
 
   /// Show current device screen as base64 JPEG image.
-  Future<String> _showScreen() async {
-    final state = _distingCubit.state;
-    if (state is! DistingStateSynchronized) {
-      return jsonEncode(
-        convertToSnakeCaseKeys({
-          'success': false,
-          'error': 'Device not synchronized',
-        }),
-      );
-    }
-
+  Future<String> _showScreen({dynamic displayMode}) async {
     try {
+      // Validate display_mode parameter first, before checking device state
+      if (displayMode != null && displayMode is String) {
+        final modeEnum = _stringToDisplayMode(displayMode);
+        if (modeEnum == null) {
+          return jsonEncode(
+            convertToSnakeCaseKeys({
+              'success': false,
+              'error': 'Invalid display_mode: $displayMode',
+              'valid_modes': ['parameter', 'algorithm', 'overview', 'vu_meters'],
+            }),
+          );
+        }
+      }
+
+      final state = _distingCubit.state;
+      if (state is! DistingStateSynchronized) {
+        return jsonEncode(
+          convertToSnakeCaseKeys({
+            'success': false,
+            'error': 'Device not synchronized',
+          }),
+        );
+      }
+
+      // Handle display_mode parameter if provided and validated
+      if (displayMode != null && displayMode is String) {
+        final modeEnum = _stringToDisplayMode(displayMode)!;
+
+        // Set the display mode
+        _distingCubit.setDisplayMode(modeEnum);
+
+        // Wait for screen update
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+
       final manager = state.disting;
       final screenshotData = await manager.encodeTakeScreenshot();
 
@@ -837,6 +863,26 @@ class MCPAlgorithmTools {
   /// Helper to encode bytes to base64 string.
   String _base64Encode(List<int> bytes) {
     return base64.encode(bytes);
+  }
+
+  /// Convert string display mode to DisplayMode enum.
+  /// Maps: "parameter" → DisplayMode.parameters
+  ///       "algorithm" → DisplayMode.algorithmUI
+  ///       "overview" → DisplayMode.overview
+  ///       "vu_meters" → DisplayMode.overviewVUs
+  DisplayMode? _stringToDisplayMode(String mode) {
+    switch (mode.toLowerCase()) {
+      case 'parameter':
+        return DisplayMode.parameters;
+      case 'algorithm':
+        return DisplayMode.algorithmUI;
+      case 'overview':
+        return DisplayMode.overview;
+      case 'vu_meters':
+        return DisplayMode.overviewVUs;
+      default:
+        return null;
+    }
   }
 
   Future<String> _showCpu() async {
