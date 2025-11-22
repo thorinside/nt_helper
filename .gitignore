@@ -88,3 +88,4 @@ docs/algorithms/*.bak
 # BMAD (local only)
 .bmad-core/
 .bmad-*/
+nt_helper.db

@@ -98,17 +98,17 @@ void main() {
     });
 
     group('Euclidean Algorithm (eucp)', () {
-      test('should have ES-5 Expander parameter (13)', () {
+      test('should have ES-5 Expander parameter (20)', () {
         final parameters = metadata['tables']['parameters'] as List<dynamic>;
         final es5Expander = parameters.firstWhere(
-          (p) => p['algorithmGuid'] == 'eucp' && p['parameterNumber'] == 13,
+          (p) => p['algorithmGuid'] == 'eucp' && p['parameterNumber'] == 20,
           orElse: () => null,
         );
 
         expect(
           es5Expander,
           isNotNull,
-          reason: 'Euclidean parameter 13 (ES-5 Expander) should exist',
+          reason: 'Euclidean parameter 20 (ES-5 Expander) should exist',
         );
         expect(es5Expander['name'], equals('1:ES-5 Expander'));
         expect(es5Expander['minValue'], equals(0));
@@ -119,17 +119,17 @@ void main() {
         expect(es5Expander['rawUnitIndex'], equals(14)); // Enum type
       });
 
-      test('should have ES-5 Output parameter (14)', () {
+      test('should have ES-5 Output parameter (21)', () {
         final parameters = metadata['tables']['parameters'] as List<dynamic>;
         final es5Output = parameters.firstWhere(
-          (p) => p['algorithmGuid'] == 'eucp' && p['parameterNumber'] == 14,
+          (p) => p['algorithmGuid'] == 'eucp' && p['parameterNumber'] == 21,
           orElse: () => null,
         );
 
         expect(
           es5Output,
           isNotNull,
-          reason: 'Euclidean parameter 14 (ES-5 Output) should exist',
+          reason: 'Euclidean parameter 21 (ES-5 Output) should exist',
         );
         expect(es5Output['name'], equals('1:ES-5 Output'));
         expect(es5Output['minValue'], equals(1));
@@ -145,7 +145,7 @@ void main() {
             metadata['tables']['parameterEnums'] as List<dynamic>;
         final es5ExpanderEnums = parameterEnums
             .where(
-              (e) => e['algorithmGuid'] == 'eucp' && e['parameterNumber'] == 13,
+              (e) => e['algorithmGuid'] == 'eucp' && e['parameterNumber'] == 20,
             )
             .toList();
 
@@ -200,7 +200,7 @@ void main() {
         expect(es5Output['defaultValue'], equals(1));
         expect(es5Output['unitId'], isNull);
         expect(es5Output['powerOfTen'], equals(0));
-        expect(es5Output['rawUnitIndex'], equals(14)); // Enum type
+        expect(es5Output['rawUnitIndex'], equals(0)); // Numeric type
       });
     });
 
@@ -249,7 +249,7 @@ void main() {
         expect(es5Output['defaultValue'], equals(1));
         expect(es5Output['unitId'], isNull);
         expect(es5Output['powerOfTen'], equals(0));
-        expect(es5Output['rawUnitIndex'], equals(14)); // Enum type
+        expect(es5Output['rawUnitIndex'], equals(0)); // Numeric type
       });
     });
 

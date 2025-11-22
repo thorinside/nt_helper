@@ -673,6 +673,42 @@ class MetadataSyncService {
       );
     });
 
+    // Collect output mode usage data for parameters with isOutputMode flag
+    final outputModeUsageEntries = <ParameterOutputModeUsageEntry>[];
+
+    for (final paramInfo in parameterInfos) {
+      // Check if this parameter is an output mode control (bit 3 of ioFlags)
+      if (paramInfo.isOutputMode) {
+        try {
+          // Query the hardware for which outputs are affected by this mode parameter
+          final outputModeUsage = await _distingManager.requestOutputModeUsage(
+            0, // Algorithm is always in slot 0 during sync
+            paramInfo.parameterNumber,
+          );
+
+          if (outputModeUsage != null &&
+              outputModeUsage.affectedParameterNumbers.isNotEmpty) {
+            // Store the relationship for database persistence
+            outputModeUsageEntries.add(
+              ParameterOutputModeUsageEntry(
+                algorithmGuid: algoInfo.guid,
+                parameterNumber: paramInfo.parameterNumber,
+                affectedOutputNumbers: outputModeUsage.affectedParameterNumbers,
+              ),
+            );
+          }
+        } catch (e) {
+          // Silently ignore output mode query failures
+          // This is supplementary metadata, not critical for basic functionality
+        }
+      }
+    }
+
+    // Persist output mode usage data to database
+    if (outputModeUsageEntries.isNotEmpty) {
+      await metadataDao.upsertOutputModeUsage(outputModeUsageEntries);
+    }
+
     // Upsert Parameter Enums (link to the parameterNumber key)
     final enumEntries = <ParameterEnumEntry>[];
     enumStringsMap.forEach((paramNumKey, strings) {

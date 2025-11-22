@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10; // Incremented for ioFlags column in Parameters table
+  int get schemaVersion => 11; // Incremented to fix ParameterOutputModeUsage table creation
 
   // Access DAOs (Drift generates getters)
   // MetadataDao get metadataDao => MetadataDao(this); // This getter is generated
@@ -148,7 +148,7 @@ class AppDatabase extends _$AppDatabase {
       // This column stores I/O metadata flags from firmware (bits 2-5 of last byte)
       // null = no data available, 0-15 = flag combinations
       // ParameterOutputModeUsage table stores which output numbers are affected by output mode parameters
-      if (from <= 9) {
+      if (from <= 10) {
         try {
           await m.addColumn(parameters, parameters.ioFlags);
         } catch (e) {
