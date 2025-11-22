@@ -59,7 +59,34 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  void noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<int?> requestNumberOfAlgorithms() async {
+    return testAlgorithms.length;
+  }
+
+  @override
+  Future<AlgorithmInfo?> requestAlgorithmInfo(int index) async {
+    if (index >= 0 && index < testAlgorithms.length) {
+      return testAlgorithms[index];
+    }
+    return null;
+  }
+
+  @override
+  Future<void> requestLoadPlugin(String guid) async {}
+
+  @override
+  Future<void> requestAddAlgorithm(
+    AlgorithmInfo algorithm,
+    List<int> specifications,
+  ) async {}
+
+  @override
+  Future<void> requestRemoveAlgorithm(int index) async {}
+
+  @override
+  void noSuchMethod(Invocation invocation) {
+    // Ignore missing methods - return null for unknown methods
+  }
 }
 
 // Helper to get parameters for an algorithm
