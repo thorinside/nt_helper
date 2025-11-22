@@ -525,6 +525,41 @@ So that I can identify and fix remaining usability issues.
 
 ---
 
+**Story E4.11: Add display mode control to MCP server**
+
+As an LLM client debugging or testing hardware display behavior,
+I want to programmatically switch the Disting NT's display mode and capture screenshots of each mode,
+So that I can inspect all available display views without manual hardware interaction.
+
+**Acceptance Criteria:**
+1. Extend `show` tool to accept optional `display_mode` parameter: "parameter" | "algorithm" | "overview" | "vu_meters"
+2. When `display_mode` provided with `target: "screen"`, set display mode before capturing screenshot
+3. Display mode changes use existing `DistingCubit.setDisplayMode()` method
+4. Mode enum mapping: "parameter" → `DisplayMode.parameterView`, "algorithm" → `DisplayMode.algorithmUI`, "overview" → `DisplayMode.overviewUI`, "vu_meters" → `DisplayMode.overviewVUMeters`
+5. Mode change completes before screenshot capture (brief delay ~200ms to allow screen update)
+6. Default behavior (no `display_mode` parameter): capture current screen without changing mode
+7. Mode changes persist on hardware (same behavior as UI buttons)
+8. Tool validates `display_mode` value and returns error if invalid
+9. Tool works only in connected mode (clear error if offline/demo)
+10. Example usage: `show(target: "screen", display_mode: "vu_meters")` returns screenshot of VU meter display
+11. Example usage: `show(target: "screen")` returns screenshot of current display (no mode change)
+12. JSON schema documents `display_mode` parameter with all four mode options
+13. JSON schema includes examples for each display mode
+14. `flutter analyze` passes with zero warnings
+15. All tests pass
+
+**Prerequisites:** Story E4.7
+
+**Technical Notes:**
+- File to modify: `lib/mcp/tools/disting_tools.dart` (extend `show` tool handler)
+- Use existing `DisplayMode` enum from `lib/cubit/disting_state.dart`
+- Use existing `DistingCubit.setDisplayMode()` method
+- Screenshot logic already exists in `show` tool implementation
+- Add delay between mode change and screenshot: `await Future.delayed(Duration(milliseconds: 200))`
+- Display modes match hardware UI buttons: Parameter View, Algorithm UI, Overview UI, Overview VU Meters
+
+---
+
 ## Epic 5: Preset Template System
 
 **Expanded Goal:**
