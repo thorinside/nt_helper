@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -13,6 +14,8 @@ class UsbVideoChannel {
   );
 
   Stream<dynamic>? _videoStream;
+  StreamSubscription<dynamic>? _keepAliveSubscription; // Keep stream alive
+  String? _currentDeviceId; // Track current device to prevent duplicate starts
   final DebugService _debugService = DebugService();
 
   // Android-specific implementation using uvccamera
@@ -82,18 +85,28 @@ class UsbVideoChannel {
 
     // Original implementation for iOS and other platforms
 
-    // Stop any existing stream first
-    if (_videoStream != null) {
-      _debugLog('Stopping existing video stream');
-      _videoStream = null;
+    // If already streaming from this device, return existing stream
+    if (_videoStream != null && _currentDeviceId == deviceId) {
+      _debugLog('Already streaming from device $deviceId, returning existing stream');
+      return _videoStream!;
     }
+
+    // Stop any existing stream first (only if it's a different device)
+    if (_videoStream != null && _currentDeviceId != deviceId) {
+      _debugLog('Stopping existing video stream for different device');
+      stopVideoStream();
+    }
+
+    // Track the current device
+    _currentDeviceId = deviceId;
 
     // Create a fresh event channel stream for receiving frames
     _debugLog('Creating new event channel stream');
     _videoStream = _eventChannel.receiveBroadcastStream({'deviceId': deviceId});
 
-    // Add error handling and debugging to the stream
+    // Convert to broadcast stream and add error handling
     _videoStream = _videoStream!
+        .asBroadcastStream()
         .handleError((error) {
           _debugLog('Stream error: $error');
           _debugLog('Stream error type: ${error.runtimeType}');
@@ -104,6 +117,14 @@ class UsbVideoChannel {
           );
           return data;
         });
+
+    // Create a keep-alive subscription to prevent EventChannel from cancelling
+    _debugLog('Creating keep-alive subscription to prevent stream cancellation');
+    _keepAliveSubscription = _videoStream!.listen(
+      (_) {}, // Do nothing with the data
+      onError: (error) => _debugLog('Keep-alive subscription error: $error'),
+      cancelOnError: false,
+    );
 
     // Then call the method channel to start the capture (after event channel is ready)
     _channel
@@ -127,8 +148,13 @@ class UsbVideoChannel {
 
     // Original implementation for iOS and other platforms
     try {
+      // Cancel keep-alive subscription first
+      await _keepAliveSubscription?.cancel();
+      _keepAliveSubscription = null;
+
       await _channel.invokeMethod('stopVideoStream');
       _videoStream = null;
+      _currentDeviceId = null; // Clear device tracking
     } on PlatformException catch (e) {
       _debugLog('Failed to stop video stream: ${e.message}');
     }
@@ -169,6 +195,8 @@ class UsbVideoChannel {
 
   Future<void> dispose() async {
     _debugLog('Disposing UsbVideoChannel');
+    await _keepAliveSubscription?.cancel();
+    _keepAliveSubscription = null;
     await _androidChannel?.dispose();
     _androidChannel = null;
     await stopVideoStream();
