@@ -91,7 +91,7 @@ development_status:
   epic-5-retrospective: optional
 
   epic-6: contexted
-  e6-1-mobile-performance-page-support: review
+  e6-1-mobile-performance-page-support: done
 
   epic-7: contexted
   7-1-implement-parameter-disabled-grayed-out-state-in-ui: done
