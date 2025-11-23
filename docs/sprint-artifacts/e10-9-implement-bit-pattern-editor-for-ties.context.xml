@@ -1,0 +1,288 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>9</storyId>
+    <title>Implement Bit Pattern Visualization for Ties Parameter</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/e10-9-implement-bit-pattern-editor-for-ties.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>Step Sequencer user</asA>
+    <iWant>a global parameter mode selector that changes what all step bars show/edit, with Ties displayed as a visual bit pattern and pitch quantization controls available in Pitch mode</iWant>
+    <soThat>I can efficiently edit parameters across all steps like a DAW automation lane, control substep tie behavior, and apply musical quantization to pitch values</soThat>
+    <tasks>
+- [ ] Create global parameter mode state management (AC: #1)
+  - [ ] Add `StepParameter` enum to step_sequencer_view.dart (Pitch, Velocity, Mod, Division, Pattern, Ties, Mute, Skip, Reset, Repeat)
+  - [ ] Add `_activeParameter` state to StepSequencerView (default: Pitch)
+  - [ ] Pass active parameter to StepGridView and StepColumnWidget
+
+- [ ] Update step bar visualization for Ties mode (AC: #1, #2, #7)
+  - [ ] Modify `PitchBarPainter` to accept `displayMode` parameter
+  - [ ] When mode = Ties: divide bar into 8 equal horizontal segments
+  - [ ] Filled segment = bit set (yellow color), empty = bit unset (gray outline)
+  - [ ] Show bit pattern as stacked horizontal bars (bit 0 at bottom, bit 7 at top)
+
+- [ ] Implement bit pattern editor overlay (AC: #3, #4, #5)
+  - [ ] Create `BitPatternEditorDialog` widget
+  - [ ] Show 8 circular toggle buttons in horizontal row
+  - [ ] Label each bit (0-7) for clarity
+  - [ ] Calculate 0-255 value from bit array
+  - [ ] Update hardware parameter via cubit on bit toggle
+
+- [ ] Integrate with step column tap gesture (AC: #3, #6, #8)
+  - [ ] When active mode = Ties and user taps step bar:
+    - Show `BitPatternEditorDialog` with current Ties value
+    - User toggles bits
+    - On confirm/dismiss: write debounced update to hardware
+  - [ ] Load current Ties value from `slot.values[tiesParamIndex].value`
+
+- [ ] Visual design and theming (AC: #8)
+  - [ ] Use yellow color (Color(0xFFeab308)) for set bits (matches Ties color)
+  - [ ] Use gray outline for unset bits
+  - [ ] Ensure 8-segment layout fits within bar height
+  - [ ] Support dark mode (theme-aware colors)
+
+- [ ] Implement step value label formatting (AC: #9)
+  - [ ] Pitch mode: use midiNoteToNoteString() from ui_helpers.dart (e.g., "C4", "E4")
+  - [ ] Velocity mode: show raw value (e.g., "64")
+  - [ ] Mod mode: show voltage with formatWithUnit() (e.g., "5.0V")
+  - [ ] Division mode: show value + 1 (e.g., "1", "2", "3")
+  - [ ] Pattern/Ties modes: show empty space (SizedBox.shrink())
+  - [ ] Probability modes: show percentage (e.g., "50%")
+
+- [ ] Move sequence selector to playback controls (AC: #12, #13)
+  - [ ] Remove SequenceSelector from control row in step_sequencer_view.dart
+  - [ ] Add SequenceSelector to PlaybackControls widget
+  - [ ] Position sequence selector logically with other playback controls (direction, start/end)
+  - [ ] CRITICAL FIX: Reload all parameter values after sequence change
+    - [ ] After setting sequence parameter, call DistingCubit.reloadSlotParameters(slotIndex)
+    - [ ] Wait for parameter reload before updating local _currentSequence state
+    - [ ] Show loading indicator during reload (all 160+ parameters must refresh)
+    - [ ] Handle offline mode: sequence changes update local cache only
+
+- [ ] Implement quantize controls (AC: #10, #11) - NT Helper feature
+  - [ ] Create quantize controls widget positioned between step grid and playback controls
+  - [ ] Add Snap to Scale checkbox
+  - [ ] Add Scale selector (Major, Minor, Dorian, Phrygian, Lydian, Mixolydian, Chromatic)
+  - [ ] Add Root note selector (C through B)
+  - [ ] Add Quantize All button (quantizes all step pitch values to selected scale/root)
+  - [ ] Implement slide-down animation (300ms ease) when switching to/from Pitch mode
+  - [ ] Hide controls completely when not in Pitch mode (use AnimatedContainer)
+  - [ ] Wire Snap toggle to step column quantization logic
+
+- [ ] Test with hardware (AC: #5, #6, #8, #9, #13)
+  - [ ] Verify bit pattern writes correct 0-255 value to hardware
+  - [ ] Verify hardware value correctly displays as bit pattern in bar
+  - [ ] Test with Division > 0 to see glide behavior when ties are set
+  - [ ] Test debouncing (rapid bit toggles → single write after 50ms)
+  - [ ] CRITICAL: Test sequence switching reloads all parameters
+    - [ ] Set Step 1 Pitch to 60 in Sequence 1
+    - [ ] Set Step 1 Pitch to 72 in Sequence 2
+    - [ ] Switch to Sequence 1 → verify UI shows 60
+    - [ ] Switch to Sequence 2 → verify UI shows 72 (not stale 60)
+    - [ ] Verify loading indicator appears during parameter reload
+  - [ ] Test offline mode: edits persist, sync on reconnect
+</tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Global parameter mode selector shows 10 ChoiceChip buttons (no "Edit:" label)
+2. When global parameter mode = "Ties", step bars show 8-segment bit pattern visualization
+3. Each segment represents one bit (substeps 0-7, LSB to MSB)
+4. Tapping a step bar in Ties mode opens bit pattern editor overlay
+5. Bit pattern editor shows 8 toggle buttons (horizontal layout)
+6. Toggling a bit updates the parameter value (0-255) via `updateParameterValue()`
+7. Current Ties value from hardware displays correctly as bit pattern
+8. Step bar shows visual summary: filled segments for set bits, empty for unset bits
+9. Step value labels show proper units (note names for Pitch, voltage for Mod, empty space for Pattern/Ties, etc.)
+10. Quantize controls appear below step grid only in Pitch mode with slide-down animation (300ms)
+11. Quantize controls include: Snap toggle, Scale selector, Root note selector, Quantize All button
+12. Sequence selector is integrated into PlaybackControls widget (playback concern, not parameter editing)
+13. Sequence changes trigger full parameter reload (all 160+ step parameters update from hardware)
+14. Pattern editor works with existing debounce system (50ms)
+15. Offline mode: changes persist and sync when hardware reconnects
+</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Critical Architecture: Step Sequencer UI (Epic 10)</section>
+        <snippet>The Step Sequencer UI replaces the default parameter list for the Step Sequencer algorithm (GUID: `spsq`) with an intuitive visual grid interface. This is an algorithm-specific widget following the established AlgorithmViewRegistry pattern, requiring zero changes to the MIDI layer, state management core, or SysEx commands.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Global Parameter Mode Selector (Stories 10.9-10.12)</section>
+        <snippet>Single mode selector affects all 16 steps simultaneously. Implementation: Horizontal scrollable row of ChoiceChip buttons above step grid. Modes include Pitch, Velocity, Mod, Division, Pattern, Ties, Mute, Skip, Reset, Repeat with specific colors for each mode.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Bit Pattern Visualization (Stories 10.9-10.10)</section>
+        <snippet>Visual editing for Pattern and Ties parameters (8-bit values 0-255). Pattern Parameter controls which substeps are active/muted when Division > 0. Ties Parameter controls substep glide/legato connections. Bar visualization uses 8-segment display with bit 0 at bottom, bit 7 at top.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/services/step_sequencer_params.dart</path>
+        <kind>service</kind>
+        <symbol>StepSequencerParams</symbol>
+        <lines>1-139</lines>
+        <reason>Parameter discovery service that maps Step Sequencer parameter structure from Slot data. Provides O(1) lookup for 160+ parameters via pre-built index map. Already has getTies() method for accessing Ties parameter.</reason>
+      </file>
+      <file>
+        <path>lib/ui/step_sequencer_view.dart</path>
+        <kind>widget</kind>
+        <symbol>StepSequencerView</symbol>
+        <lines>1-457</lines>
+        <reason>Main orchestration widget for Step Sequencer. Contains BlocBuilder for DistingCubit state, manages quantize settings, sequence selection, and sync status. Needs to add global parameter mode selector here.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/step_column_widget.dart</path>
+        <kind>widget</kind>
+        <symbol>StepColumnWidget</symbol>
+        <lines>1-271</lines>
+        <reason>Individual step column widget with parameter bars and per-step toggle buttons. Currently has StepParameter enum (pitch, velocity, mod, division, pattern, ties) and local _activeParam state. Needs modification to use global mode selector instead of per-step toggles.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/pitch_bar_painter.dart</path>
+        <kind>widget</kind>
+        <symbol>PitchBarPainter</symbol>
+        <lines>1-62</lines>
+        <reason>CustomPainter for efficient parameter bar rendering. Currently renders vertical gradient bar for continuous parameters. Needs to be extended to support bit pattern visualization mode for Pattern and Ties parameters (8-segment horizontal display).</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/playback_controls.dart</path>
+        <kind>widget</kind>
+        <symbol>PlaybackControls</symbol>
+        <lines>N/A</lines>
+        <reason>Playback controls widget where sequence selector should be relocated. Currently separate from quantize controls. Sequence selector is a playback concern, not a parameter editing feature.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/quantize_controls.dart</path>
+        <kind>widget</kind>
+        <symbol>QuantizeControls</symbol>
+        <lines>N/A</lines>
+        <reason>Quantize controls widget with Snap to Scale toggle, Scale selector, Root note selector, and Quantize All button. Already implemented, needs to remain standalone and show/hide based on Pitch mode with AnimatedContainer.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/sequence_selector.dart</path>
+        <kind>widget</kind>
+        <symbol>SequenceSelector</symbol>
+        <lines>N/A</lines>
+        <reason>Sequence selector widget (1-32 dropdown). Currently positioned in control row with quantize controls. Needs to be moved to PlaybackControls widget as it's a playback concern, not parameter editing.</reason>
+      </file>
+      <file>
+        <path>lib/util/parameter_write_debouncer.dart</path>
+        <kind>utility</kind>
+        <symbol>ParameterWriteDebouncer</symbol>
+        <lines>N/A</lines>
+        <reason>Debouncing utility for parameter writes. Timer-based debouncing with per-parameter keys. 50ms delay for smooth visual feedback with reduced SysEx traffic. Bit pattern editor should use this existing infrastructure.</reason>
+      </file>
+      <file>
+        <path>lib/services/scale_quantizer.dart</path>
+        <kind>service</kind>
+        <symbol>ScaleQuantizer</symbol>
+        <lines>N/A</lines>
+        <reason>Musical quantization service. Maps MIDI notes to nearest scale degree. Already implemented and used by quantize controls. No changes needed for this story.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>N/A</lines>
+        <reason>Primary application state manager. Manages MIDI connections, algorithm loading, parameter updates. Provides updateParameterValue() method used by all parameter editing. May need reloadSlotParameters() method for sequence switching.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter" version="3.35.1">Cross-platform framework</package>
+        <package name="flutter_bloc" version="^9.1.1">State management (Cubit pattern)</package>
+      </flutter>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- **CRITICAL**: Use existing infrastructure - no new state management, MIDI commands, or SysEx implementations needed
+- **AlgorithmViewRegistry Pattern**: Step Sequencer is an algorithm-specific widget registered for GUID 'spsq'
+- **State Management**: Use DistingCubit.updateParameterValue() for all parameter changes - no separate cubit needed
+- **Parameter Discovery**: Use StepSequencerParams.fromSlot() to map parameter structure from Slot data
+- **Debouncing**: Use existing ParameterWriteDebouncer (50ms) for smooth visual feedback with reduced MIDI traffic
+- **Offline Support**: Automatic via OfflineDistingMidiManager dirty parameter tracking - no special handling needed
+- **Widget-Local State**: Only for transient UI concerns (active parameter mode, quantize settings) - not parameter values
+- **Zero Tolerance**: flutter analyze MUST pass with zero warnings before commit
+- **No Debug Logging**: Never add debugPrint statements to code - user explicitly requests this
+- **Existing Test Patterns**: Check test/ui/widgets/step_sequencer/ for existing widget test examples
+- **Theme Support**: All UI components must support both light and dark modes
+- **Responsive Layout**: Step grid must adapt to different screen sizes (mobile, desktop)
+- **Color Consistency**: Use exact color values from story for parameter modes (e.g., Ties = 0xFFeab308 yellow)
+- **Naming Convention**: Hardware uses "N:ParamName" format (e.g., "1:Pitch", "16:Ties")
+- **Bit Pattern Semantics**: Ties bit 0 (LSB) = substep 0→1, bit 7 (MSB) = substep 7→8 (or step-to-step when Division=0)
+- **Animation**: Quantize controls slide-down animation = 300ms with easeInOut curve
+- **Sequence Reload**: CRITICAL - switching sequences MUST reload all 160+ parameters from hardware (not just UI refresh)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>DistingCubit.updateParameterValue</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; updateParameterValue({required int algorithmIndex, required int parameterNumber, required int value, required bool userIsChangingTheValue})</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+    </interface>
+    <interface>
+      <name>DistingCubit.reloadSlotParameters</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; reloadSlotParameters(int slotIndex)</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+      <note>May need to be implemented if doesn't exist - needed for sequence switching to reload all 160+ parameters</note>
+    </interface>
+    <interface>
+      <name>StepSequencerParams.fromSlot</name>
+      <kind>factory constructor</kind>
+      <signature>StepSequencerParams.fromSlot(Slot slot)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>StepSequencerParams.getTies</name>
+      <kind>method</kind>
+      <signature>int? getTies(int step)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>ParameterWriteDebouncer.schedule</name>
+      <kind>method</kind>
+      <signature>void schedule(String key, VoidCallback callback, Duration delay)</signature>
+      <path>lib/util/parameter_write_debouncer.dart</path>
+    </interface>
+    <interface>
+      <name>ScaleQuantizer.quantize</name>
+      <kind>static method</kind>
+      <signature>static int quantize(int midiNote, String scale, int rootNote)</signature>
+      <path>lib/services/scale_quantizer.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>The codebase uses flutter_test framework with mocktail for mocking and bloc_test for Cubit testing. Tests are NOT required for all code but new features should include tests to ensure visibility and usefulness. Widget tests should use MockDistingMidiManager to avoid hardware dependency. Follow pragmatic testing approach, not full TDD.</standards>
+    <locations>
+- test/ui/widgets/step_sequencer/ - Widget tests for Step Sequencer UI components
+- test/services/step_sequencer_params_test.dart - Parameter discovery logic tests
+- test/services/scale_quantizer_test.dart - Quantization algorithm tests
+    </locations>
+    <ideas>
+- **Widget Test**: StepColumnWidget renders bit pattern visualization when activeParameter = Ties
+- **Widget Test**: Tapping step bar in Ties mode opens BitPatternEditorDialog
+- **Widget Test**: BitPatternEditorDialog calculates correct 0-255 value from bit toggles
+- **Widget Test**: Global parameter mode selector switches all step bars to selected parameter
+- **Widget Test**: Quantize controls show/hide with AnimatedContainer when switching to/from Pitch mode
+- **Integration Test**: Sequence switching triggers parameter reload and UI updates with new values
+- **Widget Test**: Bit pattern painter draws 8 segments with correct fill/empty states
+- **Widget Test**: Step value labels format correctly for each parameter type (note names, voltages, percentages, empty)
+    </ideas>
+  </tests>
+</story-context>

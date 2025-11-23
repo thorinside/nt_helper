@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step Sequencer UI - Global Mode Selector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #14b8a6;
+        }
+
+        .sync-status {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #10b981;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+
+        /* Global Mode Selector */
+        .mode-selector {
+            background: #2a2a2a;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .mode-selector-label {
+            font-weight: bold;
+            margin-right: 12px;
+            display: inline-block;
+        }
+
+        .mode-buttons {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .mode-button {
+            padding: 8px 16px;
+            border: 2px solid;
+            border-radius: 6px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .mode-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .mode-button.active {
+            background: var(--mode-color);
+            opacity: 0.9;
+        }
+
+        /* Step Grid */
+        .step-grid {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 20px 0;
+            margin-bottom: 20px;
+        }
+
+        .step-column {
+            min-width: 60px;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .step-column:hover {
+            border-color: #666;
+            transform: translateY(-2px);
+        }
+
+        .step-column.active {
+            border-color: #14b8a6;
+            background: rgba(20, 184, 166, 0.1);
+        }
+
+        .step-number {
+            font-size: 12px;
+            font-weight: bold;
+            color: #999;
+        }
+
+        .step-bar {
+            width: 40px;
+            height: 280px;
+            position: relative;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        /* Vertical Bar (Pitch, Velocity, Mod, Probabilities) */
+        .bar-vertical {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, #0f766e, #115e59);
+            position: relative;
+        }
+
+        .bar-vertical .fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--mode-color);
+            transition: height 0.2s;
+        }
+
+        /* Bit Pattern (Ties, Pattern) */
+        .bar-bitpattern {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 2px;
+        }
+
+        .bit-segment {
+            flex: 1;
+            border: 1px solid #555;
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+
+        .bit-segment.set {
+            background: var(--mode-color);
+        }
+
+        /* Division Bar (0-14 with tick marks) */
+        .bar-division {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: linear-gradient(to top, #0f766e, #115e59);
+        }
+
+        .bar-division .fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--mode-color);
+            transition: height 0.2s;
+        }
+
+        .bar-division .ticks {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .bar-division .tick {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .step-value {
+            font-size: 10px;
+            font-weight: bold;
+            color: var(--mode-color);
+        }
+
+        /* Playback Controls */
+        .playback-controls {
+            background: #2a2a2a;
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        .controls-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #999;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .control-label {
+            font-size: 11px;
+            color: #999;
+        }
+
+        select, input {
+            background: #1a1a1a;
+            color: white;
+            border: 1px solid #444;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        select {
+            min-width: 150px;
+        }
+
+        input[type="number"] {
+            width: 80px;
+        }
+
+        .slider-group {
+            min-width: 200px;
+        }
+
+        .slider-value {
+            font-size: 11px;
+            color: #999;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 4px 0;
+        }
+
+        /* Legend */
+        .legend {
+            background: #2a2a2a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .legend strong {
+            color: #14b8a6;
+        }
+
+        /* Quantize Controls */
+        .quantize-controls {
+            background: #2a2a2a;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease, margin-bottom 0.3s ease, padding 0.3s ease;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+        .quantize-controls.visible {
+            max-height: 100px;
+            opacity: 1;
+            transform: translateY(0);
+            padding-top: 12px;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .quantize-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quantize-row label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .quantize-row input[type="checkbox"] {
+            width: auto;
+        }
+
+        .quantize-row button {
+            background: #14b8a6;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .quantize-row button:hover {
+            background: #0d9488;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Step Sequencer UI - Global Mode Selector</h1>
+        <div class="sync-status">● Synced</div>
+
+        <!-- Global Parameter Mode Selector -->
+        <div class="mode-selector">
+            <div class="mode-buttons">
+                <button class="mode-button active" data-mode="pitch" style="--mode-color: #14b8a6; border-color: #14b8a6;">Pitch</button>
+                <button class="mode-button" data-mode="velocity" style="--mode-color: #10b981; border-color: #10b981;">Velocity</button>
+                <button class="mode-button" data-mode="mod" style="--mode-color: #8b5cf6; border-color: #8b5cf6;">Mod</button>
+                <button class="mode-button" data-mode="division" style="--mode-color: #f97316; border-color: #f97316;">Division</button>
+                <button class="mode-button" data-mode="pattern" style="--mode-color: #3b82f6; border-color: #3b82f6;">Pattern</button>
+                <button class="mode-button" data-mode="ties" style="--mode-color: #eab308; border-color: #eab308;">Ties</button>
+                <button class="mode-button" data-mode="mute" style="--mode-color: #ef4444; border-color: #ef4444;">Mute</button>
+                <button class="mode-button" data-mode="skip" style="--mode-color: #ec4899; border-color: #ec4899;">Skip</button>
+                <button class="mode-button" data-mode="reset" style="--mode-color: #f59e0b; border-color: #f59e0b;">Reset</button>
+                <button class="mode-button" data-mode="repeat" style="--mode-color: #06b6d4; border-color: #06b6d4;">Repeat</button>
+            </div>
+        </div>
+
+        <!-- Step Grid -->
+        <div class="step-grid" id="stepGrid"></div>
+
+        <!-- Quantize Controls (only visible in Pitch mode) -->
+        <div class="quantize-controls" id="quantizeControls">
+            <div class="quantize-row">
+                <label>
+                    <input type="checkbox" id="snapToggle"> Snap to Scale
+                </label>
+                <select id="scaleSelect">
+                    <option>Major</option>
+                    <option>Minor</option>
+                    <option>Dorian</option>
+                    <option>Phrygian</option>
+                    <option>Lydian</option>
+                    <option>Mixolydian</option>
+                    <option>Chromatic</option>
+                </select>
+                <select id="rootNoteSelect">
+                    <option value="0">C</option>
+                    <option value="1">C#</option>
+                    <option value="2">D</option>
+                    <option value="3">D#</option>
+                    <option value="4">E</option>
+                    <option value="5">F</option>
+                    <option value="6">F#</option>
+                    <option value="7">G</option>
+                    <option value="8">G#</option>
+                    <option value="9">A</option>
+                    <option value="10">A#</option>
+                    <option value="11">B</option>
+                </select>
+                <button id="quantizeAllBtn">Quantize All</button>
+            </div>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="playback-controls">
+            <div class="controls-title">Playback Controls</div>
+            <div class="controls-row">
+                <div class="control-group">
+                    <label class="control-label">Direction</label>
+                    <select>
+                        <option>Forward</option>
+                        <option>Reverse</option>
+                        <option>Pendulum</option>
+                        <option>Random</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Permutation</label>
+                    <select>
+                        <option>Straight</option>
+                        <option>Odd/Even</option>
+                        <option>Halves</option>
+                        <option>Inwards</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Gate Type</label>
+                    <select id="gateType">
+                        <option value="percent">% of Clock</option>
+                        <option value="trigger">Trigger</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Start</label>
+                    <input type="number" value="1" min="1" max="16">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">End</label>
+                    <input type="number" value="16" min="1" max="16">
+                </div>
+            </div>
+            <div class="controls-row">
+                <div class="slider-group" id="gateLengthGroup">
+                    <label class="control-label">Gate Length: <span class="slider-value">50%</span></label>
+                    <input type="range" min="1" max="99" value="50" oninput="this.previousElementSibling.querySelector('.slider-value').textContent = this.value + '%'">
+                </div>
+                <div class="slider-group" id="triggerLengthGroup" style="display: none;">
+                    <label class="control-label">Trigger Length: <span class="slider-value">10ms</span></label>
+                    <input type="range" min="1" max="100" value="10" oninput="this.previousElementSibling.querySelector('.slider-value').textContent = this.value + 'ms'">
+                </div>
+                <div class="slider-group">
+                    <label class="control-label">Glide Time: <span class="slider-value">100ms</span></label>
+                    <input type="range" min="0" max="1000" value="100" step="10" oninput="this.previousElementSibling.querySelector('.slider-value').textContent = this.value + 'ms'">
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <strong>How it works:</strong> Click a parameter mode button above to change what ALL 16 step bars show/edit.
+            <ul style="margin: 8px 0 8px 20px;">
+                <li><strong>Continuous parameters</strong> (Pitch, Velocity, Mod): Vertical bars showing 0-127 values</li>
+                <li><strong>Division</strong> (0-14): Vertical bar with tick marks for discrete steps</li>
+                <li><strong>Bit patterns</strong> (Pattern, Ties): 8 horizontal segments (click bar to open bit editor)</li>
+                <li><strong>Probabilities</strong> (Mute, Skip, Reset, Repeat): Vertical bars showing 0-100% chance</li>
+            </ul>
+            <p style="margin-top: 8px;">
+            This is like a DAW automation lane - select the parameter you want to edit, then adjust values across all steps.
+            Much more efficient than per-step radio buttons!
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Mock data for 16 steps
+        const stepData = {
+            pitch: [60, 64, 67, 72, 60, 64, 67, 72, 60, 64, 67, 72, 60, 64, 67, 72], // C, E, G, C
+            velocity: [100, 80, 90, 110, 100, 80, 90, 110, 100, 80, 90, 110, 100, 80, 90, 110],
+            mod: [50, 60, 70, 80, 50, 60, 70, 80, 50, 60, 70, 80, 50, 60, 70, 80],
+            division: [0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2], // 0-14 range
+            pattern: [255, 170, 255, 170, 255, 170, 255, 170, 255, 170, 255, 170, 255, 170, 255, 170], // 0b10101010
+            ties: [0, 5, 0, 10, 0, 5, 0, 10, 0, 5, 0, 10, 0, 5, 0, 10], // 0b00001010
+            mute: [0, 10, 0, 20, 0, 10, 0, 20, 0, 10, 0, 20, 0, 10, 0, 20], // 0-100%
+            skip: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            reset: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            repeat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        };
+
+        const modeColors = {
+            pitch: '#14b8a6',
+            velocity: '#10b981',
+            mod: '#8b5cf6',
+            division: '#f97316',
+            pattern: '#3b82f6',
+            ties: '#eab308',
+            mute: '#ef4444',
+            skip: '#ec4899',
+            reset: '#f59e0b',
+            repeat: '#06b6d4'
+        };
+
+        const modeRanges = {
+            pitch: { min: 0, max: 127 },
+            velocity: { min: 1, max: 127 },
+            mod: { min: 0, max: 100 },
+            division: { min: 0, max: 14 },
+            pattern: { min: 0, max: 255 },
+            ties: { min: 0, max: 255 },
+            mute: { min: 0, max: 100 },
+            skip: { min: 0, max: 100 },
+            reset: { min: 0, max: 100 },
+            repeat: { min: 0, max: 100 }
+        };
+
+        let currentMode = 'pitch';
+
+        function renderStepGrid() {
+            const grid = document.getElementById('stepGrid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 16; i++) {
+                const column = document.createElement('div');
+                column.className = 'step-column';
+                column.innerHTML = `
+                    <div class="step-number">${i + 1}</div>
+                    <div class="step-bar">${renderBar(i)}</div>
+                    <div class="step-value" style="--mode-color: ${modeColors[currentMode]}">${formatValueWithUnit(stepData[currentMode][i], currentMode)}</div>
+                `;
+
+                column.addEventListener('click', () => {
+                    if (currentMode === 'pattern' || currentMode === 'ties') {
+                        alert(`Bit pattern editor dialog would open here for step ${i + 1}\nCurrent value: ${stepData[currentMode][i]} (0b${stepData[currentMode][i].toString(2).padStart(8, '0')})`);
+                    }
+                });
+
+                grid.appendChild(column);
+            }
+        }
+
+        function isProbability(mode) {
+            return ['mute', 'skip', 'reset', 'repeat'].includes(mode);
+        }
+
+        // MIDI note to note name conversion (from ui_helpers.dart)
+        function midiNoteToNoteString(midiNoteNumber) {
+            if (midiNoteNumber < 0 || midiNoteNumber > 127) return midiNoteNumber.toString();
+
+            const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const octave = Math.floor(midiNoteNumber / 12) - 1;
+            const note = noteNames[midiNoteNumber % 12];
+            return `${note}${octave}`;
+        }
+
+        // Format value with unit (from ui_helpers.dart formatWithUnit)
+        function formatValueWithUnit(value, mode) {
+            switch (mode) {
+                case 'pitch':
+                    return midiNoteToNoteString(value);
+                case 'velocity':
+                    return value.toString(); // No unit for velocity (MIDI velocity is unitless)
+                case 'mod':
+                    return `${(value / 10).toFixed(1)}V`; // -10.0 to +10.0V (powerOfTen = 1)
+                case 'division':
+                    return (value + 1).toString();
+                case 'pattern':
+                case 'ties':
+                    return '&nbsp;'; // Empty space, bit pattern is in the bar
+                case 'mute':
+                case 'skip':
+                case 'reset':
+                case 'repeat':
+                    return `${value}%`;
+                default:
+                    return value.toString();
+            }
+        }
+
+        function renderBar(stepIndex) {
+            const value = stepData[currentMode][stepIndex];
+            const range = modeRanges[currentMode];
+            const color = modeColors[currentMode];
+
+            if (currentMode === 'pattern' || currentMode === 'ties') {
+                // Bit pattern visualization (8 segments)
+                let html = '<div class="bar-bitpattern">';
+                for (let bit = 0; bit < 8; bit++) {
+                    const isSet = (value >> bit) & 1;
+                    html += `<div class="bit-segment ${isSet ? 'set' : ''}" style="--mode-color: ${color}"></div>`;
+                }
+                html += '</div>';
+                return html;
+            } else if (currentMode === 'division') {
+                // Division bar with tick marks (0-14)
+                const percent = (value / range.max) * 100;
+                let html = `<div class="bar-division">
+                    <div class="fill" style="--mode-color: ${color}; height: ${percent}%"></div>
+                    <div class="ticks">`;
+
+                // Draw 15 tick marks (0-14)
+                for (let i = 0; i <= 14; i++) {
+                    const tickPos = (i / 14) * 100;
+                    html += `<div class="tick" style="bottom: ${tickPos}%"></div>`;
+                }
+
+                html += '</div></div>';
+                return html;
+            } else {
+                // Vertical bar (Pitch, Velocity, Mod, Probabilities)
+                const percent = ((value - range.min) / (range.max - range.min)) * 100;
+                return `<div class="bar-vertical">
+                    <div class="fill" style="--mode-color: ${color}; height: ${percent}%"></div>
+                </div>`;
+            }
+        }
+
+        // Mode button handling
+        document.querySelectorAll('.mode-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                currentMode = button.dataset.mode;
+
+                // Show quantize controls only in Pitch mode with slide animation
+                const quantizeControls = document.getElementById('quantizeControls');
+                if (currentMode === 'pitch') {
+                    quantizeControls.classList.add('visible');
+                } else {
+                    quantizeControls.classList.remove('visible');
+                }
+
+                renderStepGrid();
+            });
+        });
+
+        // Gate type handling
+        document.getElementById('gateType').addEventListener('change', (e) => {
+            const gateLengthGroup = document.getElementById('gateLengthGroup');
+            const triggerLengthGroup = document.getElementById('triggerLengthGroup');
+
+            if (e.target.value === 'percent') {
+                gateLengthGroup.style.display = 'block';
+                triggerLengthGroup.style.display = 'none';
+            } else {
+                gateLengthGroup.style.display = 'none';
+                triggerLengthGroup.style.display = 'block';
+            }
+        });
+
+        // Initial render
+        renderStepGrid();
+    </script>
+</body>
+</html>

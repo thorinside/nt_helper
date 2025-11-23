@@ -21,27 +21,17 @@ class StepSequencerParams {
   }
 
   /// Discovers the number of steps by finding the highest step number
-  /// in parameter names using regex pattern matching
+  /// in parameter names using hardware format "N:Param"
   static int _discoverNumSteps(Slot slot) {
-    // Pattern matches step numbers at start of parameter names
-    final stepPattern = RegExp(r'^(\d+)\s*[\._]');
-    final stepWordPattern = RegExp(r'^Step\s+(\d+)', caseSensitive: false);
+    // Pattern matches: "1:Pitch", "2:Velocity", etc.
+    final stepPattern = RegExp(r'^(\d+):');
 
     int maxStep = 0;
 
     for (final param in slot.parameters) {
       final name = param.name;
+      final match = stepPattern.firstMatch(name);
 
-      // Try pattern 1: "1. Pitch" or "1_Pitch"
-      var match = stepPattern.firstMatch(name);
-      if (match != null) {
-        final step = int.tryParse(match.group(1)!) ?? 0;
-        if (step > maxStep) maxStep = step;
-        continue;
-      }
-
-      // Try pattern 2: "Step 1 Pitch"
-      match = stepWordPattern.firstMatch(name);
       if (match != null) {
         final step = int.tryParse(match.group(1)!) ?? 0;
         if (step > maxStep) maxStep = step;
@@ -73,7 +63,6 @@ class StepSequencerParams {
     int divisionCount = 0;
     int patternCount = 0;
     int tiesCount = 0;
-    int probabilityCount = 0;
 
     for (int step = 1; step <= numSteps; step++) {
       if (getPitch(step) != null) pitchCount++;
@@ -82,7 +71,6 @@ class StepSequencerParams {
       if (getDivision(step) != null) divisionCount++;
       if (getPattern(step) != null) patternCount++;
       if (getTies(step) != null) tiesCount++;
-      if (getProbability(step) != null) probabilityCount++;
     }
 
     debugPrint('[StepSequencerParams] Step parameters found:');
@@ -92,7 +80,6 @@ class StepSequencerParams {
     debugPrint('  - Division: $divisionCount/$numSteps');
     debugPrint('  - Pattern: $patternCount/$numSteps');
     debugPrint('  - Ties: $tiesCount/$numSteps');
-    debugPrint('  - Probability: $probabilityCount/$numSteps');
 
     // Check global parameters
     final globalParams = <String, bool>{
@@ -116,24 +103,16 @@ class StepSequencerParams {
 
   /// Gets parameter index for a specific step and parameter type
   ///
-  /// Tries multiple naming patterns to find the parameter
+  /// Uses hardware naming pattern: "1:Pitch", "2:Velocity", etc.
   int? getStepParam(int step, String paramType) {
-    // Try common naming patterns
-    final patterns = [
-      '$step. $paramType', // "1. Pitch"
-      'Step $step $paramType', // "Step 1 Pitch"
-      '${step}_$paramType', // "1_Pitch"
-      '$step.$paramType', // "1.Pitch" (no space)
-    ];
+    final paramName = '$step:$paramType'; // Hardware format: "1:Pitch"
 
-    for (final pattern in patterns) {
-      if (_paramIndices.containsKey(pattern)) {
-        return _paramIndices[pattern];
-      }
+    if (_paramIndices.containsKey(paramName)) {
+      return _paramIndices[paramName];
     }
 
     // Parameter not found - log warning
-    debugPrint('[StepSequencerParams] WARNING: Parameter not found - step=$step, type=$paramType');
+    debugPrint('[StepSequencerParams] WARNING: Parameter not found - $paramName');
     return null;
   }
 
@@ -145,15 +124,15 @@ class StepSequencerParams {
   int? getDivision(int step) => getStepParam(step, 'Division');
   int? getPattern(int step) => getStepParam(step, 'Pattern');
   int? getTies(int step) => getStepParam(step, 'Ties');
-  int? getProbability(int step) => getStepParam(step, 'Probability');
+  // Note: Probability doesn't exist as step parameter in hardware
 
-  // Global parameter getters (exact name match)
+  // Global parameter getters (hardware names)
 
   int? get direction => _paramIndices['Direction'];
-  int? get startStep => _paramIndices['Start Step'];
-  int? get endStep => _paramIndices['End Step'];
-  int? get gateLength => _paramIndices['Gate Length'];
-  int? get triggerLength => _paramIndices['Trigger Length'];
-  int? get glideTime => _paramIndices['Glide Time'];
-  int? get currentSequence => _paramIndices['Current Sequence'];
+  int? get startStep => _paramIndices['Start'];
+  int? get endStep => _paramIndices['End'];
+  int? get gateLength => _paramIndices['Gate length'];
+  int? get triggerLength => _paramIndices['Trigger length'];
+  int? get glideTime => _paramIndices['Glide'];
+  int? get currentSequence => _paramIndices['Sequence'];
 }

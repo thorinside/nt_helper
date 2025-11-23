@@ -20,6 +20,7 @@ Comprehensive documentation of the entire system with emphasis on:
 |------|---------|-------------|--------|
 | 2025-09-30 | 1.0 | Initial brownfield analysis | BMad Master |
 | 2025-11-18 | 1.1 | Epic 7 I/O metadata architecture updates | Winston (Architect) |
+| 2025-11-23 | 1.2 | Epic 10 Step Sequencer UI architecture | Winston (Architect) |
 
 ## Quick Reference - Key Files and Entry Points
 
@@ -71,10 +72,23 @@ Comprehensive documentation of the entire system with emphasis on:
 - `lib/ui/gallery_screen.dart` - Plugin marketplace browser
 - `lib/ui/plugin_manager_screen.dart` - Installed plugins management
 
+**Algorithm-Specific Widgets**:
+- `lib/ui/step_sequencer_view.dart` - Step Sequencer visual grid interface
+- `lib/ui/widgets/step_sequencer/` - Step Sequencer UI components
+  - `step_grid_view.dart` - 16-step grid container
+  - `step_column_widget.dart` - Individual step column with parameter bars
+  - `pitch_bar_painter.dart` - Custom painter for parameter visualization
+  - `bit_pattern_editor_dialog.dart` - Bit pattern editor for Pattern/Ties
+  - `playback_controls.dart` - Transport and control widgets
+  - `quantize_controls.dart` - Musical scale quantization
+  - `sequence_selector.dart` - Sequence 1-32 switcher
+  - `sync_status_indicator.dart` - Offline/sync status display
+
 **Critical Services**:
 - `lib/services/algorithm_metadata_service.dart` - Algorithm metadata management
 - `lib/services/metadata_sync_service.dart` - Syncs algorithm data from hardware/API
 - `lib/services/settings_service.dart` - Application settings persistence
+- `lib/services/step_sequencer_params.dart` - Parameter discovery for Step Sequencer algorithm
 
 ## High Level Architecture
 
@@ -962,6 +976,439 @@ Use MCP client (e.g., Claude Desktop) to test the new tool:
 - `lib/mcp/tools/disting_tools.dart` - Device control tools
 - `assets/mcp_docs/` - MCP resource documentation
 - `README.md` (lines 43-191) - MCP tool reference documentation
+
+## Critical Architecture: Step Sequencer UI (Epic 10)
+
+### Overview
+
+The Step Sequencer UI replaces the default parameter list for the Step Sequencer algorithm (GUID: `spsq`) with an intuitive visual grid interface. This is an **algorithm-specific widget** following the established AlgorithmViewRegistry pattern, requiring zero changes to the MIDI layer, state management core, or SysEx commands.
+
+**Architecture**: Epic 10 (In Development, November 2025)
+**Pattern**: AlgorithmViewRegistry (same as NotesAlgorithmView)
+**Firmware Support**: 1.10+ (Step Sequencer algorithm introduced in firmware 1.10)
+
+**Key Principle**: This is a **UI enhancement only**. All infrastructure exists—we're building a specialized visualization layer over existing parameter management.
+
+### AlgorithmViewRegistry Pattern
+
+**Integration Point**: `lib/ui/synchronized_screen.dart`
+
+When a slot contains the Step Sequencer algorithm, the registry returns `StepSequencerView` instead of the default parameter list:
+
+```dart
+// lib/ui/algorithm_registry.dart
+static Widget? findViewFor(String algorithmGuid, ...) {
+  switch (algorithmGuid) {
+    case 'spsq':  // Step Sequencer
+      return StepSequencerView(
+        slot: slot,
+        firmwareVersion: firmwareVersion,
+        slotIndex: slotIndex,
+      );
+    default:
+      return null; // Falls back to parameter list
+  }
+}
+```
+
+**Reference Implementation**: `lib/ui/notes_algorithm_view.dart` (Notes algorithm custom widget)
+
+### State Management Architecture
+
+**No Separate Cubit Required** - Uses existing infrastructure:
+
+1. **Parameter Values**: `DistingCubit` exposes `Slot` objects with all parameter values
+2. **Parameter Updates**: `DistingCubit.updateParameterValue(slotIndex, paramNumber, value)`
+3. **Offline Support**: Automatic via `OfflineDistingMidiManager` dirty parameter tracking
+4. **Local UI State**: Widget-local state for transient concerns (selected step, quantize settings)
+
+**Example State Flow**:
+```dart
+// In StepSequencerView
+BlocBuilder<DistingCubit, DistingState>(
+  builder: (context, state) {
+    return state.maybeWhen(
+      synchronized: (disting, slots, _, __, ___, ____) {
+        final slot = slots[slotIndex];
+        final params = StepSequencerParams.fromSlot(slot);
+
+        return StepGridView(
+          slot: slot,
+          params: params,
+          onParameterChanged: (paramNum, value) {
+            context.read<DistingCubit>().updateParameterValue(
+              slotIndex, paramNum, value,
+            );
+          },
+        );
+      },
+      orElse: () => CircularProgressIndicator(),
+    );
+  },
+)
+```
+
+### Parameter Discovery Service
+
+**File**: `lib/services/step_sequencer_params.dart` (300+ lines)
+
+**Purpose**: Maps Step Sequencer parameter structure from Slot data
+
+**Problem**: Step Sequencer has 16 steps × 10 parameters per step = 160+ parameters. Each parameter name follows pattern `"N:ParameterName"` (e.g., `"1:Pitch"`, `"2:Velocity"`). Finding parameter indices requires pattern matching.
+
+**Solution**: `StepSequencerParams` class provides O(1) lookup via pre-built index map.
+
+**Discovery Process**:
+1. Scan all parameter names in slot
+2. Build index map: `Map<String, int> _paramIndices`
+3. Provide typed getters for each parameter type
+
+**Example Usage**:
+```dart
+final params = StepSequencerParams.fromSlot(slot);
+
+// Get pitch parameter for step 3
+final pitchParamNum = params.getPitch(3);  // Returns parameter index
+
+// Update pitch value via DistingCubit
+cubit.updateParameterValue(slotIndex, pitchParamNum, 60); // C4
+```
+
+**Parameter Types Discovered**:
+- **Per-Step**: Pitch (0-127 MIDI note), Velocity (1-127), Mod (-10.0 to 10.0V), Division (0-14 repeats/ratchets)
+- **Bit Patterns**: Pattern (0-255 bitmask for substep on/off), Ties (0-255 bitmask for substep ties)
+- **Probabilities**: Mute (0-100%), Skip (0-100%), Reset (0-100%), Repeat (0-100%)
+- **Global**: Direction (0-6), Permutation (0-3), Gate Type (0-1), Start/End Steps, etc.
+
+**Naming Pattern**: Hardware uses `"N:ParamName"` format (e.g., `"1:Pitch"`, `"16:Mute"`)
+
+### Global Parameter Mode Selector (Stories 10.9-10.12)
+
+**UI Pattern**: Single mode selector affects all 16 steps simultaneously
+
+**Implementation**: Horizontal scrollable row of ChoiceChip buttons above step grid
+
+**Modes**:
+1. **Pitch** (Color: teal `0xFF14b8a6`) - MIDI note values with quantization controls
+2. **Velocity** (Color: green `0xFF10b981`) - MIDI velocity 1-127
+3. **Mod** (Color: purple `0xFF8b5cf6`) - Modulation CV -10.0 to +10.0V
+4. **Division** (Color: orange `0xFFf97316`) - Repeat/ratchet count 0-14
+5. **Pattern** (Color: blue `0xFF3b82f6`) - 8-bit substep on/off pattern
+6. **Ties** (Color: yellow `0xFFeab308`) - 8-bit substep tie pattern
+7. **Mute** (Color: red `0xFFef4444`) - Probability 0-100%
+8. **Skip** (Color: pink `0xFFec4899`) - Probability 0-100%
+9. **Reset** (Color: amber `0xFFf59e0b`) - Probability 0-100%
+10. **Repeat** (Color: cyan `0xFF06b6d4`) - Probability 0-100%
+
+**Behavior**:
+- Switching mode updates all 16 step bars to display the selected parameter
+- Step value labels format appropriately (note names for Pitch, percentages for probabilities, etc.)
+- Interaction method adapts (continuous drag for scalars, dialog for bit patterns)
+
+**Benefits**:
+- Edit same parameter across all steps (like DAW automation lanes)
+- See all values for one parameter at a glance
+- Cleaner UI than per-step mode selectors
+
+### Bit Pattern Visualization (Stories 10.9-10.10)
+
+**Purpose**: Visual editing for Pattern and Ties parameters (8-bit values 0-255)
+
+**Pattern Parameter**: Controls which substeps are active/muted when Division > 0
+- Bit 0 (LSB) = substep 0, Bit 7 (MSB) = substep 7
+- Example: `0b10101010` (170) = alternating substeps
+
+**Ties Parameter**: Controls substep glide/legato connections
+- When Division > 0: ties substeps within a step
+- When Division = 0: bit 0 set ties current step to next step
+
+**Bar Visualization**:
+```dart
+// In pitch_bar_painter.dart
+class PitchBarPainter extends CustomPainter {
+  void paint(Canvas canvas, Size size) {
+    if (displayMode == StepParameter.pattern || displayMode == StepParameter.ties) {
+      _paintBitPattern(canvas, size, value, barColor);
+    } else {
+      _paintVerticalBar(canvas, size, value, barColor);
+    }
+  }
+
+  void _paintBitPattern(Canvas canvas, Size size, int value, Color color) {
+    final segmentHeight = size.height / 8;
+    for (int bit = 0; bit < 8; bit++) {
+      final isSet = (value >> bit) & 1 == 1;
+      final y = size.height - (bit + 1) * segmentHeight; // Bit 0 at bottom
+
+      canvas.drawRect(
+        Rect.fromLTWH(0, y, size.width, segmentHeight - 2),
+        Paint()..color = isSet ? color : Colors.transparent,
+      );
+    }
+  }
+}
+```
+
+**Editing Interface**: `BitPatternEditorDialog`
+- Tapping step bar in Pattern/Ties mode opens dialog
+- 8 circular toggle buttons (horizontal row)
+- Real-time value display (decimal + binary)
+- Debounced write (50ms) to hardware on confirmation
+
+### Musical Quantization (Story 10.9)
+
+**Feature**: Snap pitch values to musical scales/keys
+
+**UI Location**: Below step grid, only visible when in Pitch mode (slide-down animation, 300ms)
+
+**Controls**:
+- **Snap to Scale** checkbox - Enable/disable quantization
+- **Scale selector** - Major, Minor, Dorian, Phrygian, Lydian, Mixolydian, Chromatic
+- **Root note selector** - C through B
+- **Quantize All button** - Apply quantization to all 16 steps
+
+**Implementation**: `lib/services/scale_quantizer.dart`
+```dart
+class ScaleQuantizer {
+  static int quantize(int midiNote, String scale, int rootNote) {
+    // Maps MIDI note to nearest scale degree
+    // Returns quantized MIDI note value
+  }
+}
+```
+
+**Example**:
+- User sets: C Major scale, root = C (0)
+- Step 1 pitch = 61 (C#4)
+- Quantize → 60 (C4) - nearest scale note
+
+### Parameter Write Debouncing
+
+**Purpose**: Prevent MIDI flood during rapid parameter changes (e.g., dragging bar)
+
+**Implementation**: `lib/util/parameter_write_debouncer.dart`
+
+**Pattern**: Timer-based debouncing with per-parameter keys
+```dart
+class ParameterWriteDebouncer {
+  final Map<String, Timer> _timers = {};
+
+  void schedule(String key, VoidCallback callback, Duration delay) {
+    _timers[key]?.cancel();
+    _timers[key] = Timer(delay, () {
+      callback();
+      _timers.remove(key);
+    });
+  }
+}
+```
+
+**Usage in Widget**:
+```dart
+// In step_sequencer_view.dart
+final _debouncer = ParameterWriteDebouncer();
+
+void _handlePitchDrag(int step, int newValue) {
+  setState(() {
+    _previewValues[step] = newValue; // Immediate visual update
+  });
+
+  _debouncer.schedule('pitch_$step', () {
+    cubit.updateParameterValue(slotIndex, paramNum, newValue);
+  }, Duration(milliseconds: 50));
+}
+```
+
+**Debounce Duration**: 50ms (balances responsiveness vs. MIDI traffic)
+
+**Benefits**:
+- Smooth visual feedback (immediate setState)
+- Reduced SysEx message count (debounced hardware write)
+- Works identically in offline mode (dirty parameter tracking)
+
+### Offline Mode Support
+
+**Automatic via Existing Infrastructure**:
+
+1. **Parameter Changes**: `OfflineDistingMidiManager.setParameterValue()` updates local state
+2. **Dirty Tracking**: Changed parameters added to `dirtyParameters` map
+3. **Sync Indicator**: `SyncStatusIndicator` widget shows sync status (synced/pending/offline/error)
+4. **Reconnect**: User prompted to sync dirty parameters to hardware
+
+**Example Flow**:
+```
+1. User in offline mode, editing step pitches
+2. Each change → setState (immediate visual) + updateParameterValue (debounced)
+3. OfflineDistingMidiManager marks parameters dirty
+4. SyncStatusIndicator shows "Pending sync (3 parameters)"
+5. User reconnects to hardware
+6. DistingCubit.syncDirtyParameters() writes all changes via SysEx
+7. SyncStatusIndicator shows "Synced"
+```
+
+**No Special Handling Required**: Widget code identical for online vs. offline modes
+
+### Sequence Management (1-32 Sequences)
+
+**Hardware Feature**: Step Sequencer stores 32 sequences internally (like preset snapshots)
+
+**UI Component**: `SequenceSelector` widget (dropdown + load button)
+
+**Implementation**:
+```dart
+// In step_sequencer_view.dart
+void _handleSequenceChange(int newSequence) async {
+  setState(() { _isLoadingSequence = true; });
+
+  final params = StepSequencerParams.fromSlot(widget.slot);
+  final sequenceParamNum = params.currentSequence;
+
+  await cubit.updateParameterValue(
+    slotIndex,
+    sequenceParamNum,
+    newSequence,
+  );
+
+  setState(() {
+    _currentSequence = newSequence;
+    _isLoadingSequence = false;
+  });
+}
+```
+
+**Behavior**:
+- Switching sequence loads different set of step values
+- All 160+ parameters update simultaneously
+- Visual grid rebuilds with new parameter values
+
+### Component Architecture
+
+**Widget Hierarchy**:
+```
+StepSequencerView (root, stateful)
+├── SyncStatusIndicator
+├── SequenceSelector
+├── QuantizeControls (conditional, Pitch mode only)
+├── Global Parameter Mode Selector (ChoiceChips)
+└── StepGridView
+    └── 16× StepColumnWidget
+        ├── CustomPaint (PitchBarPainter)
+        ├── Step value label (formatted)
+        └── GestureDetector (tap/drag handling)
+            └── BitPatternEditorDialog (conditional)
+```
+
+**Separation of Concerns**:
+- **StepSequencerView**: Orchestration, BlocBuilder, global state (sequence, quantize settings)
+- **StepGridView**: Grid layout, iterates 16 steps
+- **StepColumnWidget**: Single step rendering, parameter interaction
+- **PitchBarPainter**: Custom painting (vertical bars, bit patterns, division visualization)
+- **BitPatternEditorDialog**: Modal editor for Pattern/Ties parameters
+
+### Testing Strategy
+
+**Unit Tests**:
+- `test/services/step_sequencer_params_test.dart` - Parameter discovery logic
+- `test/services/scale_quantizer_test.dart` - Quantization algorithms
+
+**Widget Tests**:
+- `test/ui/widgets/step_sequencer/step_column_widget_test.dart` - Step column rendering
+- `test/ui/widgets/step_sequencer/pitch_bar_painter_test.dart` - Custom painter output
+- Mock DistingCubit for isolation
+
+**Integration Tests**:
+- Test with `MockDistingMidiManager` for full flow
+- Verify debouncing behavior
+- Test offline mode sync
+
+### How to Add New Parameters
+
+**Step 1**: Update `StepSequencerParams`
+```dart
+// Add getter method
+int? getNewParameter(int step) => getStepParam(step, 'NewParameter');
+```
+
+**Step 2**: Add to `StepParameter` enum
+```dart
+enum StepParameter {
+  pitch, velocity, mod, division, pattern, ties,
+  mute, skip, reset, repeat,
+  newParameter, // NEW
+}
+```
+
+**Step 3**: Add mode button to global selector
+```dart
+_buildModeButton(StepParameter.newParameter, 'NewParam', Color(0xFF...)),
+```
+
+**Step 4**: Update `PitchBarPainter` if custom visualization needed
+```dart
+if (displayMode == StepParameter.newParameter) {
+  _paintCustomVisualization(canvas, size, value, barColor);
+}
+```
+
+**Step 5**: Update `_formatStepValue()` for appropriate label formatting
+```dart
+case StepParameter.newParameter:
+  return formatWithUnit(value, ...);
+```
+
+### Important Files
+
+**Core Widget**:
+- `lib/ui/step_sequencer_view.dart` - Main orchestration widget (300+ lines)
+
+**Grid Components**:
+- `lib/ui/widgets/step_sequencer/step_grid_view.dart` - 16-step grid container
+- `lib/ui/widgets/step_sequencer/step_column_widget.dart` - Individual step column (400+ lines)
+- `lib/ui/widgets/step_sequencer/pitch_bar_painter.dart` - Custom painter for bars
+
+**Dialogs and Controls**:
+- `lib/ui/widgets/step_sequencer/bit_pattern_editor_dialog.dart` - Pattern/Ties editor
+- `lib/ui/widgets/step_sequencer/quantize_controls.dart` - Scale quantization UI
+- `lib/ui/widgets/step_sequencer/playback_controls.dart` - Transport controls
+- `lib/ui/widgets/step_sequencer/sequence_selector.dart` - Sequence 1-32 switcher
+- `lib/ui/widgets/step_sequencer/sync_status_indicator.dart` - Sync status display
+
+**Services**:
+- `lib/services/step_sequencer_params.dart` - Parameter discovery service
+- `lib/services/scale_quantizer.dart` - Musical quantization algorithms
+- `lib/util/parameter_write_debouncer.dart` - Debouncing utility
+
+**Documentation**:
+- `docs/epics/epic-step-sequencer-ui.md` - Epic overview
+- `docs/epics/epic-step-sequencer-ui-technical-context.md` - Technical context (this architecture)
+- `docs/sprint-artifacts/e10-*.md` - Individual story files
+- `docs/manual-1.10.0.md` (pages 294-300) - Firmware manual (Step Sequencer specification)
+
+### Current Status (November 2025)
+
+**Completed Stories**:
+- e10-1: Algorithm widget registration ✓
+- e10-2: Step grid component (in review)
+- e10-3: Step selection and editing ✓
+- e10-4: Scale quantization (in review)
+- e10-5: Sequence selector ✓
+- e10-6: Playback controls (in review)
+- e10-7: Auto-sync with debouncing ✓
+- e10-8: Offline mode support ✓
+
+**Drafted Stories** (Ready for Implementation):
+- e10-9: Implement bit pattern editor for Ties
+- e10-10: Implement bit pattern editor for Pattern
+- e10-11: Audit and validate parameter UI controls
+- e10-12: Add per-step probability parameters
+- e10-13: Add permutation and gate type controls
+
+**Next Steps**:
+1. Complete review of in-progress stories (e10-2, e10-4, e10-6)
+2. Implement bit pattern editors (e10-9, e10-10)
+3. Add probability parameters (e10-12)
+4. Add permutation/gate type controls (e10-13)
+5. Epic retrospective
 
 ## Data Models and Database
 

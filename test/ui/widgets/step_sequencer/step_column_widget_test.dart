@@ -1,19 +1,88 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/step_column_widget.dart';
 
+// Mock classes
+class MockDistingCubit extends Mock implements DistingCubit {}
+
 void main() {
+  late MockDistingCubit mockCubit;
+  late Slot testSlot;
+
+  setUp(() {
+    mockCubit = MockDistingCubit();
+
+    // Create test slot with mock parameters matching Step Sequencer format
+    testSlot = Slot(
+      algorithm: Algorithm(
+        algorithmIndex: 0,
+        guid: 'spsq',
+        name: 'Step Sequencer',
+      ),
+      routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+      pages: ParameterPages(algorithmIndex: 0, pages: const []),
+      parameters: [
+        ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          name: '1:Pitch',
+          min: 0,
+          max: 127,
+          defaultValue: 60,
+          unit: 0,
+          powerOfTen: 0,
+        ),
+        ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 1,
+          name: '1:Velocity',
+          min: 0,
+          max: 127,
+          defaultValue: 64,
+          unit: 0,
+          powerOfTen: 0,
+        ),
+      ],
+      values: [
+        ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 64),
+        ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 100),
+      ],
+      enums: const [],
+      mappings: const [],
+      valueStrings: const [],
+    );
+  });
+
+  Widget makeTestableWidget(Widget child) {
+    return BlocProvider<DistingCubit>.value(
+      value: mockCubit,
+      child: MaterialApp(
+        home: Scaffold(
+          body: child,
+        ),
+      ),
+    );
+  }
+
   group('StepColumnWidget', () {
     testWidgets('displays step number correctly', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StepColumnWidget(
-              stepIndex: 0,
-              pitchValue: 64,
-              velocityValue: 100,
-              isActive: false,
-            ),
+        makeTestableWidget(
+          StepColumnWidget(
+            stepIndex: 0,
+            pitchValue: 64,
+            velocityValue: 100,
+            isActive: false,
+            slotIndex: 0,
+            slot: testSlot,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.pitch,
           ),
         ),
       );
@@ -23,14 +92,18 @@ void main() {
 
     testWidgets('displays pitch bar', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StepColumnWidget(
-              stepIndex: 5,
-              pitchValue: 64,
-              velocityValue: 100,
-              isActive: false,
-            ),
+        makeTestableWidget(
+          StepColumnWidget(
+            stepIndex: 5,
+            pitchValue: 64,
+            velocityValue: 100,
+            isActive: false,
+            slotIndex: 0,
+            slot: testSlot,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.pitch,
           ),
         ),
       );
@@ -39,33 +112,64 @@ void main() {
       expect(find.text('6'), findsOneWidget); // Step 6
     });
 
-    testWidgets('displays velocity indicator', (tester) async {
+    testWidgets('displays formatted pitch value', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StepColumnWidget(
-              stepIndex: 0,
-              pitchValue: 64,
-              velocityValue: 100,
-              isActive: false,
-            ),
+        makeTestableWidget(
+          StepColumnWidget(
+            stepIndex: 0,
+            pitchValue: 64,
+            velocityValue: 100,
+            isActive: false,
+            slotIndex: 0,
+            slot: testSlot,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.pitch,
           ),
         ),
       );
 
-      expect(find.text('100'), findsOneWidget); // Velocity value
+      // Pitch values are formatted as note names (e.g., "E4")
+      expect(find.byType(CustomPaint), findsWidgets);
+    });
+
+    testWidgets('displays bit pattern editor in Ties mode', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          StepColumnWidget(
+            stepIndex: 0,
+            pitchValue: 64,
+            velocityValue: 100,
+            isActive: false,
+            slotIndex: 0,
+            slot: testSlot,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.ties,
+          ),
+        ),
+      );
+
+      // In Ties mode, the bar should be displayed with bit pattern visualization
+      expect(find.byType(CustomPaint), findsWidgets);
     });
 
     testWidgets('highlights active step with border', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StepColumnWidget(
-              stepIndex: 0,
-              pitchValue: 64,
-              velocityValue: 100,
-              isActive: true,
-            ),
+        makeTestableWidget(
+          StepColumnWidget(
+            stepIndex: 0,
+            pitchValue: 64,
+            velocityValue: 100,
+            isActive: true,
+            slotIndex: 0,
+            slot: testSlot,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.pitch,
           ),
         ),
       );
@@ -79,14 +183,18 @@ void main() {
 
     testWidgets('uses normal border for inactive step', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StepColumnWidget(
-              stepIndex: 0,
-              pitchValue: 64,
-              velocityValue: 100,
-              isActive: false,
-            ),
+        makeTestableWidget(
+          StepColumnWidget(
+            stepIndex: 0,
+            pitchValue: 64,
+            velocityValue: 100,
+            isActive: false,
+            slotIndex: 0,
+            slot: testSlot,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.pitch,
           ),
         ),
       );

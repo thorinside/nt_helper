@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/step_column_widget.dart';
-import 'package:nt_helper/ui/widgets/step_sequencer/step_edit_modal.dart';
 
 /// Grid view displaying all 16 steps of the step sequencer
 ///
@@ -16,6 +15,7 @@ class StepGridView extends StatelessWidget {
   final bool snapEnabled;
   final String selectedScale;
   final int rootNote;
+  final StepParameter activeParameter; // Global parameter mode
 
   const StepGridView({
     super.key,
@@ -24,6 +24,7 @@ class StepGridView extends StatelessWidget {
     required this.snapEnabled,
     required this.selectedScale,
     required this.rootNote,
+    required this.activeParameter,
   });
 
   @override
@@ -83,15 +84,20 @@ class StepGridView extends StatelessWidget {
     Slot slot,
     StepSequencerParams params,
   ) {
-    return GridView.count(
-      crossAxisCount: params.numSteps,
-      childAspectRatio: 0.3,
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      children: List.generate(
-        params.numSteps,
-        (index) => RepaintBoundary(
-          child: _buildStepColumn(context, slot, params, index),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(
+          params.numSteps,
+          (index) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: SizedBox(
+              width: 60,
+              child: RepaintBoundary(
+                child: _buildStepColumn(context, slot, params, index),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -123,50 +129,12 @@ class StepGridView extends StatelessWidget {
       pitchValue: pitchValue,
       velocityValue: velocityValue,
       isActive: false, // TODO: Will be implemented in future story
-      onTap: () => _showStepEditModal(context, slot, params, stepIndex),
+      slotIndex: slotIndex,
+      slot: slot,
+      snapEnabled: snapEnabled,
+      selectedScale: selectedScale,
+      rootNote: rootNote,
+      activeParameter: activeParameter, // Pass global parameter mode
     );
-  }
-
-  /// Show step edit modal (dialog on desktop, bottom sheet on mobile)
-  void _showStepEditModal(
-    BuildContext context,
-    Slot slot,
-    StepSequencerParams params,
-    int stepIndex,
-  ) {
-    final width = MediaQuery.of(context).size.width;
-    final isMobile = width <= 768;
-
-    if (isMobile) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => SizedBox(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: StepEditModal(
-            slotIndex: slotIndex,
-            stepIndex: stepIndex,
-            params: params,
-            slot: slot,
-            snapEnabled: snapEnabled,
-            selectedScale: selectedScale,
-            rootNote: rootNote,
-          ),
-        ),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) => StepEditModal(
-          slotIndex: slotIndex,
-          stepIndex: stepIndex,
-          params: params,
-          slot: slot,
-          snapEnabled: snapEnabled,
-          selectedScale: selectedScale,
-          rootNote: rootNote,
-        ),
-      );
-    }
   }
 }

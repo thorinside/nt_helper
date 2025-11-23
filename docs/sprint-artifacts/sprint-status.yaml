@@ -1,4 +1,4 @@
-# generated: 2025-11-18
+# generated: 2025-11-23
 # project: nt_helper
 # project_key: nt_helper
 # tracking_system: file-system
@@ -29,7 +29,7 @@
 # - SM typically drafts next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
-generated: 2025-11-18
+generated: 2025-11-23
 project: nt_helper
 project_key: nt_helper
 tracking_system: file-system
@@ -120,11 +120,16 @@ development_status:
 
   epic-10: contexted
   e10-1-algorithm-widget-registration: done
-  e10-2-step-grid-component: review
+  e10-2-step-grid-component: done
   e10-3-step-selection-and-editing: done
-  e10-4-scale-quantization: review
-  e10-5-sequence-selector: ready-for-dev
-  e10-6-playback-controls: review
-  e10-7-auto-sync-with-debouncing: drafted
+  e10-4-scale-quantization: done
+  e10-5-sequence-selector: done
+  e10-6-playback-controls: done
+  e10-7-auto-sync-with-debouncing: done
   e10-8-offline-mode-support: done
+  e10-9-implement-bit-pattern-editor-for-ties: review
+  e10-10-implement-bit-pattern-editor-for-pattern: drafted
+  e10-11-audit-and-validate-parameter-ui-controls: drafted
+  e10-12-add-per-step-probability-parameters: drafted
+  e10-13-add-permutation-and-gate-type-controls: drafted
   epic-10-retrospective: optional

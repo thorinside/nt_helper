@@ -48,10 +48,11 @@ class SequenceSelector extends StatelessWidget {
   Widget _buildSequenceDropdown(BuildContext context, bool isMobile) {
     return DropdownButtonFormField<int>(
       initialValue: currentSequence,
+      isExpanded: true,
       decoration: InputDecoration(
         labelText: 'Sequence',
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),

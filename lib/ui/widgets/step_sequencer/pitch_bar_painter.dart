@@ -1,30 +1,67 @@
 import 'package:flutter/material.dart';
 
-/// CustomPainter for efficient pitch bar rendering
-///
-/// Renders a vertical bar with:
-/// - Dark teal gradient background (bottom to top)
-/// - Bright teal fill from bottom to pitch level
-class PitchBarPainter extends CustomPainter {
-  final int pitchValue; // 0-127 MIDI note
+enum BarDisplayMode {
+  continuous, // Default vertical gradient bar
+  bitPattern, // 8-segment horizontal bit display (for Ties/Pattern)
+  division, // Discrete division display
+}
 
-  // Teal color scheme
-  static const darkTeal = Color(0xFF0f766e);
-  static const darkerTeal = Color(0xFF115e59);
-  static const brightTeal = Color(0xFF5eead4);
+/// CustomPainter for efficient parameter bar rendering
+///
+/// Supports multiple display modes:
+/// - Continuous: Vertical gradient bar (pitch, velocity, mod)
+/// - BitPattern: 8-segment display for Pattern/Ties (0-255 values)
+/// - Division: Discrete block display for division parameter
+class PitchBarPainter extends CustomPainter {
+  final int pitchValue; // 0-127 for continuous, 0-255 for bit patterns
+  final Color barColor; // Color for the bar
+  final BarDisplayMode displayMode; // Which rendering mode to use
 
   const PitchBarPainter({
     required this.pitchValue,
+    required this.barColor,
+    this.displayMode = BarDisplayMode.continuous,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw dark teal gradient background
+    switch (displayMode) {
+      case BarDisplayMode.bitPattern:
+        _paintBitPattern(canvas, size);
+      case BarDisplayMode.division:
+        _paintDivisionBar(canvas, size);
+      case BarDisplayMode.continuous:
+        _paintContinuousBar(canvas, size);
+    }
+  }
+
+  /// Paint continuous vertical gradient bar (default mode)
+  void _paintContinuousBar(Canvas canvas, Size size) {
+    // Create darker versions of the bar color for gradient background
+    final alpha = (barColor.a * 255.0).round().clamp(0, 255);
+    final red = (barColor.r * 255.0).round().clamp(0, 255);
+    final green = (barColor.g * 255.0).round().clamp(0, 255);
+    final blue = (barColor.b * 255.0).round().clamp(0, 255);
+
+    final darkColor = Color.fromARGB(
+      alpha,
+      (red * 0.3).round(),
+      (green * 0.3).round(),
+      (blue * 0.3).round(),
+    );
+    final darkerColor = Color.fromARGB(
+      alpha,
+      (red * 0.2).round(),
+      (green * 0.2).round(),
+      (blue * 0.2).round(),
+    );
+
+    // Draw dark gradient background
     final bgPaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
-        colors: [darkTeal, darkerTeal],
+        colors: [darkColor, darkerColor],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     canvas.drawRect(
@@ -32,9 +69,9 @@ class PitchBarPainter extends CustomPainter {
       bgPaint,
     );
 
-    // Draw bright teal fill from bottom to pitch level
+    // Draw bright fill from bottom to parameter value level
     final fillHeight = (pitchValue / 127.0) * size.height;
-    final fillPaint = Paint()..color = brightTeal;
+    final fillPaint = Paint()..color = barColor;
 
     canvas.drawRect(
       Rect.fromLTWH(0, size.height - fillHeight, size.width, fillHeight),
@@ -42,9 +79,52 @@ class PitchBarPainter extends CustomPainter {
     );
   }
 
+  /// Paint 8-segment bit pattern display (for Ties/Pattern parameters)
+  void _paintBitPattern(Canvas canvas, Size size) {
+    const int numBits = 8;
+    final segmentHeight = size.height / numBits;
+
+    for (int bit = 0; bit < numBits; bit++) {
+      // Check if this bit is set in the value
+      final isSet = (pitchValue >> bit) & 1 == 1;
+
+      // Calculate rectangle position (bit 0 at bottom, bit 7 at top)
+      final y = size.height - (bit + 1) * segmentHeight;
+      final rect = Rect.fromLTWH(0, y, size.width, segmentHeight - 1);
+
+      // Draw filled or empty segment
+      if (isSet) {
+        // Filled segment (bright color)
+        final fillPaint = Paint()..color = barColor;
+        canvas.drawRect(rect, fillPaint);
+      } else {
+        // Empty segment (light background)
+        final emptyPaint = Paint()
+          ..color = Colors.grey.shade300.withValues(alpha: 0.5);
+        canvas.drawRect(rect, emptyPaint);
+      }
+
+      // Draw border around segment
+      final borderPaint = Paint()
+        ..color = isSet ? barColor : Colors.grey.shade400
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.5;
+      canvas.drawRect(rect, borderPaint);
+    }
+  }
+
+  /// Paint discrete division display (for Division parameter)
+  void _paintDivisionBar(Canvas canvas, Size size) {
+    // For now, use continuous bar for division
+    // Could be extended to show discrete blocks
+    _paintContinuousBar(canvas, size);
+  }
+
   @override
   bool shouldRepaint(covariant PitchBarPainter oldDelegate) {
-    // Only repaint if pitch value changes
-    return pitchValue != oldDelegate.pitchValue;
+    // Repaint if value, color, or display mode changes
+    return pitchValue != oldDelegate.pitchValue ||
+        barColor != oldDelegate.barColor ||
+        displayMode != oldDelegate.displayMode;
   }
 }

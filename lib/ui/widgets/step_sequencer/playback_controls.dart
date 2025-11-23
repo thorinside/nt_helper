@@ -163,66 +163,71 @@ class _PlaybackControlsState extends State<PlaybackControls> {
   }
 
   Widget _buildFullLayout(Slot slot) {
-    // Desktop/tablet: horizontal row layout
+    // Desktop/tablet: horizontal row layout (scrollable)
     return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 12,
-        alignment: WrapAlignment.start,
-        children: [
-          SizedBox(
-            width: 200,
-            child: _buildDirectionDropdown(slot),
-          ),
-          SizedBox(
-            width: 100,
-            child: _buildStartStepInput(slot),
-          ),
-          SizedBox(
-            width: 100,
-            child: _buildEndStepInput(slot),
-          ),
-          SizedBox(
-            width: 250,
-            child: _buildGateLengthSlider(slot),
-          ),
-          SizedBox(
-            width: 250,
-            child: _buildTriggerLengthSlider(slot),
-          ),
-          SizedBox(
-            width: 250,
-            child: _buildGlideTimeSlider(slot),
-          ),
-        ],
+      padding: const EdgeInsets.all(12.0),
+      child: SingleChildScrollView(
+        child: Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          alignment: WrapAlignment.start,
+          children: [
+            SizedBox(
+              width: 200,
+              child: _buildDirectionDropdown(slot),
+            ),
+            SizedBox(
+              width: 100,
+              child: _buildStartStepInput(slot),
+            ),
+            SizedBox(
+              width: 100,
+              child: _buildEndStepInput(slot),
+            ),
+            SizedBox(
+              width: 250,
+              child: _buildGateLengthSlider(slot),
+            ),
+            SizedBox(
+              width: 250,
+              child: _buildTriggerLengthSlider(slot),
+            ),
+            SizedBox(
+              width: 250,
+              child: _buildGlideTimeSlider(slot),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCompactLayout(Slot slot) {
-    // Mobile: vertical column, smaller controls
+    // Mobile: vertical column, smaller controls (scrollable)
     return Padding(
       padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(child: _buildDirectionDropdown(slot)),
-              const SizedBox(width: 8),
-              SizedBox(width: 80, child: _buildStartStepInput(slot)),
-              const SizedBox(width: 8),
-              SizedBox(width: 80, child: _buildEndStepInput(slot)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildGateLengthSlider(slot),
-          const SizedBox(height: 8),
-          _buildTriggerLengthSlider(slot),
-          const SizedBox(height: 8),
-          _buildGlideTimeSlider(slot),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(child: _buildDirectionDropdown(slot)),
+                const SizedBox(width: 8),
+                SizedBox(width: 80, child: _buildStartStepInput(slot)),
+                const SizedBox(width: 8),
+                SizedBox(width: 80, child: _buildEndStepInput(slot)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildGateLengthSlider(slot),
+            const SizedBox(height: 8),
+            _buildTriggerLengthSlider(slot),
+            const SizedBox(height: 8),
+            _buildGlideTimeSlider(slot),
+          ],
+        ),
       ),
     );
   }
@@ -282,14 +287,12 @@ class _PlaybackControlsState extends State<PlaybackControls> {
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,
       ],
-      onChanged: (value) {
+      onFieldSubmitted: (value) {
         final intValue = int.tryParse(value);
         if (intValue != null && intValue >= 1 && intValue <= 16) {
           _updateParameter(startStepParam, intValue);
-        } else if (value.isEmpty) {
-          // Allow empty for editing, but don't update
         } else {
-          // Invalid value - revert to current
+          // Invalid - revert to current
           final current = startStepParam < slot.values.length
               ? slot.values[startStepParam].value
               : 1;
@@ -312,26 +315,21 @@ class _PlaybackControlsState extends State<PlaybackControls> {
 
     return TextFormField(
       controller: _endStepController,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         labelText: 'End',
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        errorText: _getEndStepValidationError(slot),
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
       keyboardType: TextInputType.number,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,
       ],
-      onChanged: (value) {
+      onFieldSubmitted: (value) {
         final intValue = int.tryParse(value);
-        if (intValue != null && intValue >= 1 && intValue <= 16) {
-          if (intValue >= startValue) {
-            _updateParameter(endStepParam, intValue);
-          }
-        } else if (value.isEmpty) {
-          // Allow empty for editing
+        if (intValue != null && intValue >= 1 && intValue <= 16 && intValue >= startValue) {
+          _updateParameter(endStepParam, intValue);
         } else {
-          // Invalid value - revert to current
+          // Invalid - revert to current
           final current = endStepParam < slot.values.length
               ? slot.values[endStepParam].value
               : 16;
@@ -341,24 +339,6 @@ class _PlaybackControlsState extends State<PlaybackControls> {
     );
   }
 
-  String? _getEndStepValidationError(Slot slot) {
-    final endStepParam = widget.params.endStep;
-    final startStepParam = widget.params.startStep;
-
-    if (endStepParam == null || startStepParam == null) return null;
-    if (endStepParam >= slot.values.length || startStepParam >= slot.values.length) {
-      return null;
-    }
-
-    final endValue = slot.values[endStepParam].value;
-    final startValue = slot.values[startStepParam].value;
-
-    if (endValue < startValue) {
-      return 'End must be ≥ Start ($startValue)';
-    }
-
-    return null;
-  }
 
   Widget _buildGateLengthSlider(Slot slot) {
     final gateLengthParam = widget.params.gateLength;

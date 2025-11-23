@@ -40,13 +40,12 @@ PODS:
     - Flutter
   - haptic_feedback (0.5.1):
     - Flutter
+  - objective_c (0.0.1):
+    - Flutter
   - package_info_plus (0.4.5):
     - Flutter
   - pasteboard (0.0.1):
     - Flutter
-  - path_provider_foundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
   - SDWebImage (5.21.3):
@@ -100,9 +99,9 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_midi_command (from `.symlinks/plugins/flutter_midi_command/ios`)
   - haptic_feedback (from `.symlinks/plugins/haptic_feedback/ios`)
+  - objective_c (from `.symlinks/plugins/objective_c/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - pasteboard (from `.symlinks/plugins/pasteboard/ios`)
-  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - security_scoped_resource (from `.symlinks/plugins/security_scoped_resource/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
@@ -131,12 +130,12 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_midi_command/ios"
   haptic_feedback:
     :path: ".symlinks/plugins/haptic_feedback/ios"
+  objective_c:
+    :path: ".symlinks/plugins/objective_c/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   pasteboard:
     :path: ".symlinks/plugins/pasteboard/ios"
-  path_provider_foundation:
-    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   security_scoped_resource:
@@ -162,9 +161,9 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_midi_command: 28d867d5701407d94917c4c35ca0172d362e1611
   haptic_feedback: fd1d8509833f58f164fc12122c0357fa9b2750e0
+  objective_c: 89e720c30d716b036faf9c9684022048eee1eee2
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   pasteboard: 49088aeb6119d51f976a421db60d8e1ab079b63c
-  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   SDWebImage: 16309af6d214ba3f77a7c6f6fdda888cb313a50a
   security_scoped_resource: 8b95b9c0e93ae4e03b60e9b6be9c2d61e3751ec1

@@ -60,21 +60,24 @@ class QuantizeControls extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          flex: 2,
+          flex: 3,
           child: _buildSnapToggle(context),
         ),
         const SizedBox(width: 8),
         Expanded(
-          flex: 1,
+          flex: 2,
           child: _buildScaleDropdown(context),
         ),
         const SizedBox(width: 8),
         Expanded(
-          flex: 1,
+          flex: 2,
           child: _buildRootNoteDropdown(context),
         ),
         const SizedBox(width: 8),
-        _buildQuantizeAllButton(context),
+        Flexible(
+          flex: 2,
+          child: _buildQuantizeAllButton(context),
+        ),
       ],
     );
   }
@@ -126,10 +129,11 @@ class QuantizeControls extends StatelessWidget {
   Widget _buildScaleDropdown(BuildContext context) {
     return DropdownButtonFormField<String>(
       initialValue: selectedScale,
+      isExpanded: true,
       decoration: InputDecoration(
         labelText: 'Scale',
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -157,10 +161,11 @@ class QuantizeControls extends StatelessWidget {
   Widget _buildRootNoteDropdown(BuildContext context) {
     return DropdownButtonFormField<int>(
       initialValue: rootNote,
+      isExpanded: true,
       decoration: InputDecoration(
         labelText: 'Root',
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),

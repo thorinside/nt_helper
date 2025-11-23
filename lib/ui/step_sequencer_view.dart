@@ -8,13 +8,15 @@ import 'package:nt_helper/services/step_sequencer_params.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/playback_controls.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/quantize_controls.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/sequence_selector.dart';
+import 'package:nt_helper/ui/widgets/step_sequencer/step_column_widget.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/step_grid_view.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/sync_status_indicator.dart';
 import 'package:nt_helper/util/parameter_write_debouncer.dart';
 
 /// Custom widget view for Step Sequencer algorithm (GUID: 'spsq')
 ///
-/// Displays a visual grid interface with 16 step columns showing pitch and velocity.
+/// Displays a visual grid interface with 16 step columns with global parameter mode selector.
+/// Users can edit all 16 steps for a single parameter at once (like a DAW automation lane).
 /// Includes scale quantization controls for musical pitch mapping.
 class StepSequencerView extends StatefulWidget {
   final Slot slot;
@@ -33,6 +35,9 @@ class StepSequencerView extends StatefulWidget {
 }
 
 class _StepSequencerViewState extends State<StepSequencerView> {
+  // Global parameter mode state (affects all 16 steps)
+  late StepParameter _activeParameter = StepParameter.pitch;
+
   // Local state for quantization settings (UI-only, not persisted)
   bool _snapEnabled = false;
   String _selectedScale = 'Major';
@@ -114,16 +119,13 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                 if (isOffline) _buildOfflineBanner(context),
                 if (isOffline) const SizedBox(height: 16),
 
-                // Header with sync status
+                // Compact header row: Title, Sync Status
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Step Sequencer',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                        textAlign: TextAlign.center,
-                      ),
+                    Text(
+                      'Step Sequencer',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                     SyncStatusIndicator(
                       status: effectiveSyncStatus,
@@ -132,63 +134,70 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-                // Sequence selector
-                SequenceSelector(
-                  currentSequence: _currentSequence,
-                  isLoading: _isLoadingSequence,
-                  onSequenceChanged: _handleSequenceChange,
+                // Global parameter mode selector (no "Edit:" label)
+                _buildGlobalParameterModeSelector(),
+                const SizedBox(height: 12),
+
+                // Compact control row: Sequence + Quantize controls
+                Row(
+                  children: [
+                    // Sequence selector (compact)
+                    SizedBox(
+                      width: 150,
+                      child: SequenceSelector(
+                        currentSequence: _currentSequence,
+                        isLoading: _isLoadingSequence,
+                        onSequenceChanged: _handleSequenceChange,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Quantize controls (inline)
+                    Expanded(
+                      child: QuantizeControls(
+                        snapEnabled: _snapEnabled,
+                        selectedScale: _selectedScale,
+                        rootNote: _rootNote,
+                        onToggleSnap: _toggleSnapToScale,
+                        onScaleChanged: _setScale,
+                        onRootNoteChanged: _setRootNote,
+                        onQuantizeAll: _quantizeAllSteps,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-                // Quantize controls
-                QuantizeControls(
-                  snapEnabled: _snapEnabled,
-                  selectedScale: _selectedScale,
-                  rootNote: _rootNote,
-                  onToggleSnap: _toggleSnapToScale,
-                  onScaleChanged: _setScale,
-                  onRootNoteChanged: _setRootNote,
-                  onQuantizeAll: _quantizeAllSteps,
-                ),
-                const SizedBox(height: 16),
-
-                // Step grid and playback controls (expanded to fill available space)
+                // Step grid (fills most of the space)
                 Expanded(
-                  child: Column(
-                    children: [
-                      // Step grid (80% of expanded space)
-                      Expanded(
-                        flex: 80,
-                        child: StepGridView(
-                          slot: widget.slot,
-                          slotIndex: widget.slotIndex,
-                          snapEnabled: _snapEnabled,
-                          selectedScale: _selectedScale,
-                          rootNote: _rootNote,
-                        ),
-                      ),
+                  child: StepGridView(
+                    slot: widget.slot,
+                    slotIndex: widget.slotIndex,
+                    snapEnabled: _snapEnabled,
+                    selectedScale: _selectedScale,
+                    rootNote: _rootNote,
+                    activeParameter: _activeParameter,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-                      // Playback controls (15% of expanded space)
-                      Expanded(
-                        flex: 15,
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final width = MediaQuery.of(context).size.width;
-                            final isMobile = width <= 768;
-                            final params = StepSequencerParams.fromSlot(widget.slot);
+                // Playback controls (fixed height)
+                SizedBox(
+                  height: 180,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = MediaQuery.of(context).size.width;
+                      final isMobile = width <= 768;
+                      final params = StepSequencerParams.fromSlot(widget.slot);
 
-                            return PlaybackControls(
-                              slotIndex: widget.slotIndex,
-                              params: params,
-                              slot: widget.slot,
-                              compact: isMobile,
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                      return PlaybackControls(
+                        slotIndex: widget.slotIndex,
+                        params: params,
+                        slot: widget.slot,
+                        compact: isMobile,
+                      );
+                    },
                   ),
                 ),
               ],
@@ -414,6 +423,67 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       _syncStatus = SyncStatus.synced;
       _lastError = null;
     });
+  }
+
+  /// Build global parameter mode selector
+  /// Shows 10 ChoiceChip buttons for switching between parameter modes
+  Widget _buildGlobalParameterModeSelector() {
+    const modeDefinitions = [
+      (StepParameter.pitch, 'Pitch', Color(0xFF14b8a6)),
+      (StepParameter.velocity, 'Velocity', Color(0xFF10b981)),
+      (StepParameter.mod, 'Mod', Color(0xFF8b5cf6)),
+      (StepParameter.division, 'Division', Color(0xFFf97316)),
+      (StepParameter.pattern, 'Pattern', Color(0xFF3b82f6)),
+      (StepParameter.ties, 'Ties', Color(0xFFeab308)),
+      (StepParameter.mute, 'Mute', Color(0xFFef4444)),
+      (StepParameter.skip, 'Skip', Color(0xFFec4899)),
+      (StepParameter.reset, 'Reset', Color(0xFFf59e0b)),
+      (StepParameter.repeat, 'Repeat', Color(0xFF06b6d4)),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final (mode, label, color) in modeDefinitions)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: _buildModeButton(mode, label, color),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual mode button
+  Widget _buildModeButton(
+    StepParameter mode,
+    String label,
+    Color color,
+  ) {
+    final isActive = _activeParameter == mode;
+
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      selected: isActive,
+      selectedColor: color.withValues(alpha: 0.3),
+      backgroundColor: Colors.transparent,
+      side: BorderSide(
+        color: color,
+        width: isActive ? 2 : 1,
+      ),
+      onSelected: (_) {
+        setState(() {
+          _activeParameter = mode;
+        });
+      },
+    );
   }
 
   /// Build offline banner widget
