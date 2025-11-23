@@ -2,8 +2,9 @@
 
 **Epic:** Epic 10 - Visual Step Sequencer UI Widget
 **Story ID:** e10-3-step-selection-and-editing
-**Status:** drafted
+**Status:** done
 **Created:** 2025-11-23
+**Completed:** 2025-11-23
 **Assigned To:** Dev Agent
 **Estimated Effort:** 1-2 days
 
