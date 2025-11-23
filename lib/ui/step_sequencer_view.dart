@@ -5,9 +5,12 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/scale_quantizer.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
+import 'package:nt_helper/ui/widgets/step_sequencer/playback_controls.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/quantize_controls.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/sequence_selector.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/step_grid_view.dart';
+import 'package:nt_helper/ui/widgets/step_sequencer/sync_status_indicator.dart';
+import 'package:nt_helper/util/parameter_write_debouncer.dart';
 
 /// Custom widget view for Step Sequencer algorithm (GUID: 'spsq')
 ///
@@ -39,6 +42,11 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   int _currentSequence = 0; // 0-31 (hardware value)
   bool _isLoadingSequence = false;
 
+  // Sync status tracking
+  final _debouncer = ParameterWriteDebouncer();
+  SyncStatus _syncStatus = SyncStatus.synced;
+  String? _lastError;
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +70,12 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   }
 
   @override
+  void dispose() {
+    _debouncer.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     try {
       return Padding(
@@ -69,11 +83,23 @@ class _StepSequencerViewState extends State<StepSequencerView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
-            Text(
-              'Step Sequencer',
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
+            // Header with sync status
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Step Sequencer',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SyncStatusIndicator(
+                  status: _syncStatus,
+                  errorMessage: _lastError,
+                  onRetry: _retryFailedWrites,
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -97,14 +123,41 @@ class _StepSequencerViewState extends State<StepSequencerView> {
             ),
             const SizedBox(height: 16),
 
-            // Step grid (expanded to fill available space)
+            // Step grid and playback controls (expanded to fill available space)
             Expanded(
-              child: StepGridView(
-                slot: widget.slot,
-                slotIndex: widget.slotIndex,
-                snapEnabled: _snapEnabled,
-                selectedScale: _selectedScale,
-                rootNote: _rootNote,
+              child: Column(
+                children: [
+                  // Step grid (80% of expanded space)
+                  Expanded(
+                    flex: 80,
+                    child: StepGridView(
+                      slot: widget.slot,
+                      slotIndex: widget.slotIndex,
+                      snapEnabled: _snapEnabled,
+                      selectedScale: _selectedScale,
+                      rootNote: _rootNote,
+                    ),
+                  ),
+
+                  // Playback controls (15% of expanded space)
+                  Expanded(
+                    flex: 15,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = MediaQuery.of(context).size.width;
+                        final isMobile = width <= 768;
+                        final params = StepSequencerParams.fromSlot(widget.slot);
+
+                        return PlaybackControls(
+                          slotIndex: widget.slotIndex,
+                          params: params,
+                          slot: widget.slot,
+                          compact: isMobile,
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -163,6 +216,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
 
     setState(() {
       _isLoadingSequence = true;
+      _syncStatus = SyncStatus.syncing;
     });
 
     try {
@@ -171,6 +225,10 @@ class _StepSequencerViewState extends State<StepSequencerView> {
 
       if (sequenceParamNum == null) {
         if (mounted) {
+          setState(() {
+            _syncStatus = SyncStatus.error;
+            _lastError = 'Current Sequence parameter not found';
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Current Sequence parameter not found'),
@@ -194,14 +252,22 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Update local state
-      setState(() {
-        _currentSequence = newSequence;
-      });
+      if (mounted) {
+        setState(() {
+          _currentSequence = newSequence;
+          _syncStatus = SyncStatus.synced;
+          _lastError = null;
+        });
+      }
 
       // Note: Slot data will auto-refresh via cubit state updates
       // No need to manually trigger refresh here
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _syncStatus = SyncStatus.error;
+          _lastError = 'Failed to switch sequence: $e';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to switch sequence: $e'),
@@ -222,6 +288,10 @@ class _StepSequencerViewState extends State<StepSequencerView> {
     // Show confirmation dialog
     final confirmed = await QuantizeControls.showQuantizeAllDialog(context);
     if (!confirmed || !mounted) return;
+
+    setState(() {
+      _syncStatus = SyncStatus.syncing;
+    });
 
     try {
       final params = StepSequencerParams.fromSlot(widget.slot);
@@ -272,6 +342,11 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       if (mounted) {
         Navigator.of(context).pop();
 
+        setState(() {
+          _syncStatus = SyncStatus.synced;
+          _lastError = null;
+        });
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -285,6 +360,11 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       if (mounted) {
         Navigator.of(context).pop();
 
+        setState(() {
+          _syncStatus = SyncStatus.error;
+          _lastError = 'Error quantizing steps: $e';
+        });
+
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -294,5 +374,12 @@ class _StepSequencerViewState extends State<StepSequencerView> {
         );
       }
     }
+  }
+
+  void _retryFailedWrites() {
+    setState(() {
+      _syncStatus = SyncStatus.synced;
+      _lastError = null;
+    });
   }
 }

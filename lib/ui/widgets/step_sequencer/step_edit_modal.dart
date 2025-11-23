@@ -1,8 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/services/scale_quantizer.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
+import 'package:nt_helper/util/parameter_write_debouncer.dart';
 
 /// Modal dialog for editing individual step parameters in the Step Sequencer
 class StepEditModal extends StatefulWidget {
@@ -10,6 +11,9 @@ class StepEditModal extends StatefulWidget {
   final int stepIndex; // 0-indexed internally, display as 1-indexed
   final StepSequencerParams params;
   final Slot slot;
+  final bool snapEnabled;
+  final String selectedScale;
+  final int rootNote;
 
   const StepEditModal({
     super.key,
@@ -17,6 +21,9 @@ class StepEditModal extends StatefulWidget {
     required this.stepIndex,
     required this.params,
     required this.slot,
+    required this.snapEnabled,
+    required this.selectedScale,
+    required this.rootNote,
   });
 
   @override
@@ -24,7 +31,7 @@ class StepEditModal extends StatefulWidget {
 }
 
 class _StepEditModalState extends State<StepEditModal> {
-  final Map<String, Timer> _debounceTimers = {};
+  final _debouncer = ParameterWriteDebouncer();
   final Map<String, int> _copiedParams = {};
 
   // Local preview values for immediate UI feedback
@@ -38,11 +45,7 @@ class _StepEditModalState extends State<StepEditModal> {
 
   @override
   void dispose() {
-    // Cancel all pending timers
-    for (final timer in _debounceTimers.values) {
-      timer.cancel();
-    }
-    _debounceTimers.clear();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -74,22 +77,30 @@ class _StepEditModalState extends State<StepEditModal> {
       return;
     }
 
+    // Apply quantization to pitch values if snap is enabled
+    int finalValue = value;
+    if (paramKey == 'pitch' && widget.snapEnabled) {
+      finalValue = ScaleQuantizer.quantize(
+        value,
+        widget.selectedScale,
+        widget.rootNote,
+      );
+    }
+
     // Update preview value immediately for smooth UI
     setState(() {
-      _previewValues[paramKey] = value;
+      _previewValues[paramKey] = finalValue;
     });
 
     // Debounce the actual MIDI write
-    _debounceTimers[paramKey]?.cancel();
-    _debounceTimers[paramKey] = Timer(const Duration(milliseconds: 50), () {
+    _debouncer.schedule('param_$paramKey', () {
       context.read<DistingCubit>().updateParameterValue(
             algorithmIndex: widget.slotIndex,
             parameterNumber: paramIndex,
-            value: value,
+            value: finalValue,
             userIsChangingTheValue: true,
           );
-      _debounceTimers.remove(paramKey);
-    });
+    }, const Duration(milliseconds: 50));
   }
 
   void _copyStep() {

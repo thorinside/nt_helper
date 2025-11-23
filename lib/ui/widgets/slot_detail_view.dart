@@ -6,12 +6,14 @@ import 'package:nt_helper/ui/widgets/section_parameter_list_view.dart';
 
 class SlotDetailView extends StatefulWidget {
   final Slot slot;
+  final int slotIndex;
   final List<String> units;
   final FirmwareVersion firmwareVersion;
 
   const SlotDetailView({
     super.key,
     required this.slot,
+    required this.slotIndex,
     required this.units,
     required this.firmwareVersion,
   });
@@ -32,6 +34,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
     // Provide a full replacement view
     final view = AlgorithmViewRegistry.findViewFor(
       widget.slot,
+      widget.slotIndex,
       widget.firmwareVersion,
     );
     if (view != null) return view;

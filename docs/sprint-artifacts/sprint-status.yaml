@@ -122,9 +122,9 @@ development_status:
   e10-1-algorithm-widget-registration: done
   e10-2-step-grid-component: review
   e10-3-step-selection-and-editing: done
-  e10-4-scale-quantization: backlog
-  e10-5-sequence-selector: backlog
-  e10-6-playback-controls: backlog
-  e10-7-auto-sync-with-debouncing: backlog
+  e10-4-scale-quantization: review
+  e10-5-sequence-selector: ready-for-dev
+  e10-6-playback-controls: review
+  e10-7-auto-sync-with-debouncing: drafted
   e10-8-offline-mode-support: backlog
   epic-10-retrospective: optional

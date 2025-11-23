@@ -1,0 +1,231 @@
+import 'package:flutter/material.dart';
+import 'package:nt_helper/services/scale_quantizer.dart';
+
+/// Control widget for scale quantization settings in Step Sequencer
+///
+/// Provides toggle button for snap-to-scale, scale selector dropdown,
+/// root note selector, and bulk "Quantize All Steps" button.
+///
+/// Layout adapts responsively:
+/// - Desktop/Tablet: Horizontal row layout
+/// - Mobile: Vertical stack with compact controls
+class QuantizeControls extends StatelessWidget {
+  final bool snapEnabled;
+  final String selectedScale;
+  final int rootNote;
+  final VoidCallback onToggleSnap;
+  final ValueChanged<String> onScaleChanged;
+  final ValueChanged<int> onRootNoteChanged;
+  final VoidCallback onQuantizeAll;
+
+  const QuantizeControls({
+    super.key,
+    required this.snapEnabled,
+    required this.selectedScale,
+    required this.rootNote,
+    required this.onToggleSnap,
+    required this.onScaleChanged,
+    required this.onRootNoteChanged,
+    required this.onQuantizeAll,
+  });
+
+  static const Map<int, String> _rootNoteNames = {
+    0: 'C',
+    1: 'C#',
+    2: 'D',
+    3: 'D#',
+    4: 'E',
+    5: 'F',
+    6: 'F#',
+    7: 'G',
+    8: 'G#',
+    9: 'A',
+    10: 'A#',
+    11: 'B',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width <= 768;
+
+    if (isMobile) {
+      return _buildMobileLayout(context);
+    } else {
+      return _buildDesktopLayout(context);
+    }
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: _buildSnapToggle(context),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 1,
+          child: _buildScaleDropdown(context),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 1,
+          child: _buildRootNoteDropdown(context),
+        ),
+        const SizedBox(width: 8),
+        _buildQuantizeAllButton(context),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildSnapToggle(context),
+            ),
+            const SizedBox(width: 8),
+            _buildQuantizeAllButton(context),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildScaleDropdown(context),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildRootNoteDropdown(context),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSnapToggle(BuildContext context) {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.piano),
+      label: Text('Snap to Scale: ${snapEnabled ? "ON" : "OFF"}'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: snapEnabled
+            ? const Color(0xFF14b8a6) // primaryTeal
+            : Colors.grey,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      onPressed: onToggleSnap,
+    );
+  }
+
+  Widget _buildScaleDropdown(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      initialValue: selectedScale,
+      decoration: InputDecoration(
+        labelText: 'Scale',
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        filled: true,
+        fillColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey.shade800
+            : Colors.grey.shade50,
+      ),
+      items: ScaleQuantizer.scaleNames.map((scale) {
+        return DropdownMenuItem<String>(
+          value: scale,
+          child: Text(scale),
+        );
+      }).toList(),
+      onChanged: snapEnabled
+          ? (scale) {
+              if (scale != null) {
+                onScaleChanged(scale);
+              }
+            }
+          : null, // Disabled when snap is off
+    );
+  }
+
+  Widget _buildRootNoteDropdown(BuildContext context) {
+    return DropdownButtonFormField<int>(
+      initialValue: rootNote,
+      decoration: InputDecoration(
+        labelText: 'Root',
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        filled: true,
+        fillColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey.shade800
+            : Colors.grey.shade50,
+      ),
+      items: _rootNoteNames.entries.map((entry) {
+        return DropdownMenuItem<int>(
+          value: entry.key,
+          child: Text(entry.value),
+        );
+      }).toList(),
+      onChanged: snapEnabled
+          ? (note) {
+              if (note != null) {
+                onRootNoteChanged(note);
+              }
+            }
+          : null, // Disabled when snap is off
+    );
+  }
+
+  Widget _buildQuantizeAllButton(BuildContext context) {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.auto_fix_high),
+      label: const Text('Quantize All'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: snapEnabled
+            ? const Color(0xFF0f766e) // darkTeal
+            : Colors.grey.shade400,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      onPressed: snapEnabled ? onQuantizeAll : null,
+    );
+  }
+
+  /// Show confirmation dialog for bulk quantization
+  static Future<bool> showQuantizeAllDialog(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Quantize All Steps?'),
+            content: const Text(
+              'This will apply the current scale to all 16 steps. '
+              'This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF14b8a6),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Quantize All'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+}

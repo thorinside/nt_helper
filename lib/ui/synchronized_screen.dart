@@ -257,6 +257,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     return SlotDetailView(
                       key: ValueKey("$index - ${slot.algorithm.guid}"),
                       slot: slot,
+                      slotIndex: index,
                       units: widget.units,
                       firmwareVersion: widget.firmwareVersion,
                     );
@@ -768,6 +769,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           return SlotDetailView(
             key: ValueKey("$index - ${slot.algorithm.guid}"),
             slot: slot,
+            slotIndex: index,
             units: widget.units,
             firmwareVersion: widget.firmwareVersion,
           );

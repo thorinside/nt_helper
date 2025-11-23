@@ -24,7 +24,7 @@ workflow_path: "method-brownfield.yaml"
 workflow_status:
   # Phase 0: Discovery (Optional)
   brainstorm-project: skipped
-  research: skipped
+  research: "docs/research-step-sequencer-2025-11-23.md"
   product-brief: skipped
 
   # Phase 1: Planning

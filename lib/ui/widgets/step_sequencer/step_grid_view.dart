@@ -13,11 +13,17 @@ import 'package:nt_helper/ui/widgets/step_sequencer/step_edit_modal.dart';
 class StepGridView extends StatelessWidget {
   final Slot slot;
   final int slotIndex;
+  final bool snapEnabled;
+  final String selectedScale;
+  final int rootNote;
 
   const StepGridView({
     super.key,
     required this.slot,
     required this.slotIndex,
+    required this.snapEnabled,
+    required this.selectedScale,
+    required this.rootNote,
   });
 
   @override
@@ -142,6 +148,9 @@ class StepGridView extends StatelessWidget {
             stepIndex: stepIndex,
             params: params,
             slot: slot,
+            snapEnabled: snapEnabled,
+            selectedScale: selectedScale,
+            rootNote: rootNote,
           ),
         ),
       );
@@ -153,6 +162,9 @@ class StepGridView extends StatelessWidget {
           stepIndex: stepIndex,
           params: params,
           slot: slot,
+          snapEnabled: snapEnabled,
+          selectedScale: selectedScale,
+          rootNote: rootNote,
         ),
       );
     }

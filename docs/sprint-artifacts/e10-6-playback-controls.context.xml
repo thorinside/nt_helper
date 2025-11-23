@@ -1,0 +1,218 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>6</storyId>
+    <title>Playback Controls</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e10-6-playback-controls.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to configure how the sequence plays</iWant>
+    <soThat>I can control direction, length, and gate behavior</soThat>
+    <tasks>
+      <task id="1" ac="AC6.1">Create playback_controls.dart widget file</task>
+      <task id="2" ac="AC6.1">Implement Direction dropdown with all playback modes</task>
+      <task id="3" ac="AC6.2,AC6.3">Implement Start Step and End Step inputs with validation</task>
+      <task id="4" ac="AC6.4">Implement Gate Length slider (1-99%)</task>
+      <task id="5" ac="AC6.5">Implement Trigger Length slider (1-100ms)</task>
+      <task id="6" ac="AC6.6">Implement Glide Time slider (0-1000ms)</task>
+      <task id="7" ac="AC6.7">Integrate ParameterWriteDebouncer for slider updates</task>
+      <task id="8" ac="AC6.7">Implement responsive layout (full vs. compact)</task>
+      <task id="9" ac="AC6.7">Integrate PlaybackControls into StepSequencerView (15% height)</task>
+      <task id="10" ac="ALL">Write widget tests for all controls</task>
+      <task id="11" ac="ALL">Write integration tests for parameter updates</task>
+      <task id="12" ac="ALL">Test responsive layout switching</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC6.1">
+      <description>Direction dropdown (Forward, Reverse, Pendulum, Random, etc.)</description>
+      <details>Dropdown widget displaying all available direction modes. Current direction value read from slot state via StepSequencerParams.direction. Options match hardware specification. Selection updates parameter via cubit.updateParameterValue(). Dropdown styled consistently with app theme.</details>
+    </criterion>
+    <criterion id="AC6.2">
+      <description>Start Step input (1-16)</description>
+      <details>Number input or slider for start step (range 1-16, displayed to user). Current value read from slot state via StepSequencerParams.startStep. Value validated to be within valid range. Changes update parameter immediately (no debounce needed for discrete values). Invalid values prevented or corrected.</details>
+    </criterion>
+    <criterion id="AC6.3">
+      <description>End Step input (1-16)</description>
+      <details>Number input or slider for end step (range 1-16, displayed to user). Current value read from slot state via StepSequencerParams.endStep. Value validated to be ≥ start step. Changes update parameter immediately. Visual indication if end step < start step (validation warning).</details>
+    </criterion>
+    <criterion id="AC6.4">
+      <description>Gate Length slider (1-99%)</description>
+      <details>Horizontal slider for gate length percentage. Current value read from slot state via StepSequencerParams.gateLength. Range 1-99% with numeric value display. Slider updates debounced (50ms) to prevent excessive MIDI writes during drag. Tooltip or label explaining "Gate Length" meaning.</details>
+    </criterion>
+    <criterion id="AC6.5">
+      <description>Trigger Length slider (1-100ms)</description>
+      <details>Horizontal slider for trigger length in milliseconds. Current value read from slot state via StepSequencerParams.triggerLength. Range 1-100ms with numeric value display. Slider updates debounced (50ms). Tooltip or label explaining "Trigger Length" meaning.</details>
+    </criterion>
+    <criterion id="AC6.6">
+      <description>Glide Time slider (0-1000ms)</description>
+      <details>Horizontal slider for glide/portamento time in milliseconds. Current value read from slot state via StepSequencerParams.glideTime. Range 0-1000ms with numeric value display. Slider updates debounced (50ms). Tooltip or label explaining "Glide Time" (portamento between notes).</details>
+    </criterion>
+    <criterion id="AC6.7">
+      <description>All controls auto-sync with 50ms debounce</description>
+      <details>All slider changes debounced using ParameterWriteDebouncer. Discrete values (Direction, Start/End Step) update immediately (no debounce). Visual feedback shows sync status (synced, editing, syncing). Changes persist through offline mode and sync when reconnected. All controls read current values from DistingCubit state.</details>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics/epic-step-sequencer-ui.md</path>
+        <title>Epic: Visual Step Sequencer UI Widget</title>
+        <section>Story 6: Playback Controls (lines 455-471)</section>
+        <snippet>User story details and acceptance criteria for playback controls including direction, start/end steps, gate length, trigger length, and glide time parameters. Estimated effort: 1 day.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-step-sequencer-ui-technical-context.md</path>
+        <title>Technical Context: Step Sequencer UI Epic</title>
+        <section>Architecture Alignment - State Management (lines 46-96)</section>
+        <snippet>Describes how DistingCubit provides Slot objects with algorithm, parameters, and parameterValues. Shows how to use BlocBuilder with buildWhen optimization and updateParameterValue() method for MIDI writes.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-step-sequencer-ui-technical-context.md</path>
+        <title>Technical Context: Step Sequencer UI Epic</title>
+        <section>Technical Decisions - Parameter Value Debouncing (lines 155-210)</section>
+        <snippet>Explains the ParameterWriteDebouncer implementation using Timer with 50ms delay. Shows how to schedule debounced updates and properly dispose of timers in widget dispose().</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-step-sequencer-ui-technical-context.md</path>
+        <title>Technical Context: Step Sequencer UI Epic</title>
+        <section>Parameter Mapping Strategy (lines 387-505)</section>
+        <snippet>Details the StepSequencerParams.fromSlot() parameter discovery pattern. Shows global parameter getters: direction, startStep, endStep, gateLength, triggerLength, glideTime. Explains null-safe parameter resolution.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/e10-3-step-selection-and-editing.md</path>
+        <title>Story: Step Selection and Editing</title>
+        <section>Technical Implementation Notes - Modal Implementation Pattern (lines 90-132)</section>
+        <snippet>Reference pattern for using ParameterWriteDebouncer, calling cubit.updateParameterValue(), and proper dispose pattern. Shows how to handle debounced vs. immediate parameter updates.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/services/step_sequencer_params.dart</path>
+        <kind>service</kind>
+        <symbol>StepSequencerParams</symbol>
+        <lines>1-160</lines>
+        <reason>Parameter discovery service providing access to playback control parameter indices via getters: direction, startStep, endStep, gateLength, triggerLength, glideTime. Required for resolving parameter numbers when calling updateParameterValue().</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines>1130</lines>
+        <reason>State management cubit with updateParameterValue() method (line 1130) that writes parameter changes to hardware via MIDI. All playback control changes must call this method with slotIndex, paramNumber, and value.</reason>
+      </file>
+      <file>
+        <path>lib/ui/step_sequencer_view.dart</path>
+        <kind>widget</kind>
+        <symbol>StepSequencerView</symbol>
+        <lines>1-100+</lines>
+        <reason>Main Step Sequencer widget that will integrate the new PlaybackControls widget. Currently has header (5%), sequence selector, quantize controls, and step grid. PlaybackControls will be added as 15% height section at bottom.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/quantize_controls.dart</path>
+        <kind>widget</kind>
+        <symbol>QuantizeControls</symbol>
+        <lines>existing</lines>
+        <reason>Reference widget showing similar control layout pattern with dropdowns and toggles. Can be used as a style guide for PlaybackControls UI consistency.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/sequence_selector.dart</path>
+        <kind>widget</kind>
+        <symbol>SequenceSelector</symbol>
+        <lines>existing</lines>
+        <reason>Reference widget showing dropdown implementation pattern for discrete parameter selection. Similar pattern needed for Direction dropdown.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter" version="sdk" />
+        <package name="flutter_bloc" version="^9.0.0" />
+      </flutter>
+      <dart>
+        <package name="cupertino_icons" version="^1.0.8" />
+        <package name="flutter_midi_command" version="^0.5.3" />
+        <package name="image" version="^4.5.4" />
+        <package name="shared_preferences" version="^2.5.3" />
+        <package name="package_info_plus" version="^9.0.0" />
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Use ParameterWriteDebouncer pattern from Story 1 for slider debouncing (50ms delay)</constraint>
+    <constraint>Discrete values (Direction, Start/End Step) should update immediately without debouncing</constraint>
+    <constraint>All parameter changes must call context.read&lt;DistingCubit&gt;().updateParameterValue(slotIndex, paramNumber, value)</constraint>
+    <constraint>Use StepSequencerParams.fromSlot() to resolve parameter numbers for global playback parameters</constraint>
+    <constraint>Widget must use BlocBuilder&lt;DistingCubit, DistingState&gt; with buildWhen optimization to only rebuild when playback parameters change</constraint>
+    <constraint>Implement responsive layout: full layout for desktop/tablet (width &gt; 768px), compact layout for mobile (width ≤ 768px)</constraint>
+    <constraint>Desktop layout uses horizontal Wrap with spacing, mobile uses vertical Column with compact spacing</constraint>
+    <constraint>All controls must read current values from slot.parameterValues using parameter indices from StepSequencerParams</constraint>
+    <constraint>Must properly dispose of ParameterWriteDebouncer in widget dispose() method to prevent memory leaks</constraint>
+    <constraint>Follow theme styling conventions for consistency with existing Step Sequencer widgets</constraint>
+    <constraint>Handle null parameter numbers gracefully (some parameters may not be available in all firmware versions)</constraint>
+    <constraint>Integration into StepSequencerView: allocate 15% height for PlaybackControls section</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>DistingCubit.updateParameterValue</name>
+      <kind>method</kind>
+      <signature>Future&lt;void&gt; updateParameterValue({required int slotIndex, required int paramNumber, required dynamic value})</signature>
+      <path>lib/cubit/disting_cubit.dart:1130</path>
+      <description>Updates a single parameter value and writes to hardware via MIDI. All playback control changes must use this method.</description>
+    </interface>
+    <interface>
+      <name>StepSequencerParams global parameter getters</name>
+      <kind>property getters</kind>
+      <signature>int? get direction; int? get startStep; int? get endStep; int? get gateLength; int? get triggerLength; int? get glideTime;</signature>
+      <path>lib/services/step_sequencer_params.dart:152-158</path>
+      <description>Returns parameter index for each global playback parameter, or null if not found. Used to resolve paramNumber argument for updateParameterValue().</description>
+    </interface>
+    <interface>
+      <name>ParameterWriteDebouncer (pattern from Story 1)</name>
+      <kind>class</kind>
+      <signature>class ParameterWriteDebouncer { void schedule(String key, VoidCallback callback, Duration delay); void dispose(); }</signature>
+      <path>Story 1 implementation (to be created or found)</path>
+      <description>Debounces parameter writes by canceling pending timers and scheduling new ones. Required for slider controls to prevent excessive MIDI writes during drag.</description>
+    </interface>
+    <interface>
+      <name>Slot.parameterValues</name>
+      <kind>property</kind>
+      <signature>List&lt;ParameterValue&gt; parameterValues</signature>
+      <path>lib/cubit/disting_state.dart</path>
+      <description>List of current parameter values indexed by parameter number. Used to read current playback control values for display in UI controls.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Tests are located in test/ directory mirroring lib/ structure. Use flutter_test package for widget tests and flutter_bloc_test for cubit tests. Widget tests should use pumpWidget with MaterialApp wrapper. Integration tests go in test/integration/. All tests must pass before commit (flutter test). Follow existing test patterns in test/ui/widgets/ for consistency.
+    </standards>
+    <locations>
+      <location>test/ui/widgets/step_sequencer/</location>
+      <location>test/integration/</location>
+      <location>test/services/</location>
+    </locations>
+    <ideas>
+      <test ac="AC6.1">Widget test: verify Direction dropdown renders with all options and calls updateParameterValue when selection changes</test>
+      <test ac="AC6.2">Widget test: verify Start Step input accepts valid values (1-16) and rejects invalid values</test>
+      <test ac="AC6.3">Widget test: verify End Step input validates end &gt;= start and shows warning for invalid range</test>
+      <test ac="AC6.4">Widget test: verify Gate Length slider renders with correct range (1-99%) and updates on change</test>
+      <test ac="AC6.5">Widget test: verify Trigger Length slider renders with correct range (1-100ms)</test>
+      <test ac="AC6.6">Widget test: verify Glide Time slider renders with correct range (0-1000ms)</test>
+      <test ac="AC6.7">Unit test: verify debouncer only calls updateParameterValue once after rapid slider changes (50ms debounce)</test>
+      <test ac="AC6.7">Unit test: verify discrete values (direction, start/end step) update immediately without debounce</test>
+      <test ac="AC6.7">Integration test: verify all playback controls update slot state and sync to hardware when connected</test>
+      <test ac="ALL">Widget test: verify responsive layout switches between full and compact modes based on screen width</test>
+      <test ac="ALL">Integration test: verify playback controls work in offline mode (changes tracked, sync on reconnect)</test>
+      <test ac="ALL">Widget test: verify all controls read current values from slot.parameterValues and display correctly</test>
+    </ideas>
+  </tests>
+</story-context>

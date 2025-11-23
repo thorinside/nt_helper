@@ -1,6 +1,6 @@
 # Story 10.1: Algorithm Widget Registration
 
-Status: review
+Status: done
 
 ## Story
 

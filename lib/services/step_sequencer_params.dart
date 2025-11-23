@@ -57,7 +57,7 @@ class StepSequencerParams {
   void _buildParameterMap(List<ParameterInfo> parameters) {
     for (int i = 0; i < parameters.length; i++) {
       final param = parameters[i];
-      final name = param.name as String;
+      final name = param.name;
       _paramIndices[name] = i;
     }
   }
