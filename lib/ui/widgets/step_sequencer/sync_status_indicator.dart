@@ -13,6 +13,9 @@ enum SyncStatus {
 
   /// MIDI write failed
   error,
+
+  /// Hardware disconnected, editing locally
+  offline,
 }
 
 /// Displays sync status for Step Sequencer parameter changes
@@ -88,6 +91,8 @@ class SyncStatusIndicator extends StatelessWidget {
         return const Color(0xFF3b82f6); // blue
       case SyncStatus.error:
         return const Color(0xFFef4444); // red
+      case SyncStatus.offline:
+        return const Color(0xFFf59e0b); // orange
     }
   }
 
@@ -101,6 +106,8 @@ class SyncStatusIndicator extends StatelessWidget {
         return 'Syncing...';
       case SyncStatus.error:
         return 'Error';
+      case SyncStatus.offline:
+        return 'Offline';
     }
   }
 }

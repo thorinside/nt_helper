@@ -126,5 +126,5 @@ development_status:
   e10-5-sequence-selector: ready-for-dev
   e10-6-playback-controls: review
   e10-7-auto-sync-with-debouncing: drafted
-  e10-8-offline-mode-support: backlog
+  e10-8-offline-mode-support: done
   epic-10-retrospective: optional

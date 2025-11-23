@@ -78,90 +78,123 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   @override
   Widget build(BuildContext context) {
     try {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header with sync status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      return BlocBuilder<DistingCubit, DistingState>(
+        builder: (context, state) {
+          // Determine if we're offline
+          final isOffline = state.maybeWhen(
+            connected: (disting, inputDevice, outputDevice, offline, loading) => offline,
+            synchronized: (
+              disting,
+              distingVersion,
+              firmwareVersion,
+              presetName,
+              algorithms,
+              slots,
+              unitStrings,
+              inputDevice,
+              outputDevice,
+              loading,
+              offline,
+              screenshot,
+              demo,
+              videoStream,
+            ) => offline,
+            orElse: () => false,
+          );
+
+          // Update sync status based on offline state
+          final effectiveSyncStatus = isOffline ? SyncStatus.offline : _syncStatus;
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Text(
-                    'Step Sequencer',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
+                // Offline banner (if offline)
+                if (isOffline) _buildOfflineBanner(context),
+                if (isOffline) const SizedBox(height: 16),
+
+                // Header with sync status
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Step Sequencer',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SyncStatusIndicator(
+                      status: effectiveSyncStatus,
+                      errorMessage: _lastError,
+                      onRetry: _retryFailedWrites,
+                    ),
+                  ],
                 ),
-                SyncStatusIndicator(
-                  status: _syncStatus,
-                  errorMessage: _lastError,
-                  onRetry: _retryFailedWrites,
+                const SizedBox(height: 16),
+
+                // Sequence selector
+                SequenceSelector(
+                  currentSequence: _currentSequence,
+                  isLoading: _isLoadingSequence,
+                  onSequenceChanged: _handleSequenceChange,
+                ),
+                const SizedBox(height: 16),
+
+                // Quantize controls
+                QuantizeControls(
+                  snapEnabled: _snapEnabled,
+                  selectedScale: _selectedScale,
+                  rootNote: _rootNote,
+                  onToggleSnap: _toggleSnapToScale,
+                  onScaleChanged: _setScale,
+                  onRootNoteChanged: _setRootNote,
+                  onQuantizeAll: _quantizeAllSteps,
+                ),
+                const SizedBox(height: 16),
+
+                // Step grid and playback controls (expanded to fill available space)
+                Expanded(
+                  child: Column(
+                    children: [
+                      // Step grid (80% of expanded space)
+                      Expanded(
+                        flex: 80,
+                        child: StepGridView(
+                          slot: widget.slot,
+                          slotIndex: widget.slotIndex,
+                          snapEnabled: _snapEnabled,
+                          selectedScale: _selectedScale,
+                          rootNote: _rootNote,
+                        ),
+                      ),
+
+                      // Playback controls (15% of expanded space)
+                      Expanded(
+                        flex: 15,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final width = MediaQuery.of(context).size.width;
+                            final isMobile = width <= 768;
+                            final params = StepSequencerParams.fromSlot(widget.slot);
+
+                            return PlaybackControls(
+                              slotIndex: widget.slotIndex,
+                              params: params,
+                              slot: widget.slot,
+                              compact: isMobile,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Sequence selector
-            SequenceSelector(
-              currentSequence: _currentSequence,
-              isLoading: _isLoadingSequence,
-              onSequenceChanged: _handleSequenceChange,
-            ),
-            const SizedBox(height: 16),
-
-            // Quantize controls
-            QuantizeControls(
-              snapEnabled: _snapEnabled,
-              selectedScale: _selectedScale,
-              rootNote: _rootNote,
-              onToggleSnap: _toggleSnapToScale,
-              onScaleChanged: _setScale,
-              onRootNoteChanged: _setRootNote,
-              onQuantizeAll: _quantizeAllSteps,
-            ),
-            const SizedBox(height: 16),
-
-            // Step grid and playback controls (expanded to fill available space)
-            Expanded(
-              child: Column(
-                children: [
-                  // Step grid (80% of expanded space)
-                  Expanded(
-                    flex: 80,
-                    child: StepGridView(
-                      slot: widget.slot,
-                      slotIndex: widget.slotIndex,
-                      snapEnabled: _snapEnabled,
-                      selectedScale: _selectedScale,
-                      rootNote: _rootNote,
-                    ),
-                  ),
-
-                  // Playback controls (15% of expanded space)
-                  Expanded(
-                    flex: 15,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final width = MediaQuery.of(context).size.width;
-                        final isMobile = width <= 768;
-                        final params = StepSequencerParams.fromSlot(widget.slot);
-
-                        return PlaybackControls(
-                          slotIndex: widget.slotIndex,
-                          params: params,
-                          slot: widget.slot,
-                          compact: isMobile,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       );
     } catch (e) {
       // Fallback to error message if widget fails to render
@@ -381,5 +414,44 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       _syncStatus = SyncStatus.synced;
       _lastError = null;
     });
+  }
+
+  /// Build offline banner widget
+  Widget _buildOfflineBanner(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.orange.shade900.withValues(alpha: 0.3)
+            : Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? Colors.orange.shade700 : Colors.orange.shade300,
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.cloud_off,
+            color: isDark ? Colors.orange.shade400 : Colors.orange.shade900,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Offline - editing locally',
+              style: TextStyle(
+                color: isDark ? Colors.orange.shade400 : Colors.orange.shade900,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
