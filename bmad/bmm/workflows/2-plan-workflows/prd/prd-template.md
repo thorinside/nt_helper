@@ -1,62 +1,204 @@
-# {{project_name}} Product Requirements Document (PRD)
+# {{project_name}} - Product Requirements Document
 
 **Author:** {{user_name}}
 **Date:** {{date}}
-**Project Level:** {{project_level}}
-**Target Scale:** {{target_scale}}
+**Version:** 1.0
 
 ---
 
-## Goals and Background Context
+## Executive Summary
 
-### Goals
+{{vision_alignment}}
 
-{{goals}}
+### What Makes This Special
 
-### Background Context
-
-{{background_context}}
+{{product_differentiator}}
 
 ---
 
-## Requirements
+## Project Classification
 
-### Functional Requirements
+**Technical Type:** {{project_type}}
+**Domain:** {{domain_type}}
+**Complexity:** {{complexity_level}}
 
-{{functional_requirements}}
+{{project_classification}}
 
-### Non-Functional Requirements
+{{#if domain_context_summary}}
 
-{{non_functional_requirements}}
+### Domain Context
+
+{{domain_context_summary}}
+{{/if}}
 
 ---
 
-## User Journeys
+## Success Criteria
 
-{{user_journeys}}
+{{success_criteria}}
+
+{{#if business_metrics}}
+
+### Business Metrics
+
+{{business_metrics}}
+{{/if}}
 
 ---
 
-## UX Design Principles
+## Product Scope
+
+### MVP - Minimum Viable Product
+
+{{mvp_scope}}
+
+### Growth Features (Post-MVP)
+
+{{growth_features}}
+
+### Vision (Future)
+
+{{vision_features}}
+
+---
+
+{{#if domain_considerations}}
+
+## Domain-Specific Requirements
+
+{{domain_considerations}}
+
+This section shapes all functional and non-functional requirements below.
+{{/if}}
+
+---
+
+{{#if innovation_patterns}}
+
+## Innovation & Novel Patterns
+
+{{innovation_patterns}}
+
+### Validation Approach
+
+{{validation_approach}}
+{{/if}}
+
+---
+
+{{#if project_type_requirements}}
+
+## {{project_type}} Specific Requirements
+
+{{project_type_requirements}}
+
+{{#if endpoint_specification}}
+
+### API Specification
+
+{{endpoint_specification}}
+{{/if}}
+
+{{#if authentication_model}}
+
+### Authentication & Authorization
+
+{{authentication_model}}
+{{/if}}
+
+{{#if platform_requirements}}
+
+### Platform Support
+
+{{platform_requirements}}
+{{/if}}
+
+{{#if device_features}}
+
+### Device Capabilities
+
+{{device_features}}
+{{/if}}
+
+{{#if tenant_model}}
+
+### Multi-Tenancy Architecture
+
+{{tenant_model}}
+{{/if}}
+
+{{#if permission_matrix}}
+
+### Permissions & Roles
+
+{{permission_matrix}}
+{{/if}}
+{{/if}}
+
+---
+
+{{#if ux_principles}}
+
+## User Experience Principles
 
 {{ux_principles}}
 
----
+### Key Interactions
 
-## User Interface Design Goals
-
-{{ui_design_goals}}
-
----
-
-## Epic List
-
-{{epic_list}}
-
-> **Note:** Detailed epic breakdown with full story specifications is available in [epics.md](./epics.md)
+{{key_interactions}}
+{{/if}}
 
 ---
 
-## Out of Scope
+## Functional Requirements
 
-{{out_of_scope}}
+{{functional_requirements_complete}}
+
+---
+
+## Non-Functional Requirements
+
+{{#if performance_requirements}}
+
+### Performance
+
+{{performance_requirements}}
+{{/if}}
+
+{{#if security_requirements}}
+
+### Security
+
+{{security_requirements}}
+{{/if}}
+
+{{#if scalability_requirements}}
+
+### Scalability
+
+{{scalability_requirements}}
+{{/if}}
+
+{{#if accessibility_requirements}}
+
+### Accessibility
+
+{{accessibility_requirements}}
+{{/if}}
+
+{{#if integration_requirements}}
+
+### Integration
+
+{{integration_requirements}}
+{{/if}}
+
+{{#if no_nfrs}}
+_No specific non-functional requirements identified for this project type._
+{{/if}}
+
+---
+
+_This PRD captures the essence of {{project_name}} - {{product_value_summary}}_
+
+_Created through collaborative discovery between {{user_name}} and AI facilitator._

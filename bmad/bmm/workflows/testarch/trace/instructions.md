@@ -126,9 +126,9 @@ This phase focuses on mapping requirements to tests, analyzing coverage, and ide
 2. Build traceability matrix:
 
    ```
-   | Criterion ID | Description | Test ID | Test File | Test Level | Coverage Status |
-   |--------------|-------------|---------|-----------|------------|-----------------|
-   | AC-1         | User can... | 1.3-E2E-001 | e2e/auth.spec.ts | E2E | FULL |
+   | Criterion ID | Description | Test ID     | Test File        | Test Level | Coverage Status |
+   | ------------ | ----------- | ----------- | ---------------- | ---------- | --------------- |
+   | AC-1         | User can... | 1.3-E2E-001 | e2e/auth.spec.ts | E2E        | FULL            |
    ```
 
 3. Classify coverage status for each criterion:

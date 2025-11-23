@@ -1,22 +1,32 @@
-# Story: {{story_title}}
+# Story {{N}}.{{M}}: {{story_title}}
 
-Status: Draft
+**Status:** Draft
 
-## Story
+---
 
-As a {{role}},
+## User Story
+
+As a {{user_type}},
 I want {{capability}},
-so that {{benefit}}.
+So that {{value_benefit}}.
+
+---
 
 ## Acceptance Criteria
 
-{{acceptance_criteria}}
+**Given** {{precondition}}
+**When** {{action}}
+**Then** {{expected_outcome}}
 
-## Tasks / Subtasks
+**And** {{additional_criteria}}
+
+---
+
+## Implementation Details
+
+### Tasks / Subtasks
 
 {{tasks_subtasks}}
-
-## Dev Notes
 
 ### Technical Summary
 
@@ -24,20 +34,34 @@ so that {{benefit}}.
 
 ### Project Structure Notes
 
-- Files to modify: {{files_to_modify}}
-- Expected test locations: {{test_locations}}
-- Estimated effort: {{story_points}} story points ({{time_estimate}})
+- **Files to modify:** {{files_to_modify}}
+- **Expected test locations:** {{test_locations}}
+- **Estimated effort:** {{story_points}} story points ({{time_estimate}})
+- **Prerequisites:** {{dependencies}}
 
-### References
+### Key Code References
 
-- **Tech Spec:** See tech-spec.md for detailed implementation
-- **Architecture:** {{architecture_references}}
+{{existing_code_references}}
+
+---
+
+## Context References
+
+**Tech-Spec:** [tech-spec.md](../tech-spec.md) - Primary context document containing:
+
+- Brownfield codebase analysis (if applicable)
+- Framework and library details with versions
+- Existing patterns to follow
+- Integration points and dependencies
+- Complete implementation guidance
+
+**Architecture:** {{architecture_references}}
+
+<!-- Additional context XML paths will be added here if story-context workflow is run -->
+
+---
 
 ## Dev Agent Record
-
-### Context Reference
-
-<!-- Path(s) to story context XML will be added here by context workflow -->
 
 ### Agent Model Used
 
@@ -47,10 +71,20 @@ so that {{benefit}}.
 
 <!-- Will be populated during dev-story execution -->
 
-### Completion Notes List
+### Completion Notes
 
 <!-- Will be populated during dev-story execution -->
 
-### File List
+### Files Modified
 
 <!-- Will be populated during dev-story execution -->
+
+### Test Results
+
+<!-- Will be populated during dev-story execution -->
+
+---
+
+## Review Notes
+
+<!-- Will be populated during code review -->

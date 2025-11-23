@@ -39,7 +39,7 @@
 1. Run `story-context` to generate context file and mark drafted stories as ready
 2. Run `story-ready` to quickly mark drafted stories as ready without generating context
 3. Run `create-story` if no incomplete stories are drafted yet
-4. Check {output-folder}/sprint-status.yaml to see current sprint status
+4. Check {output_folder}/sprint-status.yaml to see current sprint status
       </output>
       <action>HALT</action>
     </check>
@@ -72,7 +72,52 @@ Proceeding with story file only. For better context, consider running `story-con
     <action if="incomplete task or subtask requirements ambiguous">ASK user to clarify or HALT</action>
   </step>
 
-  <step n="1.5" goal="Mark story in-progress" tag="sprint-status">
+  <step n="0.5" goal="Discover and load project documents">
+    <invoke-protocol name="discover_inputs" />
+    <note>After discovery, these content variables are available: {architecture_content}, {tech_spec_content}, {ux_design_content}, {epics_content} (selective load), {document_project_content}</note>
+  </step>
+
+  <step n="1.5" goal="Detect review continuation and extract review context">
+    <critical>Determine if this is a fresh start or continuation after code review</critical>
+
+    <action>Check if "Senior Developer Review (AI)" section exists in the story file</action>
+    <action>Check if "Review Follow-ups (AI)" subsection exists under Tasks/Subtasks</action>
+
+    <check if="Senior Developer Review section exists">
+      <action>Set review_continuation = true</action>
+      <action>Extract from "Senior Developer Review (AI)" section:
+        - Review outcome (Approve/Changes Requested/Blocked)
+        - Review date
+        - Total action items with checkboxes (count checked vs unchecked)
+        - Severity breakdown (High/Med/Low counts)
+      </action>
+      <action>Count unchecked [ ] review follow-up tasks in "Review Follow-ups (AI)" subsection</action>
+      <action>Store list of unchecked review items as {{pending_review_items}}</action>
+
+      <output>⏯️ **Resuming Story After Code Review** ({{review_date}})
+
+**Review Outcome:** {{review_outcome}}
+**Action Items:** {{unchecked_review_count}} remaining to address
+**Priorities:** {{high_count}} High, {{med_count}} Medium, {{low_count}} Low
+
+**Strategy:** Will prioritize review follow-up tasks (marked [AI-Review]) before continuing with regular tasks.
+      </output>
+    </check>
+
+    <check if="Senior Developer Review section does NOT exist">
+      <action>Set review_continuation = false</action>
+      <action>Set {{pending_review_items}} = empty</action>
+
+      <output>🚀 **Starting Fresh Implementation**
+
+Story: {{story_key}}
+Context file: {{context_available}}
+First incomplete task: {{first_task_description}}
+      </output>
+    </check>
+  </step>
+
+  <step n="1.6" goal="Mark story in-progress" tag="sprint-status">
     <action>Load the FULL file: {{output_folder}}/sprint-status.yaml</action>
     <action>Read all development_status entries to find {{story_key}}</action>
     <action>Get current status value for development_status[{{story_key}}]</action>
@@ -126,10 +171,34 @@ Expected ready-for-dev or in-progress. Continuing anyway...
     <action if="new tests fail">STOP and fix before continuing</action>
   </step>
 
-  <step n="5" goal="Mark task complete and update story">
+  <step n="5" goal="Mark task complete, track review resolutions, and update story">
+    <critical>If task is a review follow-up, must mark BOTH the task checkbox AND the corresponding action item in the review section</critical>
+
+    <action>Check if completed task has [AI-Review] prefix (indicates review follow-up task)</action>
+
+    <check if="task is review follow-up">
+      <action>Extract review item details (severity, description, related AC/file)</action>
+      <action>Add to resolution tracking list: {{resolved_review_items}}</action>
+
+      <!-- Mark task in Review Follow-ups section -->
+      <action>Mark task checkbox [x] in "Tasks/Subtasks → Review Follow-ups (AI)" section</action>
+
+      <!-- CRITICAL: Also mark corresponding action item in review section -->
+      <action>Find matching action item in "Senior Developer Review (AI) → Action Items" section by matching description</action>
+      <action>Mark that action item checkbox [x] as resolved</action>
+
+      <action>Add to Dev Agent Record → Completion Notes: "✅ Resolved review finding [{{severity}}]: {{description}}"</action>
+    </check>
+
     <action>ONLY mark the task (and subtasks) checkbox with [x] if ALL tests pass and validation succeeds</action>
     <action>Update File List section with any new, modified, or deleted files (paths relative to repo root)</action>
     <action>Add completion notes to Dev Agent Record if significant changes were made (summarize intent, approach, and any follow-ups)</action>
+
+    <check if="review_continuation == true and {{resolved_review_items}} is not empty">
+      <action>Count total resolved review items in this session</action>
+      <action>Add Change Log entry: "Addressed code review findings - {{resolved_count}} items resolved (Date: {{date}})"</action>
+    </check>
+
     <action>Save the story file</action>
     <action>Determine if more incomplete tasks remain</action>
     <action if="more tasks remain"><goto step="2">Next task</goto></action>
@@ -188,7 +257,7 @@ Story is marked Ready for Review in file, but sprint-status.yaml may be out of s
       - Review the implemented story yourself and test the changes
       - Verify all acceptance criteria are met
       - Ensure deployment readiness if applicable
-      - Run `review-story` workflow for peer review
+      - Run `code-review` workflow for peer review
       - Check sprint-status.yaml to see project progress
     </action>
     <action>Remain flexible - allow user to choose their own path or ask for other assistance</action>

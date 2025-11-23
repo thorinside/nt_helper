@@ -2,50 +2,67 @@
 
 <critical>The workflow execution engine is governed by: {project_root}/bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: {installed_path}/workflow.yaml</critical>
+<critical>This workflow uses ADAPTIVE FACILITATION - adjust your communication style based on {user_skill_level}</critical>
 <critical>This workflow generates structured research prompts optimized for AI platforms</critical>
-<critical>Based on 2025 best practices from ChatGPT, Gemini, Grok, and Claude</critical>
+<critical>Based on {{current_year}} best practices from ChatGPT, Gemini, Grok, and Claude</critical>
+<critical>Communicate all responses in {communication_language} and tailor to {user_skill_level}</critical>
+<critical>Generate all documents in {document_output_language}</critical>
+
+<critical>🚨 BUILD ANTI-HALLUCINATION INTO PROMPTS 🚨</critical>
+<critical>Generated prompts MUST instruct AI to cite sources with URLs for all factual claims</critical>
+<critical>Include validation requirements: "Cross-reference claims with at least 2 independent sources"</critical>
+<critical>Add explicit instructions: "If you cannot find reliable data, state 'No verified data found for [X]'"</critical>
+<critical>Require confidence indicators in prompts: "Mark each claim with confidence level and source quality"</critical>
+<critical>Include fact-checking instructions: "Distinguish between verified facts, analysis, and speculation"</critical>
+<critical>⚠️ CHECKPOINT PROTOCOL: After EVERY <template-output> tag, you MUST follow workflow.xml substep 2c: SAVE content to file immediately → SHOW checkpoint separator (━━━━━━━━━━━━━━━━━━━━━━━) → DISPLAY generated content → PRESENT options [a]Advanced Elicitation/[c]Continue/[p]Party-Mode/[y]YOLO → WAIT for user response. Never batch saves or skip checkpoints.</critical>
 
 <workflow>
 
-<step n="1" goal="Research Objective Discovery">
-<action>Understand what the user wants to research</action>
+<step n="1" goal="Discover what research prompt they need">
 
-**Let's create a powerful deep research prompt!**
+<action>Engage conversationally to understand their needs:
 
-<ask>What topic or question do you want to research?
+<check if="{user_skill_level} == 'expert'">
+  "Let's craft a research prompt optimized for AI deep research tools.
 
-Examples:
+What topic or question do you want to investigate, and which platform are you planning to use? (ChatGPT Deep Research, Gemini, Grok, Claude Projects)"
+</check>
 
-- "Future of electric vehicle battery technology"
-- "Impact of remote work on commercial real estate"
-- "Competitive landscape for AI coding assistants"
-- "Best practices for microservices architecture in fintech"</ask>
+<check if="{user_skill_level} == 'intermediate'">
+  "I'll help you create a structured research prompt for AI platforms like ChatGPT Deep Research, Gemini, or Grok.
+
+These tools work best with well-structured prompts that define scope, sources, and output format.
+
+What do you want to research?"
+</check>
+
+<check if="{user_skill_level} == 'beginner'">
+  "Think of this as creating a detailed brief for an AI research assistant.
+
+Tools like ChatGPT Deep Research can spend hours searching the web and synthesizing information - but they work best when you give them clear instructions about what to look for and how to present it.
+
+What topic are you curious about?"
+</check>
+</action>
+
+<action>Through conversation, discover:
+
+- **The research topic** - What they want to explore
+- **Their purpose** - Why they need this (decision-making, learning, writing, etc.)
+- **Target platform** - Which AI tool they'll use (affects prompt structure)
+- **Existing knowledge** - What they already know vs. what's uncertain
+
+Adapt your questions based on their clarity:
+
+- If they're vague → Help them sharpen the focus
+- If they're specific → Capture the details
+- If they're unsure about platform → Guide them to the best fit
+
+Don't make them fill out a form - have a real conversation.
+</action>
 
 <template-output>research_topic</template-output>
-
-<ask>What's your goal with this research?
-
-- Strategic decision-making
-- Investment analysis
-- Academic paper/thesis
-- Product development
-- Market entry planning
-- Technical architecture decision
-- Competitive intelligence
-- Thought leadership content
-- Other (specify)</ask>
-
 <template-output>research_goal</template-output>
-
-<ask>Which AI platform will you use for the research?
-
-1. ChatGPT Deep Research (o3/o1)
-2. Gemini Deep Research
-3. Grok DeepSearch
-4. Claude Projects
-5. Multiple platforms
-6. Not sure yet</ask>
-
 <template-output>target_platform</template-output>
 
 </step>
@@ -194,8 +211,6 @@ Examples:
 - Any topics or angles to avoid</ask>
 
 <template-output>special_requirements</template-output>
-
-<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 
 </step>
 
@@ -374,60 +389,50 @@ Select option (1-4):</ask>
 
 </step>
 
-<step n="FINAL" goal="Update status file on completion">
-<action>Search {output_folder}/ for files matching pattern: bmm-workflow-status.md</action>
-<action>Find the most recent file (by date in filename)</action>
+<step n="FINAL" goal="Update status file on completion" tag="workflow-status">
+<check if="standalone_mode != true">
+  <action>Load the FULL file: {output_folder}/bmm-workflow-status.yaml</action>
+  <action>Find workflow_status key "research"</action>
+  <critical>ONLY write the file path as the status value - no other text, notes, or metadata</critical>
+  <action>Update workflow_status["research"] = "{output_folder}/bmm-research-deep-prompt-{{date}}.md"</action>
+  <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
 
-<check if="status file exists">
-  <invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
-    <param>mode: update</param>
-    <param>action: complete_workflow</param>
-    <param>workflow_name: research</param>
-  </invoke-workflow>
-
-  <check if="success == true">
-    <output>Status updated! Next: {{next_workflow}}</output>
-  </check>
+<action>Find first non-completed workflow in workflow_status (next workflow to do)</action>
+<action>Determine next agent from path file based on next workflow</action>
+</check>
 
 <output>**✅ Deep Research Prompt Generated**
 
 **Research Prompt:**
 
-- Structured research prompt generated and saved
+- Structured research prompt generated and saved to {output_folder}/bmm-research-deep-prompt-{{date}}.md
 - Ready to execute with ChatGPT, Claude, Gemini, or Grok
 
-**Status file updated:**
+{{#if standalone_mode != true}}
+**Status Updated:**
 
-- Current step: research (deep-prompt) ✓
-- Progress: {{new_progress_percentage}}%
+- Progress tracking updated: research marked complete
+- Next workflow: {{next_workflow}}
+  {{else}}
+  **Note:** Running in standalone mode (no progress tracking)
+  {{/if}}
 
 **Next Steps:**
 
-- **Next required:** {{next_workflow}} ({{next_agent}} agent)
+{{#if standalone_mode != true}}
+
+- **Next workflow:** {{next_workflow}} ({{next_agent}} agent)
 - **Optional:** Execute the research prompt with AI platform, gather findings, or run additional research workflows
 
 Check status anytime with: `workflow-status`
-</output>
-</check>
-
-<check if="status file not found">
-  <output>**✅ Deep Research Prompt Generated**
-
-**Research Prompt:**
-
-- Structured research prompt generated and saved
-
-Note: Running in standalone mode (no status file).
-
-**Next Steps:**
-
+{{else}}
 Since no workflow is in progress:
 
 - Execute the research prompt with AI platform and gather findings
 - Refer to the BMM workflow guide if unsure what to do next
 - Or run `workflow-init` to create a workflow path and get guided next steps
+  {{/if}}
   </output>
-  </check>
   </step>
 
 </workflow>

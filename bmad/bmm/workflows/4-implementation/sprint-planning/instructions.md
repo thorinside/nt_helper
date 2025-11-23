@@ -3,6 +3,23 @@
 <critical>The workflow execution engine is governed by: {project-root}/bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: {project-root}/bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml</critical>
 
+## 📚 Document Discovery - Full Epic Loading
+
+**Strategy**: Sprint planning needs ALL epics and stories to build complete status tracking.
+
+**Epic Discovery Process:**
+
+1. **Search for whole document first** - Look for `epics.md`, `bmm-epics.md`, or any `*epic*.md` file
+2. **Check for sharded version** - If whole document not found, look for `epics/index.md`
+3. **If sharded version found**:
+   - Read `index.md` to understand the document structure
+   - Read ALL epic section files listed in the index (e.g., `epic-1.md`, `epic-2.md`, etc.)
+   - Process all epics and their stories from the combined content
+   - This ensures complete sprint status coverage
+4. **Priority**: If both whole and sharded versions exist, use the whole document
+
+**Fuzzy matching**: Be flexible with document names - users may use variations like `epics.md`, `bmm-epics.md`, `user-stories.md`, etc.
+
 <workflow>
 
 <step n="1" goal="Parse epic files and extract all work items">
@@ -25,6 +42,11 @@
 
 <action>Build complete inventory of all epics and stories from all epic files</action>
 </step>
+
+  <step n="0.5" goal="Discover and load project documents">
+    <invoke-protocol name="discover_inputs" />
+    <note>After discovery, these content variables are available: {epics_content} (all epics loaded - uses FULL_LOAD strategy)</note>
+  </step>
 
 <step n="2" goal="Build sprint status structure">
 <action>For each epic found, create entries in this order:</action>
@@ -99,7 +121,7 @@ development_status:
 #   - drafted: Story file created in stories folder
 #   - ready-for-dev: Draft approved and story context created
 #   - in-progress: Developer actively working on implementation
-#   - review: Under SM review (via review-story workflow)
+#   - review: Under SM review (via code-review workflow)
 #   - done: Story completed
 #
 # Retrospective Status:
@@ -124,8 +146,6 @@ development_status:
 ```
 
 <action>Write the complete sprint status YAML to {status_file}</action>
-<action>CRITICAL: For story_location field, write the variable value EXACTLY as defined in workflow.yaml: "{project-root}/docs/stories"</action>
-<action>CRITICAL: Do NOT resolve {project-root} to an absolute path - keep it as the literal string "{project-root}/docs/stories"</action>
 <action>CRITICAL: Metadata appears TWICE - once as comments (#) for documentation, once as YAML key:value fields for parsing</action>
 <action>Ensure all items are ordered: epic, its stories, its retrospective, next epic...</action>
 </step>
@@ -133,10 +153,10 @@ development_status:
 <step n="5" goal="Validate and report">
 <action>Perform validation checks:</action>
 
-- [ ] Every epic in epic files appears in sprint-status.yaml
-- [ ] Every story in epic files appears in sprint-status.yaml
+- [ ] Every epic in epic files appears in {status_file}
+- [ ] Every story in epic files appears in {status_file}
 - [ ] Every epic has a corresponding retrospective entry
-- [ ] No items in sprint-status.yaml that don't exist in epic files
+- [ ] No items in {status_file} that don't exist in epic files
 - [ ] All status values are legal (match state machine definitions)
 - [ ] File is valid YAML syntax
 
@@ -161,7 +181,7 @@ development_status:
 
 **Next Steps:**
 
-1. Review the generated sprint-status.yaml
+1. Review the generated {status_file}
 2. Use this file to track development progress
 3. Agents will update statuses as they work
 4. Re-run this workflow to refresh auto-detected statuses
@@ -193,7 +213,7 @@ backlog → drafted → ready-for-dev → in-progress → review → done
 - **drafted**: Story file created (e.g., `stories/1-3-plant-naming.md`)
 - **ready-for-dev**: Draft approved + story context created
 - **in-progress**: Developer actively working
-- **review**: Under SM review (via review-story workflow)
+- **review**: Under SM review (via code-review workflow)
 - **done**: Completed
 
 **Retrospective Status:**
@@ -212,10 +232,3 @@ optional ↔ completed
 3. **Parallel Work Supported**: Multiple stories can be `in-progress` if team capacity allows
 4. **Review Before Done**: Stories should pass through `review` before `done`
 5. **Learning Transfer**: SM typically drafts next story after previous one is `done` to incorporate learnings
-
-### Error Handling
-
-- If epic file can't be parsed, report specific file and continue with others
-- If existing status file is malformed, backup and regenerate
-- Log warnings for duplicate story IDs across epics
-- Validate status transitions are legal (can't go from `backlog` to `done`)

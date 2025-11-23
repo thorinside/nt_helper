@@ -2,7 +2,7 @@
 
 **Date:** {{date}}
 **Author:** {{user_name}}
-**Status:** Draft for PM Review
+**Context:** {{context_type}}
 
 ---
 
@@ -12,154 +12,170 @@
 
 ---
 
-## Problem Statement
+## Core Vision
+
+### Problem Statement
 
 {{problem_statement}}
 
----
+{{#if problem_impact}}
 
-## Proposed Solution
+### Problem Impact
+
+{{problem_impact}}
+{{/if}}
+
+{{#if existing_solutions_gaps}}
+
+### Why Existing Solutions Fall Short
+
+{{existing_solutions_gaps}}
+{{/if}}
+
+### Proposed Solution
 
 {{proposed_solution}}
+
+{{#if key_differentiators}}
+
+### Key Differentiators
+
+{{key_differentiators}}
+{{/if}}
 
 ---
 
 ## Target Users
 
-### Primary User Segment
+### Primary Users
 
 {{primary_user_segment}}
 
-### Secondary User Segment
+{{#if secondary_user_segment}}
+
+### Secondary Users
 
 {{secondary_user_segment}}
+{{/if}}
+
+{{#if user_journey}}
+
+### User Journey
+
+{{user_journey}}
+{{/if}}
 
 ---
 
-## Goals and Success Metrics
+{{#if success_metrics}}
+
+## Success Metrics
+
+{{success_metrics}}
+
+{{#if business_objectives}}
 
 ### Business Objectives
 
 {{business_objectives}}
+{{/if}}
 
-### User Success Metrics
+{{#if key_performance_indicators}}
 
-{{user_success_metrics}}
-
-### Key Performance Indicators (KPIs)
+### Key Performance Indicators
 
 {{key_performance_indicators}}
-
----
-
-## Strategic Alignment and Financial Impact
-
-### Financial Impact
-
-{{financial_impact}}
-
-### Company Objectives Alignment
-
-{{company_objectives_alignment}}
-
-### Strategic Initiatives
-
-{{strategic_initiatives}}
+{{/if}}
+{{/if}}
 
 ---
 
 ## MVP Scope
 
-### Core Features (Must Have)
+### Core Features
 
 {{core_features}}
+
+{{#if out_of_scope}}
 
 ### Out of Scope for MVP
 
 {{out_of_scope}}
+{{/if}}
+
+{{#if mvp_success_criteria}}
 
 ### MVP Success Criteria
 
 {{mvp_success_criteria}}
+{{/if}}
+
+{{#if future_vision_features}}
+
+### Future Vision
+
+{{future_vision_features}}
+{{/if}}
 
 ---
 
-## Post-MVP Vision
+{{#if market_analysis}}
 
-### Phase 2 Features
+## Market Context
 
-{{phase_2_features}}
+{{market_analysis}}
+{{/if}}
 
-### Long-term Vision
+{{#if financial_considerations}}
 
-{{long_term_vision}}
+## Financial Considerations
 
-### Expansion Opportunities
+{{financial_considerations}}
+{{/if}}
 
-{{expansion_opportunities}}
+{{#if technical_preferences}}
 
----
+## Technical Preferences
 
-## Technical Considerations
+{{technical_preferences}}
+{{/if}}
 
-### Platform Requirements
+{{#if organizational_context}}
 
-{{platform_requirements}}
+## Organizational Context
 
-### Technology Preferences
+{{organizational_context}}
+{{/if}}
 
-{{technology_preferences}}
+{{#if risks_and_assumptions}}
 
-### Architecture Considerations
+## Risks and Assumptions
 
-{{architecture_considerations}}
+{{risks_and_assumptions}}
+{{/if}}
 
----
+{{#if timeline_constraints}}
 
-## Constraints and Assumptions
+## Timeline
 
-### Constraints
+{{timeline_constraints}}
+{{/if}}
 
-{{constraints}}
+{{#if supporting_materials}}
 
-### Key Assumptions
+## Supporting Materials
 
-{{key_assumptions}}
-
----
-
-## Risks and Open Questions
-
-### Key Risks
-
-{{key_risks}}
-
-### Open Questions
-
-{{open_questions}}
-
-### Areas Needing Further Research
-
-{{research_areas}}
+{{supporting_materials}}
+{{/if}}
 
 ---
 
-## Appendices
+_This Product Brief captures the vision and requirements for {{project_name}}._
 
-### A. Research Summary
+_It was created through collaborative discovery and reflects the unique needs of this {{context_type}} project._
 
-{{research_summary}}
-
-### B. Stakeholder Input
-
-{{stakeholder_input}}
-
-### C. References
-
-{{references}}
-
----
-
-_This Product Brief serves as the foundational input for Product Requirements Document (PRD) creation._
-
-_Next Steps: Handoff to Product Manager for PRD development using the `workflow prd` command._
+{{#if next_workflow}}
+_Next: {{next_workflow}} will transform this brief into detailed planning artifacts._
+{{else}}
+_Next: Use the PRD workflow to create detailed product requirements from this brief._
+{{/if}}

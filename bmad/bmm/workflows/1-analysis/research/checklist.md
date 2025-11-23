@@ -1,67 +1,129 @@
 # Market Research Report Validation Checklist
 
-## Research Foundation
+## 🚨 CRITICAL: Source Verification and Fact-Checking (PRIORITY)
 
-### Objectives and Scope
+### Source Citation Completeness
 
-- [ ] Research objectives are clearly stated with specific questions to answer
-- [ ] Market boundaries are explicitly defined (product category, geography, segments)
-- [ ] Research methodology is documented with data sources and timeframes
-- [ ] Limitations and assumptions are transparently acknowledged
+- [ ] **EVERY** market size claim has at least 2 cited sources with URLs
+- [ ] **EVERY** growth rate/CAGR has cited sources with URLs
+- [ ] **EVERY** competitive data point (pricing, features, funding) has sources with URLs
+- [ ] **EVERY** customer statistic or insight has cited sources
+- [ ] **EVERY** industry trend claim has sources from {{current_year}} or recent years
+- [ ] All sources include: Name, Date, URL (clickable links)
+- [ ] No claims exist without verifiable sources
 
-### Data Quality
+### Source Quality and Credibility
 
-- [ ] All data sources are cited with dates and links where applicable
-- [ ] Data is no more than 12 months old for time-sensitive metrics
-- [ ] At least 3 independent sources validate key market size claims
-- [ ] Source credibility is assessed (primary > industry reports > news articles)
-- [ ] Conflicting data points are acknowledged and reconciled
+- [ ] Market size sources are HIGH credibility (Gartner, Forrester, IDC, government data, industry associations)
+- [ ] NOT relying on single blog posts or unverified sources for critical data
+- [ ] Sources are recent ({{current_year}} or within 1-2 years for time-sensitive data)
+- [ ] Primary sources prioritized over secondary/tertiary sources
+- [ ] Paywalled reports are cited with proper attribution (e.g., "Gartner Market Report 2025")
 
-## Market Sizing Analysis
+### Multi-Source Verification (Critical Claims)
 
-### TAM Calculation
+- [ ] TAM calculation verified by at least 2 independent sources
+- [ ] SAM calculation methodology is transparent and sourced
+- [ ] SOM estimates are conservative and based on comparable benchmarks
+- [ ] Market growth rates corroborated by multiple analyst reports
+- [ ] Competitive market share data verified across sources
 
-- [ ] At least 2 different calculation methods are used (top-down, bottom-up, or value theory)
-- [ ] All assumptions are explicitly stated with rationale
-- [ ] Calculation methodology is shown step-by-step
-- [ ] Numbers are sanity-checked against industry benchmarks
-- [ ] Growth rate projections include supporting evidence
+### Conflicting Data Resolution
 
-### SAM and SOM
+- [ ] Where sources conflict, ALL conflicting estimates are presented
+- [ ] Variance between sources is explained (methodology, scope differences)
+- [ ] No arbitrary selection of "convenient" numbers without noting alternatives
+- [ ] Conflicting data is flagged with confidence levels
+- [ ] User is made aware of uncertainty in conflicting claims
 
-- [ ] SAM constraints are realistic and well-justified (geography, regulations, etc.)
-- [ ] SOM includes competitive analysis to support market share assumptions
-- [ ] Three scenarios (conservative, realistic, optimistic) are provided
-- [ ] Time horizons for market capture are specified (Year 1, 3, 5)
-- [ ] Market share percentages align with comparable company benchmarks
+### Confidence Level Marking
 
-## Customer Intelligence
+- [ ] Every major claim is marked with confidence level:
+  - **[Verified - 2+ sources]** = High confidence, multiple independent sources agree
+  - **[Single source - verify]** = Medium confidence, only one source found
+  - **[Estimated - low confidence]** = Low confidence, calculated/projected without strong sources
+- [ ] Low confidence claims are clearly flagged for user to verify independently
+- [ ] Speculative/projected data is labeled as PROJECTION or FORECAST, not presented as fact
 
-### Segment Analysis
+### Fact vs Analysis vs Speculation
 
-- [ ] At least 3 distinct customer segments are profiled
-- [ ] Each segment includes size estimates (number of customers or revenue)
-- [ ] Pain points are specific, not generic (e.g., "reduce invoice processing time by 50%" not "save time")
-- [ ] Willingness to pay is quantified with evidence
-- [ ] Buying process and decision criteria are documented
+- [ ] Clear distinction between:
+  - **FACT:** Sourced data with citations (e.g., "Market is $5.2B [Source: Gartner 2025]")
+  - **ANALYSIS:** Interpretation of facts (e.g., "This suggests strong growth momentum")
+  - **SPECULATION:** Educated guesses (e.g., "This trend may continue if...")
+- [ ] Analysis and speculation are NOT presented as verified facts
+- [ ] Recommendations are based on sourced facts, not unsupported assumptions
 
-### Jobs-to-be-Done
+### Anti-Hallucination Verification
 
-- [ ] Functional jobs describe specific tasks customers need to complete
-- [ ] Emotional jobs identify feelings and anxieties
-- [ ] Social jobs explain perception and status considerations
-- [ ] Jobs are validated with customer evidence, not assumptions
-- [ ] Priority ranking of jobs is provided
+- [ ] No invented statistics or "made up" market sizes
+- [ ] All percentages, dollar amounts, and growth rates are traceable to sources
+- [ ] If data couldn't be found, report explicitly states "No verified data available for [X]"
+- [ ] No use of vague sources like "industry experts say" without naming the expert/source
+- [ ] Version numbers, dates, and specific figures match source material exactly
 
-## Competitive Analysis
+## Market Sizing Analysis (Source-Verified)
 
-### Competitor Coverage
+### TAM Calculation Sources
 
-- [ ] At least 5 direct competitors are analyzed
-- [ ] Indirect competitors and substitutes are identified
-- [ ] Each competitor profile includes: company size, funding, target market, pricing
-- [ ] Recent developments (last 6 months) are included
-- [ ] Competitive advantages and weaknesses are specific, not generic
+- [ ] TAM figure has at least 2 independent source citations
+- [ ] Calculation methodology is sourced (not invented)
+- [ ] Industry benchmarks used for sanity-check are cited
+- [ ] Growth rate assumptions are backed by sourced projections
+- [ ] Any adjustments or filters applied are justified and documented
+
+### SAM and SOM Source Verification
+
+- [ ] SAM constraints are based on sourced data (addressable market scope)
+- [ ] SOM competitive assumptions cite actual competitor data
+- [ ] Market share benchmarks reference comparable companies with sources
+- [ ] Scenarios (conservative/realistic/optimistic) are justified with sourced reasoning
+
+## Competitive Analysis (Source-Verified)
+
+### Competitor Data Source Verification
+
+- [ ] **EVERY** competitor mentioned has source for basic company info
+- [ ] Competitor pricing data has sources (website URLs, pricing pages, reviews)
+- [ ] Funding amounts cite sources (Crunchbase, press releases, SEC filings)
+- [ ] Product features verified through sources (official website, documentation, reviews)
+- [ ] Market positioning claims are backed by sources (analyst reports, company statements)
+- [ ] Customer count/user numbers cite sources (company announcements, verified reports)
+- [ ] Recent news and developments cite article URLs with dates from {{current_year}}
+
+### Competitive Data Credibility
+
+- [ ] Company websites/official sources used for product info (highest credibility)
+- [ ] Financial data from Crunchbase, PitchBook, or SEC filings (not rumors)
+- [ ] Review sites cited for customer sentiment (G2, Capterra, TrustPilot with URLs)
+- [ ] Pricing verified from official pricing pages (with URL and date checked)
+- [ ] No assumptions about competitors without sourced evidence
+
+### Competitive Claims Verification
+
+- [ ] Market share claims cite analyst reports or verified data
+- [ ] "Leading" or "dominant" claims backed by sourced market data
+- [ ] Competitor weaknesses cited from reviews, articles, or public statements (not speculation)
+- [ ] Product comparison claims verified (feature lists from official sources)
+
+## Customer Intelligence (Source-Verified)
+
+### Customer Data Sources
+
+- [ ] Customer segment data cites research sources (reports, surveys, studies)
+- [ ] Demographics/firmographics backed by census data, industry reports, or studies
+- [ ] Pain points sourced from customer research, reviews, surveys (not assumed)
+- [ ] Willingness to pay backed by pricing studies, surveys, or comparable market data
+- [ ] Buying behavior sourced from research studies or industry data
+- [ ] Jobs-to-be-Done insights cite customer research or validated frameworks
+
+### Customer Insight Credibility
+
+- [ ] Primary research (if conducted) documents sample size and methodology
+- [ ] Secondary research cites the original study/report with full attribution
+- [ ] Customer quotes or testimonials cite the source (interview, review site, case study)
+- [ ] Persona data based on real research findings (not fictional archetypes)
+- [ ] No invented customer statistics or behaviors without source backing
 
 ### Positioning Analysis
 
@@ -115,23 +177,58 @@
 - [ ] Early warning indicators are defined
 - [ ] Contingency plans are outlined for high-impact risks
 
+## References and Source Documentation (CRITICAL)
+
+### References Section Completeness
+
+- [ ] Report includes comprehensive "References and Sources" section
+- [ ] Sources organized by category (market size, competitive, customer, trends)
+- [ ] Every source includes: Title/Name, Publisher, Date, Full URL
+- [ ] URLs are clickable and functional (not broken links)
+- [ ] Sources are numbered or organized for easy reference
+- [ ] Inline citations throughout report reference the sources section
+
+### Source Quality Metrics
+
+- [ ] Report documents total sources cited count
+- [ ] High confidence claims (2+ sources) count is reported
+- [ ] Single source claims are identified and counted
+- [ ] Low confidence/speculative claims are flagged
+- [ ] Web searches conducted count is included (for transparency)
+
+### Source Audit Trail
+
+- [ ] For each major section, sources are listed
+- [ ] TAM/SAM/SOM calculations show source for each number
+- [ ] Competitive data shows source for each competitor profile
+- [ ] Customer insights show research sources
+- [ ] Industry trends show article/report sources with dates
+
+### Citation Format Standards
+
+- [ ] Inline citations format: [Source: Company/Publication, Year, URL] or similar
+- [ ] Consistent citation style throughout document
+- [ ] No vague citations like "according to sources" without specifics
+- [ ] URLs are complete (not truncated)
+- [ ] Accessed/verified dates included for web sources
+
 ## Document Quality
 
-### Structure and Flow
+### Anti-Hallucination Final Check
 
-- [ ] Executive summary captures all key insights in 1-2 pages
-- [ ] Sections follow logical progression from market to strategy
+- [ ] Read through entire report - does anything "feel" invented or too convenient?
+- [ ] Spot-check 5-10 random claims - can you find the cited source?
+- [ ] Check suspicious round numbers - are they actually from sources?
+- [ ] Verify any "shocking" statistics have strong sources
+- [ ] Cross-check key market size claims against multiple cited sources
+
+### Structure and Completeness
+
+- [ ] Executive summary captures all key insights
 - [ ] No placeholder text remains (all {{variables}} are replaced)
-- [ ] Cross-references between sections are accurate
-- [ ] Table of contents matches actual sections
-
-### Professional Standards
-
-- [ ] Data visualizations effectively communicate insights
-- [ ] Technical terms are defined in glossary
-- [ ] Writing is concise and jargon-free
-- [ ] Formatting is consistent throughout
-- [ ] Document is ready for executive presentation
+- [ ] References section is complete and properly formatted
+- [ ] Source quality assessment included
+- [ ] Document ready for fact-checking by third party
 
 ## Research Completeness
 
@@ -198,5 +295,5 @@ _List areas requiring further investigation:_
 
 **Validation Complete:** ☐ Yes ☐ No
 **Ready for Distribution:** ☐ Yes ☐ No
-**Reviewer:** **\*\***\_\_\_\_**\*\***
-**Date:** **\*\***\_\_\_\_**\*\***
+**Reviewer:** {reviewer}
+**Date:** {date}

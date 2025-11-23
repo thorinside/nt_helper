@@ -1,321 +1,524 @@
-# Product Brief - Interactive Workflow Instructions
+# Product Brief - Context-Adaptive Discovery Instructions
 
 <critical>The workflow execution engine is governed by: {project-root}/bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: {installed_path}/workflow.yaml</critical>
-<critical>Communicate all responses in {communication_language} and language MUST be tailored to {user_skill_level}</critical>
+<critical>This workflow uses INTENT-DRIVEN FACILITATION - adapt organically to what emerges</critical>
+<critical>The goal is DISCOVERING WHAT MATTERS through natural conversation, not filling a template</critical>
+<critical>Communicate all responses in {communication_language} and adapt deeply to {user_skill_level}</critical>
 <critical>Generate all documents in {document_output_language}</critical>
+<critical>LIVING DOCUMENT: Write to the document continuously as you discover - never wait until the end</critical>
+<critical>⚠️ ABSOLUTELY NO TIME ESTIMATES - NEVER mention hours, days, weeks, months, or ANY time-based predictions. AI has fundamentally changed development speed - what once took teams weeks/months can now be done by one person in hours. DO NOT give ANY time estimates whatsoever.</critical>
+<critical>⚠️ CHECKPOINT PROTOCOL: After EVERY <template-output> tag, you MUST follow workflow.xml substep 2c: SAVE content to file immediately → SHOW checkpoint separator (━━━━━━━━━━━━━━━━━━━━━━━) → DISPLAY generated content → PRESENT options [a]Advanced Elicitation/[c]Continue/[p]Party-Mode/[y]YOLO → WAIT for user response. Never batch saves or skip checkpoints.</critical>
 
-<critical>DOCUMENT OUTPUT: Concise, professional, strategically focused. Use tables/lists over prose. User skill level ({user_skill_level}) affects conversation style ONLY, not document content.</critical>
+## Input Document Discovery
+
+This workflow may reference: market research, brainstorming documents, user specified other inputs, or brownfield project documentation.
+
+**All input files are discovered and loaded automatically via the `discover_inputs` protocol in Step 0.5**
+
+After discovery completes, the following content variables will be available:
+
+- `{research_content}` - Market research or domain research documents
+- `{brainstorming_content}` - Brainstorming session outputs
+- `{document_project_content}` - Brownfield project documentation (intelligently loaded via INDEX_GUIDED strategy)
 
 <workflow>
 
-<step n="0" goal="Validate workflow readiness">
-<invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
-  <param>mode: validate</param>
-  <param>calling_workflow: product-brief</param>
-</invoke-workflow>
+<step n="0" goal="Validate workflow readiness" tag="workflow-status">
+<action>Check if {output_folder}/bmm-workflow-status.yaml exists</action>
 
-<check if="status_exists == false">
-  <output>{{suggestion}}</output>
-  <output>Note: Product Brief is optional. You can continue without status tracking.</output>
-  <action>Set standalone_mode = true</action>
-</check>
+<action if="status file not found">Set standalone_mode = true</action>
 
-<check if="status_exists == true">
-  <action>Store {{status_file_path}} for later updates</action>
+<check if="status file found">
+  <action>Load the FULL file: {output_folder}/bmm-workflow-status.yaml</action>
+  <action>Parse workflow_status section</action>
+  <action>Check status of "product-brief" workflow</action>
+  <action>Get project_level from YAML metadata</action>
+  <action>Find first non-completed workflow (next expected workflow)</action>
 
   <check if="project_level < 2">
-    <output>Note: Product Brief is most valuable for Level 2+ projects. Your project is Level {{project_level}}.</output>
-    <output>You may want to skip directly to technical planning instead.</output>
-  </check>
+    <output>**Note: Level {{project_level}} Project**
 
-  <check if="warning != ''">
-    <output>{{warning}}</output>
-    <ask>Continue with Product Brief anyway? (y/n)</ask>
+Product Brief is most valuable for Level 2+ projects, but can help clarify vision for any project.</output>
+</check>
+
+  <check if="product-brief status is file path (already completed)">
+    <output>⚠️ Product Brief already completed: {{product-brief status}}</output>
+    <ask>Re-running will overwrite the existing brief. Continue? (y/n)</ask>
     <check if="n">
-      <output>Exiting. {{suggestion}}</output>
+      <output>Exiting. Use workflow-status to see your next step.</output>
       <action>Exit workflow</action>
     </check>
   </check>
+
+  <check if="product-brief is not the next expected workflow">
+    <output>⚠️ Next expected workflow: {{next_workflow}}. Product Brief is out of sequence.</output>
+    <ask>Continue with Product Brief anyway? (y/n)</ask>
+    <check if="n">
+      <output>Exiting. Run {{next_workflow}} instead.</output>
+      <action>Exit workflow</action>
+    </check>
+  </check>
+
+<action>Set standalone_mode = false</action>
 </check>
 </step>
 
-<step n="1" goal="Initialize product brief session">
-<action>Welcome the user in {communication_language} to the Product Brief creation process</action>
-<action>Explain this is a collaborative process to define their product vision and strategic foundation</action>
-<action>Ask the user to provide the project name for this product brief</action>
+<step n="0.5" goal="Discover and load input documents">
+<invoke-protocol name="discover_inputs" />
+</step>
+
+<step n="1" goal="Begin the journey and understand context">
+<action>Welcome {user_name} warmly in {communication_language}
+
+Adapt your tone to {user_skill_level}:
+
+- Expert: "Let's define your product vision. What are you building?"
+- Intermediate: "I'm here to help shape your product vision. Tell me about your idea."
+- Beginner: "Hi! I'm going to help you figure out exactly what you want to build. Let's start with your idea - what got you excited about this?"
+
+Start with open exploration:
+
+- What sparked this idea?
+- What are you hoping to build?
+- Who is this for - yourself, a business, users you know?
+
+CRITICAL: Listen for context clues that reveal their situation:
+
+- Personal/hobby project (fun, learning, small audience)
+- Startup/solopreneur (market opportunity, competition matters)
+- Enterprise/corporate (stakeholders, compliance, strategic alignment)
+- Technical enthusiasm (implementation focused)
+- Business opportunity (market/revenue focused)
+- Problem frustration (solution focused)
+
+Based on their initial response, sense:
+
+- How formal/casual they want to be
+- Whether they think in business or technical terms
+- If they have existing materials to share
+- Their confidence level with the domain</action>
+
+<ask>What's the project name, and what got you excited about building this?</ask>
+
+<action>From even this first exchange, create initial document sections</action>
 <template-output>project_name</template-output>
+<template-output>executive_summary</template-output>
+
+<action>If they mentioned existing documents (research, brainstorming, etc.):
+
+- Load and analyze these materials
+- Extract key themes and insights
+- Reference these naturally in conversation: "I see from your research that..."
+- Use these to accelerate discovery, not repeat questions</action>
+
+<template-output>initial_vision</template-output>
 </step>
 
-<step n="1" goal="Gather available inputs and context">
-<action>Explore what existing materials the user has available to inform the brief</action>
-<action>Offer options for input sources: market research, brainstorming results, competitive analysis, initial ideas, or starting fresh</action>
-<action>If documents are provided, load and analyze them to extract key insights, themes, and patterns</action>
-<action>Engage the user about their core vision: what problem they're solving, who experiences it most acutely, and what sparked this product idea</action>
-<action>Build initial understanding through conversational exploration rather than rigid questioning</action>
+<step n="2" goal="Discover the problem worth solving">
+<action>Guide problem discovery through natural conversation
 
-<template-output>initial_context</template-output>
-</step>
+DON'T ask: "What problem does this solve?"
 
-<step n="2" goal="Choose collaboration mode">
-<ask>How would you like to work through the brief?
+DO explore conversationally based on their context:
 
-**1. Interactive Mode** - We'll work through each section together, discussing and refining as we go
-**2. YOLO Mode** - I'll generate a complete draft based on our conversation so far, then we'll refine it together
+For hobby projects:
 
-Which approach works best for you?</ask>
+- "What's annoying you that this would fix?"
+- "What would this make easier or more fun?"
+- "Show me what the experience is like today without this"
 
-<action>Store the user's preference for mode</action>
-<template-output>collaboration_mode</template-output>
-</step>
+For business ventures:
 
-<step n="3" goal="Define the problem statement" if="collaboration_mode == 'interactive'">
-<action>Guide deep exploration of the problem: current state frustrations, quantifiable impact (time/money/opportunities), why existing solutions fall short, urgency of solving now</action>
-<action>Challenge vague statements and push for specificity with probing questions</action>
-<action>Help the user articulate measurable pain points with evidence</action>
-<action>Craft a compelling, evidence-based problem statement</action>
+- "Walk me through the frustration your users face today"
+- "What's the cost of this problem - time, money, opportunities?"
+- "Who's suffering most from this? Tell me about them"
+- "What solutions have people tried? Why aren't they working?"
 
+For enterprise:
+
+- "What's driving the need for this internally?"
+- "Which teams/processes are most affected?"
+- "What's the business impact of not solving this?"
+- "Are there compliance or strategic drivers?"
+
+Listen for depth cues:
+
+- Brief answers → dig deeper with follow-ups
+- Detailed passion → let them flow, capture everything
+- Uncertainty → help them explore with examples
+- Multiple problems → help prioritize the core issue
+
+Adapt your response:
+
+- If they struggle: offer analogies, examples, frameworks
+- If they're clear: validate and push for specifics
+- If they're technical: explore implementation challenges
+- If they're business-focused: quantify impact</action>
+
+<action>Immediately capture what emerges - even if preliminary</action>
 <template-output>problem_statement</template-output>
+
+<check if="user mentioned metrics, costs, or business impact">
+  <action>Explore the measurable impact of the problem</action>
+  <template-output>problem_impact</template-output>
+</check>
+
+<check if="user mentioned current solutions or competitors">
+  <action>Understand why existing solutions fall short</action>
+  <template-output>existing_solutions_gaps</template-output>
+</check>
+
+<action>Reflect understanding: "So the core issue is {{problem_summary}}, and {{impact_if_mentioned}}. Let me capture that..."</action>
 </step>
 
-<step n="4" goal="Develop the proposed solution" if="collaboration_mode == 'interactive'">
-<action>Shape the solution vision by exploring: core approach to solving the problem, key differentiators from existing solutions, why this will succeed, ideal user experience</action>
-<action>Focus on the "what" and "why", not implementation details - keep it strategic</action>
-<action>Help articulate compelling differentiators that make this solution unique</action>
-<action>Craft a clear, inspiring solution vision</action>
+<step n="3" goal="Shape the solution vision">
+<action>Transition naturally from problem to solution
+
+Based on their energy and context, explore:
+
+For builders/makers:
+
+- "How do you envision this working?"
+- "Walk me through the experience you want to create"
+- "What's the 'magic moment' when someone uses this?"
+
+For business minds:
+
+- "What's your unique approach to solving this?"
+- "How is this different from what exists today?"
+- "What makes this the RIGHT solution now?"
+
+For enterprise:
+
+- "What would success look like for the organization?"
+- "How does this fit with existing systems/processes?"
+- "What's the transformation you're enabling?"
+
+Go deeper based on responses:
+
+- If innovative → explore the unique angle
+- If standard → focus on execution excellence
+- If technical → discuss key capabilities
+- If user-focused → paint the journey
+
+Web research when relevant:
+
+- If they mention competitors → research current solutions
+- If they claim innovation → verify uniqueness
+- If they reference trends → get current data</action>
+
+<action if="competitor or market mentioned">
+  <WebSearch>{{competitor/market}} latest features 2024</WebSearch>
+  <action>Use findings to sharpen differentiation discussion</action>
+</action>
 
 <template-output>proposed_solution</template-output>
+
+<check if="unique differentiation discussed">
+  <template-output>key_differentiators</template-output>
+</check>
+
+<action>Continue building the living document</action>
 </step>
 
-<step n="5" goal="Identify target users" if="collaboration_mode == 'interactive'">
-<action>Guide detailed definition of primary users: demographic/professional profile, current problem-solving methods, specific pain points, goals they're trying to achieve</action>
-<action>Explore secondary user segments if applicable and define how their needs differ</action>
-<action>Push beyond generic personas like "busy professionals" - demand specificity and actionable details</action>
-<action>Create specific, actionable user profiles that inform product decisions</action>
+<step n="4" goal="Understand the people who need this">
+<action>Discover target users through storytelling, not demographics
+
+Facilitate based on project type:
+
+Personal/hobby:
+
+- "Who else would love this besides you?"
+- "Tell me about someone who would use this"
+- Keep it light and informal
+
+Startup/business:
+
+- "Describe your ideal first customer - not demographics, but their situation"
+- "What are they doing today without your solution?"
+- "What would make them say 'finally, someone gets it!'?"
+- "Are there different types of users with different needs?"
+
+Enterprise:
+
+- "Which roles/departments will use this?"
+- "Walk me through their current workflow"
+- "Who are the champions vs skeptics?"
+- "What about indirect stakeholders?"
+
+Push beyond generic personas:
+
+- Not: "busy professionals" → "Sales reps who waste 2 hours/day on data entry"
+- Not: "tech-savvy users" → "Developers who know Docker but hate configuring it"
+- Not: "small businesses" → "Shopify stores doing $10-50k/month wanting to scale"
+
+For each user type that emerges:
+
+- Current behavior/workflow
+- Specific frustrations
+- What they'd value most
+- Their technical comfort level</action>
 
 <template-output>primary_user_segment</template-output>
-<template-output>secondary_user_segment</template-output>
+
+<check if="multiple user types mentioned">
+  <action>Explore secondary users only if truly different needs</action>
+  <template-output>secondary_user_segment</template-output>
+</check>
+
+<check if="user journey or workflow discussed">
+  <template-output>user_journey</template-output>
+</check>
 </step>
 
-<step n="6" goal="Establish goals and success metrics" if="collaboration_mode == 'interactive'">
-<action>Guide establishment of SMART goals across business objectives and user success metrics</action>
-<action>Explore measurable business outcomes (user acquisition targets, cost reductions, revenue goals)</action>
-<action>Define user success metrics focused on behaviors and outcomes, not features (task completion time, return frequency)</action>
-<action>Help formulate specific, measurable goals that distinguish between business and user success</action>
-<action>Identify top 3-5 Key Performance Indicators that will track product success</action>
+<step n="5" goal="Define what success looks like" repeat="adapt-to-context">
+<action>Explore success measures that match their context
 
-<template-output>business_objectives</template-output>
-<template-output>user_success_metrics</template-output>
-<template-output>key_performance_indicators</template-output>
+For personal projects:
+
+- "How will you know this is working well?"
+- "What would make you proud of this?"
+- Keep metrics simple and meaningful
+
+For startups:
+
+- "What metrics would convince you this is taking off?"
+- "What user behaviors show they love it?"
+- "What business metrics matter most - users, revenue, retention?"
+- Push for specific targets: "100 users" not "lots of users"
+
+For enterprise:
+
+- "How will the organization measure success?"
+- "What KPIs will stakeholders care about?"
+- "What are the must-hit metrics vs nice-to-haves?"
+
+Only dive deep into metrics if they show interest
+Skip entirely for pure hobby projects
+Focus on what THEY care about measuring</action>
+
+<check if="metrics or goals discussed">
+  <template-output>success_metrics</template-output>
+
+  <check if="business objectives mentioned">
+    <template-output>business_objectives</template-output>
+  </check>
+
+  <check if="KPIs matter to them">
+    <template-output>key_performance_indicators</template-output>
+  </check>
+</check>
+
+<action>Keep the document growing with each discovery</action>
 </step>
 
-<step n="7" goal="Define MVP scope" if="collaboration_mode == 'interactive'">
-<action>Be ruthless about MVP scope - identify absolute MUST-HAVE features for launch that validate the core hypothesis</action>
-<action>For each proposed feature, probe why it's essential vs nice-to-have</action>
-<action>Identify tempting features that need to wait for v2 - what adds complexity without core value</action>
-<action>Define what constitutes a successful MVP launch with clear criteria</action>
-<action>Challenge scope creep aggressively and push for true minimum viability</action>
-<action>Clearly separate must-haves from nice-to-haves</action>
+<step n="6" goal="Discover the MVP scope">
+<critical>Focus on FEATURES not epics - that comes in Phase 2</critical>
+
+<action>Guide MVP scoping based on their maturity
+
+For experimental/hobby:
+
+- "What's the ONE thing this must do to be useful?"
+- "What would make a fun first version?"
+- Embrace simplicity
+
+For business ventures:
+
+- "What's the smallest version that proves your hypothesis?"
+- "What features would make early adopters say 'good enough'?"
+- "What's tempting to add but would slow you down?"
+- Be ruthless about scope creep
+
+For enterprise:
+
+- "What's the pilot scope that demonstrates value?"
+- "Which capabilities are must-have for initial rollout?"
+- "What can we defer to Phase 2?"
+
+Use this framing:
+
+- Core features: "Without this, the product doesn't work"
+- Nice-to-have: "This would be great, but we can launch without it"
+- Future vision: "This is where we're headed eventually"
+
+Challenge feature creep:
+
+- "Do we need that for launch, or could it come later?"
+- "What if we started without that - what breaks?"
+- "Is this core to proving the concept?"</action>
 
 <template-output>core_features</template-output>
-<template-output>out_of_scope</template-output>
-<template-output>mvp_success_criteria</template-output>
+
+<check if="scope creep discussed">
+  <template-output>out_of_scope</template-output>
+</check>
+
+<check if="future features mentioned">
+  <template-output>future_vision_features</template-output>
+</check>
+
+<check if="success criteria for MVP mentioned">
+  <template-output>mvp_success_criteria</template-output>
+</check>
 </step>
 
-<step n="8" goal="Assess financial impact and ROI" if="collaboration_mode == 'interactive'">
-<action>Explore financial considerations: development investment, revenue potential, cost savings opportunities, break-even timing, budget alignment</action>
-<action>Investigate strategic alignment: company OKRs, strategic objectives, key initiatives supported, opportunity cost of NOT doing this</action>
-<action>Help quantify financial impact where possible - both tangible and intangible value</action>
-<action>Connect this product to broader company strategy and demonstrate strategic value</action>
+<step n="7" goal="Explore relevant context dimensions" repeat="until-natural-end">
+<critical>Only explore what emerges naturally - skip what doesn't matter</critical>
 
-<template-output>financial_impact</template-output>
-<template-output>company_objectives_alignment</template-output>
-<template-output>strategic_initiatives</template-output>
+<action>Based on the conversation so far, selectively explore:
+
+IF financial aspects emerged:
+
+- Development investment needed
+- Revenue potential or cost savings
+- ROI timeline
+- Budget constraints
+  <check if="discussed">
+  <template-output>financial_considerations</template-output>
+  </check>
+
+IF market competition mentioned:
+
+- Competitive landscape
+- Market opportunity size
+- Differentiation strategy
+- Market timing
+  <check if="discussed">
+  <WebSearch>{{market}} size trends 2024</WebSearch>
+  <template-output>market_analysis</template-output>
+  </check>
+
+IF technical preferences surfaced:
+
+- Platform choices (web/mobile/desktop)
+- Technology stack preferences
+- Integration needs
+- Performance requirements
+  <check if="discussed">
+  <template-output>technical_preferences</template-output>
+  </check>
+
+IF organizational context emerged:
+
+- Strategic alignment
+- Stakeholder buy-in needs
+- Change management considerations
+- Compliance requirements
+  <check if="discussed">
+  <template-output>organizational_context</template-output>
+  </check>
+
+IF risks or concerns raised:
+
+- Key risks and mitigation
+- Critical assumptions
+- Open questions needing research
+  <check if="discussed">
+  <template-output>risks_and_assumptions</template-output>
+  </check>
+
+IF timeline pressures mentioned:
+
+- Launch timeline
+- Critical milestones
+- Dependencies
+  <check if="discussed">
+  <template-output>timeline_constraints</template-output>
+  </check>
+
+Skip anything that hasn't naturally emerged
+Don't force sections that don't fit their context</action>
 </step>
 
-<step n="9" goal="Explore post-MVP vision" optional="true" if="collaboration_mode == 'interactive'">
-<action>Guide exploration of post-MVP future: Phase 2 features, expansion opportunities, long-term vision (1-2 years)</action>
-<action>Ensure MVP decisions align with future direction while staying focused on immediate goals</action>
+<step n="8" goal="Refine and complete the living document">
+<action>Review what's been captured with the user
 
-<template-output>phase_2_features</template-output>
-<template-output>long_term_vision</template-output>
-<template-output>expansion_opportunities</template-output>
-</step>
+"Let me show you what we've built together..."
 
-<step n="10" goal="Document technical considerations" if="collaboration_mode == 'interactive'">
-<action>Capture technical context as preferences, not final decisions</action>
-<action>Explore platform requirements: web/mobile/desktop, browser/OS support, performance needs, accessibility standards</action>
-<action>Investigate technology preferences or constraints: frontend/backend frameworks, database needs, infrastructure requirements</action>
-<action>Identify existing systems requiring integration</action>
-<action>Check for technical-preferences.yaml file if available</action>
-<action>Note these are initial thoughts for PM and architect to consider during planning</action>
+Present the actual document sections created so far
 
-<template-output>platform_requirements</template-output>
-<template-output>technology_preferences</template-output>
-<template-output>architecture_considerations</template-output>
-</step>
+- Not a summary, but the real content
+- Shows the document has been growing throughout
 
-<step n="11" goal="Identify constraints and assumptions" if="collaboration_mode == 'interactive'">
-<action>Guide realistic expectations setting around constraints: budget/resource limits, timeline pressures, team size/expertise, technical limitations</action>
-<action>Explore assumptions being made about: user behavior, market conditions, technical feasibility</action>
-<action>Document constraints clearly and list assumptions that need validation during development</action>
+Ask:
+"Looking at this, what stands out as most important to you?"
+"Is there anything critical we haven't explored?"
+"Does this capture your vision?"
 
-<template-output>constraints</template-output>
-<template-output>key_assumptions</template-output>
-</step>
+Based on their response:
 
-<step n="12" goal="Assess risks and open questions" optional="true" if="collaboration_mode == 'interactive'">
-<action>Facilitate honest risk assessment: what could derail the project, impact if risks materialize</action>
-<action>Document open questions: what still needs figuring out, what needs more research</action>
-<action>Help prioritize risks by impact and likelihood</action>
-<action>Frame unknowns as opportunities to prepare, not just worries</action>
+- Refine sections that need more depth
+- Add any missing critical elements
+- Remove or simplify sections that don't matter
+- Ensure the document fits THEIR needs, not a template</action>
 
-<template-output>key_risks</template-output>
-<template-output>open_questions</template-output>
-<template-output>research_areas</template-output>
-</step>
+<action>Make final refinements based on feedback</action>
+<template-output>final_refinements</template-output>
 
-<!-- YOLO Mode - Generate everything then refine -->
-<step n="3" goal="Generate complete brief draft" if="collaboration_mode == 'yolo'">
-<action>Based on initial context and any provided documents, generate a complete product brief covering all sections</action>
-<action>Make reasonable assumptions where information is missing</action>
-<action>Flag areas that need user validation with [NEEDS CONFIRMATION] tags</action>
-
-<template-output>problem_statement</template-output>
-<template-output>proposed_solution</template-output>
-<template-output>primary_user_segment</template-output>
-<template-output>secondary_user_segment</template-output>
-<template-output>business_objectives</template-output>
-<template-output>user_success_metrics</template-output>
-<template-output>key_performance_indicators</template-output>
-<template-output>core_features</template-output>
-<template-output>out_of_scope</template-output>
-<template-output>mvp_success_criteria</template-output>
-<template-output>phase_2_features</template-output>
-<template-output>long_term_vision</template-output>
-<template-output>expansion_opportunities</template-output>
-<template-output>financial_impact</template-output>
-<template-output>company_objectives_alignment</template-output>
-<template-output>strategic_initiatives</template-output>
-<template-output>platform_requirements</template-output>
-<template-output>technology_preferences</template-output>
-<template-output>architecture_considerations</template-output>
-<template-output>constraints</template-output>
-<template-output>key_assumptions</template-output>
-<template-output>key_risks</template-output>
-<template-output>open_questions</template-output>
-<template-output>research_areas</template-output>
-
-<action>Present the complete draft to the user</action>
-<ask>Here's the complete brief draft. What would you like to adjust or refine?</ask>
-</step>
-
-<step n="4" goal="Refine brief sections" repeat="until-approved" if="collaboration_mode == 'yolo'">
-<ask>Which section would you like to refine?
-1. Problem Statement
-2. Proposed Solution
-3. Target Users
-4. Goals and Metrics
-5. MVP Scope
-6. Post-MVP Vision
-7. Financial Impact and Strategic Alignment
-8. Technical Considerations
-9. Constraints and Assumptions
-10. Risks and Questions
-11. Save and continue</ask>
-
-<action>Work with user to refine selected section</action>
-<action>Update relevant template outputs</action>
-</step>
-
-<!-- Final steps for both modes -->
-<step n="13" goal="Create executive summary">
-<action>Synthesize all sections into a compelling executive summary</action>
-<action>Include:
-- Product concept in 1-2 sentences
-- Primary problem being solved
-- Target market identification
-- Key value proposition</action>
-
+<action>Create executive summary that captures the essence</action>
 <template-output>executive_summary</template-output>
 </step>
+<step n="9" goal="Complete and save the product brief">
+<action>The document has been building throughout our conversation
+Now ensure it's complete and well-organized</action>
 
-<step n="14" goal="Compile supporting materials">
-<action>If research documents were provided, create a summary of key findings</action>
-<action>Document any stakeholder input received during the process</action>
-<action>Compile list of reference documents and resources</action>
-
-<template-output>research_summary</template-output>
-<template-output>stakeholder_input</template-output>
-<template-output>references</template-output>
-</step>
-
-<step n="15" goal="Final review and handoff">
-<action>Generate the complete product brief document</action>
-<action>Review all sections for completeness and consistency</action>
-<action>Flag any areas that need PM attention with [PM-TODO] tags</action>
-
-<ask>The product brief is complete! Would you like to:
-
-1. Review the entire document
-2. Make final adjustments
-3. Generate an executive summary version (3-page limit)
-4. Save and prepare for handoff to PM
-
-This brief will serve as the primary input for creating the Product Requirements Document (PRD).</ask>
-
-<check if="user chooses option 3 (executive summary)">
-  <action>Create condensed 3-page executive brief focusing on: problem statement, proposed solution, target users, MVP scope, financial impact, and strategic alignment</action>
-  <action>Save as: {output_folder}/product-brief-executive-{{project_name}}-{{date}}.md</action>
+<check if="research documents were provided">
+  <action>Append summary of incorporated research</action>
+  <template-output>supporting_materials</template-output>
 </check>
 
-<template-output>final_brief</template-output>
-<template-output>executive_brief</template-output>
+<action>Ensure the document structure makes sense for what was discovered:
+
+- Hobbyist projects might be 2-3 pages focused on problem/solution/features
+- Startup ventures might be 5-7 pages with market analysis and metrics
+- Enterprise briefs might be 10+ pages with full strategic context
+
+The document should reflect their world, not force their world into a template</action>
+
+<ask>Your product brief is ready! Would you like to:
+
+1. Review specific sections together
+2. Make any final adjustments
+3. Save and move forward
+
+What feels right?</ask>
+
+<action>Make any requested refinements</action>
+<template-output>final_document</template-output>
 </step>
 
-<step n="16" goal="Update status file on completion">
 <check if="standalone_mode != true">
-  <invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
-    <param>mode: update</param>
-    <param>action: complete_workflow</param>
-    <param>workflow_name: product-brief</param>
-  </invoke-workflow>
+  <action>Load the FULL file: {output_folder}/bmm-workflow-status.yaml</action>
+  <action>Find workflow_status key "product-brief"</action>
+  <critical>ONLY write the file path as the status value - no other text, notes, or metadata</critical>
+  <action>Update workflow_status["product-brief"] = "{output_folder}/bmm-product-brief-{{project_name}}-{{date}}.md"</action>
+  <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
 
-  <check if="success == true">
-    <output>Status updated! Next: {{next_workflow}}</output>
-  </check>
+<action>Find first non-completed workflow in workflow_status (next workflow to do)</action>
+<action>Determine next agent from path file based on next workflow</action>
 </check>
 
 <output>**✅ Product Brief Complete, {user_name}!**
 
-**Brief Document:**
+Your product vision has been captured in a document that reflects what matters most for your {{context_type}} project.
 
-- Product brief saved to {output_folder}/bmm-product-brief-{{project_name}}-{{date}}.md
-
-{{#if standalone_mode != true}}
-**Status Updated:**
-
-- Progress tracking updated
-- Current workflow marked complete
-  {{else}}
-  **Note:** Running in standalone mode (no progress tracking)
-  {{/if}}
-
-**Next Steps:**
+**Document saved:** {output_folder}/bmm-product-brief-{{project_name}}-{{date}}.md
 
 {{#if standalone_mode != true}}
+**What's next:** {{next_workflow}} ({{next_agent}} agent)
 
-- **Next required:** {{next_workflow}} ({{next_agent}} agent)
-- **Optional:** Gather additional stakeholder input or run research workflows before proceeding
-
-Check status anytime with: `workflow-status`
+The next phase will take your brief and create the detailed planning artifacts needed for implementation.
 {{else}}
-Since no workflow is in progress:
+**Next steps:**
 
-- Refer to the BMM workflow guide if unsure what to do next
-- Or run `workflow-init` to create a workflow path and get guided next steps
+- Run `workflow-init` to set up guided workflow tracking
+- Or proceed directly to the PRD workflow if you know your path
   {{/if}}
-  </output>
-  </step>
+
+Remember: This brief captures YOUR vision. It grew from our conversation, not from a rigid template. It's ready to guide the next phase of bringing your idea to life.
+</output>
+</step>
 
 </workflow>

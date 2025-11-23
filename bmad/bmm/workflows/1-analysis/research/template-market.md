@@ -293,6 +293,40 @@
 
 ---
 
+## References and Sources
+
+**CRITICAL: All data in this report must be verifiable through the sources listed below**
+
+### Market Size and Growth Data Sources
+
+{{sources_market_size}}
+
+### Competitive Intelligence Sources
+
+{{sources_competitive}}
+
+### Customer Research Sources
+
+{{sources_customer}}
+
+### Industry Trends and Analysis Sources
+
+{{sources_trends}}
+
+### Additional References
+
+{{sources_additional}}
+
+### Source Quality Assessment
+
+- **High Credibility Sources (2+ corroborating):** {{high_confidence_count}} claims
+- **Medium Credibility (single source):** {{medium_confidence_count}} claims
+- **Low Credibility (needs verification):** {{low_confidence_count}} claims
+
+**Note:** Any claim marked [Low Confidence] or [Single source] should be independently verified before making critical business decisions.
+
+---
+
 ## Document Information
 
 **Workflow:** BMad Market Research Workflow v1.0
@@ -305,7 +339,9 @@
 - **Data Freshness:** Current as of {{date}}
 - **Source Reliability:** {{source_reliability_score}}
 - **Confidence Level:** {{confidence_level}}
+- **Total Sources Cited:** {{total_sources}}
+- **Web Searches Conducted:** {{search_count}}
 
 ---
 
-_This market research report was generated using the BMad Method Market Research Workflow, combining systematic analysis frameworks with real-time market intelligence gathering._
+_This market research report was generated using the BMad Method Market Research Workflow, combining systematic analysis frameworks with real-time market intelligence gathering. All factual claims are backed by cited sources with verification dates._

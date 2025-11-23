@@ -27,6 +27,11 @@
 <action if="core documents are unavailable">HALT: "Need access to project documents (PRD, Epics, Architecture, UI/UX) to assess change impact. Please ensure these documents are accessible."</action>
 </step>
 
+<step n="0.5" goal="Discover and load project documents">
+  <invoke-protocol name="discover_inputs" />
+  <note>After discovery, these content variables are available: {prd_content}, {epics_content}, {architecture_content}, {ux_design_content}, {tech_spec_content}, {document_project_content}</note>
+</step>
+
 <step n="2" goal="Execute Change Analysis Checklist">
   <action>Load and execute the systematic analysis from: {checklist}</action>
   <action>Work through each checklist section interactively with the user</action>

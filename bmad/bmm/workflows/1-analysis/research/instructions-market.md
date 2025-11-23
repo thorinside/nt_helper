@@ -2,40 +2,61 @@
 
 <critical>The workflow execution engine is governed by: {project_root}/bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: {installed_path}/workflow.yaml</critical>
-<critical>This is an INTERACTIVE workflow with web research capabilities. Engage the user at key decision points.</critical>
+<critical>This workflow uses ADAPTIVE FACILITATION - adjust your communication style based on {user_skill_level}</critical>
+<critical>This is a HIGHLY INTERACTIVE workflow - collaborate with user throughout, don't just gather info and disappear</critical>
+<critical>Web research is MANDATORY - use WebSearch tool with {{current_year}} for all market intelligence gathering</critical>
+<critical>Communicate all responses in {communication_language} and tailor to {user_skill_level}</critical>
+<critical>Generate all documents in {document_output_language}</critical>
+
+<critical>🚨 ANTI-HALLUCINATION PROTOCOL - MANDATORY 🚨</critical>
+<critical>NEVER invent market data - if you cannot find reliable data, explicitly state: "I could not find verified data for [X]"</critical>
+<critical>EVERY statistic, market size, growth rate, or competitive claim MUST have a cited source with URL</critical>
+<critical>For CRITICAL claims (TAM/SAM/SOM, market size, growth rates), require 2+ independent sources that agree</critical>
+<critical>When data sources conflict (e.g., different market size estimates), present ALL estimates with sources and explain variance</critical>
+<critical>Mark data confidence: [Verified - 2+ sources], [Single source - verify], [Estimated - low confidence]</critical>
+<critical>Clearly label: FACT (sourced data), ANALYSIS (your interpretation), PROJECTION (forecast/speculation)</critical>
+<critical>After each WebSearch, extract and store source URLs - include them in the report</critical>
+<critical>If a claim seems suspicious or too convenient, STOP and cross-verify with additional searches</critical>
+<critical>⚠️ CHECKPOINT PROTOCOL: After EVERY <template-output> tag, you MUST follow workflow.xml substep 2c: SAVE content to file immediately → SHOW checkpoint separator (━━━━━━━━━━━━━━━━━━━━━━━) → DISPLAY generated content → PRESENT options [a]Advanced Elicitation/[c]Continue/[p]Party-Mode/[y]YOLO → WAIT for user response. Never batch saves or skip checkpoints.</critical>
 
 <!-- IDE-INJECT-POINT: market-research-subagents -->
 
 <workflow>
 
-<step n="1" goal="Research Discovery and Scoping">
-<action>Welcome the user and explain the market research journey ahead</action>
+<step n="1" goal="Discover research needs and scope collaboratively">
 
-Ask the user these critical questions to shape the research:
+<action>Welcome {user_name} warmly. Position yourself as their collaborative research partner who will:
 
-1. **What is the product/service you're researching?**
-   - Name and brief description
-   - Current stage (idea, MVP, launched, scaling)
+- Gather live {{current_year}} market data
+- Share findings progressively throughout
+- Help make sense of what we discover together
 
-2. **What are your primary research objectives?**
-   - Market sizing and opportunity assessment?
-   - Competitive intelligence gathering?
-   - Customer segment validation?
-   - Go-to-market strategy development?
-   - Investment/fundraising support?
-   - Product-market fit validation?
+Ask what they're building and what market questions they need answered.
+</action>
 
-3. **Research depth preference:**
-   - Quick scan (2-3 hours) - High-level insights
-   - Standard analysis (4-6 hours) - Comprehensive coverage
-   - Deep dive (8+ hours) - Exhaustive research with modeling
+<action>Through natural conversation, discover:
 
-4. **Do you have any existing research or documents to build upon?**
+- The product/service and current stage
+- Their burning questions (what they REALLY need to know)
+- Context and urgency (fundraising? launch decision? pivot?)
+- Existing knowledge vs. uncertainties
+- Desired depth (gauge from their needs, don't ask them to choose)
+
+Adapt your approach: If uncertain → help them think it through. If detailed → dig deeper.
+
+Collaboratively define scope:
+
+- Markets/segments to focus on
+- Geographic boundaries
+- Critical questions vs. nice-to-have
+  </action>
+
+<action>Reflect understanding back to confirm you're aligned on what matters.</action>
 
 <template-output>product_name</template-output>
 <template-output>product_description</template-output>
 <template-output>research_objectives</template-output>
-<template-output>research_depth</template-output>
+<template-output>research_scope</template-output>
 </step>
 
 <step n="2" goal="Market Definition and Boundaries">
@@ -65,49 +86,62 @@ Work with the user to establish:
 <template-output>segment_boundaries</template-output>
 </step>
 
-<step n="3" goal="Live Market Intelligence Gathering" if="enable_web_research == true">
-<action>Conduct real-time web research to gather current market data</action>
+<step n="3" goal="Gather live market intelligence collaboratively">
 
-<critical>This step performs ACTUAL web searches to gather live market intelligence</critical>
+<critical>This step REQUIRES WebSearch tool usage - gather CURRENT data from {{current_year}}</critical>
+<critical>Share findings as you go - make this collaborative, not a black box</critical>
 
-Conduct systematic research across multiple sources:
+<action>Let {user_name} know you're searching for current {{market_category}} market data: size, growth, analyst reports, recent trends. Tell them you'll share what you find in a few minutes and review it together.</action>
 
-<step n="3a" title="Industry Reports and Statistics">
-<action>Search for latest industry reports, market size data, and growth projections</action>
-Search queries to execute:
-- "[market_category] market size [geographic_scope] [current_year]"
-- "[market_category] industry report Gartner Forrester IDC McKinsey"
-- "[market_category] market growth rate CAGR forecast"
-- "[market_category] market trends [current_year]"
+<step n="3a" title="Search for market size and industry data">
+<action>Conduct systematic web searches using WebSearch tool:
 
-<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
+<WebSearch>{{market_category}} market size {{geographic_scope}} {{current_year}}</WebSearch>
+<WebSearch>{{market_category}} industry report Gartner Forrester IDC {{current_year}}</WebSearch>
+<WebSearch>{{market_category}} market growth rate CAGR forecast {{current_year}}</WebSearch>
+<WebSearch>{{market_category}} market trends {{current_year}}</WebSearch>
+<WebSearch>{{market_category}} TAM SAM market opportunity {{current_year}}</WebSearch>
+</action>
+
+<action>Share findings WITH SOURCES including URLs and dates. Ask if it aligns with their expectations.</action>
+
+<action>CRITICAL - Validate data before proceeding:
+
+- Multiple sources with similar figures?
+- Recent sources ({{current_year}} or within 1-2 years)?
+- Credible sources (Gartner, Forrester, govt data, reputable pubs)?
+- Conflicts? Note explicitly, search for more sources, mark [Low Confidence]
+  </action>
+
+<action if="user_has_questions">Explore surprising data points together</action>
+
+<template-output>sources_market_size</template-output>
 </step>
 
-<step n="3b" title="Regulatory and Government Data">
-<action>Search government databases and regulatory sources</action>
-Search for:
-- Government statistics bureaus
-- Industry associations
-- Regulatory body reports
-- Census and economic data
+<step n="3b" title="Search for recent news and developments" optional="true">
+<action>Search for recent market developments:
+
+<WebSearch>{{market_category}} news {{current_year}} funding acquisitions</WebSearch>
+<WebSearch>{{market_category}} recent developments {{current_year}}</WebSearch>
+<WebSearch>{{market_category}} regulatory changes {{current_year}}</WebSearch>
+</action>
+
+<action>Share noteworthy findings:
+
+"I found some interesting recent developments:
+
+{{key_news_highlights}}
+
+Anything here surprise you or confirm what you suspected?"
+</action>
 </step>
 
-<step n="3c" title="News and Recent Developments">
-<action>Gather recent news, funding announcements, and market events</action>
-Search for articles from the last 6-12 months about:
-- Major deals and acquisitions
-- Funding rounds in the space
-- New market entrants
-- Regulatory changes
-- Technology disruptions
-</step>
+<step n="3c" title="Optional: Government and academic sources" optional="true">
+<action if="research needs high credibility">Search for authoritative sources:
 
-<step n="3d" title="Academic and Research Papers">
-<action>Search for academic research and white papers</action>
-Look for peer-reviewed studies on:
-- Market dynamics
-- Technology adoption patterns
-- Customer behavior research
+<WebSearch>{{market_category}} government statistics census data {{current_year}}</WebSearch>
+<WebSearch>{{market_category}} academic research white papers {{current_year}}</WebSearch>
+</action>
 </step>
 
 <template-output>market_intelligence_raw</template-output>
@@ -204,7 +238,6 @@ For each major segment, research and define:
 - Purchasing frequency
 - Budget allocation
 
-<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 <template-output>segment*profile*{{segment_number}}</template-output>
 </step>
 
@@ -250,38 +283,35 @@ Analyze:
 </step>
 </step>
 
-<step n="6" goal="Competitive Intelligence" if="enable_competitor_analysis == true">
-<action>Conduct comprehensive competitive analysis</action>
+<step n="6" goal="Understand the competitive landscape">
+<action>Ask if they know their main competitors or if you should search for them.</action>
 
-<step n="6a" title="Competitor Identification">
-<action>Create comprehensive competitor list</action>
+<step n="6a" title="Discover competitors together">
+<action if="user doesn't know competitors">Search for competitors:
 
-Search for and categorize:
+<WebSearch>{{product_category}} competitors {{geographic_scope}} {{current_year}}</WebSearch>
+<WebSearch>{{product_category}} alternatives comparison {{current_year}}</WebSearch>
+<WebSearch>top {{product_category}} companies {{current_year}}</WebSearch>
+</action>
 
-1. **Direct Competitors** - Same solution, same market
-2. **Indirect Competitors** - Different solution, same problem
-3. **Potential Competitors** - Could enter market
-4. **Substitute Products** - Alternative approaches
-
-<ask>Do you have a specific list of competitors to analyze, or should I discover them through research?</ask>
+<action>Present findings. Ask them to pick the 3-5 that matter most (most concerned about or curious to understand).</action>
 </step>
 
-<step n="6b" title="Competitor Deep Dive" repeat="5">
-<action>For top 5 competitors, research and analyze</action>
+<step n="6b" title="Research each competitor together" repeat="for-each-selected-competitor">
+<action>For each competitor, search for:
+- Company overview, product features
+- Pricing model
+- Funding and recent news
+- Customer reviews and ratings
 
-Gather intelligence on:
+Use {{current_year}} in all searches.
+</action>
 
-- Company overview and history
-- Product features and positioning
-- Pricing strategy and models
-- Target customer focus
-- Recent news and developments
-- Funding and financial health
-- Team and leadership
-- Customer reviews and sentiment
+<action>Share findings with sources. Ask what jumps out and if it matches expectations.</action>
 
-<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
-<template-output>competitor*analysis*{{competitor_number}}</template-output>
+<action if="user has follow-up questions">Dig deeper based on their interests</action>
+
+<template-output>competitor-analysis-{{competitor_name}}</template-output>
 </step>
 
 <step n="6c" title="Competitive Positioning Map">
@@ -404,7 +434,6 @@ For each opportunity:
 - Risk assessment
 - Success criteria
 
-<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 <template-output>market_opportunities</template-output>
 </step>
 
@@ -485,55 +514,99 @@ Provide mitigation strategies.
 
 </step>
 
-<step n="11" goal="Executive Summary Creation">
-<action>Synthesize all findings into executive summary</action>
+<step n="11" goal="Synthesize findings together into executive summary">
 
-<critical>Write this AFTER all other sections are complete</critical>
+<critical>This is the last major content section - make it collaborative</critical>
 
-Create compelling executive summary with:
+<action>Review the research journey together. Share high-level summaries of market size, competitive dynamics, customer insights. Ask what stands out most - what surprised them or confirmed their thinking.</action>
 
-**Market Opportunity:**
+<action>Collaboratively craft the narrative:
 
-- TAM/SAM/SOM summary
-- Growth trajectory
+- What's the headline? (The ONE thing someone should know)
+- What are the 3-5 critical insights?
+- Recommended path forward?
+- Key risks?
 
-**Key Insights:**
+This should read like a strategic brief, not a data dump.
+</action>
 
-- Top 3-5 findings
-- Surprising discoveries
-- Critical success factors
-
-**Competitive Landscape:**
-
-- Market structure
-- Positioning opportunity
-
-**Strategic Recommendations:**
-
-- Priority actions
-- Go-to-market approach
-- Investment requirements
-
-**Risk Summary:**
-
-- Major risks
-- Mitigation approach
+<action>Draft executive summary and share. Ask if it captures the essence and if anything is missing or overemphasized.</action>
 
 <template-output>executive_summary</template-output>
 </step>
 
-<step n="12" goal="Report Compilation and Review">
-<action>Compile full report and review with user</action>
+<step n="12" goal="Validate sources and compile report">
 
-<action>Generate the complete market research report using the template</action>
-<action>Review all sections for completeness and consistency</action>
-<action>Ensure all data sources are properly cited</action>
+<critical>MANDATORY SOURCE VALIDATION - Do NOT skip this step!</critical>
+
+<action>Before finalizing, conduct source audit:
+
+Review every major claim in the report and verify:
+
+**For Market Size Claims:**
+
+- [ ] At least 2 independent sources cited with URLs
+- [ ] Sources are from {{current_year}} or within 2 years
+- [ ] Sources are credible (Gartner, Forrester, govt data, reputable pubs)
+- [ ] Conflicting estimates are noted with all sources
+
+**For Competitive Data:**
+
+- [ ] Competitor information has source URLs
+- [ ] Pricing data is current and sourced
+- [ ] Funding data is verified with dates
+- [ ] Customer reviews/ratings have source links
+
+**For Growth Rates and Projections:**
+
+- [ ] CAGR and forecast data are sourced
+- [ ] Methodology is explained or linked
+- [ ] Multiple analyst estimates are compared if available
+
+**For Customer Insights:**
+
+- [ ] Persona data is based on real research (cited)
+- [ ] Survey/interview data has sample size and source
+- [ ] Behavioral claims are backed by studies/data
+      </action>
+
+<action>Count and document source quality:
+
+- Total sources cited: {{count_all_sources}}
+- High confidence (2+ sources): {{high_confidence_claims}}
+- Single source (needs verification): {{single_source_claims}}
+- Uncertain/speculative: {{low_confidence_claims}}
+
+If {{single_source_claims}} or {{low_confidence_claims}} is high, consider additional research.
+</action>
+
+<action>Compile full report with ALL sources properly referenced:
+
+Generate the complete market research report using the template:
+
+- Ensure every statistic has inline citation: [Source: Company, Year, URL]
+- Populate all {{sources_*}} template variables
+- Include confidence levels for major claims
+- Add References section with full source list
+  </action>
+
+<action>Present source quality summary to user:
+
+"I've completed the research with {{count_all_sources}} total sources:
+
+- {{high_confidence_claims}} claims verified with multiple sources
+- {{single_source_claims}} claims from single sources (marked for verification)
+- {{low_confidence_claims}} claims with low confidence or speculation
+
+Would you like me to strengthen any areas with additional research?"
+</action>
 
 <ask>Would you like to review any specific sections before finalizing? Are there any additional analyses you'd like to include?</ask>
 
 <goto step="9a" if="user requests changes">Return to refine opportunities</goto>
 
 <template-output>final_report_ready</template-output>
+<template-output>source_audit_complete</template-output>
 </step>
 
 <step n="13" goal="Appendices and Supporting Materials" optional="true">
@@ -554,60 +627,49 @@ Create compelling executive summary with:
 
 </step>
 
-<step n="14" goal="Update status file on completion">
-<action>Search {output_folder}/ for files matching pattern: bmm-workflow-status.md</action>
-<action>Find the most recent file (by date in filename)</action>
+<step n="14" goal="Update status file on completion" tag="workflow-status">
+<check if="standalone_mode != true">
+  <action>Load the FULL file: {output_folder}/bmm-workflow-status.yaml</action>
+  <action>Find workflow_status key "research"</action>
+  <critical>ONLY write the file path as the status value - no other text, notes, or metadata</critical>
+  <action>Update workflow_status["research"] = "{output_folder}/bmm-research-{{research_mode}}-{{date}}.md"</action>
+  <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
 
-<check if="status file exists">
-  <invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
-    <param>mode: update</param>
-    <param>action: complete_workflow</param>
-    <param>workflow_name: research</param>
-  </invoke-workflow>
-
-  <check if="success == true">
-    <output>Status updated! Next: {{next_workflow}}</output>
-  </check>
+<action>Find first non-completed workflow in workflow_status (next workflow to do)</action>
+<action>Determine next agent from path file based on next workflow</action>
 </check>
 
 <output>**✅ Research Complete ({{research_mode}} mode)**
 
 **Research Report:**
 
-- Research report generated and saved
+- Research report generated and saved to {output_folder}/bmm-research-{{research_mode}}-{{date}}.md
 
-**Status file updated:**
+{{#if standalone_mode != true}}
+**Status Updated:**
 
-- Current step: research ({{research_mode}}) ✓
-- Progress: {{new_progress_percentage}}%
+- Progress tracking updated: research marked complete
+- Next workflow: {{next_workflow}}
+  {{else}}
+  **Note:** Running in standalone mode (no progress tracking)
+  {{/if}}
 
 **Next Steps:**
 
-- **Next required:** {{next_workflow}} ({{next_agent}} agent)
-- **Optional:** Review findings with stakeholders, or run additional analysis workflows (product-brief, game-brief, etc.)
+{{#if standalone_mode != true}}
+
+- **Next workflow:** {{next_workflow}} ({{next_agent}} agent)
+- **Optional:** Review findings with stakeholders, or run additional analysis workflows (product-brief for software, or install BMGD module for game-brief)
 
 Check status anytime with: `workflow-status`
-</output>
-</check>
-
-<check if="status file not found">
-  <output>**✅ Research Complete ({{research_mode}} mode)**
-
-**Research Report:**
-
-- Research report generated and saved
-
-Note: Running in standalone mode (no status file).
-
-**Next Steps:**
-
+{{else}}
 Since no workflow is in progress:
 
 - Review research findings
 - Refer to the BMM workflow guide if unsure what to do next
 - Or run `workflow-init` to create a workflow path and get guided next steps
+  {{/if}}
   </output>
-  </check>
   </step>
 
 </workflow>

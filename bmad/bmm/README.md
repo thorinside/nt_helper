@@ -1,132 +1,128 @@
 # BMM - BMad Method Module
 
-The BMM (BMad Method Module) is the core orchestration system for the BMad Method, providing comprehensive software development lifecycle management through specialized agents, workflows, teams, and tasks.
-
-## 📚 Essential Reading
-
-**Before using BMM, you MUST read the [BMM v6 Workflows Guide](./workflows/README.md).** This document explains the revolutionary v6a workflow system and how all components work together.
-
-## Module Structure
-
-### 🤖 `/agents`
-
-Specialized AI agents for different development roles:
-
-- **PM** (Product Manager) - Product planning and requirements
-- **Analyst** - Business analysis and research
-- **Architect** - Technical architecture and design
-- **SM** (Scrum Master) - Sprint and story management
-- **DEV** (Developer) - Code implementation
-- **TEA** (Test Architect) - Test Architect
-- **UX** - User experience design
-- And more specialized roles
-
-### 📋 `/workflows`
-
-The heart of BMM - structured workflows for the four development phases:
-
-1. **Analysis Phase** (Optional)
-   - `brainstorm-project` - Project ideation
-   - `research` - Market/technical research
-   - `product-brief` - Product strategy
-
-2. **Planning Phase** (Required)
-   - `prd` - Scale-adaptive project planning
-   - Routes to appropriate documentation based on project complexity
-
-3. **Solutioning Phase** (Level 3-4 projects)
-   - `3-solutioning` - Architecture design
-   - `tech-spec` - Epic-specific technical specifications
-
-4. **Implementation Phase** (Iterative)
-   - `create-story` - Story drafting (SM agent)
-   - `story-ready` - Approve story for development (SM agent)
-   - `story-context` - Expertise injection (SM agent)
-   - `dev-story` - Implementation (DEV agent)
-   - `story-done` - Mark story done (DEV agent)
-   - `review-story` - Quality validation (DEV/SR agent)
-   - `correct-course` - Issue resolution
-   - `retrospective` - Continuous improvement
-
-### 👥 `/teams`
-
-Pre-configured agent teams for different project types and phases. Teams coordinate multiple agents working together on complex tasks.
-
-### 📝 `/tasks`
-
-Reusable task definitions that agents execute within workflows. These are the atomic units of work that compose into larger workflows.
-
-### 🔧 `/sub-modules`
-
-Extension modules that add specialized capabilities to BMM.
-
-### 🏗️ `/testarch`
-
-Test architecture and quality assurance components. The **[Test Architect (TEA) Guide](./testarch/README.md)** provides comprehensive testing strategy across 9 workflows: framework setup, CI/CD, test design, ATDD, automation, traceability, NFR assessment, quality gates, and test review.
-
-## Quick Start
-
-```bash
-# Load the PM agent - either via slash command or drag and drop or @ the agent file.
-# Once loaded, the agent should greet you and offer a menu of options. You can enter:
-`*prd`
-```
-
-## Key Concepts
-
-### Scale Levels
-
-BMM automatically adapts to project complexity:
-
-- **Level 0**: Single atomic change
-- **Level 1**: 1-10 stories, minimal documentation
-- **Level 2**: 5-15 stories, focused PRD
-- **Level 3**: 12-40 stories, full architecture
-- **Level 4**: 40+ stories, enterprise scale
-
-### Just-In-Time Design
-
-Technical specifications are created one epic at a time during implementation, not all upfront, allowing for learning and adaptation.
-
-### Story State Machine
-
-Stories flow through a 4-state lifecycle tracked in the status file:
-
-```
-BACKLOG → TODO → IN PROGRESS → DONE
-```
-
-- **BACKLOG**: Ordered list of stories to be drafted (populated at phase transition)
-- **TODO**: Single story ready for SM to draft (or drafted, awaiting approval)
-- **IN PROGRESS**: Single story approved for DEV to implement
-- **DONE**: Completed stories with dates and points
-
-Agents never search for "next story" - they always read the exact story from the status file. Simple workflows (`story-ready`, `story-done`) advance the queue automatically.
-
-### Context Injection
-
-Story-specific technical guidance is generated dynamically, providing developers with exactly the expertise needed for each task.
-
-## Integration with BMad Core
-
-BMM integrates seamlessly with the BMad Core framework, leveraging:
-
-- The agent execution engine
-- Workflow orchestration
-- Task management
-- Team coordination
-
-## Related Documentation
-
-- [BMM Workflows Guide](./workflows/README.md) - **Start here!**
-- [Test Architect (TEA) Guide](./testarch/README.md) - Quality assurance and testing strategy
-
-## Best Practices
-
-1. **Always start with the workflows** - Let workflows guide your process
-2. **Respect the scale** - Don't over-document small projects
-3. **Trust the process** - The methodology has been carefully designed
+Core orchestration system for AI-driven agile development, providing comprehensive lifecycle management through specialized agents and workflows.
 
 ---
 
-For detailed information about the complete BMad Method workflow system, see the [BMM Workflows README](./workflows/README.md).
+## 📚 Complete Documentation
+
+👉 **[BMM Documentation Hub](./docs/README.md)** - Start here for complete guides, tutorials, and references
+
+**Quick Links:**
+
+- **[Quick Start Guide](./docs/quick-start.md)** - New to BMM? Start here (15 min)
+- **[Agents Guide](./docs/agents-guide.md)** - Meet your 12 specialized AI agents (45 min)
+- **[Scale Adaptive System](./docs/scale-adaptive-system.md)** - How BMM adapts to project size (42 min)
+- **[FAQ](./docs/faq.md)** - Quick answers to common questions
+- **[Glossary](./docs/glossary.md)** - Key terminology reference
+
+---
+
+## 🏗️ Module Structure
+
+This module contains:
+
+```
+bmm/
+├── agents/          # 12 specialized AI agents (PM, Architect, SM, DEV, TEA, etc.)
+├── workflows/       # 34 workflows across 4 phases + testing
+├── teams/           # Pre-configured agent groups
+├── tasks/           # Atomic work units
+├── testarch/        # Comprehensive testing infrastructure
+└── docs/            # Complete user documentation
+```
+
+### Agent Roster
+
+**Core Development:** PM, Analyst, Architect, SM, DEV, TEA, UX Designer, Technical Writer
+**Game Development:** Game Designer, Game Developer, Game Architect
+**Orchestration:** BMad Master (from Core)
+
+👉 **[Full Agents Guide](./docs/agents-guide.md)** - Roles, workflows, and when to use each agent
+
+### Workflow Phases
+
+**Phase 0:** Documentation (brownfield only)
+**Phase 1:** Analysis (optional) - 5 workflows
+**Phase 2:** Planning (required) - 6 workflows
+**Phase 3:** Solutioning (Level 3-4) - 2 workflows
+**Phase 4:** Implementation (iterative) - 10 workflows
+**Testing:** Quality assurance (parallel) - 9 workflows
+
+👉 **[Workflow Guides](./docs/README.md#-workflow-guides)** - Detailed documentation for each phase
+
+---
+
+## 🚀 Getting Started
+
+**New Project:**
+
+```bash
+# Install BMM
+npx bmad-method@alpha install
+
+# Load Analyst agent in your IDE, then:
+*workflow-init
+```
+
+**Existing Project (Brownfield):**
+
+```bash
+# Document your codebase first
+*document-project
+
+# Then initialize
+*workflow-init
+```
+
+👉 **[Quick Start Guide](./docs/quick-start.md)** - Complete setup and first project walkthrough
+
+---
+
+## 🎯 Key Concepts
+
+### Scale-Adaptive Design
+
+BMM automatically adjusts to project complexity (Levels 0-4):
+
+- **Level 0-1:** Quick Spec Flow for bug fixes and small features
+- **Level 2:** PRD with optional architecture
+- **Level 3-4:** Full PRD + comprehensive architecture
+
+👉 **[Scale Adaptive System](./docs/scale-adaptive-system.md)** - Complete level breakdown
+
+### Story-Centric Implementation
+
+Stories move through a defined lifecycle: `backlog → drafted → ready → in-progress → review → done`
+
+Just-in-time epic context and story context provide exact expertise when needed.
+
+👉 **[Implementation Workflows](./docs/workflows-implementation.md)** - Complete story lifecycle guide
+
+### Multi-Agent Collaboration
+
+Use party mode to engage all 19+ agents (from BMM, CIS, BMB, custom modules) in group discussions for strategic decisions, creative brainstorming, and complex problem-solving.
+
+👉 **[Party Mode Guide](./docs/party-mode.md)** - How to orchestrate multi-agent collaboration
+
+---
+
+## 📖 Additional Resources
+
+- **[Brownfield Guide](./docs/brownfield-guide.md)** - Working with existing codebases
+- **[Quick Spec Flow](./docs/quick-spec-flow.md)** - Fast-track for Level 0-1 projects
+- **[Enterprise Agentic Development](./docs/enterprise-agentic-development.md)** - Team collaboration patterns
+- **[Troubleshooting](./docs/troubleshooting.md)** - Common issues and solutions
+- **[IDE Setup Guides](../../../docs/ide-info/)** - Configure Claude Code, Cursor, Windsurf, etc.
+
+---
+
+## 🤝 Community
+
+- **[Discord](https://discord.gg/gk8jAdXWmj)** - Get help, share feedback (#general-dev, #bugs-issues)
+- **[GitHub Issues](https://github.com/bmad-code-org/BMAD-METHOD/issues)** - Report bugs or request features
+- **[YouTube](https://www.youtube.com/@BMadCode)** - Video tutorials and walkthroughs
+
+---
+
+**Ready to build?** → [Start with the Quick Start Guide](./docs/quick-start.md)

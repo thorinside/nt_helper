@@ -35,7 +35,7 @@ All stories are either still in development or already done.
 **Next Steps:**
 
 1. Run `dev-story` to implement stories
-2. Run `review-story` if stories need review first
+2. Run `code-review` if stories need review first
 3. Check sprint-status.yaml for current story states
    </output>
    <action>HALT</action>

@@ -2,38 +2,66 @@
 
 <critical>The workflow execution engine is governed by: {project_root}/bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: {installed_path}/workflow.yaml</critical>
-<critical>This workflow conducts technical research for architecture and technology decisions</critical>
+<critical>This workflow uses ADAPTIVE FACILITATION - adjust your communication style based on {user_skill_level}</critical>
+<critical>This is a HIGHLY INTERACTIVE workflow - make technical decisions WITH user, not FOR them</critical>
+<critical>Web research is MANDATORY - use WebSearch tool with {{current_year}} for current version info and trends</critical>
+<critical>ALWAYS verify current versions - NEVER use hardcoded or outdated version numbers</critical>
+<critical>Communicate all responses in {communication_language} and tailor to {user_skill_level}</critical>
+<critical>Generate all documents in {document_output_language}</critical>
+
+<critical>🚨 ANTI-HALLUCINATION PROTOCOL - MANDATORY 🚨</critical>
+<critical>NEVER invent version numbers, features, or technical details - ALWAYS verify with current {{current_year}} sources</critical>
+<critical>Every technical claim (version, feature, performance, compatibility) MUST have a cited source with URL</critical>
+<critical>Version numbers MUST be verified via WebSearch - do NOT rely on training data (it's outdated!)</critical>
+<critical>When comparing technologies, cite sources for each claim (performance benchmarks, community size, etc.)</critical>
+<critical>Mark confidence levels: [Verified {{current_year}} source], [Older source - verify], [Uncertain - needs verification]</critical>
+<critical>Distinguish: FACT (from official docs/sources), OPINION (from community/reviews), SPECULATION (your analysis)</critical>
+<critical>If you cannot find current information about a technology, state: "I could not find recent {{current_year}} data on [X]"</critical>
+<critical>Extract and include source URLs in all technology profiles and comparisons</critical>
+<critical>⚠️ CHECKPOINT PROTOCOL: After EVERY <template-output> tag, you MUST follow workflow.xml substep 2c: SAVE content to file immediately → SHOW checkpoint separator (━━━━━━━━━━━━━━━━━━━━━━━) → DISPLAY generated content → PRESENT options [a]Advanced Elicitation/[c]Continue/[p]Party-Mode/[y]YOLO → WAIT for user response. Never batch saves or skip checkpoints.</critical>
 
 <workflow>
 
-<step n="1" goal="Technical Research Discovery">
-<action>Understand the technical research requirements</action>
+<step n="1" goal="Discover technical research needs through conversation">
 
-**Welcome to Technical/Architecture Research!**
+<action>Engage conversationally based on skill level:
 
-<ask>What technical decision or research do you need?
+<check if="{user_skill_level} == 'expert'">
+  "Let's research the technical options for your decision.
 
-Common scenarios:
+I'll gather current data from {{current_year}}, compare approaches, and help you think through trade-offs.
 
-- Evaluate technology stack for a new project
-- Compare frameworks or libraries (React vs Vue, Postgres vs MongoDB)
-- Research architecture patterns (microservices, event-driven, CQRS)
-- Investigate specific technologies or tools
-- Best practices for specific use cases
-- Performance and scalability considerations
-- Security and compliance research</ask>
+What technical question are you wrestling with?"
+</check>
+
+<check if="{user_skill_level} == 'intermediate'">
+  "I'll help you research and evaluate your technical options.
+
+We'll look at current technologies (using {{current_year}} data), understand the trade-offs, and figure out what fits your needs best.
+
+What technical decision are you trying to make?"
+</check>
+
+<check if="{user_skill_level} == 'beginner'">
+  "Think of this as having a technical advisor help you research your options.
+
+I'll explain what different technologies do, why you might choose one over another, and help you make an informed decision.
+
+What technical challenge brought you here?"
+</check>
+</action>
+
+<action>Through conversation, understand:
+
+- **The technical question** - What they need to decide or understand
+- **The context** - Greenfield? Brownfield? Learning? Production?
+- **Current constraints** - Languages, platforms, team skills, budget
+- **What they already know** - Do they have candidates in mind?
+
+Don't interrogate - explore together. If they're unsure, help them articulate the problem.
+</action>
 
 <template-output>technical_question</template-output>
-
-<ask>What's the context for this decision?
-
-- New greenfield project
-- Adding to existing system (brownfield)
-- Refactoring/modernizing legacy system
-- Proof of concept / prototype
-- Production-ready implementation
-- Academic/learning purpose</ask>
-
 <template-output>project_context</template-output>
 
 </step>
@@ -82,49 +110,68 @@ Consider:
 
 </step>
 
-<step n="3" goal="Identify Alternatives and Options">
-<action>Research and identify technology options to evaluate</action>
+<step n="3" goal="Discover and evaluate technology options together">
 
-<ask>Do you have specific technologies in mind to compare, or should I discover options?
+<critical>MUST use WebSearch to find current options from {{current_year}}</critical>
 
-If you have specific options, list them. Otherwise, I'll research current leading solutions based on your requirements.</ask>
+<action>Ask if they have candidates in mind:
 
-<template-output if="user provides options">user_provided_options</template-output>
+"Do you already have specific technologies you want to compare, or should I search for the current options?"
+</action>
 
-<check if="discovering options">
-  <action>Conduct web research to identify current leading solutions</action>
-  <action>Search for:
+<action if="user has candidates">Great! Let's research: {{user_candidates}}</action>
 
-- "[technical_category] best tools 2025"
-- "[technical_category] comparison [use_case]"
-- "[technical_category] production experiences reddit"
-- "State of [technical_category] 2025"
-  </action>
+<action if="discovering options">Search for current leading technologies:
 
-  <invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
+<WebSearch>{{technical_category}} best tools {{current_year}}</WebSearch>
+<WebSearch>{{technical_category}} comparison {{use_case}} {{current_year}}</WebSearch>
+<WebSearch>{{technical_category}} popular frameworks {{current_year}}</WebSearch>
+<WebSearch>state of {{technical_category}} {{current_year}}</WebSearch>
+</action>
 
-<action>Present discovered options (typically 3-5 main candidates)</action>
-<template-output>technology_options</template-output>
+<action>Share findings conversationally:
 
+"Based on current {{current_year}} data, here are the main options:
+
+{{discovered_options}}
+
+<check if="{user_skill_level} == 'expert'">
+These are the leaders right now. Which ones make sense to evaluate for your use case?"
 </check>
+
+<check if="{user_skill_level} == 'beginner'">
+Each of these is popular for different reasons. Let me know if you want me to explain what makes each one different."
+</check>
+</action>
+
+<template-output>technology_options</template-output>
 
 </step>
 
-<step n="4" goal="Deep Dive Research on Each Option">
-<action>Research each technology option in depth</action>
+<step n="4" goal="Research each technology together in depth">
 
-<critical>For each technology option, research thoroughly</critical>
+<critical>For each option, use WebSearch to gather CURRENT {{current_year}} information</critical>
 
-<step n="4a" title="Technology Profile" repeat="for-each-option">
+<step n="4a" title="Deep dive on each technology" repeat="for-each-option">
 
-Research and document:
+<action>For {{technology_name}}, conduct comprehensive research:
+
+<WebSearch>{{technology_name}} overview what is {{current_year}}</WebSearch>
+<WebSearch>{{technology_name}} latest version release notes {{current_year}}</WebSearch>
+<WebSearch>{{technology_name}} pros cons trade-offs {{current_year}}</WebSearch>
+<WebSearch>{{technology_name}} production experience real world {{current_year}}</WebSearch>
+<WebSearch>{{technology_name}} vs alternatives comparison {{current_year}}</WebSearch>
+</action>
+
+<action>Share findings conversationally and collaboratively:
+
+"Here's what I found about {{technology_name}}:
 
 **Overview:**
+{{what_it_is_and_solves}}
 
-- What is it and what problem does it solve?
-- Maturity level (experimental, stable, mature, legacy)
-- Community size and activity
-- Maintenance status and release cadence
+**Current Status ({{current_year}}):**
+{{maturity_community_release_cadence}}
 
 **Technical Characteristics:**
 
@@ -173,7 +220,6 @@ Research and document:
 - Training costs
 - Total cost of ownership estimate
 
-<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 <template-output>tech*profile*{{option_number}}</template-output>
 
 </step>
@@ -344,8 +390,6 @@ Research and document:
 - Contingency options if primary choice doesn't work
 - Exit strategy considerations
 
-<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
-
 <template-output>recommendations</template-output>
 
 </step>
@@ -442,60 +486,49 @@ Select option (1-5):</ask>
 
 </step>
 
-<step n="FINAL" goal="Update status file on completion">
-<action>Search {output_folder}/ for files matching pattern: bmm-workflow-status.md</action>
-<action>Find the most recent file (by date in filename)</action>
+<step n="FINAL" goal="Update status file on completion" tag="workflow-status">
+<check if="standalone_mode != true">
+  <action>Load the FULL file: {output_folder}/bmm-workflow-status.yaml</action>
+  <action>Find workflow_status key "research"</action>
+  <critical>ONLY write the file path as the status value - no other text, notes, or metadata</critical>
+  <action>Update workflow_status["research"] = "{output_folder}/bmm-research-technical-{{date}}.md"</action>
+  <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
 
-<check if="status file exists">
-  <invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
-    <param>mode: update</param>
-    <param>action: complete_workflow</param>
-    <param>workflow_name: research</param>
-  </invoke-workflow>
-
-  <check if="success == true">
-    <output>Status updated! Next: {{next_workflow}}</output>
-  </check>
+<action>Find first non-completed workflow in workflow_status (next workflow to do)</action>
+<action>Determine next agent from path file based on next workflow</action>
 </check>
 
 <output>**✅ Technical Research Complete**
 
 **Research Report:**
 
-- Technical research report generated and saved
+- Technical research report generated and saved to {output_folder}/bmm-research-technical-{{date}}.md
 
-**Status file updated:**
+{{#if standalone_mode != true}}
+**Status Updated:**
 
-- Current step: research (technical) ✓
-- Progress: {{new_progress_percentage}}%
+- Progress tracking updated: research marked complete
+- Next workflow: {{next_workflow}}
+  {{else}}
+  **Note:** Running in standalone mode (no progress tracking)
+  {{/if}}
 
 **Next Steps:**
 
-- **Next required:** {{next_workflow}} ({{next_agent}} agent)
+{{#if standalone_mode != true}}
+
+- **Next workflow:** {{next_workflow}} ({{next_agent}} agent)
 - **Optional:** Review findings with architecture team, or run additional analysis workflows
 
 Check status anytime with: `workflow-status`
-</output>
-</check>
-
-<check if="status file not found">
-  <output>**✅ Technical Research Complete**
-
-**Research Report:**
-
-- Technical research report generated and saved
-
-Note: Running in standalone mode (no status file).
-
-**Next Steps:**
-
+{{else}}
 Since no workflow is in progress:
 
 - Review technical research findings
 - Refer to the BMM workflow guide if unsure what to do next
 - Or run `workflow-init` to create a workflow path and get guided next steps
+  {{/if}}
   </output>
-  </check>
   </step>
 
 </workflow>

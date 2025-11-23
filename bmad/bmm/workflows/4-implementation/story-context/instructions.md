@@ -6,7 +6,7 @@
 <critical>Communicate all responses in {communication_language}</critical>
 <critical>Generate all documents in {document_output_language}</critical>
 <critical>This workflow assembles a Story Context file for a single drafted story by extracting acceptance criteria, tasks, relevant docs/code, interfaces, constraints, and testing guidance.</critical>
-<critical>If story_path is provided, use it. Otherwise, find the first story with status "drafted" in sprint-status.yaml. If none found, HALT.</critical>
+<critical>If {story_path} is provided, use it. Otherwise, find the first story with status "drafted" in sprint-status.yaml. If none found, HALT.</critical>
 <critical>Check if context file already exists. If it does, ask user if they want to replace it, verify it, or cancel.</critical>
 
 <critical>DOCUMENT OUTPUT: Technical context file (.context.xml). Concise, structured, project-relative paths only.</critical>
@@ -34,18 +34,17 @@
 
       <check if="no story with status 'drafted' found">
         <output>📋 No drafted stories found in sprint-status.yaml
+          All stories are either still in backlog or already marked ready/in-progress/done.
 
-All stories are either still in backlog or already marked ready/in-progress/done.
-
-**Next Steps:**
-1. Run `create-story` to draft more stories
-2. Run `sprint-planning` to refresh story tracking
+          **Next Steps:**
+          1. Run `create-story` to draft more stories
+          2. Run `sprint-planning` to refresh story tracking
         </output>
         <action>HALT</action>
       </check>
 
       <action>Use the first drafted story found</action>
-      <action>Find matching story file in {{story_dir}} using story_key pattern</action>
+      <action>Find matching story file in {{story_path}} using story_key pattern</action>
       <action>Read the COMPLETE story file</action>
     </check>
 
@@ -61,10 +60,10 @@ All stories are either still in backlog or already marked ready/in-progress/done
     <check if="context file already exists">
       <output>⚠️ Context file already exists: {default_output_file}
 
-**What would you like to do?**
-1. **Replace** - Generate new context file (overwrites existing)
-2. **Verify** - Validate existing context file
-3. **Cancel** - Exit without changes
+        **What would you like to do?**
+        1. **Replace** - Generate new context file (overwrites existing)
+        2. **Verify** - Validate existing context file
+        3. **Cancel** - Exit without changes
       </output>
       <ask>Choose action (replace/verify/cancel):</ask>
 
@@ -89,9 +88,15 @@ All stories are either still in backlog or already marked ready/in-progress/done
     <template-output file="{default_output_file}">so_that</template-output>
   </step>
 
+  <step n="1.5" goal="Discover and load project documents">
+    <invoke-protocol name="discover_inputs" />
+    <note>After discovery, these content variables are available: {prd_content}, {tech_spec_content}, {architecture_content}, {ux_design_content}, {epics_content} (loads only epic for this story if sharded), {document_project_content}</note>
+  </step>
+
   <step n="2" goal="Collect relevant documentation">
-    <action>Scan docs and src module docs for items relevant to this story's domain: search keywords from story title, ACs, and tasks.</action>
-    <action>Prefer authoritative sources: PRD, Architecture, Front-end Spec, Testing standards, module-specific docs.</action>
+    <action>Review loaded content from Step 1.5 for items relevant to this story's domain (use keywords from story title, ACs, and tasks).</action>
+    <action>Extract relevant sections from: {prd_content}, {tech_spec_content}, {architecture_content}, {ux_design_content}, {document_project_content}</action>
+    <action>Note: Tech-Spec ({tech_spec_content}) is used for Level 0-1 projects (instead of PRD). It contains comprehensive technical context, brownfield analysis, framework details, existing patterns, and implementation guidance.</action>
     <action>For each discovered document: convert absolute paths to project-relative format by removing {project-root} prefix. Store only relative paths (e.g., "docs/prd.md" not "/Users/.../docs/prd.md").</action>
     <template-output file="{default_output_file}">
       Add artifacts.docs entries with {path, title, section, snippet}:
@@ -178,12 +183,14 @@ You may need to run sprint-planning to refresh tracking.
     <output>✅ Story context generated successfully, {user_name}!
 
 **Story Details:**
+
 - Story: {{epic_id}}.{{story_id}} - {{story_title}}
 - Story Key: {{story_key}}
 - Context File: {default_output_file}
 - Status: drafted → ready-for-dev
 
 **Context Includes:**
+
 - Documentation artifacts and references
 - Existing code and interfaces
 - Dependencies and frameworks
@@ -191,6 +198,7 @@ You may need to run sprint-planning to refresh tracking.
 - Development constraints
 
 **Next Steps:**
+
 1. Review the context file: {default_output_file}
 2. Run `dev-story` to implement the story
 3. Generate context for more drafted stories if needed

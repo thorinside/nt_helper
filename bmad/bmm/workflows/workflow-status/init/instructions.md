@@ -3,294 +3,331 @@
 <critical>The workflow execution engine is governed by: {project-root}/bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: workflow-init/workflow.yaml</critical>
 <critical>Communicate in {communication_language} with {user_name}</critical>
+<critical>This workflow handles BOTH new projects AND legacy projects being migrated to BMad Method</critical>
 
 <workflow>
 
-<step n="1" goal="Quick scan and ask user about THEIR work">
+<step n="1" goal="Scan for existing work">
 <output>Welcome to BMad Method, {user_name}!</output>
 
-<action>Quick scan for context (do NOT analyze in depth yet):</action>
+<action>Perform comprehensive scan for existing work:
 
-- Check for codebase: src/, lib/, package.json, .git, etc.
-- Check for BMM artifacts: PRD, epics, stories, tech-spec, architecture docs
-- Store what was found but do NOT infer project details yet
+- BMM artifacts: PRD, tech-spec, epics, architecture, UX, brief, research, brainstorm
+- Implementation: stories, sprint-status, workflow-status
+- Codebase: source directories, package files, git repo
+- Check both {output_folder} and {sprint_artifacts} locations
+  </action>
+
+<action>Categorize into one of these states:
+
+- CLEAN: No artifacts or code (or scaffold only)
+- PLANNING: Has PRD/spec but no implementation
+- ACTIVE: Has stories or sprint status
+- LEGACY: Has code but no BMM artifacts
+- UNCLEAR: Mixed state needs clarification
+  </action>
 
 <ask>What's your project called? {{#if project_name}}(Config shows: {{project_name}}){{/if}}</ask>
-<action>Set project_name</action>
+<action>Store project_name</action>
 <template-output>project_name</template-output>
+</step>
 
-<check if="found artifacts OR found codebase">
-<output>I found some existing work here. Let me understand what you're working on:</output>
-
-<check if="found artifacts">
-<output>
-**Planning Documents Found:**
-{{#each artifacts}}
-- {{artifact_name}} ({{artifact_type}}, {{story_count}} stories, modified {{date}})
-{{/each}}
-</output>
+<step n="2" goal="Choose setup path">
+<check if="state == CLEAN">
+  <output>Perfect! Fresh start detected.</output>
+  <action>Continue to step 3</action>
 </check>
 
-<check if="found codebase">
-<output>
-**Codebase Found:**
-- Source code in: {{source_dirs}}
-- Tech stack: {{detected_tech_stack}}
-{{#if git_history}}
-- Git history: {{commit_count}} commits, last commit {{last_commit_date}}
-{{/if}}
-</output>
+<check if="state == ACTIVE AND workflow_status exists">
+  <output>✅ You already have workflow tracking at: {{workflow_status_path}}
+
+To check progress: Load any BMM agent and run /bmad:bmm:workflows:workflow-status
+
+Happy building! 🚀</output>
+<action>Exit workflow (already initialized)</action>
 </check>
 
-<ask>Looking at what I found, are these:
+<check if="state != CLEAN">
+  <output>Found existing work:
+{{summary_of_findings}}</output>
 
-a) **Works in progress you're finishing** - continuing the work described in these documents
-b) **Documents from a previous effort** - you're starting something NEW and different now
-c) **The proposed work you're about to start** - these describe what you want to do
-d) **None of these** - let me explain what I'm actually working on
+<ask>How would you like to proceed?
 
-Your choice [a/b/c/d]:</ask>
+a) **Continue** - Work with existing artifacts
+b) **Archive & Start Fresh** - Move old work to archive
+c) **Express Setup** - I know exactly what I need
+d) **Guided Setup** - Walk me through options
 
-<check if="choice == a">
-  <action>User is continuing old work - analyze artifacts to get details</action>
-  <action>Set continuing_old_work = true</action>
-  <action>Go to Step 2 (Analyze artifacts for details)</action>
+Choice [a/b/c/d]:</ask>
+
+  <check if="choice == a">
+    <action>Set continuing_existing = true</action>
+    <action>Store found artifacts</action>
+    <action>Continue to step 7 (detect track from artifacts)</action>
+  </check>
+
+  <check if="choice == b">
+    <ask>Archive existing work? (y/n)</ask>
+    <action if="y">Move artifacts to {output_folder}/archive/</action>
+    <output>Ready for fresh start!</output>
+    <action>Continue to step 3</action>
+  </check>
+
+  <check if="choice == c">
+    <action>Jump to step 3 (express path)</action>
+  </check>
+
+  <check if="choice == d">
+    <action>Continue to step 4 (guided path)</action>
+  </check>
 </check>
 
-<check if="choice == b">
-  <action>User is doing NEW work - old artifacts are just context</action>
-  <action>Set continuing_old_work = false</action>
-  <action>Go to Step 3 (Ask about NEW work)</action>
-</check>
+<check if="state == CLEAN">
+  <ask>Setup approach:
 
-<check if="choice == c">
-  <action>Artifacts describe proposed work</action>
-  <action>Set continuing_old_work = true</action>
-  <action>Go to Step 2 (Analyze artifacts for details)</action>
-</check>
+a) **Express** - I know what I need
+b) **Guided** - Show me the options
 
-<check if="choice == d">
-  <action>User will explain their situation</action>
-  <action>Go to Step 3 (Ask about their work)</action>
-</check>
-</check>
+Choice [a/b]:</ask>
 
-<check if="NOT found artifacts AND NOT found codebase">
-  <output>I don't see any existing code or planning documents. Looks like we're starting fresh!</output>
-  <action>Go to Step 3 (Ask about their work)</action>
+  <check if="choice == a">
+    <action>Continue to step 3 (express)</action>
+  </check>
+
+  <check if="choice == b">
+    <action>Continue to step 4 (guided)</action>
+  </check>
 </check>
 </step>
 
-<step n="2" goal="Analyze artifacts for continuing work" if="continuing_old_work == true">
-<action>Analyze found artifacts in detail:</action>
-<action>Extract project type from content (game vs software)</action>
-<action>Count stories/epics to estimate level:
-  - Level 0: 1 story
-  - Level 1: 1-10 stories
-  - Level 2: 5-15 stories
-  - Level 3: 12-40 stories
-  - Level 4: 40+ stories
-</action>
-<action>Detect field type from codebase presence (greenfield vs brownfield)</action>
+<step n="3" goal="Express setup path">
+<ask>Is this for:
+1) **New project** (greenfield)
+2) **Existing codebase** (brownfield)
 
-<output>Based on the artifacts you're continuing, I'm suggesting **Level {{project_level}}** because I found {{story_count}} stories across {{epic_count}} epics.
+Choice [1/2]:</ask>
+<action>Set field_type based on choice</action>
 
-Here's the complexity scale for reference:
+<ask>Planning approach:
 
-**{{field_type}} Project Levels:**
+1. **Quick Flow** - Minimal planning, fast to code
+2. **BMad Method** - Full planning for complex projects
+3. **Enterprise Method** - Extended planning with security/DevOps
 
-- **Level 0** - Single atomic change (1 story) - bug fixes, typos, minor updates
-- **Level 1** - Small feature (1-10 stories) - simple additions, isolated features
-- **Level 2** - Medium feature set (5-15 stories) - dashboards, multiple related features
-- **Level 3** - Complex integration (12-40 stories) - platform features, major integrations
-- **Level 4** - Enterprise expansion (40+ stories) - multi-tenant, ecosystem changes
+Choice [1/2/3]:</ask>
+<action>Map to selected_track: quick-flow/method/enterprise</action>
 
-**My suggestion:** Level {{project_level}} {{field_type}} {{project_type}} project
-</output>
-
-<ask>Does this match what you're working on? (y/n or tell me what's different)</ask>
-
-<check if="user confirms">
-  <action>Use analyzed values</action>
-  <action>Go to Step 4 (Load workflow path)</action>
-</check>
-
-<check if="user corrects">
-  <action>Update values based on user corrections</action>
-  <ask>Updated to: Level {{project_level}} {{field_type}} {{project_type}}. Correct? (y/n)</ask>
-  <action>Go to Step 4 (Load workflow path)</action>
-</check>
-
-<template-output>project_name</template-output>
-<template-output>project_type</template-output>
-<template-output>project_level</template-output>
 <template-output>field_type</template-output>
+<template-output>selected_track</template-output>
+<action>Jump to step 6 (discovery options)</action>
 </step>
 
-<step n="3" goal="Ask user about THEIR work">
+<step n="4" goal="Guided setup - understand project">
 <ask>Tell me about what you're working on. What's the goal?</ask>
+<action>Store user_description</action>
 
-<action>Analyze user's description using keyword detection:
+<action>Analyze for field type indicators:
 
-- Level 0 keywords: "fix", "bug", "typo", "small change", "update", "patch", "one file"
-- Level 1 keywords: "simple", "basic", "small feature", "add", "minor", "single feature"
-- Level 2 keywords: "dashboard", "several features", "admin panel", "medium", "feature set"
-- Level 3 keywords: "platform", "integration", "complex", "system", "architecture"
-- Level 4 keywords: "enterprise", "multi-tenant", "multiple products", "ecosystem", "phased"
+- Brownfield: "existing", "current", "enhance", "modify"
+- Greenfield: "new", "build", "create", "from scratch"
+- If codebase exists, default to brownfield unless user indicates scaffold
   </action>
 
-<action>Make initial determination:
+<check if="field_type unclear AND codebase exists">
+  <ask>I see existing code. Are you:
+1) **Modifying** existing codebase (brownfield)
+2) **Starting fresh** - code is just scaffold (greenfield)
 
-- project_type (game or software)
-- project_level (0-4) - tentative based on keywords
-- field_type (greenfield or brownfield)
-- confidence (high/medium/low) - based on clarity of description
-  </action>
-
-<check if="confidence == low OR description is ambiguous">
-  <output>Thanks! Let me ask a few clarifying questions to make sure I route you correctly:</output>
-
-<ask>1. Roughly how many distinct features or changes do you think this involves?
-
-- Just one thing (e.g., fix a bug, add one button, update one API)
-- A small feature (2-5 related changes)
-- Several features (5-15 related things)
-- A major addition (15-40 things to do)
-- A large initiative (40+ changes across many areas)
-  </ask>
-
-<action>Adjust project_level based on response</action>
-
-<ask>2. How much of the existing codebase will this touch?
-
-- Single file or small area
-- One module or component
-- Multiple modules (2-4 areas)
-- Many modules with integration needs
-- System-wide changes
-  </ask>
-
-<action>Validate and adjust project_level based on scope</action>
-
-  <check if="project_type unclear">
-    <ask>3. Is this a game or a software application?</ask>
-    <action>Set project_type based on response</action>
-  </check>
+Choice [1/2]:</ask>
+<action>Set field_type based on answer</action>
 </check>
 
-<check if="found codebase BUT field_type still unclear">
-  <ask>I see you have existing code here. Are you:
+<action if="field_type not set">Set based on codebase presence</action>
 
-1. **Adding to or modifying** the existing codebase (brownfield)
-2. **Starting fresh** - the existing code is just a scaffold/template (greenfield)
-3. **Something else** - let me clarify
+<action>Check for game development keywords</action>
+<check if="game_detected">
+<output>🎮 **GAME DEVELOPMENT DETECTED**
 
-Your choice [1/2/3]:</ask>
+For game development, install the BMGD module:
 
-  <check if="choice == 1">
-    <action>Set field_type = "brownfield"</action>
-  </check>
+```bash
+bmad install bmgd
+```
 
-  <check if="choice == 2">
-    <action>Set field_type = "greenfield"</action>
-    <output>Got it - treating as greenfield despite the scaffold.</output>
-  </check>
-
-  <check if="choice == 3">
-    <ask>Please explain your situation:</ask>
-    <action>Analyze explanation and set field_type accordingly</action>
-  </check>
+Continue with software workflows? (y/n)</output>
+<ask>Choice:</ask>
+<action if="n">Exit workflow</action>
 </check>
 
-<action>Build reasoning for suggestion</action>
-<action>Store detected_indicators (keywords, scope indicators, complexity signals)</action>
-
-<output>Based on what you've described, I'm suggesting **Level {{project_level}}** because:
-
-{{reasoning}} (detected: {{detected_indicators}})
-
-Here's the complexity scale for reference:
-
-**{{field_type}} Project Levels:**
-
-- **Level 0** - Single atomic change (1 story) - bug fixes, typos, minor updates, single file changes
-- **Level 1** - Small feature (1-10 stories) - simple additions, isolated features, one module
-- **Level 2** - Medium feature set (5-15 stories) - dashboards, multiple related features, several modules
-- **Level 3** - Complex integration (12-40 stories) - platform features, major integrations, architectural changes
-- **Level 4** - Enterprise expansion (40+ stories) - multi-tenant, ecosystem changes, system-wide initiatives
-
-**My suggestion:** Level {{project_level}} {{field_type}} {{project_type}} project
-</output>
-
-<ask>Does this match what you're working on? (y/n or tell me what's different)</ask>
-
-<check if="user confirms">
-  <action>Use determined values</action>
-  <action>Go to Step 4 (Load workflow path)</action>
-</check>
-
-<check if="user corrects">
-  <action>Update values based on corrections</action>
-  <output>Updated to: Level {{project_level}} {{field_type}} {{project_type}}</output>
-  <ask>Does that look right now? (y/n)</ask>
-  <action>If yes, go to Step 4. If no, ask what needs adjustment and repeat.</action>
-</check>
-
-<template-output>project_name</template-output>
-<template-output>project_type</template-output>
-<template-output>project_level</template-output>
+<template-output>user_description</template-output>
 <template-output>field_type</template-output>
+<action>Continue to step 5</action>
 </step>
 
-<step n="4" goal="Load appropriate workflow path">
-<action>Determine path file based on selections:</action>
+<step n="5" goal="Guided setup - select track">
+<output>Based on your project, here are your planning options:
 
-<check if="project_type == game">
-  <action>Load {path_files}/game-design.yaml</action>
-  <action>Set workflow_path_file = "game-design.yaml"</action>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**1. Quick Flow** 🚀
+
+- Minimal planning, straight to code
+- Best for: Simple features, bug fixes
+- Risk: Potential rework if complexity emerges
+
+**2. BMad Method** 🎯 {{#if recommended}}(RECOMMENDED){{/if}}
+
+- Full planning: PRD + UX + Architecture
+- Best for: Products, platforms, complex features
+- Benefit: AI agents have complete context for better results
+
+**3. Enterprise Method** 🏢
+
+- Extended: Method + Security + DevOps + Testing
+- Best for: Enterprise, compliance, mission-critical
+- Benefit: Comprehensive planning for complex systems
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{#if brownfield}}
+💡 Architecture creates focused solution design from your codebase, keeping AI agents on track.
+{{/if}}</output>
+
+<ask>Which approach fits best?
+
+1. Quick Flow
+2. BMad Method {{#if recommended}}(recommended){{/if}}
+3. Enterprise Method
+4. Help me decide
+
+Choice [1/2/3/4]:</ask>
+
+<check if="choice == 4">
+  <ask>What concerns you about choosing?</ask>
+  <action>Provide tailored guidance based on concerns</action>
+  <action>Loop back to choice</action>
 </check>
 
-<check if="project_type == software">
-  <!-- field_type will be "greenfield" or "brownfield", project_level will be 0-4 -->
-  <action>Build filename: {field_type}-level-{project_level}.yaml</action>
-  <action>Load {path_files}/{field_type}-level-{project_level}.yaml</action>
-  <action>Set workflow_path_file = constructed filename</action>
+<action>Map choice to selected_track</action>
+<template-output>selected_track</template-output>
+</step>
+
+<step n="6" goal="Discovery workflows selection (unified)">
+<action>Determine available discovery workflows based on:
+- field_type (greenfield gets product-brief option)
+- selected_track (quick-flow skips product-brief)
+</action>
+
+<check if="field_type == greenfield AND selected_track in [method, enterprise]">
+  <output>Optional discovery workflows can help clarify your vision:</output>
+  <ask>Select any you'd like to include:
+
+1. 🧠 **Brainstorm** - Creative exploration and ideation
+2. 🔍 **Research** - Technical/competitive analysis
+3. 📋 **Product Brief** - Strategic product planning (recommended)
+
+Enter numbers (e.g., "1,3" or "all" or "none"): </ask>
 </check>
 
-<action>Parse workflow path file to extract phases and workflows</action>
+<check if="field_type == brownfield OR selected_track == quick-flow">
+  <output>Optional discovery workflows:</output>
+  <ask>Include any of these?
+
+1. 🧠 **Brainstorm** - Creative exploration
+2. 🔍 **Research** - Domain analysis
+
+Enter numbers (e.g., "1,2" or "none"): </ask>
+</check>
+
+<action>Parse selections and set:
+
+- brainstorm_requested
+- research_requested
+- product_brief_requested (if applicable)
+  </action>
+
+<template-output>brainstorm_requested</template-output>
+<template-output>research_requested</template-output>
+<template-output>product_brief_requested</template-output>
+
+<check if="brownfield AND selected_track != quick-flow">
+  <output>💡 **Note:** For brownfield projects, run document-project workflow first to analyze your codebase.</output>
+</check>
+</step>
+
+<step n="7" goal="Detect track from artifacts" if="continuing_existing OR migrating_legacy">
+<action>Analyze artifacts to detect track:
+- Has PRD → BMad Method
+- Has tech-spec only → Quick Flow
+- Has Security/DevOps → Enterprise Method
+</action>
+
+<output>Detected: **{{detected_track}}** based on {{found_artifacts}}</output>
+<ask>Correct? (y/n)</ask>
+
+<ask if="n">Which track instead?
+
+1. Quick Flow
+2. BMad Method
+3. Enterprise Method
+
+Choice:</ask>
+
+<action>Set selected_track</action>
+<template-output>selected_track</template-output>
+</step>
+
+<step n="8" goal="Generate workflow path">
+<action>Load path file: {path_files}/{{selected_track}}-{{field_type}}.yaml</action>
+<action>Build workflow_items from path file</action>
+<action>Scan for existing completed work and update statuses</action>
+<action>Set generated date</action>
+
+<template-output>generated</template-output>
 <template-output>workflow_path_file</template-output>
+<template-output>workflow_items</template-output>
 </step>
 
-<step n="5" goal="Generate workflow summary">
-<action>Build workflow from loaded path file</action>
-<action>Display phases and workflows</action>
-<action>Set initial values for status file</action>
+<step n="9" goal="Create tracking file">
+<output>Your BMad workflow path:
 
-<template-output>current_phase</template-output>
-<template-output>current_workflow</template-output>
-<template-output>current_agent</template-output>
-<template-output>next_action</template-output>
-<template-output>next_command</template-output>
-<template-output>next_agent</template-output>
-</step>
+**Track:** {{selected_track}}
+**Type:** {{field_type}}
+**Project:** {{project_name}}
 
-<step n="6" goal="Create status file">
-<action>Initialize all status values</action>
-<template-output>start_date</template-output>
-<template-output>last_updated</template-output>
-<template-output>phase_1_complete</template-output>
-<template-output>phase_2_complete</template-output>
-<template-output>phase_3_complete</template-output>
-<template-output>phase_4_complete</template-output>
+{{#if brownfield}}Prerequisites: document-project{{/if}}
+{{#if has_discovery}}Discovery: {{list_selected_discovery}}{{/if}}
 
-<ask>Ready to create your workflow status file? (y/n)</ask>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-<check if="answer == y">
-  <action>Save status file to {output_folder}/bmm-workflow-status.md</action>
-  <output>✅ Status file created! Next up: {{next_agent}} agent, run `{{next_command}}`</output>
-  <check if="next_agent !== current_agent">
-    <output>It is strongly recommended to clear the context or start a new chat and load the next agent to execute the next command from that agents help menu, unless there is something else I can do for you first.</output>
-  </check>
+{{workflow_path_summary}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</output>
+
+<ask>Create workflow tracking file? (y/n)</ask>
+
+<check if="y">
+  <action>Generate YAML from template with all variables</action>
+  <action>Save to {output_folder}/bmm-workflow-status.yaml</action>
+  <action>Identify next workflow and agent</action>
+
+<output>✅ **Created:** {output_folder}/bmm-workflow-status.yaml
+
+**Next:** {{next_workflow_name}}
+**Agent:** {{next_agent}}
+**Command:** /bmad:bmm:workflows:{{next_workflow_id}}
+
+{{#if next_agent not in [analyst, pm]}}
+💡 Start new chat with **{{next_agent}}** agent first.
+{{/if}}
+
+To check progress: /bmad:bmm:workflows:workflow-status
+
+Happy building! 🚀</output>
+</check>
+
+<check if="n">
+  <output>No problem! Run workflow-init again when ready.</output>
 </check>
 </step>
 

@@ -1,4 +1,4 @@
-# Decision Architecture
+# Architecture
 
 ## Executive Summary
 

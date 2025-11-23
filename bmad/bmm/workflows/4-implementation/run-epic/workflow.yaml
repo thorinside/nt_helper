@@ -20,8 +20,8 @@ review_model: "sonnet" # Model for review tasks
 create_pr: true # Create pull request when epic complete
 
 # Paths
-sprint_status_file: "{project-root}/docs/sprint-status.yaml"
-workflow_status_file: "{project-root}/docs/bmm-workflow-status.md"
+sprint_status_file: "{project-root}/docs/sprint-artifacts/sprint-status.yaml"
+workflow_status_file: "{project-root}/docs/bmm-workflow-status.yaml"
 
 # Workflow components
 installed_path: "{project-root}/bmad/bmm/workflows/4-implementation/run-epic"
