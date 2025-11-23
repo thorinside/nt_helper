@@ -1,6 +1,7 @@
 # Story 10.9: Implement Bit Pattern Visualization for Ties Parameter
 
-Status: review
+Status: done
+Completed: 2025-11-23
 
 ## Story
 
