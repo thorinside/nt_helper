@@ -136,7 +136,7 @@ development_status:
   e10-13-add-permutation-and-gate-type-controls: done
   e10-14-gate-type-parameter-dependency-handling: review
   e10-15-add-randomize-menu-and-settings: done
-  e10-16-add-division-subdivision-display: drafted
+  e10-16-add-division-subdivision-display: done
   e10-17-use-firmware-enum-strings-for-dropdowns: drafted
   e10-18-add-parameter-pages-view: drafted
   epic-10-retrospective: optional
