@@ -113,6 +113,32 @@ class StepSequencerParams {
         debugPrint('    [WARNING] Global parameter "$name" not found');
       }
     });
+
+    // Check randomize parameters
+    final randomizeParams = <String, bool>{
+      'Randomise': randomise != null,
+      'Randomise what': randomiseWhat != null,
+      'Note distribution': noteDistribution != null,
+      'Min note': minNote != null,
+      'Max note': maxNote != null,
+      'Mean note': meanNote != null,
+      'Note deviation': noteDeviation != null,
+      'Min repeat': minRepeat != null,
+      'Max repeat': maxRepeat != null,
+      'Min ratchet': minRatchet != null,
+      'Max ratchet': maxRatchet != null,
+      'Note probability': noteProbability != null,
+      'Tie probability': tieProbability != null,
+      'Accent probability': accentProbability != null,
+      'Repeat probability': repeatProbability != null,
+      'Ratchet probability': ratchetProbability != null,
+      'Unaccented velocity': unaccentedVelocity != null,
+    };
+
+    debugPrint('[StepSequencerParams] Randomize parameters found:');
+    randomizeParams.forEach((name, found) {
+      debugPrint('  - $name: ${found ? "✓" : "✗"}');
+    });
   }
 
   /// Gets parameter index for a specific step and parameter type
@@ -161,6 +187,98 @@ class StepSequencerParams {
       _findParameter('Gate Type') ??
       _findParameter('Gate/Trigger') ??
       _findParameter('Output Type');
+
+  // Randomize parameters (17 total)
+  // Trigger parameter
+  int? get randomise => _findParameter('Randomise') ?? _findParameter('Randomize');
+
+  // What to randomize (0-3: Nothing, Pitches, Rhythm, Both)
+  int? get randomiseWhat =>
+      _findParameter('Randomise what') ??
+      _findParameter('Randomize what') ??
+      _findParameter('Random what');
+
+  // Note distribution (0-1: Uniform, Normal)
+  int? get noteDistribution =>
+      _findParameter('Note distribution') ??
+      _findParameter('Pitch distribution') ??
+      _findParameter('Distribution');
+
+  // Pitch range parameters for Uniform distribution
+  int? get minNote =>
+      _findParameter('Min note') ??
+      _findParameter('Minimum note') ??
+      _findParameter('Min pitch');
+
+  int? get maxNote =>
+      _findParameter('Max note') ??
+      _findParameter('Maximum note') ??
+      _findParameter('Max pitch');
+
+  // Pitch range parameters for Normal distribution
+  int? get meanNote =>
+      _findParameter('Mean note') ??
+      _findParameter('Average note') ??
+      _findParameter('Mean pitch');
+
+  int? get noteDeviation =>
+      _findParameter('Note deviation') ??
+      _findParameter('Pitch deviation') ??
+      _findParameter('Deviation');
+
+  // Rhythm repeat range
+  int? get minRepeat =>
+      _findParameter('Min repeat') ??
+      _findParameter('Minimum repeat') ??
+      _findParameter('Min repeats');
+
+  int? get maxRepeat =>
+      _findParameter('Max repeat') ??
+      _findParameter('Maximum repeat') ??
+      _findParameter('Max repeats');
+
+  // Rhythm ratchet range
+  int? get minRatchet =>
+      _findParameter('Min ratchet') ??
+      _findParameter('Minimum ratchet') ??
+      _findParameter('Min ratchets');
+
+  int? get maxRatchet =>
+      _findParameter('Max ratchet') ??
+      _findParameter('Maximum ratchet') ??
+      _findParameter('Max ratchets');
+
+  // Probability parameters (0-127 firmware, displayed as 0-100%)
+  int? get noteProbability =>
+      _findParameter('Note probability') ??
+      _findParameter('Note prob') ??
+      _findParameter('Note %');
+
+  int? get tieProbability =>
+      _findParameter('Tie probability') ??
+      _findParameter('Tie prob') ??
+      _findParameter('Tie %');
+
+  int? get accentProbability =>
+      _findParameter('Accent probability') ??
+      _findParameter('Accent prob') ??
+      _findParameter('Accent %');
+
+  int? get repeatProbability =>
+      _findParameter('Repeat probability') ??
+      _findParameter('Repeat prob') ??
+      _findParameter('Repeat %');
+
+  int? get ratchetProbability =>
+      _findParameter('Ratchet probability') ??
+      _findParameter('Ratchet prob') ??
+      _findParameter('Ratchet %');
+
+  // Velocity parameter
+  int? get unaccentedVelocity =>
+      _findParameter('Unaccented velocity') ??
+      _findParameter('Base velocity') ??
+      _findParameter('Default velocity');
 
   /// Helper to find parameter by name, checking _paramIndices map
   int? _findParameter(String name) {

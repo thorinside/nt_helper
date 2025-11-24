@@ -740,4 +740,198 @@ void main() {
       expect(paramsNoGate.gateType, isNull);
     });
   });
+
+  group('StepSequencerParams - AC7: Randomize Parameter Discovery', () {
+    late Slot testSlot;
+
+    setUp(() {
+      // Create test slot with all 17 randomize parameters
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 0, name: '1:Pitch', min: 0, max: 127, defaultValue: 60, unit: 0, powerOfTen: 0),
+          // Randomize parameters
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 1, name: 'Randomise', min: 0, max: 1, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 2, name: 'Randomise what', min: 0, max: 3, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 3, name: 'Note distribution', min: 0, max: 1, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 4, name: 'Min note', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 5, name: 'Max note', min: 0, max: 127, defaultValue: 127, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 6, name: 'Mean note', min: 0, max: 127, defaultValue: 60, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 7, name: 'Note deviation', min: 0, max: 127, defaultValue: 12, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 8, name: 'Min repeat', min: 2, max: 8, defaultValue: 2, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 9, name: 'Max repeat', min: 2, max: 8, defaultValue: 8, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 10, name: 'Min ratchet', min: 2, max: 8, defaultValue: 2, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 11, name: 'Max ratchet', min: 2, max: 8, defaultValue: 8, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 12, name: 'Note probability', min: 0, max: 127, defaultValue: 127, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 13, name: 'Tie probability', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 14, name: 'Accent probability', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 15, name: 'Repeat probability', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 16, name: 'Ratchet probability', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 17, name: 'Unaccented velocity', min: 1, max: 127, defaultValue: 64, unit: 0, powerOfTen: 0),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 3),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 4, value: 48),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 72),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 6, value: 60),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 7, value: 12),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 8, value: 2),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 9, value: 4),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 10, value: 2),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 11, value: 6),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 12, value: 127),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 13, value: 64),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 14, value: 32),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 15, value: 16),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 16, value: 8),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 17, value: 80),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+    });
+
+    test('discovers Randomise trigger parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.randomise, equals(1));
+    });
+
+    test('discovers Randomise what parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.randomiseWhat, equals(2));
+    });
+
+    test('discovers Note distribution parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.noteDistribution, equals(3));
+    });
+
+    test('discovers Min note parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.minNote, equals(4));
+    });
+
+    test('discovers Max note parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.maxNote, equals(5));
+    });
+
+    test('discovers Mean note parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.meanNote, equals(6));
+    });
+
+    test('discovers Note deviation parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.noteDeviation, equals(7));
+    });
+
+    test('discovers Min repeat parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.minRepeat, equals(8));
+    });
+
+    test('discovers Max repeat parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.maxRepeat, equals(9));
+    });
+
+    test('discovers Min ratchet parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.minRatchet, equals(10));
+    });
+
+    test('discovers Max ratchet parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.maxRatchet, equals(11));
+    });
+
+    test('discovers Note probability parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.noteProbability, equals(12));
+    });
+
+    test('discovers Tie probability parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.tieProbability, equals(13));
+    });
+
+    test('discovers Accent probability parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.accentProbability, equals(14));
+    });
+
+    test('discovers Repeat probability parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.repeatProbability, equals(15));
+    });
+
+    test('discovers Ratchet probability parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.ratchetProbability, equals(16));
+    });
+
+    test('discovers Unaccented velocity parameter', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.unaccentedVelocity, equals(17));
+    });
+
+    test('uses fallback name "Randomize" for trigger parameter', () {
+      final slotWithFallback = Slot(
+        algorithm: Algorithm(algorithmIndex: 0, guid: 'spsq', name: 'Step Sequencer'),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 0, name: '1:Pitch', min: 0, max: 127, defaultValue: 60, unit: 0, powerOfTen: 0),
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 1, name: 'Randomize', min: 0, max: 1, defaultValue: 0, unit: 0, powerOfTen: 0),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final params = StepSequencerParams.fromSlot(slotWithFallback);
+      expect(params.randomise, equals(1));
+    });
+
+    test('returns null for missing randomize parameters', () {
+      final slotWithoutRandomize = Slot(
+        algorithm: Algorithm(algorithmIndex: 0, guid: 'spsq', name: 'Step Sequencer'),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(algorithmIndex: 0, parameterNumber: 0, name: '1:Pitch', min: 0, max: 127, defaultValue: 60, unit: 0, powerOfTen: 0),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final params = StepSequencerParams.fromSlot(slotWithoutRandomize);
+      expect(params.randomise, isNull);
+      expect(params.randomiseWhat, isNull);
+      expect(params.noteDistribution, isNull);
+      expect(params.minNote, isNull);
+      expect(params.maxNote, isNull);
+      expect(params.noteProbability, isNull);
+      expect(params.unaccentedVelocity, isNull);
+    });
+  });
 }

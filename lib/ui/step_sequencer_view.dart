@@ -7,6 +7,7 @@ import 'package:nt_helper/services/scale_quantizer.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/playback_controls.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/quantize_controls.dart';
+import 'package:nt_helper/ui/widgets/step_sequencer/randomize_settings_dialog.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/sequence_selector.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/step_column_widget.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/step_grid_view.dart';
@@ -119,7 +120,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                 if (isOffline) _buildOfflineBanner(context),
                 if (isOffline) const SizedBox(height: 16),
 
-                // Compact header row: Title, Sync Status
+                // Compact header row: Title, Sync Status, Overflow Menu
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -127,10 +128,46 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                       'Step Sequencer',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    SyncStatusIndicator(
-                      status: effectiveSyncStatus,
-                      errorMessage: _lastError,
-                      onRetry: _retryFailedWrites,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SyncStatusIndicator(
+                          status: effectiveSyncStatus,
+                          errorMessage: _lastError,
+                          onRetry: _retryFailedWrites,
+                        ),
+                        const SizedBox(width: 8),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'randomize',
+                              child: ListTile(
+                                leading: Icon(Icons.shuffle),
+                                title: Text('Randomize'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'settings',
+                              child: ListTile(
+                                leading: Icon(Icons.settings),
+                                title: Text('Randomize Settings...'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
+                          onSelected: (value) {
+                            if (value == 'randomize') {
+                              _triggerRandomize();
+                            } else if (value == 'settings') {
+                              _showRandomizeSettingsDialog();
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -423,6 +460,81 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       _syncStatus = SyncStatus.synced;
       _lastError = null;
     });
+  }
+
+  /// Triggers randomization by setting Randomise parameter to 1, waiting 100ms, then resetting to 0
+  Future<void> _triggerRandomize() async {
+    final params = StepSequencerParams.fromSlot(widget.slot);
+    final randomiseParam = params.randomise;
+
+    if (randomiseParam == null) {
+      // Randomise parameter not found - show error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Randomize parameter not found'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    final cubit = context.read<DistingCubit>();
+
+    try {
+      // Set trigger to 1
+      await cubit.updateParameterValue(
+        algorithmIndex: widget.slotIndex,
+        parameterNumber: randomiseParam,
+        value: 1,
+        userIsChangingTheValue: true,
+      );
+
+      // Wait 100ms (allow hardware to process)
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Reset trigger to 0
+      await cubit.updateParameterValue(
+        algorithmIndex: widget.slotIndex,
+        parameterNumber: randomiseParam,
+        value: 0,
+        userIsChangingTheValue: true,
+      );
+
+      // Show feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Randomizing sequence...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error triggering randomize: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Shows the randomize settings dialog
+  void _showRandomizeSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => RandomizeSettingsDialog(
+        slot: widget.slot,
+        slotIndex: widget.slotIndex,
+      ),
+    );
   }
 
   /// Build global parameter mode selector

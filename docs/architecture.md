@@ -1082,6 +1082,40 @@ cubit.updateParameterValue(slotIndex, pitchParamNum, 60); // C4
 
 **Naming Pattern**: Hardware uses `"N:ParamName"` format (e.g., `"1:Pitch"`, `"16:Mute"`)
 
+### Randomize Menu and Settings (Story 10.15)
+
+**Files**:
+- `lib/ui/step_sequencer_view.dart` - Overflow menu + trigger wiring
+- `lib/ui/widgets/step_sequencer/randomize_settings_dialog.dart` - Randomize settings dialog
+- `lib/services/step_sequencer_params.dart` - 17 randomize parameter getters with fallbacks
+
+**UI Pattern**:
+- Step Sequencer header includes a three-dot overflow menu (`PopupMenuButton`) with:
+  - **Randomize** – momentary trigger that toggles the firmware `Randomise` parameter `0 → 1 → 0` with a 100ms delay.
+  - **Randomize Settings...** – opens a responsive dialog that surfaces all randomization controls.
+- The overflow menu is theme-aware and positioned in the compact header row next to the sync indicator.
+
+**RandomizeSettingsDialog Architecture**:
+- Uses existing `DistingCubit` state; no new cubit or services.
+- Rebuilds from the latest `Slot` in `DistingState.synchronized` so offline/demo/connected modes all share the same infrastructure.
+- Presents all 17 randomize parameters grouped into logical sections (Trigger, What to Randomize, Note Distribution, Pitch Range, Rhythm, Probabilities, Velocity).
+- Parameters update immediately via `DistingCubit.updateParameterValue(algorithmIndex, parameterNumber, value, userIsChangingTheValue: true)`; debouncing is handled centrally by the cubit.
+
+**Randomize Parameter Discovery Pattern**:
+- `StepSequencerParams` exposes typed getters for all randomize parameters:
+  - Trigger + mode: `randomise`, `randomiseWhat`, `noteDistribution`
+  - Pitch range: `minNote`, `maxNote`, `meanNote`, `noteDeviation`
+  - Rhythm range: `minRepeat`, `maxRepeat`, `minRatchet`, `maxRatchet`
+  - Probabilities: `noteProbability`, `tieProbability`, `accentProbability`, `repeatProbability`, `ratchetProbability`
+  - Velocity: `unaccentedVelocity`
+- Each getter supports multiple firmware naming patterns (e.g., `"Randomise what"`, `"Randomize what"`, `"Random what"`) to stay resilient to string changes.
+
+**Probability Scaling Pattern**:
+- Firmware stores probability parameters as 0-127 values; the UI exposes 0-100% sliders:
+  - UI → firmware: `firmwareValue = (uiPercentage / 100 * 127).round()`
+  - Firmware → UI: `uiPercentage = (firmwareValue / 127 * 100).round()`
+- This pattern is encapsulated in the dialog widget and can be reused for future probability-style parameters.
+
 ### Global Parameter Mode Selector (Stories 10.9-10.12)
 
 **UI Pattern**: Single mode selector affects all 16 steps simultaneously
