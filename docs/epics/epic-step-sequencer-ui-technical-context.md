@@ -422,29 +422,22 @@ class StepSequencerParams {
 
   void _buildParameterMap(List<ParameterInfo> parameters) {
     for (int i = 0; i < parameters.length; i++) {
-      _paramIndices[parameters[i].name] = i;
+      final param = parameters[i];
+      _paramIndices[param.name] = i;
     }
   }
 
   int? getStepParam(int step, String paramType) {
-    // Try common naming patterns
-    // Pattern 1: "1. Pitch", "2. Pitch" (step-prefixed with period)
-    // Pattern 2: "Step 1 Pitch", "Step 2 Pitch"
-    // Pattern 3: "1_Pitch", "2_Pitch"
-    final patterns = [
-      '$step. $paramType',
-      'Step $step $paramType',
-      '${step}_$paramType',
-    ];
+    // Hardware format discovered in implementation:
+    // "N:Param" (e.g., "1:Pitch", "2:Velocity")
+    final paramName = '$step:$paramType';
 
-    for (final pattern in patterns) {
-      if (_paramIndices.containsKey(pattern)) {
-        return _paramIndices[pattern];
-      }
+    if (_paramIndices.containsKey(paramName)) {
+      return _paramIndices[paramName];
     }
 
     // If no match, log warning and return null
-    debugPrint('[StepSequencer] Parameter not found: step=$step, type=$paramType');
+    debugPrint('[StepSequencerParams] WARNING: Parameter not found - $paramName');
     return null;
   }
 
@@ -455,16 +448,19 @@ class StepSequencerParams {
   int? getDivision(int step) => getStepParam(step, 'Division');
   int? getPattern(int step) => getStepParam(step, 'Pattern');
   int? getTies(int step) => getStepParam(step, 'Ties');
-  int? getProbability(int step) => getStepParam(step, 'Probability');
+
+  // Note: Per-step probability parameters are not exposed by the current
+  // firmware. Probability-style controls in the UI (Mute/Skip/Reset/Repeat)
+  // are planned in a later story and are not discovered here yet.
 
   // Global parameters (discover by exact name match)
   int? get direction => _paramIndices['Direction'];
-  int? get startStep => _paramIndices['Start Step'];
-  int? get endStep => _paramIndices['End Step'];
-  int? get gateLength => _paramIndices['Gate Length'];
-  int? get triggerLength => _paramIndices['Trigger Length'];
-  int? get glideTime => _paramIndices['Glide Time'];
-  int? get currentSequence => _paramIndices['Current Sequence'];
+  int? get startStep => _paramIndices['Start'];
+  int? get endStep => _paramIndices['End'];
+  int? get gateLength => _paramIndices['Gate length'];
+  int? get triggerLength => _paramIndices['Trigger length'];
+  int? get glideTime => _paramIndices['Glide'];
+  int? get currentSequence => _paramIndices['Sequence'];
 }
 ```
 

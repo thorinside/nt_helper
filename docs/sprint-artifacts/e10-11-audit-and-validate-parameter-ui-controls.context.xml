@@ -1,0 +1,301 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>11</storyId>
+    <title>Audit and Validate Parameter UI Controls</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e10-11-audit-and-validate-parameter-ui-controls.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>Step Sequencer user</asA>
+    <iWant>all parameter controls to function correctly and display appropriate UI for each parameter type</iWant>
+    <soThat>I can reliably edit all step parameters with the correct interaction methods and value ranges</soThat>
+    <tasks>
+      - Task 1: Audit Parameter Discovery (AC: #1)
+        - Run app with Step Sequencer algorithm loaded
+        - Verify StepSequencerParams.fromSlot() discovers all 10 per-step parameters
+        - Verify all global parameters discovered
+        - Test with firmware 1.10, 1.11, 1.12 if available
+        - Log warnings for any missing parameters
+        - Document parameter naming patterns found
+
+      - Task 2: Validate UI Control Mapping (AC: #2)
+        - For each parameter type, verify correct interaction method
+        - Verify global parameter mode selector switches between all 10 modes
+        - Verify each mode updates all 16 step bars correctly
+
+      - Task 3: Test Value Range Enforcement (AC: #3)
+        - Test out-of-range values clamped
+        - Verify hardware writes use correct scaled values
+        - Test with mock hardware returning out-of-range values
+
+      - Task 4: Test Edge Cases (AC: #4)
+        - Test missing parameter scenarios
+        - Test rapid parameter changes (debouncing verification)
+        - Test offline mode dirty tracking and sync
+
+      - Task 5: Verify Parameter Labels (AC: #5)
+        - For each parameter type, verify label formatting
+
+      - Task 6: Validate Global Controls (AC: #6)
+        - Locate PlaybackControls widget
+        - Verify Direction dropdown (0-6 values)
+        - Verify Start/End Step inputs (1-16)
+        - Verify Gate/Trigger/Glide sliders
+        - Test all global controls update hardware
+
+      - Task 7: Add/Update Tests (AC: #7)
+        - Add unit tests for parameter discovery edge cases
+        - Add widget tests for all 10 parameter modes
+        - Add tests for value range clamping
+        - Add tests for label formatting
+
+      - Task 8: Document Findings (AC: #8)
+        - Document parameter naming patterns discovered
+        - Note any firmware version differences
+        - Document workarounds for edge cases
+
+      - Task 9: Fix Issues Found (as needed)
+        - Implement missing parameter modes (if any)
+        - Fix incorrect UI control mappings (if any)
+        - Fix value range enforcement issues (if any)
+
+      - Task 10: Code Quality Validation
+        - Run flutter analyze - must pass with zero warnings
+        - Run all tests: flutter test
+        - Manual testing with real hardware or demo mode
+        - Performance testing (60fps maintained during editing)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC1: Parameter Discovery Validation
+    - All parameters discoverable via StepSequencerParams.fromSlot() for Step Sequencer algorithm in firmware 1.10+
+    - Per-Step Parameters (16 steps × 10 parameters = 160 total): Pitch, Velocity, Mod, Division, Pattern, Ties, Mute, Skip, Reset, Repeat
+    - Global Parameters: Direction, Start Step, End Step, Gate Length, Trigger Length, Glide Time, Current Sequence, Permutation, Gate Type
+
+    AC2: UI Control Mapping Validation
+    - Each parameter type uses appropriate interaction method (continuous drag, discrete selection, bit pattern clicking)
+    - Parameter type to interaction mapping validated for all 10 types
+
+    AC3: Value Range Enforcement
+    - All parameters enforce correct value ranges
+    - Hardware writes use correct scaled values
+
+    AC4: Edge Case Handling
+    - UI gracefully handles missing parameters, out-of-range values, name pattern mismatches, rapid changes, offline mode
+
+    AC5: Parameter Label Formatting
+    - Step value labels format appropriately for each parameter type
+
+    AC6: Global Parameter Controls
+    - Global parameters accessible and functional via PlaybackControls widget
+
+    AC7: Test Coverage
+    - All parameter types have widget tests
+
+    AC8: Documentation
+    - All parameters documented with firmware manual references, naming patterns, version differences, workarounds
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <artifact>
+        <path>docs/epics/epic-step-sequencer-ui.md</path>
+        <title>Epic: Visual Step Sequencer UI Widget</title>
+        <section>User Stories and Implementation Guide</section>
+        <snippet>Complete epic documenting the Step Sequencer UI implementation including widget registration pattern, parameter discovery, and all 8 stories. Defines the architecture, Flutter implementation patterns, and success metrics.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/epics/epic-step-sequencer-ui-technical-context.md</path>
+        <title>Technical Context: Step Sequencer UI Epic</title>
+        <section>Parameter Mapping Strategy</section>
+        <snippet>Describes StepSequencerParams discovery service using multiple naming patterns ("1:Pitch", "Step 1 Pitch", "1_Pitch"). Documents that hardware format uses "N:Param" pattern (e.g., "1:Pitch", "2:Velocity"). Details parameter discovery from slot data, null-safe handling, and logging strategy.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/epics/epic-step-sequencer-ui-technical-context.md</path>
+        <title>Technical Context: Step Sequencer UI Epic</title>
+        <section>Appendix B: Parameter Name Reference</section>
+        <snippet>Lists parameter names: Per-Step (Pitch 1-16, Velocity 1-16, Mod 1-16, Division 1-16, Pattern 1-16, Ties 1-16, Probability 1-16). Global (Direction, Start Step, End Step, Gate Length, Trigger Length, Glide Time, Current Sequence). Note: Actual hardware uses "N:Param" format.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/stories/e10-10-1-fix-bit-pattern-direct-clicking.md</path>
+        <title>Story 10.10.1: Fix Bit Pattern Direct Clicking</title>
+        <section>Completion Notes</section>
+        <snippet>Documents removal of bit pattern dialog in favor of direct clicking (4-6× faster UX). Bit segment mapping: bottom = LSB (bit 0), top = MSB (bit 7). PitchBarPainter handles multiple display modes via BarDisplayMode enum. Files modified: step_column_widget.dart, pitch_bar_painter.dart.</snippet>
+      </artifact>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/services/step_sequencer_params.dart</path>
+        <kind>service</kind>
+        <symbol>StepSequencerParams</symbol>
+        <lines>1-139</lines>
+        <reason>Core parameter discovery service. Uses hardware naming pattern "N:Param" (e.g., "1:Pitch"). Discovers number of steps from parameter names. Logs discovery results for debugging. Implements getters for all per-step parameters (Pitch, Velocity, Mod, Division, Pattern, Ties) and global parameters (Direction, Start/End, Gate/Trigger/Glide, Sequence).</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/widgets/step_sequencer/step_column_widget.dart</path>
+        <kind>widget</kind>
+        <symbol>StepColumnWidget</symbol>
+        <lines>1-415</lines>
+        <reason>Individual step column widget implementing all parameter editing modes. Uses global parameter mode selector (StepParameter enum with 10 types). Implements continuous drag for Pitch/Velocity/Mod/Probabilities, bit pattern clicking for Pattern/Ties, discrete selection for Division. Handles parameter updates via DistingCubit.updateParameterValue(). Includes value formatting (_formatStepValue) and color mapping (_getActiveParameterColor).</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/widgets/step_sequencer/pitch_bar_painter.dart</path>
+        <kind>widget</kind>
+        <symbol>PitchBarPainter</symbol>
+        <lines>1-137</lines>
+        <reason>CustomPainter supporting multiple display modes (BarDisplayMode enum: continuous, bitPattern, division). Implements _paintContinuousBar for vertical gradient bars, _paintBitPattern for 8-segment bit displays, _paintDivisionBar for discrete blocks. Uses min/max range normalization for value display.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/widgets/step_sequencer/playback_controls.dart</path>
+        <kind>widget</kind>
+        <symbol>PlaybackControls</symbol>
+        <lines>1-439</lines>
+        <reason>Global parameter controls widget. Implements Direction dropdown (using enum strings from hardware), Start/End Step text inputs (1-16 range validation), Gate/Trigger/Glide sliders (with debouncing). Uses ParameterWriteDebouncer for continuous parameters. Supports responsive layouts (compact for mobile, full for desktop).</reason>
+      </artifact>
+      <artifact>
+        <path>lib/util/parameter_write_debouncer.dart</path>
+        <kind>utility</kind>
+        <symbol>ParameterWriteDebouncer</symbol>
+        <lines>1-62</lines>
+        <reason>Debouncing utility preventing excessive MIDI writes during rapid parameter changes. Uses 50ms delay. Implements schedule() method with per-parameter keying, dispose() for cleanup, pendingCount for debugging. Used by both step column widgets and playback controls.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/ui/step_sequencer_view.dart</path>
+        <kind>widget</kind>
+        <symbol>StepSequencerView</symbol>
+        <lines>-</lines>
+        <reason>Main Step Sequencer view widget. Registered in AlgorithmViewRegistry for 'spsq' GUID. Contains StepGridView, SequenceSelector, PlaybackControls, QuantizeControls. Manages global parameter mode selector state.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/services/scale_quantizer.dart</path>
+        <kind>service</kind>
+        <symbol>ScaleQuantizer</symbol>
+        <lines>-</lines>
+        <reason>Scale quantization service with 11 musical scales (Major, Minor, Dorian, etc.). Used when snapEnabled is true for pitch parameters. Implements quantize() method mapping MIDI notes to nearest scale degree.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit.updateParameterValue</symbol>
+        <lines>-</lines>
+        <reason>State management cubit method for updating parameters. Called by all step and global parameter controls. Signature: updateParameterValue(algorithmIndex, parameterNumber, value, userIsChangingTheValue). Handles MIDI writes via IDistingMidiManager, offline mode dirty tracking.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter" version=">=3.0.0" />
+        <package name="flutter_bloc" version="^8.0.0" />
+      </flutter>
+      <dart>
+        <package name="bloc" version="^8.0.0" />
+      </dart>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - All parameter updates must go through DistingCubit.updateParameterValue()
+    - All continuous parameter edits must use ParameterWriteDebouncer (50ms delay)
+    - Parameter discovery must use StepSequencerParams.fromSlot() - no hardcoded parameter indices
+    - Support hardware naming pattern "N:Param" (e.g., "1:Pitch", "2:Velocity")
+    - Handle missing parameters gracefully (log warnings, disable controls, don't crash)
+    - Value ranges must come from ParameterInfo metadata (min/max fields)
+    - Bit pattern parameters (Pattern, Ties) are 0-255 (8-bit values), LSB at bottom, MSB at top
+    - Division parameter is discrete 0-14 (no interpolation)
+    - Probability parameters (Mute, Skip, Reset, Repeat) may not be implemented yet (Story 10.12)
+    - Permutation and Gate Type controls may not be implemented yet (Story 10.13)
+    - Must maintain 60fps during editing (use CustomPaint, RepaintBoundary, buildWhen optimization)
+    - Must work in offline mode (dirty tracking, sync on reconnect)
+    - Must follow existing AlgorithmViewRegistry pattern (case 'spsq' in algorithm_registry.dart)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>StepSequencerParams.fromSlot()</name>
+      <kind>factory constructor</kind>
+      <signature>StepSequencerParams.fromSlot(Slot slot)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>StepSequencerParams.getStepParam()</name>
+      <kind>method</kind>
+      <signature>int? getStepParam(int step, String paramType)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>StepSequencerParams per-step getters</name>
+      <kind>getter methods</kind>
+      <signature>int? getPitch(int step), getVelocity(int step), getMod(int step), getDivision(int step), getPattern(int step), getTies(int step)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>StepSequencerParams global parameter getters</name>
+      <kind>getter properties</kind>
+      <signature>int? get direction, startStep, endStep, gateLength, triggerLength, glideTime, currentSequence</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>DistingCubit.updateParameterValue()</name>
+      <kind>cubit method</kind>
+      <signature>void updateParameterValue({required int algorithmIndex, required int parameterNumber, required dynamic value, required bool userIsChangingTheValue})</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+    </interface>
+    <interface>
+      <name>ParameterWriteDebouncer.schedule()</name>
+      <kind>method</kind>
+      <signature>void schedule(String key, void Function() callback, Duration delay)</signature>
+      <path>lib/util/parameter_write_debouncer.dart</path>
+    </interface>
+    <interface>
+      <name>PitchBarPainter display modes</name>
+      <kind>enum</kind>
+      <signature>enum BarDisplayMode { continuous, bitPattern, division }</signature>
+      <path>lib/ui/widgets/step_sequencer/pitch_bar_painter.dart</path>
+    </interface>
+    <interface>
+      <name>StepParameter enum</name>
+      <kind>enum</kind>
+      <signature>enum StepParameter { pitch, velocity, mod, division, pattern, ties, mute, skip, reset, repeat }</signature>
+      <path>lib/ui/widgets/step_sequencer/step_column_widget.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows Flutter best practices with unit tests for services/utilities, widget tests for UI components, and integration tests for full workflows. Use flutter_test package, mockito for mocking, and bloc_test for Cubit testing. Test files mirror source file structure under test/ directory. All tests must pass before commit (flutter test). Widget tests use testWidgets(), pump widgets with MaterialApp wrapper, use find.byType/find.text for locating widgets, and verify widget tree structure and behavior.
+    </standards>
+    <locations>
+      - test/services/ - Unit tests for services (e.g., step_sequencer_params_test.dart, scale_quantizer_test.dart)
+      - test/ui/widgets/step_sequencer/ - Widget tests for Step Sequencer UI components
+      - test/util/ - Utility tests (e.g., parameter_write_debouncer_test.dart)
+      - test/integration/ - Integration tests for full workflows
+    </locations>
+    <ideas>
+      <test ac="AC1">
+        Unit test for StepSequencerParams.fromSlot() with mock slot data containing all expected parameters. Verify numSteps discovered correctly (16), all per-step parameters found (Pitch, Velocity, Mod, Division, Pattern, Ties), all global parameters found (Direction, Start, End, Gate/Trigger/Glide, Sequence). Test with different naming patterns.
+      </test>
+      <test ac="AC2">
+        Widget test for StepColumnWidget with each StepParameter mode. Verify correct BarDisplayMode selected (continuous for pitch/velocity/mod, bitPattern for pattern/ties, division for division). Verify correct color returned from _getActiveParameterColor(). Verify GestureDetector properly wired to _handleBarInteraction or _handleBitPatternTap based on mode.
+      </test>
+      <test ac="AC3">
+        Unit test for value range clamping in _handleBarInteraction(). Mock parameter with min=10, max=100. Simulate drag to position that would produce value outside range. Verify clamped to min/max. Test for all parameter types.
+      </test>
+      <test ac="AC4">
+        Widget test for edge case: missing parameter. Mock slot with incomplete parameter list. Verify StepColumnWidget doesn't crash, logs warning, and disables control gracefully. Test offline mode: verify dirty parameter tracking works, changes persist across rebuilds.
+      </test>
+      <test ac="AC5">
+        Unit test for _formatStepValue() method. Test each StepParameter type: pitch → "C4", velocity → "100", mod → "+5.0V", division → "4", pattern/ties → "" (empty), mute/skip/reset/repeat → "50%".
+      </test>
+      <test ac="AC6">
+        Widget test for PlaybackControls. Verify Direction dropdown renders with correct enum values, Start/End Step inputs validate 1-16 range, Gate/Trigger/Glide sliders render with correct ranges. Mock parameter updates and verify DistingCubit.updateParameterValue() called with correct arguments.
+      </test>
+      <test ac="AC7">
+        Unit test for ParameterWriteDebouncer. Schedule multiple rapid calls with same key, verify only last callback executed after delay. Test dispose() cancels all pending timers.
+      </test>
+    </ideas>
+  </tests>
+</story-context>

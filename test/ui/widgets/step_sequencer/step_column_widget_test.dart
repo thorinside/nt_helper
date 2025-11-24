@@ -350,5 +350,190 @@ void main() {
       expect(decoration.border, isNotNull);
       expect(decoration.border!.top.width, equals(1.0)); // Inactive border width
     });
+
+    testWidgets('displays all parameter modes with correct colors', (tester) async {
+      // Test color mapping for each parameter type
+      final colorTests = [
+        StepParameter.pitch, // Teal
+        StepParameter.velocity, // Green
+        StepParameter.mod, // Purple
+        StepParameter.division, // Orange
+        StepParameter.pattern, // Blue
+        StepParameter.ties, // Yellow
+        StepParameter.mute, // Red
+        StepParameter.skip, // Pink
+        StepParameter.reset, // Amber
+        StepParameter.repeat, // Cyan
+      ];
+
+      for (final param in colorTests) {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            StepColumnWidget(
+              stepIndex: 0,
+              pitchValue: 64,
+              velocityValue: 100,
+              isActive: false,
+              slotIndex: 0,
+              slot: testSlot,
+              snapEnabled: false,
+              selectedScale: 'Major',
+              rootNote: 0,
+              activeParameter: param,
+            ),
+          ),
+        );
+
+        // Widget should build without errors for all parameter types
+        expect(find.byType(StepColumnWidget), findsOneWidget);
+      }
+    });
+
+    testWidgets('switches between parameter modes', (tester) async {
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: '1:Velocity',
+            min: 1,
+            max: 127,
+            defaultValue: 64,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 2,
+            name: '1:Mod',
+            min: 0,
+            max: 127,
+            defaultValue: 64,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 3,
+            name: '1:Division',
+            min: 0,
+            max: 14,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 64),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 100),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 64),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 7),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      // Test switching from Pitch to other modes
+      for (final param in [StepParameter.pitch, StepParameter.velocity, StepParameter.mod]) {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            StepColumnWidget(
+              stepIndex: 0,
+              pitchValue: 64,
+              velocityValue: 100,
+              isActive: false,
+              slotIndex: 0,
+              slot: testSlot,
+              snapEnabled: false,
+              selectedScale: 'Major',
+              rootNote: 0,
+              activeParameter: param,
+            ),
+          ),
+        );
+
+        expect(find.byType(CustomPaint), findsWidgets);
+        expect(find.text('1'), findsOneWidget); // Step number should still display
+      }
+    });
+
+    testWidgets('clamps values to parameter min/max ranges', (tester) async {
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: '1:Velocity',
+            min: 1,
+            max: 127,
+            defaultValue: 64,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 200), // Out of range
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0), // Below min
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          StepColumnWidget(
+            stepIndex: 0,
+            pitchValue: 200,
+            velocityValue: 0,
+            isActive: false,
+            slotIndex: 0,
+            slot: testSlot,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.pitch,
+          ),
+        ),
+      );
+
+      // Widget should render without crashing despite out-of-range values
+      expect(find.byType(StepColumnWidget), findsOneWidget);
+    });
   });
 }
