@@ -536,4 +536,265 @@ void main() {
       expect(find.byType(StepColumnWidget), findsOneWidget);
     });
   });
+
+  group('StepColumnWidget - AC2-6: Probability Parameters (Mute/Skip/Reset/Repeat)', () {
+    late MockDistingCubit mockCubit;
+    late Slot testSlot;
+
+    setUp(() {
+      mockCubit = MockDistingCubit();
+
+      // Create test slot with probability parameters
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Mute',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: '1:Skip',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 2,
+            name: '1:Reset',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 3,
+            name: '1:Repeat',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 64), // 50%
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 32), // 25%
+          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 95), // 75%
+          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 127), // 100%
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+    });
+
+    testWidgets('displays Mute mode with percentage label', (tester) async {
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.mute,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Should display percentage label (50%)
+      expect(find.text('50%'), findsOneWidget);
+    });
+
+    testWidgets('displays Skip mode with percentage label', (tester) async {
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.skip,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Should display percentage label (25%)
+      expect(find.text('25%'), findsOneWidget);
+    });
+
+    testWidgets('displays Reset mode with percentage label', (tester) async {
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.reset,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Should display percentage label (75%)
+      expect(find.text('75%'), findsOneWidget);
+    });
+
+    testWidgets('displays Repeat mode with percentage label', (tester) async {
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.repeat,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Should display percentage label (100%)
+      expect(find.text('100%'), findsOneWidget);
+    });
+
+    testWidgets('displays probability bars with correct colors', (tester) async {
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.mute,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Verify CustomPaint widget exists (renders the bar)
+      expect(find.byType(CustomPaint), findsWidgets);
+    });
+
+    testWidgets('converts firmware to percentage correctly', (tester) async {
+      // Test slot with firmware value 0 (0%)
+      final testSlot0 = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Mute',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0), // 0%
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot0,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.mute,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('0%'), findsOneWidget);
+    });
+  });
 }

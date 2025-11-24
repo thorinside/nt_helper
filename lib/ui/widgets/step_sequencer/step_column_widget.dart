@@ -259,8 +259,11 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
     final normalizedPosition = 1.0 - (localY / barHeight);
     int newValue = (min + (normalizedPosition * (max - min))).round().clamp(min, max);
 
-    // Apply quantization if needed for pitch parameter
-    if (widget.activeParameter == StepParameter.pitch && widget.snapEnabled) {
+    // For probability parameters, convert percentage back to firmware value
+    if (_isProbabilityMode()) {
+      newValue = _percentageToFirmware(newValue);
+    } else if (widget.activeParameter == StepParameter.pitch && widget.snapEnabled) {
+      // Apply quantization if needed for pitch parameter
       newValue = ScaleQuantizer.quantize(
         newValue,
         widget.selectedScale,
@@ -292,33 +295,52 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
       case StepParameter.ties:
         return params.getTies(step);
       case StepParameter.mute:
+        return params.getMute(step);
       case StepParameter.skip:
+        return params.getSkip(step);
       case StepParameter.reset:
+        return params.getReset(step);
       case StepParameter.repeat:
-        // Probability parameters - TODO: implement in Story 10.12
-        return null;
+        return params.getRepeat(step);
     }
   }
 
   /// Get the value of the currently selected parameter
+  /// For probability parameters, returns percentage (0-100)
+  /// For other parameters, returns firmware value (0-127 or relevant range)
   int _getCurrentParameterValue() {
     final params = StepSequencerParams.fromSlot(widget.slot);
     final paramIndex = _getParameterIndex(params, widget.activeParameter);
 
     if (paramIndex != null && paramIndex < widget.slot.values.length) {
       final value = widget.slot.values[paramIndex].value;
+
       // Clamp to parameter's min/max range from metadata
+      int clampedValue = value;
       if (paramIndex < widget.slot.parameters.length) {
         final paramInfo = widget.slot.parameters[paramIndex];
-        return value.clamp(paramInfo.min, paramInfo.max);
+        clampedValue = value.clamp(paramInfo.min, paramInfo.max);
       }
-      return value;
+
+      // For probability parameters, convert firmware value to percentage
+      if (_isProbabilityMode()) {
+        return _firmwareToPercentage(clampedValue);
+      }
+
+      return clampedValue;
     }
     return 0; // Default if parameter not found
   }
 
   /// Get the minimum value for the currently selected parameter
+  /// For probability parameters, returns 0 (0%)
+  /// For other parameters, returns firmware min value
   int _getParameterMin() {
+    // Probability parameters always have min = 0 (0%)
+    if (_isProbabilityMode()) {
+      return 0;
+    }
+
     final params = StepSequencerParams.fromSlot(widget.slot);
     final paramIndex = _getParameterIndex(params, widget.activeParameter);
 
@@ -329,7 +351,14 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
   }
 
   /// Get the maximum value for the currently selected parameter
+  /// For probability parameters, returns 100 (100%)
+  /// For other parameters, returns firmware max value
   int _getParameterMax() {
+    // Probability parameters always have max = 100 (100%)
+    if (_isProbabilityMode()) {
+      return 100;
+    }
+
     final params = StepSequencerParams.fromSlot(widget.slot);
     final paramIndex = _getParameterIndex(params, widget.activeParameter);
 
@@ -410,5 +439,25 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
 
   Color _getTextColor(bool isDark) {
     return isDark ? Colors.grey.shade400 : Colors.grey.shade700;
+  }
+
+  /// Convert firmware value (0-127) to percentage (0-100)
+  /// Used for displaying probability parameters
+  int _firmwareToPercentage(int firmwareValue) {
+    return ((firmwareValue / 127.0) * 100).round().clamp(0, 100);
+  }
+
+  /// Convert percentage (0-100) to firmware value (0-127)
+  /// Used for writing probability parameters to hardware
+  int _percentageToFirmware(int percentage) {
+    return ((percentage / 100.0) * 127).round().clamp(0, 127);
+  }
+
+  /// Check if current parameter is a probability type
+  bool _isProbabilityMode() {
+    return widget.activeParameter == StepParameter.mute ||
+        widget.activeParameter == StepParameter.skip ||
+        widget.activeParameter == StepParameter.reset ||
+        widget.activeParameter == StepParameter.repeat;
   }
 }

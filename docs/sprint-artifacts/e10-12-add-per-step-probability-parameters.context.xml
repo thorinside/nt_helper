@@ -1,0 +1,388 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>12</storyId>
+    <title>Add Per-Step Probability Parameters</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e10-12-add-per-step-probability-parameters.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>Step Sequencer user</asA>
+    <iWant>to edit per-step probability parameters (Mute, Skip, Reset, Repeat) via the global parameter mode selector</iWant>
+    <soThat>I can create generative sequences with probabilistic variation for more musical and evolving patterns</soThat>
+    <tasks>
+- [ ] **Task 1: Extend Parameter Discovery** (AC: #1)
+  - [ ] Add discovery methods to `StepSequencerParams`:
+    - [ ] `getMute(int step)` - Returns parameter number for "N:Mute"
+    - [ ] `getSkip(int step)` - Returns parameter number for "N:Skip"
+    - [ ] `getReset(int step)` - Returns parameter number for "N:Reset"
+    - [ ] `getRepeat(int step)` - Returns parameter number for "N:Repeat"
+  - [ ] Implement fallback naming patterns for firmware compatibility
+  - [ ] Log warnings for missing probability parameters (hardware/firmware mismatch)
+  - [ ] Test discovery with mock slot containing probability parameters
+
+- [ ] **Task 2: Add UI Mode Buttons** (AC: #2)
+  - [ ] Add to `StepParameter` enum in `step_column_widget.dart`:
+    - [ ] `mute`, `skip`, `reset`, `repeat`
+  - [ ] Add four ChoiceChip buttons to global mode selector:
+    - [ ] Mute (red, `0xFFef4444`)
+    - [ ] Skip (pink, `0xFFec4899`)
+    - [ ] Reset (amber, `0xFFf59e0b`)
+    - [ ] Repeat (cyan, `0xFF06b6d4`)
+  - [ ] Position after existing modes (Pitch, Velocity, Mod, Division, Pattern, Ties)
+  - [ ] Test mode button selection updates all 16 step bars
+
+- [ ] **Task 3: Implement Vertical Bar Visualization** (AC: #3)
+  - [ ] Update `PitchBarPainter` to handle probability modes:
+    - [ ] Recognize `StepParameter.mute`, `skip`, `reset`, `repeat`
+    - [ ] Draw vertical bar with mode-specific color (no gradient)
+    - [ ] Fill from bottom (0%) to percentage level
+  - [ ] Verify visual consistency with Pitch/Velocity/Mod modes
+  - [ ] Test with various percentage values (0%, 25%, 50%, 75%, 100%)
+
+- [ ] **Task 4: Add Value Label Formatting** (AC: #4)
+  - [ ] Update `_formatStepValue()` in `step_column_widget.dart`:
+    - [ ] Add cases for `mute`, `skip`, `reset`, `repeat`
+    - [ ] Format as "N%" where N = 0-100
+  - [ ] Verify label updates during drag interaction
+  - [ ] Test theme-aware text color (light/dark mode)
+
+- [ ] **Task 5: Implement Drag Interaction** (AC: #5)
+  - [ ] Verify `_handleBarInteraction()` supports probability modes:
+    - [ ] Continuous vertical drag (0-100% range)
+    - [ ] Immediate visual feedback (setState for preview)
+    - [ ] Debounced write via `ParameterWriteDebouncer` (50ms)
+  - [ ] Test rapid drag changes (verify debouncing)
+  - [ ] Test value clamping (drag above/below bar bounds)
+
+- [ ] **Task 6: Implement Value Scaling** (AC: #6)
+  - [ ] Add scaling methods to `step_column_widget.dart` or utility:
+    - [ ] `percentageToFirmware(int percentage)` → returns 0-127
+    - [ ] `firmwareToPercentage(int firmwareValue)` → returns 0-100
+  - [ ] Apply scaling when reading from slot parameters
+  - [ ] Apply reverse scaling when writing to `DistingCubit.updateParameterValue()`
+  - [ ] Test edge cases (0%, 50%, 100%)
+  - [ ] Test out-of-range firmware values (clamping)
+
+- [ ] **Task 7: Verify Offline Mode Support** (AC: #7)
+  - [ ] Test editing probabilities in offline mode:
+    - [ ] Verify dirty parameter tracking
+    - [ ] Verify sync indicator shows "Pending sync"
+  - [ ] Test reconnect and sync prompt
+  - [ ] Verify bulk sync applies all probability changes
+  - [ ] No code changes expected (existing infrastructure handles this)
+
+- [ ] **Task 8: Add/Update Tests** (AC: #8)
+  - [ ] Unit tests in `test/services/step_sequencer_params_test.dart`:
+    - [ ] Test `getMute()`, `getSkip()`, `getReset()`, `getRepeat()` for all 16 steps
+    - [ ] Test fallback naming patterns
+    - [ ] Test missing parameter handling
+  - [ ] Widget tests in `test/ui/widgets/step_sequencer/step_column_widget_test.dart`:
+    - [ ] Test probability mode buttons render
+    - [ ] Test vertical bar visualization for each probability type
+    - [ ] Test percentage label formatting
+    - [ ] Test drag interaction and value clamping
+  - [ ] Integration tests:
+    - [ ] Test mode switching updates all 16 steps
+    - [ ] Test debounced writes
+    - [ ] Test offline mode sync
+
+- [ ] **Task 9: Document Findings** (AC: #9)
+  - [ ] Document parameter discovery patterns for probabilities
+  - [ ] Document value scaling formula
+  - [ ] Document color specifications
+  - [ ] Reference firmware manual (pages 294-300)
+  - [ ] Note any firmware version differences discovered
+
+- [ ] **Task 10: Code Quality Validation**
+  - [ ] Run `flutter analyze` - must pass with zero warnings
+  - [ ] Run all tests: `flutter test` - all must pass
+  - [ ] Manual testing with real hardware or demo mode
+  - [ ] Performance testing (60fps maintained during editing)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+### AC1: Parameter Discovery
+`StepSequencerParams.fromSlot()` discovers all four probability parameters for each of the 16 steps:
+- Mute (0-100%) - Probability of muting the step
+- Skip (0-100%) - Probability of skipping to next step
+- Reset (0-100%) - Probability of resetting sequence to start
+- Repeat (0-100%) - Probability of repeating current step
+
+**Hardware Parameter Naming Pattern:**
+- Expected: "N:Mute", "N:Skip", "N:Reset", "N:Repeat" (where N = step number 1-16)
+- Fallback patterns: "Step N Mute", "N. Mute", "N_Mute" (for firmware version compatibility)
+
+**Discovery Methods Added to `StepSequencerParams`:**
+```dart
+int? getMute(int step);     // Returns parameter number for Mute on given step
+int? getSkip(int step);     // Returns parameter number for Skip on given step
+int? getReset(int step);    // Returns parameter number for Reset on given step
+int? getRepeat(int step);   // Returns parameter number for Repeat on given step
+```
+
+### AC2: UI Mode Buttons Added
+Global parameter mode selector includes four new ChoiceChip buttons:
+- **Mute** - Red color (`0xFFef4444`), label "Mute"
+- **Skip** - Pink color (`0xFFec4899`), label "Skip"
+- **Reset** - Amber color (`0xFFf59e0b`), label "Reset"
+- **Repeat** - Cyan color (`0xFF06b6d4`), label "Repeat"
+
+**Behavior:**
+- Clicking mode button updates all 16 step bars to show selected probability parameter
+- Only one mode active at a time (exclusive selection via ChoiceChip group)
+- Modes positioned after existing modes: Pitch, Velocity, Mod, Division, Pattern, Ties, then Mute, Skip, Reset, Repeat
+
+### AC3: Vertical Bar Visualization
+When in probability mode, each step column displays:
+- **Vertical bar** filled from 0% (bottom) to 100% (top)
+- **Color coding** matches mode button color (red for Mute, pink for Skip, amber for Reset, cyan for Repeat)
+- **Continuous gradient** (not discrete segments like bit patterns)
+
+**Visual Specifications:**
+- Bar height: Full column height (same as Pitch/Velocity/Mod modes)
+- Bar color: Solid color (no gradient) matching mode button
+- Empty portion: Transparent/dark background (consistent with existing bar modes)
+
+### AC4: Value Label Formatting
+Step value labels display probability as percentage:
+- Format: "N%" where N = 0-100
+- Examples: "0%", "50%", "100%"
+- Position: Below step bar (consistent with existing label placement)
+- Color: Theme-aware (light/dark mode support)
+
+### AC5: Continuous Drag Interaction
+Users edit probability via vertical drag on step bar:
+- **Drag up**: Increase probability (0% → 100%)
+- **Drag down**: Decrease probability (100% → 0%)
+- **Visual feedback**: Bar height and label update immediately during drag
+- **Debounced write**: Hardware updated after 50ms debounce (via `ParameterWriteDebouncer`)
+
+**Interaction Details:**
+- Touch/click anywhere on step bar initiates drag
+- Vertical drag only (horizontal ignored)
+- Value clamped to 0-100% range
+- Release drag → final value written to hardware
+
+### AC6: Value Range Enforcement and Scaling
+Probability parameters use percentage range with scaling:
+- **UI Range**: 0-100% (integer percentage)
+- **Firmware Range**: 0-127 (7-bit MIDI value)
+- **Scaling Formula**: `firmwareValue = round((percentage / 100.0) * 127)`
+- **Reverse Scaling**: `percentage = round((firmwareValue / 127.0) * 100)`
+- **Clamping**: UI values clamped to [0, 100], firmware values clamped to [0, 127]
+
+**Edge Cases:**
+- 0% → firmware 0
+- 50% → firmware 64 (rounded)
+- 100% → firmware 127
+- Hardware returns 128+ → clamped to 127 → displayed as 100%
+
+### AC7: Offline Mode Support
+Probability parameter edits work identically in offline mode:
+- Changes update local state immediately (visual feedback)
+- Dirty parameter tracking via `OfflineDistingMidiManager`
+- Sync indicator shows "Pending sync" when offline with unsaved changes
+- Reconnect to hardware → user prompted to sync dirty parameters
+- Bulk sync applies all probability changes
+
+### AC8: Test Coverage
+Comprehensive test coverage for probability parameters:
+
+**Unit Tests** (`test/services/step_sequencer_params_test.dart`):
+- Test discovery of Mute/Skip/Reset/Repeat parameters for all 16 steps
+- Test fallback naming patterns (firmware version compatibility)
+- Test missing parameter handling (warning logged, null returned)
+- Test parameter numbering consistency
+
+**Widget Tests** (`test/ui/widgets/step_sequencer/step_column_widget_test.dart`):
+- Test all 4 probability mode buttons render and activate correctly
+- Test vertical bar visualization for each probability type
+- Test value label formatting (percentage display)
+- Test drag interaction updates values
+- Test value clamping (0-100%)
+
+**Integration Tests**:
+- Test switching between probability modes updates all 16 step bars
+- Test debounced writes (verify max 1 write per 50ms)
+- Test offline mode dirty tracking and sync
+
+### AC9: Documentation
+Story documentation includes:
+- Parameter discovery patterns for probabilities
+- Value scaling formula (UI ↔ firmware)
+- Color specifications for each probability type
+- Firmware manual reference (pages 294-300)
+- Known firmware version differences (if any)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics/epic-step-sequencer-ui.md</path>
+        <title>Epic: Visual Step Sequencer UI Widget</title>
+        <section>User Stories</section>
+        <snippet>Epic defines the Step Sequencer visual grid interface pattern. Story 10.12 adds probability parameters (Mute/Skip/Reset/Repeat) following established global parameter mode selector pattern.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-step-sequencer-ui-technical-context.md</path>
+        <title>Technical Context: Step Sequencer UI Epic</title>
+        <section>Parameter Discovery Service, Global Parameter Mode Selector, Parameter Write Debouncing</section>
+        <snippet>Technical architecture for Step Sequencer UI. StepSequencerParams service uses "N:ParamName" discovery pattern. Global mode selector controls which parameter all 16 steps display (Pitch, Velocity, Mod, Division, Pattern, Ties, and now Mute/Skip/Reset/Repeat). ParameterWriteDebouncer provides 50ms debouncing.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Epic 10: Step Sequencer UI Architecture, Color Specifications</section>
+        <snippet>Architecture defines color specifications for probability parameters: Mute (red 0xFFef4444), Skip (pink 0xFFec4899), Reset (amber 0xFFf59e0b), Repeat (cyan 0xFF06b6d4). Global parameter mode selector pattern established in stories e10-9 through e10-11.</snippet>
+      </doc>
+      <doc>
+        <path>docs/manual-1.10.0.md</path>
+        <title>Disting NT Firmware Manual v1.10.0</title>
+        <section>Pages 294-300 - Step Sequencer Specification</section>
+        <snippet>Firmware manual documents Step Sequencer probability parameters: Mute (0-100% probability step will be muted), Skip (0-100% probability step will be skipped), Reset (0-100% probability sequence will reset to start), Repeat (0-100% probability step will repeat). Probabilities evaluated at step playback time (generative). Independent probabilities (can have Mute=50% and Skip=25% on same step). Reset takes precedence over Skip.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/services/step_sequencer_params.dart</path>
+        <kind>service</kind>
+        <symbol>StepSequencerParams</symbol>
+        <lines>1-139</lines>
+        <reason>Parameter discovery service for Step Sequencer algorithm. Uses "N:ParamName" naming pattern (e.g., "1:Pitch", "2:Velocity"). Provides getters for Pitch, Velocity, Mod, Division, Pattern, Ties. Story 10.12 adds getMute(), getSkip(), getReset(), getRepeat() following same pattern. Line 127 comment notes "Probability doesn't exist as step parameter in hardware" - this story implements that support.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/step_column_widget.dart</path>
+        <kind>widget</kind>
+        <symbol>StepColumnWidget, _StepColumnWidgetState, StepParameter enum</symbol>
+        <lines>1-415</lines>
+        <reason>Individual step column widget. Contains StepParameter enum (lines 9-21) with placeholder entries for mute/skip/reset/repeat. _getParameterIndex() (lines 274-301) returns null for probability parameters with TODO comment for Story 10.12. _formatStepValue() (lines 343-375) formats probability as percentage (lines 369-373). _getActiveParameterColor() (lines 378-401) defines colors for all 4 probability modes. _handleBarInteraction() (lines 244-272) handles continuous drag - no changes needed for probabilities.</reason>
+      </file>
+      <file>
+        <path>lib/ui/widgets/step_sequencer/pitch_bar_painter.dart</path>
+        <kind>custom_painter</kind>
+        <symbol>PitchBarPainter, BarDisplayMode enum</symbol>
+        <lines>1-137</lines>
+        <reason>Custom painter for parameter visualization. Supports continuous vertical bars (pitch/velocity/mod), bit patterns (pattern/ties), and division mode. Probability parameters use continuous mode with mode-specific colors. No changes needed - existing _paintContinuousBar() method (lines 43-86) handles percentage-based parameters.</reason>
+      </file>
+      <file>
+        <path>lib/ui/step_sequencer_view.dart</path>
+        <kind>widget</kind>
+        <symbol>StepSequencerView</symbol>
+        <lines>full file</lines>
+        <reason>Main Step Sequencer view containing global parameter mode selector (ChoiceChip group). Story 10.12 adds 4 new ChoiceChip buttons for Mute/Skip/Reset/Repeat positioned after existing modes (Pitch, Velocity, Mod, Division, Pattern, Ties).</reason>
+      </file>
+      <file>
+        <path>lib/util/parameter_write_debouncer.dart</path>
+        <kind>utility</kind>
+        <symbol>ParameterWriteDebouncer</symbol>
+        <lines>full file</lines>
+        <reason>Debouncing utility for parameter writes. Provides 50ms debouncing to prevent MIDI flood during continuous drag interactions. Already used by step_column_widget.dart - no changes needed.</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit.updateParameterValue</symbol>
+        <lines>method reference</lines>
+        <reason>Primary state manager. updateParameterValue() method writes parameter changes to hardware via MIDI SysEx. Used by step_column_widget.dart._updateParameter() - no changes needed. Offline mode support automatic via OfflineDistingMidiManager.</reason>
+      </file>
+      <file>
+        <path>lib/domain/offline_disting_midi_manager.dart</path>
+        <kind>midi_manager</kind>
+        <symbol>OfflineDistingMidiManager</symbol>
+        <lines>full file</lines>
+        <reason>Offline mode MIDI manager implementation. Handles dirty parameter tracking automatically. When setParameterValue() called in offline mode, parameter marked dirty. On reconnect, user prompted to sync. No changes needed for Story 10.12 - existing infrastructure handles probability parameters.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <flutter>
+        flutter: 3.35.1
+        dart: ">=3.8.1"
+        flutter_bloc: ^9.1.1
+      </flutter>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- **Follow Established Patterns**: Use existing global parameter mode selector pattern from stories e10-9 through e10-11. Do NOT create per-step parameter selection.
+- **Reuse Existing Services**: Add discovery methods to existing `StepSequencerParams` class. Do NOT create new service.
+- **Reuse Existing Painter**: Use existing `PitchBarPainter._paintContinuousBar()` method. Do NOT create new painting logic.
+- **Reuse Existing Debouncer**: Use existing `ParameterWriteDebouncer` utility. Do NOT modify debouncing logic.
+- **No MIDI Layer Changes**: All parameter writes use existing `DistingCubit.updateParameterValue()`. Do NOT add new SysEx commands.
+- **Zero Tolerance for Warnings**: `flutter analyze` MUST pass with zero warnings before commit.
+- **Test Coverage**: Add tests for parameter discovery, widget rendering, and value scaling. Use existing test patterns.
+- **Performance**: Maintain 60fps during editing. Use existing CustomPaint optimization patterns.
+- **Offline Mode**: No code changes needed - existing infrastructure handles dirty parameter tracking and sync.
+- **Naming Convention**: Follow hardware "N:ParamName" pattern (e.g., "1:Mute", "16:Repeat").
+- **Color Specifications**: Use exact color codes from Epic 10 Architecture: Mute 0xFFef4444, Skip 0xFFec4899, Reset 0xFFf59e0b, Repeat 0xFF06b6d4.
+- **Value Scaling**: UI displays 0-100%, firmware uses 0-127. Apply bidirectional scaling in step_column_widget.dart.
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>StepSequencerParams.getMute(int step)</name>
+      <kind>method</kind>
+      <signature>int? getMute(int step)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+      <description>Returns parameter index for Mute parameter on given step (1-indexed). Uses hardware naming pattern "N:Mute". Returns null if parameter not found (logs warning).</description>
+    </interface>
+    <interface>
+      <name>StepSequencerParams.getSkip(int step)</name>
+      <kind>method</kind>
+      <signature>int? getSkip(int step)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+      <description>Returns parameter index for Skip parameter on given step (1-indexed). Uses hardware naming pattern "N:Skip". Returns null if parameter not found (logs warning).</description>
+    </interface>
+    <interface>
+      <name>StepSequencerParams.getReset(int step)</name>
+      <kind>method</kind>
+      <signature>int? getReset(int step)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+      <description>Returns parameter index for Reset parameter on given step (1-indexed). Uses hardware naming pattern "N:Reset". Returns null if parameter not found (logs warning).</description>
+    </interface>
+    <interface>
+      <name>StepSequencerParams.getRepeat(int step)</name>
+      <kind>method</kind>
+      <signature>int? getRepeat(int step)</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+      <description>Returns parameter index for Repeat parameter on given step (1-indexed). Uses hardware naming pattern "N:Repeat". Returns null if parameter not found (logs warning).</description>
+    </interface>
+    <interface>
+      <name>StepParameter enum extension</name>
+      <kind>enum</kind>
+      <signature>enum StepParameter { pitch, velocity, mod, division, pattern, ties, mute, skip, reset, repeat }</signature>
+      <path>lib/ui/widgets/step_sequencer/step_column_widget.dart</path>
+      <description>Global parameter mode enum. Story 10.12 enum entries already exist (lines 17-20) but are not wired to hardware. This story implements discovery and interaction.</description>
+    </interface>
+    <interface>
+      <name>DistingCubit.updateParameterValue</name>
+      <kind>method</kind>
+      <signature>void updateParameterValue({required int algorithmIndex, required int parameterNumber, required dynamic value, bool userIsChangingTheValue = false})</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+      <description>Updates parameter value via MIDI SysEx (Live mode) or local state (Offline mode). Handles debouncing, dirty tracking, and hardware sync. Used by step_column_widget.dart._updateParameter() - no changes needed.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Project uses flutter_test, mocktail, and bloc_test frameworks. Tests are pragmatic (not TDD) - new features should include tests to ensure visibility and usefulness. Existing test patterns in test/services/ and test/ui/widgets/step_sequencer/ should be followed.</standards>
+    <locations>
+      <location>test/services/step_sequencer_params_test.dart</location>
+      <location>test/ui/widgets/step_sequencer/step_column_widget_test.dart</location>
+      <location>test/integration/</location>
+    </locations>
+    <ideas>
+      <idea ac="AC1">Unit test StepSequencerParams.getMute/getSkip/getReset/getRepeat() for all 16 steps. Create mock slot with probability parameters following "N:Mute" naming pattern. Verify discovery returns correct parameter indices. Test fallback naming patterns. Test missing parameter handling (null return, warning logged).</idea>
+      <idea ac="AC2">Widget test global mode selector renders 4 new ChoiceChip buttons (Mute, Skip, Reset, Repeat) with correct colors and labels. Test buttons positioned after existing modes. Test clicking mode button updates activeParameter state.</idea>
+      <idea ac="AC3">Widget test step column renders vertical bar visualization for each probability mode. Mock slot with probability parameters at various values (0, 25, 50, 75, 100). Verify bar height matches percentage. Verify bar color matches mode color.</idea>
+      <idea ac="AC4">Widget test value label formatting displays percentage for probability modes. Verify "0%", "50%", "100%" format. Test theme-aware text color.</idea>
+      <idea ac="AC5">Widget test drag interaction updates probability values. Simulate vertical drag on step bar. Verify _handleBarInteraction() called. Verify parameter value clamped to 0-100 range. Test debounced write (verify updateParameterValue called after 50ms).</idea>
+      <idea ac="AC6">Unit test value scaling functions. percentageToFirmware(0) → 0, percentageToFirmware(50) → 64, percentageToFirmware(100) → 127. firmwareToPercentage(0) → 0, firmwareToPercentage(64) → 50, firmwareToPercentage(127) → 100. Test out-of-range clamping (128 → 127 → 100%).</idea>
+      <idea ac="AC7">Integration test offline mode support. Create mock offline manager. Edit probability parameters in offline mode. Verify dirty parameter tracking. Verify sync indicator shows "Pending sync". Simulate reconnect and verify sync prompt.</idea>
+      <idea ac="AC8">Integration test mode switching. Switch from Pitch mode to Mute mode. Verify all 16 step bars update to show Mute values. Switch between all 10 modes (Pitch, Velocity, Mod, Division, Pattern, Ties, Mute, Skip, Reset, Repeat). Verify smooth transitions.</idea>
+    </ideas>
+  </tests>
+</story-context>

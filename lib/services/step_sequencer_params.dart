@@ -63,6 +63,10 @@ class StepSequencerParams {
     int divisionCount = 0;
     int patternCount = 0;
     int tiesCount = 0;
+    int muteCount = 0;
+    int skipCount = 0;
+    int resetCount = 0;
+    int repeatCount = 0;
 
     for (int step = 1; step <= numSteps; step++) {
       if (getPitch(step) != null) pitchCount++;
@@ -71,6 +75,10 @@ class StepSequencerParams {
       if (getDivision(step) != null) divisionCount++;
       if (getPattern(step) != null) patternCount++;
       if (getTies(step) != null) tiesCount++;
+      if (getMute(step) != null) muteCount++;
+      if (getSkip(step) != null) skipCount++;
+      if (getReset(step) != null) resetCount++;
+      if (getRepeat(step) != null) repeatCount++;
     }
 
     debugPrint('[StepSequencerParams] Step parameters found:');
@@ -80,6 +88,10 @@ class StepSequencerParams {
     debugPrint('  - Division: $divisionCount/$numSteps');
     debugPrint('  - Pattern: $patternCount/$numSteps');
     debugPrint('  - Ties: $tiesCount/$numSteps');
+    debugPrint('  - Mute: $muteCount/$numSteps');
+    debugPrint('  - Skip: $skipCount/$numSteps');
+    debugPrint('  - Reset: $resetCount/$numSteps');
+    debugPrint('  - Repeat: $repeatCount/$numSteps');
 
     // Check global parameters
     final globalParams = <String, bool>{
@@ -124,7 +136,12 @@ class StepSequencerParams {
   int? getDivision(int step) => getStepParam(step, 'Division');
   int? getPattern(int step) => getStepParam(step, 'Pattern');
   int? getTies(int step) => getStepParam(step, 'Ties');
-  // Note: Probability doesn't exist as step parameter in hardware
+
+  // Probability parameters (per-step, 0-100%)
+  int? getMute(int step) => getStepParam(step, 'Mute');
+  int? getSkip(int step) => getStepParam(step, 'Skip');
+  int? getReset(int step) => getStepParam(step, 'Reset');
+  int? getRepeat(int step) => getStepParam(step, 'Repeat');
 
   // Global parameter getters (hardware names)
 

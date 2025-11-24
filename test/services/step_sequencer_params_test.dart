@@ -357,4 +357,151 @@ void main() {
       expect(params.numSteps, equals(16));
     });
   });
+
+  group('StepSequencerParams - AC1: Probability Parameter Discovery', () {
+    late Slot testSlot;
+
+    setUp(() {
+      // Create test slot with probability parameters for steps 1 and 2
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          // Step 1 probability parameters
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Mute',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: '1:Skip',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 2,
+            name: '1:Reset',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 3,
+            name: '1:Repeat',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          // Step 2 probability parameters
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 4,
+            name: '2:Mute',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 5,
+            name: '2:Skip',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 6,
+            name: '2:Reset',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 7,
+            name: '2:Repeat',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 4, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 6, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 7, value: 0),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+    });
+
+    test('discovers Mute parameter for each step', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.getMute(1), equals(0));
+      expect(params.getMute(2), equals(4));
+    });
+
+    test('discovers Skip parameter for each step', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.getSkip(1), equals(1));
+      expect(params.getSkip(2), equals(5));
+    });
+
+    test('discovers Reset parameter for each step', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.getReset(1), equals(2));
+      expect(params.getReset(2), equals(6));
+    });
+
+    test('discovers Repeat parameter for each step', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.getRepeat(1), equals(3));
+      expect(params.getRepeat(2), equals(7));
+    });
+
+    test('returns null for missing probability parameters', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      // Step 3 has no parameters
+      expect(params.getMute(3), isNull);
+      expect(params.getSkip(3), isNull);
+      expect(params.getReset(3), isNull);
+      expect(params.getRepeat(3), isNull);
+    });
+  });
 }
