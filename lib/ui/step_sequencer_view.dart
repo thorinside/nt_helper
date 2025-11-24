@@ -351,12 +351,6 @@ class _StepSequencerViewState extends State<StepSequencerView> {
             _syncStatus = SyncStatus.error;
             _lastError = 'Current Sequence parameter not found';
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Current Sequence parameter not found'),
-              backgroundColor: Colors.red,
-            ),
-          );
         }
         return;
       }
@@ -390,12 +384,6 @@ class _StepSequencerViewState extends State<StepSequencerView> {
           _syncStatus = SyncStatus.error;
           _lastError = 'Failed to switch sequence: $e';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to switch sequence: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     } finally {
       if (mounted) {
@@ -409,22 +397,8 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   Future<void> _quantizeAllSteps() async {
     if (!mounted) return;
 
-    setState(() {
-      _syncStatus = SyncStatus.syncing;
-    });
-
     try {
       final params = StepSequencerParams.fromSlot(widget.slot);
-
-      // Show progress indicator
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
 
       // Store changes for undo
       final changes = <_ParameterChange>[];
@@ -471,10 +445,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
         }
       }
 
-      // Close progress dialog
       if (mounted) {
-        Navigator.of(context).pop();
-
         setState(() {
           // Add to undo history if any changes were made
           if (changes.isNotEmpty) {
@@ -491,22 +462,11 @@ class _StepSequencerViewState extends State<StepSequencerView> {
         });
       }
     } catch (e) {
-      // Close progress dialog if open
       if (mounted) {
-        Navigator.of(context).pop();
-
         setState(() {
           _syncStatus = SyncStatus.error;
           _lastError = 'Error quantizing steps: $e';
         });
-
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error quantizing steps: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     }
   }
@@ -566,16 +526,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
     final randomiseParam = params.randomise;
 
     if (randomiseParam == null) {
-      // Randomise parameter not found - show error
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Randomize parameter not found'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      // Randomise parameter not found
       return;
     }
 
@@ -600,27 +551,8 @@ class _StepSequencerViewState extends State<StepSequencerView> {
         value: 0,
         userIsChangingTheValue: true,
       );
-
-      // Show feedback
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Randomizing sequence...'),
-            duration: Duration(seconds: 1),
-          ),
-        );
-      }
     } catch (e) {
-      // Show error message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error triggering randomize: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      // Error triggering randomize - silently fail
     }
   }
 
