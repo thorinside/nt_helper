@@ -36,6 +36,27 @@ class StepSequencerView extends StatefulWidget {
   State<StepSequencerView> createState() => _StepSequencerViewState();
 }
 
+/// Undo history entry for parameter changes
+class _UndoHistoryEntry {
+  final List<_ParameterChange> changes;
+  final DateTime timestamp;
+
+  _UndoHistoryEntry(this.changes) : timestamp = DateTime.now();
+}
+
+/// Individual parameter change
+class _ParameterChange {
+  final int parameterNumber;
+  final int oldValue;
+  final int newValue;
+
+  _ParameterChange({
+    required this.parameterNumber,
+    required this.oldValue,
+    required this.newValue,
+  });
+}
+
 class _StepSequencerViewState extends State<StepSequencerView> {
   // Global parameter mode state (affects all 16 steps)
   late StepParameter _activeParameter = StepParameter.pitch;
@@ -44,6 +65,10 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   bool _snapEnabled = false;
   String _selectedScale = 'Major';
   int _rootNote = 0; // C
+
+  // Undo history for quantization operations
+  final List<_UndoHistoryEntry> _undoHistory = [];
+  static const int _maxUndoHistory = 10;
 
   // Loading state for sequence selection
   bool _isLoadingSequence = false;
@@ -228,6 +253,8 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                             onScaleChanged: _setScale,
                             onRootNoteChanged: _setRootNote,
                             onQuantizeAll: _quantizeAllSteps,
+                            onUndo: _undoLastChange,
+                            canUndo: _undoHistory.isNotEmpty,
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -380,9 +407,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   }
 
   Future<void> _quantizeAllSteps() async {
-    // Show confirmation dialog
-    final confirmed = await QuantizeControls.showQuantizeAllDialog(context);
-    if (!confirmed || !mounted) return;
+    if (!mounted) return;
 
     setState(() {
       _syncStatus = SyncStatus.syncing;
@@ -400,6 +425,9 @@ class _StepSequencerViewState extends State<StepSequencerView> {
           child: CircularProgressIndicator(),
         ),
       );
+
+      // Store changes for undo
+      final changes = <_ParameterChange>[];
 
       // Quantize all 16 steps
       final cubit = context.read<DistingCubit>();
@@ -420,16 +448,26 @@ class _StepSequencerViewState extends State<StepSequencerView> {
             _rootNote,
           );
 
-          // Update parameter (with debouncing built into cubit)
-          cubit.updateParameterValue(
-            algorithmIndex: widget.slotIndex,
-            parameterNumber: pitchParamNum,
-            value: quantized,
-            userIsChangingTheValue: true,
-          );
+          // Only update if value changed
+          if (quantized != currentPitch) {
+            // Store change for undo
+            changes.add(_ParameterChange(
+              parameterNumber: pitchParamNum,
+              oldValue: currentPitch,
+              newValue: quantized,
+            ));
 
-          // Small delay to avoid overwhelming MIDI scheduler
-          await Future.delayed(const Duration(milliseconds: 10));
+            // Update parameter (with debouncing built into cubit)
+            cubit.updateParameterValue(
+              algorithmIndex: widget.slotIndex,
+              parameterNumber: pitchParamNum,
+              value: quantized,
+              userIsChangingTheValue: true,
+            );
+
+            // Small delay to avoid overwhelming MIDI scheduler
+            await Future.delayed(const Duration(milliseconds: 10));
+          }
         }
       }
 
@@ -438,17 +476,19 @@ class _StepSequencerViewState extends State<StepSequencerView> {
         Navigator.of(context).pop();
 
         setState(() {
+          // Add to undo history if any changes were made
+          if (changes.isNotEmpty) {
+            _undoHistory.add(_UndoHistoryEntry(changes));
+
+            // Limit history size
+            if (_undoHistory.length > _maxUndoHistory) {
+              _undoHistory.removeAt(0);
+            }
+          }
+
           _syncStatus = SyncStatus.synced;
           _lastError = null;
         });
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('All steps quantized to scale'),
-            duration: Duration(seconds: 2),
-          ),
-        );
       }
     } catch (e) {
       // Close progress dialog if open
@@ -467,6 +507,48 @@ class _StepSequencerViewState extends State<StepSequencerView> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    }
+  }
+
+  /// Undo the last quantization operation
+  Future<void> _undoLastChange() async {
+    if (_undoHistory.isEmpty || !mounted) return;
+
+    try {
+      // Get last history entry
+      final entry = _undoHistory.removeLast();
+
+      setState(() {
+        _undoHistory.remove(entry);
+      });
+
+      // Restore old values
+      final cubit = context.read<DistingCubit>();
+      for (final change in entry.changes) {
+        cubit.updateParameterValue(
+          algorithmIndex: widget.slotIndex,
+          parameterNumber: change.parameterNumber,
+          value: change.oldValue,
+          userIsChangingTheValue: true,
+        );
+
+        // Small delay to avoid overwhelming MIDI scheduler
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+
+      if (mounted) {
+        setState(() {
+          _syncStatus = SyncStatus.synced;
+          _lastError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _syncStatus = SyncStatus.error;
+          _lastError = 'Error undoing changes: $e';
+        });
       }
     }
   }

@@ -4,7 +4,7 @@ import 'package:nt_helper/services/scale_quantizer.dart';
 /// Control widget for scale quantization settings in Step Sequencer
 ///
 /// Provides toggle button for snap-to-scale, scale selector dropdown,
-/// root note selector, and bulk "Quantize All Steps" button.
+/// root note selector, bulk "Quantize All Steps" button, and undo button.
 ///
 /// Layout adapts responsively:
 /// - Desktop/Tablet: Horizontal row layout
@@ -17,6 +17,8 @@ class QuantizeControls extends StatelessWidget {
   final ValueChanged<String> onScaleChanged;
   final ValueChanged<int> onRootNoteChanged;
   final VoidCallback onQuantizeAll;
+  final VoidCallback? onUndo;
+  final bool canUndo;
 
   const QuantizeControls({
     super.key,
@@ -27,6 +29,8 @@ class QuantizeControls extends StatelessWidget {
     required this.onScaleChanged,
     required this.onRootNoteChanged,
     required this.onQuantizeAll,
+    this.onUndo,
+    this.canUndo = false,
   });
 
   static const Map<int, String> _rootNoteNames = {
@@ -72,6 +76,8 @@ class QuantizeControls extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         _buildQuantizeAllButton(context),
+        const SizedBox(width: 12),
+        _buildUndoButton(context),
       ],
     );
   }
@@ -94,7 +100,13 @@ class QuantizeControls extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        _buildQuantizeAllButton(context),
+        Row(
+          children: [
+            Expanded(child: _buildQuantizeAllButton(context)),
+            const SizedBox(width: 8),
+            _buildUndoButton(context),
+          ],
+        ),
       ],
     );
   }
@@ -141,13 +153,11 @@ class QuantizeControls extends StatelessWidget {
           child: Text(scale),
         );
       }).toList(),
-      onChanged: snapEnabled
-          ? (scale) {
-              if (scale != null) {
-                onScaleChanged(scale);
-              }
-            }
-          : null, // Disabled when snap is off
+      onChanged: (scale) {
+        if (scale != null) {
+          onScaleChanged(scale);
+        }
+      },
     );
   }
 
@@ -173,13 +183,11 @@ class QuantizeControls extends StatelessWidget {
           child: Text(entry.value),
         );
       }).toList(),
-      onChanged: snapEnabled
-          ? (note) {
-              if (note != null) {
-                onRootNoteChanged(note);
-              }
-            }
-          : null, // Disabled when snap is off
+      onChanged: (note) {
+        if (note != null) {
+          onRootNoteChanged(note);
+        }
+      },
     );
   }
 
@@ -188,42 +196,30 @@ class QuantizeControls extends StatelessWidget {
       icon: const Icon(Icons.auto_fix_high),
       label: const Text('Quantize All'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: snapEnabled
-            ? const Color(0xFF0f766e) // darkTeal
-            : Colors.grey.shade400,
+        backgroundColor: const Color(0xFF0f766e), // darkTeal
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
-      onPressed: snapEnabled ? onQuantizeAll : null,
+      onPressed: onQuantizeAll,
     );
   }
 
-  /// Show confirmation dialog for bulk quantization
-  static Future<bool> showQuantizeAllDialog(BuildContext context) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Quantize All Steps?'),
-            content: const Text(
-              'This will apply the current scale to all 16 steps. '
-              'This action cannot be undone.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF14b8a6),
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Quantize All'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+  Widget _buildUndoButton(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return IconButton(
+      icon: const Icon(Icons.undo),
+      tooltip: 'Undo last quantize',
+      onPressed: canUndo ? onUndo : null,
+      style: IconButton.styleFrom(
+        backgroundColor: canUndo
+            ? const Color(0xFF14b8a6) // primaryTeal
+            : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+        disabledForegroundColor: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+      ),
+    );
   }
 }
