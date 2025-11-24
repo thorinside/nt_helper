@@ -804,6 +804,8 @@ void main() {
 
     setUp(() {
       mockCubit = MockDistingCubit();
+      when(() => mockCubit.stream).thenAnswer((_) => Stream.empty());
+      when(() => mockCubit.state).thenReturn(const DistingState.initial());
     });
 
     Slot createSlotWithDivision(int divisionValue) {
@@ -872,7 +874,7 @@ void main() {
         ),
       );
 
-      expect(find.text('8 Ratchets'), findsOneWidget);
+      expect(find.text('8 RA'), findsOneWidget);
     });
 
     testWidgets('AC2: displays "2 Ratchets" when Division = 6', (tester) async {
@@ -900,7 +902,7 @@ void main() {
         ),
       );
 
-      expect(find.text('2 Ratchets'), findsOneWidget);
+      expect(find.text('2 RA'), findsOneWidget);
     });
 
     testWidgets('AC3: displays "1" when Division = 7 (default)', (tester) async {
@@ -956,7 +958,7 @@ void main() {
         ),
       );
 
-      expect(find.text('2 Repeats'), findsOneWidget);
+      expect(find.text('2 RE'), findsOneWidget);
     });
 
     testWidgets('AC2: displays "8 Repeats" when Division = 14', (tester) async {
@@ -984,7 +986,7 @@ void main() {
         ),
       );
 
-      expect(find.text('8 Repeats'), findsOneWidget);
+      expect(find.text('8 RE'), findsOneWidget);
     });
 
     testWidgets('AC4: subdivision label NOT visible when in Pitch mode', (tester) async {
@@ -1013,7 +1015,7 @@ void main() {
       );
 
       // Subdivision label should NOT be visible in Pitch mode
-      expect(find.text('3 Repeats'), findsNothing);
+      expect(find.text('3 RE'), findsNothing);
     });
 
     testWidgets('AC4: subdivision label visible only in Division mode', (tester) async {
@@ -1042,7 +1044,7 @@ void main() {
       );
 
       // Subdivision label SHOULD be visible in Division mode
-      expect(find.text('3 Repeats'), findsOneWidget);
+      expect(find.text('3 RE'), findsOneWidget);
     });
 
     testWidgets('AC8: handles out-of-range Division values', (tester) async {
@@ -1109,7 +1111,7 @@ void main() {
       );
 
       // Should clamp to 14 and display "8 Repeats"
-      expect(find.text('8 Repeats'), findsOneWidget);
+      expect(find.text('8 RE'), findsOneWidget);
     });
 
     testWidgets('AC10: uses theme-aware text color with opacity', (tester) async {
@@ -1140,7 +1142,7 @@ void main() {
 
       // Widget should render without errors in dark mode
       expect(find.byType(StepColumnWidget), findsOneWidget);
-      expect(find.text('3 Repeats'), findsOneWidget);
+      expect(find.text('3 RE'), findsOneWidget);
     });
   });
 }
