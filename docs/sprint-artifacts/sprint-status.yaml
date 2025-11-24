@@ -130,6 +130,7 @@ development_status:
   e10-9-implement-bit-pattern-editor-for-ties: done
   e10-9-1-step-sequencer-ui-refinements: done
   e10-10-implement-bit-pattern-editor-for-pattern: done
+  e10-10-1-fix-bit-pattern-direct-clicking: review
   e10-11-audit-and-validate-parameter-ui-controls: drafted
   e10-12-add-per-step-probability-parameters: drafted
   e10-13-add-permutation-and-gate-type-controls: drafted

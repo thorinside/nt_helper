@@ -9,13 +9,13 @@ As a **Step Sequencer user**,
 I want **a global parameter mode selector that changes what all step bars show/edit, with Ties displayed as a visual bit pattern and pitch quantization controls available in Pitch mode**,
 so that **I can efficiently edit parameters across all steps like a DAW automation lane, control substep tie behavior, and apply musical quantization to pitch values**.
 
-## Acceptance Criteria
+## Acceptance Criteria (UPDATED 2025-11-23)
 
 1. Global parameter mode selector shows 10 ChoiceChip buttons (no "Edit:" label)
 2. When global parameter mode = "Ties", step bars show 8-segment bit pattern visualization
 3. Each segment represents one bit (substeps 0-7, LSB to MSB)
-4. Tapping a step bar in Ties mode opens bit pattern editor overlay
-5. Bit pattern editor shows 8 toggle buttons (horizontal layout)
+4. ~~Tapping a step bar in Ties mode opens bit pattern editor overlay~~ **UPDATED:** Tapping a specific segment of the step bar in Ties mode toggles that bit directly (0→1 or 1→0) without opening a dialog (see story e10.10.1)
+5. ~~Bit pattern editor shows 8 toggle buttons (horizontal layout)~~ **UPDATED:** Step bar 8-segment visualization allows direct bit toggling via tap (see story e10.10.1)
 6. Toggling a bit updates the parameter value (0-255) via `updateParameterValue()`
 7. Current Ties value from hardware displays correctly as bit pattern
 8. Step bar shows visual summary: filled segments for set bits, empty for unset bits

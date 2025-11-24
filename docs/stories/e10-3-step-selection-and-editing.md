@@ -36,11 +36,16 @@ This story implements the step editing modal that allows users to modify individ
 
 ## Acceptance Criteria
 
-### AC3.1: Tap step → opens modal with all per-step parameters
+### AC3.1: Tap step → opens modal with all per-step parameters (UPDATED 2025-11-23)
+**For continuous/discrete parameters (Pitch, Velocity, Mod, Division):**
 - User taps on a step column in the grid
 - Modal dialog opens showing all editable parameters for that step
 - Modal is properly sized and positioned (centered on desktop, bottom sheet on mobile)
 - Step number is displayed in modal header (e.g., "Edit Step 5")
+
+**For bit pattern parameters (Pattern, Ties):**
+- User taps directly on value bar segments to toggle individual bits (no modal)
+- See story e10.10.1 for direct bit clicking implementation
 
 ### AC3.2: Modal shows: Pitch (slider + numeric), Velocity (slider), Mod (slider)
 - Pitch parameter: Slider (0-127) with numeric value display and note name (e.g., "C4")

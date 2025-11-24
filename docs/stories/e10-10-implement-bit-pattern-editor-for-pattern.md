@@ -12,12 +12,12 @@ As a **Step Sequencer user**,
 I want **to edit the Pattern parameter using the same bit pattern editor as Ties**,
 so that **I can control which substeps play when Division > 0 using an intuitive visual interface**.
 
-## Acceptance Criteria
+## Acceptance Criteria (UPDATED 2025-11-23)
 
 1. When global parameter mode = "Pattern", step bars show 8-segment bit pattern visualization (same as Ties)
 2. Each segment represents one substep on/off state (bits 0-7, LSB to MSB)
-3. Tapping a step bar in Pattern mode opens the bit pattern editor overlay
-4. Bit pattern editor shows 8 toggle buttons (horizontal layout) with blue color scheme (Pattern color)
+3. ~~Tapping a step bar in Pattern mode opens the bit pattern editor overlay~~ **UPDATED:** Tapping a specific segment of the step bar in Pattern mode toggles that bit directly (0→1 or 1→0) without opening a dialog (see story e10.10.1)
+4. ~~Bit pattern editor shows 8 toggle buttons (horizontal layout) with blue color scheme (Pattern color)~~ **UPDATED:** Step bar 8-segment visualization allows direct bit toggling via tap, using blue color scheme (Pattern color) (see story e10.10.1)
 5. Toggling a bit updates the Pattern parameter value (0-255) via `updateParameterValue()`
 6. Current Pattern value from hardware displays correctly as bit pattern
 7. Step bar shows visual summary: filled segments (blue) for set bits (substep plays), empty (gray) for unset bits (substep muted)
