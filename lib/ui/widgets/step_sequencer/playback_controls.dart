@@ -360,6 +360,9 @@ class _PlaybackControlsState extends State<PlaybackControls> {
       onChanged: (value) {
         if (value != null) {
           _updateParameter(directionParam, value);
+
+          // Request fresh parameter values from hardware after Direction change
+          context.read<DistingCubit>().scheduleParameterRefresh(widget.slotIndex);
         }
       },
     );
@@ -473,40 +476,26 @@ class _PlaybackControlsState extends State<PlaybackControls> {
         ? slot.values[gateTypeParam].value
         : 0;
 
-    // Get enum strings from firmware
-    final options = _getEnumStringsOrFallback(slot, gateTypeParam);
+    // Build dropdown items from firmware enum strings
+    final items = _buildEnumDropdownItems(slot, gateTypeParam);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Gate Type',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: 8),
-        SegmentedButton<int>(
-          segments: List.generate(
-            options.length,
-            (index) => ButtonSegment(
-              value: index,
-              label: Text(options[index]),
-            ),
-          ),
-          selected: {currentValue.clamp(0, options.length - 1)},
-          onSelectionChanged: (Set<int> selected) {
-            if (selected.isNotEmpty) {
-              _updateParameter(gateTypeParam, selected.first);
+    return DropdownButtonFormField<int>(
+      initialValue: currentValue.clamp(0, items.length - 1),
+      decoration: const InputDecoration(
+        labelText: 'Gate Type',
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      items: items,
+      onChanged: (value) {
+        if (value != null) {
+          _updateParameter(gateTypeParam, value);
 
-              // Refresh parameter states after Gate Type change
-              // Use addPostFrameCallback to ensure state update after parameter write
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _refreshParameterStates();
-              });
-            }
-          },
-        ),
-      ],
+          // Request fresh parameter values from hardware after Gate Type change
+          // This ensures we get updated disabled states for dependent parameters
+          context.read<DistingCubit>().scheduleParameterRefresh(widget.slotIndex);
+        }
+      },
     );
   }
 

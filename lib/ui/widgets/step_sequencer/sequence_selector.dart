@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Control widget for sequence selection in Step Sequencer
 ///
-/// Provides a dropdown for selecting one of 32 stored sequences.
+/// Provides a dropdown for selecting stored sequences based on parameter range.
 /// Shows loading indicator during sequence switch operations.
 ///
 /// Layout adapts responsively:
@@ -11,11 +11,13 @@ import 'package:flutter/material.dart';
 ///
 /// Supports firmware-provided sequence names via enumStrings parameter.
 class SequenceSelector extends StatelessWidget {
-  final int currentSequence; // 0-31 (hardware value)
+  final int currentSequence; // Current parameter value
   final bool isLoading;
   final ValueChanged<int> onSequenceChanged;
   final Map<int, String>? sequenceNames; // Optional custom names (deprecated - use enumStrings)
   final List<String>? enumStrings; // Firmware-provided sequence names
+  final int? minValue; // Parameter minimum value
+  final int? maxValue; // Parameter maximum value
 
   const SequenceSelector({
     super.key,
@@ -24,6 +26,8 @@ class SequenceSelector extends StatelessWidget {
     required this.onSequenceChanged,
     this.sequenceNames,
     this.enumStrings,
+    this.minValue,
+    this.maxValue,
   });
 
   @override
@@ -50,8 +54,10 @@ class SequenceSelector extends StatelessWidget {
   }
 
   Widget _buildSequenceDropdown(BuildContext context, bool isMobile) {
-    // Determine sequence count from enum strings or default to 32
-    final sequenceCount = enumStrings?.length ?? 32;
+    // Determine range from parameter min/max or fallback
+    final min = minValue ?? 0;
+    final max = maxValue ?? (enumStrings?.length ?? 32) - 1;
+    final count = max - min + 1;
 
     return DropdownButtonFormField<int>(
       initialValue: currentSequence,
@@ -68,21 +74,22 @@ class SequenceSelector extends StatelessWidget {
             ? Colors.grey.shade800
             : Colors.grey.shade50,
       ),
-      items: List.generate(sequenceCount, (index) {
+      items: List.generate(count, (index) {
+        final value = min + index;
         String name;
         if (enumStrings != null && index < enumStrings!.length && enumStrings![index].isNotEmpty) {
           // Use firmware-provided enum string
           name = enumStrings![index];
-        } else if (sequenceNames != null && sequenceNames!.containsKey(index)) {
+        } else if (sequenceNames != null && sequenceNames!.containsKey(value)) {
           // Fallback to custom names (deprecated)
-          name = sequenceNames![index]!;
+          name = sequenceNames![value]!;
         } else {
-          // Fallback to numeric label (display as 1-32, value is 0-31)
-          name = 'Sequence ${index + 1}';
+          // Use numeric label from parameter range
+          name = '$value';
         }
 
         return DropdownMenuItem<int>(
-          value: index,
+          value: value,
           child: Text(name),
         );
       }),

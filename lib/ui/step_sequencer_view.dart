@@ -45,8 +45,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   String _selectedScale = 'Major';
   int _rootNote = 0; // C
 
-  // Local state for sequence selection (UI-only, not persisted)
-  int _currentSequence = 0; // 0-31 (hardware value)
+  // Loading state for sequence selection
   bool _isLoadingSequence = false;
 
   // Sync status tracking
@@ -54,26 +53,19 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   SyncStatus _syncStatus = SyncStatus.synced;
   String? _lastError;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeCurrentSequence();
-  }
-
-  /// Initialize current sequence from slot parameter value
-  void _initializeCurrentSequence() {
-    final params = StepSequencerParams.fromSlot(widget.slot);
+  /// Gets current sequence value from slot parameter
+  int _getCurrentSequence(Slot slot) {
+    final params = StepSequencerParams.fromSlot(slot);
     final sequenceParamNum = params.currentSequence;
 
     if (sequenceParamNum != null &&
-        sequenceParamNum < widget.slot.values.length) {
-      final sequenceValue = widget.slot.values[sequenceParamNum].value;
+        sequenceParamNum < slot.values.length) {
+      final sequenceValue = slot.values[sequenceParamNum].value;
       if (sequenceValue >= 0 && sequenceValue < 32) {
-        setState(() {
-          _currentSequence = sequenceValue;
-        });
+        return sequenceValue;
       }
     }
+    return 0; // Default to sequence 0
   }
 
   @override
@@ -338,17 +330,17 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       // Wait for hardware to process the change
       await Future.delayed(const Duration(milliseconds: 100));
 
-      // Update local state
+      // Request fresh parameter values from hardware after sequence change
+      // This ensures we get updated disabled states and parameter values
+      cubit.scheduleParameterRefresh(widget.slotIndex);
+
+      // Update sync status
       if (mounted) {
         setState(() {
-          _currentSequence = newSequence;
           _syncStatus = SyncStatus.synced;
           _lastError = null;
         });
       }
-
-      // Note: Slot data will auto-refresh via cubit state updates
-      // No need to manually trigger refresh here
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -593,20 +585,33 @@ class _StepSequencerViewState extends State<StepSequencerView> {
     final params = StepSequencerParams.fromSlot(slot);
     final sequenceParam = params.currentSequence;
 
-    // Get enum strings from firmware (if available)
+    // Get enum strings and parameter info from firmware (if available)
     List<String>? enumStrings;
-    if (sequenceParam != null && sequenceParam < slot.enums.length) {
-      final enumData = slot.enums[sequenceParam];
-      if (enumData.values.isNotEmpty) {
-        enumStrings = enumData.values;
+    int? minValue;
+    int? maxValue;
+
+    if (sequenceParam != null) {
+      if (sequenceParam < slot.enums.length) {
+        final enumData = slot.enums[sequenceParam];
+        if (enumData.values.isNotEmpty) {
+          enumStrings = enumData.values;
+        }
+      }
+
+      if (sequenceParam < slot.parameters.length) {
+        final paramInfo = slot.parameters[sequenceParam];
+        minValue = paramInfo.min;
+        maxValue = paramInfo.max;
       }
     }
 
     return SequenceSelector(
-      currentSequence: _currentSequence,
+      currentSequence: _getCurrentSequence(slot),
       isLoading: _isLoadingSequence,
       onSequenceChanged: _handleSequenceChange,
       enumStrings: enumStrings,
+      minValue: minValue,
+      maxValue: maxValue,
     );
   }
 

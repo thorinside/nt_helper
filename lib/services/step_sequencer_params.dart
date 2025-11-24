@@ -184,7 +184,8 @@ class StepSequencerParams {
   // Permutation and Gate Type parameters (global playback controls)
   int? get permutation => _findParameter('Permutation') ?? _findParameter('Permute');
   int? get gateType =>
-      _findParameter('Gate Type') ??
+      _findParameter('Gate type') ?? // Firmware uses lowercase 't'
+      _findParameter('Gate Type') ?? // Legacy fallback
       _findParameter('Gate/Trigger') ??
       _findParameter('Output Type');
 
