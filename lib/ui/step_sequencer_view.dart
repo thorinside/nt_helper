@@ -106,14 +106,15 @@ class _StepSequencerViewState extends State<StepSequencerView> {
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Offline banner (if offline)
-                if (isOffline) _buildOfflineBanner(context),
-                if (isOffline) const SizedBox(height: 16),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Offline banner (if offline)
+                  if (isOffline) _buildOfflineBanner(context),
+                  if (isOffline) const SizedBox(height: 16),
 
-                // Compact header row: Title, Sync Status, Overflow Menu
+                  // Compact header row: Title, Sync Status, Overflow Menu
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -177,37 +178,24 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                 ),
                 const SizedBox(height: 12),
 
-                // Global parameter mode selector (no "Edit:" label)
-                _buildGlobalParameterModeSelector(),
-                const SizedBox(height: 12),
-
-                // Compact control row: Sequence + Quantize controls
+                // Row with sequence and mode selector
                 Row(
                   children: [
-                    // Sequence selector (compact)
                     SizedBox(
-                      width: 150,
+                      width: 120,
                       child: _buildSequenceSelector(widget.slot),
                     ),
                     const SizedBox(width: 16),
-                    // Quantize controls (inline)
                     Expanded(
-                      child: QuantizeControls(
-                        snapEnabled: _snapEnabled,
-                        selectedScale: _selectedScale,
-                        rootNote: _rootNote,
-                        onToggleSnap: _toggleSnapToScale,
-                        onScaleChanged: _setScale,
-                        onRootNoteChanged: _setRootNote,
-                        onQuantizeAll: _quantizeAllSteps,
-                      ),
+                      child: _buildGlobalParameterModeSelector(),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
 
-                // Step grid (fills most of the space)
-                Expanded(
+                // Step grid (fixed height so it doesn't shrink)
+                SizedBox(
+                  height: 400,
                   child: StepGridView(
                     slot: widget.slot,
                     slotIndex: widget.slotIndex,
@@ -219,25 +207,53 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                 ),
                 const SizedBox(height: 12),
 
-                // Playback controls (fixed height)
-                SizedBox(
-                  height: 180,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = MediaQuery.of(context).size.width;
-                      final isMobile = width <= 768;
-                      final params = StepSequencerParams.fromSlot(widget.slot);
-
-                      return PlaybackControls(
-                        slotIndex: widget.slotIndex,
-                        params: params,
-                        slot: widget.slot,
-                        compact: isMobile,
-                      );
-                    },
-                  ),
+                // Quantize controls (only visible in Pitch mode)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: _activeParameter == StepParameter.pitch
+                      ? Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? const Color(0xFF2a2a2a)
+                                : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: QuantizeControls(
+                            snapEnabled: _snapEnabled,
+                            selectedScale: _selectedScale,
+                            rootNote: _rootNote,
+                            onToggleSnap: _toggleSnapToScale,
+                            onScaleChanged: _setScale,
+                            onRootNoteChanged: _setRootNote,
+                            onQuantizeAll: _quantizeAllSteps,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
-              ],
+                if (_activeParameter == StepParameter.pitch) const SizedBox(height: 12),
+
+                  // Playback controls (fixed height)
+                  SizedBox(
+                    height: 180,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = MediaQuery.of(context).size.width;
+                        final isMobile = width <= 768;
+                        final params = StepSequencerParams.fromSlot(widget.slot);
+
+                        return PlaybackControls(
+                          slotIndex: widget.slotIndex,
+                          params: params,
+                          slot: widget.slot,
+                          compact: isMobile,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

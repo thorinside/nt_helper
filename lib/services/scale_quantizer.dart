@@ -4,8 +4,8 @@
 /// This is a UI-only composition aid - quantized values are not persisted
 /// to hardware. The hardware stores raw MIDI note values.
 ///
-/// Supports 11 scales: Chromatic, Major, Minor, Dorian, Phrygian, Lydian,
-/// Mixolydian, Aeolian, Locrian, Pentatonic Major, and Pentatonic Minor.
+/// Supports 40+ scales including major modes, minor variations, pentatonic,
+/// blues, exotic scales, and more.
 class ScaleQuantizer {
   /// Map of scale names to their interval patterns (semitones from root)
   ///
@@ -13,17 +13,64 @@ class ScaleQuantizer {
   /// from the root note. For example, Major scale = [0,2,4,5,7,9,11] represents
   /// the intervals: Root, Whole, Whole, Half, Whole, Whole, Whole.
   static const Map<String, List<int>> scales = {
+    // Chromatic
     'Chromatic': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+
+    // Major modes (church modes)
     'Major': [0, 2, 4, 5, 7, 9, 11],
-    'Minor': [0, 2, 3, 5, 7, 8, 10],
     'Dorian': [0, 2, 3, 5, 7, 9, 10],
     'Phrygian': [0, 1, 3, 5, 7, 8, 10],
     'Lydian': [0, 2, 4, 6, 7, 9, 11],
     'Mixolydian': [0, 2, 4, 5, 7, 9, 10],
-    'Aeolian': [0, 2, 3, 5, 7, 8, 10],
+    'Minor': [0, 2, 3, 5, 7, 8, 10],
     'Locrian': [0, 1, 3, 5, 6, 8, 10],
+
+    // Minor scale variations
+    'Harmonic Minor': [0, 2, 3, 5, 7, 8, 11],
+    'Melodic Minor': [0, 2, 3, 5, 7, 9, 11],
+    'Dorian ♭2': [0, 1, 3, 5, 7, 9, 10],
+
+    // Pentatonic scales
     'Pentatonic Major': [0, 2, 4, 7, 9],
     'Pentatonic Minor': [0, 3, 5, 7, 10],
+    'Blues': [0, 3, 5, 6, 7, 10],
+    'Major Blues': [0, 2, 3, 4, 7, 9],
+
+    // Exotic and world scales
+    'Hungarian Minor': [0, 2, 3, 6, 7, 8, 11],
+    'Spanish (Phrygian Dominant)': [0, 1, 4, 5, 7, 8, 10],
+    'Arabic': [0, 1, 4, 5, 7, 8, 11],
+    'Japanese (In Sen)': [0, 1, 5, 7, 10],
+    'Japanese (Hirajoshi)': [0, 2, 3, 7, 8],
+    'Japanese (Iwato)': [0, 1, 5, 6, 10],
+    'Chinese': [0, 4, 6, 7, 11],
+    'Persian': [0, 1, 4, 5, 6, 8, 11],
+    'Byzantine': [0, 1, 4, 5, 7, 8, 11],
+    'Gypsy': [0, 2, 3, 6, 7, 8, 11],
+    'Jewish (Ahava Raba)': [0, 1, 4, 5, 7, 8, 10],
+    'Flamenco': [0, 1, 3, 4, 5, 7, 8, 10],
+
+    // Symmetrical scales
+    'Whole Tone': [0, 2, 4, 6, 8, 10],
+    'Diminished (Whole-Half)': [0, 2, 3, 5, 6, 8, 9, 11],
+    'Diminished (Half-Whole)': [0, 1, 3, 4, 6, 7, 9, 10],
+    'Augmented': [0, 3, 4, 7, 8, 11],
+
+    // Other interesting scales
+    'Bebop Major': [0, 2, 4, 5, 7, 8, 9, 11],
+    'Bebop Dorian': [0, 2, 3, 4, 5, 7, 9, 10],
+    'Bebop Dominant': [0, 2, 4, 5, 7, 9, 10, 11],
+    'Altered (Super Locrian)': [0, 1, 3, 4, 6, 8, 10],
+    'Lydian Augmented': [0, 2, 4, 6, 8, 9, 11],
+    'Lydian Dominant': [0, 2, 4, 6, 7, 9, 10],
+    'Mixolydian ♭6': [0, 2, 4, 5, 7, 8, 10],
+    'Half Diminished (Locrian ♮2)': [0, 2, 3, 5, 6, 8, 10],
+    'Enigmatic': [0, 1, 4, 6, 8, 10, 11],
+    'Double Harmonic': [0, 1, 4, 5, 7, 8, 11],
+    'Neapolitan Major': [0, 1, 3, 5, 7, 9, 11],
+    'Neapolitan Minor': [0, 1, 3, 5, 7, 8, 11],
+    'Prometheus': [0, 2, 4, 6, 9, 10],
+    'Tritone': [0, 1, 4, 6, 7, 10],
   };
 
   /// Quantizes a MIDI note to the nearest degree of the specified scale

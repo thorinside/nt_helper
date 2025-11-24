@@ -59,25 +59,19 @@ class QuantizeControls extends StatelessWidget {
   Widget _buildDesktopLayout(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          flex: 3,
-          child: _buildSnapToggle(context),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 2,
+        _buildSnapCheckbox(context),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 150,
           child: _buildScaleDropdown(context),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 2,
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 100,
           child: _buildRootNoteDropdown(context),
         ),
-        const SizedBox(width: 8),
-        Flexible(
-          flex: 2,
-          child: _buildQuantizeAllButton(context),
-        ),
+        const SizedBox(width: 12),
+        _buildQuantizeAllButton(context),
       ],
     );
   }
@@ -86,15 +80,7 @@ class QuantizeControls extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildSnapToggle(context),
-            ),
-            const SizedBox(width: 8),
-            _buildQuantizeAllButton(context),
-          ],
-        ),
+        _buildSnapCheckbox(context),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -107,22 +93,29 @@ class QuantizeControls extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        _buildQuantizeAllButton(context),
       ],
     );
   }
 
-  Widget _buildSnapToggle(BuildContext context) {
-    return ElevatedButton.icon(
-      icon: const Icon(Icons.piano),
-      label: Text('Snap to Scale: ${snapEnabled ? "ON" : "OFF"}'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: snapEnabled
-            ? const Color(0xFF14b8a6) // primaryTeal
-            : Colors.grey,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-      onPressed: onToggleSnap,
+  Widget _buildSnapCheckbox(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Checkbox(
+          value: snapEnabled,
+          onChanged: (_) => onToggleSnap(),
+        ),
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: onToggleSnap,
+          child: const Text(
+            'Snap to Scale',
+            style: TextStyle(fontSize: 14),
+          ),
+        ),
+      ],
     );
   }
 
