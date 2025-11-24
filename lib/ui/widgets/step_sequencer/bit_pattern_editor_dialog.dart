@@ -132,9 +132,11 @@ class _BitPatternEditorDialogState extends State<BitPatternEditorDialog> {
           ),
           const SizedBox(height: 8),
 
-          // Explanation text
+          // Explanation text - varies by parameter type
           Text(
-            'Each bit represents a substep connection or activation state.\nBit 0 (LSB) = Substep 0→1, Bit 7 (MSB) = Substep 7→8',
+            widget.parameterName == 'Pattern'
+                ? 'Each bit controls whether a substep plays (1) or is muted (0).\nBit 0 = substep 0, Bit 7 = substep 7.'
+                : 'Each bit controls legato ties between substeps.\nBit 0 = tie substep 0→1, Bit 7 = tie substep 7→8',
             style: TextStyle(
               fontSize: 10,
               color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,

@@ -135,6 +135,57 @@ void main() {
     });
 
     testWidgets('displays bit pattern editor in Ties mode', (tester) async {
+      // Add Ties parameter to test slot
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: '1:Velocity',
+            min: 0,
+            max: 127,
+            defaultValue: 64,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 2,
+            name: '1:Ties',
+            min: 0,
+            max: 255,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 64),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 100),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 170), // 0b10101010
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
       await tester.pumpWidget(
         makeTestableWidget(
           StepColumnWidget(
@@ -154,6 +205,107 @@ void main() {
 
       // In Ties mode, the bar should be displayed with bit pattern visualization
       expect(find.byType(CustomPaint), findsWidgets);
+
+      // Verify bit pattern editor shows on tap
+      await tester.tap(find.byType(CustomPaint).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Ties Bit Pattern'), findsOneWidget);
+    });
+
+    testWidgets('displays bit pattern editor in Pattern mode', (tester) async {
+      // Add Pattern parameter to test slot
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: '1:Velocity',
+            min: 0,
+            max: 127,
+            defaultValue: 64,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 2,
+            name: '1:Pattern',
+            min: 0,
+            max: 255,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 3,
+            name: '1:Division',
+            min: 0,
+            max: 14,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 64),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 100),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 10), // 0b00001010 (bits 1 and 3 set)
+          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 3), // Division = 3 (4 substeps)
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          StepColumnWidget(
+            stepIndex: 0,
+            pitchValue: 64,
+            velocityValue: 100,
+            isActive: false,
+            slotIndex: 0,
+            slot: testSlot,
+            snapEnabled: false,
+            selectedScale: 'Major',
+            rootNote: 0,
+            activeParameter: StepParameter.pattern,
+          ),
+        ),
+      );
+
+      // In Pattern mode, the bar should be displayed with bit pattern visualization
+      expect(find.byType(CustomPaint), findsWidgets);
+
+      // Verify bit pattern editor shows on tap
+      await tester.tap(find.byType(CustomPaint).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Pattern Bit Pattern'), findsOneWidget);
+      // Verify help text for Pattern semantics
+      expect(
+        find.textContaining('substep plays'),
+        findsWidgets,
+      );
     });
 
     testWidgets('highlights active step with border', (tester) async {

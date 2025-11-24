@@ -101,12 +101,9 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
               builder: (context, constraints) {
                 return GestureDetector(
                   onTapDown: (details) {
-                    // For bit pattern modes, toggle the tapped bit; for continuous, handle drag
+                    // For bit pattern modes, show editor dialog; for continuous, handle drag
                     if (_isBitPatternMode()) {
-                      _handleBitPatternTap(
-                        details.localPosition.dy,
-                        constraints.maxHeight,
-                      );
+                      _showBitPatternEditor();
                     } else {
                       _handleBarInteraction(
                         details.localPosition.dy,
@@ -272,20 +269,6 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
         widget.rootNote,
       );
     }
-
-    _updateParameter(newValue);
-  }
-
-  /// Handle tap on bit pattern bar to toggle individual bits
-  void _handleBitPatternTap(double localY, double barHeight) {
-    // Calculate which bit segment was tapped (0-7)
-    // Inverted: top is bit 7 (MSB), bottom is bit 0 (LSB)
-    final segmentHeight = barHeight / 8;
-    final bitIndex = (7 - (localY / segmentHeight).floor()).clamp(0, 7);
-
-    // Get current value and toggle the tapped bit
-    final currentValue = _getCurrentParameterValue();
-    final newValue = currentValue ^ (1 << bitIndex);
 
     _updateParameter(newValue);
   }

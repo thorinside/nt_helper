@@ -121,3 +121,4 @@ For detailed information about BMAD-METHOD agents, tasks, and workflows, see:
 - **[How To Use With Codex](./CLAUDE/how-to-use-with-codex.md)** - Codex integration guide
 
 The CLAUDE/ directory contains all detailed BMAD-METHOD documentation in an organized, maintainable structure.
+- It is very important not to try to execute the Flutter app if it's already running because we may have set up the MCP access and the Dart MCP and the debugger and everything. So if you restart the app, it's going to mess with all of that. So please don't.
