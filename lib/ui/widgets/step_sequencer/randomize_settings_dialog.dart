@@ -30,6 +30,32 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
     _params = StepSequencerParams.fromSlot(widget.slot);
   }
 
+  /// Gets enum strings for a parameter with fallback to numeric labels
+  ///
+  /// Returns firmware-provided enum strings if available, otherwise falls back
+  /// to numeric labels based on parameter min/max values.
+  List<String> _getEnumStringsOrFallback(Slot slot, int paramNumber) {
+    // Try to get enum strings from slot
+    final enumStrings = paramNumber < slot.enums.length
+        ? slot.enums[paramNumber]
+        : null;
+
+    if (enumStrings != null && enumStrings.values.isNotEmpty) {
+      // Use firmware-provided enum strings
+      return enumStrings.values;
+    }
+
+    // Fallback to numeric labels based on parameter range
+    if (paramNumber < slot.parameters.length) {
+      final paramInfo = slot.parameters[paramNumber];
+      final count = paramInfo.max - paramInfo.min + 1;
+      return List.generate(count, (index) => '${paramInfo.min + index}');
+    }
+
+    // Last resort fallback
+    return ['0'];
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -168,7 +194,9 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
     if (paramNum == null) return const SizedBox.shrink();
 
     final value = slot.values[paramNum].value;
-    const options = ['Nothing', 'Pitches', 'Rhythm', 'Both'];
+
+    // Get enum strings from firmware
+    final options = _getEnumStringsOrFallback(slot, paramNum);
 
     return ListTile(
       title: const Text('Randomise what'),
@@ -196,7 +224,9 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
     if (paramNum == null) return const SizedBox.shrink();
 
     final value = slot.values[paramNum].value;
-    const options = ['Uniform', 'Normal'];
+
+    // Get enum strings from firmware
+    final options = _getEnumStringsOrFallback(slot, paramNum);
 
     return ListTile(
       title: const Text('Note distribution'),

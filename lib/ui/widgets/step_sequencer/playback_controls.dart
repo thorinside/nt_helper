@@ -43,10 +43,15 @@ class _PlaybackControlsState extends State<PlaybackControls> {
   final _startStepController = TextEditingController();
   final _endStepController = TextEditingController();
 
+  // Track disabled state for dependent parameters
+  bool _isGateLengthDisabled = false;
+  bool _isTriggerLengthDisabled = false;
+
   @override
   void initState() {
     super.initState();
     _initializeControllers();
+    _refreshParameterStates();
   }
 
   @override
@@ -54,6 +59,7 @@ class _PlaybackControlsState extends State<PlaybackControls> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.slot != widget.slot) {
       _initializeControllers();
+      _refreshParameterStates();
     }
   }
 
@@ -73,12 +79,88 @@ class _PlaybackControlsState extends State<PlaybackControls> {
     }
   }
 
+  /// Refreshes parameter disabled states based on Gate Type dependency
+  ///
+  /// Gate Type controls which length parameter is active:
+  /// - Gate Type = 0 (Gate): Gate Length enabled, Trigger Length disabled
+  /// - Gate Type = 1 (Trigger): Trigger Length enabled, Gate Length disabled
+  ///
+  /// This method reads the disabled flag from parameter values (no SysEx requests)
+  void _refreshParameterStates() {
+    final slot = widget.slot;
+
+    // Get Gate Length disabled state
+    final gateLengthParam = widget.params.gateLength;
+    if (gateLengthParam != null && gateLengthParam < slot.values.length) {
+      final gateLengthValue = slot.values[gateLengthParam];
+      setState(() {
+        _isGateLengthDisabled = gateLengthValue.isDisabled;
+      });
+    }
+
+    // Get Trigger Length disabled state
+    final triggerLengthParam = widget.params.triggerLength;
+    if (triggerLengthParam != null && triggerLengthParam < slot.values.length) {
+      final triggerLengthValue = slot.values[triggerLengthParam];
+      setState(() {
+        _isTriggerLengthDisabled = triggerLengthValue.isDisabled;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _debouncer.dispose();
     _startStepController.dispose();
     _endStepController.dispose();
     super.dispose();
+  }
+
+  /// Gets enum strings for a parameter with fallback to numeric labels
+  ///
+  /// Returns firmware-provided enum strings if available, otherwise falls back
+  /// to numeric labels based on parameter min/max values.
+  ///
+  /// Examples:
+  /// - With enum strings: ['Forward', 'Reverse', 'Pendulum', ...]
+  /// - Without enum strings: ['0', '1', '2', '3', ...]
+  List<String> _getEnumStringsOrFallback(Slot slot, int paramNumber) {
+    // Try to get enum strings from slot
+    final enumStrings = paramNumber < slot.enums.length
+        ? slot.enums[paramNumber]
+        : null;
+
+    if (enumStrings != null && enumStrings.values.isNotEmpty) {
+      // Use firmware-provided enum strings
+      return enumStrings.values;
+    }
+
+    // Fallback to numeric labels based on parameter range
+    if (paramNumber < slot.parameters.length) {
+      final paramInfo = slot.parameters[paramNumber];
+      final count = paramInfo.max - paramInfo.min + 1;
+      return List.generate(count, (index) => '${paramInfo.min + index}');
+    }
+
+    // Last resort fallback
+    return ['0'];
+  }
+
+  /// Builds dropdown menu items from enum strings for a parameter
+  ///
+  /// Uses firmware-provided enum strings if available, otherwise falls back
+  /// to numeric labels. This ensures dropdowns work across firmware versions
+  /// and adapt automatically to firmware changes.
+  List<DropdownMenuItem<int>> _buildEnumDropdownItems(Slot slot, int paramNumber) {
+    final options = _getEnumStringsOrFallback(slot, paramNumber);
+
+    return List.generate(
+      options.length,
+      (index) => DropdownMenuItem(
+        value: index,
+        child: Text(options[index]),
+      ),
+    );
   }
 
   /// Updates a parameter with optional debouncing
@@ -264,26 +346,17 @@ class _PlaybackControlsState extends State<PlaybackControls> {
         ? slot.values[directionParam].value
         : 0;
 
-    // Get direction options from enum strings
-    final enumStrings = directionParam < slot.enums.length
-        ? slot.enums[directionParam]
-        : null;
-    final options = enumStrings?.values ?? ['Forward', 'Reverse', 'Pendulum', 'Random'];
+    // Build dropdown items from firmware enum strings
+    final items = _buildEnumDropdownItems(slot, directionParam);
 
     return DropdownButtonFormField<int>(
-      initialValue: currentValue.clamp(0, options.length - 1),
+      initialValue: currentValue.clamp(0, items.length - 1),
       decoration: const InputDecoration(
         labelText: 'Direction',
         border: OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      items: List.generate(
-        options.length,
-        (index) => DropdownMenuItem(
-          value: index,
-          child: Text(options[index]),
-        ),
-      ),
+      items: items,
       onChanged: (value) {
         if (value != null) {
           _updateParameter(directionParam, value);
@@ -368,22 +441,20 @@ class _PlaybackControlsState extends State<PlaybackControls> {
     }
 
     final currentValue = permutationParam < slot.values.length
-        ? slot.values[permutationParam].value.clamp(0, 3)
+        ? slot.values[permutationParam].value
         : 0;
 
+    // Build dropdown items from firmware enum strings
+    final items = _buildEnumDropdownItems(slot, permutationParam);
+
     return DropdownButtonFormField<int>(
-      initialValue: currentValue,
+      initialValue: currentValue.clamp(0, items.length - 1),
       decoration: const InputDecoration(
         labelText: 'Permutation',
         border: OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      items: const [
-        DropdownMenuItem(value: 0, child: Text('None')),
-        DropdownMenuItem(value: 1, child: Text('Variation 1')),
-        DropdownMenuItem(value: 2, child: Text('Variation 2')),
-        DropdownMenuItem(value: 3, child: Text('Variation 3')),
-      ],
+      items: items,
       onChanged: (value) {
         if (value != null) {
           _updateParameter(permutationParam, value);
@@ -399,8 +470,11 @@ class _PlaybackControlsState extends State<PlaybackControls> {
     }
 
     final currentValue = gateTypeParam < slot.values.length
-        ? slot.values[gateTypeParam].value.clamp(0, 1)
+        ? slot.values[gateTypeParam].value
         : 0;
+
+    // Get enum strings from firmware
+    final options = _getEnumStringsOrFallback(slot, gateTypeParam);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,14 +486,23 @@ class _PlaybackControlsState extends State<PlaybackControls> {
         ),
         const SizedBox(height: 8),
         SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 0, label: Text('Gate')),
-            ButtonSegment(value: 1, label: Text('Trigger')),
-          ],
-          selected: {currentValue},
+          segments: List.generate(
+            options.length,
+            (index) => ButtonSegment(
+              value: index,
+              label: Text(options[index]),
+            ),
+          ),
+          selected: {currentValue.clamp(0, options.length - 1)},
           onSelectionChanged: (Set<int> selected) {
             if (selected.isNotEmpty) {
               _updateParameter(gateTypeParam, selected.first);
+
+              // Refresh parameter states after Gate Type change
+              // Use addPostFrameCallback to ensure state update after parameter write
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _refreshParameterStates();
+              });
             }
           },
         ),
@@ -437,25 +520,35 @@ class _PlaybackControlsState extends State<PlaybackControls> {
         ? slot.values[gateLengthParam].value
         : 50;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Gate Length: $currentValue%',
-          style: Theme.of(context).textTheme.bodySmall,
+    final isDisabled = _isGateLengthDisabled;
+
+    return Opacity(
+      opacity: isDisabled ? 0.5 : 1.0,
+      child: Tooltip(
+        message: isDisabled
+            ? 'Disabled when Gate Type is Trigger'
+            : 'Sets gate length as percentage of step duration',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Gate Length: $currentValue%',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            Slider(
+              value: currentValue.toDouble().clamp(1, 99),
+              min: 1,
+              max: 99,
+              divisions: 98,
+              label: '$currentValue%',
+              onChanged: isDisabled ? null : (value) {
+                _updateParameter(gateLengthParam, value.toInt(), debounce: true);
+              },
+            ),
+          ],
         ),
-        Slider(
-          value: currentValue.toDouble().clamp(1, 99),
-          min: 1,
-          max: 99,
-          divisions: 98,
-          label: '$currentValue%',
-          onChanged: (value) {
-            _updateParameter(gateLengthParam, value.toInt(), debounce: true);
-          },
-        ),
-      ],
+      ),
     );
   }
 
@@ -469,25 +562,35 @@ class _PlaybackControlsState extends State<PlaybackControls> {
         ? slot.values[triggerLengthParam].value
         : 10;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Trigger Length: ${currentValue}ms',
-          style: Theme.of(context).textTheme.bodySmall,
+    final isDisabled = _isTriggerLengthDisabled;
+
+    return Opacity(
+      opacity: isDisabled ? 0.5 : 1.0,
+      child: Tooltip(
+        message: isDisabled
+            ? 'Disabled when Gate Type is Gate'
+            : 'Sets trigger length in milliseconds',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Trigger Length: ${currentValue}ms',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            Slider(
+              value: currentValue.toDouble().clamp(1, 100),
+              min: 1,
+              max: 100,
+              divisions: 99,
+              label: '${currentValue}ms',
+              onChanged: isDisabled ? null : (value) {
+                _updateParameter(triggerLengthParam, value.toInt(), debounce: true);
+              },
+            ),
+          ],
         ),
-        Slider(
-          value: currentValue.toDouble().clamp(1, 100),
-          min: 1,
-          max: 100,
-          divisions: 99,
-          label: '${currentValue}ms',
-          onChanged: (value) {
-            _updateParameter(triggerLengthParam, value.toInt(), debounce: true);
-          },
-        ),
-      ],
+      ),
     );
   }
 

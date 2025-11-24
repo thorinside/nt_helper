@@ -183,11 +183,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                     // Sequence selector (compact)
                     SizedBox(
                       width: 150,
-                      child: SequenceSelector(
-                        currentSequence: _currentSequence,
-                        isLoading: _isLoadingSequence,
-                        onSequenceChanged: _handleSequenceChange,
-                      ),
+                      child: _buildSequenceSelector(widget.slot),
                     ),
                     const SizedBox(width: 16),
                     // Quantize controls (inline)
@@ -539,6 +535,28 @@ class _StepSequencerViewState extends State<StepSequencerView> {
 
   /// Build global parameter mode selector
   /// Shows 10 ChoiceChip buttons for switching between parameter modes
+  /// Builds sequence selector with firmware-provided enum strings
+  Widget _buildSequenceSelector(Slot slot) {
+    final params = StepSequencerParams.fromSlot(slot);
+    final sequenceParam = params.currentSequence;
+
+    // Get enum strings from firmware (if available)
+    List<String>? enumStrings;
+    if (sequenceParam != null && sequenceParam < slot.enums.length) {
+      final enumData = slot.enums[sequenceParam];
+      if (enumData.values.isNotEmpty) {
+        enumStrings = enumData.values;
+      }
+    }
+
+    return SequenceSelector(
+      currentSequence: _currentSequence,
+      isLoading: _isLoadingSequence,
+      onSequenceChanged: _handleSequenceChange,
+      enumStrings: enumStrings,
+    );
+  }
+
   Widget _buildGlobalParameterModeSelector() {
     const modeDefinitions = [
       (StepParameter.pitch, 'Pitch', Color(0xFF14b8a6)),

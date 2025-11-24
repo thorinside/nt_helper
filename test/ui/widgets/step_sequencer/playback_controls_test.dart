@@ -385,4 +385,236 @@ void main() {
       expect(paramsNoGateType.gateType, isNull);
     });
   });
+
+  group('PlaybackControls - Gate Type Parameter Dependency', () {
+    test('Gate Length is enabled when Gate Type = 0 (Gate)', () {
+      // Create slot with Gate Type = 0 (Gate)
+      final slotGateMode = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Gate length',
+            min: 1,
+            max: 127,
+            defaultValue: 50,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Gate Type',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50, isDisabled: false),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0), // Gate mode
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsGateMode = StepSequencerParams.fromSlot(slotGateMode);
+      final gateLengthParam = paramsGateMode.gateLength!;
+      final gateLengthValue = slotGateMode.values[gateLengthParam];
+
+      expect(gateLengthValue.isDisabled, isFalse);
+    });
+
+    test('Gate Length is disabled when Gate Type = 1 (Trigger)', () {
+      // Create slot with Gate Type = 1 (Trigger)
+      final slotTriggerMode = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Gate length',
+            min: 1,
+            max: 127,
+            defaultValue: 50,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Gate Type',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50, isDisabled: true),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 1), // Trigger mode
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsTriggerMode = StepSequencerParams.fromSlot(slotTriggerMode);
+      final gateLengthParam = paramsTriggerMode.gateLength!;
+      final gateLengthValue = slotTriggerMode.values[gateLengthParam];
+
+      expect(gateLengthValue.isDisabled, isTrue);
+    });
+
+    test('Trigger Length is disabled when Gate Type = 0 (Gate)', () {
+      // Create slot with Gate Type = 0 (Gate)
+      final slotGateMode = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Trigger length',
+            min: 1,
+            max: 100,
+            defaultValue: 10,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Gate Type',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 10, isDisabled: true),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0), // Gate mode
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsGateMode = StepSequencerParams.fromSlot(slotGateMode);
+      final triggerLengthParam = paramsGateMode.triggerLength!;
+      final triggerLengthValue = slotGateMode.values[triggerLengthParam];
+
+      expect(triggerLengthValue.isDisabled, isTrue);
+    });
+
+    test('Trigger Length is enabled when Gate Type = 1 (Trigger)', () {
+      // Create slot with Gate Type = 1 (Trigger)
+      final slotTriggerMode = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Trigger length',
+            min: 1,
+            max: 100,
+            defaultValue: 10,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Gate Type',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 10, isDisabled: false),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 1), // Trigger mode
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsTriggerMode = StepSequencerParams.fromSlot(slotTriggerMode);
+      final triggerLengthParam = paramsTriggerMode.triggerLength!;
+      final triggerLengthValue = slotTriggerMode.values[triggerLengthParam];
+
+      expect(triggerLengthValue.isDisabled, isFalse);
+    });
+
+    test('disabled flag defaults to false when not specified', () {
+      // Create slot with parameters that don't specify isDisabled
+      final slotDefaultDisabled = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Gate length',
+            min: 1,
+            max: 127,
+            defaultValue: 50,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50), // No isDisabled specified
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsDefault = StepSequencerParams.fromSlot(slotDefaultDisabled);
+      final gateLengthParam = paramsDefault.gateLength!;
+      final gateLengthValue = slotDefaultDisabled.values[gateLengthParam];
+
+      // Default should be false (enabled)
+      expect(gateLengthValue.isDisabled, isFalse);
+    });
+  });
 }
