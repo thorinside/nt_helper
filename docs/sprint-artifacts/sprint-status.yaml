@@ -134,7 +134,7 @@ development_status:
   e10-11-audit-and-validate-parameter-ui-controls: done
   e10-12-add-per-step-probability-parameters: done
   e10-13-add-permutation-and-gate-type-controls: done
-  e10-14-gate-type-parameter-dependency-handling: review
+  e10-14-gate-type-parameter-dependency-handling: done
   e10-15-add-randomize-menu-and-settings: done
   e10-16-add-division-subdivision-display: done
   e10-17-use-firmware-enum-strings-for-dropdowns: done
