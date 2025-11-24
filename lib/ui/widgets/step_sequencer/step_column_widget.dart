@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/scale_quantizer.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
-import 'package:nt_helper/ui/widgets/step_sequencer/bit_pattern_editor_dialog.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/pitch_bar_painter.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
 
@@ -101,9 +100,12 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
               builder: (context, constraints) {
                 return GestureDetector(
                   onTapDown: (details) {
-                    // For bit pattern modes, show editor dialog; for continuous, handle drag
+                    // For bit pattern modes, toggle the tapped bit; for continuous, handle drag
                     if (_isBitPatternMode()) {
-                      _showBitPatternEditor();
+                      _handleBitPatternTap(
+                        details.localPosition.dy,
+                        constraints.maxHeight,
+                      );
                     } else {
                       _handleBarInteraction(
                         details.localPosition.dy,
@@ -120,9 +122,12 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
                       );
                     }
                   },
-                  child: SizedBox(
+                  child: Container(
                     width: double.infinity,
+                    height: constraints.maxHeight,
+                    color: Colors.transparent,
                     child: CustomPaint(
+                      size: Size(double.infinity, constraints.maxHeight),
                       painter: PitchBarPainter(
                         pitchValue: _getCurrentParameterValue(),
                         barColor: _getActiveParameterColor(),
@@ -206,27 +211,6 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
     }
   }
 
-  /// Show bit pattern editor dialog for Ties/Pattern modes
-  void _showBitPatternEditor() {
-    final currentValue = _getCurrentParameterValue();
-    final paramName =
-        widget.activeParameter == StepParameter.ties ? 'Ties' : 'Pattern';
-    final color = _getActiveParameterColor();
-
-    showDialog(
-      context: context,
-      builder: (context) => BitPatternEditorDialog(
-        initialValue: currentValue,
-        parameterName: paramName,
-        color: color,
-      ),
-    ).then((newValue) {
-      if (newValue != null && newValue != currentValue) {
-        _updateParameter(newValue);
-      }
-    });
-  }
-
   /// Update parameter value via cubit
   void _updateParameter(int newValue) {
     final params = StepSequencerParams.fromSlot(widget.slot);
@@ -240,6 +224,20 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
             userIsChangingTheValue: true,
           );
     }
+  }
+
+  /// Handle tap on bit pattern bar to toggle individual bits
+  void _handleBitPatternTap(double localY, double barHeight) {
+    // Calculate which bit segment was tapped (0-7)
+    // Inverted: top is bit 7 (MSB), bottom is bit 0 (LSB)
+    final segmentHeight = barHeight / 8;
+    final bitIndex = (7 - (localY / segmentHeight).floor()).clamp(0, 7);
+
+    // Get current value and toggle the tapped bit
+    final currentValue = _getCurrentParameterValue();
+    final newValue = currentValue ^ (1 << bitIndex);
+
+    _updateParameter(newValue);
   }
 
   /// Handle tap or drag on pitch bar to edit active parameter
