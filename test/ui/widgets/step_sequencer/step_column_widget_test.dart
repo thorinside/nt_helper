@@ -559,7 +559,7 @@ void main() {
             parameterNumber: 0,
             name: '1:Mute',
             min: 0,
-            max: 127,
+            max: 100,
             defaultValue: 0,
             unit: 0,
             powerOfTen: 0,
@@ -569,7 +569,7 @@ void main() {
             parameterNumber: 1,
             name: '1:Skip',
             min: 0,
-            max: 127,
+            max: 100,
             defaultValue: 0,
             unit: 0,
             powerOfTen: 0,
@@ -579,7 +579,7 @@ void main() {
             parameterNumber: 2,
             name: '1:Reset',
             min: 0,
-            max: 127,
+            max: 100,
             defaultValue: 0,
             unit: 0,
             powerOfTen: 0,
@@ -589,17 +589,17 @@ void main() {
             parameterNumber: 3,
             name: '1:Repeat',
             min: 0,
-            max: 127,
+            max: 100,
             defaultValue: 0,
             unit: 0,
             powerOfTen: 0,
           ),
         ],
         values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 64), // 50%
-          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 32), // 25%
-          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 95), // 75%
-          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 127), // 100%
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50), // 50%
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 25), // 25%
+          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 75), // 75%
+          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 100), // 100%
         ],
         enums: const [],
         mappings: const [],
@@ -758,7 +758,7 @@ void main() {
             parameterNumber: 0,
             name: '1:Mute',
             min: 0,
-            max: 127,
+            max: 100,
             defaultValue: 0,
             unit: 0,
             powerOfTen: 0,

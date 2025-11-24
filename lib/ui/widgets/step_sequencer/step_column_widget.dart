@@ -441,16 +441,34 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
     return isDark ? Colors.grey.shade400 : Colors.grey.shade700;
   }
 
-  /// Convert firmware value (0-127) to percentage (0-100)
+  /// Convert firmware value to percentage (0-100)
   /// Used for displaying probability parameters
+  /// Uses the parameter's actual max value instead of hardcoded 127
   int _firmwareToPercentage(int firmwareValue) {
-    return ((firmwareValue / 127.0) * 100).round().clamp(0, 100);
+    final params = StepSequencerParams.fromSlot(widget.slot);
+    final paramIndex = _getParameterIndex(params, widget.activeParameter);
+
+    int paramMax = 100; // Default for probability parameters
+    if (paramIndex != null && paramIndex < widget.slot.parameters.length) {
+      paramMax = widget.slot.parameters[paramIndex].max;
+    }
+
+    return ((firmwareValue / paramMax.toDouble()) * 100).round().clamp(0, 100);
   }
 
-  /// Convert percentage (0-100) to firmware value (0-127)
+  /// Convert percentage (0-100) to firmware value
   /// Used for writing probability parameters to hardware
+  /// Uses the parameter's actual max value instead of hardcoded 127
   int _percentageToFirmware(int percentage) {
-    return ((percentage / 100.0) * 127).round().clamp(0, 127);
+    final params = StepSequencerParams.fromSlot(widget.slot);
+    final paramIndex = _getParameterIndex(params, widget.activeParameter);
+
+    int paramMax = 100; // Default for probability parameters
+    if (paramIndex != null && paramIndex < widget.slot.parameters.length) {
+      paramMax = widget.slot.parameters[paramIndex].max;
+    }
+
+    return ((percentage / 100.0) * paramMax).round().clamp(0, paramMax);
   }
 
   /// Check if current parameter is a probability type
