@@ -133,5 +133,5 @@ development_status:
   e10-10-1-fix-bit-pattern-direct-clicking: done
   e10-11-audit-and-validate-parameter-ui-controls: done
   e10-12-add-per-step-probability-parameters: done
-  e10-13-add-permutation-and-gate-type-controls: review
+  e10-13-add-permutation-and-gate-type-controls: done
   epic-10-retrospective: optional

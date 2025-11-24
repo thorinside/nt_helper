@@ -47,8 +47,9 @@ stories_done:
   - e10-10-1-fix-bit-pattern-direct-clicking
   - e10-11-audit-and-validate-parameter-ui-controls
   - e10-12-add-per-step-probability-parameters
+  - e10-13-add-permutation-and-gate-type-controls
 
 # Next Actions
-todo_story: "e10-13-add-permutation-and-gate-type-controls"
-next_command: "/bmad:bmm:workflows:run-story e10-13"
-next_action: "Complete Epic 10 with story e10-13 (Add Permutation and Gate Type Controls)"
+todo_story: "epic-10-retrospective"
+next_command: "/bmad:bmm:workflows:retrospective"
+next_action: "Epic 10 (Step Sequencer UI) complete! Run retrospective to review overall success and extract lessons learned."

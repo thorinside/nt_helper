@@ -1,6 +1,7 @@
 # Story 10.13: Add Permutation and Gate Type Controls
 
-Status: review
+Status: done
+Completed: 2025-11-23T18:35:00-07:00
 
 ## Story
 
