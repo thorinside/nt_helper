@@ -13,14 +13,18 @@ enum BarDisplayMode {
 /// - BitPattern: 8-segment display for Pattern/Ties (0-255 values)
 /// - Division: Discrete block display for division parameter
 class PitchBarPainter extends CustomPainter {
-  final int pitchValue; // 0-127 for continuous, 0-255 for bit patterns
+  final int pitchValue; // Current value
   final Color barColor; // Color for the bar
   final BarDisplayMode displayMode; // Which rendering mode to use
+  final int minValue; // Minimum value for range
+  final int maxValue; // Maximum value for range
 
   const PitchBarPainter({
     required this.pitchValue,
     required this.barColor,
     this.displayMode = BarDisplayMode.continuous,
+    this.minValue = 0,
+    this.maxValue = 127,
   });
 
   @override
@@ -70,7 +74,9 @@ class PitchBarPainter extends CustomPainter {
     );
 
     // Draw bright fill from bottom to parameter value level
-    final fillHeight = (pitchValue / 127.0) * size.height;
+    // Normalize value to 0.0-1.0 range based on min/max
+    final normalizedValue = (pitchValue - minValue) / (maxValue - minValue);
+    final fillHeight = normalizedValue * size.height;
     final fillPaint = Paint()..color = barColor;
 
     canvas.drawRect(

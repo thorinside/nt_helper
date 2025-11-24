@@ -128,6 +128,7 @@ development_status:
   e10-7-auto-sync-with-debouncing: done
   e10-8-offline-mode-support: done
   e10-9-implement-bit-pattern-editor-for-ties: done
+  e10-9-1-step-sequencer-ui-refinements: done
   e10-10-implement-bit-pattern-editor-for-pattern: drafted
   e10-11-audit-and-validate-parameter-ui-controls: drafted
   e10-12-add-per-step-probability-parameters: drafted

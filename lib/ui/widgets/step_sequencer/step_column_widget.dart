@@ -101,9 +101,12 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
               builder: (context, constraints) {
                 return GestureDetector(
                   onTapDown: (details) {
-                    // For bit pattern modes, show editor dialog; for continuous, handle drag
+                    // For bit pattern modes, toggle the tapped bit; for continuous, handle drag
                     if (_isBitPatternMode()) {
-                      _showBitPatternEditor();
+                      _handleBitPatternTap(
+                        details.localPosition.dy,
+                        constraints.maxHeight,
+                      );
                     } else {
                       _handleBarInteraction(
                         details.localPosition.dy,
@@ -127,6 +130,8 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
                         pitchValue: _getCurrentParameterValue(),
                         barColor: _getActiveParameterColor(),
                         displayMode: _getDisplayMode(),
+                        minValue: _getParameterMin(),
+                        maxValue: _getParameterMax(),
                       ),
                     ),
                   ),
@@ -136,13 +141,37 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
           ),
           const SizedBox(height: 4),
 
-          // Current parameter value text (formatted based on parameter type)
-          Text(
-            _formatStepValue(_getCurrentParameterValue()),
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: _getActiveParameterColor(),
+          // Current parameter value text + warning (fixed height to prevent layout shift)
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 22, maxHeight: 22),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                  top: 0,
+                  child: Text(
+                    _formatStepValue(_getCurrentParameterValue()),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: _getActiveParameterColor(),
+                    ),
+                  ),
+                ),
+                // Warning indicator if Pattern = 0 (no substeps active)
+                if (_shouldShowPatternWarning())
+                  Positioned(
+                    bottom: 0,
+                    child: Tooltip(
+                      message: 'Pattern has no steps',
+                      child: Icon(
+                        Icons.warning_amber,
+                        size: 10,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -154,6 +183,19 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
   bool _isBitPatternMode() {
     return widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties;
+  }
+
+  /// Check if we should show the pattern warning (Pattern = 0 means no substeps active)
+  bool _shouldShowPatternWarning() {
+    final params = StepSequencerParams.fromSlot(widget.slot);
+    final step = widget.stepIndex + 1;
+    final patternIndex = params.getPattern(step);
+
+    if (patternIndex != null && patternIndex < widget.slot.values.length) {
+      final patternValue = widget.slot.values[patternIndex].value;
+      return patternValue == 0; // No substeps active
+    }
+    return false;
   }
 
   /// Get the appropriate display mode for the painter
@@ -205,8 +247,22 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
 
   /// Handle tap or drag on pitch bar to edit active parameter
   void _handleBarInteraction(double localY, double barHeight) {
+    // Get parameter's min/max range from metadata
+    final params = StepSequencerParams.fromSlot(widget.slot);
+    final paramIndex = _getParameterIndex(params, widget.activeParameter);
+
+    int min = 0;
+    int max = 127;
+    if (paramIndex != null && paramIndex < widget.slot.parameters.length) {
+      final paramInfo = widget.slot.parameters[paramIndex];
+      min = paramInfo.min;
+      max = paramInfo.max;
+    }
+
     // Calculate value based on position (inverted - top is high, bottom is low)
-    int newValue = ((1.0 - (localY / barHeight)) * 127).round().clamp(0, 127);
+    // Map bar position (0.0-1.0) to parameter range (min-max)
+    final normalizedPosition = 1.0 - (localY / barHeight);
+    int newValue = (min + (normalizedPosition * (max - min))).round().clamp(min, max);
 
     // Apply quantization if needed for pitch parameter
     if (widget.activeParameter == StepParameter.pitch && widget.snapEnabled) {
@@ -216,6 +272,20 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
         widget.rootNote,
       );
     }
+
+    _updateParameter(newValue);
+  }
+
+  /// Handle tap on bit pattern bar to toggle individual bits
+  void _handleBitPatternTap(double localY, double barHeight) {
+    // Calculate which bit segment was tapped (0-7)
+    // Inverted: top is bit 7 (MSB), bottom is bit 0 (LSB)
+    final segmentHeight = barHeight / 8;
+    final bitIndex = (7 - (localY / segmentHeight).floor()).clamp(0, 7);
+
+    // Get current value and toggle the tapped bit
+    final currentValue = _getCurrentParameterValue();
+    final newValue = currentValue ^ (1 << bitIndex);
 
     _updateParameter(newValue);
   }
@@ -255,9 +325,37 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
     final paramIndex = _getParameterIndex(params, widget.activeParameter);
 
     if (paramIndex != null && paramIndex < widget.slot.values.length) {
-      return widget.slot.values[paramIndex].value;
+      final value = widget.slot.values[paramIndex].value;
+      // Clamp to parameter's min/max range from metadata
+      if (paramIndex < widget.slot.parameters.length) {
+        final paramInfo = widget.slot.parameters[paramIndex];
+        return value.clamp(paramInfo.min, paramInfo.max);
+      }
+      return value;
     }
     return 0; // Default if parameter not found
+  }
+
+  /// Get the minimum value for the currently selected parameter
+  int _getParameterMin() {
+    final params = StepSequencerParams.fromSlot(widget.slot);
+    final paramIndex = _getParameterIndex(params, widget.activeParameter);
+
+    if (paramIndex != null && paramIndex < widget.slot.parameters.length) {
+      return widget.slot.parameters[paramIndex].min;
+    }
+    return 0; // Default
+  }
+
+  /// Get the maximum value for the currently selected parameter
+  int _getParameterMax() {
+    final params = StepSequencerParams.fromSlot(widget.slot);
+    final paramIndex = _getParameterIndex(params, widget.activeParameter);
+
+    if (paramIndex != null && paramIndex < widget.slot.parameters.length) {
+      return widget.slot.parameters[paramIndex].max;
+    }
+    return 127; // Default
   }
 
   /// Format step value based on parameter type
@@ -280,7 +378,8 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
         ); // e.g., "2.0V"
 
       case StepParameter.division:
-        return (value + 1).toString(); // Show number of notes: 0→"1", 1→"2"
+        // Division is 0-14 repeats/ratchets - show as-is for now
+        return value.toString();
 
       case StepParameter.pattern:
       case StepParameter.ties:

@@ -17,7 +17,8 @@ String formatWithUnit(
   if (unit == null || unit.isEmpty) return currentValue.toString();
 
   final trimmedUnit = unit.trim();
-  return '${((currentValue / pow(10, powerOfTen)).toStringAsFixed(powerOfTen))} $trimmedUnit';
+  final decimalPlaces = powerOfTen.abs();
+  return '${((currentValue * pow(10, powerOfTen)).toStringAsFixed(decimalPlaces))} $trimmedUnit';
 }
 
 String midiNoteToNoteString(int midiNoteNumber) {
