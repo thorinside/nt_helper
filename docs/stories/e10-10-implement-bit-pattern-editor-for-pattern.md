@@ -1,7 +1,7 @@
 # Story e10-10: Implement Bit Pattern Editor for Pattern
 
 **Epic:** 10 - Visual Step Sequencer UI Widget
-**Status:** review
+**Status:** done
 **Created:** 2025-11-23
 **Story Type:** Feature Implementation
 **Completed:** 2025-11-23
