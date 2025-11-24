@@ -53,8 +53,9 @@ stories_done:
   - e10-16-add-division-subdivision-display
   - e10-17-use-firmware-enum-strings-for-dropdowns
   - e10-18-add-parameter-pages-view
+  - e10-19-refine-parameter-pages-with-firmware-structure
 
 # Next Actions
 todo_story: "epic-10-retrospective"
 next_command: "/bmad:bmm:workflows:retrospective"
-next_action: "Epic 10 (Step Sequencer UI) COMPLETE! All 18 stories delivered. Run retrospective to review overall success and extract lessons learned."
+next_action: "Epic 10 (Step Sequencer UI) COMPLETE! All 19 stories delivered. Run retrospective to review overall success and extract lessons learned."

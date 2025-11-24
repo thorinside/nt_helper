@@ -139,4 +139,5 @@ development_status:
   e10-16-add-division-subdivision-display: done
   e10-17-use-firmware-enum-strings-for-dropdowns: done
   e10-18-add-parameter-pages-view: done
+  e10-19-refine-parameter-pages-with-firmware-structure: done
   epic-10-retrospective: optional

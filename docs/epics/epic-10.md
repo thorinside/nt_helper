@@ -794,6 +794,44 @@ void updateStepPitch(int step, int value) {
 
 ---
 
+### Story 19: Refine Parameter Pages with Firmware Structure
+**As a** user
+**I want** parameter pages to use firmware-provided page organization and familiar UI
+**So that** I see consistent page structure and parameters appear where I expect them
+
+**AC:**
+- AC19.1: Fix cubit passing - wrap dialogs/routes with `BlocProvider.value` to provide `DistingCubit` context
+- AC19.2: Use familiar `ParameterEditorView` widget instead of custom parameter editors
+- AC19.3: Use firmware-provided `ParameterPages` structure instead of heuristic categorization
+- AC19.4: Display actual firmware page names in tabs (not made-up categories like "MIDI", "Routing")
+- AC19.5: Parameters appear on firmware-designated pages automatically
+- AC19.6: New firmware parameters automatically appear on correct pages when added
+- AC19.7: Filter out custom UI parameters using existing `shouldShowInParameterPages` logic
+- AC19.8: Maintain all parameter editor features (value strings, enum strings, units, mappings)
+- AC19.9: Preserve responsive layout and dialog/full-screen behavior
+- AC19.10: Zero flutter analyze warnings, all tests passing
+
+**Technical Details:**
+- **Cubit Fix**: Pass cubit to new contexts using `BlocProvider.value(value: cubit, child: ...)`
+- **ParameterEditorView**: Reuse existing widget for consistent UI/UX across all parameter editing
+- **Firmware Pages**: Use `slot.pages.pages` (List<ParameterPage>) instead of heuristic `ParamPage` enum
+- **Page Names**: Display `page.name` from firmware instead of `ParameterPageAssigner.getPageName()`
+- **Parameter Filtering**: Build set of custom UI parameter numbers, filter firmware page parameters
+
+**Benefits:**
+- Users see consistent page organization matching firmware design
+- Parameters always appear on correct firmware-designated pages
+- No maintenance of heuristic categorization logic
+- Automatic support for new firmware parameters
+- Familiar parameter editing experience throughout app
+
+**Files Modified:**
+- `lib/ui/step_sequencer_view.dart` - Add BlocProvider.value wrappers
+- `lib/ui/widgets/step_sequencer/parameter_pages_view.dart` - Use firmware pages + ParameterEditorView
+- `lib/util/parameter_page_assigner.dart` - Add buildCustomUISet() and getStepSequencerCustomUIParameters()
+
+---
+
 ## Implementation Order
 
 **Completed Stories (in order):**
@@ -811,14 +849,15 @@ void updateStepPitch(int step, int value) {
 12. **Story 12** - Per-step probability parameters ✅
 13. **Story 13** - Permutation and gate type controls ✅
 
-**Drafted (Ready for Dev):**
-14. **Story 14** - Gate type parameter dependency handling 📝
-15. **Story 15** - Randomize menu and settings 📝
-16. **Story 16** - Division subdivision display 📝
-17. **Story 17** - Use firmware enum strings for dropdowns 📝
-18. **Story 18** - Add parameter pages view 📝
+**Completed Stories (continued):**
+14. **Story 14** - Gate type parameter dependency handling ✅
+15. **Story 15** - Randomize menu and settings ✅
+16. **Story 16** - Division subdivision display ✅
+17. **Story 17** - Use firmware enum strings for dropdowns ✅
+18. **Story 18** - Add parameter pages view ✅
+19. **Story 19** - Refine parameter pages with firmware structure ✅
 
-**Epic Status:** 13 of 18 stories complete (72%)
+**Epic Status:** 19 of 19 stories complete (100%)
 
 ## Success Metrics
 
