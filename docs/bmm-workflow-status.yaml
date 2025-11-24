@@ -46,8 +46,9 @@ workflow_status:
 stories_done:
   - e10-10-1-fix-bit-pattern-direct-clicking
   - e10-11-audit-and-validate-parameter-ui-controls
+  - e10-12-add-per-step-probability-parameters
 
 # Next Actions
-todo_story: "e10-12-add-per-step-probability-parameters"
-next_command: "/bmad:bmm:workflows:run-story e10-12"
-next_action: "Continue Epic 10 implementation with story e10-12 (Add Per-Step Probability Parameters)"
+todo_story: "e10-13-add-permutation-and-gate-type-controls"
+next_command: "/bmad:bmm:workflows:run-story e10-13"
+next_action: "Complete Epic 10 with story e10-13 (Add Permutation and Gate Type Controls)"

@@ -1,6 +1,7 @@
 # Story 10.12: Add Per-Step Probability Parameters
 
-Status: review
+Status: done
+Completed: 2025-11-23T18:25:00-07:00
 
 ## Story
 
