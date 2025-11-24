@@ -1,0 +1,213 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>14</storyId>
+    <title>Gate Type Parameter Dependency Handling</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/nealsanche/nosuch/nt_helper/docs/stories/e10-14-gate-type-parameter-dependency-handling.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>Step Sequencer user</asA>
+    <iWant>parameter availability to update automatically when Gate Type changes</iWant>
+    <soThat>I only see relevant parameters (Gate Length vs Trigger Length) based on the current gate type</soThat>
+    <tasks>
+- Task 1: Implement Parameter State Refresh (AC: #1, #2)
+- Task 2: Add Disabled State Rendering for Gate Length (AC: #3)
+- Task 3: Add Disabled State Rendering for Trigger Length (AC: #4)
+- Task 4: Hook Parameter Refresh to Gate Type Changes (AC: #5)
+- Task 5: Add Refresh Triggers for Slot/Preset Changes (AC: #5)
+- Task 6: Verify Mode Consistency (AC: #7)
+- Task 7: Performance Validation (AC: #8)
+- Task 8: Add Tooltip Explanations (AC: #6)
+- Task 9: Add/Update Tests
+- Task 10: Code Quality Validation
+</tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC1: Gate Type Change Detection - System detects Gate Type parameter modification and triggers parameter state refresh before next render, updating disabled/enabled state for all dependent parameters in under 10ms
+
+AC2: Pre-Render Parameter Refresh - Before displaying Gate Length or Trigger Length parameters, fetch latest parameter values from current slot state, read disabled flag from parameter info, apply disabled state to UI controls, and ensure state is synchronized with current Gate Type value
+
+AC3: Gate Length Disable Logic - Gate Length parameter shows disabled/grayed out state (reduced opacity, non-interactive, tooltip explains "Disabled when Gate Type is Trigger") when Gate Type = 1 (Trigger), and shows enabled/interactive state when Gate Type = 0 (Gate)
+
+AC4: Trigger Length Disable Logic - Trigger Length parameter shows disabled/grayed out state (reduced opacity, non-interactive, tooltip explains "Disabled when Gate Type is Gate") when Gate Type = 0 (Gate), and shows enabled/interactive state when Gate Type = 1 (Trigger)
+
+AC5: Automatic Refresh Triggers - Parameter refresh occurs automatically on Gate Type modification, slot change, preset load, hardware sync, and algorithm change
+
+AC6: Disabled Parameter Visibility - Both Gate Length and Trigger Length always rendered with disabled parameter showing grayed out (opacity: 0.5), tooltip explaining dependency, current value visible but non-editable, and no layout shift when parameter state changes
+
+AC7: Mode Consistency - Parameter dependency logic works identically across Connected Mode (reads disabled flag from live hardware), Offline Mode (uses cached parameter info), and Demo Mode (uses mock parameter info), with no mode-specific workarounds
+
+AC8: Performance Validation - Refresh operation completes in under 10ms, no UI lag when toggling Gate Type, smooth 60fps UI rendering during parameter changes, no excessive SysEx requests
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <artifact>
+        <path>docs/epics/epic-10.md</path>
+        <title>Epic: Visual Step Sequencer UI Widget</title>
+        <section>Story 14: Gate Type Parameter Dependency Handling</section>
+        <snippet>When Gate Type parameter changes, refresh all parameter states to detect disabled/enabled changes. Gate Type (0=Gate, 1=Trigger) controls which length parameter is active. Must refresh parameter disabled state when Gate Type is modified by user, before rendering Gate/Trigger Length controls, and after slot/preset change.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Step Sequencer UI (Epic 10)</section>
+        <snippet>Step Sequencer UI replaces the default parameter list with an intuitive visual grid interface. This is an algorithm-specific widget following the AlgorithmViewRegistry pattern, requiring zero changes to the MIDI layer or state management core. All infrastructure exists—we're building a specialized visualization layer over existing parameter management.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/epics/epic-10.md</path>
+        <title>Epic: Visual Step Sequencer UI Widget</title>
+        <section>Story 13: Add Permutation and Gate Type Controls</section>
+        <snippet>Gate Type toggle shows: Gate (0) - sustained notes, Trigger (1) - short pulses. Gate Type toggle was added but does NOT currently trigger parameter state refresh. Gate Length and Trigger Length sliders exist but do NOT check disabled flag. This story closes the loop: Gate Type change → refresh → disable dependent parameters.</snippet>
+      </artifact>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/ui/widgets/step_sequencer/playback_controls.dart</path>
+        <kind>widget</kind>
+        <symbol>PlaybackControls</symbol>
+        <lines></lines>
+        <reason>Contains Gate Length and Trigger Length sliders that need disabled state rendering. This is the primary file to modify for implementing parameter refresh logic and disabled state handling.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/services/step_sequencer_params.dart</path>
+        <kind>service</kind>
+        <symbol>StepSequencerParams</symbol>
+        <lines></lines>
+        <reason>Provides parameter discovery and getter properties for parameter numbers including gateType, gateLength, and triggerLength. Use this service to locate parameter indices from slot data.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>model</kind>
+        <symbol>ParameterInfo</symbol>
+        <lines>220-230</lines>
+        <reason>Defines ParameterInfo class with disabled flag field. This is the data structure containing the disabled boolean that must be read to determine parameter state.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/cubit/disting_state.dart</path>
+        <kind>model</kind>
+        <symbol>Slot</symbol>
+        <lines></lines>
+        <reason>Slot class contains parameters list with ParameterInfo objects. Access slot.parameters[index].disabled to read the disabled flag for any parameter.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit</symbol>
+        <lines></lines>
+        <reason>Primary state manager providing synchronized Slot data and updateParameterValue method. All parameter updates flow through this cubit.</reason>
+      </artifact>
+      <artifact>
+        <path>test/ui/widgets/step_sequencer/playback_controls_test.dart</path>
+        <kind>test</kind>
+        <symbol>playback_controls_test</symbol>
+        <lines></lines>
+        <reason>Existing widget test file for playback controls. Add new test cases for Gate Length/Trigger Length disabled state behavior and parameter refresh triggering.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/mock_disting_midi_manager.dart</path>
+        <kind>manager</kind>
+        <symbol>MockDistingMidiManager</symbol>
+        <lines></lines>
+        <reason>Demo mode implementation. Verify mock data includes correct disabled flags for Gate Type dependency testing in demo mode.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/domain/offline_disting_midi_manager.dart</path>
+        <kind>manager</kind>
+        <symbol>OfflineDistingMidiManager</symbol>
+        <lines></lines>
+        <reason>Offline mode implementation using cached parameter info. Disabled flags should be preserved in cached data for offline mode testing.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <flutter>
+        <package name="flutter_bloc" version="^9.1.1">State management via BlocBuilder for reading slot data</package>
+        <package name="flutter" version="sdk">Core UI widgets including Opacity, Tooltip, Slider</package>
+      </flutter>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- Use existing DistingCubit for all parameter state access - do not create separate state management
+- Follow AlgorithmViewRegistry widget pattern - this is algorithm-specific UI only
+- Parameter refresh must read from Slot.parameters[index].disabled flag - no custom tracking
+- Disabled state rendering uses Opacity widget (0.5 when disabled, 1.0 when enabled)
+- Non-interactive sliders use onChanged: null pattern
+- Tooltips explain dependency ("Disabled when Gate Type is X")
+- Performance requirement: refresh must complete in under 10ms (reading cached data, no SysEx)
+- Mode consistency: identical behavior in Connected, Offline, and Demo modes
+- No layout shift when parameter state changes - both parameters always rendered
+- Gate Type dependency: Type=0 (Gate) enables Gate Length, disables Trigger Length; Type=1 (Trigger) enables Trigger Length, disables Gate Length
+- Use WidgetsBinding.instance.addPostFrameCallback for refresh after Gate Type change to ensure state update after parameter write
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>StepSequencerParams.gateType</name>
+      <kind>property getter</kind>
+      <signature>int? get gateType => _findParameter('Gate Type') ?? _findParameter('Gate/Trigger');</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>StepSequencerParams.gateLength</name>
+      <kind>property getter</kind>
+      <signature>int? get gateLength => _findParameter('Gate Length');</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>StepSequencerParams.triggerLength</name>
+      <kind>property getter</kind>
+      <signature>int? get triggerLength => _findParameter('Trigger Length');</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+    </interface>
+    <interface>
+      <name>DistingCubit.updateParameterValue</name>
+      <kind>method</kind>
+      <signature>Future<void> updateParameterValue(int slotIndex, int parameterNumber, dynamic value)</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+    </interface>
+    <interface>
+      <name>Slot.parameters</name>
+      <kind>property</kind>
+      <signature>List<ParameterInfo> parameters</signature>
+      <path>lib/cubit/disting_state.dart</path>
+    </interface>
+    <interface>
+      <name>ParameterInfo.disabled</name>
+      <kind>property</kind>
+      <signature>bool disabled</signature>
+      <path>lib/domain/disting_nt_sysex.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Widget testing using flutter_test with BlocBuilder mocking via mocktail. Test files located in test/ui/widgets/step_sequencer/. Follow existing patterns in playback_controls_test.dart. Mock DistingCubit with synchronized state containing Slot data with disabled flags set appropriately. Use golden files for visual regression testing of disabled state rendering.
+    </standards>
+    <locations>
+test/ui/widgets/step_sequencer/playback_controls_test.dart - Widget tests for playback controls
+test/cubit/ - Cubit tests (if needed for state management changes)
+test/domain/ - MIDI layer tests (likely not needed for UI-only changes)
+    </locations>
+    <ideas>
+AC1/AC2 - Test _refreshParameterStates() method: Mock slot with Gate Type=0, verify Gate Length enabled and Trigger Length disabled flags are read correctly
+
+AC3 - Test Gate Length disabled rendering: Mock slot with Gate Type=1 (Trigger), verify Gate Length slider has opacity 0.5, onChanged is null, and tooltip shows "Disabled when Gate Type is Trigger"
+
+AC4 - Test Trigger Length disabled rendering: Mock slot with Gate Type=0 (Gate), verify Trigger Length slider has opacity 0.5, onChanged is null, and tooltip shows "Disabled when Gate Type is Gate"
+
+AC5 - Test refresh triggers: Verify _refreshParameterStates() called in initState, didUpdateWidget when slot changes, and after Gate Type toggle
+
+AC6 - Test visibility: Verify both Gate Length and Trigger Length widgets always rendered regardless of disabled state, no layout shift
+
+AC7 - Test mode consistency: Run same test suite with Connected, Offline, and Demo mode mock data, verify identical behavior
+
+AC8 - Performance test: Mock slot data, measure refresh time, assert under 10ms
+    </ideas>
+  </tests>
+</story-context>
