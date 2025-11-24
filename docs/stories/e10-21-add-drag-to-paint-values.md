@@ -302,6 +302,15 @@ Container(
 7. ✅ Respects parameter min/max ranges from firmware
 8. ✅ Skips bit pattern modes (Pattern, Ties) - they need special editor
 9. ✅ Works for all continuous parameters: Pitch, Velocity, Mod, Division, Probabilities
+10. ✅ Fixed coordinate transforms using GlobalKey and globalToLocal
+11. ✅ Accurate Y calculation accounting for container padding and text areas
+
+**Coordinate Transform Fix:**
+- Use `globalPosition` from drag events (not localPosition)
+- Added `GlobalKey` to Row widget to track its render position
+- Convert global coordinates to Row-local coordinates via `globalToLocal`
+- Account for container padding (8px), step number (14px), spacing (4px+4px), value text (22px)
+- Accurately map mouse Y position to bar area only
 
 **How It Works:**
 - Press and drag across step columns horizontally
@@ -309,9 +318,10 @@ Container(
 - Top of bar = maximum value, bottom = minimum value
 - Works on both desktop and mobile layouts
 - Updates hardware via debounced parameter writes
+- Mouse position accurately tracks to bar values
 
 **Files Modified:**
-- `lib/ui/widgets/step_sequencer/step_grid_view.dart` - Added drag detection and value painting logic
+- `lib/ui/widgets/step_sequencer/step_grid_view.dart` - Added drag detection, value painting, coordinate transforms
 
 **Testing:**
 - ✅ Hot reload successful
@@ -319,6 +329,8 @@ Container(
 - ✅ Drag gesture detection working
 - ✅ Value calculation implemented
 - ✅ Debouncing active
+- ✅ Coordinate transforms accurate
+- ✅ User verified drag-to-paint working correctly
 
 ## Change Log
 

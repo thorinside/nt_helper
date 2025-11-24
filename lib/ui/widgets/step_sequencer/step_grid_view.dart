@@ -39,6 +39,7 @@ class _StepGridViewState extends State<StepGridView> {
   bool _isDragging = false;
   int? _lastPaintedStep;
   final _debouncer = ParameterWriteDebouncer();
+  final _rowKey = GlobalKey(); // Key to get Row's position
 
   @override
   void dispose() {
@@ -82,12 +83,13 @@ class _StepGridViewState extends State<StepGridView> {
     StepSequencerParams params,
   ) {
     return GestureDetector(
-      onPanStart: (details) => _handleDragStart(details, slot, params),
-      onPanUpdate: (details) => _handleDragUpdate(details, slot, params),
+      onPanStart: (details) => _handleDragStart(details.globalPosition, slot, params),
+      onPanUpdate: (details) => _handleDragUpdate(details.globalPosition, slot, params),
       onPanEnd: (details) => _handleDragEnd(),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
+          key: _rowKey,
           children: List.generate(
             params.numSteps,
             (index) => SizedBox(
@@ -109,12 +111,13 @@ class _StepGridViewState extends State<StepGridView> {
     StepSequencerParams params,
   ) {
     return GestureDetector(
-      onPanStart: (details) => _handleDragStart(details, slot, params),
-      onPanUpdate: (details) => _handleDragUpdate(details, slot, params),
+      onPanStart: (details) => _handleDragStart(details.globalPosition, slot, params),
+      onPanUpdate: (details) => _handleDragUpdate(details.globalPosition, slot, params),
       onPanEnd: (details) => _handleDragEnd(),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
+          key: _rowKey,
           children: List.generate(
             params.numSteps,
             (index) => Padding(
@@ -168,18 +171,18 @@ class _StepGridViewState extends State<StepGridView> {
   }
 
   /// Handle drag start - begin painting values
-  void _handleDragStart(DragStartDetails details, Slot slot, StepSequencerParams params) {
+  void _handleDragStart(Offset globalPosition, Slot slot, StepSequencerParams params) {
     setState(() {
       _isDragging = true;
       _lastPaintedStep = null;
     });
-    _paintValueAtPosition(details.localPosition, slot, params);
+    _paintValueAtPosition(globalPosition, slot, params);
   }
 
   /// Handle drag update - continue painting as drag moves
-  void _handleDragUpdate(DragUpdateDetails details, Slot slot, StepSequencerParams params) {
+  void _handleDragUpdate(Offset globalPosition, Slot slot, StepSequencerParams params) {
     if (_isDragging) {
-      _paintValueAtPosition(details.localPosition, slot, params);
+      _paintValueAtPosition(globalPosition, slot, params);
     }
   }
 
@@ -192,15 +195,23 @@ class _StepGridViewState extends State<StepGridView> {
   }
 
   /// Paint value at the given position
-  void _paintValueAtPosition(Offset position, Slot slot, StepSequencerParams params) {
+  void _paintValueAtPosition(Offset globalPosition, Slot slot, StepSequencerParams params) {
     // Skip bit pattern modes (Pattern, Ties) - they need special editor
     if (widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties) {
       return;
     }
 
+    // Convert global position to local position relative to the Row
+    final RenderBox? rowBox = _rowKey.currentContext?.findRenderObject() as RenderBox?;
+    if (rowBox == null) {
+      return; // Row not yet rendered
+    }
+
+    final localPosition = rowBox.globalToLocal(globalPosition);
+
     // Calculate which step column is under the cursor
-    final stepIndex = _calculateStepIndex(position.dx, params.numSteps);
+    final stepIndex = _calculateStepIndex(localPosition.dx, params.numSteps);
     if (stepIndex == null || stepIndex == _lastPaintedStep) {
       return; // Outside grid or same step as last update
     }
@@ -208,7 +219,7 @@ class _StepGridViewState extends State<StepGridView> {
     _lastPaintedStep = stepIndex;
 
     // Calculate value from Y position
-    final value = _calculateValueFromY(position.dy, slot, params);
+    final value = _calculateValueFromY(localPosition.dy, slot, params);
     if (value == null) {
       return;
     }
@@ -246,28 +257,45 @@ class _StepGridViewState extends State<StepGridView> {
     final min = paramInfo.min;
     final max = paramInfo.max;
 
-    // Step column height breakdown:
-    // - Top: 12px (step number) + 4px (spacing)
-    // - Middle: Variable (bar height)
-    // - Bottom: 4px (spacing) + 22px (value text)
-    // Total non-bar space: ~42px
+    // Step column structure from StepColumnWidget:
+    // - Step number (Text): ~14px
+    // - SizedBox(height: 4)
+    // - Expanded (bar area)
+    // - SizedBox(height: 4)
+    // - ConstrainedBox(minHeight: 22, maxHeight: 22) - value text
 
-    const headerHeight = 16.0; // Step number + spacing
-    const footerHeight = 26.0; // Spacing + value text
-    const totalNonBarHeight = headerHeight + footerHeight;
+    const stepNumberHeight = 14.0; // Text fontSize: 12, plus some padding
+    const topSpacing = 4.0;
+    const bottomSpacing = 4.0;
+    const valueTextHeight = 22.0;
 
-    // Assuming step column is full height (let's use a reasonable estimate)
-    // The actual bar height will be constraints.maxHeight in StepColumnWidget
-    // For calculation purposes, use the remaining space
+    const headerHeight = stepNumberHeight + topSpacing; // ~18px
+    const footerHeight = bottomSpacing + valueTextHeight; // ~26px
+
+    // The step column container has padding: 8px all around from Container
+    const containerPadding = 8.0;
+
+    // Adjust Y for container padding
+    final yInContainer = y - containerPadding;
+
+    // Calculate position relative to the bar area
     final barTop = headerHeight;
-    final relativeY = y - barTop;
+    final relativeY = yInContainer - barTop;
 
-    // Use a reasonable bar height estimate (will be close enough for painting)
-    final barHeight = 280.0; // Matches mockup
+    // Bar height estimate (from 400px grid height - 44px padding - 44px header/footer)
+    final barHeight = 400.0 - (containerPadding * 2) - headerHeight - footerHeight;
 
     if (relativeY < 0 || relativeY > barHeight) {
-      // Outside bar area
-      return null;
+      // Outside bar area - clamp to nearest edge
+      final clampedY = relativeY.clamp(0.0, barHeight);
+      final normalized = 1.0 - (clampedY / barHeight);
+      int value = (min + (normalized * (max - min))).round().clamp(min, max);
+
+      // Apply quantization for pitch if enabled
+      if (widget.activeParameter == StepParameter.pitch && widget.snapEnabled) {
+        value = ScaleQuantizer.quantize(value, widget.selectedScale, widget.rootNote);
+      }
+      return value;
     }
 
     // Calculate normalized position (inverted: top = 1.0, bottom = 0.0)
