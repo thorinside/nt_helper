@@ -48,9 +48,13 @@ stories_done:
   - e10-11-audit-and-validate-parameter-ui-controls
   - e10-12-add-per-step-probability-parameters
   - e10-13-add-permutation-and-gate-type-controls
+  - e10-14-gate-type-parameter-dependency-handling
+  - e10-15-add-randomize-menu-and-settings
+  - e10-16-add-division-subdivision-display
   - e10-17-use-firmware-enum-strings-for-dropdowns
+  - e10-18-add-parameter-pages-view
 
 # Next Actions
 todo_story: "epic-10-retrospective"
 next_command: "/bmad:bmm:workflows:retrospective"
-next_action: "Epic 10 (Step Sequencer UI) complete! Run retrospective to review overall success and extract lessons learned."
+next_action: "Epic 10 (Step Sequencer UI) COMPLETE! All 18 stories delivered. Run retrospective to review overall success and extract lessons learned."
