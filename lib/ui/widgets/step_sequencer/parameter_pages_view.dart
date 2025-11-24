@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 import 'package:nt_helper/util/parameter_page_assigner.dart';
 
 /// Parameter Pages view for Step Sequencer
@@ -204,7 +205,7 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
 
 /// Content widget for a single parameter page
 ///
-/// Displays a scrollable list of parameter editors for the given parameters.
+/// Displays a scrollable list of familiar parameter editors for the given parameters.
 class _ParameterPageContent extends StatelessWidget {
   final List<ParameterInfo> parameters;
   final Slot slot;
@@ -220,8 +221,8 @@ class _ParameterPageContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DistingCubit, DistingState>(
       builder: (context, state) {
-        // Get current slot to refresh parameter values
-        final currentSlot = state.maybeWhen(
+        // Get current slot and unit strings to refresh parameter values
+        final data = state.maybeWhen(
           synchronized: (
             disting,
             distingVersion,
@@ -238,218 +239,59 @@ class _ParameterPageContent extends StatelessWidget {
             demo,
             videoStream,
           ) {
-            if (slotIndex < slots.length) {
-              return slots[slotIndex];
-            }
-            return slot;
+            final currentSlot = slotIndex < slots.length ? slots[slotIndex] : slot;
+            return (currentSlot, unitStrings);
           },
-          orElse: () => slot,
+          orElse: () => (slot, <String>[]),
         );
 
+        final currentSlot = data.$1;
+        final unitStrings = data.$2;
+
+        // Use the familiar parameter editor UI
         return ListView.builder(
-          padding: const EdgeInsets.all(16.0),
+          cacheExtent: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           itemCount: parameters.length,
           itemBuilder: (context, index) {
-            final param = parameters[index];
-            return _buildParameterEditor(context, param, currentSlot);
+            final parameter = parameters[index];
+            final paramNum = parameter.parameterNumber;
+
+            // Use safe access with bounds checking (like ParameterListView does)
+            final value = currentSlot.values.elementAtOrNull(paramNum);
+            final enumStrings = currentSlot.enums.elementAtOrNull(paramNum);
+            final mapping = currentSlot.mappings.elementAtOrNull(paramNum);
+            final valueString = currentSlot.valueStrings.elementAtOrNull(paramNum);
+
+            // Skip if we don't have essential data
+            if (value == null) {
+              return const SizedBox.shrink();
+            }
+
+            // Use filler/empty data if not available
+            final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
+            final safeValueString = valueString ?? ParameterValueString.filler();
+
+            // For string-type parameters (units 13, 14, 17), don't fetch unit
+            final shouldShowUnit =
+                parameter.unit != 13 &&
+                parameter.unit != 14 &&
+                parameter.unit != 17;
+            final unit = shouldShowUnit ? parameter.getUnitString(unitStrings) : null;
+
+            // Use the familiar ParameterEditorView widget
+            return ParameterEditorView(
+              slot: currentSlot,
+              parameterInfo: parameter,
+              value: value,
+              enumStrings: safeEnumStrings,
+              mapping: mapping,
+              valueString: safeValueString,
+              unit: unit,
+            );
           },
         );
       },
-    );
-  }
-
-  /// Builds the appropriate parameter editor widget based on parameter type
-  Widget _buildParameterEditor(
-    BuildContext context,
-    ParameterInfo param,
-    Slot currentSlot,
-  ) {
-    final cubit = context.read<DistingCubit>();
-    final paramNumber = param.parameterNumber;
-
-    // Get current value
-    final currentValue = paramNumber < currentSlot.values.length
-        ? currentSlot.values[paramNumber].value
-        : param.defaultValue;
-
-    // Check if parameter has enum strings
-    final hasEnumStrings = paramNumber < currentSlot.enums.length &&
-        currentSlot.enums[paramNumber].values.isNotEmpty;
-
-    if (hasEnumStrings) {
-      // Enum parameter - use dropdown
-      return _buildEnumDropdown(
-        context,
-        param,
-        currentValue,
-        currentSlot,
-        cubit,
-      );
-    } else if (param.max - param.min == 1) {
-      // Boolean parameter - use switch
-      return _buildBooleanSwitch(
-        context,
-        param,
-        currentValue,
-        cubit,
-      );
-    } else {
-      // Continuous parameter - use slider
-      return _buildSlider(
-        context,
-        param,
-        currentValue,
-        cubit,
-      );
-    }
-  }
-
-  /// Builds an enum dropdown parameter editor
-  Widget _buildEnumDropdown(
-    BuildContext context,
-    ParameterInfo param,
-    int currentValue,
-    Slot currentSlot,
-    DistingCubit cubit,
-  ) {
-    final paramNumber = param.parameterNumber;
-    final enumStrings = currentSlot.enums[paramNumber].values;
-
-    // Check if parameter is disabled
-    final isDisabled = paramNumber < currentSlot.values.length &&
-        currentSlot.values[paramNumber].isDisabled;
-
-    // Build dropdown items from enum strings
-    final items = enumStrings.asMap().entries.map((entry) {
-      final index = entry.key + param.min;
-      final label = entry.value;
-      return DropdownMenuItem<int>(
-        value: index,
-        child: Text(label),
-      );
-    }).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            param.name,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<int>(
-            initialValue: currentValue.clamp(param.min, param.max),
-            decoration: InputDecoration(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            items: items,
-            onChanged: isDisabled
-                ? null
-                : (value) {
-                    if (value != null) {
-                      cubit.updateParameterValue(
-                        algorithmIndex: slotIndex,
-                        parameterNumber: paramNumber,
-                        value: value,
-                        userIsChangingTheValue: true,
-                      );
-                    }
-                  },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds a boolean switch parameter editor
-  Widget _buildBooleanSwitch(
-    BuildContext context,
-    ParameterInfo param,
-    int currentValue,
-    DistingCubit cubit,
-  ) {
-    // Check if parameter is disabled
-    final paramNumber = param.parameterNumber;
-    final isDisabled = paramNumber < slot.values.length &&
-        slot.values[paramNumber].isDisabled;
-
-    return SwitchListTile(
-      title: Text(param.name),
-      value: currentValue == param.max,
-      onChanged: isDisabled
-          ? null
-          : (value) {
-              cubit.updateParameterValue(
-                algorithmIndex: slotIndex,
-                parameterNumber: param.parameterNumber,
-                value: value ? param.max : param.min,
-                userIsChangingTheValue: true,
-              );
-            },
-    );
-  }
-
-  /// Builds a slider parameter editor
-  Widget _buildSlider(
-    BuildContext context,
-    ParameterInfo param,
-    int currentValue,
-    DistingCubit cubit,
-  ) {
-    // Check if parameter is disabled
-    final paramNumber = param.parameterNumber;
-    final isDisabled = paramNumber < slot.values.length &&
-        slot.values[paramNumber].isDisabled;
-
-    // Get unit string (unit is an int index)
-    final unitString = '';  // TODO: Map unit index to string if needed
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                param.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                '$currentValue$unitString',
-                style: const TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-          Slider(
-            value: currentValue.toDouble().clamp(
-                  param.min.toDouble(),
-                  param.max.toDouble(),
-                ),
-            min: param.min.toDouble(),
-            max: param.max.toDouble(),
-            divisions: (param.max - param.min).clamp(1, 1000),
-            label: '$currentValue$unitString',
-            onChanged: isDisabled
-                ? null
-                : (value) {
-                    cubit.updateParameterValue(
-                      algorithmIndex: slotIndex,
-                      parameterNumber: param.parameterNumber,
-                      value: value.toInt(),
-                      userIsChangingTheValue: true,
-                    );
-                  },
-          ),
-        ],
-      ),
     );
   }
 }
