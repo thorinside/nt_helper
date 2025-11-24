@@ -504,4 +504,240 @@ void main() {
       expect(params.getRepeat(3), isNull);
     });
   });
+
+  group('StepSequencerParams - AC1: Permutation and Gate Type Parameter Discovery', () {
+    late Slot testSlot;
+
+    setUp(() {
+      // Create test slot with permutation and gate type global parameters
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          // Step 1 minimal params
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          // Global playback parameters
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Direction',
+            min: 0,
+            max: 6,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 2,
+            name: 'Permutation',
+            min: 0,
+            max: 3,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 3,
+            name: 'Gate Type',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 1),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 1),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+    });
+
+    test('discovers Permutation parameter by primary name', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.permutation, equals(2));
+    });
+
+    test('discovers Gate Type parameter by primary name', () {
+      final params = StepSequencerParams.fromSlot(testSlot);
+      expect(params.gateType, equals(3));
+    });
+
+    test('discovers Permutation parameter by fallback name (Permute)', () {
+      final slotWithFallback = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Permute',
+            min: 0,
+            max: 3,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 2),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final params = StepSequencerParams.fromSlot(slotWithFallback);
+      expect(params.permutation, equals(1));
+    });
+
+    test('discovers Gate Type parameter by fallback names', () {
+      // Test "Gate/Trigger" fallback
+      final slotWithGateTrigger = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Gate/Trigger',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 1),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final params = StepSequencerParams.fromSlot(slotWithGateTrigger);
+      expect(params.gateType, equals(1));
+    });
+
+    test('returns null for missing Permutation parameter', () {
+      final slotWithoutPermutation = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final params = StepSequencerParams.fromSlot(slotWithoutPermutation);
+      expect(params.permutation, isNull);
+    });
+
+    test('returns null for missing Gate Type parameter', () {
+      // Create a new slot without Gate Type
+      final slotWithoutGateType = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsNoGate = StepSequencerParams.fromSlot(slotWithoutGateType);
+      expect(paramsNoGate.gateType, isNull);
+    });
+  });
 }

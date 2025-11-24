@@ -1,0 +1,511 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>13</storyId>
+    <title>Add Permutation and Gate Type Controls</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/e10-13-add-permutation-and-gate-type-controls.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>Step Sequencer user</asA>
+    <iWant>to control sequence permutation and gate type via global playback controls</iWant>
+    <soThat>I can create evolving patterns with different playback variations and precise gate behavior for both triggers and sustained notes</soThat>
+    <tasks>- [ ] **Task 1: Extend Parameter Discovery** (AC: #1)
+  - [ ] Add discovery properties to `StepSequencerParams`:
+    - [ ] `int? get permutation` - Returns parameter number for "Permutation"
+    - [ ] `int? get gateType` - Returns parameter number for "Gate Type"
+  - [ ] Implement fallback naming patterns for firmware compatibility (via existing parameter search helper)
+  - [ ] Log discovery results for permutation and gate type parameters
+  - [ ] Test discovery with mock slot containing global parameters
+
+- [ ] **Task 2: Add Permutation Dropdown Control** (AC: #3)
+  - [ ] Update `playback_controls.dart` to add permutation dropdown:
+    - [ ] Label: "Permutation"
+    - [ ] 4 options: None, Variation 1, Variation 2, Variation 3
+    - [ ] Read current value from slot parameters
+    - [ ] Update parameter via debounced write on selection
+  - [ ] Position near Direction dropdown (logical grouping)
+  - [ ] Apply theme-aware styling consistent with existing controls
+  - [ ] Test dropdown renders and selection works
+
+- [ ] **Task 3: Add Gate Type Toggle Control** (AC: #4)
+  - [ ] Update `playback_controls.dart` to add gate type toggle:
+    - [ ] Label: "Gate Type"
+    - [ ] 2 segments: Gate (0), Trigger (1)
+    - [ ] Read current value from slot parameters
+    - [ ] Update parameter via debounced write on toggle
+  - [ ] Position near Gate Length slider (logical grouping)
+  - [ ] Apply theme-aware styling (Material 3 SegmentedButton)
+  - [ ] Test toggle renders and state switching works
+
+- [ ] **Task 4: Implement Value Validation** (AC: #5)
+  - [ ] Add validation in parameter reading:
+    - [ ] Permutation: clamp firmware values > 3 to 3
+    - [ ] Gate Type: clamp firmware values > 1 to 1
+  - [ ] Add validation in parameter writing (ensure 0-3 for permutation, 0-1 for gate type)
+  - [ ] Test edge cases (out-of-range firmware values)
+  - [ ] Verify no scaling needed (1:1 mapping)
+
+- [ ] **Task 5: Wire Interaction Behavior** (AC: #6)
+  - [ ] Permutation dropdown:
+    - [ ] Immediate local state update on selection
+    - [ ] Debounced write via `ParameterWriteDebouncer` (50ms)
+  - [ ] Gate Type toggle:
+    - [ ] Immediate local state update on toggle
+    - [ ] Debounced write via `ParameterWriteDebouncer` (50ms)
+  - [ ] Test rapid changes (verify debouncing)
+  - [ ] Test state persistence across widget rebuilds
+
+- [ ] **Task 6: Verify Layout Integration** (AC: #7)
+  - [ ] Test desktop layout (all controls visible, no wrapping)
+  - [ ] Test mobile layout (controls wrap gracefully via Wrap widget)
+  - [ ] Verify consistent spacing (8px gaps)
+  - [ ] Verify logical grouping (Permutation near Direction, Gate Type near Gate Length)
+  - [ ] Verify no visual disruption to existing controls
+  - [ ] Test responsive behavior (screen width changes)
+
+- [ ] **Task 7: Verify Offline Mode Support** (AC: #8)
+  - [ ] Test editing permutation in offline mode:
+    - [ ] Verify dirty parameter tracking - uses existing OfflineDistingMidiManager
+    - [ ] Verify sync indicator shows "Pending sync" - already implemented
+  - [ ] Test editing gate type in offline mode (same checks)
+  - [ ] Test reconnect and sync prompt - no changes needed
+  - [ ] Verify bulk sync applies all changes - existing infrastructure
+  - [ ] No code changes expected (existing infrastructure handles this)
+
+- [ ] **Task 8: Add/Update Tests** (AC: #9)
+  - [ ] Unit tests in `test/services/step_sequencer_params_test.dart`:
+    - [ ] Test `permutation` getter discovers parameter
+    - [ ] Test `gateType` getter discovers parameter
+    - [ ] Test fallback naming patterns (via parameter search)
+    - [ ] Test missing parameter handling (returns null, logs warning)
+  - [ ] Widget tests in `test/ui/widgets/step_sequencer/playback_controls_test.dart`:
+    - [ ] Test permutation dropdown renders with 4 options
+    - [ ] Test gate type toggle renders with 2 states
+    - [ ] Test dropdown selection updates value
+    - [ ] Test toggle state switching updates value
+    - [ ] Test value clamping for out-of-range values
+  - [ ] Integration tests:
+    - [ ] Test controls integrate with existing playback controls
+    - [ ] Test debounced writes (existing infrastructure)
+    - [ ] Test offline mode sync (existing infrastructure)
+
+- [ ] **Task 9: Document Findings** (AC: #10)
+  - [ ] Document parameter discovery patterns for global parameters (no step prefix)
+  - [ ] Document dropdown options (4 permutation variations)
+  - [ ] Document toggle states (Gate vs Trigger)
+  - [ ] Reference firmware manual (pages 294-300) - note permutation and gate type sections
+  - [ ] Note any firmware version differences discovered (if any)
+
+- [ ] **Task 10: Code Quality Validation**
+  - [ ] Run `flutter analyze` - must pass with zero warnings
+  - [ ] Run all tests: `flutter test` - all tests must pass
+  - [ ] Manual testing with real hardware or demo mode
+  - [ ] Verify no regressions in existing playback controls</tasks>
+  </story>
+
+  <acceptanceCriteria>### AC1: Parameter Discovery
+
+`StepSequencerParams.fromSlot()` discovers global permutation and gate type parameters:
+- **Permutation** (0-3) - Sequence playback variation mode
+- **Gate Type** (0-1) - Gate vs Trigger output mode
+
+**Hardware Parameter Naming Pattern:**
+- Expected: "Permutation", "Gate Type" (global parameters, no step prefix)
+- Fallback patterns: "Permute", "Gate/Trigger", "Output Type" (for firmware version compatibility)
+
+**Discovery Methods Added to `StepSequencerParams`:**
+```dart
+int? get permutation;  // Returns parameter number for Permutation
+int? get gateType;     // Returns parameter number for Gate Type
+```
+
+### AC2: UI Control Placement
+
+Controls added to **Playback Controls section** (bottom 15% of UI):
+- **Permutation dropdown** - Positioned with Direction, Start Step, End Step controls
+- **Gate Type toggle** - Positioned near Gate Length slider
+
+**Layout Requirements:**
+- Desktop: Both controls visible in horizontal row (no wrapping)
+- Mobile: Controls wrap to second row if needed (Wrap widget auto-layout)
+- Controls group logically with existing playback controls
+- Consistent spacing (8px gaps between controls)
+
+### AC3: Permutation Control Implementation
+
+**Dropdown Widget:**
+- Label: "Permutation"
+- Options:
+  - "None" (value: 0)
+  - "Variation 1" (value: 1)
+  - "Variation 2" (value: 2)
+  - "Variation 3" (value: 3)
+- Default value: Read from hardware parameter
+- Selection updates hardware parameter via debounced write (50ms)
+
+**Visual Specifications:**
+- Standard DropdownButtonFormField
+- Width: Auto (fits longest label)
+- Theme-aware styling (matches existing dropdowns)
+- Tooltip: "Change sequence playback variation"
+
+### AC4: Gate Type Control Implementation
+
+**Toggle Widget:**
+- Label: "Gate Type"
+- States:
+  - "Gate" (value: 0) - Sustained notes, duration controlled by Gate Length
+  - "Trigger" (value: 1) - Short pulses, fixed duration
+- Default value: Read from hardware parameter
+- Toggle updates hardware parameter via debounced write (50ms)
+
+**Visual Specifications:**
+- SegmentedButton or ToggleButtons widget (Material 3 style)
+- Two segments: "Gate" | "Trigger"
+- Theme-aware styling
+- Tooltip: "Gate: Sustained notes. Trigger: Short pulses"
+
+### AC5: Parameter Value Validation
+
+**Permutation:**
+- UI Range: 0-3 (discrete integer values)
+- Firmware Range: 0-127 (7-bit MIDI value, but only 0-3 are valid)
+- No scaling required (direct 1:1 mapping)
+- Validation: Firmware values > 3 → clamp to 3 → display as "Variation 3"
+
+**Gate Type:**
+- UI Range: 0-1 (boolean)
+- Firmware Range: 0-127 (7-bit MIDI value, but only 0-1 are valid)
+- No scaling required (direct 1:1 mapping)
+- Validation: Firmware values > 1 → clamp to 1 → display as "Trigger"
+
+### AC6: Interaction Behavior
+
+**Permutation Dropdown:**
+- Click dropdown → shows 4 options
+- Select option → updates local state immediately (visual feedback)
+- Debounced write to hardware after 50ms
+- Current selection always visible in dropdown
+- Works identically online and offline
+
+**Gate Type Toggle:**
+- Click segment → switches between Gate/Trigger
+- Updates local state immediately (visual feedback)
+- Debounced write to hardware after 50ms
+- Active segment highlighted with theme accent color
+- Works identically online and offline
+
+### AC7: Integration with Existing Controls
+
+Controls integrate seamlessly with existing playback controls:
+- **No visual disruption** - New controls fit naturally in existing layout
+- **No layout shift** - Addition of controls doesn't break existing responsive behavior
+- **Consistent styling** - Matches theme (colors, fonts, borders) of Direction, Start/End Step, Gate Length controls
+- **Logical grouping** - Permutation near Direction (playback variation), Gate Type near Gate Length (gate behavior)
+
+### AC8: Offline Mode Support
+
+Permutation and Gate Type edits work identically in offline mode:
+- Changes update local state immediately (visual feedback)
+- Dirty parameter tracking via `OfflineDistingMidiManager`
+- Sync indicator shows "Pending sync" when offline with unsaved changes
+- Reconnect to hardware → user prompted to sync dirty parameters
+- Bulk sync applies all changes
+
+### AC9: Test Coverage
+
+Comprehensive test coverage for permutation and gate type controls:
+
+**Unit Tests** (`test/services/step_sequencer_params_test.dart`):
+- Test discovery of permutation parameter
+- Test discovery of gateType parameter
+- Test fallback naming patterns (firmware version compatibility)
+- Test missing parameter handling (warning logged, null returned)
+
+**Widget Tests** (`test/ui/widgets/step_sequencer/playback_controls_test.dart`):
+- Test permutation dropdown renders with 4 options
+- Test gate type toggle renders with 2 states
+- Test permutation selection updates value
+- Test gate type toggle updates value
+- Test value clamping for out-of-range firmware values
+
+**Integration Tests**:
+- Test permutation change triggers debounced write
+- Test gate type toggle triggers debounced write
+- Test offline mode dirty tracking and sync
+- Test controls integrate with existing playback controls layout
+
+### AC10: Documentation
+
+Story documentation includes:
+- Parameter discovery patterns
+- UI control specifications (dropdown options, toggle states)
+- Firmware manual reference (pages 294-300)
+- Known firmware version differences (if any)
+- Integration points with existing playback controls</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <!-- Epic 10: Step Sequencer UI -->
+      <doc>
+        <path>docs/epics/epic-step-sequencer-ui.md</path>
+        <title>Epic: Visual Step Sequencer UI Widget</title>
+        <section>Overview and Architecture</section>
+        <snippet>Step Sequencer UI replaces default parameter list with intuitive visual grid interface. Uses AlgorithmViewRegistry pattern (same as NotesAlgorithmView). Reuses existing DistingCubit state management with per-parameter MIDI writes (50ms debounce). No separate cubit required.</snippet>
+      </doc>
+
+      <!-- Architecture Documentation -->
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture - Step Sequencer UI (Epic 10)</title>
+        <section>Parameter Discovery Service (lines 1052-1156)</section>
+        <snippet>StepSequencerParams discovers parameter structure from Slot data. Hardware uses "N:ParamName" format (e.g., "1:Pitch", "16:Mute"). Global parameters have no step prefix (e.g., "Direction", "Permutation", "Gate Type"). Discovery provides O(1) lookup via pre-built index map.</snippet>
+      </doc>
+
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture - Step Sequencer UI (Epic 10)</title>
+        <section>Global Parameter Mode Selector (lines 1085-1112)</section>
+        <snippet>Global parameters include: Direction (0-6), Permutation (0-3), Gate Type (0-1), Start/End Steps, Gate/Trigger/Glide lengths. Playback controls affect all 16 steps simultaneously. Pattern: horizontal scrollable row of controls.</snippet>
+      </doc>
+
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture - Step Sequencer UI (Epic 10)</title>
+        <section>Parameter Write Debouncing (lines 1185-1228)</section>
+        <snippet>ParameterWriteDebouncer prevents MIDI flood during rapid changes. Timer-based with per-parameter keys. 50ms delay balances responsiveness vs. MIDI traffic. Immediate visual update (setState) + debounced hardware write. Works identically in offline mode.</snippet>
+      </doc>
+
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture - Step Sequencer UI (Epic 10)</title>
+        <section>Offline Mode Support (lines 1229-1250)</section>
+        <snippet>Automatic via OfflineDistingMidiManager. Parameter changes update local state, dirty tracking automatic. SyncStatusIndicator shows sync status. Reconnect triggers bulk sync. No special widget handling required.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <!-- Core Parameter Discovery Service -->
+      <artifact>
+        <path>lib/services/step_sequencer_params.dart</path>
+        <kind>service</kind>
+        <symbol>StepSequencerParams</symbol>
+        <lines>1-156</lines>
+        <reason>Parameter discovery service for Step Sequencer. Must extend with permutation and gateType getters (lines 146-154 show pattern for global parameters). Discovery uses hardware naming pattern "ParamName" for globals (no step prefix).</reason>
+      </artifact>
+
+      <!-- Playback Controls Widget -->
+      <artifact>
+        <path>lib/ui/widgets/step_sequencer/playback_controls.dart</path>
+        <kind>widget</kind>
+        <symbol>PlaybackControls</symbol>
+        <lines>1-439</lines>
+        <reason>Primary file to extend for adding permutation dropdown and gate type toggle. Shows existing pattern: dropdown for Direction (lines 235-271), sliders for Gate/Trigger/Glide (lines 343-437). Uses responsive Wrap layout and ParameterWriteDebouncer for debounced updates.</reason>
+      </artifact>
+
+      <!-- Parameter Write Debouncer Utility -->
+      <artifact>
+        <path>lib/util/parameter_write_debouncer.dart</path>
+        <kind>utility</kind>
+        <symbol>ParameterWriteDebouncer</symbol>
+        <lines>1-62</lines>
+        <reason>Used by PlaybackControls for debouncing parameter writes (50ms delay). Already integrated in playback_controls.dart (line 40). Pattern: schedule('key', callback, Duration(milliseconds: 50)). Must dispose() in widget lifecycle.</reason>
+      </artifact>
+
+      <!-- State Management -->
+      <artifact>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>cubit</kind>
+        <symbol>DistingCubit.updateParameterValue</symbol>
+        <lines>unknown</lines>
+        <reason>Core method for parameter updates. Called by PlaybackControls._updateParameter (lines 83-114). Signature: updateParameterValue(algorithmIndex, parameterNumber, value, userIsChangingTheValue). No changes needed - existing infrastructure handles new controls.</reason>
+      </artifact>
+
+      <!-- Existing Tests -->
+      <artifact>
+        <path>test/services/step_sequencer_params_test.dart</path>
+        <kind>test</kind>
+        <symbol>StepSequencerParamsTest</symbol>
+        <lines>unknown</lines>
+        <reason>Existing unit tests for parameter discovery. Must add tests for permutation and gateType getter discovery. Reference for test patterns and mock slot creation.</reason>
+      </artifact>
+
+      <artifact>
+        <path>test/ui/widgets/step_sequencer/playback_controls_test.dart</path>
+        <kind>test</kind>
+        <symbol>PlaybackControlsTest</symbol>
+        <lines>unknown</lines>
+        <reason>Existing widget tests for playback controls. Must add tests for permutation dropdown (4 options) and gate type toggle (2 states). Reference for test patterns and widget test setup.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <flutter>
+        <package name="flutter" version="sdk" />
+        <package name="flutter_bloc" version="^9.1.1" />
+        <package name="bloc" version="^9.1.0" />
+        <package name="equatable" version="^2.0.7" />
+      </flutter>
+
+      <testing>
+        <package name="flutter_test" version="sdk" />
+        <package name="mockito" version="^5.5.1" />
+        <package name="mocktail" version="^1.0.4" />
+        <package name="test" version="^1.26.3" />
+        <package name="bloc_test" version="^10.0.0" />
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <!-- Development Constraints -->
+    <constraint type="pattern">DO NOT create new files - extend existing lib/services/step_sequencer_params.dart and lib/ui/widgets/step_sequencer/playback_controls.dart</constraint>
+    <constraint type="pattern">Global parameters use simple names without step prefix (e.g., "Permutation", "Gate Type" not "1:Permutation")</constraint>
+    <constraint type="pattern">All parameter updates must use ParameterWriteDebouncer with 50ms delay for sliders/continuous controls</constraint>
+    <constraint type="pattern">Discrete controls (dropdowns, toggles) update immediately without debouncing</constraint>
+    <constraint type="pattern">Zero tolerance for flutter analyze errors - code must pass with zero warnings</constraint>
+    <constraint type="architecture">Use existing DistingCubit.updateParameterValue() - no new state management required</constraint>
+    <constraint type="architecture">Offline mode support automatic via OfflineDistingMidiManager - no special widget handling</constraint>
+    <constraint type="ui">Responsive layout: Desktop (horizontal Wrap), Mobile (vertical Column with wrapping)</constraint>
+    <constraint type="ui">Consistent spacing (16px between controls in Wrap layout, 8px in compact mode)</constraint>
+    <constraint type="ui">Theme-aware styling - use existing dropdown and button styles from playback_controls.dart</constraint>
+    <constraint type="testing">Run all tests before commit - zero test failures allowed</constraint>
+    <constraint type="testing">Follow existing test patterns in step_sequencer_params_test.dart and playback_controls_test.dart</constraint>
+  </constraints>
+
+  <interfaces>
+    <!-- StepSequencerParams Interface Extension -->
+    <interface>
+      <name>StepSequencerParams.permutation</name>
+      <kind>getter property</kind>
+      <signature>int? get permutation => _paramIndices['Permutation'] ?? _paramIndices['Permute'];</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+      <description>Returns parameter index for Permutation parameter. Uses fallback naming patterns for firmware version compatibility. Returns null if parameter not found.</description>
+    </interface>
+
+    <interface>
+      <name>StepSequencerParams.gateType</name>
+      <kind>getter property</kind>
+      <signature>int? get gateType => _paramIndices['Gate Type'] ?? _paramIndices['Gate/Trigger'] ?? _paramIndices['Output Type'];</signature>
+      <path>lib/services/step_sequencer_params.dart</path>
+      <description>Returns parameter index for Gate Type parameter. Uses fallback naming patterns for firmware version compatibility. Returns null if parameter not found.</description>
+    </interface>
+
+    <!-- DistingCubit Interface (existing) -->
+    <interface>
+      <name>DistingCubit.updateParameterValue</name>
+      <kind>method</kind>
+      <signature>void updateParameterValue({required int algorithmIndex, required int parameterNumber, required int value, bool userIsChangingTheValue = false})</signature>
+      <path>lib/cubit/disting_cubit.dart</path>
+      <description>Core method for parameter updates. Used by PlaybackControls._updateParameter(). Handles both online (MIDI write) and offline (dirty tracking) modes automatically. No changes needed for this story.</description>
+    </interface>
+
+    <!-- ParameterWriteDebouncer Interface (existing) -->
+    <interface>
+      <name>ParameterWriteDebouncer.schedule</name>
+      <kind>method</kind>
+      <signature>void schedule(String key, void Function() callback, Duration delay)</signature>
+      <path>lib/util/parameter_write_debouncer.dart</path>
+      <description>Schedules debounced callback for parameter writes. Cancels any pending timer with same key. Used for continuous controls (sliders). Typical delay: Duration(milliseconds: 50).</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Tests follow Flutter widget testing patterns with BlocProvider for state management. Unit tests use mockito for mocking Slot data. Widget tests use flutter_test with pumpWidget and finder patterns. Integration tests verify full workflow (parameter change → debounce → cubit update). All tests must pass before commit (flutter test command). Test files colocated with source (test/ mirrors lib/ structure).
+    </standards>
+
+    <locations>
+      <location>test/services/step_sequencer_params_test.dart</location>
+      <location>test/ui/widgets/step_sequencer/playback_controls_test.dart</location>
+      <location>test/util/parameter_write_debouncer_test.dart</location>
+    </locations>
+
+    <ideas>
+      <!-- Unit Tests for Parameter Discovery -->
+      <test id="AC1" criteria="Parameter Discovery">
+        <description>Test StepSequencerParams.permutation getter discovers parameter</description>
+        <approach>Create mock Slot with "Permutation" parameter, verify getter returns correct index</approach>
+        <file>test/services/step_sequencer_params_test.dart</file>
+      </test>
+
+      <test id="AC1" criteria="Parameter Discovery">
+        <description>Test StepSequencerParams.gateType getter discovers parameter</description>
+        <approach>Create mock Slot with "Gate Type" parameter, verify getter returns correct index</approach>
+        <file>test/services/step_sequencer_params_test.dart</file>
+      </test>
+
+      <test id="AC1" criteria="Parameter Discovery - Fallbacks">
+        <description>Test permutation fallback naming patterns (Permute)</description>
+        <approach>Create mock Slot with "Permute" instead of "Permutation", verify getter finds fallback</approach>
+        <file>test/services/step_sequencer_params_test.dart</file>
+      </test>
+
+      <test id="AC1" criteria="Parameter Discovery - Missing">
+        <description>Test missing parameter handling (returns null, logs warning)</description>
+        <approach>Create mock Slot without permutation parameter, verify getter returns null</approach>
+        <file>test/services/step_sequencer_params_test.dart</file>
+      </test>
+
+      <!-- Widget Tests for UI Controls -->
+      <test id="AC3" criteria="Permutation Dropdown">
+        <description>Test permutation dropdown renders with 4 options</description>
+        <approach>Pump widget with mock slot, find DropdownButtonFormField, verify 4 DropdownMenuItem children (None, Variation 1, Variation 2, Variation 3)</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+
+      <test id="AC4" criteria="Gate Type Toggle">
+        <description>Test gate type toggle renders with 2 states</description>
+        <approach>Pump widget with mock slot, find SegmentedButton, verify 2 ButtonSegment children (Gate, Trigger)</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+
+      <test id="AC5" criteria="Value Validation">
+        <description>Test permutation value clamping for out-of-range firmware values</description>
+        <approach>Mock slot with permutation value = 127 (firmware max), verify UI displays clamped value (3) as "Variation 3"</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+
+      <test id="AC5" criteria="Value Validation">
+        <description>Test gate type value clamping for out-of-range firmware values</description>
+        <approach>Mock slot with gate type value = 127, verify UI displays clamped value (1) as "Trigger"</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+
+      <test id="AC6" criteria="Interaction - Dropdown">
+        <description>Test dropdown selection updates value</description>
+        <approach>Pump widget, tap dropdown, select "Variation 2", verify updateParameterValue called with value=2</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+
+      <test id="AC6" criteria="Interaction - Toggle">
+        <description>Test toggle state switching updates value</description>
+        <approach>Pump widget, tap "Trigger" segment, verify updateParameterValue called with value=1</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+
+      <!-- Integration Tests -->
+      <test id="AC6" criteria="Debounced Writes">
+        <description>Test permutation change triggers debounced write</description>
+        <approach>Verify ParameterWriteDebouncer.schedule called with 50ms delay when dropdown changes</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+
+      <test id="AC7" criteria="Layout Integration">
+        <description>Test controls integrate with existing playback controls layout</description>
+        <approach>Pump widget with full playback controls, verify Wrap contains Direction dropdown, Start/End inputs, Permutation dropdown, Gate Type toggle, and sliders in correct order</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+
+      <test id="AC8" criteria="Offline Mode">
+        <description>Test offline mode dirty tracking and sync (existing infrastructure)</description>
+        <approach>No new tests needed - existing OfflineDistingMidiManager tests cover this. Verify new controls work identically in offline mode by testing parameter updates trigger dirty tracking.</approach>
+        <file>test/ui/widgets/step_sequencer/playback_controls_test.dart</file>
+      </test>
+    </ideas>
+  </tests>
+</story-context>

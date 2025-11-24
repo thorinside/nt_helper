@@ -102,6 +102,8 @@ class StepSequencerParams {
       'Trigger Length': triggerLength != null,
       'Glide Time': glideTime != null,
       'Current Sequence': currentSequence != null,
+      'Permutation': permutation != null,
+      'Gate Type': gateType != null,
     };
 
     debugPrint('[StepSequencerParams] Global parameters found:');
@@ -152,4 +154,16 @@ class StepSequencerParams {
   int? get triggerLength => _paramIndices['Trigger length'];
   int? get glideTime => _paramIndices['Glide'];
   int? get currentSequence => _paramIndices['Sequence'];
+
+  // Permutation and Gate Type parameters (global playback controls)
+  int? get permutation => _findParameter('Permutation') ?? _findParameter('Permute');
+  int? get gateType =>
+      _findParameter('Gate Type') ??
+      _findParameter('Gate/Trigger') ??
+      _findParameter('Output Type');
+
+  /// Helper to find parameter by name, checking _paramIndices map
+  int? _findParameter(String name) {
+    return _paramIndices[name];
+  }
 }

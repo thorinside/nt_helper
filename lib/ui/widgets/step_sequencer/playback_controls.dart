@@ -9,8 +9,10 @@ import 'package:nt_helper/util/parameter_write_debouncer.dart';
 ///
 /// Provides controls for global playback parameters:
 /// - Direction (Forward, Reverse, Pendulum, Random, etc.)
+/// - Permutation (None, Variation 1-3)
 /// - Start Step (1-16)
 /// - End Step (1-16)
+/// - Gate Type (Gate, Trigger)
 /// - Gate Length (1-99%)
 /// - Trigger Length (1-100ms)
 /// - Glide Time (0-1000ms)
@@ -132,6 +134,8 @@ class _PlaybackControlsState extends State<PlaybackControls> {
           widget.params.gateLength,
           widget.params.triggerLength,
           widget.params.glideTime,
+          widget.params.permutation,
+          widget.params.gateType,
         ].whereType<int>(); // Filter out nulls
 
         for (final paramNum in playbackParamNumbers) {
@@ -177,12 +181,20 @@ class _PlaybackControlsState extends State<PlaybackControls> {
               child: _buildDirectionDropdown(slot),
             ),
             SizedBox(
+              width: 180,
+              child: _buildPermutationDropdown(slot),
+            ),
+            SizedBox(
               width: 100,
               child: _buildStartStepInput(slot),
             ),
             SizedBox(
               width: 100,
               child: _buildEndStepInput(slot),
+            ),
+            SizedBox(
+              width: 150,
+              child: _buildGateTypeToggle(slot),
             ),
             SizedBox(
               width: 250,
@@ -219,6 +231,16 @@ class _PlaybackControlsState extends State<PlaybackControls> {
                 const SizedBox(width: 8),
                 SizedBox(width: 80, child: _buildEndStepInput(slot)),
               ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: _buildPermutationDropdown(slot),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: _buildGateTypeToggle(slot),
             ),
             const SizedBox(height: 12),
             _buildGateLengthSlider(slot),
@@ -339,6 +361,71 @@ class _PlaybackControlsState extends State<PlaybackControls> {
     );
   }
 
+  Widget _buildPermutationDropdown(Slot slot) {
+    final permutationParam = widget.params.permutation;
+    if (permutationParam == null || permutationParam >= slot.parameters.length) {
+      return const SizedBox.shrink();
+    }
+
+    final currentValue = permutationParam < slot.values.length
+        ? slot.values[permutationParam].value.clamp(0, 3)
+        : 0;
+
+    return DropdownButtonFormField<int>(
+      initialValue: currentValue,
+      decoration: const InputDecoration(
+        labelText: 'Permutation',
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      items: const [
+        DropdownMenuItem(value: 0, child: Text('None')),
+        DropdownMenuItem(value: 1, child: Text('Variation 1')),
+        DropdownMenuItem(value: 2, child: Text('Variation 2')),
+        DropdownMenuItem(value: 3, child: Text('Variation 3')),
+      ],
+      onChanged: (value) {
+        if (value != null) {
+          _updateParameter(permutationParam, value);
+        }
+      },
+    );
+  }
+
+  Widget _buildGateTypeToggle(Slot slot) {
+    final gateTypeParam = widget.params.gateType;
+    if (gateTypeParam == null || gateTypeParam >= slot.parameters.length) {
+      return const SizedBox.shrink();
+    }
+
+    final currentValue = gateTypeParam < slot.values.length
+        ? slot.values[gateTypeParam].value.clamp(0, 1)
+        : 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Gate Type',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 0, label: Text('Gate')),
+            ButtonSegment(value: 1, label: Text('Trigger')),
+          ],
+          selected: {currentValue},
+          onSelectionChanged: (Set<int> selected) {
+            if (selected.isNotEmpty) {
+              _updateParameter(gateTypeParam, selected.first);
+            }
+          },
+        ),
+      ],
+    );
+  }
 
   Widget _buildGateLengthSlider(Slot slot) {
     final gateLengthParam = widget.params.gateLength;

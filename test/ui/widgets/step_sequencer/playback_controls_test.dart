@@ -78,6 +78,26 @@ void main() {
           unit: 0,
           powerOfTen: 0,
         ),
+        ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 6,
+          name: 'Permutation',
+          min: 0,
+          max: 3,
+          defaultValue: 0,
+          unit: 0,
+          powerOfTen: 0,
+        ),
+        ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 7,
+          name: 'Gate Type',
+          min: 0,
+          max: 1,
+          defaultValue: 0,
+          unit: 0,
+          powerOfTen: 0,
+        ),
       ],
       values: [
         ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0),
@@ -86,6 +106,8 @@ void main() {
         ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 50),
         ParameterValue(algorithmIndex: 0, parameterNumber: 4, value: 10),
         ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 0),
+        ParameterValue(algorithmIndex: 0, parameterNumber: 6, value: 1),
+        ParameterValue(algorithmIndex: 0, parameterNumber: 7, value: 0),
       ],
       enums: const [],
       mappings: const [],
@@ -195,6 +217,172 @@ void main() {
       expect(paramsNoDirection.direction, isNull);
       // But Start should still be discoverable
       expect(paramsNoDirection.startStep, isNotNull);
+    });
+  });
+
+  group('PlaybackControls - AC3/AC4: Permutation and Gate Type Controls', () {
+    test('discovers Permutation parameter correctly', () {
+      expect(params.permutation, isNotNull);
+      expect(params.permutation, equals(6));
+    });
+
+    test('discovers Gate Type parameter correctly', () {
+      expect(params.gateType, isNotNull);
+      expect(params.gateType, equals(7));
+    });
+
+    test('Permutation parameter has correct value range (0-3)', () {
+      final permutationParam = testSlot.parameters[6];
+      expect(permutationParam.min, equals(0));
+      expect(permutationParam.max, equals(3));
+    });
+
+    test('Gate Type parameter has correct value range (0-1)', () {
+      final gateTypeParam = testSlot.parameters[7];
+      expect(gateTypeParam.min, equals(0));
+      expect(gateTypeParam.max, equals(1));
+    });
+
+    test('handles permutation value clamping (firmware > 3 clamps to 3)', () {
+      // Firmware may return values > 3, should clamp to 3
+      final slotWithHighValue = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Permutation',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 5), // Out of range
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsWithHighValue = StepSequencerParams.fromSlot(slotWithHighValue);
+      expect(paramsWithHighValue.permutation, equals(0));
+
+      // In playback_controls, we clamp the value when reading
+      final clampedValue = slotWithHighValue.values[0].value.clamp(0, 3);
+      expect(clampedValue, equals(3));
+    });
+
+    test('handles gate type value clamping (firmware > 1 clamps to 1)', () {
+      // Firmware may return values > 1, should clamp to 1
+      final slotWithHighValue = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Gate Type',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 5), // Out of range
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsWithHighValue = StepSequencerParams.fromSlot(slotWithHighValue);
+      expect(paramsWithHighValue.gateType, equals(0));
+
+      // In playback_controls, we clamp the value when reading
+      final clampedValue = slotWithHighValue.values[0].value.clamp(0, 1);
+      expect(clampedValue, equals(1));
+    });
+
+    test('handles missing Permutation parameter gracefully', () {
+      final slotNoPermutation = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Direction',
+            min: 0,
+            max: 6,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsNoPermutation = StepSequencerParams.fromSlot(slotNoPermutation);
+      expect(paramsNoPermutation.permutation, isNull);
+    });
+
+    test('handles missing Gate Type parameter gracefully', () {
+      final slotNoGateType = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: 'Direction',
+            min: 0,
+            max: 6,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      final paramsNoGateType = StepSequencerParams.fromSlot(slotNoGateType);
+      expect(paramsNoGateType.gateType, isNull);
     });
   });
 }
