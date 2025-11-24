@@ -536,11 +536,15 @@ class _StepSequencerViewState extends State<StepSequencerView> {
 
   /// Shows the randomize settings dialog
   void _showRandomizeSettingsDialog() {
+    final cubit = context.read<DistingCubit>();
     showDialog(
       context: context,
-      builder: (context) => RandomizeSettingsDialog(
-        slot: widget.slot,
-        slotIndex: widget.slotIndex,
+      builder: (context) => BlocProvider.value(
+        value: cubit,
+        child: RandomizeSettingsDialog(
+          slot: widget.slot,
+          slotIndex: widget.slotIndex,
+        ),
       ),
     );
   }
@@ -552,14 +556,18 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   void _showParameterPages() {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 600;
+    final cubit = context.read<DistingCubit>();
 
     if (isMobile) {
       // Mobile: Full-screen navigation
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => ParameterPagesView(
-            slot: widget.slot,
-            slotIndex: widget.slotIndex,
+          builder: (context) => BlocProvider.value(
+            value: cubit,
+            child: ParameterPagesView(
+              slot: widget.slot,
+              slotIndex: widget.slotIndex,
+            ),
           ),
         ),
       );
@@ -567,9 +575,12 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       // Desktop: Dialog
       showDialog(
         context: context,
-        builder: (context) => ParameterPagesView(
-          slot: widget.slot,
-          slotIndex: widget.slotIndex,
+        builder: (context) => BlocProvider.value(
+          value: cubit,
+          child: ParameterPagesView(
+            slot: widget.slot,
+            slotIndex: widget.slotIndex,
+          ),
         ),
       );
     }
