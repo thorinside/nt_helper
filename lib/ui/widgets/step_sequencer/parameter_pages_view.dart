@@ -28,8 +28,7 @@ class ParameterPagesView extends StatefulWidget {
 class _ParameterPagesViewState extends State<ParameterPagesView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late Map<ParamPage, List<ParameterInfo>> _groupedParameters;
-  late List<ParamPage> _availablePages;
+  late List<ParameterPage> _availableFirmwarePages;
 
   @override
   void initState() {
@@ -37,22 +36,36 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
     _initializePages();
   }
 
-  /// Initialize pages by grouping parameters and filtering empty pages
+  /// Initialize pages using firmware-provided page structure
+  ///
+  /// Filters out parameters that are handled by custom Step Sequencer UI
   void _initializePages() {
-    // Group all parameters by page
-    _groupedParameters = ParameterPageAssigner.groupParametersByPage(
-      widget.slot.parameters,
-    );
+    // Get the firmware-provided pages
+    final firmwarePages = widget.slot.pages.pages;
 
-    // Filter to only pages with parameters
-    _availablePages = _groupedParameters.entries
-        .where((entry) => entry.value.isNotEmpty)
-        .map((entry) => entry.key)
+    // Build the set of custom UI parameters from all slot parameters
+    ParameterPageAssigner.buildCustomUISet(widget.slot.parameters);
+
+    // Parameters handled by custom Step Sequencer UI (to exclude)
+    final customUIParameters = ParameterPageAssigner.getStepSequencerCustomUIParameters();
+
+    // Filter firmware pages to only include parameters not in custom UI
+    _availableFirmwarePages = firmwarePages
+        .map((page) {
+          final filteredParams = page.parameters
+              .where((paramNum) => !customUIParameters.contains(paramNum))
+              .toList();
+          return ParameterPage(
+            name: page.name,
+            parameters: filteredParams,
+          );
+        })
+        .where((page) => page.parameters.isNotEmpty)
         .toList();
 
     // Initialize tab controller with number of available pages
     _tabController = TabController(
-      length: _availablePages.length,
+      length: _availableFirmwarePages.length,
       vsync: this,
     );
   }
@@ -69,7 +82,7 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
     final isMobile = width < 600;
 
     // Handle case where no parameters are available for pages
-    if (_availablePages.isEmpty) {
+    if (_availableFirmwarePages.isEmpty) {
       return _buildEmptyState(context, isMobile);
     }
 
@@ -91,17 +104,16 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
           bottom: TabBar(
             controller: _tabController,
             isScrollable: true,
-            tabs: _availablePages.map((page) {
-              return Tab(text: ParameterPageAssigner.getPageName(page));
+            tabs: _availableFirmwarePages.map((page) {
+              return Tab(text: page.name);
             }).toList(),
           ),
         ),
         body: TabBarView(
           controller: _tabController,
-          children: _availablePages.map((page) {
-            final parameters = _groupedParameters[page]!;
+          children: _availableFirmwarePages.map((page) {
             return _ParameterPageContent(
-              parameters: parameters,
+              parameterNumbers: page.parameters,
               slot: widget.slot,
               slotIndex: widget.slotIndex,
             );
@@ -123,17 +135,16 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
               bottom: TabBar(
                 controller: _tabController,
                 isScrollable: false,
-                tabs: _availablePages.map((page) {
-                  return Tab(text: ParameterPageAssigner.getPageName(page));
+                tabs: _availableFirmwarePages.map((page) {
+                  return Tab(text: page.name);
                 }).toList(),
               ),
             ),
             body: TabBarView(
               controller: _tabController,
-              children: _availablePages.map((page) {
-                final parameters = _groupedParameters[page]!;
+              children: _availableFirmwarePages.map((page) {
                 return _ParameterPageContent(
-                  parameters: parameters,
+                  parameterNumbers: page.parameters,
                   slot: widget.slot,
                   slotIndex: widget.slotIndex,
                 );
@@ -207,12 +218,12 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
 ///
 /// Displays a scrollable list of familiar parameter editors for the given parameters.
 class _ParameterPageContent extends StatelessWidget {
-  final List<ParameterInfo> parameters;
+  final List<int> parameterNumbers;
   final Slot slot;
   final int slotIndex;
 
   const _ParameterPageContent({
-    required this.parameters,
+    required this.parameterNumbers,
     required this.slot,
     required this.slotIndex,
   });
@@ -252,10 +263,10 @@ class _ParameterPageContent extends StatelessWidget {
         return ListView.builder(
           cacheExtent: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-          itemCount: parameters.length,
+          itemCount: parameterNumbers.length,
           itemBuilder: (context, index) {
-            final parameter = parameters[index];
-            final paramNum = parameter.parameterNumber;
+            final paramNum = parameterNumbers[index];
+            final parameter = currentSlot.parameters.elementAtOrNull(paramNum);
 
             // Use safe access with bounds checking (like ParameterListView does)
             final value = currentSlot.values.elementAtOrNull(paramNum);
@@ -264,7 +275,7 @@ class _ParameterPageContent extends StatelessWidget {
             final valueString = currentSlot.valueStrings.elementAtOrNull(paramNum);
 
             // Skip if we don't have essential data
-            if (value == null) {
+            if (parameter == null || value == null) {
               return const SizedBox.shrink();
             }
 

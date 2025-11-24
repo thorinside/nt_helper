@@ -93,6 +93,32 @@ class ParameterPageAssigner {
     return RegExp(r'^\d+:mod$', caseSensitive: false).hasMatch(name);
   }
 
+  /// Returns the set of parameter numbers handled by custom Step Sequencer UI
+  ///
+  /// These parameters are excluded from Parameter Pages view because they have
+  /// dedicated UI components in the Step Sequencer.
+  /// Must call _buildCustomUISet first with all parameters.
+  static Set<int> getStepSequencerCustomUIParameters() {
+    return _customUIParamNumbers ?? {};
+  }
+
+  // Cache of parameter numbers handled by custom UI (set by first call to _buildCustomUISet)
+  static Set<int>? _customUIParamNumbers;
+
+  /// Builds the set of parameter numbers handled by custom UI
+  static Set<int> buildCustomUISet(List<ParameterInfo> allParams) {
+    if (_customUIParamNumbers != null) {
+      return _customUIParamNumbers!;
+    }
+
+    _customUIParamNumbers = allParams
+        .where((p) => !shouldShowInParameterPages(p))
+        .map((p) => p.parameterNumber)
+        .toSet();
+
+    return _customUIParamNumbers!;
+  }
+
   /// Filters parameters that should appear in Parameter Pages
   ///
   /// Excludes parameters already covered by the custom Step Sequencer UI:
