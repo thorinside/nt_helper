@@ -165,14 +165,7 @@ class _PlaybackControlsState extends State<PlaybackControls> {
 
   /// Updates a parameter with optional debouncing
   void _updateParameter(int? paramNumber, int value, {bool debounce = false}) {
-    if (paramNumber == null) {
-      // Parameter not found - this is expected for some firmware versions
-      debugPrint('[PlaybackControls] Parameter not available in this firmware version');
-      return;
-    }
-
-    if (paramNumber >= widget.slot.values.length) {
-      debugPrint('[PlaybackControls] Invalid parameter number: $paramNumber');
+    if (paramNumber == null || paramNumber >= widget.slot.values.length) {
       return;
     }
 

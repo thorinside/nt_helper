@@ -17,7 +17,6 @@ class StepSequencerParams {
 
   StepSequencerParams.fromSlot(Slot slot) : numSteps = _discoverNumSteps(slot) {
     _buildParameterMap(slot.parameters);
-    _logDiscoveryResults();
   }
 
   /// Discovers the number of steps by finding the highest step number
@@ -39,7 +38,6 @@ class StepSequencerParams {
     }
 
     final discovered = maxStep > 0 ? maxStep : 16;
-    debugPrint('[StepSequencerParams] Discovered $discovered steps');
     return discovered;
   }
 
@@ -52,94 +50,7 @@ class StepSequencerParams {
     }
   }
 
-  /// Logs discovery results for debugging
-  void _logDiscoveryResults() {
-    debugPrint('[StepSequencerParams] Total parameters indexed: ${_paramIndices.length}');
 
-    // Count step parameters
-    int pitchCount = 0;
-    int velocityCount = 0;
-    int modCount = 0;
-    int divisionCount = 0;
-    int patternCount = 0;
-    int tiesCount = 0;
-    int muteCount = 0;
-    int skipCount = 0;
-    int resetCount = 0;
-    int repeatCount = 0;
-
-    for (int step = 1; step <= numSteps; step++) {
-      if (getPitch(step) != null) pitchCount++;
-      if (getVelocity(step) != null) velocityCount++;
-      if (getMod(step) != null) modCount++;
-      if (getDivision(step) != null) divisionCount++;
-      if (getPattern(step) != null) patternCount++;
-      if (getTies(step) != null) tiesCount++;
-      if (getMute(step) != null) muteCount++;
-      if (getSkip(step) != null) skipCount++;
-      if (getReset(step) != null) resetCount++;
-      if (getRepeat(step) != null) repeatCount++;
-    }
-
-    debugPrint('[StepSequencerParams] Step parameters found:');
-    debugPrint('  - Pitch: $pitchCount/$numSteps');
-    debugPrint('  - Velocity: $velocityCount/$numSteps');
-    debugPrint('  - Mod: $modCount/$numSteps');
-    debugPrint('  - Division: $divisionCount/$numSteps');
-    debugPrint('  - Pattern: $patternCount/$numSteps');
-    debugPrint('  - Ties: $tiesCount/$numSteps');
-    debugPrint('  - Mute: $muteCount/$numSteps');
-    debugPrint('  - Skip: $skipCount/$numSteps');
-    debugPrint('  - Reset: $resetCount/$numSteps');
-    debugPrint('  - Repeat: $repeatCount/$numSteps');
-
-    // Check global parameters
-    final globalParams = <String, bool>{
-      'Direction': direction != null,
-      'Start Step': startStep != null,
-      'End Step': endStep != null,
-      'Gate Length': gateLength != null,
-      'Trigger Length': triggerLength != null,
-      'Glide Time': glideTime != null,
-      'Current Sequence': currentSequence != null,
-      'Permutation': permutation != null,
-      'Gate Type': gateType != null,
-    };
-
-    debugPrint('[StepSequencerParams] Global parameters found:');
-    globalParams.forEach((name, found) {
-      debugPrint('  - $name: ${found ? "✓" : "✗"}');
-      if (!found) {
-        debugPrint('    [WARNING] Global parameter "$name" not found');
-      }
-    });
-
-    // Check randomize parameters
-    final randomizeParams = <String, bool>{
-      'Randomise': randomise != null,
-      'Randomise what': randomiseWhat != null,
-      'Note distribution': noteDistribution != null,
-      'Min note': minNote != null,
-      'Max note': maxNote != null,
-      'Mean note': meanNote != null,
-      'Note deviation': noteDeviation != null,
-      'Min repeat': minRepeat != null,
-      'Max repeat': maxRepeat != null,
-      'Min ratchet': minRatchet != null,
-      'Max ratchet': maxRatchet != null,
-      'Note probability': noteProbability != null,
-      'Tie probability': tieProbability != null,
-      'Accent probability': accentProbability != null,
-      'Repeat probability': repeatProbability != null,
-      'Ratchet probability': ratchetProbability != null,
-      'Unaccented velocity': unaccentedVelocity != null,
-    };
-
-    debugPrint('[StepSequencerParams] Randomize parameters found:');
-    randomizeParams.forEach((name, found) {
-      debugPrint('  - $name: ${found ? "✓" : "✗"}');
-    });
-  }
 
   /// Gets parameter index for a specific step and parameter type
   ///
@@ -151,8 +62,6 @@ class StepSequencerParams {
       return _paramIndices[paramName];
     }
 
-    // Parameter not found - log warning
-    debugPrint('[StepSequencerParams] WARNING: Parameter not found - $paramName');
     return null;
   }
 
