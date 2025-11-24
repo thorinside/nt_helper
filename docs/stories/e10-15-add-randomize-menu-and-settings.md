@@ -1,6 +1,6 @@
 # Story 10.15: Add Randomize Menu and Settings
 
-Status: review
+Status: done
 
 ## Story
 
