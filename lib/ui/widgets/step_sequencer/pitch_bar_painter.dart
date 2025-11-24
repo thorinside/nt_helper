@@ -18,6 +18,7 @@ class PitchBarPainter extends CustomPainter {
   final BarDisplayMode displayMode; // Which rendering mode to use
   final int minValue; // Minimum value for range
   final int maxValue; // Maximum value for range
+  final int? validBitCount; // Number of valid bits in bitPattern mode (1-8), null defaults to 8
 
   const PitchBarPainter({
     required this.pitchValue,
@@ -25,6 +26,7 @@ class PitchBarPainter extends CustomPainter {
     this.displayMode = BarDisplayMode.continuous,
     this.minValue = 0,
     this.maxValue = 127,
+    this.validBitCount,
   });
 
   @override
@@ -85,12 +87,16 @@ class PitchBarPainter extends CustomPainter {
     );
   }
 
-  /// Paint 8-segment bit pattern display (for Ties/Pattern parameters)
+  /// Paint 8-segment bit pattern display (for Ties/Parameter parameters)
   void _paintBitPattern(Canvas canvas, Size size) {
     const int numBits = 8;
     final segmentHeight = size.height / numBits;
+    final effectiveValidBitCount = validBitCount ?? 8; // Default to 8 if not specified
 
     for (int bit = 0; bit < numBits; bit++) {
+      // Check if this bit is valid based on division subdivisions
+      final isValidBit = bit < effectiveValidBitCount;
+
       // Check if this bit is set in the value
       final isSet = (pitchValue >> bit) & 1 == 1;
 
@@ -98,24 +104,38 @@ class PitchBarPainter extends CustomPainter {
       final y = size.height - (bit + 1) * segmentHeight;
       final rect = Rect.fromLTWH(0, y, size.width, segmentHeight - 1);
 
-      // Draw filled or empty segment
-      if (isSet) {
+      // Draw filled, empty, or disabled segment
+      if (!isValidBit) {
+        // Disabled bit (grey background, non-clickable)
+        final disabledPaint = Paint()
+          ..color = Colors.grey.shade400.withValues(alpha: 0.4);
+        canvas.drawRect(rect, disabledPaint);
+
+        // Draw disabled border
+        final borderPaint = Paint()
+          ..color = Colors.grey.shade500
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.5;
+        canvas.drawRect(rect, borderPaint);
+      } else if (isSet) {
         // Filled segment (bright color)
         final fillPaint = Paint()..color = barColor;
         canvas.drawRect(rect, fillPaint);
-      } else {
-        // Empty segment (light background)
-        final emptyPaint = Paint()
-          ..color = Colors.grey.shade300.withValues(alpha: 0.5);
-        canvas.drawRect(rect, emptyPaint);
-      }
 
-      // Draw border around segment
-      final borderPaint = Paint()
-        ..color = isSet ? barColor : Colors.grey.shade400
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.5;
-      canvas.drawRect(rect, borderPaint);
+        // Draw border for filled segment
+        final borderPaint = Paint()
+          ..color = barColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.5;
+        canvas.drawRect(rect, borderPaint);
+      } else {
+        // Empty enabled segment (no background, just border)
+        final borderPaint = Paint()
+          ..color = Colors.grey.shade400
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.5;
+        canvas.drawRect(rect, borderPaint);
+      }
     }
   }
 
@@ -128,9 +148,10 @@ class PitchBarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant PitchBarPainter oldDelegate) {
-    // Repaint if value, color, or display mode changes
+    // Repaint if value, color, display mode, or valid bit count changes
     return pitchValue != oldDelegate.pitchValue ||
         barColor != oldDelegate.barColor ||
-        displayMode != oldDelegate.displayMode;
+        displayMode != oldDelegate.displayMode ||
+        (validBitCount ?? 8) != (oldDelegate.validBitCount ?? 8);
   }
 }

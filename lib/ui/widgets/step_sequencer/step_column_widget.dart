@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/scale_quantizer.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
+import 'package:nt_helper/ui/widgets/step_sequencer/bit_pattern_editor.dart';
 import 'package:nt_helper/ui/widgets/step_sequencer/pitch_bar_painter.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
 
@@ -96,70 +97,82 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
 
           // Main parameter bar (tappable and draggable for editing current parameter)
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return GestureDetector(
-                  onTapDown: (details) {
-                    // For bit pattern modes, toggle the tapped bit; for continuous, handle drag
-                    if (_isBitPatternMode()) {
-                      _handleBitPatternTap(
-                        details.localPosition.dy,
-                        constraints.maxHeight,
+            child: _isBitPatternMode()
+                ? BitPatternEditor(
+                    value: _getCurrentParameterValue(),
+                    color: _getActiveParameterColor(),
+                    validBitCount: _getValidBitCount(),
+                    onChanged: _updateParameter,
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SizedBox(
+                        width: constraints.maxWidth,
+                        height: constraints.maxHeight,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapUp: (details) {
+                            _handleBarInteraction(
+                              details.localPosition.dy,
+                              constraints.maxHeight,
+                            );
+                          },
+                          onVerticalDragUpdate: (details) {
+                            _handleBarInteraction(
+                              details.localPosition.dy,
+                              constraints.maxHeight,
+                            );
+                          },
+                          child: CustomPaint(
+                            painter: PitchBarPainter(
+                              pitchValue: _getCurrentParameterValue(),
+                              barColor: _getActiveParameterColor(),
+                              displayMode: _getDisplayMode(),
+                              minValue: _getParameterMin(),
+                              maxValue: _getParameterMax(),
+                              validBitCount: _getValidBitCount(),
+                            ),
+                          ),
+                        ),
                       );
-                    } else {
-                      _handleBarInteraction(
-                        details.localPosition.dy,
-                        constraints.maxHeight,
-                      );
-                    }
-                  },
-                  onVerticalDragUpdate: (details) {
-                    // Only continuous parameters support drag
-                    if (!_isBitPatternMode()) {
-                      _handleBarInteraction(
-                        details.localPosition.dy,
-                        constraints.maxHeight,
-                      );
-                    }
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: constraints.maxHeight,
-                    color: Colors.transparent,
-                    child: CustomPaint(
-                      size: Size(double.infinity, constraints.maxHeight),
-                      painter: PitchBarPainter(
-                        pitchValue: _getCurrentParameterValue(),
-                        barColor: _getActiveParameterColor(),
-                        displayMode: _getDisplayMode(),
-                        minValue: _getParameterMin(),
-                        maxValue: _getParameterMax(),
-                      ),
-                    ),
+                    },
                   ),
-                );
-              },
-            ),
           ),
           const SizedBox(height: 4),
 
           // Current parameter value text + warning (fixed height to prevent layout shift)
+          // For Division mode, show subdivision label instead of division value
           ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 22, maxHeight: 22),
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Positioned(
-                  top: 0,
-                  child: Text(
-                    _formatStepValue(_getCurrentParameterValue()),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: _getActiveParameterColor(),
+                // Show subdivision label for Division mode, otherwise show value
+                if (widget.activeParameter == StepParameter.division)
+                  Positioned(
+                    top: 0,
+                    child: Text(
+                      _getSubdivisionLabel(_getCurrentParameterValue()),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: _getActiveParameterColor(),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                else
+                  Positioned(
+                    top: 0,
+                    child: Text(
+                      _formatStepValue(_getCurrentParameterValue()),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: _getActiveParameterColor(),
+                      ),
                     ),
                   ),
-                ),
                 // Warning indicator if Pattern = 0 (no substeps active)
                 if (_shouldShowPatternWarning())
                   Positioned(
@@ -176,21 +189,6 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
               ],
             ),
           ),
-
-          // Subdivision label (only visible in Division mode)
-          if (widget.activeParameter == StepParameter.division)
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Text(
-                _getSubdivisionLabel(_getCurrentParameterValue()),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: _getTextColor(isDark).withValues(alpha: 0.7),
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
         ],
       ),
     );
@@ -200,6 +198,28 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
   bool _isBitPatternMode() {
     return widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties;
+  }
+
+  /// Get the current step's division value
+  int _getCurrentDivisionValue() {
+    final params = StepSequencerParams.fromSlot(widget.slot);
+    final step = widget.stepIndex + 1;
+    final divisionIndex = params.getDivision(step);
+
+    if (divisionIndex != null && divisionIndex < widget.slot.values.length) {
+      return widget.slot.values[divisionIndex].value;
+    }
+    return 7; // Default division (no subdivision)
+  }
+
+  /// Get the number of valid bits for Pattern/Ties based on current Division
+  /// Returns 1-8 based on subdivision count
+  int _getValidBitCount() {
+    if (!_isBitPatternMode()) {
+      return 8; // Not in bit pattern mode, return max
+    }
+    final divisionValue = _getCurrentDivisionValue();
+    return _calculateSubdivisions(divisionValue);
   }
 
   /// Check if we should show the pattern warning (Pattern = 0 means no substeps active)
@@ -239,20 +259,6 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
             userIsChangingTheValue: true,
           );
     }
-  }
-
-  /// Handle tap on bit pattern bar to toggle individual bits
-  void _handleBitPatternTap(double localY, double barHeight) {
-    // Calculate which bit segment was tapped (0-7)
-    // Inverted: top is bit 7 (MSB), bottom is bit 0 (LSB)
-    final segmentHeight = barHeight / 8;
-    final bitIndex = (7 - (localY / segmentHeight).floor()).clamp(0, 7);
-
-    // Get current value and toggle the tapped bit
-    final currentValue = _getCurrentParameterValue();
-    final newValue = currentValue ^ (1 << bitIndex);
-
-    _updateParameter(newValue);
   }
 
   /// Handle tap or drag on pitch bar to edit active parameter
@@ -518,9 +524,9 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
     final subdivisions = _calculateSubdivisions(divisionValue);
 
     if (divisionValue < 7) {
-      return '$subdivisions Ratchets';
+      return '$subdivisions RA'; // Ratchets abbreviated
     } else if (divisionValue > 7) {
-      return '$subdivisions Repeats';
+      return '$subdivisions RE'; // Repeats abbreviated
     } else {
       return '1'; // Division = 7, no subdivision
     }
