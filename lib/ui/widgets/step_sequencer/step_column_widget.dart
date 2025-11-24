@@ -176,6 +176,21 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
               ],
             ),
           ),
+
+          // Subdivision label (only visible in Division mode)
+          if (widget.activeParameter == StepParameter.division)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                _getSubdivisionLabel(_getCurrentParameterValue()),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _getTextColor(isDark).withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
         ],
       ),
     );
@@ -477,5 +492,37 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
         widget.activeParameter == StepParameter.skip ||
         widget.activeParameter == StepParameter.reset ||
         widget.activeParameter == StepParameter.repeat;
+  }
+
+  /// Calculate number of subdivisions from Division parameter value
+  /// Formula: subdivisions = |Division - 7| + 1
+  /// - Division = 7 (default) → 1 subdivision (no ratchet/repeat)
+  /// - Division < 7 → ratchets (fast subdivided notes)
+  /// - Division > 7 → repeats (multiple sustained notes)
+  int _calculateSubdivisions(int divisionValue) {
+    // Clamp to valid range (0-14)
+    final clampedDivision = divisionValue.clamp(0, 14);
+
+    // Calculate distance from default (7)
+    final distanceFromDefault = (clampedDivision - 7).abs();
+
+    // Subdivisions = distance + 1
+    return distanceFromDefault + 1;
+  }
+
+  /// Get subdivision label text based on Division parameter value
+  /// - Division < 7: "X Ratchets" (e.g., "2 Ratchets")
+  /// - Division > 7: "X Repeats" (e.g., "3 Repeats")
+  /// - Division = 7: "1" (no subdivision)
+  String _getSubdivisionLabel(int divisionValue) {
+    final subdivisions = _calculateSubdivisions(divisionValue);
+
+    if (divisionValue < 7) {
+      return '$subdivisions Ratchets';
+    } else if (divisionValue > 7) {
+      return '$subdivisions Repeats';
+    } else {
+      return '1'; // Division = 7, no subdivision
+    }
   }
 }

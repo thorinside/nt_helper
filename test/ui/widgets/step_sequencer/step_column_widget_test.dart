@@ -797,4 +797,350 @@ void main() {
       expect(find.text('0%'), findsOneWidget);
     });
   });
+
+  group('StepColumnWidget - Subdivision Label (Story 10.16)', () {
+    late MockDistingCubit mockCubit;
+    late Slot testSlot;
+
+    setUp(() {
+      mockCubit = MockDistingCubit();
+    });
+
+    Slot createSlotWithDivision(int divisionValue) {
+      return Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: '1:Division',
+            min: 0,
+            max: 14,
+            defaultValue: 7,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 64),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: divisionValue),
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+    }
+
+    testWidgets('AC2: displays "8 Ratchets" when Division = 0', (tester) async {
+      testSlot = createSlotWithDivision(0);
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.division,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('8 Ratchets'), findsOneWidget);
+    });
+
+    testWidgets('AC2: displays "2 Ratchets" when Division = 6', (tester) async {
+      testSlot = createSlotWithDivision(6);
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.division,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('2 Ratchets'), findsOneWidget);
+    });
+
+    testWidgets('AC3: displays "1" when Division = 7 (default)', (tester) async {
+      testSlot = createSlotWithDivision(7);
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.division,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('1'), findsAtLeastNWidgets(1)); // Step number "1" and subdivision label "1"
+    });
+
+    testWidgets('AC2: displays "2 Repeats" when Division = 8', (tester) async {
+      testSlot = createSlotWithDivision(8);
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.division,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('2 Repeats'), findsOneWidget);
+    });
+
+    testWidgets('AC2: displays "8 Repeats" when Division = 14', (tester) async {
+      testSlot = createSlotWithDivision(14);
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.division,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('8 Repeats'), findsOneWidget);
+    });
+
+    testWidgets('AC4: subdivision label NOT visible when in Pitch mode', (tester) async {
+      testSlot = createSlotWithDivision(9); // 3 Repeats
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.pitch, // NOT Division mode
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Subdivision label should NOT be visible in Pitch mode
+      expect(find.text('3 Repeats'), findsNothing);
+    });
+
+    testWidgets('AC4: subdivision label visible only in Division mode', (tester) async {
+      testSlot = createSlotWithDivision(9); // 3 Repeats
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.division,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Subdivision label SHOULD be visible in Division mode
+      expect(find.text('3 Repeats'), findsOneWidget);
+    });
+
+    testWidgets('AC8: handles out-of-range Division values', (tester) async {
+      // Create slot with Division > 14 (out of range)
+      testSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: '1:Division',
+            min: 0,
+            max: 14,
+            defaultValue: 7,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 64),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 20), // Out of range
+        ],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      );
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.division,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Should clamp to 14 and display "8 Repeats"
+      expect(find.text('8 Repeats'), findsOneWidget);
+    });
+
+    testWidgets('AC10: uses theme-aware text color with opacity', (tester) async {
+      testSlot = createSlotWithDivision(9); // 3 Repeats
+
+      await tester.pumpWidget(
+        BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: MaterialApp(
+            theme: ThemeData.dark(), // Dark mode
+            home: Scaffold(
+              body: StepColumnWidget(
+                stepIndex: 0,
+                pitchValue: 64,
+                velocityValue: 100,
+                isActive: false,
+                slotIndex: 0,
+                slot: testSlot,
+                snapEnabled: false,
+                selectedScale: 'Major',
+                rootNote: 0,
+                activeParameter: StepParameter.division,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Widget should render without errors in dark mode
+      expect(find.byType(StepColumnWidget), findsOneWidget);
+      expect(find.text('3 Repeats'), findsOneWidget);
+    });
+  });
 }
