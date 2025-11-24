@@ -140,4 +140,8 @@ development_status:
   e10-17-use-firmware-enum-strings-for-dropdowns: done
   e10-18-add-parameter-pages-view: done
   e10-19-refine-parameter-pages-with-firmware-structure: done
+  e10-19-fix-gate-type-ui-and-parameter-refresh: done
+  e10-20-reposition-quantize-controls-per-design: done
+  e10-21-add-drag-to-paint-values: done
+  e10-22-add-undo-for-quantization: done
   epic-10-retrospective: optional

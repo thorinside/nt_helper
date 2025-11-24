@@ -857,7 +857,13 @@ void updateStepPitch(int step, int value) {
 18. **Story 18** - Add parameter pages view ✅
 19. **Story 19** - Refine parameter pages with firmware structure ✅
 
-**Epic Status:** 19 of 19 stories complete (100%)
+**Completed Refinement Stories:**
+20. **Story 20** - Fix Gate Type UI and parameter refresh ✅ ([e10-19](../stories/e10-19-fix-gate-type-ui-and-parameter-refresh.md))
+21. **Story 21** - Reposition quantize controls per design ✅ ([e10-20](../stories/e10-20-reposition-quantize-controls-per-design.md))
+22. **Story 22** - Add drag-to-paint values across steps ✅ ([e10-21](../stories/e10-21-add-drag-to-paint-values.md))
+23. **Story 23** - Add undo for quantization operations ✅ ([e10-22](../stories/e10-22-add-undo-for-quantization.md))
+
+**Epic Status:** 23 of 23 stories complete (100%)
 
 ## Success Metrics
 
