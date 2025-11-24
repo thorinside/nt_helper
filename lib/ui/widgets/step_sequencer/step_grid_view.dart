@@ -82,10 +82,19 @@ class _StepGridViewState extends State<StepGridView> {
     Slot slot,
     StepSequencerParams params,
   ) {
+    // Disable drag-to-paint for Pattern and Ties modes to allow direct bit clicking
+    final isBitPatternMode = widget.activeParameter == StepParameter.pattern ||
+        widget.activeParameter == StepParameter.ties;
+
     return GestureDetector(
-      onPanStart: (details) => _handleDragStart(details.globalPosition, slot, params),
-      onPanUpdate: (details) => _handleDragUpdate(details.globalPosition, slot, params),
-      onPanEnd: (details) => _handleDragEnd(),
+      onPanStart: isBitPatternMode
+          ? null
+          : (details) => _handleDragStart(details.globalPosition, slot, params),
+      onPanUpdate: isBitPatternMode
+          ? null
+          : (details) =>
+              _handleDragUpdate(details.globalPosition, slot, params),
+      onPanEnd: isBitPatternMode ? null : (details) => _handleDragEnd(),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -110,10 +119,19 @@ class _StepGridViewState extends State<StepGridView> {
     Slot slot,
     StepSequencerParams params,
   ) {
+    // Disable drag-to-paint for Pattern and Ties modes to allow direct bit clicking
+    final isBitPatternMode = widget.activeParameter == StepParameter.pattern ||
+        widget.activeParameter == StepParameter.ties;
+
     return GestureDetector(
-      onPanStart: (details) => _handleDragStart(details.globalPosition, slot, params),
-      onPanUpdate: (details) => _handleDragUpdate(details.globalPosition, slot, params),
-      onPanEnd: (details) => _handleDragEnd(),
+      onPanStart: isBitPatternMode
+          ? null
+          : (details) => _handleDragStart(details.globalPosition, slot, params),
+      onPanUpdate: isBitPatternMode
+          ? null
+          : (details) =>
+              _handleDragUpdate(details.globalPosition, slot, params),
+      onPanEnd: isBitPatternMode ? null : (details) => _handleDragEnd(),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
