@@ -537,10 +537,9 @@ void updateStepPitch(int step, int value) {
 - AC9.5: Bit toggling updates Ties parameter value (0-255) via debounced write
 - AC9.6: Visual feedback: filled segments (orange) for tied substeps, empty (gray) for separate
 - AC9.7: Works with existing debounce system (50ms)
-- AC9.8: Offline mode support via dirty parameter tracking
-
-**Files:**
-- Modify: `lib/ui/widgets/step_sequencer/step_column_widget.dart`
+- AC9.8: Offline  - [e10-10-implement-bit-pattern-editor-for-pattern.md](e10-10-implement-bit-pattern-editor-for-pattern.md)
+  - [e10-22-fix-bit-pattern-editor-clickability.md](e10-22-fix-bit-pattern-editor-clickability.md)
+- Implementation Reference: `lib/ui/widgets/step_sequencer/step_column_widget.dart`
 - Modify: `lib/ui/widgets/step_sequencer/pitch_bar_painter.dart`
 
 ---

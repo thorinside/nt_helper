@@ -144,4 +144,5 @@ development_status:
   e10-20-reposition-quantize-controls-per-design: done
   e10-21-add-drag-to-paint-values: done
   e10-22-add-undo-for-quantization: done
+  e10-22-fix-bit-pattern-editor-clickability: done
   epic-10-retrospective: optional
