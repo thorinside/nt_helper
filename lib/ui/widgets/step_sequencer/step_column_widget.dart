@@ -130,7 +130,6 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
                               displayMode: _getDisplayMode(),
                               minValue: _getParameterMin(),
                               maxValue: _getParameterMax(),
-                              validBitCount: _getValidBitCount(),
                             ),
                           ),
                         ),
@@ -236,10 +235,9 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
   }
 
   /// Get the appropriate display mode for the painter
+  /// Note: Bit pattern modes use BitPatternEditor widget instead
   BarDisplayMode _getDisplayMode() {
-    if (_isBitPatternMode()) {
-      return BarDisplayMode.bitPattern;
-    } else if (widget.activeParameter == StepParameter.division) {
+    if (widget.activeParameter == StepParameter.division) {
       return BarDisplayMode.division;
     } else {
       return BarDisplayMode.continuous;
