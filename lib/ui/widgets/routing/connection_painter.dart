@@ -1,8 +1,10 @@
 import 'dart:math' as math;
+import 'dart:ui' as dart_ui;
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/connection.dart'
     show Connection, ConnectionType;
 import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:collection/collection.dart';
 import 'ghost_connection_tooltip.dart';
 import 'connection_theme.dart';
 import 'bus_label_formatter.dart';
@@ -63,6 +65,7 @@ class ConnectionPainter extends CustomPainter {
   final bool enableAnimations;
   final double? animationProgress;
   final String? hoveredConnectionId;
+  final List<Rect> obstacles;
 
   /// Map storing label bounds for hit testing
   final Map<String, Rect> _labelBounds = {};
@@ -76,6 +79,7 @@ class ConnectionPainter extends CustomPainter {
     this.enableAnimations = true,
     this.animationProgress,
     this.hoveredConnectionId,
+    this.obstacles = const [],
   });
 
   @override
@@ -129,15 +133,16 @@ class ConnectionPainter extends CustomPainter {
       ConnectionVisualType.selected,
     );
 
-    // Draw labels last so they appear on top (skip partial connections as they have their own labels)
+    // Draw labels
     if (showLabels) {
-      for (final conn in connections) {
-        // Skip partial connections - they have their own label handling
-        if (!conn.isPartial) {
-          _drawConnectionLabel(canvas, conn);
-        }
+      for (final conn in regularConnections) {
+        _drawConnectionLabel(canvas, conn);
+      }
+      for (final conn in partialConnections) {
+        _drawConnectionLabel(canvas, conn);
       }
     }
+    
   }
 
   /// Draw a batch of connections of the same type
@@ -162,12 +167,39 @@ class ConnectionPainter extends CustomPainter {
       } else {
         // Regular path calculation for other connection types
         path = enableAntiOverlap
-            ? _createRoutedPath(conn, batch)
+            ? _createRoutedPath(conn, connections) // Use ALL connections for routing
             : _createDirectPath(conn.sourcePosition, conn.destinationPosition);
       }
 
       // Apply visual style based on connection type
       _applyConnectionStyle(paint, conn, type);
+
+      // Determine obstacles to clip against
+      // We clip against obstacles that overlap the path, BUT NOT the source or destination nodes
+      // This ensures the connection is visible at its endpoints but "goes under" intervening nodes
+      final pathBounds = path.getBounds();
+      final obstaclesToClip = <Rect>[];
+      
+      if (obstacles.isNotEmpty) {
+        for (final obstacle in obstacles) {
+          // Skip if obstacle doesn't overlap the path bounds
+          if (!pathBounds.overlaps(obstacle)) continue;
+          
+          // Skip if obstacle contains the start or end point (source/dest nodes)
+          // We use a small margin to be safe, or just check containment
+          if (obstacle.contains(conn.sourcePosition) || obstacle.contains(conn.destinationPosition)) {
+            continue;
+          }
+          
+          obstaclesToClip.add(obstacle);
+        }
+      }
+
+      // If we have obstacles to clip, we use a saveLayer with BlendMode.clear
+      // This avoids geometric artifacts from Path.combine
+      if (obstaclesToClip.isNotEmpty) {
+        canvas.saveLayer(pathBounds, Paint());
+      }
 
       // Draw the connection
       if (type == ConnectionVisualType.ghost) {
@@ -188,12 +220,32 @@ class ConnectionPainter extends CustomPainter {
         canvas.drawPath(path, paint);
       }
 
+      // Apply the mask (clear out the obstacles)
+      if (obstaclesToClip.isNotEmpty) {
+        // Use dstOut to reduce the alpha of the destination (the connection line)
+        // where it overlaps with the source (the obstacle rect).
+        // We want "very ghosty lines", so we want to reduce alpha significantly but not completely.
+        // dstOut: Result = Dest * (1 - SourceAlpha)
+        // If we want ResultAlpha to be low (e.g. 0.2 * DestAlpha), we need (1 - SourceAlpha) = 0.2
+        // So SourceAlpha should be 0.8.
+        final maskPaint = Paint()
+          ..blendMode = BlendMode.dstOut
+          ..color = Colors.black.withOpacity(0.85); // High opacity mask = low opacity result
+
+        for (final obstacle in obstaclesToClip) {
+          canvas.drawRect(obstacle, maskPaint);
+        }
+        canvas.restore();
+      }
+
       // Draw endpoints (skip for partial connections)
       if (type != ConnectionVisualType.partial) {
         _drawEndpoints(canvas, conn);
       }
     }
   }
+
+  // Removed _clipPathAgainstObstacles as it is no longer used
 
   /// Create a bezier path with routing to avoid overlaps
   Path _createRoutedPath(
@@ -250,25 +302,33 @@ class ConnectionPainter extends CustomPainter {
 
   /// Create a direct bezier path between two points
   Path _createDirectPath(Offset start, Offset end) {
-    return createBezierPath(start, end);
+    return _createOffsetPath(start, end, 0);
   }
 
   /// Create an offset bezier path to avoid overlaps
-  Path _createOffsetPath(Offset start, Offset end, double offset) {
+  Path _createOffsetPath(
+    Offset start,
+    Offset end,
+    double offset,
+  ) {
     final path = Path();
     path.moveTo(start.dx, start.dy);
 
     final dx = end.dx - start.dx;
     final controlOffset = (dx.abs() * 0.5).clamp(30.0, 150.0);
 
+    // Initial control points with basic offset
+    var cp1Y = start.dy + offset;
+    var cp2Y = end.dy + offset;
+
     // Add vertical offset to control points
     final cp1 = Offset(
       start.dx + (dx > 0 ? controlOffset : -controlOffset),
-      start.dy + offset,
+      cp1Y,
     );
     final cp2 = Offset(
       end.dx - (dx > 0 ? controlOffset : -controlOffset),
-      end.dy + offset,
+      cp2Y,
     );
 
     path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, end.dx, end.dy);
@@ -421,6 +481,109 @@ class ConnectionPainter extends CustomPainter {
     }
   }
 
+  /// Find the best position along the path for the label
+  /// Scans the path and picks the best spot based on:
+  /// 1. Safety (must not overlap obstacles)
+  /// 2. Proximity to center (t=0.5)
+  /// This ensures the label "slides" just out of the way of obstacles but stays close.
+  Offset _findSafeLabelPosition(
+    dart_ui.PathMetric metric,
+    double labelWidth,
+    double labelHeight,
+  ) {
+    // Scan configuration
+    const step = 0.01; // 1% steps
+    const startT = 0.05;
+    const endT = 0.95;
+    
+    // Margin for "safe" threshold
+    const safeMargin = 20.0;
+
+    Offset? bestPos;
+    double maxScore = double.negativeInfinity;
+
+    // Pre-calculate expanded obstacles to simplify point-vs-rect checks
+    // We expand each obstacle by the label's half-size plus margin
+    // This allows us to treat the label as a point
+    final halfWidth = labelWidth / 2;
+    final halfHeight = labelHeight / 2;
+    
+    final expandedObstacles = obstacles.map((rect) {
+      return Rect.fromLTRB(
+        rect.left - halfWidth - safeMargin,
+        rect.top - halfHeight - safeMargin,
+        rect.right + halfWidth + safeMargin,
+        rect.bottom + halfHeight + safeMargin,
+      );
+    }).toList();
+    
+    for (double t = startT; t <= endT; t += step) {
+      final pos = _getPointAtT(metric, t);
+      if (pos == null) continue;
+
+      // Find distance to the nearest obstacle
+      double minDistToObs = double.infinity;
+      
+      if (expandedObstacles.isEmpty) {
+        minDistToObs = double.infinity;
+      } else {
+        for (final obs in expandedObstacles) {
+          final dist = _signedDistanceToRect(pos, obs);
+          if (dist < minDistToObs) {
+            minDistToObs = dist;
+          }
+        }
+      }
+      
+      // Calculate score
+      double score;
+      if (minDistToObs > 0) {
+        // Safe spot: Prioritize proximity to center (t=0.5)
+        // Score = 100000 - (distance from center * weight)
+        // This ensures any safe spot beats any unsafe spot
+        final distFromCenter = (t - 0.5).abs();
+        score = 100000.0 - (distFromCenter * 1000.0);
+      } else {
+        // Unsafe spot: Prioritize minimizing overlap (maximizing signed distance)
+        // Score is negative or zero
+        score = minDistToObs;
+      }
+
+      // Update best position
+      if (score > maxScore) {
+        maxScore = score;
+        bestPos = pos;
+      }
+    }
+
+    // If scan failed completely (shouldn't happen), return center
+    return bestPos ?? _getPointAtT(metric, 0.5) ?? Offset.zero;
+  }
+
+  /// Calculate signed distance from point to rect.
+  /// Positive = outside. Negative = inside.
+  double _signedDistanceToRect(Offset p, Rect rect) {
+    // Calculate distance to each edge
+    // dx > 0 if outside horizontal range
+    final dx = math.max(rect.left - p.dx, p.dx - rect.right);
+    // dy > 0 if outside vertical range
+    final dy = math.max(rect.top - p.dy, p.dy - rect.bottom);
+
+    if (dx > 0 || dy > 0) {
+      // Outside: Euclidean distance to the nearest corner/edge
+      return math.sqrt(math.max(0, dx) * math.max(0, dx) + math.max(0, dy) * math.max(0, dy));
+    } else {
+      // Inside: Distance to nearest edge (negative)
+      // Since both are negative, max(dx, dy) is the one closest to 0 (closest edge)
+      return math.max(dx, dy);
+    }
+  }
+
+  Offset? _getPointAtT(dart_ui.PathMetric metric, double t) {
+    final tangent = metric.getTangentForOffset(metric.length * t);
+    return tangent?.position;
+  }
+
   /// Draw connection endpoints
   void _drawEndpoints(Canvas canvas, ConnectionData conn) {
     final paint = Paint()
@@ -438,50 +601,6 @@ class ConnectionPainter extends CustomPainter {
       return;
     }
 
-    // Calculate midpoint - try path metrics first, fallback to simple calculation
-    Offset midPoint;
-
-    final path = _createDirectPath(
-      conn.sourcePosition,
-      conn.destinationPosition,
-    );
-    final metrics = path.computeMetrics();
-
-    if (metrics.isNotEmpty) {
-      final metricsIterator = metrics.iterator;
-      if (metricsIterator.moveNext()) {
-        final metric = metricsIterator.current;
-        if (metric.length > 0) {
-          final midDistance = metric.length * 0.5;
-          final tangent = metric.getTangentForOffset(midDistance);
-          if (tangent != null) {
-            midPoint = tangent.position;
-          } else {
-            midPoint = Offset(
-              (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
-              (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
-            );
-          }
-        } else {
-          midPoint = Offset(
-            (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
-            (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
-          );
-        }
-      } else {
-        midPoint = Offset(
-          (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
-          (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
-        );
-      }
-    } else {
-      // Fallback to simple midpoint calculation
-      midPoint = Offset(
-        (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
-        (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
-      );
-    }
-
     // Use BusLabelFormatter to get the label with mode-aware formatting
     final label = formatBusLabelWithMode(conn.busNumber, conn.outputMode);
     if (label.isEmpty) {
@@ -497,12 +616,58 @@ class ConnectionPainter extends CustomPainter {
 
     final textPainter = createLabelTextPainter(label, textStyle);
     textPainter.layout();
+    
+    final labelWidth = textPainter.width + 12;
+    final labelHeight = textPainter.height + 8;
+
+    // Calculate midpoint - try path metrics first, fallback to simple calculation
+    Offset midPoint;
+
+    // Use the routed path logic to ensure label follows the actual line
+    // We need to check for overlaps again to get the correct offset
+    // This is slightly inefficient but ensures correctness
+    // In a real optimized scenario, we would cache the path
+    final overlaps = _findOverlappingConnections(conn, connections);
+    final offsetIndex = overlaps.indexOf(conn);
+    final offsetAmount = (offsetIndex + 1) * 10.0;
+
+    final path = enableAntiOverlap
+        ? _createOffsetPath(
+            conn.sourcePosition,
+            conn.destinationPosition,
+            offsetAmount,
+          )
+        : _createDirectPath(conn.sourcePosition, conn.destinationPosition);
+
+    final metrics = path.computeMetrics();
+    
+    // Find the longest contour in the path (the actual connection line)
+    dart_ui.PathMetric? bestMetric;
+    double maxLen = 0.0;
+    
+    for (final metric in metrics) {
+      if (metric.length > maxLen) {
+        maxLen = metric.length;
+        bestMetric = metric;
+      }
+    }
+
+    if (bestMetric != null && bestMetric.length > 0) {
+      // Find a safe position along the path that doesn't overlap obstacles
+      midPoint = _findSafeLabelPosition(bestMetric, labelWidth, labelHeight);
+    } else {
+      // Fallback to simple midpoint calculation
+      midPoint = Offset(
+        (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
+        (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
+      );
+    }
 
     // Calculate label position
     final labelRect = Rect.fromCenter(
       center: midPoint,
-      width: textPainter.width + 12,
-      height: textPainter.height + 8,
+      width: labelWidth,
+      height: labelHeight,
     );
 
     // Store label bounds for hit testing
@@ -731,7 +896,8 @@ class ConnectionPainter extends CustomPainter {
         oldDelegate.enableAnimations != enableAnimations ||
         oldDelegate.animationProgress != animationProgress ||
         oldDelegate.hoveredConnectionId != hoveredConnectionId ||
-        oldDelegate.theme != theme;
+        oldDelegate.theme != theme ||
+        !ListEquality().equals(oldDelegate.obstacles, obstacles);
   }
 }
 

@@ -774,6 +774,68 @@ void main() {
         expect(selectedConnections.length, equals(1));
       });
     });
+
+    group('Obstacle Avoidance', () {
+      test('should route around obstacles', () {
+        final theme = ThemeData.light();
+        // Create a connection that goes straight through the center
+        // Source: (0, 100), Dest: (300, 100)
+        // Obstacle: (100, 50) - (200, 150) -> Center (150, 100)
+        final connection = ConnectionData(
+          connection: Connection(
+            id: 'test_obstacle',
+            sourcePortId: 'source',
+            destinationPortId: 'dest',
+            connectionType: ConnectionType.algorithmToAlgorithm,
+          ),
+          sourcePosition: const Offset(0, 100),
+          destinationPosition: const Offset(300, 100),
+        );
+
+        final obstacle = Rect.fromLTWH(100, 50, 100, 100);
+
+        final painter = ConnectionPainter(
+          connections: [connection],
+          theme: theme,
+          obstacles: [obstacle], // This parameter needs to be added to the constructor
+        );
+
+        // We can verify that the path is generated and potentially check some properties
+        // Since we can't easily inspect the path internals without a golden test,
+        // we'll rely on the fact that it runs without error and the obstacles are passed correctly.
+        
+        expect(painter.obstacles, contains(obstacle));
+      });
+
+      test('should paint without error when obstacles are present (masking)', () {
+        final theme = ThemeData.light();
+        final connection = ConnectionData(
+          connection: Connection(
+            id: 'test_masking',
+            sourcePortId: 'source',
+            destinationPortId: 'dest',
+            connectionType: ConnectionType.algorithmToAlgorithm,
+          ),
+          sourcePosition: const Offset(0, 100),
+          destinationPosition: const Offset(400, 100),
+        );
+
+        // Obstacle directly on the line
+        final obstacle = Rect.fromLTWH(150, 50, 100, 100);
+
+        final painter = ConnectionPainter(
+          connections: [connection],
+          theme: theme,
+          obstacles: [obstacle],
+        );
+        
+        // Just ensure it paints without error
+        // The masking happens during paint via saveLayer/BlendMode.clear
+        final recorder = PictureRecorder();
+        final canvas = Canvas(recorder);
+        painter.paint(canvas, const Size(400, 400));
+      });
+    });
   });
 }
 

@@ -66,7 +66,10 @@ class RoutingEditorWidget extends StatefulWidget {
 }
 
 class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
+  // Map of node IDs to their positions
   final Map<String, Offset> _nodePositions = {};
+  // Map of node IDs to their actual rendered sizes
+  final Map<String, Size> _nodeSizes = {};
   final Set<String> _selectedNodes = {};
 
   // Drag state management for connection creation
@@ -1572,6 +1575,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               ? (channel, enabled) =>
                     _handleEs5ToggleChange(algorithm.index, channel, enabled)
               : null,
+          onSizeResolved: (size) => _handleNodeSizeResolved(nodeId, size),
           // onTap: () => _handleNodeTap(nodeId), // Disable selection for now
         ),
       );
@@ -2021,16 +2025,26 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           IgnorePointer(
             child: CustomPaint(
               painter: _ConnectionPainterWithBounds(
-                connections: connectionDataList,
-                theme: Theme.of(context),
-                showLabels: true,
-                enableAnimations: true,
-                hoveredConnectionId:
-                    _hoveredLabelConnectionId, // Use label hover state for label highlighting
-                onBoundsUpdated: (bounds) {
-                  _connectionLabelBounds = bounds;
-                },
-              ),
+              connections: connectionDataList, // Keep this as connectionDataList
+              theme: Theme.of(context),
+              showLabels: widget.showBusLabels, // Changed
+              enableAnimations: true,
+              hoveredConnectionId: _hoveredLabelConnectionId,
+              obstacles: _calculateNodeBounds(), // Added
+              onBoundsUpdated: (bounds) {
+                // Only update if bounds have changed to avoid infinite rebuild loops
+                if (!_areBoundsEqual(_connectionLabelBounds, bounds)) {
+                  // Schedule update for next frame to avoid build-phase setState
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _connectionLabelBounds = bounds;
+                      });
+                    }
+                  });
+                }
+              },
+            ),
               child: const SizedBox.expand(),
             ),
           ),
@@ -2039,6 +2053,79 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         ],
       );
     }
+  }
+
+  List<Rect> _calculateNodeBounds() {
+    final bounds = <Rect>[];
+    
+    // Access the current state to get algorithm details for accurate sizing
+    final state = context.read<RoutingEditorCubit>().state;
+    if (state is! RoutingEditorStateLoaded) return bounds;
+
+    for (final entry in _nodePositions.entries) {
+      final id = entry.key;
+      final pos = entry.value;
+
+      // Determine node size based on type
+      // Physical nodes: 180x320
+      // Algorithm nodes: Dynamic height based on ports
+      final isPhysical = id == 'physical_inputs' || id == 'physical_outputs';
+
+      // Skip physical nodes for obstacle avoidance
+      if (isPhysical) continue;
+
+      // Find the algorithm corresponding to this node ID
+      final algorithm = state.algorithms.firstWhereOrNull((a) => a.id == id);
+      
+      double width = 280.0; // Default width used in layout
+      double height = 200.0; // Default height
+
+      // Use actual reported size if available
+      if (_nodeSizes.containsKey(id)) {
+        width = _nodeSizes[id]!.width;
+        height = _nodeSizes[id]!.height;
+      } else if (algorithm != null) {
+        // Fallback calculation for first frame
+        // Calculate height based on ports
+        // Header: ~50.0 (Title bar)
+        // Port: ~24.0 (PortWidget is 20-24px)
+        // Padding: 12.0 top + 12.0 bottom = 24.0
+        // Border/Shadow: ~4.0
+        final inputCount = algorithm.inputPorts.length;
+        final outputCount = algorithm.outputPorts.length;
+        final maxPorts = math.max(inputCount, outputCount);
+        
+        // Height = Header + Padding + (Ports * PortHeight)
+        // We use 24.0 to accommodate ES-5 toggles, though simple ports are 20.0
+        // This might be slightly taller than visual for simple nodes, but ensures coverage
+        height = 50.0 + 24.0 + (maxPorts * 24.0) + 4.0;
+        
+        // Width is Intrinsic, but usually around 280-340 depending on text
+        // We'll use a slightly larger width to ensure full coverage
+        width = 300.0; 
+      }
+
+      bounds.add(Rect.fromLTWH(pos.dx, pos.dy, width, height));
+    }
+    return bounds;
+  }
+
+  void _handleNodeSizeResolved(String nodeId, Size size) {
+    if (_nodeSizes[nodeId] != size) {
+      setState(() {
+        _nodeSizes[nodeId] = size;
+      });
+    }
+  }
+
+  bool _areBoundsEqual(Map<String, Rect> a, Map<String, Rect> b) {
+    if (a.length != b.length) return false;
+    for (final key in a.keys) {
+      if (!b.containsKey(key) || a[key] != b[key]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Build individual hoverable connections for desktop platforms
@@ -2061,6 +2148,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               enableAnimations: true,
               hoveredConnectionId:
                   _hoveredLabelConnectionId, // Use label hover state for label highlighting
+              obstacles: _calculateNodeBounds(),
               onBoundsUpdated: (bounds) {
                 _connectionLabelBounds = bounds;
               },
@@ -3283,6 +3371,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
   final bool showLabels;
   final bool enableAnimations;
   final String? hoveredConnectionId;
+  final List<Rect> obstacles;
   final Function(Map<String, Rect>) onBoundsUpdated;
 
   late final painter.ConnectionPainter _delegate;
@@ -3293,6 +3382,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
     required this.showLabels,
     required this.enableAnimations,
     required this.hoveredConnectionId,
+    required this.obstacles,
     required this.onBoundsUpdated,
   }) {
     _delegate = painter.ConnectionPainter(
@@ -3301,6 +3391,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
       showLabels: showLabels,
       enableAnimations: enableAnimations,
       hoveredConnectionId: hoveredConnectionId,
+      obstacles: obstacles,
     );
   }
 
@@ -3318,6 +3409,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
     return _delegate.shouldRepaint(oldDelegate._delegate);
   }
 }
+
 
 /// Custom painter for temporary connection preview during drag operations
 class _TemporaryConnectionPainter extends CustomPainter {
