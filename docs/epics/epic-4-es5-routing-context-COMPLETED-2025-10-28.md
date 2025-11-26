@@ -641,6 +641,35 @@ test('Poly CV has ES-5 parameters', () {
 
 ---
 
+---
+
+### Story E4.7: Routing Editor Visual Refinements (Completed 2025-11-25)
+**Estimated Effort:** 4 hours
+
+**Goal:** Refine the visual presentation of connections and algorithm nodes in the `RoutingEditorWidget` to ensure professional quality and usability.
+
+**Changes Implemented:**
+1.  **Clipped Connection Endpoints:**
+    - Modified `ConnectionPainter` to clip connection lines precisely to the bounding box of source and destination nodes.
+    - Removed fixed-length "tail" segments that looked disconnected on larger nodes.
+    - Updated `RoutingEditorWidget` to calculate and pass `nodeBoundsMap` to the painter.
+
+2.  **Algorithm Node Styling:**
+    - Updated `AlgorithmNodeWidget` title bar transparency to match the node body (`alpha: 0.7`).
+    - Ensures consistent visual weight across the node.
+
+3.  **Bus Label Positioning & Z-Order:**
+    - **Positioning:** Implemented size reporting for `PhysicalInputNode` and `PhysicalOutputNode` to ensure accurate obstacle avoidance. Reduced avoidance margin for connected nodes (20.0 -> 5.0) to prevent labels from being "repelled" too far.
+    - **Z-Order:** Moved bus label rendering to the foreground pass (`drawEndpointsOnly: true`) in `RoutingEditorWidget`. This ensures labels are always drawn *on top* of nodes, never underneath.
+
+**Success Criteria:**
+- ✅ Connections appear to emerge from node edges.
+- ✅ Algorithm node styling is consistent.
+- ✅ Bus labels are legible, correctly positioned, and always visible on top of nodes.
+- ✅ No regressions in routing functionality.
+
+---
+
 ## Risk Mitigation
 
 **Risks:**
