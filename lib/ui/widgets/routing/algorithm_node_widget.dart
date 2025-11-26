@@ -167,7 +167,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             ? Duration.zero
             : const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: theme.colorScheme.surface.withOpacity(0.7),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: widget.isSelected

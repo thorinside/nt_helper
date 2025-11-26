@@ -1176,79 +1176,94 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     color: Theme.of(context).colorScheme.surface,
                   ),
                   child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Grid background with gesture detector for empty space (bottom layer)
-                      SizedBox(
-                        width: _canvasWidth,
-                        height: _canvasHeight,
-                        child: GestureDetector(
-                          // Handle taps and panning on empty space
-                          onTapDown: (details) {
-                            _handleCanvasTap(
-                              details.localPosition,
-                              connections,
-                            );
-                          },
-                          onDoubleTap: () {
-                            // Double tap to reset zoom
-                            final routingCubit = context
-                                .read<RoutingEditorCubit>();
-                            routingCubit.resetZoom();
-                          },
-                          onPanStart: _handleCanvasPanStart,
-                          onPanUpdate: _handleCanvasPanUpdate,
-                          onPanEnd: _handleCanvasPanEnd,
-                          behavior: HitTestBehavior
-                              .translucent, // Allow events to pass through to child widgets
-                          child: CustomPaint(
-                            painter: _CanvasGridPainter(
-                              minorGridColor: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.1),
-                              majorGridColor: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.2),
-                              gridSize: 50.0,
-                              majorEvery: 5,
-                            ),
-                            size: Size(_canvasWidth, _canvasHeight),
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Grid background with gesture detector for empty space (bottom layer)
+                    SizedBox(
+                      width: _canvasWidth,
+                      height: _canvasHeight,
+                      child: GestureDetector(
+                        // Handle taps and panning on empty space
+                        onTapDown: (details) {
+                          _handleCanvasTap(
+                            details.localPosition,
+                            connections,
+                          );
+                        },
+                        onDoubleTap: () {
+                          // Double tap to reset zoom
+                          final routingCubit = context
+                              .read<RoutingEditorCubit>();
+                          routingCubit.resetZoom();
+                        },
+                        onPanStart: _handleCanvasPanStart,
+                        onPanUpdate: _handleCanvasPanUpdate,
+                        onPanEnd: _handleCanvasPanEnd,
+                        behavior: HitTestBehavior
+                            .translucent, // Allow events to pass through to child widgets
+                        child: CustomPaint(
+                          painter: _CanvasGridPainter(
+                            minorGridColor: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.1),
+                            majorGridColor: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.2),
+                            gridSize: 50.0,
+                            majorEvery: 5,
                           ),
+                          size: Size(_canvasWidth, _canvasHeight),
                         ),
                       ),
-                      // Nodes on middle layer (connections will draw above to overlay ports)
-                      if (widget.showPhysicalPorts)
-                        ..._buildPhysicalInputNodes(
-                          physicalInputs,
-                          connections,
-                          stateNodePositions,
-                        ),
-                      if (widget.showPhysicalPorts)
-                        ..._buildPhysicalOutputNodes(
-                          physicalOutputs,
-                          connections,
-                          stateNodePositions,
-                        ),
-                      if (widget.showPhysicalPorts)
-                        ..._buildEs5Nodes(
-                          es5Inputs,
-                          connections,
-                          stateNodePositions,
-                        ),
-                      ..._buildAlgorithmNodes(
-                        algorithms,
+                    ),
+
+                    // 1. Background Connections (Full paths, behind everything)
+                    _buildConnections(connections),
+
+                    // 2. Nodes (Stacked from bottom to top)
+                    
+                    // Physical Output Nodes (Lowest Z-order)
+                    if (widget.showPhysicalPorts)
+                      ..._buildPhysicalOutputNodes(
+                        physicalOutputs,
                         connections,
                         stateNodePositions,
                       ),
-                      // Draw all connections with unified canvas
-                      // Use RepaintBoundary to isolate canvas repaints
-                      RepaintBoundary(
-                        child: _buildUnifiedConnectionCanvas(connections),
+
+                    // Physical Input Nodes
+                    if (widget.showPhysicalPorts)
+                      ..._buildPhysicalInputNodes(
+                        physicalInputs,
+                        connections,
+                        stateNodePositions,
                       ),
-                      if (_isDraggingConnection && _dragCurrentPosition != null)
-                        _buildTemporaryConnection(),
-                    ],
-                  ),
+
+                    // ES-5 Nodes
+                    if (widget.showPhysicalPorts)
+                      ..._buildEs5Nodes(
+                        es5Inputs,
+                        connections,
+                        stateNodePositions,
+                      ),
+
+                    // Algorithm Nodes (Highest Z-order among nodes)
+                    ..._buildAlgorithmNodes(
+                      algorithms,
+                      connections,
+                      stateNodePositions,
+                    ),
+
+                    // 3. Foreground Connections (Tips only, on top of everything)
+                    _buildConnections(connections, drawEndpointsOnly: true),
+
+                    // Temporary connection (dragging)
+                    if (_isDraggingConnection && _dragCurrentPosition != null)
+                      _buildTemporaryConnection(),
+
+                    // Connection label overlays (for tap detection)
+                    ..._buildConnectionLabelOverlays(),
+                  ],
+                ),
                 ),
               ),
             ),
@@ -1279,7 +1294,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     } else {
       nodePosition =
           _nodePositions['physical_inputs'] ??
-          const Offset(centerX - 800, centerY - 300);
+          const Offset(100, centerY);
     }
 
     return [
@@ -1472,7 +1487,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Compute shadowed outputs once for all algorithms
     final shadowedOutputPortIds = _computeShadowedOutputPortIds(algorithms);
 
-    return algorithms.map((algorithm) {
+    return algorithms.expand((algorithm) {
       // Use stable algorithm ID instead of index for consistent positioning
       final nodeId = algorithm.id;
 
@@ -1502,83 +1517,86 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Extract ES-5 toggle data if this is a Clock or Euclidean algorithm
       final es5Data = _extractEs5ToggleData(algorithm);
 
-      return Positioned(
-        left: position.dx,
-        top: position.dy,
-        child: AlgorithmNodeWidget(
-          key: ValueKey(algorithm.id), // Use stable ID for widget key
-          algorithmName: algorithm.algorithm.name,
-          slotNumber: algorithm.index + 1, // 1-indexed for display
-          position: position,
-          isSelected: isSelected,
-          inputLabels: algorithm.inputPorts.map((p) => p.name).toList(),
-          outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
-          inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
-          outputPortIds: algorithm.outputPorts.map((p) => p.id).toList(),
-          outputChannelNumbers: es5Data?.channelNumbers,
-          connectedPorts: _getConnectedPortIds(connections),
-          shadowedPortIds: shadowedOutputPortIds,
-          onPortPositionResolved: (portId, globalCenter, isInput) {
-            _updatePortAnchor(portId, globalCenter, isInput);
-          },
-          onDragStart: () {
-            if (!_isDraggingNode) {
+      return [
+        Positioned(
+          left: position.dx,
+          top: position.dy,
+          child: AlgorithmNodeWidget(
+            key: ValueKey(algorithm.id), // Use stable ID for widget key
+            algorithmName: algorithm.algorithm.name,
+            slotNumber: algorithm.index + 1, // 1-indexed for display
+            position: position,
+            isSelected: isSelected,
+            inputLabels: algorithm.inputPorts.map((p) => p.name).toList(),
+            outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
+            inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
+            outputPortIds: algorithm.outputPorts.map((p) => p.id).toList(),
+            outputChannelNumbers: es5Data?.channelNumbers,
+            connectedPorts: _getConnectedPortIds(connections),
+            shadowedPortIds: shadowedOutputPortIds,
+            onPortPositionResolved: (portId, globalCenter, isInput) {
+              _updatePortAnchor(portId, globalCenter, isInput);
+            },
+            onDragStart: () {
+              if (!_isDraggingNode) {
+                setState(() {
+                  _isDraggingNode = true;
+                  _isPanning = false;
+                });
+              }
+            },
+            onPositionChanged: (newPosition) {
+              // When a node is being dragged, flag it so canvas doesn't pan
+              if (!_isDraggingNode) {
+                setState(() {
+                  _isDraggingNode = true;
+                  _isPanning = false;
+                });
+              }
               setState(() {
-                _isDraggingNode = true;
-                _isPanning = false;
+                _nodePositions[nodeId] = newPosition;
               });
-            }
-          },
-          onPositionChanged: (newPosition) {
-            // When a node is being dragged, flag it so canvas doesn't pan
-            if (!_isDraggingNode) {
-              setState(() {
-                _isDraggingNode = true;
-                _isPanning = false;
-              });
-            }
-            setState(() {
-              _nodePositions[nodeId] = newPosition;
-            });
-            // Save position to preferences
-            context.read<RoutingEditorCubit>().updateNodePosition(
-              nodeId,
-              newPosition.dx,
-              newPosition.dy,
-            );
-          },
-          onDragEnd: () {
-            if (_isDraggingNode) {
-              setState(() {
-                _isDraggingNode = false;
-              });
-            }
-          },
-          onMoveUp: algorithm.index > 0
-              ? () => _handleAlgorithmMoveUp(algorithm.index)
-              : null,
-          onMoveDown: algorithm.index < algorithms.length - 1
-              ? () => _handleAlgorithmMoveDown(algorithm.index)
-              : null,
-          onDelete: () => _handleAlgorithmDelete(algorithm.index),
-          onRoutingAction: (portId, action) =>
-              _handlePortRoutingAction(portId, action, connections),
-          onPortTapped: (portId) => _handlePortTapById(portId),
-          onPortDragStart: _handleAlgorithmPortDragStart,
-          onPortDragUpdate: _handleAlgorithmPortDragUpdate,
-          onPortDragEnd: _handleAlgorithmPortDragEnd,
-          highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
-          // ES-5 toggle support for Clock/Euclidean algorithms
-          es5ChannelToggles: es5Data?.toggles,
-          es5ExpanderParameterNumbers: es5Data?.parameterNumbers,
-          onEs5ToggleChanged: es5Data != null
-              ? (channel, enabled) =>
+              // Save position to preferences
+              context.read<RoutingEditorCubit>().updateNodePosition(
+                nodeId,
+                newPosition.dx,
+                newPosition.dy,
+              );
+            },
+            onDragEnd: () {
+              if (_isDraggingNode) {
+                setState(() {
+                  _isDraggingNode = false;
+                });
+              }
+            },
+            onMoveUp: algorithm.index > 0
+                ? () => _handleAlgorithmMoveUp(algorithm.index)
+                : null,
+            onMoveDown: algorithm.index < algorithms.length - 1
+                ? () => _handleAlgorithmMoveDown(algorithm.index)
+                : null,
+            onDelete: () => _handleAlgorithmDelete(algorithm.index),
+            onRoutingAction: (portId, action) =>
+                _handlePortRoutingAction(portId, action, connections),
+            onPortTapped: (portId) => _handlePortTapById(portId),
+            onPortDragStart: _handleAlgorithmPortDragStart,
+            onPortDragUpdate: _handleAlgorithmPortDragUpdate,
+            onPortDragEnd: _handleAlgorithmPortDragEnd,
+            highlightedPortId:
+                _isDraggingConnection ? _highlightedPortId : null,
+            // ES-5 toggle support for Clock/Euclidean algorithms
+            es5ChannelToggles: es5Data?.toggles,
+            es5ExpanderParameterNumbers: es5Data?.parameterNumbers,
+            onEs5ToggleChanged: es5Data != null
+                ? (channel, enabled) =>
                     _handleEs5ToggleChange(algorithm.index, channel, enabled)
-              : null,
-          onSizeResolved: (size) => _handleNodeSizeResolved(nodeId, size),
-          // onTap: () => _handleNodeTap(nodeId), // Disable selection for now
+                : null,
+            onSizeResolved: (size) => _handleNodeSizeResolved(nodeId, size),
+            // onTap: () => _handleNodeTap(nodeId), // Disable selection for now
+          ),
         ),
-      );
+      ];
     }).toList();
   }
 
@@ -1920,8 +1938,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     );
   }
 
-  Widget _buildUnifiedConnectionCanvas(List<Connection> connections) {
-    // Build ConnectionData list for all connections
+  List<painter.ConnectionData> _buildConnectionDataList(
+    List<Connection> connections,
+  ) {
     final connectionDataList = <painter.ConnectionData>[];
 
     for (final connection in connections) {
@@ -1952,10 +1971,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         // Regular connection handling
         sourcePosition = _getPortPosition(connection.sourcePortId);
         targetPosition = _getPortPosition(connection.destinationPortId);
-
-        // Debug the first connection
-        if (connection.sourcePortId.contains('hw_in_1') ||
-            connection.destinationPortId.contains('Clock_input_1')) {}
       }
 
       if (sourcePosition == null || targetPosition == null) {
@@ -1983,8 +1998,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         }
       }
 
-      if (busNumber == null) {}
-
       connectionDataList.add(
         painter.ConnectionData(
           connection: connection,
@@ -2008,6 +2021,18 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         ),
       );
     }
+    return connectionDataList;
+  }
+
+  Widget _buildConnections(
+    List<Connection> connections, {
+    bool drawEndpointsOnly = false,
+  }) {
+    if (connections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final connectionDataList = _buildConnectionDataList(connections);
 
     if (connectionDataList.isEmpty) {
       return const SizedBox.shrink();
@@ -2016,44 +2041,72 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Choose rendering approach based on platform capabilities
     if (_platformService.supportsHoverInteractions()) {
       // Desktop: Use individual hoverable connections for delete functionality
-      return _buildHoverableConnections(connectionDataList);
-    } else {
-      // Mobile/other: Use unified painter with label overlays
-      return Stack(
-        children: [
-          // The connection painter itself (no pointer events)
-          IgnorePointer(
-            child: CustomPaint(
-              painter: _ConnectionPainterWithBounds(
-              connections: connectionDataList, // Keep this as connectionDataList
-              theme: Theme.of(context),
-              showLabels: widget.showBusLabels, // Changed
-              enableAnimations: true,
-              hoveredConnectionId: _hoveredLabelConnectionId,
-              obstacles: _calculateNodeBounds(), // Added
-              onBoundsUpdated: (bounds) {
-                // Only update if bounds have changed to avoid infinite rebuild loops
-                if (!_areBoundsEqual(_connectionLabelBounds, bounds)) {
-                  // Schedule update for next frame to avoid build-phase setState
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      setState(() {
-                        _connectionLabelBounds = bounds;
-                      });
-                    }
-                  });
-                }
-              },
-            ),
-              child: const SizedBox.expand(),
+      // Note: Hoverable connections don't support partial drawing yet, but that's fine for now
+      // as we only use dual-pass for the main visual lines.
+      // If drawEndpointsOnly is true, we might want to skip hoverable widgets or adjust them.
+      // For now, we'll assume hoverable widgets are only used for the full background pass.
+      if (drawEndpointsOnly) {
+        return Positioned(
+          left: 0,
+          top: 0,
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: CustomPaint(
+                size: Size(_canvasWidth, _canvasHeight),
+                painter: _ConnectionPainterWithBounds(
+                  connections: connectionDataList,
+                  theme: Theme.of(context),
+                  showLabels: false, // No labels on tips
+                  enableAnimations: true,
+                  hoveredConnectionId: _hoveredLabelConnectionId,
+                  obstacles: _calculateNodeBounds(),
+                  drawEndpointsOnly: true,
+                  onBoundsUpdated: (_) {}, // No bounds update for tips
+                ),
+              ),
             ),
           ),
-          // Invisible overlay for gesture detection only over connection labels
-          ..._buildConnectionLabelOverlays(),
-        ],
+        );
+      }
+      return _buildHoverableConnections(connectionDataList);
+    } else {
+      // Mobile/other: Use unified painter
+      return Positioned(
+        left: 0,
+        top: 0,
+        child: IgnorePointer(
+          child: RepaintBoundary(
+            child: CustomPaint(
+              size: Size(_canvasWidth, _canvasHeight),
+              painter: _ConnectionPainterWithBounds(
+                connections: connectionDataList,
+                theme: Theme.of(context),
+                showLabels: widget.showBusLabels && !drawEndpointsOnly,
+                enableAnimations: true,
+                hoveredConnectionId: _hoveredLabelConnectionId,
+                obstacles: _calculateNodeBounds(),
+                drawEndpointsOnly: drawEndpointsOnly,
+                onBoundsUpdated: (bounds) {
+                  // Only update bounds for the main pass
+                  if (!drawEndpointsOnly &&
+                      !_areBoundsEqual(_connectionLabelBounds, bounds)) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        setState(() {
+                          _connectionLabelBounds.addAll(bounds);
+                        });
+                      }
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
       );
     }
   }
+
 
   List<Rect> _calculateNodeBounds() {
     final bounds = <Rect>[];
@@ -3320,6 +3373,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       portId: connection.sourcePortId,
     );
   }
+
 }
 
 class _CanvasGridPainter extends CustomPainter {
@@ -3372,6 +3426,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
   final bool enableAnimations;
   final String? hoveredConnectionId;
   final List<Rect> obstacles;
+  final bool drawEndpointsOnly;
   final Function(Map<String, Rect>) onBoundsUpdated;
 
   late final painter.ConnectionPainter _delegate;
@@ -3383,6 +3438,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
     required this.enableAnimations,
     required this.hoveredConnectionId,
     required this.obstacles,
+    this.drawEndpointsOnly = false,
     required this.onBoundsUpdated,
   }) {
     _delegate = painter.ConnectionPainter(
@@ -3392,6 +3448,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
       enableAnimations: enableAnimations,
       hoveredConnectionId: hoveredConnectionId,
       obstacles: obstacles,
+      drawEndpointsOnly: drawEndpointsOnly,
     );
   }
 

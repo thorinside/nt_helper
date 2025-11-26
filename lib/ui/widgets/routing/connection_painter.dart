@@ -66,6 +66,7 @@ class ConnectionPainter extends CustomPainter {
   final double? animationProgress;
   final String? hoveredConnectionId;
   final List<Rect> obstacles;
+  final bool drawEndpointsOnly;
 
   /// Map storing label bounds for hit testing
   final Map<String, Rect> _labelBounds = {};
@@ -80,6 +81,7 @@ class ConnectionPainter extends CustomPainter {
     this.animationProgress,
     this.hoveredConnectionId,
     this.obstacles = const [],
+    this.drawEndpointsOnly = false,
   });
 
   @override
@@ -174,33 +176,6 @@ class ConnectionPainter extends CustomPainter {
       // Apply visual style based on connection type
       _applyConnectionStyle(paint, conn, type);
 
-      // Determine obstacles to clip against
-      // We clip against obstacles that overlap the path, BUT NOT the source or destination nodes
-      // This ensures the connection is visible at its endpoints but "goes under" intervening nodes
-      final pathBounds = path.getBounds();
-      final obstaclesToClip = <Rect>[];
-      
-      if (obstacles.isNotEmpty) {
-        for (final obstacle in obstacles) {
-          // Skip if obstacle doesn't overlap the path bounds
-          if (!pathBounds.overlaps(obstacle)) continue;
-          
-          // Skip if obstacle contains the start or end point (source/dest nodes)
-          // We use a small margin to be safe, or just check containment
-          if (obstacle.contains(conn.sourcePosition) || obstacle.contains(conn.destinationPosition)) {
-            continue;
-          }
-          
-          obstaclesToClip.add(obstacle);
-        }
-      }
-
-      // If we have obstacles to clip, we use a saveLayer with BlendMode.clear
-      // This avoids geometric artifacts from Path.combine
-      if (obstaclesToClip.isNotEmpty) {
-        canvas.saveLayer(pathBounds, Paint());
-      }
-
       // Draw the connection
       if (type == ConnectionVisualType.ghost) {
         _drawDashedPath(canvas, path, paint);
@@ -217,25 +192,26 @@ class ConnectionPainter extends CustomPainter {
         // Draw bus label at the endpoint for partial connections
         _drawPartialConnectionBusLabel(canvas, conn);
       } else {
-        canvas.drawPath(path, paint);
-      }
+        // Draw the path
+        if (drawEndpointsOnly) {
+          // Draw only the tips (first and last 40px)
+          final metrics = path.computeMetrics();
+          for (final metric in metrics) {
+            // Start tip
+            final startPath = metric.extractPath(0, 40);
+            canvas.drawPath(startPath, paint);
 
-      // Apply the mask (clear out the obstacles)
-      if (obstaclesToClip.isNotEmpty) {
-        // Use dstOut to reduce the alpha of the destination (the connection line)
-        // where it overlaps with the source (the obstacle rect).
-        // We want "very ghosty lines", so we want to reduce alpha significantly but not completely.
-        // dstOut: Result = Dest * (1 - SourceAlpha)
-        // If we want ResultAlpha to be low (e.g. 0.2 * DestAlpha), we need (1 - SourceAlpha) = 0.2
-        // So SourceAlpha should be 0.8.
-        final maskPaint = Paint()
-          ..blendMode = BlendMode.dstOut
-          ..color = Colors.black.withOpacity(0.85); // High opacity mask = low opacity result
-
-        for (final obstacle in obstaclesToClip) {
-          canvas.drawRect(obstacle, maskPaint);
+            // End tip
+            final length = metric.length;
+            if (length > 40) {
+              final endPath = metric.extractPath(length - 40, length);
+              canvas.drawPath(endPath, paint);
+            }
+          }
+        } else {
+          // Draw full path
+          canvas.drawPath(path, paint);
         }
-        canvas.restore();
       }
 
       // Draw endpoints (skip for partial connections)
