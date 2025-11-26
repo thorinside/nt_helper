@@ -1107,6 +1107,28 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   ) {
     final routingCubit = context.read<RoutingEditorCubit>();
 
+    final nodeBoundsMap = _calculateNodeBoundsMap();
+    final portToNodeIdMap = <String, String>{};
+
+    // Build port ID to Node ID map
+    for (final port in physicalInputs) {
+      portToNodeIdMap[port.id] = 'physical_inputs';
+    }
+    for (final port in physicalOutputs) {
+      portToNodeIdMap[port.id] = 'physical_outputs';
+    }
+    for (final port in es5Inputs) {
+      portToNodeIdMap[port.id] = 'es5_node';
+    }
+    for (final algo in algorithms) {
+      for (final port in algo.inputPorts) {
+        portToNodeIdMap[port.id] = algo.id;
+      }
+      for (final port in algo.outputPorts) {
+        portToNodeIdMap[port.id] = algo.id;
+      }
+    }
+
     return Semantics(
       label:
           'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
@@ -1218,7 +1240,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     ),
 
                     // 1. Background Connections (Full paths, behind everything)
-                    _buildConnections(connections),
+                    _buildConnections(
+                      connections,
+                      portToNodeIdMap,
+                      nodeBoundsMap,
+                    ),
 
                     // 2. Nodes (Stacked from bottom to top)
                     
@@ -1254,7 +1280,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     ),
 
                     // 3. Foreground Connections (Tips only, on top of everything)
-                    _buildConnections(connections, drawEndpointsOnly: true),
+                    _buildConnections(
+                      connections,
+                      portToNodeIdMap,
+                      nodeBoundsMap,
+                      drawEndpointsOnly: true,
+                    ),
 
                     // Temporary connection (dragging)
                     if (_isDraggingConnection && _dragCurrentPosition != null)
@@ -1281,7 +1312,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   ) {
     if (physicalInputs.isEmpty) return [];
     // Position in the center area of the canvas, to the left of algorithms
-    const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
 
     // Check for position from state first
@@ -1337,6 +1367,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onNodeDragEnd: () {
             // Node drag end handler (could be used for cleanup)
           },
+          onSizeResolved: (size) =>
+              _handleNodeSizeResolved('physical_inputs', size),
         ),
       ),
     ];
@@ -1405,6 +1437,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onNodeDragEnd: () {
             // Node drag end handler (could be used for cleanup)
           },
+          onSizeResolved: (size) =>
+              _handleNodeSizeResolved('physical_outputs', size),
         ),
       ),
     ];
@@ -1940,6 +1974,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   List<painter.ConnectionData> _buildConnectionDataList(
     List<Connection> connections,
+    Map<String, String> portToNodeIdMap,
+    Map<String, Rect> nodeBoundsMap,
   ) {
     final connectionDataList = <painter.ConnectionData>[];
 
@@ -2018,6 +2054,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onLabelHover:
               null, // Label hover is handled by the overlay widgets, not here
           onLabelTap: () => _toggleConnectionOutputMode(connection.id),
+          sourceNodeBounds: nodeBoundsMap[portToNodeIdMap[connection.sourcePortId]],
+          destinationNodeBounds: nodeBoundsMap[portToNodeIdMap[connection.destinationPortId]],
         ),
       );
     }
@@ -2025,14 +2063,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   Widget _buildConnections(
-    List<Connection> connections, {
+    List<Connection> connections,
+    Map<String, String> portToNodeIdMap,
+    Map<String, Rect> nodeBoundsMap, {
     bool drawEndpointsOnly = false,
   }) {
     if (connections.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final connectionDataList = _buildConnectionDataList(connections);
+    final connectionDataList = _buildConnectionDataList(
+      connections,
+      portToNodeIdMap,
+      nodeBoundsMap,
+    );
 
     if (connectionDataList.isEmpty) {
       return const SizedBox.shrink();
@@ -2056,7 +2100,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 painter: _ConnectionPainterWithBounds(
                   connections: connectionDataList,
                   theme: Theme.of(context),
-                  showLabels: false, // No labels on tips
+                  showLabels: widget.showBusLabels && drawEndpointsOnly, // Only show labels in foreground pass
                   enableAnimations: true,
                   hoveredConnectionId: _hoveredLabelConnectionId,
                   obstacles: _calculateNodeBounds(),
@@ -2109,7 +2153,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
 
   List<Rect> _calculateNodeBounds() {
-    final bounds = <Rect>[];
+    return _calculateNodeBoundsMap().values.toList();
+  }
+
+  Map<String, Rect> _calculateNodeBoundsMap() {
+    final bounds = <String, Rect>{};
     
     // Access the current state to get algorithm details for accurate sizing
     final state = context.read<RoutingEditorCubit>().state;
@@ -2124,41 +2172,50 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Algorithm nodes: Dynamic height based on ports
       final isPhysical = id == 'physical_inputs' || id == 'physical_outputs';
 
-      // Skip physical nodes for obstacle avoidance
-      if (isPhysical) continue;
-
-      // Find the algorithm corresponding to this node ID
-      final algorithm = state.algorithms.firstWhereOrNull((a) => a.id == id);
+      // Skip physical nodes for obstacle avoidance if desired, but we need them for clipping
+      // For clipping we need ALL nodes. For obstacles we might filter.
+      // The original code filtered physical nodes for obstacles.
+      // We should keep them in the map but maybe filter later for obstacles?
+      // Actually, the original code skipped physical nodes: "if (isPhysical) continue;"
+      // But for clipping we definitely need physical node bounds.
+      
+      // Let's calculate bounds for everything, and filter in _calculateNodeBounds for obstacles.
       
       double width = 280.0; // Default width used in layout
       double height = 200.0; // Default height
 
-      // Use actual reported size if available
-      if (_nodeSizes.containsKey(id)) {
-        width = _nodeSizes[id]!.width;
-        height = _nodeSizes[id]!.height;
-      } else if (algorithm != null) {
-        // Fallback calculation for first frame
-        // Calculate height based on ports
-        // Header: ~50.0 (Title bar)
-        // Port: ~24.0 (PortWidget is 20-24px)
-        // Padding: 12.0 top + 12.0 bottom = 24.0
-        // Border/Shadow: ~4.0
-        final inputCount = algorithm.inputPorts.length;
-        final outputCount = algorithm.outputPorts.length;
-        final maxPorts = math.max(inputCount, outputCount);
+      if (isPhysical) {
+         // Physical node size estimation
+         // They are usually rendered with a specific width/height in PhysicalInputNode/PhysicalOutputNode
+         // Let's assume a reasonable default or use reported size if available
+         if (_nodeSizes.containsKey(id)) {
+            width = _nodeSizes[id]!.width;
+            height = _nodeSizes[id]!.height;
+         } else {
+            width = 180.0; // Approximate
+            height = 320.0; // Approximate
+         }
+      } else {
+        // Find the algorithm corresponding to this node ID
+        final algorithm = state.algorithms.firstWhereOrNull((a) => a.id == id);
         
-        // Height = Header + Padding + (Ports * PortHeight)
-        // We use 24.0 to accommodate ES-5 toggles, though simple ports are 20.0
-        // This might be slightly taller than visual for simple nodes, but ensures coverage
-        height = 50.0 + 24.0 + (maxPorts * 24.0) + 4.0;
-        
-        // Width is Intrinsic, but usually around 280-340 depending on text
-        // We'll use a slightly larger width to ensure full coverage
-        width = 300.0; 
+        // Use actual reported size if available
+        if (_nodeSizes.containsKey(id)) {
+          width = _nodeSizes[id]!.width;
+          height = _nodeSizes[id]!.height;
+        } else if (algorithm != null) {
+          // Fallback calculation for first frame
+          final inputCount = algorithm.inputPorts.length;
+          final outputCount = algorithm.outputPorts.length;
+          final maxPorts = math.max(inputCount, outputCount);
+          
+          // Height = Header + Padding + (Ports * PortHeight)
+          height = 50.0 + 24.0 + (maxPorts * 24.0) + 4.0;
+          width = 300.0; 
+        }
       }
 
-      bounds.add(Rect.fromLTWH(pos.dx, pos.dy, width, height));
+      bounds[id] = Rect.fromLTWH(pos.dx, pos.dy, width, height);
     }
     return bounds;
   }
@@ -2183,8 +2240,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   /// Build individual hoverable connections for desktop platforms
   Widget _buildHoverableConnections(
-    List<painter.ConnectionData> connectionDataList,
-  ) {
+    List<painter.ConnectionData> connectionDataList, {
+    bool showLabels = false,
+  }) {
     // For desktop, we use a hybrid approach:
     // 1. Render all connections with unified painter (efficient)
     // 2. Overlay individual hover detection areas for delete functionality
@@ -2197,7 +2255,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             painter: _ConnectionPainterWithBounds(
               connections: connectionDataList,
               theme: Theme.of(context),
-              showLabels: true,
+              showLabels: showLabels,
               enableAnimations: true,
               hoveredConnectionId:
                   _hoveredLabelConnectionId, // Use label hover state for label highlighting

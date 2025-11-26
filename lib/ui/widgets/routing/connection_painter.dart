@@ -39,7 +39,12 @@ class ConnectionData {
     this.busLabel,
     this.onLabelHover,
     this.onLabelTap,
+    this.sourceNodeBounds,
+    this.destinationNodeBounds,
   });
+
+  final Rect? sourceNodeBounds;
+  final Rect? destinationNodeBounds;
 
   /// Convenience getter for ghost connection status from the connection model
   bool get isGhostConnection => connection.isGhostConnection;
@@ -194,19 +199,19 @@ class ConnectionPainter extends CustomPainter {
       } else {
         // Draw the path
         if (drawEndpointsOnly) {
-          // Draw only the tips (first and last 40px)
-          final metrics = path.computeMetrics();
-          for (final metric in metrics) {
-            // Start tip
-            final startPath = metric.extractPath(0, 40);
-            canvas.drawPath(startPath, paint);
+          // Draw path clipped to source and destination node bounds
+          if (conn.sourceNodeBounds != null) {
+            canvas.save();
+            canvas.clipRect(conn.sourceNodeBounds!);
+            canvas.drawPath(path, paint);
+            canvas.restore();
+          }
 
-            // End tip
-            final length = metric.length;
-            if (length > 40) {
-              final endPath = metric.extractPath(length - 40, length);
-              canvas.drawPath(endPath, paint);
-            }
+          if (conn.destinationNodeBounds != null) {
+            canvas.save();
+            canvas.clipRect(conn.destinationNodeBounds!);
+            canvas.drawPath(path, paint);
+            canvas.restore();
           }
         } else {
           // Draw full path
@@ -466,6 +471,8 @@ class ConnectionPainter extends CustomPainter {
     dart_ui.PathMetric metric,
     double labelWidth,
     double labelHeight,
+    Rect? sourceNodeBounds,
+    Rect? destinationNodeBounds,
   ) {
     // Scan configuration
     const step = 0.01; // 1% steps
@@ -485,11 +492,16 @@ class ConnectionPainter extends CustomPainter {
     final halfHeight = labelHeight / 2;
     
     final expandedObstacles = obstacles.map((rect) {
+      // Use smaller margin for source/destination nodes to allow labels closer to them
+      final isConnectedNode =
+          rect == sourceNodeBounds || rect == destinationNodeBounds;
+      final margin = isConnectedNode ? 5.0 : safeMargin;
+
       return Rect.fromLTRB(
-        rect.left - halfWidth - safeMargin,
-        rect.top - halfHeight - safeMargin,
-        rect.right + halfWidth + safeMargin,
-        rect.bottom + halfHeight + safeMargin,
+        rect.left - halfWidth - margin,
+        rect.top - halfHeight - margin,
+        rect.right + halfWidth + margin,
+        rect.bottom + halfHeight + margin,
       );
     }).toList();
     
@@ -630,7 +642,13 @@ class ConnectionPainter extends CustomPainter {
 
     if (bestMetric != null && bestMetric.length > 0) {
       // Find a safe position along the path that doesn't overlap obstacles
-      midPoint = _findSafeLabelPosition(bestMetric, labelWidth, labelHeight);
+      midPoint = _findSafeLabelPosition(
+        bestMetric,
+        labelWidth,
+        labelHeight,
+        conn.sourceNodeBounds,
+        conn.destinationNodeBounds,
+      );
     } else {
       // Fallback to simple midpoint calculation
       midPoint = Offset(

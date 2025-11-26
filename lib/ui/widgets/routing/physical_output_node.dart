@@ -53,6 +53,9 @@ class PhysicalOutputNode extends StatelessWidget {
   /// ID of the port that should be highlighted (during drag operations)
   final String? highlightedPortId;
 
+  /// Callback when the node's size is resolved
+  final ValueChanged<Size>? onSizeResolved;
+
   const PhysicalOutputNode({
     super.key,
     required this.ports,
@@ -70,6 +73,7 @@ class PhysicalOutputNode extends StatelessWidget {
     this.onNodeDragEnd,
     this.onRoutingAction,
     this.highlightedPortId,
+    this.onSizeResolved,
   });
 
   @override
@@ -94,6 +98,7 @@ class PhysicalOutputNode extends StatelessWidget {
         onNodeDragEnd: onNodeDragEnd,
         onRoutingAction: onRoutingAction,
         highlightedPortId: highlightedPortId,
+        onSizeResolved: onSizeResolved,
       ),
     );
   }

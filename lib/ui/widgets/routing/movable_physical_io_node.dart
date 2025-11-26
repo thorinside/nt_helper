@@ -57,6 +57,9 @@ class MovablePhysicalIONode extends StatefulWidget {
   /// ID of the port that should be highlighted (during drag operations)
   final String? highlightedPortId;
 
+  /// Callback when the node's size is resolved
+  final ValueChanged<Size>? onSizeResolved;
+
   const MovablePhysicalIONode({
     super.key,
     required this.ports,
@@ -75,6 +78,7 @@ class MovablePhysicalIONode extends StatefulWidget {
     this.connectedPorts,
     this.onRoutingAction,
     this.highlightedPortId,
+    this.onSizeResolved,
   });
 
   @override
@@ -85,6 +89,29 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   bool _isDragging = false;
   Offset _dragStartGlobal = Offset.zero;
   Offset _initialPosition = Offset.zero;
+  final GlobalKey _nodeKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reportSize());
+  }
+
+  @override
+  void didUpdateWidget(covariant MovablePhysicalIONode oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reportSize());
+  }
+
+  void _reportSize() {
+    final context = _nodeKey.currentContext;
+    if (context != null) {
+      final box = context.findRenderObject() as RenderBox?;
+      if (box != null && widget.onSizeResolved != null) {
+        widget.onSizeResolved!(box.size);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +123,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       onPanUpdate: _handleDragUpdate,
       onPanEnd: _handleDragEnd,
       child: AnimatedContainer(
+        key: _nodeKey,
         duration: _isDragging
             ? Duration.zero
             : const Duration(milliseconds: 150),

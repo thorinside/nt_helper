@@ -167,7 +167,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             ? Duration.zero
             : const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withOpacity(0.7),
+          color: theme.colorScheme.surface.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: widget.isSelected
@@ -201,8 +201,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   Widget _buildTitleBar(ThemeData theme) {
     // Use app bar theming for better readability and consistency
     final backgroundColor =
-        theme.appBarTheme.backgroundColor ??
-        theme.colorScheme.surfaceContainerHigh;
+        (theme.appBarTheme.backgroundColor ??
+                theme.colorScheme.surfaceContainerHigh)
+            .withValues(alpha: 0.7);
     final foregroundColor =
         theme.appBarTheme.foregroundColor ?? theme.colorScheme.onSurface;
 
