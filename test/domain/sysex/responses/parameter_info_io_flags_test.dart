@@ -27,46 +27,46 @@ void main() {
       expect(result.powerOfTen, 0);
     });
 
-    test('extracts powerOfTen=1 from last byte 0x01', () {
-      // Last byte = 0x01: powerOfTen = 0x01 & 0x3 = 1
+    test('extracts powerOfTen=-1 from last byte 0x01', () {
+      // Last byte = 0x01: powerOfTen = -(0x01 & 0x3) = -1
       final data = Uint8List.fromList([
         0x01, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x64, 0x00, 0x00, 0x32, 0x00, 0x00,
         0x54, 0x65, 0x73, 0x74, 0x00,
-        0x01, // last byte: powerOfTen=1, ioFlags=0
+        0x01, // last byte: powerOfTen=-1, ioFlags=0
       ]);
       final response = ParameterInfoResponse(data);
       final result = response.parse();
 
-      expect(result.powerOfTen, 1);
+      expect(result.powerOfTen, -1);
     });
 
-    test('extracts powerOfTen=2 from last byte 0x02', () {
-      // Last byte = 0x02: powerOfTen = 0x02 & 0x3 = 2
+    test('extracts powerOfTen=-2 from last byte 0x02', () {
+      // Last byte = 0x02: powerOfTen = -(0x02 & 0x3) = -2
       final data = Uint8List.fromList([
         0x01, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x64, 0x00, 0x00, 0x32, 0x00, 0x00,
         0x54, 0x65, 0x73, 0x74, 0x00,
-        0x02, // last byte: powerOfTen=2, ioFlags=0
+        0x02, // last byte: powerOfTen=-2, ioFlags=0
       ]);
       final response = ParameterInfoResponse(data);
       final result = response.parse();
 
-      expect(result.powerOfTen, 2);
+      expect(result.powerOfTen, -2);
     });
 
-    test('extracts powerOfTen=3 from last byte 0x03', () {
-      // Last byte = 0x03: powerOfTen = 0x03 & 0x3 = 3
+    test('extracts powerOfTen=-3 from last byte 0x03', () {
+      // Last byte = 0x03: powerOfTen = -(0x03 & 0x3) = -3
       final data = Uint8List.fromList([
         0x01, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x64, 0x00, 0x00, 0x32, 0x00, 0x00,
         0x54, 0x65, 0x73, 0x74, 0x00,
-        0x03, // last byte: powerOfTen=3, ioFlags=0
+        0x03, // last byte: powerOfTen=-3, ioFlags=0
       ]);
       final response = ParameterInfoResponse(data);
       final result = response.parse();
 
-      expect(result.powerOfTen, 3);
+      expect(result.powerOfTen, -3);
     });
   });
 
@@ -181,20 +181,20 @@ void main() {
   });
 
   group('ParameterInfoResponse combined extraction', () {
-    test('extracts powerOfTen=1 and ioFlags=5 from last byte 0x15', () {
+    test('extracts powerOfTen=-1 and ioFlags=5 from last byte 0x15', () {
       // Last byte = 0x15:
-      //   powerOfTen = 0x15 & 0x3 = 1
+      //   powerOfTen = -(0x15 & 0x3) = -1
       //   ioFlags = (0x15 >> 2) & 0xF = 5 (input + audio)
       final data = Uint8List.fromList([
         0x01, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x64, 0x00, 0x00, 0x32, 0x00, 0x00,
         0x54, 0x65, 0x73, 0x74, 0x00,
-        0x15, // last byte: powerOfTen=1, ioFlags=5
+        0x15, // last byte: powerOfTen=-1, ioFlags=5
       ]);
       final response = ParameterInfoResponse(data);
       final result = response.parse();
 
-      expect(result.powerOfTen, 1);
+      expect(result.powerOfTen, -1);
       expect(result.ioFlags, 5);
       expect(result.isInput, true);  // bit 0 set
       expect(result.isOutput, false); // bit 1 not set
@@ -202,20 +202,20 @@ void main() {
       expect(result.isOutputMode, false); // bit 3 not set
     });
 
-    test('extracts powerOfTen=2 and ioFlags=10 from last byte 0x2A', () {
+    test('extracts powerOfTen=-2 and ioFlags=10 from last byte 0x2A', () {
       // Last byte = 0x2A:
-      //   powerOfTen = 0x2A & 0x3 = 2
+      //   powerOfTen = -(0x2A & 0x3) = -2
       //   ioFlags = (0x2A >> 2) & 0xF = 10 (output + output mode)
       final data = Uint8List.fromList([
         0x01, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x64, 0x00, 0x00, 0x32, 0x00, 0x00,
         0x54, 0x65, 0x73, 0x74, 0x00,
-        0x2A, // last byte: powerOfTen=2, ioFlags=10
+        0x2A, // last byte: powerOfTen=-2, ioFlags=10
       ]);
       final response = ParameterInfoResponse(data);
       final result = response.parse();
 
-      expect(result.powerOfTen, 2);
+      expect(result.powerOfTen, -2);
       expect(result.ioFlags, 10);
       expect(result.isInput, false);  // bit 0 not set
       expect(result.isOutput, true);  // bit 1 set

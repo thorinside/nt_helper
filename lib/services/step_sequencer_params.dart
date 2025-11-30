@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart' show Slot;
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show ParameterInfo;
 

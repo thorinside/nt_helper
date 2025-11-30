@@ -19,7 +19,7 @@ class ParameterInfoResponse extends SysexResponse {
     //     - Bit 4 (value 4): Audio signal (true) vs CV signal (false)
     //     - Bit 5 (value 8): Parameter controls output mode
     final lastByte = data.last;
-    final powerOfTen = lastByte & 0x3;           // Bits 0-1
+    final powerOfTen = -(lastByte & 0x3);         // Bits 0-1, negate for division
     final ioFlags = (lastByte >> 2) & 0xF;       // Bits 2-5
 
     return ParameterInfo(
