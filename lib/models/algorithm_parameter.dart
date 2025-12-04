@@ -22,7 +22,6 @@ sealed class AlgorithmParameter with _$AlgorithmParameter {
     String? channelCountRef,
     bool? isPerChannel,
     bool? isCommon,
-    int? parameterNumber,
   }) = _AlgorithmParameter;
 
   factory AlgorithmParameter.fromJson(Map<String, dynamic> json) =>

@@ -23,7 +23,6 @@ _AlgorithmParameter _$AlgorithmParameterFromJson(Map<String, dynamic> json) =>
       channelCountRef: json['channelCountRef'] as String?,
       isPerChannel: json['isPerChannel'] as bool?,
       isCommon: json['isCommon'] as bool?,
-      parameterNumber: (json['parameterNumber'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$AlgorithmParameterToJson(_AlgorithmParameter instance) =>
@@ -41,5 +40,4 @@ Map<String, dynamic> _$AlgorithmParameterToJson(_AlgorithmParameter instance) =>
       'channelCountRef': instance.channelCountRef,
       'isPerChannel': instance.isPerChannel,
       'isCommon': instance.isCommon,
-      'parameterNumber': instance.parameterNumber,
     };

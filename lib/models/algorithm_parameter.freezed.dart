@@ -18,7 +18,7 @@ mixin _$AlgorithmParameter {
  String get name; String? get unit;// Using dynamic for min/max/default as they can be int, double, or null
  dynamic get min; dynamic get max; dynamic get defaultValue; String? get scope;// e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
  String? get description; List<String>? get enumValues; String? get type;// e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
- String? get busIdRef; String? get channelCountRef; bool? get isPerChannel; bool? get isCommon; int? get parameterNumber;
+ String? get busIdRef; String? get channelCountRef; bool? get isPerChannel; bool? get isCommon;
 /// Create a copy of AlgorithmParameter
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -31,16 +31,16 @@ $AlgorithmParameterCopyWith<AlgorithmParameter> get copyWith => _$AlgorithmParam
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AlgorithmParameter&&(identical(other.name, name) || other.name == name)&&(identical(other.unit, unit) || other.unit == unit)&&const DeepCollectionEquality().equals(other.min, min)&&const DeepCollectionEquality().equals(other.max, max)&&const DeepCollectionEquality().equals(other.defaultValue, defaultValue)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.enumValues, enumValues)&&(identical(other.type, type) || other.type == type)&&(identical(other.busIdRef, busIdRef) || other.busIdRef == busIdRef)&&(identical(other.channelCountRef, channelCountRef) || other.channelCountRef == channelCountRef)&&(identical(other.isPerChannel, isPerChannel) || other.isPerChannel == isPerChannel)&&(identical(other.isCommon, isCommon) || other.isCommon == isCommon)&&(identical(other.parameterNumber, parameterNumber) || other.parameterNumber == parameterNumber));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AlgorithmParameter&&(identical(other.name, name) || other.name == name)&&(identical(other.unit, unit) || other.unit == unit)&&const DeepCollectionEquality().equals(other.min, min)&&const DeepCollectionEquality().equals(other.max, max)&&const DeepCollectionEquality().equals(other.defaultValue, defaultValue)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.enumValues, enumValues)&&(identical(other.type, type) || other.type == type)&&(identical(other.busIdRef, busIdRef) || other.busIdRef == busIdRef)&&(identical(other.channelCountRef, channelCountRef) || other.channelCountRef == channelCountRef)&&(identical(other.isPerChannel, isPerChannel) || other.isPerChannel == isPerChannel)&&(identical(other.isCommon, isCommon) || other.isCommon == isCommon));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,unit,const DeepCollectionEquality().hash(min),const DeepCollectionEquality().hash(max),const DeepCollectionEquality().hash(defaultValue),scope,description,const DeepCollectionEquality().hash(enumValues),type,busIdRef,channelCountRef,isPerChannel,isCommon,parameterNumber);
+int get hashCode => Object.hash(runtimeType,name,unit,const DeepCollectionEquality().hash(min),const DeepCollectionEquality().hash(max),const DeepCollectionEquality().hash(defaultValue),scope,description,const DeepCollectionEquality().hash(enumValues),type,busIdRef,channelCountRef,isPerChannel,isCommon);
 
 @override
 String toString() {
-  return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, enumValues: $enumValues, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
+  return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, enumValues: $enumValues, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon)';
 }
 
 
@@ -51,7 +51,7 @@ abstract mixin class $AlgorithmParameterCopyWith<$Res>  {
   factory $AlgorithmParameterCopyWith(AlgorithmParameter value, $Res Function(AlgorithmParameter) _then) = _$AlgorithmParameterCopyWithImpl;
 @useResult
 $Res call({
- String name, String? unit, dynamic min, dynamic max, dynamic defaultValue, String? scope, String? description, List<String>? enumValues, String? type, String? busIdRef, String? channelCountRef, bool? isPerChannel, bool? isCommon, int? parameterNumber
+ String name, String? unit, dynamic min, dynamic max, dynamic defaultValue, String? scope, String? description, List<String>? enumValues, String? type, String? busIdRef, String? channelCountRef, bool? isPerChannel, bool? isCommon
 });
 
 
@@ -68,7 +68,7 @@ class _$AlgorithmParameterCopyWithImpl<$Res>
 
 /// Create a copy of AlgorithmParameter
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? unit = freezed,Object? min = freezed,Object? max = freezed,Object? defaultValue = freezed,Object? scope = freezed,Object? description = freezed,Object? enumValues = freezed,Object? type = freezed,Object? busIdRef = freezed,Object? channelCountRef = freezed,Object? isPerChannel = freezed,Object? isCommon = freezed,Object? parameterNumber = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? unit = freezed,Object? min = freezed,Object? max = freezed,Object? defaultValue = freezed,Object? scope = freezed,Object? description = freezed,Object? enumValues = freezed,Object? type = freezed,Object? busIdRef = freezed,Object? channelCountRef = freezed,Object? isPerChannel = freezed,Object? isCommon = freezed,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,unit: freezed == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
@@ -83,8 +83,7 @@ as String?,busIdRef: freezed == busIdRef ? _self.busIdRef : busIdRef // ignore: 
 as String?,channelCountRef: freezed == channelCountRef ? _self.channelCountRef : channelCountRef // ignore: cast_nullable_to_non_nullable
 as String?,isPerChannel: freezed == isPerChannel ? _self.isPerChannel : isPerChannel // ignore: cast_nullable_to_non_nullable
 as bool?,isCommon: freezed == isCommon ? _self.isCommon : isCommon // ignore: cast_nullable_to_non_nullable
-as bool?,parameterNumber: freezed == parameterNumber ? _self.parameterNumber : parameterNumber // ignore: cast_nullable_to_non_nullable
-as int?,
+as bool?,
   ));
 }
 
@@ -166,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String? unit,  dynamic min,  dynamic max,  dynamic defaultValue,  String? scope,  String? description,  List<String>? enumValues,  String? type,  String? busIdRef,  String? channelCountRef,  bool? isPerChannel,  bool? isCommon,  int? parameterNumber)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String? unit,  dynamic min,  dynamic max,  dynamic defaultValue,  String? scope,  String? description,  List<String>? enumValues,  String? type,  String? busIdRef,  String? channelCountRef,  bool? isPerChannel,  bool? isCommon)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AlgorithmParameter() when $default != null:
-return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_that.scope,_that.description,_that.enumValues,_that.type,_that.busIdRef,_that.channelCountRef,_that.isPerChannel,_that.isCommon,_that.parameterNumber);case _:
+return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_that.scope,_that.description,_that.enumValues,_that.type,_that.busIdRef,_that.channelCountRef,_that.isPerChannel,_that.isCommon);case _:
   return orElse();
 
 }
@@ -187,10 +186,10 @@ return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String? unit,  dynamic min,  dynamic max,  dynamic defaultValue,  String? scope,  String? description,  List<String>? enumValues,  String? type,  String? busIdRef,  String? channelCountRef,  bool? isPerChannel,  bool? isCommon,  int? parameterNumber)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String? unit,  dynamic min,  dynamic max,  dynamic defaultValue,  String? scope,  String? description,  List<String>? enumValues,  String? type,  String? busIdRef,  String? channelCountRef,  bool? isPerChannel,  bool? isCommon)  $default,) {final _that = this;
 switch (_that) {
 case _AlgorithmParameter():
-return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_that.scope,_that.description,_that.enumValues,_that.type,_that.busIdRef,_that.channelCountRef,_that.isPerChannel,_that.isCommon,_that.parameterNumber);}
+return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_that.scope,_that.description,_that.enumValues,_that.type,_that.busIdRef,_that.channelCountRef,_that.isPerChannel,_that.isCommon);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -204,10 +203,10 @@ return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String? unit,  dynamic min,  dynamic max,  dynamic defaultValue,  String? scope,  String? description,  List<String>? enumValues,  String? type,  String? busIdRef,  String? channelCountRef,  bool? isPerChannel,  bool? isCommon,  int? parameterNumber)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String? unit,  dynamic min,  dynamic max,  dynamic defaultValue,  String? scope,  String? description,  List<String>? enumValues,  String? type,  String? busIdRef,  String? channelCountRef,  bool? isPerChannel,  bool? isCommon)?  $default,) {final _that = this;
 switch (_that) {
 case _AlgorithmParameter() when $default != null:
-return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_that.scope,_that.description,_that.enumValues,_that.type,_that.busIdRef,_that.channelCountRef,_that.isPerChannel,_that.isCommon,_that.parameterNumber);case _:
+return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_that.scope,_that.description,_that.enumValues,_that.type,_that.busIdRef,_that.channelCountRef,_that.isPerChannel,_that.isCommon);case _:
   return null;
 
 }
@@ -219,7 +218,7 @@ return $default(_that.name,_that.unit,_that.min,_that.max,_that.defaultValue,_th
 @JsonSerializable()
 
 class _AlgorithmParameter implements AlgorithmParameter {
-  const _AlgorithmParameter({required this.name, this.unit, this.min, this.max, this.defaultValue, this.scope, this.description, final  List<String>? enumValues, this.type, this.busIdRef, this.channelCountRef, this.isPerChannel, this.isCommon, this.parameterNumber}): _enumValues = enumValues;
+  const _AlgorithmParameter({required this.name, this.unit, this.min, this.max, this.defaultValue, this.scope, this.description, final  List<String>? enumValues, this.type, this.busIdRef, this.channelCountRef, this.isPerChannel, this.isCommon}): _enumValues = enumValues;
   factory _AlgorithmParameter.fromJson(Map<String, dynamic> json) => _$AlgorithmParameterFromJson(json);
 
 @override final  String name;
@@ -246,7 +245,6 @@ class _AlgorithmParameter implements AlgorithmParameter {
 @override final  String? channelCountRef;
 @override final  bool? isPerChannel;
 @override final  bool? isCommon;
-@override final  int? parameterNumber;
 
 /// Create a copy of AlgorithmParameter
 /// with the given fields replaced by the non-null parameter values.
@@ -261,16 +259,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AlgorithmParameter&&(identical(other.name, name) || other.name == name)&&(identical(other.unit, unit) || other.unit == unit)&&const DeepCollectionEquality().equals(other.min, min)&&const DeepCollectionEquality().equals(other.max, max)&&const DeepCollectionEquality().equals(other.defaultValue, defaultValue)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._enumValues, _enumValues)&&(identical(other.type, type) || other.type == type)&&(identical(other.busIdRef, busIdRef) || other.busIdRef == busIdRef)&&(identical(other.channelCountRef, channelCountRef) || other.channelCountRef == channelCountRef)&&(identical(other.isPerChannel, isPerChannel) || other.isPerChannel == isPerChannel)&&(identical(other.isCommon, isCommon) || other.isCommon == isCommon)&&(identical(other.parameterNumber, parameterNumber) || other.parameterNumber == parameterNumber));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AlgorithmParameter&&(identical(other.name, name) || other.name == name)&&(identical(other.unit, unit) || other.unit == unit)&&const DeepCollectionEquality().equals(other.min, min)&&const DeepCollectionEquality().equals(other.max, max)&&const DeepCollectionEquality().equals(other.defaultValue, defaultValue)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._enumValues, _enumValues)&&(identical(other.type, type) || other.type == type)&&(identical(other.busIdRef, busIdRef) || other.busIdRef == busIdRef)&&(identical(other.channelCountRef, channelCountRef) || other.channelCountRef == channelCountRef)&&(identical(other.isPerChannel, isPerChannel) || other.isPerChannel == isPerChannel)&&(identical(other.isCommon, isCommon) || other.isCommon == isCommon));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,unit,const DeepCollectionEquality().hash(min),const DeepCollectionEquality().hash(max),const DeepCollectionEquality().hash(defaultValue),scope,description,const DeepCollectionEquality().hash(_enumValues),type,busIdRef,channelCountRef,isPerChannel,isCommon,parameterNumber);
+int get hashCode => Object.hash(runtimeType,name,unit,const DeepCollectionEquality().hash(min),const DeepCollectionEquality().hash(max),const DeepCollectionEquality().hash(defaultValue),scope,description,const DeepCollectionEquality().hash(_enumValues),type,busIdRef,channelCountRef,isPerChannel,isCommon);
 
 @override
 String toString() {
-  return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, enumValues: $enumValues, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
+  return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, enumValues: $enumValues, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon)';
 }
 
 
@@ -281,7 +279,7 @@ abstract mixin class _$AlgorithmParameterCopyWith<$Res> implements $AlgorithmPar
   factory _$AlgorithmParameterCopyWith(_AlgorithmParameter value, $Res Function(_AlgorithmParameter) _then) = __$AlgorithmParameterCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String? unit, dynamic min, dynamic max, dynamic defaultValue, String? scope, String? description, List<String>? enumValues, String? type, String? busIdRef, String? channelCountRef, bool? isPerChannel, bool? isCommon, int? parameterNumber
+ String name, String? unit, dynamic min, dynamic max, dynamic defaultValue, String? scope, String? description, List<String>? enumValues, String? type, String? busIdRef, String? channelCountRef, bool? isPerChannel, bool? isCommon
 });
 
 
@@ -298,7 +296,7 @@ class __$AlgorithmParameterCopyWithImpl<$Res>
 
 /// Create a copy of AlgorithmParameter
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? unit = freezed,Object? min = freezed,Object? max = freezed,Object? defaultValue = freezed,Object? scope = freezed,Object? description = freezed,Object? enumValues = freezed,Object? type = freezed,Object? busIdRef = freezed,Object? channelCountRef = freezed,Object? isPerChannel = freezed,Object? isCommon = freezed,Object? parameterNumber = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? unit = freezed,Object? min = freezed,Object? max = freezed,Object? defaultValue = freezed,Object? scope = freezed,Object? description = freezed,Object? enumValues = freezed,Object? type = freezed,Object? busIdRef = freezed,Object? channelCountRef = freezed,Object? isPerChannel = freezed,Object? isCommon = freezed,}) {
   return _then(_AlgorithmParameter(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,unit: freezed == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
@@ -313,8 +311,7 @@ as String?,busIdRef: freezed == busIdRef ? _self.busIdRef : busIdRef // ignore: 
 as String?,channelCountRef: freezed == channelCountRef ? _self.channelCountRef : channelCountRef // ignore: cast_nullable_to_non_nullable
 as String?,isPerChannel: freezed == isPerChannel ? _self.isPerChannel : isPerChannel // ignore: cast_nullable_to_non_nullable
 as bool?,isCommon: freezed == isCommon ? _self.isCommon : isCommon // ignore: cast_nullable_to_non_nullable
-as bool?,parameterNumber: freezed == parameterNumber ? _self.parameterNumber : parameterNumber // ignore: cast_nullable_to_non_nullable
-as int?,
+as bool?,
   ));
 }
 

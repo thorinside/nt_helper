@@ -32,13 +32,7 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
         for (final paramJson in pageParams) {
           if (paramJson is Map<String, dynamic>) {
             try {
-              // Attempt to read parameterNumber, defaults to null if not present
-              final int? pNum = paramJson['parameterNumber'] as int?;
-              allParams.add(
-                AlgorithmParameter.fromJson(
-                  paramJson,
-                ).copyWith(parameterNumber: pNum),
-              );
+              allParams.add(AlgorithmParameter.fromJson(paramJson));
             } catch (e) {
               // Skip invalid parameters
             }
@@ -51,11 +45,7 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
       } else if (item.containsKey('name')) {
         // It's a parameter directly in the list (flat structure)
         try {
-          // Attempt to read parameterNumber, defaults to null if not present
-          final int? pNum = item['parameterNumber'] as int?;
-          allParams.add(
-            AlgorithmParameter.fromJson(item).copyWith(parameterNumber: pNum),
-          );
+          allParams.add(AlgorithmParameter.fromJson(item));
         } catch (e) {
           // Skip invalid parameters
         }
