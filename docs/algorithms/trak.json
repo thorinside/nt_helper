@@ -1,266 +1,157 @@
 {
   "guid": "trak",
   "name": "Tracker",
-  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the [video on that algorithm, here](https://www.youtube.com/watch?v=wSjuOA9yMBk) [114] . The pitch shifter part of the EX algorithm was split out into a separate algorithm on the NT (above), which you can combine with this algorithm if it suits your needs.\nThe algorithm tracks the pitch and envelope of an audio signal, which are output as CVs. It can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio).\nThe chords can be tuned microtonally using Scala or MTS.\n\n### GUI\nThe display shows the tracked note at the bottom of the screen, as a MIDI note number plus cents, and as a frequency in Hz. To the right of this is a bar that shows the envelope, and the tuning as a deviation from the true pitch of the tracked note.\nAbove this is the closest note to the tracked note that lies within the current scale (on the left), and the four harmony notes (on the right).\n\n### Tracker parameters\n|Name|Min|Max|Default|Unit|Description|\n|---|---|---|---|---|---|\n|Range|1|20|9||Sets the range of pitches which can be tracked. Set<br>this appropriately for the lowest note that you need<br>to track.\n|Track bias|0|100|10|%|An internal parameter of the pitch tracking\nalgorithm, which can help it avoid errors of octave in\nsome circumstances. The default value is\nrecommended in most cases.|",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. It tracks the pitch and envelope of an audio signal, which are output as CVs. The pitch shifter part of the EX algorithm was split out into a separate algorithm on the NT. The algorithm can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio). The chords can be tuned microtonally using Scala or MTS.",
   "categories": [
-    "audio effects",
+    "pitch",
     "CV processing",
-    "utility"
+    "sequencing"
   ],
   "short_description": "A pitch and envelope tracker",
-  "specifications": [],
+  "use_cases": [
+    "Tracking monophonic audio signals for MIDI note output or CV control",
+    "Generating harmony chords based on tracked pitch",
+    "Pitch shifting tracked audio with microtonal accuracy",
+    "Creating backing tracks that bend expressively with a solo part"
+  ],
+  "gui_description": "The display shows the tracked note at the bottom of the screen, as a MIDI note number plus cents and as a frequency in Hz. To the right is a bar showing the envelope and tuning deviation from true pitch. Above this are the closest note within the current scale (left) and four harmony notes (right).",
   "parameters": [
     {
       "name": "Range",
       "min": 1,
       "max": 20,
       "default": 9,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Sets the range of pitches which can be tracked. Set this appropriately for the lowest note that you need to track."
     },
     {
       "name": "Track bias",
       "min": 0,
       "max": 100,
       "default": 10,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Track bias",
+      "min": -80,
+      "max": 0,
+      "default": -40,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Harmony mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "enum_values": [
+        "Shape",
+        "SATB",
+        "MIDI"
+      ],
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Sets the MIDI channel on which to receive notes if the harmony mode is 'MIDI'."
     },
     {
       "name": "Force in tune",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Pitch output",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Pitch output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Env output",
-      "min": 0,
-      "max": 28,
-      "default": 16,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Env output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Change trigger mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Input",
+      "description": "The audio input bus for pitch and envelope tracking."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Pitch output",
+      "description": "Outputs the tracked pitch as a CV (MIDI note number + cents)."
+    },
+    {
+      "name": "Env output",
+      "description": "Outputs the envelope following signal as a CV."
     },
     {
       "name": "Change trigger out",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Emits a trigger pulse when the current tracked note changes."
     },
     {
       "name": "Chord 1 output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Chord 1 output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Pitch CV for the first chord note (harmony)."
     },
     {
       "name": "Chord 2 output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Chord 2 output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Pitch CV for the second chord note (harmony)."
     },
     {
       "name": "Chord 3 output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Chord 3 output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Pitch CV for the third chord note (harmony)."
     },
     {
       "name": "Chord 4 output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Chord 4 output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Pitch CV for the fourth chord note (harmony)."
     },
     {
       "name": "Shift 1 output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Shift 1 output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Pitch shift CV for the first pitch shifter."
     },
     {
       "name": "Shift 2 output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Shift 2 output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Pitch shift CV for the second pitch shifter."
     },
     {
       "name": "Shift 3 output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Shift 3 output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "Pitch shift CV for the third pitch shifter."
     }
-  ],
-  "input_ports": [],
-  "output_ports": []
+  ]
 }

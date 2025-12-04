@@ -1,10 +1,11 @@
 {
   "guid": "pyri",
   "name": "Poly Resonator",
-  "description": "This algorithm is a polysynth where each voice is essentially a Rings (the open source Rings https://github.com/pichenettes/eurorack/tree/master/rings) [93] module by Émilie Gillet. Rings itself does support a kind of polyphony, but it’s limited by having a single pitch and gate input – it’s very much designed so that only one note is triggered at a time. This algorithm gives you a full Rings implementation for each voice, with the convenience of shared parameter control. Please refer to the section “Common polysynth features” above.",
+  "description": "It's lots of Rings! This algorithm is a polysynth where each voice is essentially a Rings (the open source Rings module by Émilie Gillet). Rings itself does support a kind of polyphony, but it’s limited by having a single pitch and gate input – it’s very much designed so that only one note is triggered at a time. This algorithm gives you a full Rings implementation for each voice, with the convenience of shared parameter control.",
   "categories": [
     "synthesis",
-    "polyphonic"
+    "polyphonic",
+    "utility"
   ],
   "short_description": "\"It's lots of Rings!\"",
   "specifications": [
@@ -12,141 +13,30 @@
       "name": "Voices",
       "min": 1,
       "max": 8
-    }
-  ],
-  "parameters": [
-    {
-      "name": "Mode",
-      "min": 0,
-      "max": 4,
-      "default": 0,
-      "description": "Selects the resonator mode."
-    },
-    {
-      "name": "Synth effect",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "If the mode is 'Synth', selects the audio effect applied to the synth output."
-    },
-    {
-      "name": "Coarse tune",
-      "min": -36,
-      "max": 24,
-      "default": 0,
-      "description": "Provides a coarse tuning control."
-    },
-    {
-      "name": "Fine tune",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Provides a fine tuning control."
     },
     {
       "name": "Resolution",
-      "min": 8,
-      "max": 64,
-      "default": 16,
-      "description": "Sets the resolution of the resonators. See above."
-    },
-    {
-      "name": "Structure",
-      "min": 0,
-      "max": 127,
-      "default": 64,
-      "description": "Controls the resonator 'structure.'"
-    },
-    {
-      "name": "Brightness",
-      "min": 0,
-      "max": 127,
-      "default": 64,
-      "description": "Controls the resonator 'brightness.'"
-    },
-    {
-      "name": "Damping",
-      "min": 0,
-      "max": 127,
-      "default": 64,
-      "description": "Controls the resonator 'damping.'"
-    },
-    {
-      "name": "Position",
-      "min": 0,
-      "max": 127,
-      "default": 64,
-      "description": "Controls the resonator 'position.'"
-    },
-    {
-      "name": "Chord",
-      "min": 0,
-      "max": 10,
-      "default": 0,
-      "description": "Chooses the chord to use for resonator modes that use one. In the original, set from the Structure knob."
-    },
-    {
-      "name": "Noise gate",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "Enables a noise gate on the audio input. Always enabled in the original Rings."
-    },
-    {
-      "name": "Input gain",
-      "min": -40,
-      "max": 12,
-      "default": 0,
-      "description": "A gain applied to the input audio, before it hits the resonator."
-    },
+      "description": "The number of resonator building blocks that contribute to the overall sound. Defaults to 16 (equivalent to a Rings set to 4-voice polyphony). Higher values increase CPU load."
+    }
+  ],
+  "input_ports": [
     {
       "name": "Audio input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "Chooses which input bus to use for the audio input."
+      "description": "Selects which input bus to use for the audio input, allowing routing from different sources."
     },
     {
+      "name": "CV/gate input (per voice)",
+      "description": "Uses standard polysynth CV/gate parameters for pitch and gate control per voice. See 'Common polysynth features' above."
+    }
+  ],
+  "output_ports": [
+    {
       "name": "Odd output",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "description": "The bus to use for the Odd output."
+      "description": "The bus used for the Odd output signal, which can be added or replaced in the mix."
     },
     {
       "name": "Even output",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "description": "The bus to use for the Even output."
-    },
-    {
-      "name": "Odd output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The Add/Replace mode for the Odd output."
-    },
-    {
-      "name": "Even output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The Add/Replace mode for the Even output."
-    },
-    {
-      "name": "Output gain",
-      "min": -40,
-      "max": 12,
-      "default": 0,
-      "description": "The output level (of both the Odd and Even outputs)."
-    },
-    {
-      "name": "Dry gain",
-      "min": -40,
-      "max": 12,
-      "default": -40,
-      "description": "The level of the input audio mixed into the output(s)."
+      "description": "The bus used for the Even output signal, which can be added or replaced in the mix."
     }
   ]
 }

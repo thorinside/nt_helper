@@ -1,12 +1,245 @@
 {
   "guid": "lfo ",
   "name": "LFO",
-  "description": "This algorithm offers a number of flexible low frequency oscillators. The global ‘Quality’ parameter offers two options: “Stepped” quality is extremely low CPU usage, and is appropriate for automating parameters of other algorithms (via mapping).  “Linear” quality should be selected if you plan to use the LFOs to output CVs to other modules. The LFOs can run freely, or be synced to external clocks or to MIDI clock. When there is more than one LFO channel, channels 2-4 can be locked to the phase of LFO 1. This allows you to, for example, create a quadrature LFO. Use the ‘Phase’ parameter of LFOs 2-4 to set the phase relationship in degrees to LFO 1. Note that in this case, the ‘Speed’ and ‘Multiplier’ parameters of the phase-locked LFO have no effect. The display shows the shape of the current channel’s output, or if the ‘Globals’ page is active, the shape of all the channels. The global parameters: Quality (0-1, default 1), Clock input (0-28, default 0). Per-channel parameters: Enable (0-1, default 0), Speed (0-16383, default 8605), Multiplier (0-3, default 1), Sine (-10.00-10.00, default 0.00), Triangle (-10.00-10.00, default 0.00), Saw (-10.00-10.00, default 0.00), Square (-10.00-10.00, default 0.00), Pulse width (0.0-100.0, default 50.0), Offset (-10.00-10.00, default 0.00), Asymmetry (-100.0-100.0, default 0.0), Random (-10.00-10.00, default 0.00), Phase (0-360, default 0). Per-channel routing parameters: Output (0-28, default 15), Output mode (0-1, default 0). Per-channel sync parameters: Sync (0-4, default 0), Clock multiplier (0-23, default 15), MIDI divisor (0-19, default 9).",
+  "description": "This algorithm offers a number of flexible low frequency oscillators. The global ‘Quality’ parameter provides two options: ‘Stepped’ quality is extremely low CPU usage and suitable for automating parameters of other algorithms via mapping, while ‘Linear’ quality should be selected if you intend to use the LFOs to output CVs to other modules. The LFOs can run freely or be synced to external clocks or MIDI clock. When using multiple LFO channels (1-4), channels 2-4 can be phase-locked to channel 1, allowing for configurations like quadrature LFOs. Phase-locking is controlled by the ‘Phase’ parameter of channels 2-4, which sets their relationship in degrees relative to LFO 1; note that ‘Speed’ and ‘Multiplier’ parameters are ignored when phase-locked.",
   "categories": [
-    "synthesis",
     "utility",
-    "CV processing",
     "clocking",
-    "MIDI"
+    "MIDI",
+    "CV processing"
+  ],
+  "short_description": "A low frequency oscillator",
+  "use_cases": [
+    "Automating parameters of other algorithms via mapping (using 'Stepped' quality)",
+    "Generating CV outputs for external modules ('Linear' quality)",
+    "Creating complex modulation patterns with phase-locked LFOs",
+    "Syncing to MIDI clock or transport for tempo-based modulation",
+    "Resetting LFO phases using external triggers"
+  ],
+  "gui_description": "The display shows the shape of the current channel’s output waveform. If the ‘Globals’ page is active, it displays the waveforms of all channels simultaneously.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 4
+    },
+    {
+      "name": "Quality modes",
+      "description": "'Stepped' mode offers extremely low CPU usage, while 'Linear' mode provides higher-quality CV output."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Quality",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Speed",
+      "min": 0,
+      "max": 16383,
+      "default": 8605,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Multiplier",
+      "min": 0,
+      "max": 3,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Sine",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Triangle",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Saw",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Square",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Pulse width",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Offset",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Asymmetry",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Random",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Phase",
+      "min": 0,
+      "max": 360,
+      "default": 0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Sync",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Clock multiplier",
+      "min": 0,
+      "max": 23,
+      "default": 15,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI divisor",
+      "min": 0,
+      "max": 19,
+      "default": 9,
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Clock input",
+      "description": "The bus used for external clock synchronization, if selected in the 'Sync' parameter."
+    },
+    {
+      "name": "Reset input",
+      "description": "The bus used to reset LFO phase when triggered (applies depending on sync mode or standalone trigger)."
+    },
+    {
+      "name": "Clock input",
+      "description": ""
+    },
+    {
+      "name": "Reset input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "LFO output",
+      "description": "Outputs CV signals from the selected channel(s) to other modules. Each channel can be routed to a specific bus."
+    },
+    {
+      "name": "Output",
+      "description": ""
+    }
   ]
 }

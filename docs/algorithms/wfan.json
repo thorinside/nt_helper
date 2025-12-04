@@ -1,146 +1,230 @@
 {
   "guid": "wfan",
   "name": "Waveform Animator",
-  "description": "This algorithm is version of the disting mk4 algorithm of the same name. You may like to watch the [video on that algorithm here](https://www.youtube.com/watch?v=htkdsLm0oa8) [117] . From the disting mk4 manual: \"This algorithm recreates a popular analogue circuit variously known as a waveform animator or wave multiplier. Such a circuit, when given (typically) a sawtooth waveform as input, uses a comparator to generate a square wave of suitable phase and pulsewidth such that when the square and saw waves are added together the result is a phase shifted saw waveform. This is usually done a number of times and the results added with the overall effect of turning the original, rather plain, waveform into a much richer one which to all intents and purposes is the same as if you'd started with a number of VCOs rather than just one, and so sounds \"fatter\". In combination with LFOs varying the comparator thresholds, very rich textures can be generated. Here, four comparators and four LFOs are used.\"",
+  "description": "This algorithm recreates a popular analogue circuit variously known as a waveform animator or wave multiplier. Such a circuit, when given (typically) a sawtooth waveform as input, uses a comparator to generate a square wave of suitable phase and pulsewidth such that when the square and saw waves are added together the result is a phase shifted saw waveform. This is usually done a number of times and the results added with the overall effect of turning the original, rather plain, waveform into a much richer one which to all intents and purposes is the same as if you'd started with a number of VCOs rather than just one, and so sounds 'fatter'. In combination with LFOs varying the comparator thresholds, very rich textures can be generated. Here, four comparators and four LFOs are used.\n\nThe comparator thresholds are set by a combination of the Threshold parameter and the Threshold CV input, and the Separation parameter which defines a 'spread' of the individual thresholds around the centre.\n\nThe amplitude of the square waves can be determined automatically (by an envelope tracker) or manually, according to the ‘Track’ parameter. The recreation of phase shifted sawtooths works best when the square wave amplitude is matched to that of the saw. However, fixing the amplitude of the square waves and varying the input signal's amplitude is a useful effect in its own right.\n\nThis algorithm is based on the disting mk4 algorithm of the same name.",
   "categories": [
     "synthesis",
     "logic",
-    "CV Processing"
+    "modulation"
   ],
   "short_description": "Embiggens simple waveforms",
-  "specifications": [],
+  "use_cases": [
+    "Creating richer sawtooth waveforms by adding phase-shifted square waves",
+    "Generating 'fatter' sounds similar to multiple VCOs from a single input waveform",
+    "Varying comparator thresholds with LFOs for complex textures",
+    "Adjusting output mix between original and generated waveforms"
+  ],
+  "gui_description": null,
   "parameters": [
     {
       "name": "Threshold",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 1
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Threshold",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Threshold",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Threshold",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Threshold",
+      "unit": "V",
+      "description": "Sets the comparator threshold."
     },
     {
       "name": "Track",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 2
+      "type": "toggle",
+      "is_bus": false
+    },
+    {
+      "name": "Track",
+      "description": "Whether to track the input signal amplitude."
     },
     {
       "name": "Amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 5.0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 3
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Amplitude",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 5.0,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Amplitude",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 5.0,
+      "type": "folder",
+      "is_bus": true
+    },
+    {
+      "name": "Amplitude",
+      "unit": "V",
+      "description": "The square wave amplitude, if tracking is not being used."
     },
     {
       "name": "Squares",
       "min": 1,
       "max": 4,
       "default": 4,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 4
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Squares",
+      "description": "The number of square waves to generate."
     },
     {
       "name": "Separation",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 5
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Separation",
+      "unit": "%",
+      "description": "The spread of the actual comparator thresholds around the value set by ‘Threshold’."
     },
     {
       "name": "Mix",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 6
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "LFO rate",
+      "name": "Mix",
+      "unit": "%",
+      "description": "The output mix, from -100% (only the input signal) to 100% (only the squares). At 0% both the input and squares are at full amplitude."
+    },
+    {
+      "name": "LFO_rate",
       "min": 0,
       "max": 1000,
       "default": 699,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 7
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "LFO depth",
+      "name": "LFO rate",
+      "unit": null,
+      "description": "The LFO rate, scaled exponentially from 0.2Hz to 20Hz."
+    },
+    {
+      "name": "LFO_depth",
       "min": 0,
       "max": 100,
       "default": 10,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 8
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "Input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 9
+      "name": "LFO depth",
+      "unit": "%",
+      "description": "The LFO depth."
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 10
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "Output",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 11
+      "name": "Width",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
-      "name": "Output mode",
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 12
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "Threshold input",
+      "name": "Output mode",
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Threshold_input",
       "min": 0,
       "max": 28,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 13
+      "type": "enum",
+      "is_bus": false
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "input_ports": [
+    {
+      "name": "Input",
+      "description": "First input bus to process (1-28)"
+    },
+    {
+      "name": "Input",
+      "description": ""
+    },
+    {
+      "name": "Input",
+      "description": "The first input bus to process."
+    },
+    {
+      "name": "Threshold input",
+      "description": "The CV input bus for the comparator threshold."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "First output bus for processed signal"
+    },
+    {
+      "name": "Output",
+      "description": ""
+    },
+    {
+      "name": "Output",
+      "description": "The first output bus."
+    }
+  ]
 }

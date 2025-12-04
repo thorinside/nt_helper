@@ -1,119 +1,132 @@
 {
   "guid": "clck",
   "name": "Clock",
-  "description": "This algorithm produces and/or receives analogue clock pulses and/or MIDI clock. It is designed to synchronise the module with others, or with other devices that it communicates with via MIDI, or simply to be a source of clock pulses for other algorithms within the module.\nIt can generate its own BPM-based clock, or sync to external clock pulses, or sync to MIDI.\nIt can output clock pulses, or send MIDI clock, or both.\nIf syncing to external clock, the algorithm expects a 24ppqn DINsync style clock. If you only have a slower clock available, use the Clock multiplier algorithm to get the clock up to the right speed before this algorithm sees it.",
+  "description": "This algorithm produces and/or receives analogue clock pulses and/or MIDI clock. It is designed to synchronise the module with others, or with other devices that it communicates with via MIDI, or simply to be a source of clock pulses for other algorithms within the module.\n\nIt can generate its own BPM-based clock, or sync to external clock pulses, or sync to MIDI.\n\nIt can output clock pulses, or send MIDI clock, or both.\n\nIf syncing to external clock, the algorithm expects a 24ppqn DINsync style clock. If you only have a slower clock available, use the Clock multiplier algorithm to get the clock up to the right speed before this algorithm sees it.",
   "categories": [
     "clocking",
     "MIDI"
   ],
   "short_description": "Generates clocks",
-  "specifications": [
-    {
-      "name": "Outputs",
-      "min": 1,
-      "max": 8
-    }
+  "use_cases": [
+    "Synchronizing modules within a Disting system",
+    "Providing clock pulses to external MIDI devices",
+    "Generating internal BPM-based clock for other algorithms",
+    "Syncing to external DINsync-style clock inputs (24ppqn)",
+    "Syncing to MIDI clock signals"
   ],
+  "gui_description": "The display shows the current tempo, and the transport location in bars, beats, and sixteenths. It also shows the clock source, and whether the transport is running or stopped.",
   "parameters": [
     {
       "name": "Source",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "description": "The clock source. The options are 'Internal', 'External', and 'MIDI'.",
+      "enum_values": [
+        "Internal",
+        "External",
+        "MIDI"
+      ]
     },
     {
       "name": "Tempo",
       "min": 30.0,
       "max": 240.0,
       "default": 120.0,
-      "type": "string",
-      "is_common": true
+      "description": "The internal clock tempo.",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Run",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "description": "Starts and stops the internal clock.",
+      "type": "toggle"
     },
     {
       "name": "Time sig numerator",
       "min": 1,
       "max": 99,
       "default": 4,
-      "type": "string",
-      "is_common": true
+      "description": "The time signature numerator.",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Time sig denominator",
       "min": 0,
       "max": 4,
       "default": 2,
-      "type": "string",
-      "is_common": true
-    },
-    {
-      "name": "Clock input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "type": "string",
-      "is_common": true
-    },
-    {
-      "name": "Run/stop input",
-      "min": 0,
-      "max": 28,
-      "default": 2,
-      "type": "string",
-      "is_common": true
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Output to breakout",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "description": "Enables MIDI output to the breakout.",
+      "type": "toggle"
     },
     {
       "name": "Output to Select Bus",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "description": "Enables MIDI output to the Select Bus.",
+      "type": "toggle"
     },
     {
       "name": "Output to USB",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "description": "Enables MIDI output to USB.",
+      "type": "toggle"
     },
     {
       "name": "Output to internal",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms.",
+      "type": "toggle"
     }
   ],
-  "input_ports": [],
   "output_ports": [
     {
-      "name": "Enable",
-      "description": "Enables the output.",
-      "isPerChannel": false
+      "name": "Clock outputs",
+      "description": "1-8 analogue clock pulse outputs (CV). Each can be individually configured via per-output parameters."
     },
     {
-      "name": "Output",
-      "description": "The output bus."
+      "name": "MIDI breakout output",
+      "description": "Optional MIDI clock output to the breakout port if enabled by 'Output to breakout' parameter."
+    },
+    {
+      "name": "Select Bus MIDI output",
+      "description": "Optional MIDI clock output to the Select Bus if enabled by 'Output to Select Bus' parameter."
+    },
+    {
+      "name": "USB MIDI output",
+      "description": "Optional MIDI clock output to USB if enabled by 'Output to USB' parameter."
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Clock input",
+      "description": "The external clock input."
+    },
+    {
+      "name": "Run/stop input",
+      "description": "The run/stop input for the external clock."
     }
   ]
 }

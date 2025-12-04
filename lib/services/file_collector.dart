@@ -93,26 +93,66 @@ class FileCollector {
 
     // Collect community plugin files (if enabled)
     if (config?.includeCommunityPlugins == true) {
-      // Get plugin file paths from database
-      final guidToPathMap = await database.metadataDao
-          .getPluginFilePathsByGuids(dependencies.communityPlugins);
+      // First, collect all plugin GUIDs that need paths
+      final allPluginGuids = <String>{
+        ...dependencies.communityPlugins,
+        ...dependencies.pluginPaths.keys,
+      };
 
-      for (final pluginGuid in dependencies.communityPlugins) {
-        final pluginPath = guidToPathMap[pluginGuid];
-        if (pluginPath != null) {
-          try {
-            (await fileSystem.readFile(pluginPath))?.let((bytes) {
-              files.add(CollectedFile(pluginPath, bytes));
-            });
-          } catch (e) {
+      // Track which GUIDs we've already collected to avoid duplicates
+      final collectedGuids = <String>{};
+
+      // Priority 1: Use direct paths from AlgorithmInfo (pluginPaths)
+      // These are more reliable as they come directly from the hardware
+      for (final entry in dependencies.pluginPaths.entries) {
+        final pluginGuid = entry.key;
+        final pluginPath = entry.value;
+
+        try {
+          final bytes = await fileSystem.readFile(pluginPath);
+          if (bytes != null) {
+            files.add(CollectedFile(pluginPath, bytes));
+            collectedGuids.add(pluginGuid);
+          } else {
             warnings.add(
-              'Error reading community plugin $pluginGuid at $pluginPath: $e',
+              'Plugin file not found at path from hardware: $pluginPath (GUID: $pluginGuid)',
             );
           }
-        } else {
+        } catch (e) {
           warnings.add(
-            'Community plugin $pluginGuid not found locally. File path not available in database.',
+            'Error reading plugin $pluginGuid at $pluginPath: $e',
           );
+        }
+      }
+
+      // Priority 2: Fall back to database lookup for remaining plugins
+      // (plugins identified by GUID but not in pluginPaths)
+      final remainingGuids =
+          allPluginGuids.difference(collectedGuids).intersection(
+                dependencies.communityPlugins,
+              );
+
+      if (remainingGuids.isNotEmpty) {
+        final guidToPathMap = await database.metadataDao
+            .getPluginFilePathsByGuids(remainingGuids);
+
+        for (final pluginGuid in remainingGuids) {
+          final pluginPath = guidToPathMap[pluginGuid];
+          if (pluginPath != null) {
+            try {
+              (await fileSystem.readFile(pluginPath))?.let((bytes) {
+                files.add(CollectedFile(pluginPath, bytes));
+              });
+            } catch (e) {
+              warnings.add(
+                'Error reading community plugin $pluginGuid at $pluginPath: $e',
+              );
+            }
+          } else {
+            warnings.add(
+              'Community plugin $pluginGuid not found locally. File path not available in database.',
+            );
+          }
         }
       }
     }

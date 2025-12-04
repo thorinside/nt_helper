@@ -1,198 +1,238 @@
 {
   "guid": "srra",
   "name": "Shift Register Random",
-  "description": "This algorithm generates random CVs via the popular rotating shift register method, often known simply as a “Turing Machine” after this module (https://www.musicthing.co.uk/Turing-Machine/) [103]. The joy of this method is that it generates a loop of CVs, with a controllable likelihood of change, including the possibility to lock the loop so it does not change. On each clock, the shift register rotates and a new CV is output. On each rotation, there is the possibility that one bit of the shift register will be flipped, changing the pattern. This algorithm can output either CVs, or triggers, or both. You may like to feed the CVs into the Quantizer algorithm to generate random melodies.",
+  "description": "This algorithm generates random CVs via the popular rotating shift register method, often known simply as a \"Turing Machine\" after this module. The joy of this method is that it generates a loop of CVs, with a controllable likelihood of change, including the possibility to lock the loop so it does not change.\n\nOn each clock, the shift register rotates and a new CV is output. On each rotation, there is the possibility that one bit of the shift register will be flipped, changing the pattern.\n\nThis algorithm can output either CVs, or triggers, or both. You may like to feed the CVs into the Quantizer algorithm to generate random melodies.",
   "categories": [
-    "CV Processing",
-    "Randomization",
-    "Triggers"
+    "sequencing",
+    "randomization",
+    "triggers",
+    "utility",
+    "CV processing"
   ],
   "short_description": "Generates random CVs",
-  "specifications": [],
+  "use_cases": [
+    "Generating random control voltages for modular synthesizers",
+    "Creating unpredictable melodic sequences when combined with the Quantizer algorithm",
+    "Producing dynamic rhythmic patterns via trigger outputs",
+    "Experimental sound design and unpredictable modulation"
+  ],
+  "gui_description": "The display shows a graphical representation of the shift register. If the unrandomness is ±100%, it also shows \"<LOCKED>\".",
   "parameters": [
     {
       "name": "Unrandomness",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Unrandomness",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Direction",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 2
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Length",
       "min": 1,
       "max": 32,
       "default": 8,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 3
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Scale",
       "min": -20.0,
       "max": 20.0,
       "default": 10.0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 4
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Offset",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 5
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Cause",
       "min": 0,
       "max": 4,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 6
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Type",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 7
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Length (ms)",
       "min": 1,
       "max": 100,
       "default": 10,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 8
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Length (%)",
       "min": 1,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 9
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Clock input",
-      "min": 0,
-      "max": 28,
-      "default": 1,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 10
-    },
-    {
-      "name": "Modify input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 11
-    },
-    {
-      "name": "CV output",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 12
-    },
-    {
-      "name": "Trigger output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 13
-    },
-    {
-      "name": "CV output (mode)",
+      "name": "CV output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 14
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Trigger output (mode)",
+      "name": "Trigger output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 15
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Follow MIDI clock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI note",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Clock input",
-      "id": "clock_input",
-      "description": "Input bus for clock."
+      "description": "Chooses the clock input bus for rotating the shift register."
     },
     {
       "name": "Modify input",
-      "id": "modify_input",
-      "description": "Input bus for modify."
+      "description": "A gate input that forces pattern modification when high, even if locked."
     },
     {
-      "name": "CV output",
-      "id": "cv_output",
-      "description": "Output bus for CV."
+      "name": "Clock input",
+      "description": ""
     },
     {
-      "name": "Trigger output",
-      "id": "trigger_output",
-      "description": "Output bus for trigger."
+      "name": "Modify input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "CV output",
-      "id": "cv_output",
-      "description": "Output bus for CV."
+      "description": "The bus where generated control voltages are sent."
     },
     {
       "name": "Trigger output",
-      "id": "trigger_output",
-      "description": "Output bus for trigger."
+      "description": "The bus where triggers are generated based on bit changes or conditions."
+    },
+    {
+      "name": "CV output",
+      "description": ""
+    },
+    {
+      "name": "Trigger output",
+      "description": ""
     }
   ]
 }

@@ -6,93 +6,134 @@
     "utility",
     "analysis"
   ],
-  "short_description": "\"Oscilloscope for viewing waveforms\"",
-  "specifications": [],
+  "short_description": "Oscilloscope for viewing waveforms",
   "parameters": [
     {
-      "name": "Input 1",
+      "name": "Input_1",
       "min": 1,
       "max": 28,
       "default": 1,
-      "type": "bus",
-      "is_bus": true,
-      "parameterNumber": 0
+      "description": "The bus for input 1."
     },
     {
-      "name": "Input 2",
+      "name": "Input_2",
       "min": 1,
       "max": 28,
       "default": 2,
-      "type": "bus",
-      "is_bus": true,
-      "parameterNumber": 1
+      "description": "The bus for input 2."
     },
     {
-      "name": "Trigger type",
+      "name": "Trigger_type",
       "min": 0,
       "max": 4,
       "default": 0,
-      "type": "trigger",
-      "is_bus": false,
-      "parameterNumber": 2
+      "enum_values": [
+        "Free running",
+        "1 rising",
+        "1 falling",
+        "2 rising",
+        "2 falling"
+      ],
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "Trigger voltage",
+      "name": "Trigger_voltage",
       "min": -11.0,
       "max": 11.0,
       "default": 0.0,
-      "type": "trigger",
-      "is_bus": false,
-      "parameterNumber": 3
+      "description": "Set the trigger voltage - the voltage the input signal has to cross to trigger the oscilloscope.",
+      "enum_values": [],
+      "type": "folder",
+      "is_bus": false
     },
     {
-      "name": "Display mode",
+      "name": "Time_range",
+      "min": 0,
+      "max": 13,
+      "default": 7,
+      "description": "Sets the time range corresponding to the full width of the display. The special value \"Auto\" sets the time range to the time between consecutive triggers.",
+      "enum_values": [
+        "Auto"
+      ],
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Display_mode",
       "min": 0,
       "max": 4,
       "default": 2,
-      "type": "trigger",
-      "is_bus": false,
-      "parameterNumber": 4
+      "description": "Sets which waveforms are displayed and how. The options are \"Overlaid\", \"Split\", \"Channel 1\", \"Channel 2\", and \"XY\". In \"XY\" mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa.",
+      "enum_values": [
+        "Overlaid",
+        "Split",
+        "Channel_1",
+        "Channel_2",
+        "XY"
+      ],
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "Draw mode",
+      "name": "Draw_mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "trigger",
-      "is_bus": false,
-      "parameterNumber": 5
+      "description": "",
+      "enum_values": [
+        "Lines (antialiased)",
+        "Lines",
+        "Points"
+      ],
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "Vertical scale 1",
+      "name": "Vertical_scale_1",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "trigger",
-      "is_bus": false,
-      "parameterNumber": 6
+      "description": "Sets the vertical scale for channel 1. The options are 10V, 5V, 2V, and 1V.",
+      "enum_values": [
+        "10V",
+        "5V",
+        "2V",
+        "1V"
+      ],
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "Vertical scale 2",
+      "name": "Vertical_scale_2",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "trigger",
-      "is_bus": false,
-      "parameterNumber": 7
+      "description": "Sets the vertical scale for channel 2.",
+      "enum_values": [
+        "10V",
+        "5V",
+        "2V",
+        "1V"
+      ],
+      "type": "enum",
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input 1",
-      "busIdRef": "1",
-      "isPerChannel": true
+      "name": "Input_1",
+      "description": "The bus for input 1."
     },
     {
-      "name": "Input 2",
-      "busIdRef": "2",
-      "isPerChannel": true
+      "name": "Input_2",
+      "description": "The bus for input 2."
     }
   ],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "",
+      "description": ""
+    }
+  ]
 }

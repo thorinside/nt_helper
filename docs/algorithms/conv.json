@@ -1,126 +1,135 @@
 {
   "guid": "conv",
   "name": "Convolver",
-  "description": "This algorithm performs real-time convolution of the input signal and another signal (often called an impulse response), which is loaded from the MicroSD card. This is often used for realistic reverb effects, since the required impulse responses can be sampled from a physical location, but the technique is much more general and can be a very creative way to mangle and combine sounds. Convolution is notoriously CPU-intensive, and the disting NT is a resource-constrained embedded system – you should not expect to achieve the same results as you might in the latest new fangled convolution reverb plug-in in your DAW, with orders of magnitude more CPU power and RAM. However, this algorithm remains a useful tool within the context of a modular synth. The algorithm is based on the disting EX algorithm of the same name. There is an in-depth video for that algorithm here https://www.youtube.com/watch?v=tDFZA9b2A0Y. The algorithm is based on the disting EX algorithm of the same name. There is an in-depth video for that algorithm here https://www.youtube.com/watch?v=tDFZA9b2A0Y.",
+  "description": "This algorithm performs real-time convolution of the input signal and another signal (often called an 'impulse response'), which is loaded from the MicroSD card. Convolution is a technique used for realistic reverb effects by sampling impulse responses from physical locations, but it can also be applied creatively to mangle and combine sounds. The disting NT is a resource-constrained embedded system, so this algorithm will not achieve the same results as high-end convolution reverbs in DAWs with more CPU power and RAM. However, it remains useful within modular synthesis contexts.",
   "categories": [
+    "audio effects",
     "reverb",
-    "audio effects"
+    "sampling"
   ],
   "short_description": "Computes audio convolutions",
+  "use_cases": [
+    "Realistic reverb effects using impulse responses sampled from physical spaces",
+    "Creative sound mangling and combination via convolution",
+    "Master bus insert effect for adding reverb to entire mixes (with long latency tolerance)",
+    "Loading impulse responses from MicroSD card for real-time processing"
+  ],
+  "gui_description": "The display shows a graphical representation of the impulse sample on the left. On the right, it displays the mono/stereo processing mode, maximum impulse time based on current parameters, actual length of the loaded sample file, and overall CPU usage.",
   "specifications": [
     {
-      "name": "Max impulse",
-      "min": 1,
-      "max": 10
+      "name": "Sample rate",
+      "value": "48kHz (fixed for all algorithms)",
+      "description": "All disting NT algorithms run at a fixed sample rate of 48kHz. The 'Sample rate' parameter allows internal downsampling to lower rates (48kHz, 24kHz, 12kHz, or 6kHz) for longer impulse times but reduced audio bandwidth."
     },
     {
-      "name": "Sample rate",
-      "min": 0,
-      "max": 3
+      "name": "Max impulse length",
+      "value": "1-10 seconds",
+      "description": "The maximum length of the impulse response sample that can be processed depends on allocated memory, mono/stereo mode, latency settings, and internal downsampling. Longer impulses are generally desirable for reverb applications."
+    },
+    {
+      "name": "CPU usage",
+      "value": "High (resource-constrained system)",
+      "description": "Convolution is notoriously CPU-intensive. The disting NT's limited resources mean the algorithm will not perform as efficiently as high-end convolution reverbs in DAWs, but it remains functional within modular synthesis constraints."
+    },
+    {
+      "name": "Latency options",
+      "value": "[5ms, 11ms, 22ms, or 43ms]",
+      "description": "The algorithm processes audio in blocks. Latency can be adjusted to balance between lower latency (shorter impulse times) and higher latency (longer impulse times). Dry signal remains synced with convolution output regardless of latency."
+    },
+    {
+      "name": "Memory allocation",
+      "value": "Adjustable via specifications",
+      "description": "More allocated memory allows longer impulse responses to be processed, at the cost of available resources for other algorithms or tasks."
     }
   ],
   "parameters": [
     {
       "name": "Folder",
       "min": 1,
-      "max": null,
-      "default": "",
-      "description": "Chooses the folder from which to load the impulse response sample."
+      "default": null,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Sample",
       "min": 1,
-      "max": null,
-      "default": "",
-      "description": "Chooses the impulse response sample within the folder."
+      "default": null,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Latency",
       "min": 0,
       "max": 3,
       "default": 2,
-      "description": "Sets the processing latency (5ms, 11ms, 22ms, or 43ms)."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Sample rate",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the processing sample rate (48kHz, 24kHz,12kHz, or 6kHz)."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Partitions",
-      "min": 1,
+      "min": null,
       "max": null,
-      "default": "",
-      "description": "Allows you to fine tune the maximum impulse length, and consequently the CPU usage."
+      "default": null,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Dry gain",
       "min": -40,
       "max": 12,
       "default": 0,
-      "description": "The output level of the dry signal."
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Convolutio\nn gain",
+      "name": "Convolution gain",
       "min": -40,
       "max": 12,
       "default": 0,
-      "description": "The output level of the convolution result."
-    },
-    {
-      "name": "Left/mono\ninput",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "description": "The left or mono audio input bus."
-    },
-    {
-      "name": "Right input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The right audio input bus."
-    },
-    {
-      "name": "Left output",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "description": "The left audio output bus."
-    },
-    {
-      "name": "Right\noutput",
-      "min": 0,
-      "max": 28,
-      "default": 14,
-      "description": "The right audio output bus."
-    },
-    {
-      "name": "Output\nmode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "Input port for the input signal."
+      "name": "Left/mono input",
+      "description": "The left or mono audio input bus (1-28)."
     },
     {
-      "name": "Impulse",
-      "description": "Input port for the impulse response."
+      "name": "Right input",
+      "description": "The right audio input bus (0-28, 0 means no signal)."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left output",
+      "description": "The left audio output bus (1-28)."
     },
     {
-      "name": "Dry",
-      "description": "Input port for the dry signal."
-    },
-    {
-      "name": "Output",
-      "description": "Output port for the output signal."
+      "name": "Right output",
+      "description": "The right audio output bus (0-28, 0 means no signal)."
     }
   ]
 }

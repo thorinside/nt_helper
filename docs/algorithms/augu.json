@@ -1,247 +1,54 @@
 {
   "guid": "augu",
   "name": "Augustus Loop",
-  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name (here https://expert-sleepers.co.uk/augustusloop.html). Essentially, it is a tape-inspired stereo delay. The delay time can be dialled in manually, or set by tap tempo or a clock input. The longest delay possible is around 44 seconds. Being a tape delay, you can change the tape speed via CV. Patching an LFO into here is your route to all manner of subtle detuning or extreme mangling effects. You can also stop and reverse the tape. There is an option to run the delay signal through an 'effects loop', allowing you to insert other effects or processing into the guts of the delay. Note that the 'Pitch CV' input changes the tape speed. It is labelled pitch rather than speed to emphasise the fact that it is scaled 1V/octave.",
+  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name. Essentially, it's a tape-inspired stereo delay. The delay time can be dialled in manually, or set by tap tempo or a clock input. The longest delay possible is around 44 seconds. Being a tape delay, you can change the tape speed via CV, patching an LFO into here for subtle detuning or extreme mangling effects. You can also stop and reverse the tape. There is an option to run the delay signal through an 'effects loop', allowing insertion of other effects or processing into the guts of the delay. The Pitch CV input changes the tape speed, scaled 1V/octave.",
   "categories": [
+    "audio effects",
     "delay",
-    "CV Processing"
+    "clocking",
+    "routing",
+    "external control",
+    "CV processing"
   ],
   "short_description": "\"Tape-like delay\"",
   "specifications": [
     {
-      "name": "Max delay time",
-      "min": 0,
-      "max": 44
+      "name": "Max Delay Time",
+      "value": "1-44 seconds",
+      "description": "The maximum delay time possible."
     },
     {
-      "name": "Delay time",
-      "min": 0,
-      "max": 43.7
+      "name": "Sample Rate",
+      "value": "Variable (depends on NT system)",
+      "description": "Supports the sample rate of the disting NT platform."
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left Input",
+      "description": "Audio input for the left channel, fed to the tape write head."
     },
     {
-      "name": "Time (fine)",
-      "min": -100,
-      "max": 100
+      "name": "Right Input",
+      "description": "Audio input for the right channel, fed to the tape write head."
     },
     {
-      "name": "Delay multiplier",
-      "min": 0,
-      "max": 23
+      "name": "Pitch CV",
+      "description": "CV input that changes the tape speed (scaled 1V/octave)."
     },
     {
-      "name": "Feedback",
-      "min": 0,
-      "max": 100
+      "name": "Clock Input",
+      "description": "CV clock input used to set delay time based on rising edges."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left Output",
+      "description": "Audio output for the left channel, including processed delay signal."
     },
     {
-      "name": "L-L Time",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "L-R Time",
-      "min": 0,
-      "max": 50
-    },
-    {
-      "name": "R-L Time",
-      "min": 0,
-      "max": 50
-    },
-    {
-      "name": "R-R Time",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "L-L Level",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "L-R Level",
-      "min": 0,
-      "max": 0
-    },
-    {
-      "name": "R-L Level",
-      "min": 0,
-      "max": 0
-    },
-    {
-      "name": "R-R Level",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "Mono-ize",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "Initial pan",
-      "min": -100,
-      "max": 100
-    },
-    {
-      "name": "Dry gain",
-      "min": -40,
-      "max": 6
-    },
-    {
-      "name": "Effect gain",
-      "min": -40,
-      "max": 6
-    },
-    {
-      "name": "Input level",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "Pitch inertia",
-      "min": 0,
-      "max": 125
-    },
-    {
-      "name": "Stop tape",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Reverse tape",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Bit depth",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Inertia free",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Inertia fade time",
-      "min": 1,
-      "max": 1000
-    },
-    {
-      "name": "Pitch CV input",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "Pitch LFO speed",
-      "min": 0,
-      "max": 127
-    },
-    {
-      "name": "Pitch LFO depth",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "Clear loop",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Filter type",
-      "min": 0,
-      "max": 400
-    },
-    {
-      "name": "Filter freq",
-      "min": 0,
-      "max": 127
-    },
-    {
-      "name": "Filter Q",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "Saturation enable",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Saturation",
-      "min": 0,
-      "max": 110
-    },
-    {
-      "name": "Saturation shape",
-      "min": 0,
-      "max": 100
-    },
-    {
-      "name": "Clock input",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "Tap tempo",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Clocks",
-      "min": 1,
-      "max": 10
-    },
-    {
-      "name": "Left input",
-      "min": 1,
-      "max": 28
-    },
-    {
-      "name": "Right input",
-      "min": 1,
-      "max": 28
-    },
-    {
-      "name": "Left output",
-      "min": 1,
-      "max": 28
-    },
-    {
-      "name": "Right output",
-      "min": 1,
-      "max": 28
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "FX Loop position",
-      "min": 0,
-      "max": 2
-    },
-    {
-      "name": "FX Loop output L",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "FX Loop output R",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "FX Loop input L",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "FX Loop input R",
-      "min": 0,
-      "max": 28
+      "name": "Right Output",
+      "description": "Audio output for the right channel, including processed delay signal."
     }
   ]
 }

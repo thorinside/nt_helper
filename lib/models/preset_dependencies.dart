@@ -12,6 +12,10 @@ class PresetDependencies {
   final Set<String> communityPlugins = <String>{};
   final Set<String> pluginData = <String>{};
 
+  /// Maps plugin GUID to SD card file path (from AlgorithmInfo.filename)
+  /// Used for direct SD card reads during export when connected to hardware
+  final Map<String, String> pluginPaths = <String, String>{};
+
   int get totalCount =>
       wavetables.length +
       sampleFolders.length +
@@ -26,5 +30,6 @@ class PresetDependencies {
 
   bool get isEmpty => totalCount == 0;
 
-  bool get hasCommunityPlugins => communityPlugins.isNotEmpty;
+  bool get hasCommunityPlugins =>
+      communityPlugins.isNotEmpty || pluginPaths.isNotEmpty;
 }

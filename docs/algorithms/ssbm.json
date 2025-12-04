@@ -1,67 +1,145 @@
 {
   "guid": "ssbm",
   "name": "SSB Modulator",
-  "description": "This algorithm is based on one mode of the Frequency Shifter algorithm on the disting EX. It modulates two signals with each other, and produces the upper and lower sidebands on separate outputs.",
+  "description": "This algorithm is based on one mode of the Frequency Shifter algorithm on the disting EX. It modulates two signals with each other, and produces the upper and lower sidebands on separate outputs.\n\n[For a (rather technical) description of single side band modulation, see the Wikipedia article here](https://en.wikipedia.org/wiki/Single-sideband_modulation).\n\nIf you use a pure sine wave for one of the inputs, you essentially have a frequency shifter, but one where you control the shift by controlling the frequency of your input oscillator.",
   "categories": [
-    "modulation",
+    "synthesis",
+    "audio effects",
     "pitch"
   ],
-  "short_description": "\"Single Side Band modulator\"",
-  "specifications": [],
   "parameters": [
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "%",
+      "description": "The output wet/dry mix.",
+      "enum_values": [
+        "0",
+        "100"
+      ]
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 2
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "dB",
+      "description": "The output gain applied to the modulated signal.",
+      "enum_values": [
+        "-40",
+        "0"
+      ]
+    },
+    {
+      "name": "Input 1",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "The first input bus to process for the first signal.",
+      "description": "Input 1"
+    },
+    {
+      "name": "Input 2",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "The first input bus to process for the second signal.",
+      "description": "Input 2"
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "description": "Width"
+    },
+    {
+      "name": "The first output bus for the upper side band.",
+      "description": "Upper SB output"
+    },
+    {
+      "name": "Upper SB mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false
+    },
+    {
+      "name": "The standard Add/Replace mode selector as described above for the upper side band.",
+      "description": "Upper SB mode"
+    },
+    {
+      "name": "The first output bus for the lower side band.",
+      "description": "Lower SB output"
+    },
+    {
+      "name": "Lower SB mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false
+    },
+    {
+      "name": "The standard Add/Replace mode selector as described above for the lower side band.",
+      "description": "Lower SB mode"
     }
   ],
   "input_ports": [
     {
       "name": "Input 1",
-      "busIdRef": "1",
-      "isPerChannel": true
+      "description": "First input signal (bus 1-28)"
     },
     {
       "name": "Input 2",
-      "busIdRef": "2",
-      "isPerChannel": true
-    },
-    {
-      "name": "Width",
-      "busIdRef": "1",
-      "isPerChannel": true
+      "description": "Second input signal (bus 1-28)"
     }
   ],
   "output_ports": [
     {
-      "name": "Upper SB<br>output",
-      "busIdRef": "13",
-      "isPerChannel": true
+      "name": "Upper SB output",
+      "description": "Output for the upper side band (bus 0-28)"
     },
     {
-      "name": "Upper SB<br>mode",
-      "busIdRef": "0",
-      "isPerChannel": true
+      "name": "Lower SB output",
+      "description": "Output for the lower side band (bus 0-28)"
     },
     {
-      "name": "Lower SB<br>output",
-      "busIdRef": "0",
-      "isPerChannel": true
+      "name": "Upper SB output",
+      "description": ""
+    },
+    {
+      "name": "Lower SB output",
+      "description": ""
     }
   ]
 }

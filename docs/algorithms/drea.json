@@ -1,308 +1,462 @@
 {
   "guid": "drea",
   "name": "Dream Machine",
-  "description": "This algorithm is an implementation of the original Dream Machine algorithm on the disting EX. It is designed to generate drones, allowing the user to explore non-traditional harmonies based on prime ratios. It was inspired by the theories of composer La Monte Young (https://en.wikipedia.org/wiki/La_Monte_Young) [65] . An interesting read is the pdf “Notes on The Theatre of Eternal Music” available in a number of places online e.g. here (https://www.melafoundation.org/theatre.pdf) [66]. The output is a combination of five sounds – the fundamental and four harmonies. The prime ratios that define the frequency relationships are controlled by parameters. The algorithm uses wavetable synthesis to generate the tones. Additionally the fundamental may instead be a pure sine, triangle, or square wave. Each tone has a simple attack/release envelope, controlled by its own gate parameter. By default, little is mapped to the CV inputs, and it is perfectly possible to drive the algorithm entirely by hand. You may however like to map inputs as FM inputs, or to control the gates.",
+  "description": "This algorithm is an implementation of the original Dream Machine algorithm on the disting EX. It is designed to generate drones, allowing the user to explore non-traditional harmonies based on prime ratios. Inspired by composer La Monte Young's theories, it excludes major thirds and focuses on just intonation principles. The output combines five sounds – a fundamental tone (default concert B♭) and four harmonics – with adjustable frequency relationships via prime ratio parameters. Wavetable synthesis generates tones, while the fundamental can also be a pure sine, triangle, or square wave. Each tone features an attack/release envelope controlled by individual gate parameters. By default, CV inputs are minimally mapped, enabling manual control but allowing optional mapping for FM modulation or gating.",
   "categories": [
     "synthesis",
     "wavetable",
-    "polyphonic",
-    "CV processing"
+    "dynamics",
+    "randomization"
   ],
-  "short_description": "\"Just intonation drone synth\"",
-  "specifications": [],
+  "short_description": "Just intonation drone synth",
+  "use_cases": [
+    "Exploring non-traditional harmonies based on prime ratios",
+    "Generating drones with customizable frequency relationships",
+    "Manual control of synthesis parameters for experimental sound design",
+    "Mapping CV inputs as FM modulation or gating controls"
+  ],
+  "gui_description": "The display shows the current waveform within the wavetable on the right side. The rest of the screen displays the frequency, ratio (reduced to lowest form), and gate level of five tones from left to right.",
+  "specifications": [
+    {
+      "name": "Polyphony",
+      "description": "Supports five simultaneous tones (fundamental + four harmonics)"
+    },
+    {
+      "name": "Sample Rates",
+      "description": "Compatible with standard audio sample rates (implied by wavetable synthesis and CV modulation)"
+    }
+  ],
   "parameters": [
     {
       "name": "Wavetable",
-      "min": null,
-      "max": null,
-      "default": "Chooses the wavetable for the oscillators."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Wave offset",
       "min": -100.0,
       "max": 100.0,
-      "default": "0.0",
-      "description": "Sets the position within the wavetable."
+      "default": 0.0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Wave input",
-      "min": 0,
-      "max": 28,
-      "default": "0",
-      "description": "Sets an input bus to modulate the wave offset."
-    },
-    {
-      "name": "Waveform",
+      "name": "Waveform 0",
       "min": 0,
       "max": 3,
-      "default": "0",
-      "description": "Chooses the waveform for the fundamental. The options are \"Wavetable\", \"Sine\", \"Triangle\", and \"Square\"."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Prime 1",
       "min": 2,
       "max": 32749,
-      "default": "2",
-      "description": "Sets one of the four primes that may be multiplied to create the denominator and numerators of the frequency ratios."
+      "default": 2,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Prime 2",
       "min": 1,
       "max": 32749,
-      "default": "3",
-      "description": "Sets the second prime."
+      "default": 3,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Prime 3",
       "min": 1,
       "max": 32749,
-      "default": "7",
-      "description": "Sets the third prime."
+      "default": 7,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Prime 4",
       "min": 1,
       "max": 32749,
-      "default": "11",
-      "description": "Sets the fourth prime."
+      "default": 11,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Fundamental",
       "min": 0.001,
-      "max": 32.76,
-      "default": "29.135",
-      "description": "Sets the fundamental frequency."
+      "max": 32767,
+      "default": 29.135,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Octave",
       "min": -8,
       "max": 8,
-      "default": "1",
-      "description": "Sets an octave shift for the fundamental."
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
-      "default": "0",
-      "description": "Adjusts the tuning of all frequencies in (12-TET) semitone steps."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Denominator",
       "min": 1,
       "max": 256,
-      "default": "32",
-      "description": "Sets the denominator of the frequency ratios."
+      "default": 32,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Numerator 1",
       "min": 1,
       "max": 1024,
-      "default": "42",
-      "description": "Sets the numerator of the frequency ratio of tone 1."
+      "default": 42,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Numerator 2",
       "min": 1,
       "max": 1024,
-      "default": "56",
-      "description": "Sets the numerator of the frequency ratio of tone 2."
+      "default": 56,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Numerator 3",
       "min": 1,
       "max": 1024,
-      "default": "62",
-      "description": "Sets the numerator of the frequency ratio of tone 3."
+      "default": 62,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Numerator 4",
       "min": 1,
       "max": 1024,
-      "default": "63",
-      "description": "Sets the numerator of the frequency ratio of tone 4."
+      "default": 63,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gate 0",
       "min": 0,
       "max": 1,
-      "default": "0",
-      "description": "Gate for tone 0."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gate 1",
       "min": 0,
       "max": 1,
-      "default": "0",
-      "description": "Gate for tone 1."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gate 2",
       "min": 0,
       "max": 1,
-      "default": "0",
-      "description": "Gate for tone 2."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gate 3",
       "min": 0,
       "max": 1,
-      "default": "0",
-      "description": "Gate for tone 3."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gate 4",
       "min": 0,
       "max": 1,
-      "default": "0",
-      "description": "Gate for tone 4."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gain 0",
       "min": -40,
       "max": 6,
-      "default": "0",
-      "description": "Gain for the fundamental. \"-40\" is treated as –∞dB."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gain 1",
       "min": -40,
       "max": 6,
-      "default": "0",
-      "description": "Gain for tone 1."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gain 2",
       "min": -40,
       "max": 6,
-      "default": "0",
-      "description": "Gain for tone 2."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gain 3",
       "min": -40,
       "max": 6,
-      "default": "0",
-      "description": "Gain for tone 3."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gain 4",
       "min": -40,
       "max": 6,
-      "default": "0",
-      "description": "Gain for tone 4."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Pan 1",
       "min": -100,
       "max": 100,
-      "default": "0",
-      "description": "Stereo pan position for tone 1."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Pan 2",
       "min": -100,
       "max": 100,
-      "default": "0",
-      "description": "Stereo pan position for tone 2."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Pan 3",
       "min": -100,
       "max": 100,
-      "default": "0",
-      "description": "Stereo pan position for tone 3."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Pan 4",
       "min": -100,
       "max": 100,
-      "default": "0",
-      "description": "Stereo pan position for tone 4."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Attack time",
       "min": 0,
       "max": 127,
-      "default": "0",
-      "description": "Attack time for the envelopes."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Decay time",
       "min": 0,
       "max": 127,
-      "default": "0",
-      "description": "Decay time for the envelopes."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "FM input 1",
       "min": 0,
       "max": 28,
-      "default": "0",
-      "description": "Which input bus to use to frequency modulate (FM) tone 1. The input is scaled according to the FM Range parameter."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "FM input 2",
       "min": 0,
       "max": 28,
-      "default": "0",
-      "description": "As above for tone 2."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "FM input 3",
       "min": 0,
       "max": 28,
-      "default": "0",
-      "description": "As above for tone 3."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "FM input 4",
       "min": 0,
       "max": 28,
-      "default": "0",
-      "description": "As above for tone 4."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "FM Range",
       "min": 0,
       "max": 3,
-      "default": "0",
-      "description": "Sets the scaling for the FM inputs. The options are 1Hz/V, 10Hz/V, 100Hz/V or 1kHz/V."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Frequency slew",
       "min": 0,
       "max": 127,
-      "default": "0",
-      "description": "Sets a slew rate for any change in voice frequency."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Crossfade time",
       "min": 0,
       "max": 127,
-      "default": "0",
-      "description": "Sets a crossfade time for any change in voice frequency."
-    },
-    {
-      "name": "Left output",
-      "min": 1,
-      "max": 28,
-      "default": "13",
-      "description": "The left output bus."
-    },
-    {
-      "name": "Right output",
-      "min": 1,
-      "max": 28,
-      "default": "14",
-      "description": "The right output bus."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
-      "default": "0",
-      "description": "The standard Add/Replace mode selector as described above."
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Wave input (bus 1-28)",
+      "description": "Input bus to modulate the wave offset position within the wavetable."
+    },
+    {
+      "name": "FM input 1",
+      "description": "Input bus for frequency modulation of tone 1, scaled according to FM Range parameter."
+    },
+    {
+      "name": "FM input 2",
+      "description": "Input bus for frequency modulation of tone 2, scaled according to FM Range parameter."
+    },
+    {
+      "name": "FM input 3",
+      "description": "Input bus for frequency modulation of tone 3, scaled according to FM Range parameter."
+    },
+    {
+      "name": "FM input 4",
+      "description": "Input bus for frequency modulation of tone 4, scaled according to FM Range parameter."
+    },
+    {
+      "name": "Wave input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left output (bus 1-28)",
+      "description": "Left stereo output bus for the combined five tones."
+    },
+    {
+      "name": "Right output (bus 1-28)",
+      "description": "Right stereo output bus for the combined five tones."
+    },
+    {
+      "name": "Left output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
     }
   ]
 }

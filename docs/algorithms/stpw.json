@@ -3,60 +3,90 @@
   "name": "Stopwatch",
   "description": "This algorithm is simply a clock, for timing how long things (for example, your performance) have been going on, or for showing a countdown (for example, until you should stop your performance and get off the stage). It has no effect on any input/output bus and consumes almost no CPU.",
   "categories": [
-    "clocking",
-    "utility"
+    "utility",
+    "clocking"
   ],
-  "short_description": "\"Real-time clock for timing things\"",
-  "specifications": [],
+  "short_description": "Real-time clock for timing things",
+  "specifications": [
+    {
+      "name": "CPU_usage",
+      "description": "Almost negligible"
+    },
+    {
+      "name": "polyphony",
+      "description": "N/A (no audio processing)"
+    }
+  ],
   "parameters": [
     {
       "name": "Mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Chooses whether to display a timer or a countdown."
+      "scope": "setup",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Start/stop<br>mode",
+      "name": "Start/stop_mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets whether the start/stop control is a gate (start when high, stop when low) or a trigger (trigger to start, another trigger to stop)."
+      "scope": "setup",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Hours",
       "min": 0,
       "max": 24,
       "default": 0,
-      "description": "Sets the number of hours for the countdown."
+      "scope": "countdown",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Minutes",
       "min": 0,
       "max": 59,
       "default": 0,
-      "description": "Sets the number of minutes for the countdown."
+      "scope": "countdown",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Seconds",
       "min": 0,
       "max": 59,
       "default": 0,
-      "description": "Sets the number of seconds for the countdown."
+      "scope": "countdown",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Start/stop",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Starts and stops the timer/countdown."
+      "scope": "controls",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Reset",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets the timer to zero, or resets the countdown to that specified by the countdown parameters."
+      "scope": "controls",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [],

@@ -7,125 +7,112 @@
     "reverb"
   ],
   "short_description": "A general purpose reverb effect",
-  "specifications": [],
   "parameters": [
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Time",
       "min": 400,
       "max": 3000,
       "default": 1700,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 2
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Model",
       "min": 0,
       "max": 3,
       "default": 1,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 3
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Size",
       "min": 1,
       "max": 100,
       "default": 100,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 4
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "High damp",
+      "name": "High_damp",
       "min": 0,
       "max": 100,
       "default": 60,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 5
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Modulation speed",
+      "name": "Modulation_speed",
       "min": 0.01,
       "max": 5.0,
       "default": 2.5,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 6
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Modulation depth",
+      "name": "Modulation_depth",
       "min": 0,
       "max": 100,
       "default": 25,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 7
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Early gain",
+      "name": "Early_gain",
       "min": -40,
       "max": 6,
       "default": -12,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 8
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Diffuse gain",
+      "name": "Diffuse_gain",
       "min": -40,
       "max": 6,
       "default": -6,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 9
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Left input",
-      "id": "1",
+      "name": "Left_input",
       "description": "The left audio input bus.",
-      "isPerChannel": true
+      "busIdRef": "",
+      "channelCountRef": ""
     },
     {
-      "name": "Right input",
-      "id": "2",
+      "name": "Right_input",
       "description": "The right audio input bus.",
-      "isPerChannel": true
+      "busIdRef": "",
+      "channelCountRef": ""
     }
   ],
   "output_ports": [
     {
-      "name": "Left output",
-      "id": "13",
+      "name": "Left_output",
       "description": "The left audio output bus.",
-      "isPerChannel": true
+      "busIdRef": ""
     },
     {
-      "name": "Right output",
-      "id": "14",
-      "description": "The right audio output bus.",
-      "isPerChannel": true
+      "name": "Right_output",
+      "description": "The right audio output bus."
     }
   ]
 }

@@ -1,136 +1,153 @@
 {
   "guid": "comp",
   "name": "Compressor",
-  "description": "This algorithm is a multi-channel compressor. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you, say, want a compressor on all 12 module inputs, you don’t need to add 12 copies of the algorithm to do so.\nA sidechain input is available, to compress one signal according to the envelope of another.\nThe algorithm always works as an insert effect i.e. the output replaces the input.",
+  "description": "This algorithm is a multi-channel compressor where each channel operates independently. It provides convenience for processing multiple bus channels (1-12) without needing to add separate copies of the algorithm. A sidechain input is available, allowing compression of one signal based on the envelope of another. The algorithm functions strictly as an insert effect, meaning its output replaces the input.",
   "categories": [
     "audio effects",
-    "dynamics"
+    "dynamics",
+    "utility"
   ],
-  "short_description": "\"A simple compressor\"",
+  "short_description": "A simple compressor",
+  "use_cases": [
+    "Compressing multiple module inputs simultaneously (1-12 channels)",
+    "Sidechain compression for ducking effects or creative processing",
+    "Gain reduction to control dynamic range in a mix"
+  ],
+  "gui_description": "The display features a right-to-left signal level graph with superimposed gain reduction. To the right of this graph, there is a bar representing the current gain reduction applied.",
   "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 12
+      "description": "Handles 1-12 bus channels for processing."
     },
     {
-      "name": "Per-channel parameters",
-      "min": 0,
-      "max": 1023
+      "name": "Latency",
+      "description": "Lookahead time introduces audio delay equal to the lookahead setting."
     }
   ],
   "parameters": [
     {
       "name": "Enable",
-      "scope": "per-channel",
-      "type": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Threshold",
-      "scope": "per-channel",
-      "type": "file",
+      "min": -60.0,
+      "max": 0.0,
+      "default": -12.0,
+      "type": "folder",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 2
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Ratio",
-      "scope": "per-channel",
-      "type": "file",
+      "min": 0,
+      "max": 1023,
+      "default": 100,
+      "type": "folder",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 3
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Attack",
-      "scope": "per-channel",
-      "type": "file",
+      "min": 0,
+      "max": 1023,
+      "default": 100,
+      "type": "folder",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 4
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Release",
-      "scope": "per-channel",
-      "type": "file",
+      "min": 0,
+      "max": 1023,
+      "default": 100,
+      "type": "folder",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 5
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Auto make-up",
-      "scope": "per-channel",
-      "type": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 6
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Make-up gain",
-      "scope": "per-channel",
-      "type": "file",
+      "min": null,
+      "max": null,
+      "default": null,
+      "type": "folder",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 7
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Lookahead",
-      "scope": "per-channel",
-      "type": "file",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 1.0,
+      "type": "folder",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 8
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Sidechain mix",
-      "scope": "per-channel",
-      "type": "file",
+      "min": -40.0,
+      "max": 12.0,
+      "default": -40.0,
+      "type": "folder",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 9
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Sidechain solo",
-      "scope": "per-channel",
-      "type": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
       "is_per_channel": true,
-      "is_bus": false,
-      "parameterNumber": 10
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Left/mono input",
-      "busIdRef": "1",
-      "channelCountRef": "28",
-      "isPerChannel": false
+      "description": "The left or mono input bus (1-28)."
     },
     {
       "name": "Right input",
-      "busIdRef": "0",
-      "channelCountRef": "28",
-      "isPerChannel": false
+      "description": "The right input bus for stereo mode, if applicable (0-28). 0 indicates no connection."
     },
     {
       "name": "Sidechain input",
-      "busIdRef": "0",
-      "channelCountRef": "28",
-      "isPerChannel": false
-    },
+      "description": "The sidechain input bus used to drive compression based on another signal's envelope (0-28)."
+    }
+  ],
+  "output_ports": [
     {
       "name": "Reduction output",
-      "busIdRef": "0",
-      "channelCountRef": "28",
-      "isPerChannel": false
+      "description": "Bus receiving scaled gain reduction values, where 1V equals 6dB of reduction."
     },
     {
-      "name": "Reduction mode",
-      "busIdRef": "0",
-      "channelCountRef": "28",
-      "isPerChannel": false
+      "name": "Main output",
+      "description": "The processed audio signal after compression and sidechain mixing."
     }
   ]
 }

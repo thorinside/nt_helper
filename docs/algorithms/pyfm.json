@@ -1,13 +1,19 @@
 {
   "guid": "pyfm",
   "name": "Poly FM",
-  "description": "This algorithm is inspired by the original Poly FM algorithm on the disting EX. It is a polyphonic, multitimbral, FM synthesizer. It uses the six-operator FM engine from the open source Plaits (https://github.com/pichenettes/eurorack/tree/master/plaits) [89] module by Émilie Gillet (exactly as used in the Macro Oscillator 2 algorithm, above). It loads Yamaha DX7 voice bank SysEx files from the MicroSD card. Please refer to the section \"Common polysynth features\" above.",
+  "description": "This algorithm is inspired by the original Poly FM algorithm on the disting EX. It is a polyphonic, multitimbral, FM synthesizer using the six-operator FM engine from the open-source Plaits module by Émilie Gillet (exactly as used in the Macro Oscillator 2 algorithm). The algorithm loads Yamaha DX7 voice bank SysEx files from the MicroSD card. It supports up to four different timbres, each defined by a distinct voice bank/voice selection and additional parameters shaping sound characteristics. All timbres share a pool of up to 24 simultaneous voices. When adjusting microtuning parameters, more information about the chosen tuning is displayed on the GUI.",
   "categories": [
     "synthesis",
     "polyphonic",
     "FM"
   ],
   "short_description": "A polyphonic FM synthesizer",
+  "use_cases": [
+    "Generating complex, evolving sounds using Yamaha DX7 voice banks",
+    "Creating layered textures with up to four distinct timbres",
+    "Responding to MIDI, MPE, or CV/gate inputs for dynamic control"
+  ],
+  "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar indicating the note envelope. Additional tuning information appears when microtuning parameters are adjusted.",
   "specifications": [
     {
       "name": "Timbres",
@@ -26,102 +32,204 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 1
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Sustain mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 2
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Bank",
-      "min": null,
-      "max": null,
-      "default": "",
+      "scope": "timbre",
       "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 3
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Voice",
       "min": 1,
       "max": 32,
       "default": 1,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 4
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 5
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 6
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Brightness",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 7
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Envelope scale",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 8
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 9
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Sustain",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 10
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Press -> volume",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Press -> bright",
+      "min": -200,
+      "max": 200,
+      "default": 0,
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MPE Y -> volume",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MPE Y -> bright",
+      "min": -200,
+      "max": 200,
+      "default": 0,
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "scope": "timbre",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
+    }
+  ]
 }

@@ -1,40 +1,168 @@
 {
   "guid": "usbt",
   "name": "USB audio (to host)",
-  "description": "This algorithm routes signals to the USB audio host, if one is connected.\nThe host sees 12 input channels. Each one of these can be set to receive any of the disting NT’s busses.\nNote that the signals seen by the algorithm, and so by the host, depend where in the list of algorithms this one appears. If it’s the first algorithm, it can send to the host the module’s own inputs, unmodified; if it’s the last algorithm, it can send to the host the outputs of all the other algorithms.\nNote also that “USB audio” doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
+  "description": "This algorithm routes signals to the USB audio host, if one is connected.\n\nThe host sees 12 input channels. Each one of these can be set to receive any of the disting NT’s busses.\n\nNote that the signals seen by the algorithm, and so by the host, depend where in the list of algorithms this one appears. If it’s the first algorithm, it can send to the host the module’s own inputs, unmodified; if it’s the last algorithm, it can send to the host the outputs of all the other algorithms.\n\nNote also that “USB audio” doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
   "categories": [
     "routing",
-    "external control",
-    "utility"
+    "utility",
+    "external control"
   ],
   "short_description": "Sends audio to USB host",
+  "use_cases": [
+    "Audio routing to a computer for further processing",
+    "Exchanging control signals with VCV Rack or other modular synth environments",
+    "Monitoring internal module busses via external software",
+    "Debugging signal flow in the disting NT"
+  ],
+  "gui_description": null,
   "specifications": [],
   "parameters": [
     {
-      "name": "USB channel 1 from",
+      "name": "USB_channel_1_from",
       "min": 1,
       "max": 28,
       "default": 1,
-      "type": "bus",
-      "is_common": true
+      "type": "enum",
+      "is_bus": true
     },
     {
-      "name": "USB channel 2 from",
+      "name": "USB_channel_2_from",
       "min": 1,
       "max": 28,
       "default": 2,
-      "type": "bus",
-      "is_common": true
+      "type": "enum",
+      "is_bus": true
     },
     {
-      "name": "Etc. up to channel 12",
-      "min": null,
-      "max": null,
+      "name": "USB_channel_3_from",
+      "min": 1,
+      "max": 28,
       "default": null,
-      "type": "bus",
-      "is_common": true
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_4_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_5_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_6_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_7_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_8_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_9_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_10_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_11_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
+    },
+    {
+      "name": "USB_channel_12_from",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "type": "enum",
+      "is_bus": true
     }
   ],
   "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "USB_channel_1",
+      "description": "Outputs signal to USB host channel 1 (corresponds to disting NT bus 1 by default)"
+    },
+    {
+      "name": "USB_channel_2",
+      "description": "Outputs signal to USB host channel 2 (corresponds to disting NT bus 2 by default)"
+    },
+    {
+      "name": "USB_channel_3",
+      "description": "Outputs signal to USB host channel 3"
+    },
+    {
+      "name": "USB_channel_4",
+      "description": "Outputs signal to USB host channel 4"
+    },
+    {
+      "name": "USB_channel_5",
+      "description": "Outputs signal to USB host channel 5"
+    },
+    {
+      "name": "USB_channel_6",
+      "description": "Outputs signal to USB host channel 6"
+    },
+    {
+      "name": "USB_channel_7",
+      "description": "Outputs signal to USB host channel 7"
+    },
+    {
+      "name": "USB_channel_8",
+      "description": "Outputs signal to USB host channel 8"
+    },
+    {
+      "name": "USB_channel_9",
+      "description": "Outputs signal to USB host channel 9"
+    },
+    {
+      "name": "USB_channel_10",
+      "description": "Outputs signal to USB host channel 10"
+    },
+    {
+      "name": "USB_channel_11",
+      "description": "Outputs signal to USB host channel 11"
+    },
+    {
+      "name": "USB_channel_12",
+      "description": "Outputs signal to USB host channel 12"
+    }
+  ]
 }

@@ -1,105 +1,122 @@
 {
   "guid": "delt",
   "name": "Delay (Tape)",
-  "description": "This algorithm is based on the disting mk4 algorithm “D-2 Tape Delay”, which is itself a simplified version of the “Augustus Loop” effect. It is a delay/echo effect which simulates a variable speed tape loop echo device.\nThe ‘Tape length’ parameter sets the range of delay times available. Note though that changing this may introduce clicks and pops. The primary means of changing the delay time is the “Tape speed” parameter and/or the Speed CV input.\nThe tape speed can be set in the range from half speed (0.5x) to double speed (2x). If using the CV input, the scaling is 8V/octave i.e. +8V gives double speed and -4V gives half speed.\nThree options are available for how the wet/dry mix is controlled:\n- With feedback\n- Crossfade\n- Add delay\n",
+  "description": "A tape delay effect based on the disting mk4 algorithm 'D-2 Tape Delay', which is a simplified version of the 'Augustus Loop' effect. It simulates a variable speed tape loop echo device.\n\nThe 'Tape length' parameter sets the range of delay times available, though changing this may introduce clicks and pops. The primary means of altering delay time is via the 'Tape speed' parameter or Speed CV input. Tape speed can be adjusted from half (0.5x) to double (2x), with an 8V/octave scaling for CV inputs (+8V doubles speed, -4V halves it).\n\nThree mixing modes are available:\n- **With feedback**: delay amount in mix increases proportionally with feedback.\n- **Crossfade**: 'Mix' parameter acts as a crossfader between wet/dry signals.\n- **Add delay**: dry level remains constant while 'Mix' adds the delayed signal.",
   "categories": [
     "audio effects",
     "delay",
+    "mixing",
     "CV processing"
   ],
   "short_description": "A tape delay effect",
-  "specifications": [
-    {
-      "name": "Max tape length",
-      "min": 1,
-      "max": 30
-    },
-    {
-      "name": "Stereo",
-      "value": "mono or stereo"
-    }
+  "use_cases": [
+    "Music production (delay/echo effects)",
+    "Sound design (tape loop simulation)",
+    "Live performance (variable speed CV-controlled delays)"
   ],
+  "gui_description": "The interface likely includes controls for tape length, speed, feedback, and mix mode selection, along with input/output bus selectors for routing audio signals.",
   "parameters": [
     {
       "name": "Mix mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets how the delay and dry signals are mixed. See<br>above."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "string",
+      "scope": "global",
+      "type": "scaled",
       "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 1
+      "is_bus": false
     },
     {
       "name": "Feedback",
       "min": 0,
       "max": 110,
       "default": 50,
-      "description": "The delay feedback."
+      "scope": "global",
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
       "name": "Tape length",
       "min": 1,
       "max": 250,
-      "default": "250",
-      "type": "string",
+      "default": null,
+      "scope": "global",
+      "type": "scaled",
       "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 2
+      "is_bus": false
     },
     {
       "name": "Tape speed",
       "min": -500,
       "max": 1000,
+      "default": null,
+      "scope": "global",
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
       "default": 0,
-      "description": "Sets the tape speed (in conjunction with the CV input)."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Left/mono<br>input",
-      "busIdRef": "1",
-      "channelCountRef": "28",
-      "isPerChannel": true
+      "name": "Left/mono input",
+      "description": "The left or mono audio signal input bus."
     },
     {
       "name": "Right input",
-      "busIdRef": "2",
-      "channelCountRef": "28",
-      "isPerChannel": true
+      "description": "The right audio signal input bus (stereo mode only)."
     },
     {
-      "name": "Left/mono<br>output",
-      "busIdRef": "13",
-      "channelCountRef": "28",
-      "isPerChannel": true
+      "name": "Speed input",
+      "description": "CV input for controlling tape speed (8V/octave scaling)."
     },
     {
-      "name": "Right<br>output",
-      "busIdRef": "14",
-      "channelCountRef": "28",
-      "isPerChannel": true
+      "name": "Left/mono input",
+      "description": ""
     },
     {
-      "name": "Output<br>mode",
-      "busIdRef": "0",
-      "channelCountRef": "1",
-      "isPerChannel": false
+      "name": "Right input",
+      "description": ""
     },
     {
-      "name": "Speed<br>input",
-      "busIdRef": "0",
-      "channelCountRef": "28",
-      "isPerChannel": false
+      "name": "Speed input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": "The left or mono audio signal output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right audio signal output bus (stereo mode only)."
+    },
+    {
+      "name": "Left/mono output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
     }
   ]
 }

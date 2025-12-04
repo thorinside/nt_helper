@@ -4,5 +4,8 @@
   "description": "This algorithm is simply a place to enter some text, perhaps an explanation of how the preset works, or your set list, or a reminder to buy milk. It has absolutely no effect on the busses and consumes no CPU.",
   "categories": [
     "utility"
-  ]
+  ],
+  "specifications": [],
+  "input_ports": [],
+  "output_ports": []
 }

@@ -1,136 +1,173 @@
 {
   "guid": "clkd",
-  "name": "Clock divider",
-  "description": "This algorithm is a simple clock divider, outputting slower clocks from a faster one. The channels can use completely independent clocks, or share clocks.\nThere is a shared reset input and a per-channel reset input. If either is active, the channel is reset.",
+  "name": "Clock Divider",
+  "description": "This algorithm is a simple clock divider, outputting slower clocks from a faster one. The channels can use completely independent clocks, or share clocks.\n\nThere is a shared reset input and a per-channel reset input. If either is active, the channel is reset.",
   "categories": [
     "clocking"
   ],
-  "short_description": "\"Divides clocks\"",
-  "specifications": [
-    {
-      "name": "Channels",
-      "min": 1,
-      "max": 8
-    }
-  ],
+  "short_description": "Divides clocks",
   "parameters": [
     {
-      "name": "Reset input",
+      "name": "Reset_input",
       "min": 0,
       "max": 28,
       "default": 0,
-      "type": "bus",
-      "is_per_channel": false
+      "scope": "common",
+      "type": "enum",
+      "channelCountRef": "1-8",
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_bus": true
     },
     {
       "name": "Type",
       "min": 0,
       "max": 2,
       "default": 0,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     },
     {
-      "name": "Divisor",
+      "name": "Divisor_Free",
       "min": 1,
       "max": 32,
       "default": 2,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     },
     {
-      "name": "Divisor",
+      "name": "Divisor_Metrical_2",
       "min": 0,
       "max": 5,
       "default": 1,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     },
     {
-      "name": "Divisor",
+      "name": "Divisor_Metrical_23",
       "min": 0,
       "max": 9,
       "default": 1,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     },
     {
-      "name": "Input",
+      "name": "Input_bus",
       "min": 1,
       "max": 28,
       "default": 1,
-      "type": "bus",
-      "is_per_channel": true
+      "scope": "per-channel",
+      "type": "enum",
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true
     },
     {
-      "name": "Reset input",
+      "name": "Reset_input_bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "type": "bus",
-      "is_per_channel": true
+      "scope": "per-channel",
+      "type": "enum",
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": true
     },
     {
-      "name": "Output",
+      "name": "Output_bus",
       "min": 1,
       "max": 28,
       "default": 15,
-      "type": "bus",
-      "is_per_channel": true
+      "scope": "per-channel",
+      "type": "enum",
+      "channelCountRef": "1-8",
+      "is_bus": true
     },
     {
-      "name": "Output",
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 1,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     },
     {
-      "name": "ES-5 Expander",
+      "name": "ES5_Expander",
       "min": 0,
       "max": 6,
       "default": 0,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true,
-      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. \"1\" means the ES-5 itself."
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     },
     {
-      "name": "ES-5 Output",
+      "name": "ES5_Output",
       "min": 1,
       "max": 8,
       "default": 1,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true,
-      "description": "If using an ES-5 expander output, sets which of the 8 outputs on the expander to use."
+      "channelCountRef": "1-8",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Clock input bus",
-      "description": "The clock input bus to divide."
-    },
-    {
-      "name": "Reset input bus",
-      "description": "The reset input bus for this channel."
-    },
-    {
-      "name": "Shared reset input bus",
+      "name": "Reset_input",
       "description": "The shared reset input bus."
+    },
+    {
+      "name": "Input_bus_per_channel",
+      "description": "The clock input bus to divide (per-channel)."
     }
   ],
   "output_ports": [
     {
-      "name": "Clock output bus",
-      "description": "The clock output bus."
+      "name": "Output_bus_per_channel",
+      "description": "The clock output bus (per-channel)."
+    },
+    {
+      "name": "ES5_Expander_output",
+      "description": "If using an ES-5 expander output, sets which of the 8 outputs on the expander to use."
     }
   ]
 }

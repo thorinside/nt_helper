@@ -1,70 +1,28 @@
 {
   "guid": "luae",
   "name": "Lua Expression",
-  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example \"a + b\" to add two signals together. It is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you’re out and about without a computer on which to write the script). For more extensive discussion of Lua on the disting NT, see the Lua Script algorithm (below) and the UI Scripts (below).",
+  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example “a + b” to add two signals together. It is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you’re out and about without a computer on which to write the script). For more extensive discussion of Lua on the disting NT, see the Lua Script algorithm and the UI Scripts.",
   "categories": [
     "utility",
-    "mixing",
     "CV processing"
   ],
-  "short_description": "\"A single line of Lua\"",
   "specifications": [
     {
       "name": "Expressions",
-      "min": 1,
-      "max": 8
+      "description": "The number of independent expressions to evaluate is between 1 and 8."
     }
   ],
-  "parameters": [
+  "parameters": [],
+  "input_ports": [
     {
       "name": "Input A-H",
-      "min": 1,
-      "max": 28,
-      "default": "",
-      "type": "bus",
-      "parameterNumber": 0
-    },
-    {
-      "name": "Output",
-      "min": 1,
-      "max": 28,
-      "default": "15",
-      "type": "bus",
-      "parameterNumber": 0
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": "0",
-      "type": "bus",
-      "parameterNumber": 0
-    },
-    {
-      "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "default": "",
-      "type": "bus",
-      "parameterNumber": 0
-    },
-    {
-      "name": "Expression",
-      "min": null,
-      "max": null,
-      "default": "",
-      "type": "string",
-      "parameterNumber": 0
-    },
-    {
-      "name": "Rate",
-      "min": 0,
-      "max": 1,
-      "default": "0",
-      "type": "bus",
-      "parameterNumber": 0
+      "description": "The bus to use for the correspondingly named expression variable (a-h)."
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The bus to use for the expression output."
+    }
+  ]
 }

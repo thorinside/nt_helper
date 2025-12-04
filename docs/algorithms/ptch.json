@@ -3,9 +3,16 @@
   "name": "Pitch reference",
   "description": "This algorithm simply generates a sine wave tone at a particular pitch or frequency. Note that if using a note to specify the pitch, it respects the global tuning setting.",
   "categories": [
-    "synthesis"
+    "synthesis",
+    "utility"
   ],
   "short_description": "Generates a pitch reference tone",
+  "use_cases": [
+    "Tuning reference",
+    "Pitch calibration",
+    "Frequency alignment tool"
+  ],
+  "gui_description": "The display shows the chosen pitch as a MIDI note name plus cents, as a fractional MIDI note number, and as a frequency in Hz.",
   "specifications": [],
   "parameters": [
     {
@@ -14,7 +21,8 @@
       "max": 1,
       "default": 0,
       "type": "enum",
-      "is_common": true
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Note",
@@ -22,7 +30,8 @@
       "max": 127,
       "default": 69,
       "type": "enum",
-      "is_common": true
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Frequency",
@@ -30,28 +39,45 @@
       "max": 880.0,
       "default": 440.0,
       "type": "enum",
-      "is_common": true
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Amplitude",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 10.0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 6,
+      "default": -40,
+      "type": "enum",
+      "is_bus": true
     }
   ],
   "input_ports": [],
   "output_ports": [
     {
       "name": "Output",
-      "id": "1",
-      "description": "The output bus.",
-      "isPerChannel": false
+      "description": "The output bus for the generated pitch reference tone."
     },
     {
-      "name": "Output mode",
-      "id": "0",
-      "description": "The standard Add/Replace mode selector as described above.",
-      "isPerChannel": false
-    },
-    {
-      "name": "Amplitude",
-      "id": "0.00",
-      "description": "The amplitude of the signal (before the gain is applied).",
-      "isPerChannel": false
+      "name": "Output",
+      "description": ""
     }
   ]
 }

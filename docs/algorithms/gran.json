@@ -1,10 +1,577 @@
 {
   "guid": "gran",
   "name": "Granulator",
-  "description": "This algorithm is an implementation of the original Granulator algorithm on the disting EX.\nIt implements a granular synthesis [73] engine, taking as its source material either live audio input or\naudio loaded from the MicroSD card. Live audio can be recorded into a buffer or streamed continuously.\nGranular synthesis works by playing many short snippets of sound, or 'grains', typically of the order\nof 100ms in length. Often various properties of the grains (e.g. their timing, length, pitch, stereo\npanning etc.) are randomised to some extent.\nIn this algorithm, the creation ('spawning') of grains is controlled by 'notes'. Notes control when grain\nclouds begin and end, and affect other features e.g. the grain pitch.\nNotes can be played via CV/gate pairs, or MIDI, or I2C. The algorithm also offers three 'drone'\nvoices, which can simply be enabled via the usual parameter interface. When using the algorithm as\nan audio processing effect you're likely to just enable one or more of these drones and leave them on\nwhile manipulating other grain parameters.\nThe algorithm does nothing until you've recorded some audio into it or loaded some audio from the\nSD card.\nTwo suggested ways of getting started:\n1) Connect an audio input, enable Record and enable Drone 1.\n2) Connect CV/gate or MIDI, load a sample from the card, and play.\nYou may like to review the in-depth videos about the disting EX algorithm - the YouTube playlist is\n[here](https://www.youtube.com/playlist?list=PLlY5j4QDwxWtIlNfDq_dCdryxR2hXTqvg) [74] .\n### Effects and routing\nThose familiar with the disting EX version of this algorithm may wonder where the delay and reverb\n73 Essential reading on granular synthesis includes Microsound by Curtis Roads,\n[https://mitpress.mit.edu/9780262681544/microsound/](https://mitpress.mit.edu/9780262681544/microsound/)\n74 https://www.youtube.com/playlist?list=PLlY5j4QDwxWtIlNfDq_dCdryxR2hXTqvg\nPage 148\neffects have gone. You can of course simply add them as extra algorithms on the disting NT, and do\nso with more routing flexibility.\nThe “Main feedback” (which echoes the granulator output to the buffer input) and “Input feedback\"\n(which effectively applies an echo on the input signal) paths are still available.\n### GUI\nThe display shows a waveform representation of the audio buffer, on which are superimposed dots\nindicating the currently playing grains. The two dotted lines represent the “Size mean” (by their\nseparation) and the “Delay mean” (by their position within the buffer).\nOn the right of the screen you can see the current buffer size, the current delay, and the number\nof grains currently playing.\n### Loading/saving audio\nFunctions for loading and saving audio from/to the MicroSD card are available through the\n‘Granulator’ menu.\nOnce a sample has been loaded via the menu, the algorithm remembers it, and displays its name in the\nGUI:\nIf the preset is then saved and reloaded, the sample will also be reloaded into the buffer.\n##### Load sample\nThis submenu offers four versions of loading a WAV file from the MicroSD card into the\nGranulator’s audio buffer.\n  - **Into buffer/As buffer**  - The ‘into buffer’ options keep the buffer size as-is, and load the\nsample into it. If the sample is shorter than the buffer, the remaining space is cleared.\nThe ‘as\nPage 149\nbuffer’ options change the buffer length to match the sample length (up to the maximum\nbuffer size as per the specifications).\n  - **& Normalize**  - The options with ‘& normalize’ post-process the sample to normalize its level\nso the peak signal level is the nominal maximum.\n##### Forget sample\nThis tells the algorithm to forget the sample location, so it will not be reloaded when the preset\nis loaded. The audio remains in the buffer, however.\n##### Save recording\nThis saves the current buffer contents to the MicroSD card as a WAV file.\nThe file is saved into a folder called ‘granulator’, which will be created if it doesn’t already exist.\nThe filename is ‘saved <date and time>.wav’ where ‘date and time’ come from the real-time clock.\n### Mix parameters\n|Name|Min|Max|Default|Unit|Description|\n---|---|---|---|---|---|\n|Input gain|-34|12|0|dB|Gain applied to the audio being recorded (does not<br>affect the dry signal).\n|Dry gain|-40|6|0|dB|Level of the input signal in the output mix.\n|Granulator<br>gain|-40|6|0|dB|Level of the granulator signal in the output mix.\n|Input<br>feedback|0|100|0|%|The amount of feedback to apply around the audio\nbuffer itself when recording (resulting in an echo\neffect on the input material, with a delay time equal\nto the buffer size).\n|Main<br>feedback|0|100|0|%|The amount of the granulator output to feed back\ninto the audio buffer when recording.\n|Normalize|0|1|1||If enabled, the overall volume of the grain cloud is\nlowered according to how many grains are active.\n### Record parameters\n|Name|Min|Max|Default|Unit|Description|\n---|---|---|---|---|---|\n|Record|0|1|0||Enables recording into the buffer.\n|Buffer size|100|||ms|The audio buffer size in milliseconds.\nPage 150\nRecord\nfade\n\n0 1000 5 ms The duration of the fade applied when starting and\nstopping recording, to avoid clicks.\n### Grains parameters\n\n|Name|Min|Max|Default|Unit|Description|\n---|---|---|---|---|---|\n|Shape|0|5|0||The grain envelope/window shape. See below.\n|Spawn<br>mode|0|4|0||How grains are spawned.\n|Rate mean|1|1000|5|ms|The average time between new grains being\nspawned.\n|Rate<br>spread|0|200|10|%|The amount of variation in the spawn rate,\nexpressed as a percentage of 'Rate mean'.\n|Size mean|0|1000|100|ms|The average grain size. '0' has a special meaning –<br>see below.\n|Size<br>spread|0|200|10|%|The amount of variation in grain size, expressed as\na percentage of 'Size mean'.\n|Pitch mean|-24|24|0|ST|The average grain pitch shift (in semitones).\n|Pitch<br>spread|0|1200|0|cents|The amount of variation in grain pitch shift.\n|Pan mean|-100|100|0|%|The average grain pan position.\n|Pan spread|0|100|10|%|The amount of variation in grain pan.\n|Delay<br>mean|0|100|50|%|The average grain delay (equivalently, the position\nin the audio buffer), expressed as a percentage of\nthe buffer size.\n|Delay<br>spread|0|100|5|%|The amount of variation in grain delay, expressed\nas a percentage of the buffer size.\n|Reverse|0|100|0|%|Sets the probability that a grain will be played\nbackwards.\n|Grain limit|1|40|40||Imposes an arbitrary limit on the number of\nsimultaneous grains.\n|Natural<br>pitch|0|127|48|ST|Sets the natural pitch of the audio i.e. the MIDI\nnote number that will play back the audio at the same pitch at which it was recorded.\nPage 151\n|Pitch<br>quantize|0|5|0|Col5|Quantizes the random pitch deviation (the\nsum of the 'Pitch mean' and 'Pitch spread') to\nmusical intervals. See below.\n|---|---|---|---|---|\n|Opacity|0|100|100|%|The 'opacity' of a note, which is the percentage of\ngrains that would normally make up the note that\nactually sound.\n|Grain<br>position|0|1|0||Sets how the grain position is computed relative to\nthe position set by the Delay mean/spread\nparameters. The options are ‘Centred on delay’ and\n‘Start at delay’.\n### Modulation parameters\n\n|Name|Min|Max|Default|Unit|Description|\n---|---|---|---|---|---|\n|LFO depth|-100|100|0|%|The depth of the LFO that affects the grain delay,\nexpressed as a percentage of the buffer size.\n|LFO speed|0|255|196||The speed of the grain delay LFO. This is scaled\nrelative to the buffer size – at the default value of\n196 the LFO will cause the 'play head' (to use a\ntape metaphor) to advance at 1x speed.\n|LFO shape|0|2|0||Sets the LFO shape. The options are “Triangle”,\n“Ramp up”, and “Ramp down”.\n|Attack<br>time|0|127|64||The envelope attack time, from 100ms to 30s with\nan exponential scaling.\n|Release<br>time|0|127|64||The envelope release time, from 100ms to 30s with\nan exponential scaling.\n|Env -><br>opacity|0|100|0|%|The amount by which the note envelope affects the\nnote opacity.\n|Env -><br>level|0|100|100|%|The amount by which the note envelope affects the\nnote level (volume).\n|Veloc -><br>level|0|100|100|%|The amount by which the note velocity affects the\nnote level (volume).\n|Veloc -><br>delay|0|100|0|%|The amount by which the note velocity affects the\ngrain delay.\n|Pitch -><br>pitch|0|100|100|%|The amount by which the note pitch affects the\ngrain pitch. Commonly this will either be 100%<br>(normal pitch tracking) or 0% (the incoming pitch\ndoesn't affect the grain pitch at all, but may still\naffect e.g. the grain delay).\nPage 152\nPitch ->\ndelay\n\n0 100 0 % The amount by which the note pitch affects the\ngrain delay.\n### Drone 1-3 parameters\n\n|Name|Min|Max|Default|Unit|Description|\n---|---|---|---|---|\n|Drone 1-3<br>pitch|0|127|48/36/60|ST|The MIDI note number for the drone. Remember\nthat ‘Natural pitch’ sets how these are interpreted.\n|Drone 1-3<br>enable|0|1|0||Enables (gates) the drone.\n|Drone 1-3<br>opacity|0|100|100|%|The opacity of the drone.\n|Drone 1-3<br>level|-40|6|0|dB|The level (volume) of the drone.|\n### Setup parameters\n\n|Name|Min|Max|Default|Unit|Description|\n---|---|---|---|---|\n|MIDI<br>channel|0|16|0||The MIDI channel to listen on.\n|MPE<br>channels|1|16|1||Controls how the algorithm will respond to MPE.\n|I2C<br>channel|0|255|1||Sets the I2C channel.\n|Bend<br>range|0|48|2|ST|The MIDI pitch bend range.\n|Delay unit|0|1|0||Determines whether the Delay mean and spread\nparameters work in terms of % or ms.\n### Routing parameters\n\n|Name|Min|Max|Default|Unit|Description|\n---|---|---|---|---|\n|Left input|1|28|1||The left audio input bus.\n|Right input|1|28|1||The right audio input bus.\nPage 153\n|Left output|1|28|13|Col5|The left audio output bus.\n|---|---|---|---|---|\n|Right<br>output|1|28|14||The right audio output bus.\n|Output<br>mode|0|1|0||The standard Add/Replace mode selector as\ndescribed above.\n|Delay<br>mean input|0|28|0||The input bus to use to control the grain delay.\n|Delay<br>mean<br>sampled|0|1|0||If enabled, the Delay mean input is sampled once at\nthe start of a note. Otherwise, it is sampled afresh\nas every grain spawns.\n### CV/gate parameters\nThe algorithm uses the standard polysynth CV/gate parameters, as described above.\n### Spawn mode\nThe spawn mode parameter controls the algorithm by which new grains are spawned.\nThe options are:\n  - **Stochastic** (the default): grains are spawned randomly according to the 'Rate mean' and\n    \"Rate\"\n    spread\n    parameters.\n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n   \n\n\n",
+  "description": "This algorithm is an implementation of the original Granulator algorithm on the disting EX. It implements a granular synthesis engine, taking as its source material either live audio input or audio loaded from the MicroSD card. Live audio can be recorded into a buffer or streamed continuously.\n\nGranular synthesis works by playing many short snippets of sound, or 'grains', typically of the order of 100ms in length. Often various properties of the grains (e.g. their timing, length, pitch, stereo panning etc.) are randomised to some extent.\n\nIn this algorithm, the creation ('spawning') of grains is controlled by 'notes'. Notes control when grain clouds begin and end, and affect other features e.g. the grain pitch. Notes can be played via CV/gate pairs, or MIDI, or I2C. The algorithm also offers three 'drone' voices, which can simply be enabled via the usual parameter interface. When using the algorithm as an audio processing effect you're likely to just enable one or more of these drones and leave them on while manipulating other grain parameters.\n\nThe algorithm does nothing until you've recorded some audio into it or loaded some audio from the SD card.",
   "categories": [
+    "synthesis",
     "granular",
-    "audio effects",
-    "sequencing"
+    "sampling",
+    "MIDI",
+    "external control"
+  ],
+  "short_description": "A granulator",
+  "use_cases": [
+    "Live audio recording and processing with granular synthesis",
+    "Loading samples from MicroSD for grain-based manipulation",
+    "Creating echo effects using input feedback or main feedback",
+    "Generating drone sounds alongside grain clouds",
+    "Pitch-shifting, time-stretching, and spatializing grains"
+  ],
+  "gui_description": "The display shows a waveform representation of the audio buffer with dots indicating currently playing grains. Two dotted lines represent 'Size mean' (by separation) and 'Delay mean' (by position). The right side displays current buffer size, delay, and number of active grains.",
+  "specifications": [
+    {
+      "name": "Max Buffer Size",
+      "value": "1-32 seconds"
+    },
+    {
+      "name": "Grain Spawn Rate",
+      "description": "Typically around the order of 100ms between new grains."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Input gain",
+      "min": -34,
+      "max": 12,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Input gain",
+      "min": -34,
+      "max": 12,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Dry gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Granulator gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Input feedback",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Main feedback",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Normalize",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Record",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Buffer size",
+      "min": 100,
+      "max": null,
+      "default": null,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Record fade",
+      "min": 0,
+      "max": 1000,
+      "default": 5,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Shape",
+      "min": 0,
+      "max": 5,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Spawn mode",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Rate mean",
+      "min": 1,
+      "max": 1000,
+      "default": 5,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Rate spread",
+      "min": 0,
+      "max": 200,
+      "default": 10,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Size mean",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Size spread",
+      "min": 0,
+      "max": 200,
+      "default": 10,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch mean",
+      "min": -24,
+      "max": 24,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch spread",
+      "min": 0,
+      "max": 1200,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pan mean",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pan spread",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Delay mean",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Delay spread",
+      "min": 0,
+      "max": 100,
+      "default": 5,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Reverse",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Grain limit",
+      "min": 1,
+      "max": 40,
+      "default": 40,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Natural pitch",
+      "min": 0,
+      "max": 127,
+      "default": 48,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch quantize",
+      "min": 0,
+      "max": 5,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Opacity",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Grain position",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "LFO depth",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "LFO speed",
+      "min": 0,
+      "max": 255,
+      "default": 196,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "LFO shape",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Attack time",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Release time",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Env -> opacity",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Env -> level",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Veloc -> level",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Veloc -> delay",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch -> pitch",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch -> delay",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 1-3 pitch",
+      "min": 0,
+      "max": 127,
+      "default": null,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 1-3 enable",
+      "min": 0,
+      "max": 1,
+      "default": null,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 1-3 opacity",
+      "min": 0,
+      "max": 100,
+      "default": null,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Drone 1-3 level",
+      "min": -40,
+      "max": 6,
+      "default": null,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Delay unit",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Delay mean sampled",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left input",
+      "description": "The left audio bus for live or recorded audio input."
+    },
+    {
+      "name": "Right input",
+      "description": "The right audio bus for live or recorded audio input."
+    },
+    {
+      "name": "Delay mean input (CV)",
+      "description": "Input CV to control the grain delay, where 5V corresponds to 100% of buffer size."
+    },
+    {
+      "name": "Left input",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "description": ""
+    },
+    {
+      "name": "Delay mean input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left output",
+      "description": "The left audio bus for granulator-processed and mixed output signal."
+    },
+    {
+      "name": "Right output",
+      "description": "The right audio bus for granulator-processed and mixed output signal."
+    },
+    {
+      "name": "Left output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
+    }
   ]
 }

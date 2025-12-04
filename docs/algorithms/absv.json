@@ -1,0 +1,63 @@
+{
+  "guid": "absv",
+  "name": "Rectifier",
+  "description": "This simple algorithm computes the absolute value of the input voltage.",
+  "categories": [
+    "utility",
+    "CV processing"
+  ],
+  "short_description": "\"Full-wave rectifier/absolute value\"",
+  "use_cases": [
+    "Absolute value conversion for audio signals",
+    "Full-wave rectification in modular synthesis",
+    "Channel-level signal processing with adjustable routing"
+  ],
+  "gui_description": null,
+  "parameters": [
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "channelCountRef": "channels",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output_mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "channelCountRef": "channels",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Input",
+      "description": "The input bus to process."
+    },
+    {
+      "name": "Input",
+      "description": "",
+      "isPerChannel": true
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
+    },
+    {
+      "name": "Output",
+      "description": "",
+      "isPerChannel": true
+    }
+  ]
+}

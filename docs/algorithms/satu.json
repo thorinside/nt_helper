@@ -3,15 +3,14 @@
   "name": "Saturation",
   "description": "This algorithm implements a simple soft-saturation effect. It can be used simply for creative toneshaping, but it is particularly useful for avoiding harsh digital clipping when signals get loud. (It is the same processing that is built into many of the disting EX algorithms as a final “output bus” limiter.)",
   "categories": [
+    "audio effects",
     "distortion",
-    "audio effects"
+    "dynamics"
   ],
-  "short_description": "\"Soft-clipping saturation\"",
   "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 8
+      "description": "The number of bus channels to process, ranging from 1 to 8."
     }
   ],
   "parameters": [
@@ -20,50 +19,30 @@
       "min": -40,
       "max": 24,
       "default": 0,
-      "type": "bus",
-      "parameterNumber": 1
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Post gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "bus",
-      "parameterNumber": 2
-    },
-    {
-      "name": "Input",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "type": "bus",
-      "parameterNumber": 3
-    },
-    {
-      "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "bus",
-      "parameterNumber": 4
-    },
-    {
-      "name": "Width",
-      "min": 1,
-      "max": 12,
-      "default": 1,
-      "type": "bus",
-      "parameterNumber": 5
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "The input (and output) bus."
-    },
+      "description": "The input (and output) bus for saturation processing."
+    }
+  ],
+  "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus."
+      "description": "The processed signal after applying soft-saturation, routed from the Input bus."
     }
   ]
 }

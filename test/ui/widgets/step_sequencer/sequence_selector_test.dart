@@ -4,7 +4,8 @@ import 'package:nt_helper/ui/widgets/step_sequencer/sequence_selector.dart';
 
 void main() {
   group('SequenceSelector Widget Tests', () {
-    testWidgets('displays 32 sequence options', (tester) async {
+    testWidgets('displays sequence options based on min/max values',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -12,6 +13,8 @@ void main() {
               currentSequence: 0,
               isLoading: false,
               onSequenceChanged: (_) {},
+              minValue: 0,
+              maxValue: 31,
             ),
           ),
         ),
@@ -25,10 +28,10 @@ void main() {
       await tester.tap(dropdown);
       await tester.pumpAndSettle();
 
-      // Verify first few sequences are visible (not all 32 will be visible in scrollable menu)
-      expect(find.text('Sequence 1'), findsWidgets);
-      expect(find.text('Sequence 2'), findsWidgets);
-      expect(find.text('Sequence 3'), findsWidgets);
+      // Verify first few sequences are visible (numeric values)
+      expect(find.text('0'), findsWidgets);
+      expect(find.text('1'), findsWidgets);
+      expect(find.text('2'), findsWidgets);
     });
 
     testWidgets('displays current sequence correctly', (tester) async {
@@ -36,16 +39,18 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: SequenceSelector(
-              currentSequence: 5, // Hardware value 5 = display "Sequence 6"
+              currentSequence: 5,
               isLoading: false,
               onSequenceChanged: (_) {},
+              minValue: 0,
+              maxValue: 31,
             ),
           ),
         ),
       );
 
-      // Should display "Sequence 6" (hardware value 5 + 1)
-      expect(find.text('Sequence 6'), findsOneWidget);
+      // Should display "5" (the raw value)
+      expect(find.text('5'), findsOneWidget);
     });
 
     testWidgets('calls onSequenceChanged when selection changes',
@@ -61,6 +66,8 @@ void main() {
               onSequenceChanged: (sequence) {
                 selectedSequence = sequence;
               },
+              minValue: 0,
+              maxValue: 31,
             ),
           ),
         ),
@@ -70,11 +77,11 @@ void main() {
       await tester.tap(find.byType(DropdownButtonFormField<int>));
       await tester.pumpAndSettle();
 
-      // Select "Sequence 10" (hardware value 9)
-      await tester.tap(find.text('Sequence 10').last);
+      // Select "9" (hardware value 9)
+      await tester.tap(find.text('9').last);
       await tester.pumpAndSettle();
 
-      // Verify callback was called with correct hardware value (0-indexed)
+      // Verify callback was called with correct value
       expect(selectedSequence, equals(9));
     });
 
@@ -96,8 +103,8 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       // Verify dropdown is disabled (onChanged should be null)
-      final dropdown =
-          tester.widget<DropdownButtonFormField<int>>(find.byType(DropdownButtonFormField<int>));
+      final dropdown = tester.widget<DropdownButtonFormField<int>>(
+          find.byType(DropdownButtonFormField<int>));
       expect(dropdown.onChanged, isNull);
     });
 
@@ -119,12 +126,12 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
 
       // Verify dropdown is enabled
-      final dropdown =
-          tester.widget<DropdownButtonFormField<int>>(find.byType(DropdownButtonFormField<int>));
+      final dropdown = tester.widget<DropdownButtonFormField<int>>(
+          find.byType(DropdownButtonFormField<int>));
       expect(dropdown.onChanged, isNotNull);
     });
 
-    testWidgets('displays custom sequence names when provided',
+    testWidgets('displays custom sequence names when provided via sequenceNames',
         (tester) async {
       final customNames = {
         0: 'Intro',
@@ -140,6 +147,8 @@ void main() {
               isLoading: false,
               onSequenceChanged: (_) {},
               sequenceNames: customNames,
+              minValue: 0,
+              maxValue: 4,
             ),
           ),
         ),
@@ -149,13 +158,41 @@ void main() {
       await tester.tap(find.byType(DropdownButtonFormField<int>));
       await tester.pumpAndSettle();
 
-      // Verify custom names are displayed (may appear multiple times due to dropdown value + menu items)
+      // Verify custom names are displayed
       expect(find.text('Intro'), findsWidgets);
       expect(find.text('Verse'), findsWidgets);
       expect(find.text('Chorus'), findsWidgets);
 
-      // Verify unnamed sequences still show default naming
-      expect(find.text('Sequence 4'), findsWidgets);
+      // Verify unnamed sequences show numeric value fallback
+      expect(find.text('3'), findsWidgets);
+    });
+
+    testWidgets('displays enumStrings when provided', (tester) async {
+      final enumStrings = ['Pattern A', 'Pattern B', 'Pattern C'];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SequenceSelector(
+              currentSequence: 0,
+              isLoading: false,
+              onSequenceChanged: (_) {},
+              enumStrings: enumStrings,
+              minValue: 0,
+              maxValue: 2,
+            ),
+          ),
+        ),
+      );
+
+      // Open dropdown
+      await tester.tap(find.byType(DropdownButtonFormField<int>));
+      await tester.pumpAndSettle();
+
+      // Verify enum strings are displayed
+      expect(find.text('Pattern A'), findsWidgets);
+      expect(find.text('Pattern B'), findsWidgets);
+      expect(find.text('Pattern C'), findsWidgets);
     });
 
     testWidgets('dropdown disabled when isLoading is true', (tester) async {
@@ -172,8 +209,8 @@ void main() {
       );
 
       // Verify dropdown is disabled by checking onChanged is null
-      final dropdown =
-          tester.widget<DropdownButtonFormField<int>>(find.byType(DropdownButtonFormField<int>));
+      final dropdown = tester.widget<DropdownButtonFormField<int>>(
+          find.byType(DropdownButtonFormField<int>));
       expect(dropdown.onChanged, isNull);
 
       // Also verify loading indicator is present

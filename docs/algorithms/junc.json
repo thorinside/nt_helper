@@ -3,75 +3,50 @@
   "name": "Chorus (Vintage)",
   "description": "This algorithm is a stereo chorus effect, modelled on that of the classic Juno-6 polysynth, based on measurements of the author's own unit. Those with keen ears may recognise it as the chorus that is built into the Poly Wavetable algorithm on the disting EX.",
   "categories": [
-    "audio effects",
-    "modulation"
+    "synthesis",
+    "modulation",
+    "polyphonic"
   ],
   "short_description": "\"Chorus effect based on an 80s polysynth\"",
+  "use_cases": [
+    "emulating Juno-6 chorus sound",
+    "adding vintage-style modulation to audio signals",
+    "creating stereo chorus effects in synth patches"
+  ],
+  "gui_description": null,
   "specifications": [],
   "parameters": [
     {
-      "name": "Left/mono\ninput",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "type": "bus",
-      "is_common": true
-    },
-    {
-      "name": "Right input",
+      "name": "Mode",
       "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "bus",
-      "is_common": false
-    },
-    {
-      "name": "Left output",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "type": "bus",
-      "is_common": true
-    },
-    {
-      "name": "Right\noutput",
-      "min": 1,
-      "max": 28,
-      "default": 14,
-      "type": "bus",
-      "is_common": false
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_common": false
+      "max": 2,
+      "default": 2,
+      "description": "The chorus effect to apply. The options are \"None\", \"Mode 1\", and \"Mode 2\".",
+      "enum_values": [
+        "None",
+        "Mode 1",
+        "Mode 2"
+      ]
     }
   ],
   "input_ports": [
     {
-      "name": "Left/mono\ninput",
+      "name": "Left/mono input",
       "description": "The left or mono input bus."
     },
     {
       "name": "Right input",
       "description": "The right input bus, if stereo."
-    },
+    }
+  ],
+  "output_ports": [
     {
       "name": "Left output",
       "description": "The left output bus."
     },
     {
-      "name": "Right\noutput",
+      "name": "Right output",
       "description": "The right output bus."
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "Output mode",
-      "description": "The standard Add/Replace mode selector as described above."
     }
   ]
 }

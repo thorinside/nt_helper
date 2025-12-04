@@ -1,13 +1,20 @@
 {
   "guid": "mac2",
   "name": "Macro Oscillator 2",
-  "description": "This algorithm is an implementation of the open source Plaits (https://github.com/pichenettes/eurorack/tree/master/plaits) [83] module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is https://pichenettes.github.io/mutable-instruments-documentation/modules/plaits/manual/ [84]. The documentation below assumes some familiarity with this. This version of the disting NT firmware is based on v1.2 of the Plaits code.",
+  "description": "This algorithm is an implementation of the open source Plaits module by Émilie Gillet. It should behave and sound identical to the original hardware version, which is based on v1.2 of the Plaits code. The disting NT relies on 'input' settings being enabled or disabled rather than detecting physical jack connections (unlike the original), so if a Trigger input setting is set to 'None', the algorithm generates constant sound; otherwise, it assumes triggers will be supplied via the selected bus.",
   "categories": [
     "synthesis",
-    "FM",
-    "wavetable"
+    "wavetable",
+    "triggers"
   ],
-  "short_description": "\"It's Plaits!\"",
+  "short_description": "It's Plaits!",
+  "use_cases": [
+    "Wavetable synthesis with extensive modulation capabilities",
+    "Pitch and envelope modulation via CV inputs or MIDI/I2C",
+    "Morphing between different synthesis models",
+    "Replacement for traditional oscillators in modular systems"
+  ],
+  "gui_description": null,
   "specifications": [],
   "parameters": [
     {
@@ -15,120 +22,256 @@
       "min": 0,
       "max": 23,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Coarse tune",
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Harmonics",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Timbre",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Morph",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "FM",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Timbre<br>mod",
+      "name": "Timbre mod",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Morph mod",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Low-pass<br>gate",
+      "name": "Low-pass gate",
       "min": 0,
       "max": 127,
       "default": 127,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Time/decay",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "string",
-      "is_common": true
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Main gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Aux gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "I2C mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Trigger<br>input",
-      "id": "0",
-      "description": "Selects which bus is used as the trigger input."
+      "name": "Trigger input (bus)",
+      "description": "Bus used as the trigger input. If set to 'None', the algorithm generates constant sound."
     },
     {
-      "name": "Level<br>input",
-      "id": "0",
-      "description": "Selects which bus is used as the level input."
+      "name": "Level input (bus)",
+      "description": "Bus used as the level input, modulating the amplitude of the output signal."
+    },
+    {
+      "name": "CV input (bus)",
+      "description": "Bus used for pitch CV modulation. Can be controlled via MIDI/I2C if enabled."
+    },
+    {
+      "name": "FM input (bus)",
+      "description": "Bus used as the FM modulation input, affecting synthesis model parameters."
+    },
+    {
+      "name": "Harmonics input (bus)",
+      "description": "Bus used for harmonics CV modulation. Can be controlled via MIDI/I2C if enabled."
+    },
+    {
+      "name": "Timbre input (bus)",
+      "description": "Bus used for timbre CV modulation. Can be controlled via MIDI/I2C if enabled."
+    },
+    {
+      "name": "Morph input (bus)",
+      "description": "Bus used for morph CV modulation. Can be controlled via MIDI/I2C if enabled."
+    },
+    {
+      "name": "Trigger input",
+      "description": ""
+    },
+    {
+      "name": "Level input",
+      "description": ""
     },
     {
       "name": "CV input",
-      "id": "0",
-      "description": "Selects which bus is used as the pitch CV input."
+      "description": ""
     },
     {
       "name": "FM input",
-      "id": "0",
-      "description": "Selects which bus is used as the FM input."
+      "description": ""
     },
     {
-      "name": "Harmonics<br>input",
-      "id": "0",
-      "description": "Selects which bus is used as the harmonics input."
+      "name": "Harmonics input",
+      "description": ""
     },
     {
-      "name": "Timbre<br>input",
-      "id": "0",
-      "description": "Select..."
+      "name": "Timbre input",
+      "description": ""
+    },
+    {
+      "name": "Morph input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Main output",
+      "description": "Primary audio output bus, mixed with Aux output if both use the same bus."
+    },
+    {
+      "name": "Aux output",
+      "description": "Secondary audio output bus. Mixed with Main output if both use the same bus."
+    },
+    {
+      "name": "Main output",
+      "description": ""
+    },
+    {
+      "name": "Aux output",
+      "description": ""
     }
   ]
 }

@@ -1,8 +1,24 @@
 import '../models/collected_file.dart';
 import '../models/preset_dependencies.dart';
+import '../domain/disting_nt_sysex.dart';
 
 /// Analyzes preset JSON files to extract dependencies
 class PresetAnalyzer {
+  /// Extracts plugin file paths from AlgorithmInfo objects.
+  /// Call this with live slot data to populate pluginPaths for direct SD card reads.
+  /// Returns a map of plugin GUID to SD card file path.
+  static Map<String, String> extractPluginPaths(
+    List<AlgorithmInfo> algorithmInfos,
+  ) {
+    final paths = <String, String>{};
+    for (final info in algorithmInfos) {
+      if (info.isPlugin && info.filename != null && info.filename!.isNotEmpty) {
+        paths[info.guid] = info.filename!;
+      }
+    }
+    return paths;
+  }
+
   static PresetDependencies analyzeDependencies(
     Map<String, dynamic> presetData,
   ) {

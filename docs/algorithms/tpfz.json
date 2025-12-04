@@ -1,0 +1,188 @@
+{
+  "guid": "tpfz",
+  "name": "Temporal Freeze",
+  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The 'temporal' part of the name indicates that it works in the time domain, in contrast to the Spectral Freeze algorithm (above). There are a number (depending on the specification) of different 'voices', i.e., you can freeze different moments of audio and play them simultaneously.",
+  "categories": [
+    "audio effects",
+    "sampling",
+    "pitch"
+  ],
+  "short_description": "An audio ‘freeze’ effect",
+  "specifications": [
+    {
+      "name": "Voices",
+      "min": 1,
+      "max": 16
+    },
+    {
+      "name": "History Length",
+      "min": 0.1,
+      "max": 2.0
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Freeze toggle",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze when the parameter changes from '0' to '1'."
+    },
+    {
+      "name": "Freeze gate",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze when the parameter changes from '0' to '1', and releases the freeze when the parameter changes from '1' to '0'."
+    },
+    {
+      "name": "Freeze target",
+      "min": 0,
+      "max": null,
+      "default": 0,
+      "description": "Chooses the voice for the next freeze, or '0' for 'Auto'.",
+      "enum_values": [
+        "0 (Auto)",
+        "1-16 (Voice selection)"
+      ]
+    },
+    {
+      "name": "Unfreeze all",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes to '1', all active freezes are released."
+    },
+    {
+      "name": "Auto voices",
+      "min": null,
+      "max": null,
+      "default": 2,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Length",
+      "min": 10,
+      "max": null,
+      "default": 200,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Play heads",
+      "min": 1,
+      "max": 7,
+      "default": 4,
+      "description": "Sets the number of 'playback heads' (to use a tape metaphor)."
+    },
+    {
+      "name": "Octave down heads",
+      "min": 0,
+      "max": 7,
+      "default": 0,
+      "description": "Sets how many of the playback heads run at half speed i.e. an octave down."
+    },
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the envelope attack time. Exponential scale from 0.01s to 30s.",
+      "enum_values": [
+        "0-1000 (Exponential scaling: 0.01s to 30s)"
+      ]
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the envelope release time. Exponential scale from 0.01s to 30s.",
+      "enum_values": [
+        "0-1000 (Exponential scaling: 0.01s to 30s)"
+      ]
+    },
+    {
+      "name": "Mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets the envelope mode: 'Normal' or 'Complete attack'. In the latter mode, the envelope attack segment always completes, even if the gate is released during the attack, which is useful to trigger long swells from a short trigger pulse.",
+      "enum_values": [
+        "0 (Normal)",
+        "1 (Complete attack)"
+      ]
+    },
+    {
+      "name": "Freeze",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze on the corresponding voice when the parameter changes from '0' to '1', and releases the freeze when the parameter changes from '1' to '0'.",
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above.",
+      "enum_values": [
+        "0 (Add)",
+        "1 (Replace)"
+      ]
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "description": "Audio bus connection for left or mono input."
+    },
+    {
+      "name": "Right input",
+      "description": "Audio bus connection for right input (stereo operation)."
+    },
+    {
+      "name": "Left/mono input",
+      "description": "Sets the left or mono input audio bus."
+    },
+    {
+      "name": "Right input",
+      "description": "If not set to 'None', the algorithm captures audio in stereo. This halves the maximum history length for each voice and raises CPU usage."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": "Output audio bus for left or mono voice signals."
+    },
+    {
+      "name": "Right output",
+      "description": "Output audio bus for right voice signals (stereo operation)."
+    },
+    {
+      "name": "Left/mono output",
+      "description": "Sets the left output bus for the voice."
+    },
+    {
+      "name": "Right output",
+      "description": "Sets the right output bus for the voice."
+    }
+  ]
+}

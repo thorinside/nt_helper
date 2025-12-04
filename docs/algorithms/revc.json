@@ -1,99 +1,99 @@
 {
   "guid": "revc",
   "name": "Reverb (Clouds)",
-  "description": "This algorithm implements the reverb and diffuser parts of the Clouds module by Émilie Gillet. The diffuser is a simple network of all-pass filters which ‘smears’ the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
+  "description": "This algorithm implements the reverb and diffuser parts of the Clouds [101] module by Émilie Gillet. The diffuser is a simple network of all-pass filters which ‘smears’ the sound slightly, turning a mono source into something that sounds stereo.",
   "categories": [
+    "audio effects",
     "reverb",
-    "audio effects"
+    "modulation"
   ],
-  "short_description": "The reverb from Clouds",
-  "specifications": [],
   "parameters": [
     {
       "name": "Diffuser mix",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "parameterNumber": 1
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Reverb mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "string",
-      "parameterNumber": 2
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Reverb time",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "parameterNumber": 3
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Reverb diffusion",
       "min": 0,
       "max": 100,
       "default": 70,
-      "type": "string",
-      "parameterNumber": 4
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Reverb low pass",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "parameterNumber": 5
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Reverb input gain",
       "min": -40,
       "max": 0,
       "default": -14,
-      "type": "string",
-      "parameterNumber": 6
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Sample rate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "parameterNumber": 7
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Left input",
-      "id": "1",
-      "description": "The left audio input bus."
+      "description": "The left audio input bus.",
+      "channelCountRef": "1-28"
     },
     {
       "name": "Right input",
-      "id": "2",
-      "description": "The right audio input bus."
+      "description": "The right audio input bus.",
+      "channelCountRef": "1-28"
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "id": "13",
       "description": "The left audio output bus.",
-      "channelCountRef": "Col5"
+      "channelCountRef": "1-28"
     },
     {
       "name": "Right output",
-      "id": "14",
-      "description": "The right audio output bus."
-    },
-    {
-      "name": "Output mode",
-      "id": "0",
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The right audio output bus.",
+      "channelCountRef": "1-28"
     }
   ]
 }

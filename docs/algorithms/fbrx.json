@@ -1,12 +1,18 @@
 {
   "guid": "fbrx",
   "name": "Feedback Receive/Send",
-  "description": "These two algorithms are taken together, as they are two parts of a mechanism to introduce feedback into presets. Though perhaps they are misnamed – they can just as easily feed forward. Think of them as two ends of a teleport/hyperspace tunnel – what goes in one end (the send) comes out of the other (the receive). If the receive is placed above the send in the preset you have feedback; if the receive is placed after the send, you have a way of teleporting busses past a section of the preset. Both algorithms have an ‘Identifier’ parameter. This allows the system to match up send/receive pairs if there is more than one. The send and receive can process a number of channels, according to the specifications. If these don’t match, the smaller number of channels will be processed. Be careful when setting up feedback loops. There’s a reason that the receive’s gain parameter defaults to fully silent. Raise this with caution.",
+  "description": "These two algorithms are taken together as they form a mechanism to introduce feedback into presets. Though perhaps misnamed – they can just as easily feed forward. Think of them as two ends of a teleport/hyperspace tunnel: what goes in one end (the send) comes out of the other (the receive). If the receive is placed above the send in the preset, you have feedback; if the receive is placed after the send, you create a way to teleport busses past a section of the preset. Both algorithms have an 'Identifier' parameter that allows matching up send/receive pairs if there is more than one. The send and receive can process a number of channels (1-8), but if these don't match, only the smaller number will be processed. Be careful when setting up feedback loops: the receive's gain defaults to fully silent (-40 dB) for safety reasons.",
   "categories": [
-    "utility",
-    "routing"
+    "routing",
+    "utility"
   ],
-  "short_description": "\"Receive/send for internal feedback loop\"",
+  "short_description": "Receive/send for internal feedback loop",
+  "use_cases": [
+    "Internal feedback routing in presets",
+    "Teleporting audio busses past preset sections",
+    "Creating feedforward paths for signal processing",
+    "Multi-bus cross-routing with identifier matching"
+  ],
   "specifications": [
     {
       "name": "Channels",
@@ -18,57 +24,26 @@
     {
       "name": "Identifier",
       "scope": "common",
-      "type": "string",
+      "type": "enum",
+      "channelCountRef": "Receive",
+      "isPerChannel": false,
+      "isCommon": true,
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "is_bus": false
     },
     {
-      "name": "Output",
-      "scope": "channel",
-      "type": "string",
-      "is_common": false,
-      "is_bus": true,
-      "parameterNumber": 1
-    },
-    {
-      "name": "Output<br>mode",
-      "scope": "channel",
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 2
-    },
-    {
-      "name": "Gain",
-      "scope": "channel",
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 3
-    },
-    {
-      "name": "Enable",
-      "scope": "send",
-      "type": "string",
-      "is_common": false,
-      "is_bus": true,
-      "parameterNumber": 4
-    },
-    {
-      "name": "Input",
-      "scope": "send",
-      "type": "string",
-      "is_common": false,
-      "is_bus": true,
-      "parameterNumber": 5
+      "name": "Identifier",
+      "scope": "common",
+      "type": "enum",
+      "channelCountRef": "Send",
+      "isPerChannel": false,
+      "isCommon": true,
+      "is_common": true,
+      "is_bus": false
     }
   ],
-  "input_ports": [
-    {
-      "name": "Input",
-      "description": "The bus to send."
-    },
+  "input_ports": [],
+  "output_ports": [
     {
       "name": "Output",
       "description": "The bus on which to output the received signal."

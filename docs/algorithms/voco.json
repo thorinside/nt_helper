@@ -3,120 +3,152 @@
   "name": "Vocoder",
   "description": "This algorithm implements a vocoder. The spectral characteristics of the modulator input are applied to the carrier input. In classic usage, the modulator might be a human voice, and the carrier might be a synth sound, or simply noise.",
   "categories": [
+    "synthesis",
     "audio effects",
-    "spectral",
-    "modulation"
+    "spectral"
   ],
   "short_description": "A classic vocoder",
-  "specifications": [],
+  "use_cases": [
+    "Speech synthesis enhancement",
+    "Vocal spectral processing for creative sound design",
+    "Classic human voice modulation over synth or noise carrier"
+  ],
+  "gui_description": "The display shows the current level of the modulator bands.",
   "parameters": [
     {
       "name": "Bands",
       "min": 4,
       "max": 20,
       "default": 12,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 1
+      "description": "The number of bands into which the signals are split."
     },
     {
-      "name": "Min<br>frequency",
+      "name": "Min frequency",
       "min": 50,
       "max": 1000,
       "default": 200,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 2
+      "scope": "vocoder",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Max<br>frequency",
+      "name": "Max frequency",
       "min": 1000,
       "max": 10000,
       "default": 3200,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 3
+      "scope": "vocoder",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Bandwidth",
       "min": 25,
       "max": 400,
       "default": 100,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 4
+      "scope": "vocoder",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Attack",
-      "min": 0,
+      "min": 0.5,
       "max": 1000,
       "default": 303,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 5
+      "scope": "vocoder",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Decay",
-      "min": 0,
+      "min": 0.5,
       "max": 1000,
       "default": 394,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 6
+      "scope": "vocoder",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "High pass",
       "min": 10,
       "max": 1000,
       "default": 50,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 7
+      "scope": "vocoder",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 24,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 8
+      "scope": "vocoder",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Noise",
+      "min": -40,
+      "max": 24,
+      "default": -40,
+      "scope": "noise",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Carrier width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "scope": "routing",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "routing",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
-      "name": "Modulator<br>input",
-      "busIdRef": "1",
-      "isPerChannel": true
+      "name": "Modulator input",
+      "description": "The bus to use for the modulator signal."
     },
     {
-      "name": "Carrier<br>input",
-      "busIdRef": "2",
-      "isPerChannel": true
+      "name": "Carrier input",
+      "description": "The first carrier bus to process (can be extended by Carrier width)."
     },
     {
-      "name": "Carrier<br>width",
-      "busIdRef": "1",
-      "isPerChannel": false
+      "name": "Modulator input",
+      "description": ""
     },
     {
-      "name": "Output",
-      "busIdRef": "13",
-      "isPerChannel": true
+      "name": "Carrier input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "busIdRef": "13"
+      "description": "The first output bus for the vocoded signal."
+    },
+    {
+      "name": "Output",
+      "description": ""
     }
   ]
 }

@@ -1,24 +1,30 @@
 {
   "guid": "musw",
   "name": "Multi-Switch",
-  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the [video on that algorithm here](https://www.youtube.com/watch?v=bbwHnLNqOXo) [85] . It offers up to six highly configurable sequential or voltage controlled switches. Being DC-coupled, it can switch audio or CVs. Each switch consists of two sub-switches: an input sub-switch, and an output sub-switch. The selected input is routed to the selected output. When multiple switches share the same output, their signals are summed. Each sub-switch can crossfade when transitioning, for click-free switches (when the fade is very short) or noticeable blends between sources/targets (when the fade is long). The switches can be controlled by CV inputs, or by one of the 'Macro' parameters, which can in turn be controlled by one of the mapping sources (CV, MIDI, or I2C).",
+  "description": "This algorithm offers up to six highly configurable sequential or voltage-controlled switches that are DC-coupled and can handle both audio and CV signals. Each switch consists of two sub-switches: an input sub-switch and an output sub-switch, where the selected input is routed to the selected output. When multiple switches share the same output bus, their signals are summed. Both sub-switches support crossfading for click-free or blended transitions between sources/targets. The switches can be controlled via CV inputs or through 'Macro' parameters, which can themselves be mapped to various control sources like CV, MIDI, or I2C.",
   "categories": [
+    "utility",
     "routing",
-    "mixing",
-    "CV processing",
-    "utility"
+    "mixing"
   ],
-  "short_description": "\"Sequential or CV-controlled switch\"",
+  "short_description": "Sequential or CV-controlled switch",
+  "use_cases": [
+    "Audio signal routing between multiple inputs and outputs",
+    "CV signal switching for modular synthesis",
+    "Sequencer step control via triggers or voltage",
+    "Macro parameter-based switching for complex patching",
+    "Click-free transitions with crossfading",
+    "Signal summation from multiple switches sharing an output"
+  ],
+  "gui_description": "The display shows which input and output busses are currently joined by the various switches.",
   "specifications": [
     {
-      "name": "Switches",
-      "min": 1,
-      "max": 6
+      "name": "Number of Switches",
+      "description": "Supports configurable switching between 1 to 6 individual units."
     },
     {
-      "name": "Number of switches",
-      "min": 1,
-      "max": 6
+      "name": "DC Coupling",
+      "description": "Allows for seamless routing of both audio and CV signals."
     }
   ],
   "parameters": [
@@ -27,118 +33,160 @@
       "min": 0,
       "max": 127,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "In control type",
       "min": 0,
       "max": 9,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "In control source",
       "min": 0,
       "max": 34,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "In link switch",
       "min": 0,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "In link offset",
       "min": 0,
       "max": 11,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Out control type",
       "min": 0,
       "max": 9,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Out control source",
       "min": 0,
       "max": 34,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Out link switch",
       "min": 0,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Out link offset",
       "min": 0,
       "max": 11,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Reset source",
       "min": 0,
       "max": 34,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Fade",
       "min": 0,
       "max": 1000,
       "default": 1,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Input A-L",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output A-H",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
-      "name": "Input A-L",
-      "id": "A-L",
-      "busIdRef": "28",
-      "isPerChannel": false
+      "name": "Input A-L (1-12)",
+      "description": "The input busses for the switches, labeled from A to L. Each switch can select one of these inputs."
     },
     {
-      "name": "Output A-H",
-      "id": "A-H",
-      "busIdRef": "28",
-      "isPerChannel": false
+      "name": "CV Inputs",
+      "description": "Voltage-controlled inputs that can trigger or directly control switch positions."
     }
   ],
   "output_ports": [
     {
-      "name": "Output A-H",
-      "id": "A-H",
-      "busIdRef": "28",
-      "isPerChannel": false
+      "name": "Output A-H (1-8)",
+      "description": "The output busses for the switches, labeled from A to H. Each switch can select one of these outputs."
+    },
+    {
+      "name": "Summed Outputs",
+      "description": "When multiple switches share an output bus, their signals are summed and sent through that single output."
     }
   ]
 }

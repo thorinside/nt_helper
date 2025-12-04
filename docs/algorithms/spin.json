@@ -1,79 +1,176 @@
 {
   "guid": "spin",
   "name": "Three Pot",
-  "description": "This algorithm allows you to run what are effectively DSP \"plug‑ins\", loaded from the MicroSD card. It was designed particularly to support programs written for the Spin Semiconductor (http://www.spinsemi.com/) FV-1 chip. The popular IC has ended up in numerous products including some Eurorack modules (e.g. the FX, Aid and the Timiszoara). Its popularity and the relative ease of developing for it has led to a large number of (generally open source) DSP programs being available, and this that the Three Pot algorithm was designed to leverage. The name \"Three Pot\" comes from the FV-1 hardware design – all it has are stereo inputs and outputs, and connections for three pots for user controls. Although the focus is on converted FV‑1 programs, the conversion works by translating the programs to C++ and then compiling them for the disting NT – so you can if you like actually write C++ directly and use this algorithm to run it on the module.",
+  "description": "This algorithm allows you to run what are effectively DSP “plug-ins”, loaded from the MicroSD card. It was designed particularly to support programs written for the Spin Semiconductor FV-1 chip, a popular IC found in numerous products including Eurorack modules like FX Aid and Timiszoara. The conversion works by translating these programs to C++ and then compiling them for the disting NT, so you can also write C++ directly and use this algorithm to run it on the module.",
   "categories": [
+    "utility",
     "audio effects",
-    "utility"
+    "MIDI"
   ],
   "short_description": "Runs DSP code from the SD card",
-  "specifications": [
-    {
-      "name": "Code memory",
-      "min": 1,
-      "max": 24
-    },
-    {
-      "name": "Code memory",
-      "unit": "512 bytes"
-    }
+  "use_cases": [
+    "Loading and running FV-1-compatible programs on disting NT",
+    "Running custom C++-compiled DSP effects",
+    "Hosting third-party or community-converted SpinAsm programs",
+    "Audio processing with adjustable parameters via physical pots"
   ],
+  "gui_description": "The UI provides a custom display showing the program name, pot labels, and description (from the .3pot file). The three module knobs directly control Pot 1, Pot 2, and Pot 3 parameters. During program selection, the full display shows the program description. The right encoder is used to change programs.",
   "parameters": [
     {
       "name": "Program",
       "min": 0,
       "max": 999,
       "default": 0,
-      "description": "Selects the program to run."
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Pot 1",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "description": "The first program ‘pot’ parameter."
+      "scope": "program",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Pot 2",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "description": "The second program ‘pot’ parameter."
+      "scope": "program",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Pot 3",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "description": "The third program ‘pot’ parameter."
+      "scope": "program",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Pre/post gain",
       "min": -36,
       "max": 0,
       "default": -20,
-      "description": "Sets the gain adjustment applied before the program’s DSP code."
+      "scope": "mix",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Mix style",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Chooses the dry/wet mix style: ‘None’, ‘Wet/dry’, or ‘Independent'"
+      "scope": "mix",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Mix",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "scope": "mix",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Dry gain",
+      "min": -40,
+      "max": 24,
+      "default": -40,
+      "scope": "mix",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Wet gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "scope": "mix",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Rate conversion",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "sample rate",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Sample rate",
+      "min": 8.0,
+      "max": 40.0,
+      "default": 32.0,
+      "scope": "sample rate",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "routing",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Left input",
-      "busIdRef": "1",
-      "isPerChannel": true
+      "description": "The left audio input bus (1-28)"
+    },
+    {
+      "name": "Right input",
+      "description": "The right audio input bus (1-28)"
+    },
+    {
+      "name": "Left input",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
+      "name": "Left output",
+      "description": "The left audio output bus (1-28)"
+    },
+    {
       "name": "Right output",
-      "busIdRef": "14",
-      "isPerChannel": true
+      "description": "The right audio output bus (1-28)"
+    },
+    {
+      "name": "Left output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
     }
   ]
 }

@@ -1,12 +1,12 @@
 {
   "guid": "eqpa",
   "name": "EQ Parametric",
-  "description": "This algorithm is a multi-channel, multi-band, parametric EQ.\nEach channel can process a number of busses - you might typically have a channel processing one or two busses for a mono or stereo signal, but you could, say, process all 12 of the inputs with the same EQ settings by using a single channel with a width of 12.\nThe display shows a graphical representation of the EQ curve for the current channel. The frequency and gain of the current band within the channel is indicated with a small box.",
+  "description": "This algorithm is a multi-channel, multi-band, parametric EQ. Each channel can process a number of busses - you might typically have a channel processing one or two busses for a mono or stereo signal, but you could, say, process all 12 of the inputs with the same EQ settings by using a single channel with a width of 12.",
   "categories": [
     "audio effects",
     "filtering"
   ],
-  "short_description": "\"Multi-band parametric EQ\"",
+  "short_description": "Multi-band parametric EQ",
   "specifications": [
     {
       "name": "Channels",
@@ -21,32 +21,81 @@
   ],
   "parameters": [
     {
-      "name": "Input",
-      "min": 0,
-      "max": 28,
-      "default": 1,
-      "description": "The first input bus to process."
-    },
-    {
       "name": "Width",
       "min": 1,
       "max": 12,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+      "scope": "channel",
+      "type": "bus",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
-      "name": "Output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The first output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace'."
-    },
-    {
-      "name": "Output mode",
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "The standard Add/Replace mode selector as described above."
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "scope": "channel",
+      "type": "toggle",
+      "is_bus": false
+    },
+    {
+      "name": "Type",
+      "min": 0,
+      "max": 6,
+      "default": 6,
+      "enum_values": [
+        "Low pass (1st)",
+        "High pass (1st)",
+        "Low pass (2nd)",
+        "High pass (2nd)",
+        "Low shelf",
+        "High shelf",
+        "Peak"
+      ],
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Frequency",
+      "min": 0,
+      "max": 16383,
+      "default": 8192,
+      "scope": "channel",
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Q",
+      "min": 0,
+      "max": 127,
+      "default": 48,
+      "description": "Sets the EQ band ‘Q’ or resonance. Note that some EQ types do not use this parameter.",
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Gain",
+      "min": -12.0,
+      "max": 12.0,
+      "default": 0.0,
+      "description": "Sets the EQ band gain. Note that some EQ types do not use this parameter.",
+      "type": "folder",
+      "is_bus": false
     }
   ],
   "input_ports": [
@@ -55,22 +104,18 @@
       "description": "The first input bus to process."
     },
     {
-      "name": "Width",
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
-    },
-    {
-      "name": "Output",
-      "description": "The first output bus. If set to ‘None’, the input bus is used as output, and the mode is always 'Replace'."
-    },
-    {
-      "name": "Output mode",
-      "description": "The standard Add/Replace mode selector as described above."
+      "name": "Input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The first output bus. If set to ‘None’, the input bus is used as output, and the mode is always 'Replace'."
+      "description": "The first output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace’."
+    },
+    {
+      "name": "Output",
+      "description": ""
     }
   ]
 }

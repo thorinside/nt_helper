@@ -1,17 +1,17 @@
 {
   "guid": "debo",
   "name": "Debouncer",
-  "description": "This algorithm implements a simple switch debouncer (see e.g. this Wikipedia page https://en.wikipedia.org/wiki/Switch#Contact_bounce) [63] It was added primarily so that simple passive guitar footswitches can be attached to the module’s inputs (with a suitable voltage source) and used with, for example, the Looper algorithm.",
+  "description": "This algorithm implements a simple switch debouncer (see e.g. this Wikipedia page). It was added primarily so that simple passive guitar footswitches can be attached to the module’s inputs (with a suitable voltage source) and used with, for example, the Looper algorithm.",
   "categories": [
     "utility",
+    "routing",
     "logic"
   ],
   "short_description": "A switch debouncer",
   "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 8
+      "description": "The number of bus channels to process, ranging from 1 to 8."
     }
   ],
   "parameters": [
@@ -20,58 +20,65 @@
       "min": 1,
       "max": 100,
       "default": 10,
-      "type": "string",
-      "is_common": true
-    },
-    {
-      "name": "Input",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
-      "name": "Output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true
-    },
-    {
-      "name": "Output mode",
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "string",
-      "is_common": true
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
-      "name": "Output Volts",
+      "name": "Output_Volts",
       "min": -10,
       "max": 10,
       "default": 5,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
-      "name": "Output semitones",
+      "name": "Output_semitones",
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "input_ports": [
+    {
+      "name": "Input",
+      "description": "The input bus for the switch signal (channels 1-8)."
+    },
+    {
+      "name": "Input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The debounced output bus, which can be routed to a different bus or use the same as input if set to 'None'."
+    },
+    {
+      "name": "Output",
+      "description": ""
+    }
+  ]
 }

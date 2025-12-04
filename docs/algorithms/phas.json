@@ -1,119 +1,124 @@
 {
   "guid": "phas",
   "name": "Phaser",
-  "description": "This algorithm is based on the Phaser algorithm on the disting mk4. You may like to view the video [on that algorithm, which is here](https://www.youtube.com/watch?v=XLxi45ONXVA) [87] . It’s a classic phaser effect, using a number of all-pass filters to introduce notches into the audio’s frequency spectrum. You may like to apply an LFO to the sweep CV input.",
+  "description": "This algorithm is based on the Phaser algorithm from the disting mk4. It’s a classic phaser effect using a number of all-pass filters to introduce notches into the audio’s frequency spectrum. You may like to apply an LFO to the sweep CV input.",
   "categories": [
     "audio effects",
     "modulation",
     "filtering"
   ],
   "short_description": "Classic phaser effect",
-  "specifications": [],
   "parameters": [
     {
       "name": "Sweep",
       "min": -1.0,
       "max": 1.0,
       "default": 0.0,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "description": "Sweeps the all-pass filters over the audio spectrum."
     },
     {
       "name": "Stages",
       "min": 1,
       "max": 32,
       "default": 8,
-      "type": "scaled",
+      "scope": "global",
+      "type": "enum",
       "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 2
+      "is_bus": false
     },
     {
       "name": "Feedback",
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "scaled",
+      "description": "Sets the amount of feedback around the effect.\nNegative values invert the signal.",
+      "type": "enum",
       "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 3
+      "is_bus": false
     },
     {
       "name": "Warp",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "scaled",
+      "description": "If enabled, warps the sweep parameter/CV for a\nmore perceptually linear sweep.",
+      "type": "enum",
       "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 4
+      "is_bus": false
     },
     {
       "name": "Input scale",
       "min": -100,
       "max": 100,
       "default": 20,
-      "type": "scaled",
+      "description": "Sets the scaling of the sweep CV input.",
+      "type": "enum",
       "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 5
+      "is_bus": false
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "scaled",
+      "description": "The output wet/dry mix.",
+      "type": "enum",
       "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 6
+      "is_bus": false
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "scaled",
+      "description": "The output gain applied to the effected signal.",
+      "type": "enum",
       "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 7
+      "is_bus": false
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of busses to process, starting from the\nInput. For example, for a stereo signal, set this to 2.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as\ndescribed above.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
+      "name": "Input",
+      "description": "The first audio input bus, with additional busses processed based on the Width parameter."
+    },
+    {
       "name": "Sweep input",
-      "id": "0",
       "description": "The bus to use for the sweep CV."
     },
     {
       "name": "Input",
-      "id": "1",
       "description": "The first audio input bus."
-    },
+    }
+  ],
+  "output_ports": [
     {
-      "name": "Width",
-      "id": "1",
-      "description": "The number of busses to process, starting from the\nInput. For example, for a stereo signal, set this to 2."
+      "name": "Output",
+      "description": "The first output bus for the effected signal, following the Output mode selector (Add/Replace)."
     },
     {
       "name": "Output",
-      "id": "13",
       "description": "The first output bus."
-    },
-    {
-      "name": "Output mode",
-      "id": "0",
-      "description": "The standard Add/Replace mode selector as described above."
     }
-  ],
-  "output_ports": []
+  ]
 }

@@ -1,75 +1,106 @@
 {
   "guid": "micc",
   "name": "MIDI CC Generator",
-  "description": "This simple utility generates MIDI CCs. These can be sent to the various external MIDI destinations, and/or routed to other algorithms within the module. Some example uses include: CV to MIDI conversion: by mapping the Value parameter to a CV, you can generate a MIDI CC from a control voltage. Macro control: you can send the CCs from this algorithm to other algorithms, and map parameters in those algorithms to be controlled by the CC. Then, by changing the Value parameter in this algorithm, you can change many parameters in other algorithms at once. This is particularly useful in combination with the Performance Page.",
+  "description": "This simple utility generates MIDI CCs. These can be sent to the various external MIDI destinations, and/or routed to other algorithms within the module. Some example uses include:\n\n   - CV to MIDI conversion: by mapping the Value parameter to a CV, you can generate a MIDI CC from a control voltage.\n\n   - Macro control: you can send the CCs from this algorithm to other algorithms, and map parameters in those algorithms to be controlled by the CC. Then, by changing the Value parameter in this algorithm, you can change many parameters in other algorithms at once. This is particularly useful in combination with the Performance Page.",
   "categories": [
+    "utility",
     "MIDI",
-    "utility"
+    "routing"
   ],
   "short_description": "Generates MIDI CCs",
-  "specifications": [
-    {
-      "name": "CCs",
-      "min": 1,
-      "max": 8
-    }
+  "use_cases": [
+    "CV to MIDI conversion",
+    "Macro control for parameter automation across algorithms",
+    "Integration with Performance Page for global adjustments"
   ],
+  "gui_description": null,
+  "specifications": [],
   "parameters": [
     {
-      "name": "Output to breakout",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables MIDI output to the breakout."
+      "name": "CCs, 1-8",
+      "description": "The number of CCs to generate."
     },
     {
-      "name": "Output to Select Bus",
+      "name": "Output_to_breakout",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables MIDI output to the Select Bus."
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Output to USB",
+      "name": "Output_to_Select_Bus",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables MIDI output to USB."
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Output to internal",
+      "name": "Output_to_USB",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output_to_internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables the CC generator."
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "MIDI channel",
+      "name": "MIDI_channel",
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "The MIDI channel for the CC."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "MIDI CC",
+      "name": "MIDI_CC",
       "min": 0,
       "max": 127,
       "default": 1,
-      "description": "The CC number to generate."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Value",
       "min": 0,
       "max": 127,
       "default": 0,
-      "description": "The CC value."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     }
-  ]
+  ],
+  "input_ports": [],
+  "output_ports": []
 }

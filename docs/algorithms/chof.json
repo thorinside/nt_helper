@@ -1,0 +1,101 @@
+{
+  "guid": "chof",
+  "name": "Chorus/Flange",
+  "description": "This algorithm is a stereo chorus or flanger effect.\n\nFor a chorus effect, select a longish Delay with a low Depth and low Feedback. For a flanger, you want a short Delay and a high Depth, and add feedback to taste.\n\nThe Spread control sets the phase difference in the LFOs for the left and right channel. When at the default setting of 180 you get the 'stereo chorus' effect provided on certain classic synths to generate a stereo output from an essentially mono source.",
+  "categories": [
+    "audio effects",
+    "modulation"
+  ],
+  "short_description": "Chorus or Flange effect",
+  "parameters": [
+    {
+      "name": "Delay",
+      "min": 0.1,
+      "max": 150.0,
+      "default": 20.0,
+      "type": "folder",
+      "is_per_channel": false
+    },
+    {
+      "name": "Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "scope": "global",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Feedback",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Depth",
+      "min": 0,
+      "max": 100,
+      "default": 15,
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Spread",
+      "min": 0,
+      "max": 360,
+      "default": 180,
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Mix",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Level",
+      "min": -40,
+      "max": 0,
+      "default": 0,
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "description": "The left or mono input bus."
+    },
+    {
+      "name": "Right input",
+      "description": "The right input bus, if stereo."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": "The left output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right output bus, if stereo."
+    }
+  ]
+}

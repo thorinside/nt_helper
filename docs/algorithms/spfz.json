@@ -1,13 +1,21 @@
 {
   "guid": "spfz",
   "name": "Spectral Freeze",
-  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The ‘spectral’ part of the name indicates that it works in the frequency domain – unlike simple loopers or granular effects, which work in the time domain, this algorithm captures the spectrum of a sound (using an FFT) and uses that to resynthesize audio [104] . As well as completely freezing sound, the algorithm can actually play it back at any desired speed (i.e. it does time stretching) and pitch. There are a number (depending on the specification) of different ‘voices’ i.e. you can freeze different moments of audio and play them simultaneously. The algorithm is based on the disting EX algorithm of the same name. There is an in-depth video for [that algorithm here](https://www.youtube.com/watch?v=8HFm0zzLHRM) [105] .",
+  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The 'spectral' part of the name indicates that it works in the frequency domain, unlike simple loopers or granular effects which work in the time domain. It captures the spectrum of a sound (using an FFT) and uses that to resynthesize audio via phase vocoder technique. As well as completely freezing sound, the algorithm can play it back at any desired speed (time stretching) and pitch. Multiple 'voices' allow freezing different moments of audio simultaneously.",
   "categories": [
     "audio effects",
     "spectral",
-    "pitch"
+    "pitch",
+    "sampling"
   ],
-  "short_description": "\"An audio ‘freeze’ effect\"",
+  "short_description": "An audio ‘freeze’ effect",
+  "use_cases": [
+    "Static sound generation for ambient effects",
+    "Textural sustain with spectral interpolation",
+    "Pitch shifting and time stretching of frozen sounds",
+    "Etherization (transient removal) on live or frozen audio"
+  ],
+  "gui_description": "The display shows information about each voice, including an envelope level vertical bar, small vertical lines visualizing the used audio segment, and a 'T' indicator for freeze target. If no 'T' is shown, the target is set to 'Auto'.",
   "specifications": [
     {
       "name": "Voices",
@@ -25,137 +33,16 @@
       "max": 12
     }
   ],
-  "parameters": [
-    {
-      "name": "Freeze toggle",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Activates a new freeze when the parameter changes from ‘0’ to ‘1'."
-    },
-    {
-      "name": "Freeze gate",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Activates a new freeze when the parameter changes from ‘0’ to ‘1', and releases the freeze when the parameter changes from ‘1’ to ‘0'."
-    },
-    {
-      "name": "Freeze target",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Chooses the voice for the next freeze, or '0' for 'Auto'."
-    },
-    {
-      "name": "Unfreeze all",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "When this parameter changes to ‘1’, all active freezes are released."
-    },
-    {
-      "name": "Movement",
-      "min": 0,
-      "max": 4,
-      "default": 2,
-      "description": "Chooses the type of movement. The options are 'Forwards', 'Backwards', 'Alternating', 'Random walk', and 'Random skip'."
-    },
-    {
-      "name": "Rate",
-      "min": 0,
-      "max": 1000,
-      "default": 340,
-      "description": "Sets the rate of movement. '0' is stopped; '1000' is normal speed (as recorded). In between, the scale is highly non-linear to give more control at slower speeds."
-    },
-    {
-      "name": "Depth",
-      "min": 1,
-      "max": 2,
-      "default": 2,
-      "description": "Sets the maximum amount of movement."
-    },
-    {
-      "name": "Offset",
-      "min": 0,
-      "max": 0,
-      "default": 0,
-      "description": "Offsets the freeze position back in time."
-    },
-    {
-      "name": "Etherizatio n",
-      "min": 0.0,
-      "max": 100.0,
-      "default": 0.0,
-      "description": "Drops out transient elements of the sound."
-    },
-    {
-      "name": "Live process",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "When this parameter changes to ‘1’, a new voice is started which uses live audio input instead of actually freezing."
-    },
-    {
-      "name": "Attack",
-      "min": 0,
-      "max": 127,
-      "default": 10,
-      "description": "Sets the envelope attack time."
-    },
-    {
-      "name": "Release",
-      "min": 0,
-      "max": 127,
-      "default": 10,
-      "description": "Sets the envelope release time."
-    },
-    {
-      "name": "Coarse shift",
-      "min": -48,
-      "max": 24,
-      "default": 0,
-      "description": "Sets the coarse pitch shift amount for all voices. Added to the individual voice shifts."
-    },
-    {
-      "name": "Fine shift",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Sets the fine pitch shift amount for all voices. Added to the individual voice shifts."
-    },
-    {
-      "name": "Output",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "description": "Sets the output bus for the voice."
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
-    },
-    {
-      "name": "Input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "description": "Sets the input audio bus."
-    }
-  ],
   "input_ports": [
     {
-      "name": "Audio Input",
-      "id": "audio_input"
+      "name": "Input",
+      "description": "Sets the input audio bus (1-28)"
     }
   ],
   "output_ports": [
     {
-      "name": "Audio Output",
-      "id": "audio_output"
+      "name": "Output Bus",
+      "description": "Each voice can be routed to a specific output bus (1-28) via the 'Output' parameter"
     }
   ]
 }

@@ -1,9 +1,96 @@
 {
   "guid": "wavs",
   "name": "Waveshaper",
-  "description": "This algorithm is based on the Dual Waveshaper algorithm on the disting mk4. You may like to watch [the video on that algorithm here](https://www.youtube.com/watch?v=-B1VzxQ2qOo) [118] . From the disting mk4 manual:\n\"Type 0 is what is usually termed a wavefolder. This increases the harmonic content of the sound in\ninteresting ways, especially as the gain changes.\n\"Type 1 is a triangle-to-sine waveshaper. Used on most audio this is a relatively gentle form of\noverdrive/saturation. However, when fed with the right level of triangle wave, the output is exactly a\nsine wave, which is useful when you have a triangle wave VCO handy but really want a pure sine\nwave instead.\n\"\"",
+  "description": "This algorithm is based on the Dual Waveshaper algorithm from the disting mk4. It features two distinct waveshaping modes: Type 0 (wavefolder) and Type 1 (triangle-to-sine shaper).\n\n**Type 0 - Wavefolder:** This mode increases harmonic content in interesting ways, particularly as the gain changes.\n\n**Type 1 - Triangle-to-Sine Waveshaper:** When used on most audio signals, this provides a relatively gentle form of overdrive/saturation. However, when fed with an appropriate level of triangle wave input (such as from a VCO), it outputs a pure sine wave, which can be useful for generating clean sine waves while retaining the flexibility of a triangle wave source.\n\nThe GUI displays how an input sine wave is affected by the waveshaper, serving as a graphical aid to visualize the amount of waveshaping applied. It does not function as an oscilloscope and will only accurately reflect audio behavior when fed with a sine wave.",
   "categories": [
+    "synthesis",
     "audio effects",
     "distortion"
+  ],
+  "short_description": "\"Waveshaper/wavefolder\"",
+  "use_cases": [
+    "Adding harmonic distortion to audio signals for creative effects",
+    "Generating pure sine waves from triangle wave sources",
+    "Introducing gentle overdrive/saturation in audio processing chains",
+    "Live performance with simplified UI via Lua scripting"
+  ],
+  "gui_description": "The display shows how an input sine wave will be affected by the waveshaper. It is not an oscilloscope – it’s not showing what your actual audio looks like (unless you happen to be feeding it a sine wave). It’s just a graphical aid to get an idea of how much waveshaping is being applied.",
+  "parameters": [
+    {
+      "name": "Input gain",
+      "min": -32.0,
+      "max": 32.0,
+      "default": 1.0,
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "enum_values": [
+        "Wavefolder (Type 0)",
+        "Triangle-to-Sine Waveshaper (Type 1)"
+      ],
+      "type": "enum"
+    },
+    {
+      "name": "Mix",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "scope": "global",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Level",
+      "min": -40.0,
+      "max": 0.0,
+      "default": 0.0,
+      "scope": "global",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "type": "scaled"
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector for routing output.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "enum"
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Gain input",
+      "description": ""
+    },
+    {
+      "name": "Input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": ""
+    }
   ]
 }

@@ -7,104 +7,125 @@
     "wavetable"
   ],
   "short_description": "A wavetable VCO",
+  "use_cases": [
+    "Sound design with custom waveforms",
+    "Modular synthesis",
+    "Pitch modulation via MIDI or CV",
+    "Waveform offset modulation for dynamic textures"
+  ],
+  "gui_description": "The display shows a single cycle of the current wavetable waveform, and the VCO’s pitch as a MIDI note name plus cents and as a frequency in Hz.",
   "parameters": [
     {
       "name": "Wavetable",
-      "min": 0,
-      "max": null,
-      "default": "",
-      "type": "string",
-      "is_common": true
+      "description": "Chooses the wavetable."
     },
     {
       "name": "Wave offset",
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "string",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Octave",
       "min": -16,
       "max": 8,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "type": "string",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "type": "string",
-      "is_common": true
-    },
-    {
-      "name": "Pitch input",
-      "min": 0,
-      "max": 28,
-      "default": 1,
-      "type": "string",
-      "is_common": true
-    },
-    {
-      "name": "Wave input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_common": true
-    },
-    {
-      "name": "Output",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "type": "string",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "input_ports": [
+    {
+      "name": "Pitch input",
+      "description": "The pitch CV input (1V/octave)."
+    },
+    {
+      "name": "Wave input",
+      "description": "Sets an input bus to modulate the wave offset."
+    },
+    {
+      "name": "Pitch input",
+      "description": ""
+    },
+    {
+      "name": "Wave input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The output bus for the VCO signal."
+    },
+    {
+      "name": "Output",
+      "description": ""
+    }
+  ]
 }

@@ -1,146 +1,143 @@
 {
   "guid": "samc",
   "name": "Sample Player (Clocked)",
-  "description": "This algorithm plays samples, stretching or shrinking them to fit the tempo provided by a clock input, or MIDI. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm, but works somewhat differently. Still, it might be fun to review the video (actually for the disting mk3) here https://www.youtube.com/watch?v=9wZHqDfXvGg 100 . Please review the section on the features common to the various Sample Players, above.",
+  "description": "This algorithm plays samples synced to a clock input, stretching or shrinking them to fit the tempo provided by the clock. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm but works somewhat differently. The Sample Player (Clocked) recalculates playback speed based on the chosen sample's length and the current tempo/time signature, adjusting it to fit a calculated number of bars. Parameters like 'Speed tune' allow manual adjustments for accuracy when samples don't perfectly align with bar counts.",
   "categories": [
     "sampling",
     "clocking",
-    "MIDI"
+    "utility"
   ],
   "short_description": "Plays samples synced to a clock",
+  "use_cases": [
+    "Looping samples in time with MIDI or external clocks",
+    "Adjusting playback speed for tempo synchronization",
+    "Triggering samples via bus, MIDI, or manual controls",
+    "Automated sample triggering in fixed intervals or loop-based timing"
+  ],
+  "gui_description": "Displays the waveform of the chosen sample, updated during playback. Shows tick marks for bars and beats above the waveform. To the right, it displays the sample length (in seconds), natural bar count at original speed, and adjusted bar count based on clocked tempo. The interface highlights how the sample fits into the calculated loop time.",
   "specifications": [
     {
       "name": "Record time",
+      "description": "The maximum length of audio that can be recorded (sampled).",
       "min": 0,
       "max": 60
-    },
-    {
-      "name": "Time signature",
-      "min": 1,
-      "max": 99
     }
   ],
   "parameters": [
     {
       "name": "Speed tune",
-      "min": 50.0,
-      "max": 200.0,
       "default": 100.0,
-      "type": "string",
-      "is_per_channel": false,
+      "type": "folder",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "is_bus": false
     },
     {
       "name": "Input clock div",
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "string",
-      "is_per_channel": false,
+      "scope": "global",
+      "type": "enum",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "is_bus": false
     },
     {
       "name": "Time sig num",
       "min": 1,
       "max": 99,
       "default": 4,
-      "type": "string",
-      "is_per_channel": false,
+      "scope": "global",
+      "type": "enum",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 2
+      "is_bus": false
     },
     {
       "name": "Time sig denom",
       "min": 0,
       "max": 4,
       "default": 2,
-      "type": "string",
-      "is_per_channel": false,
+      "scope": "global",
+      "type": "enum",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 3
+      "is_bus": false
     },
     {
       "name": "Auto trigger",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
+      "scope": "global",
+      "type": "enum",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 4
+      "is_bus": false
     },
     {
       "name": "Auto divisor",
       "min": 0,
       "max": 19,
       "default": 15,
-      "type": "string",
-      "is_per_channel": false,
+      "scope": "global",
+      "type": "enum",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 5
+      "is_bus": false
     },
     {
       "name": "Clock",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
+      "scope": "mix",
+      "type": "enum",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 6
+      "is_bus": false
     },
     {
       "name": "Clock divisor",
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "string",
-      "is_per_channel": false,
+      "scope": "mix",
+      "type": "enum",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 7
-    },
-    {
-      "name": "Clock input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 8
-    },
-    {
-      "name": "Reset input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 9
+      "is_bus": false
     },
     {
       "name": "Reset mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
+      "scope": "mix",
+      "type": "enum",
       "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 10
+      "is_bus": false
+    },
+    {
+      "name": "Speed tune",
+      "min": 50.0,
+      "max": 200.0,
+      "default": 100.0,
+      "type": "folder",
+      "is_common": false,
+      "is_bus": false
     }
-  ]
+  ],
+  "input_ports": [
+    {
+      "name": "Clock input",
+      "description": "The bus to use as the clock input for tempo synchronization."
+    },
+    {
+      "name": "Reset input",
+      "description": "The bus to use as the reset input, which can trigger or stop/restart playback depending on 'Reset mode'."
+    },
+    {
+      "name": "Clock input",
+      "description": ""
+    },
+    {
+      "name": "Reset input",
+      "description": ""
+    }
+  ],
+  "output_ports": []
 }

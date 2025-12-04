@@ -1,127 +1,178 @@
 {
   "guid": "delf",
   "name": "Delayed Function",
-  "description": "This algorithm generates a variety of one-shot functions after a delay, when triggered. The logic of each channel is as follows: When triggered, it immediately jumps to its idle voltage, if not already there. It stays at that voltage for the duration set by the Delay parameter. Then it executes the function, for the duration set by the Time parameter, if relevant (for example, the Step function has no duration). Depending on the function, it then remains at the active or idle voltage until triggered again. The available functions are: Pulse, a simple rectangular pulse of the specified duration; Step, a step – the output goes from idle to active after the delay, and remains at the active level until retriggered; Ramp, a rising ramp of the specified duration. Stays at the active level after the ramp is complete; Sawtooth, a rising ramp of the specified duration, which jumps back to the idle level when complete.",
+  "description": "This algorithm generates a variety of one-shot functions after a delay, when triggered. The logic of each channel is as follows:\n   - When triggered, it immediately jumps to its idle voltage, if not already there.\n   - It stays at that voltage for the duration set by the Delay parameter.\n   - It then executes the function, for the duration set by the Time parameter, if relevant (for example, the Step function has no duration).\n   - Depending on the function, it then remains at the active or idle voltage until triggered again.\n\nThe available functions are:\n   - Pulse: A simple rectangular pulse of the specified duration.\n   - Step: A step – the output goes from idle to active after the delay and remains at the active level until retriggered.\n   - Ramp: A rising ramp of the specified duration. Stays at the active level after the ramp is complete.\n   - Sawtooth: A rising ramp of the specified duration, which jumps back to the idle level when complete.",
   "categories": [
-    "delay",
-    "audio effects",
+    "utility",
     "triggers"
   ],
   "short_description": "Generates functions after a delay",
+  "use_cases": [
+    "Creating delayed triggers for modular synthesizers",
+    "Generating control voltage pulses with adjustable timing",
+    "Sequencing events in audio or Eurorack setups",
+    "Adding rhythmic delays to function outputs"
+  ],
+  "gui_description": "The display shows, for each channel (1-8), from top to bottom:\n   - The remaining time of the delay once triggered.\n   - The remaining time of the function execution.\n   - A bar graph representing the output function waveform.",
   "specifications": [
     {
       "name": "Channels",
       "min": 1,
       "max": 8
-    },
-    {
-      "name": "Delay",
-      "min": 0,
-      "max": 1000
-    },
-    {
-      "name": "Time",
-      "min": 1,
-      "max": 1000
     }
   ],
   "parameters": [
     {
       "name": "Disable all",
-      "min": 0,
-      "max": 1,
-      "default": 0
+      "type": "toggle",
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Detection",
-      "min": 0,
-      "max": 1,
-      "default": 0
+      "type": "enum",
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
-      "default": 0
+      "default": 0,
+      "scope": "per-channel",
+      "type": "toggle"
     },
     {
       "name": "Function",
       "min": 0,
       "max": 3,
-      "default": 0
+      "default": 0,
+      "enum_values": [
+        "Pulse",
+        "Step",
+        "Ramp",
+        "Sawtooth"
+      ],
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Delay",
       "min": 0,
       "max": 1000,
-      "default": 0
+      "default": 0,
+      "scope": "per-channel",
+      "type": "scaled"
     },
     {
       "name": "Delay multiplier",
       "min": 0,
       "max": 6,
-      "default": 0
+      "default": 0,
+      "enum_values": [
+        "x1",
+        "x2",
+        "x5",
+        "x10",
+        "x20",
+        "x50",
+        "x100"
+      ],
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Time",
       "min": 1,
       "max": 1000,
-      "default": 100
+      "default": 100,
+      "scope": "per-channel",
+      "type": "scaled"
     },
     {
       "name": "Time multiplier",
       "min": 0,
       "max": 6,
-      "default": 0
+      "default": 0,
+      "enum_values": [
+        "x1",
+        "x2",
+        "x5",
+        "x10",
+        "x20",
+        "x50",
+        "x100"
+      ],
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Active voltage",
       "min": -10.0,
       "max": 10.0,
       "default": 5.0,
-      "type": "string",
-      "is_common": true
+      "scope": "per-channel",
+      "type": "scaled",
+      "is_bus": false
     },
     {
       "name": "Idle voltage",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "string",
-      "is_common": true
+      "scope": "per-channel",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "scope": "per-channel",
+      "type": "scaled"
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "scope": "per-channel",
+      "type": "scaled"
+    },
+    {
+      "name": "Note number (MIDI/I2C)",
+      "min": -1,
+      "max": 127,
+      "default": -1,
+      "enum_values": [
+        "-1 (Any)"
+      ],
+      "type": "scaled"
     }
   ],
   "input_ports": [
     {
       "name": "Trigger input",
-      "busIdRef": "28",
-      "isPerChannel": true
-    },
-    {
-      "name": "Output",
-      "busIdRef": "28",
-      "isPerChannel": true
-    },
-    {
-      "name": "Output mode",
-      "busIdRef": "28",
-      "isPerChannel": true
-    },
-    {
-      "name": "MIDI channel",
-      "busIdRef": "16",
-      "isPerChannel": true
-    },
-    {
-      "name": "I2C channel",
-      "busIdRef": "255",
-      "isPerChannel": true
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "busIdRef": "28"
+      "description": ""
     }
   ]
 }

@@ -1,12 +1,19 @@
 {
   "guid": "enfo",
   "name": "Envelope Follower",
-  "description": "This algorithm is a simple envelope follower. It outputs a CV according to the volume envelope of the input audio.\nWhen operating on stereo (or multichannel) signals, it tracks the maximum of the various signals and outputs a single CV. If you want to separately track the left and right sides of a stereo signal, use this algorithm configured as two mono channels.",
+  "description": "This algorithm is a simple envelope follower. It outputs a CV according to the volume envelope of the input audio. When operating on stereo (or multichannel) signals, it tracks the maximum of the various signals and outputs a single CV. If you want to separately track the left and right sides of a stereo signal, use this algorithm configured as two mono channels.",
   "categories": [
-    "CV Processing",
-    "Dynamics"
+    "utility",
+    "CV processing"
   ],
-  "short_description": "\"Tracks the volume envelope of a signal\"",
+  "short_description": "Tracks the volume envelope of a signal",
+  "use_cases": [
+    "CV modulation from audio signals",
+    "Stereo/multichannel envelope tracking (max mode)",
+    "Left/right channel separation in stereo processing",
+    "Modulation source for other effects or synths"
+  ],
+  "gui_description": null,
   "specifications": [
     {
       "name": "Channels",
@@ -17,54 +24,80 @@
   "parameters": [
     {
       "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables the channel."
-    },
-    {
-      "name": "Input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "description": "The input bus to process."
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+      "scope": "per-channel",
+      "type": "bus",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
-      "name": "Output",
-      "min": 1,
-      "max": 28,
-      "default": 15,
-      "description": "The output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace'."
-    },
-    {
-      "name": "Output<br>mode",
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false
     },
     {
       "name": "Attack",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "description": "The follower attack time. Exponential scale from 0.1ms to 1000ms."
+      "scope": "per-channel",
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Release",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "description": "The follower release time. Ex exponential scale from 1.0ms to 3000ms."
+      "scope": "per-channel",
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "input_ports": [
+    {
+      "name": "Audio Input",
+      "description": "The audio signal to track the volume envelope from."
+    },
+    {
+      "name": "Input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "CV Output",
+      "description": "The CV signal generated according to the input audio's volume envelope. For stereo/multichannel inputs in max mode, a single CV output is provided based on the maximum envelope across channels."
+    },
+    {
+      "name": "Audio Output (if enabled)",
+      "description": "The processed audio signal routed back to the specified bus when 'Output' is set to 'None'."
+    },
+    {
+      "name": "Output",
+      "description": ""
+    }
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "guid": "lexp",
   "name": "Linear/Exponential",
-  "description": "This algorithm implements a linear-to-exponential converter and an exponential-to-linear converter, typically used when interfacing between Volt/octave and Hz/Volt CV standards. The 0V point for the V/octave signals is taken as C3 (130.8Hz approximately).",
+  "description": "This algorithm implements a linear-to-exponential converter and an exponential-to-linear converter,\ntypically used when interfacing between Volt/octave and Hz/Volt CV standards.\n\nThe 0V point for the V/octave signals is taken as C3 (130.8Hz approximately).",
   "categories": [
     "utility",
     "CV processing"
@@ -13,52 +13,98 @@
       "min": 1,
       "max": 2000,
       "default": 1000,
-      "type": "scaled",
-      "is_common": true
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Offset",
       "min": -1000,
       "max": 1000,
       "default": 0,
-      "type": "scaled",
-      "is_common": false
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Input",
+      "name": "Input (Linear/HzV)",
       "min": 0,
       "max": 28,
       "default": 0,
       "type": "bus",
-      "is_common": true
+      "is_per_channel": false,
+      "is_bus": true
     },
     {
-      "name": "Output",
+      "name": "Output (Exponential/V/Octave)",
       "min": 0,
       "max": 28,
       "default": 0,
       "type": "bus",
-      "is_common": true
+      "is_per_channel": false,
+      "is_bus": true
     },
     {
-      "name": "Output<br>mode",
+      "name": "Output_mode (Linear/HzV)",
       "min": 0,
       "max": 1,
       "default": 1,
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
       "type": "enum",
-      "is_common": false
+      "is_per_channel": false
+    },
+    {
+      "name": "Input (Exponential/V/Octave)",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output (Linear/HzV)",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output_mode (Exponential/V/Octave)",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "enum",
+      "is_per_channel": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "Linear, Hz/V bus"
+      "name": "Input (Linear/HzV)",
+      "description": "The input bus for linear Hz/V signals."
+    },
+    {
+      "name": "Input (Exponential/V/Octave)",
+      "description": "The input bus for exponential V/octave signals."
     }
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "description": "Exponential, V/octave bus"
+      "name": "Output (Exponential/V/Octave)",
+      "description": "The output bus for converted exponential V/octave signals."
+    },
+    {
+      "name": "Output (Linear/HzV)",
+      "description": "The output bus for converted linear Hz/V signals."
     }
   ]
 }

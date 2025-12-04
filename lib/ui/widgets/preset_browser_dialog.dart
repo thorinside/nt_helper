@@ -17,6 +17,7 @@ import 'package:nt_helper/ui/widgets/mobile_drill_down_navigator.dart';
 import 'package:nt_helper/ui/widgets/package_install_dialog.dart';
 import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
 import 'package:nt_helper/utils/responsive.dart';
+import 'package:nt_helper/services/preset_analyzer.dart';
 
 class PresetBrowserDialog extends StatefulWidget {
   final DistingCubit distingCubit;
@@ -198,6 +199,24 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                   OutlinedButton(
                     onPressed: () async {
                       Navigator.of(context).pop();
+
+                      // Extract plugin paths from AlgorithmInfo for slots in the preset
+                      Map<String, String>? pluginPaths;
+                      final state = widget.distingCubit.state;
+                      if (state is DistingStateSynchronized) {
+                        // Get algorithm indices from current preset's slots
+                        final slotAlgorithmIndices = state.slots
+                            .map((s) => s.algorithm.algorithmIndex)
+                            .toSet();
+                        // Filter to only AlgorithmInfos used in slots
+                        final slotAlgorithms = state.algorithms
+                            .where((a) =>
+                                slotAlgorithmIndices.contains(a.algorithmIndex))
+                            .toList();
+                        pluginPaths =
+                            PresetAnalyzer.extractPluginPaths(slotAlgorithms);
+                      }
+
                       await showDialog<void>(
                         context: context,
                         builder: (dialogContext) => PresetPackageDialog(
@@ -206,6 +225,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                             widget.distingCubit.requireDisting(),
                           ),
                           database: widget.distingCubit.database,
+                          pluginPaths: pluginPaths,
                         ),
                       );
                     },

@@ -104,6 +104,7 @@ development_status:
   7-8-generate-updated-metadata-bundle-with-io-flags: done
   7-9-upgrade-existing-databases-with-io-flags: done
   7-10-persist-output-mode-usage-to-database: done
+  7-11-use-plugin-path-from-algorithm-info-for-export: done
   epic-7-retrospective: optional
 
   epic-8: contexted

@@ -1,72 +1,127 @@
 {
   "guid": "nsgt",
   "name": "Noise gate",
-  "description": "This algorithm is a multi-channel noise gate. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you, say, want a noise gate on all 12 module inputs, you don’t need to add 12 copies of the algorithm to do so.\nA sidechain input is available, to gate one signal with another.\nThe algorithm always works as an insert effect i.e. the output replaces the input.",
+  "description": "This algorithm is a multi-channel noise gate. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you want a noise gate on all 12 module inputs, you don’t need to add 12 copies of the algorithm to do so.\n\nA sidechain input is available, to gate one signal with another. The algorithm always works as an insert effect i.e. the output replaces the input.",
   "categories": [
     "audio effects",
     "dynamics"
   ],
-  "short_description": "\"A simple noise gate\"",
   "specifications": [
     {
       "name": "Channels",
       "min": 1,
       "max": 12
-    },
+    }
+  ],
+  "parameters": [
     {
       "name": "Enable",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Left/mono<br>input",
-      "min": 1,
-      "max": 28
-    },
-    {
-      "name": "Right input",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "Sidechain<br>input",
-      "min": 0,
-      "max": 28
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Threshold",
       "min": -70.0,
-      "max": 0.0
+      "max": 0.0,
+      "default": -24.0,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Hysteresis",
       "min": -24.0,
-      "max": 0.0
+      "max": 0.0,
+      "default": -3.0,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Attack",
       "min": 0,
-      "max": 1023
+      "max": 1023,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Hold",
       "min": 0,
-      "max": 1023
+      "max": 1023,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Release",
       "min": 0,
-      "max": 1023
+      "max": 1023,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Lookahead",
       "min": 0.0,
-      "max": 10.0
+      "max": 10.0,
+      "default": 1.0,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Gain<br>reduction",
+      "name": "Gain reduction",
       "min": -80,
-      "max": 0
+      "max": 0,
+      "default": -80,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "description": "The left or mono input bus for the channel."
+    },
+    {
+      "name": "Right input",
+      "description": "The right input bus, if stereo."
+    },
+    {
+      "name": "Sidechain input",
+      "description": "The sidechain input bus to control gate opening/closing."
+    },
+    {
+      "name": "Left/mono input",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "description": ""
+    },
+    {
+      "name": "Sidechain input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "description": "The processed signal output (replaces the original input when used as an insert effect)."
     }
   ]
 }

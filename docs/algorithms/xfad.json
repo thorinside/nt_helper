@@ -1,57 +1,107 @@
 {
   "guid": "xfad",
   "name": "Crossfader",
-  "description": "This algorithm crossfades between two sets of signals (from mono up to two sets of eight channels). Three different crossfade curves are available: Equal gain - Appropriate for crossfading phase-coherent material. Equal power - Appropriate for crossfading non-phase-coherent material. Transition - DJ-style crossfade where both sources are at full gain at the 50% position. Inputs A & B, and the output, use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the ‘Width’ parameter. For example, to crossfade stereo signals, set the Width to 2. The crossfade can be controlled by both a parameter and a CV, which are simply summed if both are in use.",
+  "description": "This algorithm crossfades between two sets of signals (from mono up to two sets of eight channels). Three different crossfade curves are available: Equal gain - appropriate for crossfading phase-coherent material; Equal power - appropriate for crossfading non-phase-coherent material; Transition - DJ-style crossfade where both sources are at full gain at the 50% position. Inputs A & B, and the output, use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the 'Width' parameter. For example, to crossfade stereo signals, set the Width to 2. The crossfade can be controlled by both a parameter and a CV, which are simply summed if both are in use.",
   "categories": [
-    "audio effects",
+    "utility",
     "mixing"
   ],
-  "short_description": "\"Crossfades signals\"",
-  "specifications": [],
+  "short_description": "Crossfades signals",
+  "use_cases": [
+    "DJ crossfading between tracks",
+    "Phase-coherent signal blending (e.g., synths, effects)",
+    "Non-phase-coherent audio mixing (e.g., drums, vocals)",
+    "Multi-channel audio routing and transitioning"
+  ],
+  "gui_description": "The display shows a graphical representation of the crossfade curves and the amount of the two signals that are combined in the output mix.",
   "parameters": [
     {
       "name": "Crossfader",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Curve",
       "min": 0,
       "max": 2,
       "default": 1,
-      "type": "string",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 2
+      "enum_values": [
+        "Equal gain (phase-coherent material)",
+        "Equal power (non-phase-coherent material)",
+        "Transition (DJ-style crossfade)"
+      ],
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Input A",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "type": "bus",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Input B",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "type": "bus",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "enum_values": [
+        "Add (mixes signals)",
+        "Replace (output replaces inputs)"
+      ],
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of busses to process, defining the channel count for inputs and output.",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
       "name": "Input A",
-      "busIdRef": "1",
-      "isPerChannel": false
+      "description": "The first bus for input A, using a contiguous range of busses defined by the 'Width' parameter."
     },
     {
       "name": "Input B",
-      "busIdRef": "2",
-      "isPerChannel": false
+      "description": "The second set of inputs (contiguous with Input A), starting from the bus specified in the routing parameters and spanning the width set by the 'Width' parameter."
     },
     {
-      "name": "Output",
-      "busIdRef": "13",
-      "isPerChannel": false
+      "name": "Crossfade input",
+      "description": "The CV input to drive the crossfade, scaled so that 5V covers the range 0-100%."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "busIdRef": "13",
-      "isPerChannel": false
+      "description": "The crossfaded signal output, using a contiguous range of busses defined by the 'Width' parameter."
+    },
+    {
+      "name": "Output",
+      "description": ""
     }
   ]
 }

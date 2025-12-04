@@ -1,92 +1,86 @@
 {
   "guid": "ptsh",
   "name": "Pitch Shifter",
-  "description": "This algorithm performs pitch shifting, using a time-domain algorithm [88] . The pitch shift amount is the sum of the various shift amount parameters and the CV input. The algorithm was extracted from the disting EX ‘Tracker’ algorithm, as was the disting NT’s 'Tracker', below. As such these two algorithms make a natural pairing.",
+  "description": "This algorithm performs pitch shifting using a time-domain algorithm (not employing Phase Vocoder or similar techniques). The pitch shift amount is the sum of various adjustable shift parameters and an optional CV input. It was extracted from the disting EX ‘Tracker’ algorithm, sharing a natural pairing with disting NT’s ‘Tracker’.",
   "categories": [
-    "pitch",
     "audio effects",
-    "CV processing"
+    "pitch"
   ],
-  "short_description": "\"A time-domain pitch shifter\"",
-  "specifications": [],
+  "short_description": "A time-domain pitch shifter",
+  "gui_description": "The display shows the current shift amount in cents.",
   "parameters": [
     {
-      "name": "Shift<br>algorithm",
+      "name": "Shift algorithm",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 1
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Grain delay",
       "min": 1,
       "max": 682,
       "default": 300,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 2
+      "scope": "common",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Octaves",
       "min": -10,
       "max": 10,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 3
+      "scope": "common",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Semitones",
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 4
+      "scope": "common",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Cents",
       "min": -1200,
       "max": 1200,
       "default": 0,
-      "type": "string",
-      "is_common": false,
-      "is_bus": false,
-      "parameterNumber": 5
+      "scope": "common",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Audio input",
-      "busIdRef": "1",
-      "isPerChannel": true
+      "description": "The bus to use as the audio input.",
+      "busIdRef": "audio_input"
     },
     {
       "name": "Shift input",
-      "busIdRef": "0",
-      "isPerChannel": true
-    },
-    {
-      "name": "Output",
-      "busIdRef": "1",
-      "isPerChannel": true
-    },
-    {
-      "name": "Output<br>mode",
-      "busIdRef": "0",
-      "isPerChannel": true
+      "description": "The bus to use as a V/octave pitch shift amount CV.",
+      "busIdRef": "shift_input"
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "busIdRef": "13"
+      "description": "The output bus for the pitch-shifted audio signal.",
+      "busIdRef": "output_bus"
     }
   ]
 }

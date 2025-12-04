@@ -1,0 +1,110 @@
+{
+  "guid": "mima",
+  "name": "Minimum/maximum",
+  "description": "This simple algorithm computes the minimum and maximum of two input voltages.\n\nNote that with one input disabled, or at 0V, this effectively performs half-wave rectification.",
+  "categories": [
+    "utility",
+    "CV processing",
+    "logic"
+  ],
+  "short_description": "Min/max, or half-wave rectifier",
+  "use_cases": [
+    "Extracting envelope information from audio signals",
+    "Creating dynamic sidechain effects by detecting peak levels",
+    "Generating control voltages for modular synthesizers based on input signal extremes",
+    "Half-wave rectification of CV signals"
+  ],
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Input_A",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "type": "bus",
+      "channelCountRef": "channels",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Input_B",
+      "min": 0,
+      "max": 28,
+      "default": 2,
+      "type": "bus",
+      "channelCountRef": "channels",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Min_output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "bus",
+      "channelCountRef": "channels",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Min_output_mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Max_output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "bus",
+      "channelCountRef": "channels",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Max_output_mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Input_A",
+      "description": "One of the two input busses to process."
+    },
+    {
+      "name": "Input_B",
+      "description": "One of the two input busses to process."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Min_output",
+      "description": "The output bus for the minimum voltage."
+    },
+    {
+      "name": "Max_output",
+      "description": "The output bus for the maximum voltage."
+    }
+  ]
+}

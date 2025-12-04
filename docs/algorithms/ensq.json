@@ -1,388 +1,276 @@
 {
   "guid": "ensq",
   "name": "Envelope Sequencer",
-  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer (below), and some of the documentation for this algorithm cross-references with that for the other.\nEach step has a curve shape, a scale, and an offset. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock).\nThe algorithm has a function for randomising the curves in various ways.\nEach Envelope Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures.\nRemember that every curve shape, level, etc. is a parameter and therefore mappable.",
+  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer, and some of the documentation for this algorithm cross-references with that for the other.\n\nEach step has a curve shape, a scale, and an offset. It also has a 'Division', which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock).\n\nThe algorithm has a function for randomising the curves in various ways.\n\nEach Envelope Sequencer has internal storage for 32 sequences, which you can use like 'snapshots' or 'patterns' to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures.\n\nRemember that every curve shape, level, etc. is a parameter and therefore mappable.",
   "categories": [
     "sequencing",
+    "randomization",
+    "clocking",
     "CV processing",
     "MIDI"
   ],
   "short_description": "\"A really, really big curve sequencer\"",
-  "specifications": [],
+  "use_cases": [
+    "Creating complex CV envelopes for modular synthesizers",
+    "Generating rhythmic patterns with adjustable step lengths and repeats/ratchets",
+    "Switching between multiple stored sequences under CV or manual control",
+    "Randomizing envelope shapes for unpredictable modulation",
+    "Building larger structures by combining smaller sequences"
+  ],
+  "gui_description": "The display shows an overview of the 16 steps. The current step being played is indicated by a highlight above the step, while start and end steps are marked with solid bars. The step whose parameter is being edited is highlighted in the GUI. Divisions (repeats or ratchets) appear as breaks in the highlight, accompanied by numbers indicating their values.",
   "parameters": [
     {
       "name": "Sequence",
       "min": 1,
       "max": 32,
       "default": 1,
-      "type": "string",
+      "scope": "sequencer",
+      "type": "enum",
       "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "is_bus": false
     },
     {
       "name": "Start",
       "min": 1,
       "max": 16,
       "default": 1,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "sequencer",
+      "type": "enum"
+    },
+    {
+      "name": "End",
+      "min": 1,
+      "max": 16,
+      "default": 16,
+      "scope": "sequencer",
+      "type": "enum"
     },
     {
       "name": "Direction",
       "min": 0,
       "max": 6,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "sequencer",
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Permutation",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "sequencer",
+      "type": "enum"
     },
     {
       "name": "Reset offset",
       "min": -16,
       "max": 16,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "sequencer",
+      "type": "enum"
     },
     {
       "name": "Length type",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "% length",
       "min": 1,
       "max": 100,
       "default": 100,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Fixed length",
       "min": 1,
       "max": 1000,
       "default": 100,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Curve",
       "min": 0,
       "max": 11,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum"
     },
     {
       "name": "Scale",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Offset",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum"
     },
     {
       "name": "Division",
       "min": 0,
       "max": 14,
       "default": 7,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum"
     },
     {
       "name": "Mute",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Skip",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum"
     },
     {
       "name": "Reset",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum"
     },
     {
       "name": "Repeat",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "step",
+      "type": "enum"
     },
     {
       "name": "Randomise",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Levels",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum"
     },
     {
       "name": "Curves",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum"
     },
     {
       "name": "Repeats",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum"
     },
     {
       "name": "Min repeat",
       "min": 2,
       "max": 8,
       "default": 2,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum"
     },
     {
       "name": "Max repeat",
       "min": 2,
       "max": 8,
       "default": 8,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum"
     },
     {
       "name": "Min ratchet",
       "min": 2,
       "max": 8,
       "default": 2,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum"
     },
     {
       "name": "Max ratchet",
       "min": 2,
       "max": 8,
       "default": 8,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum"
     },
     {
-      "name": "Repeat<br>probability",
+      "name": "Repeat probability",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "scope": "randomise",
+      "type": "enum"
     },
     {
-      "name": "Ratchet<br>probability",
+      "name": "Ratchet probability",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
+      "scope": "randomise",
+      "type": "enum"
+    }
+  ],
+  "input_ports": [
     {
       "name": "Clock input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "The bus to use as the clock input for triggering steps."
     },
     {
       "name": "Reset input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "The bus to use as the reset trigger, run/stop signal, or one-shot trigger depending on Reset mode setting."
     },
     {
-      "name": "Reset mode",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "name": "Sequence CV input",
+      "description": "The bus used for selecting sequences under CV control (if Sequence change mode is set accordingly)."
     },
+    {
+      "name": "Sequence trigger input",
+      "description": "The bus to use as the sequence select trigger."
+    }
+  ],
+  "output_ports": [
     {
       "name": "Output",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "description": "The bus used for CV output, which can be controlled by envelope sequences."
     },
     {
-      "name": "Output<br>mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Sequence<br>CV input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Sequence<br>trigger input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
-    },
-    {
-      "name": "Sequence<br>change<br>mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 0
+      "name": "MIDI CC",
+      "description": "The MIDI CC number sent as part of the MIDI output (if enabled)."
     }
   ]
 }

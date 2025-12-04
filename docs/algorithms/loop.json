@@ -1,15 +1,735 @@
 {
   "guid": "loop",
   "name": "Looper",
-  "description": "This algorithm is a looper, based on the disting EX algorithm of the same name, but significantly extended. Loops can have crossfades, they can fade in and out, and overdubbing can fade in and out, all of which is designed to make it easy to achieve smooth, ambient looping. All looping operations can also be synchronised to a clock input, if tight rhythmic looping is more your thing. The looper can also generate clocks (analogue and/or MIDI), if you prefer the looper to be the source of tempo in your setup. Loops may also be reversed, and played at half speed (an octave down). A ‘layers’ system is also implemented, which is like the ‘undo/redo’ found on some loopers but more powerful. The core control setup is a two button record/play/overdub paradigm in the manner of many stompbox loopers, though many more controls are available. These can be mapped to CV, MIDI, or I2C as usual; a dedicated MIDI-note based interface is also provided for ease of use with MIDI pedalboards which send notes when footswitches are pressed. You may like to review the Debouncer algorithm (above) which is designed to make it easy to hook guitar footswitches to the looper controls. A UI script (see below for information about UI scripts) is available which puts the looper’s main record/play buttons on the module’s two encoders. This is available from our GitHub https://github.com/expertsleepersltd/distingNT if it’s not already on your MicroSD card.",
+  "description": "This algorithm is a looper, based on the disting EX algorithm of the same name but significantly extended. It supports up to four simultaneous loops with features like crossfades (in and out), overdub fades, synchronization to clock or MIDI input, tempo generation via analog or MIDI clocks, half-speed playback, loop reversal, and a powerful 'layers' system for undo/redo functionality. The core control paradigm uses two buttons for record/play/overdub operations, but additional controls can be mapped to CV, MIDI, or I2C inputs. A dedicated MIDI-note interface is provided for compatibility with pedalboards that send notes on footswitch presses.\n\nThe total loop time (1-90 seconds) is shared equally among loops, and the actual maximum duration per loop depends on bit depth and mono/stereo configuration. For example: 78s (mono 32-bit), 39s (stereo 32-bit), or 156s (mono 16-bit). Clipping may occur in lower bit depths, but not with 32-bit float.\n\nParameters affecting loop memory (Channels, Bit depth, Minimum layers) trigger an immediate clear of the loop. The algorithm also features clocked operation for rhythmic synchronization and per-loop routing controls for input/output bus selection.",
   "categories": [
     "utility",
     "mixing",
     "routing",
-    "CV processing",
-    "logic",
     "clocking",
     "MIDI"
   ],
-  "short_description": "\"A looper\""
+  "short_description": "A looper",
+  "use_cases": [
+    "Ambient looping with smooth crossfades and fades",
+    "Rhythmic looping synchronized to clock or MIDI input",
+    "Building complex rhythmic parts piece-by-piece via overdubbing",
+    "Layering ambient textures with gradual decay",
+    "Generating tempo clocks (analog or MIDI) for modular setups",
+    "Half-speed playback and loop reversal for creative effects",
+    "Saving/loading loops as WAV files to MicroSD card"
+  ],
+  "gui_description": "The display shows detailed information about the active loop(s), including state icons, length, current position, and envelope levels. Icons indicate:\n\n   - Square: Empty\n   - Circle: Record (or pulsing circle for record crossfade)\n   - Triangle: Play (left-pointing triangle = reversed; small hole in triangle = octave down)\n   - Triangle + Circle: Overdub\n   - Two vertical lines: Stop\n   - Two vertical lines with downward triangle: Fade to stop or fade to clear\n   - 'M' instead of two vertical lines: Mute (not pause).\n\n\nThe target loop(s) are highlighted with a box. A large single-loop GUI is available when only one loop is active.\n\n\nControls can be activated via MIDI notes, CV/CC mapping, or UI script (record/play on encoders).",
+  "specifications": [
+    {
+      "name": "Loops",
+      "min": 1,
+      "max": 4
+    },
+    {
+      "name": "Max time",
+      "min": 1,
+      "max": 90
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Target loop",
+      "scope": "controls",
+      "type": "toggle",
+      "channelCountRef": "channels",
+      "isPerChannel": true,
+      "isCommon": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Record",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Play",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Reverse",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Octave down",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Retrigger",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Stop all",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Bypass clock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Undo",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Redo",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Target next",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Fade to clear",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Target 1",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Target 2",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Target 3",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Target 4",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "controls",
+      "type": "toggle"
+    },
+    {
+      "name": "Pause/mute",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Attack time",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Decay time",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Attack shape",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Decay shape",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Overdub attack time",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "scope": "global",
+      "type": "scaled"
+    },
+    {
+      "name": "Overdub decay time",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "scope": "global",
+      "type": "scaled"
+    },
+    {
+      "name": "Overdub fade",
+      "min": -24.0,
+      "max": 0.0,
+      "default": 0.0,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Retrigger fade",
+      "min": 0.5,
+      "max": 100.0,
+      "default": 2.0,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Layer fade",
+      "min": 1,
+      "max": 1000,
+      "default": 10,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Clear hold time",
+      "min": 0.5,
+      "max": 5.0,
+      "default": 1.0,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "Record hold time",
+      "min": 0.5,
+      "max": 5.0,
+      "default": 1.0,
+      "scope": "global",
+      "type": "scaled"
+    },
+    {
+      "name": "Next hold time",
+      "min": 0.1,
+      "max": 5.0,
+      "default": 0.3,
+      "scope": "global",
+      "type": "scaled"
+    },
+    {
+      "name": "Controls wake UI",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "toggle"
+    },
+    {
+      "name": "Only record targets",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "toggle"
+    },
+    {
+      "name": "Clock source",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "enum_values": [
+        "None",
+        "Clock input",
+        "MIDI clock"
+      ],
+      "is_bus": false
+    },
+    {
+      "name": "MIDI divisor",
+      "min": 0,
+      "max": 19,
+      "default": 9,
+      "enum_values": [
+        "24ppqn",
+        "1/8 notes",
+        "1/16 notes",
+        "1/32 notes"
+      ],
+      "is_bus": false
+    },
+    {
+      "name": "MIDI numerator",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "scope": "global",
+      "type": "bus"
+    },
+    {
+      "name": "MIDI transport",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "toggle"
+    },
+    {
+      "name": "Lock range",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "scope": "global",
+      "type": "scaled",
+      "is_bus": false
+    },
+    {
+      "name": "2nd press cancels",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "toggle"
+    },
+    {
+      "name": "PPQN (out)",
+      "min": 1,
+      "max": 48,
+      "default": 1,
+      "enum_values": [
+        "24ppqn"
+      ],
+      "is_bus": false
+    },
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "toggle"
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "toggle"
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "toggle"
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "toggle"
+    },
+    {
+      "name": "Channels",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "enum_values": [
+        "Mono",
+        "Stereo"
+      ],
+      "is_bus": false
+    },
+    {
+      "name": "Bit depth",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "enum_values": [
+        "32 bit (float)",
+        "24 bit",
+        "16 bit"
+      ],
+      "is_bus": false
+    },
+    {
+      "name": "Crossfade time",
+      "min": 0,
+      "max": 1000,
+      "default": 70,
+      "scope": "per-channel",
+      "type": "scaled"
+    },
+    {
+      "name": "Minimum layers",
+      "min": 0,
+      "max": 8,
+      "default": 0,
+      "enum_values": [
+        "Layers disabled"
+      ],
+      "is_bus": false
+    },
+    {
+      "name": "Current layer",
+      "min": 1,
+      "max": 999,
+      "default": 1,
+      "scope": "per-channel",
+      "type": "bus"
+    },
+    {
+      "name": "1/4 notes (out)",
+      "min": 1,
+      "max": 128,
+      "default": 1,
+      "scope": "per-channel",
+      "type": "scaled"
+    },
+    {
+      "name": "Input left/mono",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "per-channel",
+      "type": "bus"
+    },
+    {
+      "name": "Input right",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "scope": "per-channel",
+      "type": "bus"
+    },
+    {
+      "name": "Output left/mono",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "per-channel",
+      "type": "bus"
+    },
+    {
+      "name": "Output right",
+      "min": 1,
+      "max": 28,
+      "default": 14,
+      "scope": "per-channel",
+      "type": "bus"
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "is_bus": false
+    },
+    {
+      "name": "Trigger mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "scope": "global",
+      "type": "bus"
+    },
+    {
+      "name": "Target 1 (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 48,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Target 2 (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 50,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Target 3 (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 52,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Target 4 (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 53,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Target next (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 54,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Record (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 55,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Play (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 57,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Reverse (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 59,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Octave down (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Retrigger (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 58,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Stop all (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 62,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Bypass clock (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 71,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Undo (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 72,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Redo (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 74,
+      "scope": "mix",
+      "type": "scaled"
+    },
+    {
+      "name": "Fade to clear (MIDI)",
+      "min": 0,
+      "max": 127,
+      "default": 76,
+      "scope": "mix",
+      "type": "scaled"
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Input left/mono (Loop 1)",
+      "description": "Audio input bus for the left or mono channel of loop 1.",
+      "busIdRef": "Input_left_mono_1"
+    },
+    {
+      "name": "Input right (Loop 1)",
+      "description": "Audio input bus for the right channel of loop 1, if stereo mode is selected.",
+      "busIdRef": "Input_right_1"
+    },
+    {
+      "name": "Input left/mono (Loop 2)",
+      "description": "Audio input bus for the left or mono channel of loop 2.",
+      "busIdRef": "Input_left_mono_2"
+    },
+    {
+      "name": "Input right (Loop 2)",
+      "description": "Audio input bus for the right channel of loop 2, if stereo mode is selected.",
+      "busIdRef": "Input_right_2"
+    },
+    {
+      "name": "Input left/mono (Loop 3)",
+      "description": "Audio input bus for the left or mono channel of loop 3.",
+      "busIdRef": "Input_left_mono_3"
+    },
+    {
+      "name": "Input right (Loop 3)",
+      "description": "Audio input bus for the right channel of loop 3, if stereo mode is selected.",
+      "busIdRef": "Input_right_3"
+    },
+    {
+      "name": "Input left/mono (Loop 4)",
+      "description": "Audio input bus for the left or mono channel of loop 4.",
+      "busIdRef": "Input_left_mono_4"
+    },
+    {
+      "name": "Input right (Loop 4)",
+      "description": "Audio input bus for the right channel of loop 4, if stereo mode is selected.",
+      "busIdRef": "Input_right_4"
+    },
+    {
+      "name": "Clock input",
+      "description": "Bus used as clock source when 'Clock source' parameter is set to 'Clock input'."
+    },
+    {
+      "name": "Clock input",
+      "description": ""
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output left/mono (Loop 1)",
+      "description": "Audio output bus for the left or mono channel of loop 1.",
+      "busIdRef": "Output_left_mono_1"
+    },
+    {
+      "name": "Output right (Loop 1)",
+      "description": "Audio output bus for the right channel of loop 1, if stereo mode is selected.",
+      "busIdRef": "Output_right_1"
+    },
+    {
+      "name": "Output left/mono (Loop 2)",
+      "description": "Audio output bus for the left or mono channel of loop 2.",
+      "busIdRef": "Output_left_mono_2"
+    },
+    {
+      "name": "Output right (Loop 2)",
+      "description": "Audio output bus for the right channel of loop 2, if stereo mode is selected.",
+      "busIdRef": "Output_right_2"
+    },
+    {
+      "name": "Output left/mono (Loop 3)",
+      "description": "Audio output bus for the left or mono channel of loop 3.",
+      "busIdRef": "Output_left_mono_3"
+    },
+    {
+      "name": "Output right (Loop 3)",
+      "description": "Audio output bus for the right channel of loop 3, if stereo mode is selected.",
+      "busIdRef": "Output_right_3"
+    },
+    {
+      "name": "Output left/mono (Loop 4)",
+      "description": "Audio output bus for the left or mono channel of loop 4.",
+      "busIdRef": "Output_left_mono_4"
+    },
+    {
+      "name": "Output right (Loop 4)",
+      "description": "Audio output bus for the right channel of loop 4, if stereo mode is selected.",
+      "busIdRef": "Output_right_4"
+    },
+    {
+      "name": "Trigger output",
+      "description": "Bus used to send trigger pulses or clock signals at the end of each loop cycle."
+    },
+    {
+      "name": "Trigger output",
+      "description": ""
+    }
+  ]
 }

@@ -1,142 +1,29 @@
 {
   "guid": "pym2",
   "name": "Poly Macro Oscillator 2",
-  "description": "This algorithm is a polysynth where each voice is essentially a Plaits (the open source Plaits https://github.com/pichenettes/eurorack/tree/master/plaits) [90] module by Émilie Gillet. Please refer to the section “Common polysynth features” above.",
+  "description": "[This algorithm is a polysynth where each voice is essentially a Plaits (the open source Plaits](https://github.com/pichenettes/eurorack/tree/master/plaits) [92] module by Émilie Gillet). Please refer to the section 'Common polysynth features' above.",
   "categories": [
     "synthesis",
     "polyphonic",
     "wavetable"
   ],
   "short_description": "\"It's lots of Plaits!\"",
+  "gui_description": "The display shows the notes being played by the various voices. Note that Plaits voices never really end – in theory they decay forever.",
   "specifications": [
     {
       "name": "Voices",
-      "min": 1,
-      "max": 8
-    },
-    {
-      "name": "Model",
-      "min": 0,
-      "max": 23
-    },
-    {
-      "name": "Coarse tune",
-      "min": -60,
-      "max": 60
-    },
-    {
-      "name": "Fine tune",
-      "min": -100,
-      "max": 100
-    },
-    {
-      "name": "Harmonics",
-      "min": 0,
-      "max": 127
-    },
-    {
-      "name": "Timbre",
-      "min": 0,
-      "max": 127
-    },
-    {
-      "name": "Morph",
-      "min": 0,
-      "max": 127
-    },
-    {
-      "name": "FM",
-      "min": -100,
-      "max": 100
-    },
-    {
-      "name": "Timbre mod",
-      "min": -100,
-      "max": 100
-    },
-    {
-      "name": "Morph mod",
-      "min": -100,
-      "max": 100
-    },
-    {
-      "name": "Low-pass gate",
-      "min": 0,
-      "max": 127
-    },
-    {
-      "name": "Time/decay",
-      "min": 0,
-      "max": 127
-    },
-    {
-      "name": "Main gain",
-      "min": -40,
-      "max": 6
-    },
-    {
-      "name": "Aux gain",
-      "min": -40,
-      "max": 6
+      "description": "Number of simultaneous voices, ranging from 1 to 8."
     }
   ],
-  "parameters": [
-    {
-      "name": "Level input",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "FM input",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "Harmonics input",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "Timbre input",
-      "min": 0,
-      "max": 28
-    },
-    {
-      "name": "Morph input",
-      "min": 0,
-      "max": 28
-    }
-  ],
-  "input_ports": [
-    {
-      "name": "Level input",
-      "busIdRef": "level_input"
-    },
-    {
-      "name": "FM input",
-      "busIdRef": "fm_input"
-    },
-    {
-      "name": "Harmonics input",
-      "busIdRef": "harmonics_input"
-    },
-    {
-      "name": "Timbre input",
-      "busIdRef": "timbre_input"
-    },
-    {
-      "name": "Morph input",
-      "busIdRef": "morph_input"
-    }
-  ],
+  "input_ports": [],
   "output_ports": [
     {
       "name": "Main output",
-      "busIdRef": "main_output"
+      "description": "The bus for the 'Main' output signal. Can be mixed with Aux if selected on the same bus."
     },
     {
       "name": "Aux output",
-      "busIdRef": "aux_output"
+      "description": "The bus for the 'Aux' output signal."
     }
   ]
 }

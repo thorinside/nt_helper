@@ -3,44 +3,30 @@
   "name": "Mixer Stereo",
   "description": "This algorithm is a stereo mixer – it mixes mono or stereo inputs to a stereo output. Up to four aux send busses are available, which can be switched to pre- or post-fade. Sends may also be set to be mono or stereo.",
   "categories": [
-    "mixing",
-    "audio effects"
+    "utility",
+    "mixing"
   ],
-  "short_description": "\"A stereo mixer\"",
   "specifications": [
     {
-      "name": "Channels",
-      "min": 1,
-      "max": 12
+      "name": "channels",
+      "description": "The number of mixer channels, ranging from 1 to 12."
     },
     {
-      "name": "Sends",
-      "min": 0,
-      "max": 4
+      "name": "sends_per_channel",
+      "description": "The number of aux sends per channel, ranging from 0 to 4."
     }
   ],
   "parameters": [
-    {
-      "name": "Left output",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "type": "bus",
-      "is_per_channel": false
-    },
-    {
-      "name": "Right output",
-      "min": 0,
-      "max": 28,
-      "default": 14,
-      "type": "bus",
-      "is_per_channel": false
-    },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
+      "description": "The standard Add/Replace mode selector as described above.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
       "type": "enum",
       "is_per_channel": false
     },
@@ -48,120 +34,153 @@
       "name": "Output gain",
       "min": -70.0,
       "max": 6.0,
-      "default": 0,
-      "type": "bus",
+      "default": 0.0,
+      "scope": "global",
+      "type": "folder",
       "is_per_channel": false
-    },
-    {
-      "name": "Destination",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "type": "bus",
-      "is_per_channel": true
-    },
-    {
-      "name": "Pre/post",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "enum",
-      "is_per_channel": true
-    },
-    {
-      "name": "Width",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true
     },
     {
       "name": "Input left/mono",
       "min": 0,
       "max": 28,
       "default": 1,
+      "scope": "per-channel",
       "type": "bus",
-      "is_per_channel": true
+      "is_per_channel": true,
+      "is_common": false
     },
     {
       "name": "Input right",
       "min": 0,
       "max": 28,
       "default": 1,
+      "scope": "per-channel",
       "type": "bus",
-      "is_per_channel": true
+      "is_per_channel": true,
+      "is_common": false
     },
     {
       "name": "Gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "type": "bus",
-      "is_per_channel": true
+      "scope": "per-channel",
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false
     },
     {
       "name": "Pan",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "bus",
-      "is_per_channel": true
+      "scope": "per-channel",
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false
     },
     {
       "name": "Mute",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true
+      "scope": "per-channel",
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false
     },
     {
       "name": "Solo",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true
+      "scope": "per-channel",
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false
     },
     {
       "name": "Name",
-      "min": null,
-      "max": null,
-      "default": null,
+      "description": "A text name for the channel for identification.",
       "type": "string",
-      "is_per_channel": true
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Destination (send)",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "per-channel",
+      "type": "bus",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Pre/post (send)",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Whether the send is Pre-fade or Post-fade.",
+      "enum_values": [
+        "Pre-fade",
+        "Post-fade"
+      ],
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Width (send)",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Whether the send is mono or stereo. Stereo sends use the destination bus and the next one up.",
+      "enum_values": [
+        "Mono",
+        "Stereo"
+      ],
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Send gain",
+      "min": -70.0,
+      "max": 6.0,
+      "default": -70.0,
+      "scope": "per-channel",
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input left/mono",
-      "description": "The channel left input bus.",
-      "isPerChannel": false
+      "name": "Input left/mono (channel)",
+      "description": "The channel's left or mono input bus."
     },
     {
-      "name": "Input right",
-      "description": "The channel right input bus (if stereo).",
-      "isPerChannel": false
+      "name": "Input right (channel, if stereo)",
+      "description": "The channel's right input bus when operating in stereo mode."
     }
   ],
   "output_ports": [
     {
-      "name": "Output left",
-      "description": "The left output bus.",
-      "isPerChannel": false
+      "name": "Left output",
+      "description": "The left output bus for the mixed signal."
     },
     {
-      "name": "Output right",
-      "description": "The right output bus."
+      "name": "Right output",
+      "description": "The right output bus for the mixed signal (if stereo)."
+    },
+    {
+      "name": "Left output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
     }
   ]
 }

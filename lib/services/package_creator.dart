@@ -20,6 +20,7 @@ class PackageCreator {
     required String presetFilePath, // e.g., "presets/MyPreset.json"
     required PackageConfig config,
     void Function(String status)? onProgress,
+    Map<String, String>? pluginPaths,
   }) async {
     try {
       onProgress?.call('Loading preset...');
@@ -38,6 +39,11 @@ class PackageCreator {
 
       // Analyze dependencies
       final dependencies = PresetAnalyzer.analyzeDependencies(presetData);
+
+      // Add plugin paths from AlgorithmInfo (if provided from live state)
+      if (pluginPaths != null) {
+        dependencies.pluginPaths.addAll(pluginPaths);
+      }
 
       onProgress?.call('Collecting files...');
 

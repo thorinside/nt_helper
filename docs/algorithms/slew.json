@@ -1,18 +1,16 @@
 {
   "guid": "slew",
   "name": "Slew rate limiter",
-  "description": "This algorithm is a simple slew rate limiter, offering both logarithmic and linear slew. You can choose to use a single slew rate for both rising and falling signals, or specify them separately. You can also choose to use the same rates for all the busses, or specify them individually.",
+  "description": "This algorithm is a simple slew rate limiter, offering both logarithmic and linear slew to smooth CVs and create glissandos. You can choose to use a single slew rate for both rising and falling signals, or specify them separately. You can also choose to use the same rates for all the busses, or specify them individually.",
   "categories": [
-    "CV Processing",
-    "dynamics",
-    "utility"
+    "utility",
+    "CV processing"
   ],
   "short_description": "Smooths CVs and creates glissandos",
   "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 8
+      "description": "The number of bus channels to process, ranging from 1 to 8."
     }
   ],
   "parameters": [
@@ -21,73 +19,81 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "type": "toggle",
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Up/shared slew",
+      "name": "Up/shared slew (Common)",
       "min": 0,
       "max": 1000,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "scope": "common",
+      "type": "scaled",
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Down slew",
+      "name": "Down slew (Common)",
       "min": 0,
       "max": 1000,
       "default": 0,
-      "type": "string",
-      "is_common": true
+      "scope": "common",
+      "type": "scaled",
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Type",
+      "name": "Type (Per-channel)",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_common": false
+      "scope": "per-channel",
+      "type": "toggle",
+      "is_common": false,
+      "is_bus": true
     },
     {
-      "name": "Control",
+      "name": "Control (Per-channel)",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "string",
-      "is_common": false
+      "scope": "per-channel",
+      "type": "enum",
+      "is_common": false,
+      "is_bus": true
     },
     {
-      "name": "Up/shared slew",
+      "name": "Up/shared slew (Per-channel)",
       "min": 0,
       "max": 1000,
       "default": 0,
-      "type": "string",
-      "is_common": false
+      "scope": "per-channel",
+      "type": "scaled",
+      "is_common": false,
+      "is_bus": true
     },
     {
-      "name": "Down slew",
+      "name": "Down slew (Per-channel)",
       "min": 0,
       "max": 1000,
       "default": 0,
-      "type": "string",
-      "is_common": false
+      "scope": "per-channel",
+      "type": "scaled",
+      "is_common": false,
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "channelCountRef": "1",
-      "isPerChannel": true
-    },
+      "name": "Input bus",
+      "description": "The input bus, numbered from 1 to 28. The algorithm processes this bus for slew rate limiting."
+    }
+  ],
+  "output_ports": [
     {
-      "name": "Output",
-      "channelCountRef": "28",
-      "isPerChannel": true
-    },
-    {
-      "name": "Output mode",
-      "channelCountRef": "1",
-      "isPerChannel": true
+      "name": "Output bus",
+      "description": "The output bus, numbered from 0 to 28. If set to 'None', the input bus is used as output and the mode is always 'Replace'."
     }
   ]
 }

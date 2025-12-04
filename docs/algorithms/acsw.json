@@ -1,117 +1,126 @@
 {
   "guid": "acsw",
   "name": "Accent sweep",
-  "description": "This algorithm recreates a very specific aspect of the Roland TB-303’s circuitry. There is a lengthy [write-up on it on the Devil Fish page here](https://www.firstpr.com.au/rwi/dfish/303-unique.html) [50], but essentially it creates an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered.",
+  "description": "This algorithm recreates a very specific aspect of the Roland TB-303’s circuitry by generating an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered. The design is based on a detailed technical write-up available at https://www.firstpr.com.au/rwi/dfish/303-unique.html, simulating the internal pulse and resistor-capacitor network that produces the TB-303’s unique accent sweep behavior.",
   "categories": [
-    "audio effects",
-    "CV processing"
+    "synthesis",
+    "filtering",
+    "triggers"
   ],
-  "short_description": "\"AD envelope with variable peak\"",
-  "specifications": [],
+  "short_description": "AD envelope with variable peak",
+  "gui_description": "The display shows the input (dark) and output (light) signals, visually representing how the AD shaper modifies the incoming signal based on trigger behavior.",
   "parameters": [
     {
       "name": "Input mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 1
+      "description": "Sets how the input is treated: 'Direct' feeds the input signal directly into the AD shaper; 'Trigger' uses the input to trigger an internal pulse, which is then fed into the shaper.",
+      "enum_values": [
+        "Direct",
+        "Trigger"
+      ]
     },
     {
       "name": "Trigger length",
       "min": 1,
       "max": 200,
       "default": 100,
-      "type": "file",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 2
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Trigger length",
+      "min": 1,
+      "max": 200,
+      "default": 100,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Trigger voltage",
       "min": 0.1,
       "max": 10.0,
       "default": 10.0,
-      "type": "file",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 3
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Shape",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "file",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 4
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Gain",
       "min": 0,
       "max": 24,
       "default": 0,
-      "type": "file",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 5
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Charge",
       "min": 1,
       "max": 470,
       "default": 47,
-      "type": "file",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 6
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Discharge",
       "min": 1,
       "max": 470,
       "default": 100,
-      "type": "file",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 7
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Pot",
       "min": 1,
       "max": 470,
       "default": 100,
-      "type": "file",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 8
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Capacitance",
       "min": 0.1,
       "max": 10.0,
       "default": 1.0,
-      "type": "file",
-      "is_common": true,
-      "is_bus": false,
-      "parameterNumber": 9
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "busIdRef": "1",
-      "channelCountRef": "28",
-      "isPerChannel": false
+      "description": "The bus to use as input for the accent sweep algorithm (1-28)."
     },
     {
+      "name": "Input signal",
+      "description": "Audio/CV input signal fed into the AD shaper, depending on 'Input mode' setting."
+    }
+  ],
+  "output_ports": [
+    {
       "name": "Output",
-      "busIdRef": "15",
-      "channelCountRef": "28",
-      "isPerChannel": false
+      "description": "The bus to use as output for the accent sweep algorithm (1-28)."
+    },
+    {
+      "name": "Output signal",
+      "description": "Processed audio/CV signal shaped by the AD envelope with variable peak."
     }
   ]
 }

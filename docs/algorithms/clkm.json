@@ -1,111 +1,103 @@
 {
   "guid": "clkm",
-  "name": "Clock multiplier",
-  "description": "This algorithm is a simple clock multiplier, generating a faster clock from a slower one.\nThe output clock rate is updated on every clock received, except that the clock duration is limited to at\nmost double each time. This is mainly to prevent the output clock rate changing when the input clock\nis paused and restarted, which would otherwise be interpreted as a really long clock pulse.",
+  "name": "Clock Multiplier",
+  "description": "This algorithm is a simple clock multiplier, generating a faster clock from a slower one.\n\nThe output clock rate is updated on every clock received, except that the clock duration is limited to at most double each time. This is mainly to prevent the output clock rate changing when the input clock is paused and restarted, which would otherwise be interpreted as a really long clock pulse.",
   "categories": [
-    "clocking",
-    "utility"
+    "clocking"
   ],
-  "short_description": "\"Multiplies clocks\"",
-  "specifications": [],
   "parameters": [
     {
-      "name": "Clock input",
+      "name": "Clock_input",
       "min": 1,
       "max": 28,
       "default": 1,
-      "type": "bus",
-      "parameterNumber": 0
+      "description": "The clock input bus."
     },
     {
-      "name": "Clock output",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "type": "bus",
-      "parameterNumber": 1
-    },
-    {
-      "name": "Output mode",
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "enum",
-      "parameterNumber": 2
+      "description": "The standard Add/Replace mode selector as described above.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     },
     {
       "name": "Multiplier",
       "min": 1,
       "max": 24,
       "default": 2,
-      "type": "scaled",
-      "parameterNumber": 3
+      "description": "The clock multiplier."
     },
     {
-      "name": "Low voltage",
+      "name": "Low_voltage",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
       "type": "folder",
-      "parameterNumber": 4
+      "is_bus": true
     },
     {
-      "name": "High voltage",
+      "name": "High_voltage",
       "min": -10.0,
       "max": 10.0,
       "default": 5.0,
       "type": "folder",
-      "parameterNumber": 5
+      "is_bus": true
     },
     {
-      "name": "ES-5 Expander",
+      "name": "ES-5_Expander",
       "min": 0,
       "max": 6,
       "default": 0,
-      "type": "enum",
-      "parameterNumber": 6,
-      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. \"1\" means the ES-5 itself."
+      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Clock output parameter. \"1\" means the ES-5 itself.",
+      "enum_values": [
+        "ES-5 (header 1)",
+        "Header 2",
+        "Header 3",
+        "Header 4",
+        "Header 5",
+        "Header 6"
+      ]
     },
     {
-      "name": "ES-5 Output",
+      "name": "ES-5_Output",
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "enum",
-      "parameterNumber": 7,
-      "description": "If using an ES-5 expander output, sets which of the 8 outputs on the expander to use."
+      "description": "If using an ES-5 expander output, sets which of the 8 outputs on the expander to use.",
+      "enum_values": [
+        "Output 1",
+        "Output 2",
+        "Output 3",
+        "Output 4",
+        "Output 5",
+        "Output 6",
+        "Output 7",
+        "Output 8"
+      ]
     }
   ],
   "input_ports": [
     {
-      "name": "Clock input",
-      "description": "The clock input bus."
-    },
-    {
-      "name": "Clock output",
-      "description": "The clock output bus."
-    },
-    {
-      "name": "Output mode",
-      "description": "The standard Add/Replace mode selector as described above."
-    },
-    {
-      "name": "Multiplier",
-      "description": "The clock multiplier."
-    },
-    {
-      "name": "Low voltage",
-      "description": "The output voltage when the clock is low/inactive."
-    },
-    {
-      "name": "High voltage",
-      "description": "The output voltage when the clock is high/active."
+      "name": "Clock_input_port",
+      "description": "The clock input signal port, corresponding to the Clock input bus parameter."
     }
   ],
   "output_ports": [
     {
-      "name": "Clock output",
-      "description": "The clock output bus."
+      "name": "Clock_output_port",
+      "description": "The clock output signal port, corresponding to the Clock output bus parameter and ES-5 expander settings when applicable."
+    },
+    {
+      "name": "Low_voltage_output_port",
+      "description": "Outputs the low voltage level when the clock is inactive (corresponding to Low voltage setting)."
+    },
+    {
+      "name": "High_voltage_output_port",
+      "description": "Outputs the high voltage level when the clock is active (corresponding to High voltage setting)."
     }
   ]
 }

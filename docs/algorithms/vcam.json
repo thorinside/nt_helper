@@ -3,85 +3,93 @@
   "name": "VCA/Multiplier",
   "description": "This algorithm is a voltage multiplier, which can be used as a VCA. The CV on the common channel is used to multiply the voltages on the other channels.",
   "categories": [
+    "utility",
     "mixing",
-    "CV Processing"
+    "CV processing"
   ],
-  "short_description": "\"Four quadrant multiplier\"",
-  "specifications": [
-    {
-      "name": "Channels",
-      "min": 1,
-      "max": 8
-    },
-    {
-      "name": "Input",
-      "min": 1,
-      "max": 28
-    },
-    {
-      "name": "Clamp to 0V",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Divider",
-      "min": 1,
-      "max": 12
-    },
-    {
-      "name": "Default",
-      "value": "8",
-      "description": "Sets the scaling of the input CV that corresponds to \"unity gain\""
-    }
-  ],
+  "short_description": "Four quadrant multiplier",
   "parameters": [
-    {
-      "name": "Input",
-      "min": 1,
-      "max": 28,
-      "default": "1",
-      "type": "bus",
-      "parameterNumber": 1
-    },
     {
       "name": "Clamp to 0V",
       "min": 0,
       "max": 1,
-      "default": "1",
-      "type": "bus",
-      "parameterNumber": 2
+      "default": 1,
+      "scope": "global",
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Divider",
       "min": 1,
       "max": 12,
-      "default": "8",
-      "type": "bus",
-      "parameterNumber": 3
+      "default": 8,
+      "scope": "global",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Input",
+      "name": "Input (common)",
       "min": 1,
       "max": 28,
-      "default": "1",
+      "default": 1,
+      "scope": "global",
       "type": "bus",
-      "parameterNumber": 4
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": true
     },
     {
-      "name": "Output",
+      "name": "Input (channel)",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "scope": "per-channel",
+      "type": "bus",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output (channel)",
       "min": 0,
       "max": 28,
-      "default": "0",
+      "default": 0,
+      "scope": "per-channel",
       "type": "bus",
-      "parameterNumber": 5
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
-      "default": "1",
-      "type": "bus",
-      "parameterNumber": 6
+      "default": 1,
+      "scope": "per-channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "common_input_bus",
+      "description": "The common input bus where CV is applied to control multiplication."
+    },
+    {
+      "name": "channel_input_bus",
+      "description": "The channel-specific input buses (1-8) for voltages to be multiplied by the common CV."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "channel_output_bus",
+      "description": "The channel-specific output bus (0-28). If set to 'None' (0), uses input bus as output in Replace mode."
     }
   ]
 }

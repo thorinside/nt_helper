@@ -1,124 +1,148 @@
 {
   "guid": "tmqn",
   "name": "Temporal MIDI Quantizer",
-  "description": "This algorithm is a MIDI quantizer, but not a pitch quantizer – it quantizes the position of notes in time (much like applying quantization to the timing of a MIDI clip in your DAW). Timing can be derived from MIDI clock or from clock pulses on the algorithm’s input bus. It only affects MIDI notes – other MIDI messages are not processed. Because there is no concept of ‘replacing’ or ‘consuming’ MIDI events in the disting NT, you will usually want to use different input and output MIDI channels e.g. receive MIDI notes from your keyboard on channel 1 and output quantized notes on channel 2, and then have your synth algorithm(s) respond on channel 2.",
+  "description": "This algorithm is a MIDI quantizer, but not a pitch quantizer – it quantizes the position of notes in time (much like applying quantization to the timing of a MIDI clip in your DAW). Timing can be derived from MIDI clock or from clock pulses on the algorithm’s input bus. It only affects MIDI notes – other MIDI messages are not processed. Because there is no concept of ‘replacing’ or ‘consuming’ MIDI events in the disting NT, you will usually want to use different input and output MIDI channels (e.g., receive MIDI notes from your keyboard on channel 1 and output quantized notes on channel 2), and then have your synth algorithm(s) respond on that channel.",
   "categories": [
+    "utility",
     "MIDI",
-    "Utility",
-    "Clocking"
+    "CV processing",
+    "clocking"
   ],
-  "short_description": "\"Quantizes MIDI notes in time\"",
+  "short_description": "Quantizes MIDI notes in time",
+  "use_cases": [
+    "Correcting timing inaccuracies from live MIDI input",
+    "Aligning MIDI notes to a grid for better rhythmic precision",
+    "Processing MIDI clock signals for synchronization purposes",
+    "Routing quantized MIDI notes to synth algorithms"
+  ],
+  "gui_description": null,
   "specifications": [
     {
       "name": "Channels",
       "min": 1,
       "max": 16
-    },
-    {
-      "name": "Sync",
-      "min": 0,
-      "max": 2
-    },
-    {
-      "name": "Clock input",
-      "min": 1,
-      "max": 28
-    },
-    {
-      "name": "Output to breakout",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Output to Select Bus",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Output to USB",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Output to internal",
-      "min": 0,
-      "max": 1
     }
   ],
   "parameters": [
     {
+      "name": "Sync",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "enum",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "toggle",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
       "name": "Enable",
       "min": 0,
-      "max": 1
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Input channel",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "scope": "per-channel",
+      "description": "The MIDI channel on which to receive notes."
+    },
+    {
+      "name": "Output channel",
+      "min": 1,
+      "max": 16,
+      "default": 2,
+      "scope": "per-channel",
+      "description": "The MIDI channel on which to send quantized notes."
     },
     {
       "name": "Divisor",
       "min": 0,
       "max": 19,
-      "default": "9"
+      "default": 9,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
       "name": "Prune short notes",
       "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Sync",
-      "min": 0,
-      "max": 2
-    },
-    {
-      "name": "Clock input",
-      "min": 1,
-      "max": 28
-    },
-    {
-      "name": "Output to breakout",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Output to Select Bus",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Output to USB",
-      "min": 0,
-      "max": 1
-    },
-    {
-      "name": "Output to internal",
-      "min": 0,
-      "max": 1
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input channel",
-      "id": "1",
-      "description": "The MIDI channel on which to receive notes."
+      "name": "MIDI Clock Input (if Sync set to MIDI)",
+      "description": "Input for MIDI clock synchronization when Sync is set to MIDI."
     },
     {
-      "name": "Output channel",
-      "id": "2",
-      "description": "The MIDI channel on which to send notes."
+      "name": "Clock Input Bus",
+      "description": "Input bus used for clock pulses if Sync is set to Clock."
     },
     {
-      "name": "Divisor",
-      "id": "3",
-      "description": "The MIDI clock divisor, if Sync is set to MIDI."
-    },
-    {
-      "name": "Prune short notes",
-      "id": "4",
-      "description": "If enabled, notes that are already over by the time the clock pulse comes around are suppressed."
+      "name": "Clock input",
+      "description": "The input bus to use for clock if Sync is set to Clock."
     }
   ],
   "output_ports": [
     {
-      "name": "Output channel",
-      "id": "2"
+      "name": "MIDI Breakout Output (if enabled)",
+      "description": "Outputs quantized MIDI notes to the breakout when 'Output to breakout' parameter is enabled."
+    },
+    {
+      "name": "Select Bus Output (if enabled)",
+      "description": "Outputs quantized MIDI notes to the Select Bus when 'Output to Select Bus' parameter is enabled."
+    },
+    {
+      "name": "USB Output (if enabled)",
+      "description": "Outputs quantized MIDI notes to USB when 'Output to USB' parameter is enabled."
+    },
+    {
+      "name": "Internal MIDI Output",
+      "description": "Sends quantized MIDI notes internally to other algorithms when 'Output to internal' parameter is enabled."
     }
   ]
 }

@@ -1,76 +1,81 @@
 {
   "guid": "tunf",
   "name": "Tuner (fancy)",
-  "description": "This algorithm provides four simultaneous tuners. It uses an autocorrelation pitch detection method which is fairly CPU heavy, but which provides reliable pitch detection for most signals. For simpler tones, you may prefer the “Tuner (simple)” algorithm. Microtuning via Scala or MTS is supported.",
+  "description": "This algorithm provides four simultaneous tuners using an autocorrelation pitch detection method which is fairly CPU heavy but reliable for most signals. For simpler tones, the 'Tuner (simple)' algorithm may be preferred. Microtuning via Scala or MTS is supported.",
   "categories": [
-    "analysis",
-    "utility"
+    "analysis"
   ],
   "short_description": "A sophisticated tuner",
-  "specifications": [],
+  "use_cases": [
+    "Detecting pitch in complex audio signals",
+    "Tuning instruments with microtuning support (Scala/MTS)",
+    "Real-time MIDI note tracking for multiple channels",
+    "Octave error correction via track bias adjustment"
+  ],
+  "gui_description": "The display shows the detected pitch of active channels as a MIDI note number and cents, alongside an Hz value. A bar grows left or right depending on how flat or sharp the note is relative to its true pitch.",
   "parameters": [
     {
-      "name": "Channel 1",
+      "name": "Channel_1",
       "min": 0,
       "max": 28,
       "default": 1,
-      "type": "bus",
-      "is_bus": true,
-      "parameterNumber": 1
+      "scope": "global",
+      "type": "enum",
+      "is_bus": true
     },
     {
-      "name": "Channel 2",
+      "name": "Channel_2",
       "min": 0,
       "max": 28,
       "default": 0,
-      "type": "bus",
-      "is_bus": true,
-      "parameterNumber": 2
+      "scope": "global",
+      "type": "enum",
+      "is_bus": true
     },
     {
-      "name": "Channel 3",
+      "name": "Channel_3",
       "min": 0,
       "max": 28,
       "default": 0,
-      "type": "bus",
-      "is_bus": true,
-      "parameterNumber": 3
+      "scope": "global",
+      "type": "enum",
+      "is_bus": true
     },
     {
-      "name": "Channel 4",
+      "name": "Channel_4",
       "min": 0,
       "max": 28,
       "default": 0,
-      "type": "bus",
-      "is_bus": true,
-      "parameterNumber": 4
+      "scope": "global",
+      "type": "enum",
+      "is_bus": true
     },
     {
       "name": "Range",
       "min": 1,
       "max": 20,
       "default": 9,
-      "type": "scaled",
-      "is_bus": false,
-      "parameterNumber": 5
+      "description": "Sets the range of pitches which can be tracked. Set this appropriately for the lowest note that you need to tune."
     },
     {
-      "name": "Track bias",
+      "name": "Track_bias",
       "min": 0,
       "max": 100,
       "default": 10,
-      "type": "scaled",
-      "is_bus": false,
-      "parameterNumber": 6
+      "description": "An internal parameter of the pitch tracking algorithm, which can help it avoid errors of octave in some circumstances. The default value is recommended in most cases.",
+      "enum_values": [
+        "%"
+      ]
     },
     {
-      "name": "Env threshold",
+      "name": "Env_threshold",
       "min": -80,
       "max": 0,
       "default": -40,
-      "type": "scaled",
-      "is_bus": false,
-      "parameterNumber": 7
+      "description": "Sets a signal threshold below which no attempt is made to track pitch.",
+      "enum_values": [
+        "dB"
+      ]
     }
   ],
   "input_ports": [],

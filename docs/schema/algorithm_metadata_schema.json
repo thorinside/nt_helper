@@ -250,10 +250,6 @@
         "is_bus": {
           "type": "boolean",
           "description": "Whether parameter represents a bus"
-        },
-        "parameterNumber": {
-          "type": "integer",
-          "description": "Parameter number in hardware"
         }
       }
     },

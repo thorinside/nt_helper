@@ -16,11 +16,17 @@ class PresetPackageDialog extends StatefulWidget {
   final PresetFileSystem fileSystem;
   final AppDatabase database;
 
+  /// Optional plugin paths from AlgorithmInfo for direct SD card reads.
+  /// Map of plugin GUID to file path. If provided, these paths are used
+  /// for plugin file collection instead of database lookup.
+  final Map<String, String>? pluginPaths;
+
   const PresetPackageDialog({
     super.key,
     required this.presetFilePath,
     required this.fileSystem,
     required this.database,
+    this.pluginPaths,
   });
 
   @override
@@ -61,8 +67,15 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
       final presetJson = utf8.decode(presetBytes);
       final presetData = jsonDecode(presetJson) as Map<String, dynamic>;
 
+      final deps = PresetAnalyzer.analyzeDependencies(presetData);
+
+      // If plugin paths were provided (from live AlgorithmInfo), add them
+      if (widget.pluginPaths != null) {
+        deps.pluginPaths.addAll(widget.pluginPaths!);
+      }
+
       setState(() {
-        dependencies = PresetAnalyzer.analyzeDependencies(presetData);
+        dependencies = deps;
       });
     } catch (e) {
       if (!mounted) return;
@@ -102,6 +115,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           presetFilePath: widget.presetFilePath,
           config: config,
           onProgress: (status) => setState(() => _status = status),
+          pluginPaths: widget.pluginPaths,
         );
 
         await File(outputPath).writeAsBytes(packageBytes);

@@ -829,6 +829,33 @@ So that I can immediately see which parameters become available or unavailable w
 
 **Story E7.9: Upgrade Existing Databases with I/O Flags** (See `docs/stories/7-9-upgrade-existing-databases-with-io-flags.md`)
 
+**Story E7.10: Persist Output Mode Usage to Database** (See `docs/stories/7-10-persist-output-mode-usage-to-database.md`)
+
+**Story E7.11: Use Plugin Path from Algorithm Info for Preset Export**
+
+As a user exporting presets that contain community plugins,
+I want the export to use the plugin file paths from the preset's algorithm info to download plugins directly from the SD card,
+So that plugin files are reliably included in the export package using the path known by the hardware.
+
+**Acceptance Criteria:**
+1. Add `pluginPaths` field to `PresetDependencies` as `Map<String, String>` mapping GUID to SD card file path
+2. When analyzing slots from `SynchronizedState`, extract `AlgorithmInfo.filename` for algorithms where `isPlugin == true`
+3. Populate `pluginPaths[guid] = filename` for each slot that has a non-null `filename`
+4. `FileCollector.collectDependencies()` uses `pluginPaths` to read plugin files directly from SD card via SysEx
+5. Use existing `PresetFileSystem.readFile()` to download plugin .elf files from the paths in `pluginPaths`
+6. Plugin files are included in the export .zip at their original SD card paths
+7. If plugin file cannot be read from SD card, add warning to export results (don't fail entire export)
+8. Handle both relative paths and any path format the hardware returns
+9. `flutter analyze` passes with zero warnings
+10. All existing tests pass with no regressions
+
+**Prerequisites:** None (uses existing AlgorithmInfo.filename field from SysEx)
+
+**Technical Notes:**
+- `AlgorithmInfo.filename` contains the SD card path (e.g., `plugins/MyPlugin.elf`) parsed from SysEx response
+- `PresetFileSystem.readFile()` already handles reading files from SD card via SysEx
+- No database involvement - purely SysEx-based file retrieval
+
 **Epic 7 Implementation Sequence:**
 
 Stories must be implemented sequentially to avoid code conflicts and ensure proper dependency resolution:
