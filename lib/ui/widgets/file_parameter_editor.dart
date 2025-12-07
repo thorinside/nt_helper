@@ -138,20 +138,25 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   /// For per-trigger parameters, uses the naming pattern "N:ParameterName" (e.g., "1:Folder", "1:Sample")
   int _findCorrespondingFolderParameter() {
     final currentParamName = widget.parameterInfo.name;
-    
+
     // Extract trigger number from current parameter name (e.g., "2:Sample" -> "2")
     final triggerMatch = RegExp(r'^(\d+):').firstMatch(currentParamName);
     if (triggerMatch != null) {
       final triggerNumber = triggerMatch.group(1)!;
       final expectedFolderParamName = '$triggerNumber:Folder';
-      
+
       // Find the folder parameter for the same trigger
-      return widget.slot.parameters.indexWhere(
+      final triggerFolderIndex = widget.slot.parameters.indexWhere(
         (p) => p.name == expectedFolderParamName,
       );
+
+      // If found, return it; otherwise fall through to generic fallback
+      if (triggerFolderIndex != -1) {
+        return triggerFolderIndex;
+      }
     }
-    
-    // Fallback for non-per-trigger parameters: find any folder parameter
+
+    // Fallback for non-per-trigger parameters or when trigger-specific not found
     return widget.slot.parameters.indexWhere(
       (p) => p.name.contains('Folder'),
     );
