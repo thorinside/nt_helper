@@ -134,12 +134,33 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     }
   }
 
+  /// Finds the folder parameter that corresponds to the same trigger as this sample parameter.
+  /// For per-trigger parameters, uses the naming pattern "N:ParameterName" (e.g., "1:Folder", "1:Sample")
+  int _findCorrespondingFolderParameter() {
+    final currentParamName = widget.parameterInfo.name;
+    
+    // Extract trigger number from current parameter name (e.g., "2:Sample" -> "2")
+    final triggerMatch = RegExp(r'^(\d+):').firstMatch(currentParamName);
+    if (triggerMatch != null) {
+      final triggerNumber = triggerMatch.group(1)!;
+      final expectedFolderParamName = '$triggerNumber:Folder';
+      
+      // Find the folder parameter for the same trigger
+      return widget.slot.parameters.indexWhere(
+        (p) => p.name == expectedFolderParamName,
+      );
+    }
+    
+    // Fallback for non-per-trigger parameters: find any folder parameter
+    return widget.slot.parameters.indexWhere(
+      (p) => p.name.contains('Folder'),
+    );
+  }
+
   void _checkForFolderChanges(FileParameterEditor oldWidget) {
     try {
-      // Find the folder parameter in both old and new slots
-      final folderParamIndex = widget.slot.parameters.indexWhere(
-        (p) => p.name.contains('Folder'),
-      );
+      // Find the specific folder parameter for the same trigger as this sample parameter
+      final folderParamIndex = _findCorrespondingFolderParameter();
 
       if (folderParamIndex == -1) return;
 
@@ -427,10 +448,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       final cubit = context.read<DistingCubit>();
       final disting = cubit.disting();
 
-      // Find the folder parameter in the same slot
-      final folderParamIndex = widget.slot.parameters.indexWhere(
-        (p) => p.name.contains('Folder'),
-      );
+      // Find the specific folder parameter for the same trigger as this sample parameter
+      final folderParamIndex = _findCorrespondingFolderParameter();
 
       if (folderParamIndex == -1) {
         return _currentDirectory;
