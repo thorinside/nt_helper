@@ -6,7 +6,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_linux
   desktop_drop
   pasteboard
-  sqlite3_flutter_libs
   url_launcher_linux
 )
 
