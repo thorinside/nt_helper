@@ -2702,12 +2702,20 @@ class DistingCubit extends Cubit<DistingState> {
       ParameterValueString.filler(),
     );
 
+    // Skip enum strings for known buggy algorithm/parameter combinations
+    // Macro Oscillator (maco) param 1 (Model) causes firmware to send truncated
+    // SysEx that can corrupt the MIDI stream
+    bool shouldSkipEnumStrings(int param) {
+      if (guid?.guid == 'maco' && param == 1) return true;
+      return false;
+    }
+
     await Future.wait([
       // Enums
       _forEachLimited(
         Iterable<int>.generate(
           numParams,
-        ).where((i) => visible.contains(i) && isEnum(i)),
+        ).where((i) => visible.contains(i) && isEnum(i) && !shouldSkipEnumStrings(i)),
         (param) async {
           try {
             final enumResult = await disting.requestParameterEnumStrings(

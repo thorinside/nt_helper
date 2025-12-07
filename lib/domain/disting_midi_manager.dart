@@ -307,10 +307,14 @@ class DistingMidiManager implements IDistingMidiManager {
     );
 
     // `optional` => no error if no response arrives within the timeout.
+    // Reduced retries because firmware has bugs with some algorithms (e.g., Macro Oscillator)
+    // where enum strings requests may not get responses.
     return await _scheduler.sendRequest<ParameterEnumStrings>(
       packet,
       key,
       responseExpectation: ResponseExpectation.optional,
+      maxRetries: 2,
+      timeout: const Duration(milliseconds: 100),
     );
   }
 
@@ -336,10 +340,13 @@ class DistingMidiManager implements IDistingMidiManager {
     );
 
     // `optional` => no error if no response arrives within the timeout.
+    // Reduced retries because some algorithms have firmware bugs.
     return await _scheduler.sendRequest<Mapping>(
       packet,
       key,
       responseExpectation: ResponseExpectation.optional,
+      maxRetries: 2,
+      timeout: const Duration(milliseconds: 100),
     );
   }
 
@@ -408,10 +415,13 @@ class DistingMidiManager implements IDistingMidiManager {
       parameterNumber: parameterNumber,
     );
 
+    // Reduced retries because some algorithms don't support this
     return await _scheduler.sendRequest<OutputModeUsage>(
       packet,
       key,
       responseExpectation: ResponseExpectation.optional,
+      maxRetries: 2,
+      timeout: const Duration(milliseconds: 100),
     );
   }
 

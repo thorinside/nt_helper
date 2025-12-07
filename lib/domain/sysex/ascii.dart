@@ -17,9 +17,7 @@ ParseResult decodeNullTerminatedAscii(Uint8List bytes, int start) {
     i++;
   }
 
-  // --- Debug Print: Log the sublist before decoding ---
   final bytesToDecode = bytes.sublist(start, i);
-  // --- End Debug Print ---
 
   // Decode the substring from [start .. i).
   // Pass the explicitly created sublist to decode.
@@ -27,9 +25,6 @@ ParseResult decodeNullTerminatedAscii(Uint8List bytes, int start) {
 
   // If we found a null terminator, skip it. Otherwise, i == bytes.length.
   final nextOffset = (i < bytes.length) ? i + 1 : i;
-
-  // --- Debug Print: Log the decoded string ---
-  // --- End Debug Print ---
 
   return ParseResult(str, nextOffset);
 }

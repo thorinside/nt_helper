@@ -618,6 +618,10 @@ class MetadataSyncService {
         // though it might not matter for processing if we only use parameterNumber
         parameterInfos.add(paramInfo);
         if (paramInfo.unit == 1) {
+          // Skip enum strings for Macro Oscillator Model parameter (firmware bug)
+          if (algoInfo.guid == 'maco' && pNum == 1) {
+            continue;
+          }
           final enumsResult = await _distingManager.requestParameterEnumStrings(
             0,
             pNum,

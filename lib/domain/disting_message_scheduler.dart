@@ -248,54 +248,63 @@ class DistingMessageScheduler {
   }
 
   void _handleIncoming(Uint8List raw) {
-    final parsed = decodeDistingNTSysEx(raw);
-    if (parsed == null) return;
-    if (parsed.sysExId != _sysExId) return;
+    try {
+      final parsed = decodeDistingNTSysEx(raw);
+      if (parsed == null) {
+        return;
+      }
+      if (parsed.sysExId != _sysExId) {
+        return;
+      }
 
-    final request = _currentRequest;
-    if (request == null ||
-        _state != _SchedulerState.waitingForResponse ||
-        request.completer.isCompleted) {
-      return;
-    }
+      final request = _currentRequest;
+      if (request == null ||
+          _state != _SchedulerState.waitingForResponse ||
+          request.completer.isCompleted) {
+        return;
+      }
 
-    if (!request.key.matches(parsed)) {
-      return;
-    }
+      if (!request.key.matches(parsed)) {
+        return;
+      }
 
-    // Parse and complete the response
-    final response = ResponseFactory.fromMessageType(
-      parsed.messageType,
-      parsed.payload,
-    );
+      // Parse and complete the response
+      final response = ResponseFactory.fromMessageType(
+        parsed.messageType,
+        parsed.payload,
+      );
 
-    if (response != null) {
-      try {
-        final parsed = response.parse();
-        request.completer.complete(parsed);
-      } catch (e) {
-        // If parsing fails, complete with error instead of raw response to avoid type mismatches
+      if (response != null) {
+        try {
+          final parsedResponse = response.parse();
+          request.completer.complete(parsedResponse);
+        } catch (e) {
+          // If parsing fails, complete with error instead of raw response to avoid type mismatches
+          if (request.expectation == ResponseExpectation.optional) {
+            request.completer.complete(null);
+          } else {
+            request.completer.completeError(
+              StateError(
+                'Failed to parse response: ${response.runtimeType} - $e',
+              ),
+            );
+          }
+        }
+      } else {
+        // No parser available
         if (request.expectation == ResponseExpectation.optional) {
           request.completer.complete(null);
         } else {
           request.completer.completeError(
-            StateError(
-              'Failed to parse response: ${response.runtimeType} - $e',
-            ),
+            StateError('Unhandled response type: ${parsed.messageType}'),
           );
         }
       }
-    } else {
-      // No parser available
-      if (request.expectation == ResponseExpectation.optional) {
-        request.completer.complete(null);
-      } else {
-        request.completer.completeError(
-          StateError('Unhandled response type: ${parsed.messageType}'),
-        );
-      }
-    }
 
-    _finishCurrentRequest();
+      _finishCurrentRequest();
+    } catch (e) {
+      // Catch any unexpected exceptions to prevent scheduler from getting stuck.
+      // The timeout will eventually clean up the current request.
+    }
   }
 }

@@ -42,7 +42,8 @@ class RequestKey {
         if (msg.payload.isNotEmpty) {
           algorithmIndex = msg.payload[0];
         }
-        if (msg.payload.length >= 3) {
+        if (msg.payload.length >= 4) {
+          // decode16 reads 3 bytes at offset 1, so we need indices 1,2,3
           parameterNumber = decode16(msg.payload, 1);
         }
         break;
@@ -71,6 +72,13 @@ class RequestKey {
     if (algorithmIndex != null &&
         algorithmIndex != responseKey.algorithmIndex) {
       return false;
+    }
+
+    // For enum strings, be lenient with parameterNumber matching since firmware
+    // may return corrupted values for some algorithms (e.g., Macro Oscillator).
+    // We still require algorithmIndex to match to avoid out-of-order issues.
+    if (messageType == DistingNTRespMessageType.respEnumStrings) {
+      return true;
     }
 
     if (parameterNumber != null &&
