@@ -1045,6 +1045,14 @@ class DistingCubit extends Cubit<DistingState> {
     _refreshAlgorithmsInBackground();
   }
 
+  /// Sends rescan plugins command to hardware and refreshes algorithm list.
+  /// Used by the Add Algorithm screen's manual rescan button.
+  Future<void> rescanPlugins() async {
+    final disting = requireDisting();
+    await disting.requestRescanPlugins();
+    _refreshAlgorithmsInBackground();
+  }
+
   // Handle parameter string updates from the queue
   void _onParameterStringUpdated(
     int algorithmIndex,
@@ -3453,6 +3461,18 @@ class DistingCubit extends Cubit<DistingState> {
         }
       } catch (e) {
         throw Exception("Upload failed at position $uploadPos: $e");
+      }
+    }
+
+    // For C++ plugins (.o files), trigger hardware rescan after upload
+    if (extension == 'o') {
+      try {
+        // Brief delay to allow hardware to finish file operations
+        await Future.delayed(const Duration(milliseconds: 200));
+        await disting.requestRescanPlugins();
+      } catch (e) {
+        // Fire-and-forget: log but don't block on rescan errors
+        debugPrint('Rescan plugins failed (non-blocking): $e');
       }
     }
 

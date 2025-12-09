@@ -56,6 +56,7 @@ import 'package:nt_helper/domain/sysex/requests/request_file_rename.dart';
 import 'package:nt_helper/domain/sysex/requests/request_file_upload.dart';
 import 'package:nt_helper/domain/sysex/requests/request_file_upload_chunk.dart';
 import 'package:nt_helper/domain/sysex/requests/request_directory_create.dart';
+import 'package:nt_helper/domain/sysex/requests/request_rescan_plugins.dart';
 import 'package:nt_helper/domain/sysex/requests/request_scl_file.dart';
 import 'package:nt_helper/domain/sysex/requests/request_kbm_file.dart';
 import 'package:nt_helper/domain/sysex/requests/request_cpu_usage.dart';
@@ -1166,6 +1167,21 @@ class DistingMidiManager implements IDistingMidiManager {
     return SdCardStatus(
       success: true,
       message: 'Directory create command sent',
+    );
+  }
+
+  @override
+  Future<void> requestRescanPlugins() async {
+    await _checkSdCardSupport();
+    final message = RequestRescanPluginsMessage(sysExId: sysExId);
+    final packet = message.encode();
+    await _scheduler.sendRequest<void>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respSdStatus,
+      ),
+      responseExpectation: ResponseExpectation.none, // Fire-and-forget
     );
   }
 

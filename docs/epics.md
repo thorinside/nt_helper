@@ -856,6 +856,39 @@ So that plugin files are reliably included in the export package using the path 
 - `PresetFileSystem.readFile()` already handles reading files from SD card via SysEx
 - No database involvement - purely SysEx-based file retrieval
 
+**Story E7.12: Implement Rescan Plug-ins SysEx and Auto-Rescan After Plugin Installation**
+
+As a user installing C++ plugins via the Plugin Gallery or Plugin Manager,
+I want the Disting NT hardware to automatically rescan its plug-ins folder after installation,
+So that newly installed plugins are immediately available for use without manually rebooting or remounting.
+
+**Acceptance Criteria:**
+1. **SysEx Message:** Create `RequestRescanPluginsMessage` class implementing SD card operation opcode 8 (`kOpRescan`)
+2. **SysEx Format:** Message follows format: `[F0, 00 21 27, 6D, sysExId, 7A, 08, checksum, F7]` (fire-and-forget, no payload)
+3. **MIDI Interface:** Add `Future<void> requestRescanPlugins()` method to `IDistingMidiManager` interface
+4. **Live Implementation:** Implement in `DistingMidiManager` using fire-and-forget pattern (no response expected)
+5. **Offline/Mock Stubs:** Add no-op implementation in `OfflineDistingMidiManager` and `MockDistingMidiManager`
+6. **Auto-Rescan Trigger:** After successful C++ plugin (`.o` file) upload in `DistingCubit.installPlugin()`, call `requestRescanPlugins()`
+7. **Conditional Trigger:** Only trigger rescan for `.o` files (C++ plugins), not for `.lua` or `.3pot` files
+8. **Gallery Integration:** Rescan is triggered automatically when plugins are installed from Gallery screen
+9. **Plugin Manager Integration:** Rescan is triggered automatically when plugins are installed from Plugin Manager screen
+10. **Brief Delay:** Add 200ms delay after upload completes before sending rescan command to allow hardware to finish file operations
+11. **Error Handling:** Rescan failures should be logged but not block the user (fire-and-forget)
+12. **MCP Tool (Optional):** Add `rescan_plugins` action to MCP server for manual trigger
+13. **Testing:** Unit test verifies SysEx message encoding matches expected byte sequence
+14. **Testing:** Integration test verifies rescan is called after `.o` file upload but not after `.lua` upload
+15. **Code Quality:** `flutter analyze` passes with zero warnings
+16. **Code Quality:** All existing tests pass with no regressions
+
+**Prerequisites:** None
+
+**Technical Notes:**
+- Reference implementation: `~/github/distingNT/tools/dnt_sdcard_tool.html` commit `5b3d7f7` (Dec 8, 2025)
+- Template file: `lib/domain/sysex/requests/request_directory_create.dart` (opcode 7, same fire-and-forget pattern)
+- Trigger location: `lib/cubit/disting_cubit.dart` line ~3460 in `installPlugin()` method
+- Files to create: `lib/domain/sysex/requests/request_rescan_plugins.dart`
+- Files to modify: `lib/domain/i_disting_midi_manager.dart`, `lib/domain/disting_midi_manager.dart`, `lib/domain/offline_disting_midi_manager.dart`, `lib/domain/mock_disting_midi_manager.dart`, `lib/cubit/disting_cubit.dart`
+
 **Epic 7 Implementation Sequence:**
 
 Stories must be implemented sequentially to avoid code conflicts and ensure proper dependency resolution:

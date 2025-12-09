@@ -963,6 +963,11 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       throw UnsupportedError('Not available in offline mode');
 
   @override
+  Future<void> requestRescanPlugins() async {
+    // No-op in offline mode - rescan not applicable without hardware
+  }
+
+  @override
   Future<void> requestSclFile(String filePath) =>
       throw UnsupportedError('Not available in offline mode');
 

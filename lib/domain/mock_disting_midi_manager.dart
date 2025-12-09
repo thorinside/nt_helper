@@ -1297,6 +1297,11 @@ class MockDistingMidiManager implements IDistingMidiManager {
       throw UnsupportedError('Not supported in mock');
 
   @override
+  Future<void> requestRescanPlugins() async {
+    // No-op in mock mode - rescan not applicable without hardware
+  }
+
+  @override
   Future<void> requestSclFile(String filePath) =>
       throw UnsupportedError('Not supported in mock');
 

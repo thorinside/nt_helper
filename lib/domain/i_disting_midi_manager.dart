@@ -114,6 +114,7 @@ abstract class IDistingMidiManager {
     bool createAlways = false,
   });
   Future<SdCardStatus?> requestDirectoryCreate(String path);
+  Future<void> requestRescanPlugins();
 
   // Scala/Tuning Operations
   Future<void> requestSclFile(String filePath);

@@ -1,0 +1,257 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>12</storyId>
+    <title>Implement Rescan Plug-ins SysEx and Auto-Rescan After Plugin Installation</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-08</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/7-12-implement-rescan-plugins-sysex-and-auto-rescan.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user installing C++ plugins via the Plugin Gallery or Plugin Manager</asA>
+    <iWant>the Disting NT hardware to automatically rescan its plug-ins folder after installation</iWant>
+    <soThat>newly installed plugins are immediately available for use without manually rebooting or remounting</soThat>
+    <tasks>
+      <task id="1" ac="1,2">Create SysEx request message class
+        <subtask>Create lib/domain/sysex/requests/request_rescan_plugins.dart</subtask>
+        <subtask>Implement RequestRescanPluginsMessage extending SysexMessage</subtask>
+        <subtask>Use opcode 8 with no payload (mirror RequestDirectoryCreateMessage pattern but simpler)</subtask>
+        <subtask>Calculate checksum as (-8) and 0x7F = 0x78</subtask>
+      </task>
+      <task id="2" ac="3">Update MIDI manager interface
+        <subtask>Add Future&lt;void&gt; requestRescanPlugins() to IDistingMidiManager interface</subtask>
+        <subtask>Add to SD Card Operations section (after requestDirectoryCreate)</subtask>
+      </task>
+      <task id="3" ac="4">Implement in live MIDI manager
+        <subtask>Add import for RequestRescanPluginsMessage</subtask>
+        <subtask>Implement requestRescanPlugins() in DistingMidiManager</subtask>
+        <subtask>Use fire-and-forget pattern: send message, don't await response</subtask>
+      </task>
+      <task id="4" ac="5">Add stubs to offline/mock managers
+        <subtask>Add no-op requestRescanPlugins() to OfflineDistingMidiManager</subtask>
+        <subtask>Add no-op requestRescanPlugins() to MockDistingMidiManager</subtask>
+      </task>
+      <task id="5" ac="6,7,8,9,10,11">Integrate auto-rescan in plugin installation
+        <subtask>Modify DistingCubit.installPlugin() method</subtask>
+        <subtask>After successful upload completes (line ~3460), check if extension is .o</subtask>
+        <subtask>If .o file: add 200ms delay, then call disting.requestRescanPlugins()</subtask>
+        <subtask>Wrap in try-catch to avoid blocking on errors</subtask>
+        <subtask>Keep existing _refreshAlgorithmsInBackground() call for UI update</subtask>
+      </task>
+      <task id="6" ac="12,13,14">Add Rescan Plugins button to Add Algorithm screen
+        <subtask>Add rescanPlugins() method to DistingCubit that calls MIDI manager and then refreshes algorithms</subtask>
+        <subtask>In add_algorithm_screen.dart, add new IconButton with Icons.sync icon to AppBar actions</subtask>
+        <subtask>Button tooltip: "Rescan Plugins on Hardware"</subtask>
+        <subtask>On press: call distingCubit.rescanPlugins(), show snackbar "Rescanning plugins on hardware..."</subtask>
+        <subtask>Only show button when !offline (check DistingStateSynchronized.offline flag)</subtask>
+        <subtask>Position button before the existing refresh button</subtask>
+      </task>
+      <task id="7" ac="16">Write unit tests
+        <subtask>Test RequestRescanPluginsMessage.encode() produces correct byte sequence</subtask>
+        <subtask>Verify header, opcode, checksum, footer bytes</subtask>
+      </task>
+      <task id="8" ac="17">Write integration tests
+        <subtask>Test that .o file upload triggers rescan</subtask>
+        <subtask>Test that .lua file upload does NOT trigger rescan</subtask>
+        <subtask>Test that .3pot file upload does NOT trigger rescan</subtask>
+      </task>
+      <task id="9" ac="18,19">Verify code quality
+        <subtask>Run flutter analyze - zero warnings</subtask>
+        <subtask>Run flutter test - all tests pass</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Create RequestRescanPluginsMessage class implementing SD card operation opcode 8 (kOpRescan)</criterion>
+    <criterion id="2">Message follows format: [F0, 00 21 27, 6D, sysExId, 7A, 08, checksum, F7] (fire-and-forget, no payload)</criterion>
+    <criterion id="3">Add Future&lt;void&gt; requestRescanPlugins() method to IDistingMidiManager interface</criterion>
+    <criterion id="4">Implement in DistingMidiManager using fire-and-forget pattern (no response expected)</criterion>
+    <criterion id="5">Add no-op implementation in OfflineDistingMidiManager and MockDistingMidiManager</criterion>
+    <criterion id="6">After successful C++ plugin (.o file) upload in DistingCubit.installPlugin(), call requestRescanPlugins()</criterion>
+    <criterion id="7">Only trigger rescan for .o files (C++ plugins), not for .lua or .3pot files</criterion>
+    <criterion id="8">Rescan is triggered automatically when plugins are installed from Gallery screen</criterion>
+    <criterion id="9">Rescan is triggered automatically when plugins are installed from Plugin Manager screen</criterion>
+    <criterion id="10">Add 200ms delay after upload completes before sending rescan command</criterion>
+    <criterion id="11">Rescan failures should be logged but not block the user (fire-and-forget)</criterion>
+    <criterion id="12">Add a "Rescan Plugins" IconButton to the Add Algorithm screen AppBar (separate from existing "Refresh Algorithm List" button)</criterion>
+    <criterion id="13">The button sends the rescan SysEx command to hardware, shows a brief snackbar confirmation, then triggers refreshAlgorithms() to update the UI</criterion>
+    <criterion id="14">Button only visible when connected to real hardware (not in offline/demo mode)</criterion>
+    <criterion id="15">MCP Tool (Optional): Add rescan_plugins action to MCP server for manual trigger</criterion>
+    <criterion id="16">Unit test verifies SysEx message encoding matches expected byte sequence</criterion>
+    <criterion id="17">Integration test verifies rescan is called after .o file upload but not after .lua upload</criterion>
+    <criterion id="18">flutter analyze passes with zero warnings</criterion>
+    <criterion id="19">All existing tests pass with no regressions</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Critical Architecture: SysEx Command System</section>
+        <snippet>All communication with Disting NT uses MIDI SysEx. Message format: [0xF0] [0x00, 0x21, 0x27] [0x6D] [SysExId] [MessageType] [Payload...] [0xF7]. Step-by-step guide for adding new SysEx commands at lines 579-731.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>nt_helper Brownfield Architecture Document</title>
+        <section>Critical Architecture: IDistingMidiManager Hierarchy</section>
+        <snippet>MIDI manager abstraction allows Live, Offline, and Mock modes. When adding operations: add abstract method to interface, implement in all three subclasses.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Project Instructions</title>
+        <section>Key Services</section>
+        <snippet>State: lib/cubit/disting_cubit.dart, MIDI: lib/domain/i_disting_midi_manager.dart. Commands: flutter analyze must pass with zero warnings.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/domain/sysex/requests/request_directory_create.dart</path>
+        <kind>sysex-request</kind>
+        <symbol>RequestDirectoryCreateMessage</symbol>
+        <lines>1-29</lines>
+        <reason>Template for new rescan message - same fire-and-forget pattern with SD card operation (0x7A), but uses opcode 7 instead of 8</reason>
+      </file>
+      <file>
+        <path>lib/domain/sysex/sysex_utils.dart</path>
+        <kind>utility</kind>
+        <symbol>buildHeader, buildFooter, calculateChecksum</symbol>
+        <lines>1-95</lines>
+        <reason>SysEx utility functions needed for message encoding</reason>
+      </file>
+      <file>
+        <path>lib/domain/sysex/sysex_message.dart</path>
+        <kind>base-class</kind>
+        <symbol>SysexMessage</symbol>
+        <reason>Abstract base class that RequestRescanPluginsMessage must extend</reason>
+      </file>
+      <file>
+        <path>lib/domain/disting_nt_sysex.dart</path>
+        <kind>constants</kind>
+        <symbol>DistingNTRequestMessageType.sdCardOperation</symbol>
+        <lines>1-100</lines>
+        <reason>Contains SD card operation command byte (0x7A) and other SysEx constants</reason>
+      </file>
+      <file>
+        <path>lib/domain/i_disting_midi_manager.dart</path>
+        <kind>interface</kind>
+        <symbol>IDistingMidiManager</symbol>
+        <lines>104-127</lines>
+        <reason>Interface where requestRescanPlugins() method must be added to SD Card Operations section</reason>
+      </file>
+      <file>
+        <path>lib/domain/disting_midi_manager.dart</path>
+        <kind>implementation</kind>
+        <symbol>DistingMidiManager.requestDirectoryCreate</symbol>
+        <lines>1152-1170</lines>
+        <reason>Template for live implementation - shows fire-and-forget pattern with ResponseExpectation.none</reason>
+      </file>
+      <file>
+        <path>lib/domain/offline_disting_midi_manager.dart</path>
+        <kind>implementation</kind>
+        <symbol>OfflineDistingMidiManager</symbol>
+        <lines>962</lines>
+        <reason>Needs no-op stub for requestRescanPlugins()</reason>
+      </file>
+      <file>
+        <path>lib/domain/mock_disting_midi_manager.dart</path>
+        <kind>implementation</kind>
+        <symbol>MockDistingMidiManager</symbol>
+        <lines>1296</lines>
+        <reason>Needs no-op stub for requestRescanPlugins()</reason>
+      </file>
+      <file>
+        <path>lib/cubit/disting_cubit.dart</path>
+        <kind>state-management</kind>
+        <symbol>DistingCubit.installPlugin</symbol>
+        <lines>3377-3461</lines>
+        <reason>Plugin installation method where auto-rescan trigger must be added after .o file upload completes</reason>
+      </file>
+      <file>
+        <path>lib/ui/add_algorithm_screen.dart</path>
+        <kind>ui-screen</kind>
+        <symbol>AddAlgorithmScreen, _AddAlgorithmScreenState</symbol>
+        <lines>422-476</lines>
+        <reason>Add Algorithm screen AppBar where new "Rescan Plugins" IconButton must be added before existing "Refresh Algorithm List" button</reason>
+      </file>
+      <file>
+        <path>lib/domain/request_key.dart</path>
+        <kind>utility</kind>
+        <symbol>RequestKey</symbol>
+        <reason>Used for message scheduling, but not needed for fire-and-forget operations</reason>
+      </file>
+      <file>
+        <path>test/domain/sysex/requests/request_output_mode_usage_test.dart</path>
+        <kind>test-template</kind>
+        <symbol>RequestOutputModeUsageMessage tests</symbol>
+        <lines>1-87</lines>
+        <reason>Example test pattern for SysEx message encoding verification</reason>
+      </file>
+    </code>
+    <dependencies>
+      <flutter>
+        <package>flutter_bloc: ^9.1.1</package>
+        <package>flutter_midi_command: ^0.5.3</package>
+      </flutter>
+      <dart>
+        <package>dart:typed_data</package>
+        <package>dart:async</package>
+      </dart>
+      <testing>
+        <package>flutter_test</package>
+        <package>mocktail: ^1.0.4</package>
+        <package>bloc_test: ^10.0.0</package>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>flutter analyze MUST pass with zero warnings before commit</constraint>
+    <constraint>Use debugPrint() for logging, never print()</constraint>
+    <constraint>Follow existing SysEx message patterns - extend SysexMessage base class</constraint>
+    <constraint>Fire-and-forget operations use ResponseExpectation.none</constraint>
+    <constraint>All three MIDI manager implementations (Live, Mock, Offline) must implement new methods</constraint>
+    <constraint>SD card operations require firmware 1.10+ - use _checkSdCardSupport() guard</constraint>
+    <constraint>Do not add debug logging unless explicitly requested</constraint>
+    <constraint>Keep implementation minimal - no over-engineering</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>IDistingMidiManager.requestRescanPlugins</name>
+      <kind>abstract method</kind>
+      <signature>Future&lt;void&gt; requestRescanPlugins();</signature>
+      <path>lib/domain/i_disting_midi_manager.dart</path>
+    </interface>
+    <interface>
+      <name>SysexMessage.encode</name>
+      <kind>abstract method</kind>
+      <signature>Uint8List encode();</signature>
+      <path>lib/domain/sysex/sysex_message.dart</path>
+    </interface>
+    <interface>
+      <name>DistingNTRequestMessageType.sdCardOperation</name>
+      <kind>enum value</kind>
+      <signature>sdCardOperation(0x7A, hasResponse: true)</signature>
+      <path>lib/domain/disting_nt_sysex.dart</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Unit tests use flutter_test with mocktail for mocking. SysEx message tests verify byte-level encoding. Integration tests use MockDistingMidiManager to simulate hardware. Tests are pragmatic (not TDD) but should cover new functionality for visibility.</standards>
+    <locations>
+      <location>test/domain/sysex/requests/</location>
+      <location>test/cubit/</location>
+    </locations>
+    <ideas>
+      <idea ac="13">Test RequestRescanPluginsMessage.encode() produces exact byte sequence: [0xF0, 0x00, 0x21, 0x27, 0x6D, sysExId, 0x7A, 0x08, 0x78, 0xF7]</idea>
+      <idea ac="13">Test checksum calculation: (-8) and 0x7F = 0x78</idea>
+      <idea ac="14">Mock DistingMidiManager and verify requestRescanPlugins() called after .o upload</idea>
+      <idea ac="14">Verify requestRescanPlugins() NOT called after .lua upload</idea>
+      <idea ac="14">Verify requestRescanPlugins() NOT called after .3pot upload</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -423,6 +423,21 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       appBar: AppBar(
         title: const Text('Add Algorithm'),
         actions: [
+          // Rescan Plugins button - only visible when connected to real hardware
+          if (!isOffline)
+            IconButton(
+              icon: const Icon(Icons.sync),
+              tooltip: 'Rescan Plugins on Hardware',
+              onPressed: () async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Rescanning plugins on hardware...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                await context.read<DistingCubit>().rescanPlugins();
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh Algorithm List',
