@@ -523,141 +523,159 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           : null,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: switch (distingState) {
-            DistingStateSynchronized() => () {
-              if (_allAlgorithms.isEmpty && !_showFavoritesOnly) {
-                // Show only if not in fav-only mode and list is truly empty
-                return const Center(
-                  child: Text('No algorithms available in current state.'),
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // --- Search Row ---
-                  Row(
-                    // Align items vertically center
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            labelText: 'Search Algorithms',
-                            hintText: _showFavoritesOnly
-                                ? 'Search within favorites...'
-                                : 'Enter algorithm name...',
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                    },
-                                  )
-                                : null,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(
-                          _showFavoritesOnly ? Icons.star : Icons.star_border,
-                        ),
-                        tooltip: 'Show Favorites Only',
-                        color: _showFavoritesOnly
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                        onPressed: _toggleShowFavoritesOnly,
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(12),
-                      ),
-                      const SizedBox(width: 4),
-                      TextButton.icon(
-                        icon: const Icon(Icons.filter_alt_off),
-                        label: const Text('Clear Filters'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.secondary,
-                        ),
-                        onPressed: () {
-                          FocusScope.of(context).unfocus();
-                          setState(() {
-                            _searchController.clear();
-                            _showFavoritesOnly = false;
-                            _selectedCategories.clear();
-                            _selectedPluginType = _pluginTypeAll;
-                            _saveShowFavoritesOnlyState();
-                            _filterAlgorithms();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _buildPluginTypeFilterButton(),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildCategoryFilterButton()),
-                      const SizedBox(width: 16),
-                      _buildViewModeSelector(),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Showing ${_filteredAlgorithms.length} of ${_allAlgorithms.length} algorithms',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const Divider(),
-
-                  // --- Algorithm Display (Expanded to take remaining space) ---
-                  Expanded(
-                    child: _filteredAlgorithms.isEmpty
-                        ? Center(
-                            child: Text(
-                              _showFavoritesOnly
-                                  ? (_favoriteGuids.isEmpty
-                                        ? 'No algorithms marked as favorite.'
-                                        : 'No favorites match "${_searchController.text}".')
-                                  : 'No algorithms match "${_searchController.text}".',
-                            ),
-                          )
-                        : _buildAlgorithmView(),
-                  ),
-
-                  // --- Specification Inputs (Auto-sized to content) ---
-                  if (_currentAlgoInfo != null &&
-                      _currentAlgoInfo!.numSpecifications > 0) ...[
-                    const Divider(),
-                    const SizedBox(height: 12),
-                    _buildSpecificationInputs(_currentAlgoInfo!, isOffline),
-                  ],
-
-                  // --- Action Buttons (fixed at the bottom) ---
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    padding: EdgeInsets.only(
-                      top: 16.0,
-                      bottom: 8.0,
-                      // Add extra padding when FAB is visible to prevent overlap
-                      right: _isHelpAvailableForSelected ? 72.0 : 0.0,
-                    ),
-                    child: _buildActionButton(isOffline),
-                  ),
-                ],
+        child: switch (distingState) {
+          DistingStateSynchronized() => () {
+            if (_allAlgorithms.isEmpty && !_showFavoritesOnly) {
+              // Show only if not in fav-only mode and list is truly empty
+              return const Center(
+                child: Text('No algorithms available in current state.'),
               );
-            }(),
-            _ => const Center(child: CircularProgressIndicator()),
-          },
-        ),
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // --- Top Section with padding ---
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // --- Search Row ---
+                        Row(
+                          // Align items vertically center
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  labelText: 'Search Algorithms',
+                                  hintText: _showFavoritesOnly
+                                      ? 'Search within favorites...'
+                                      : 'Enter algorithm name...',
+                                  prefixIcon: const Icon(Icons.search),
+                                  suffixIcon: _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                          },
+                                        )
+                                      : null,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(
+                                _showFavoritesOnly ? Icons.star : Icons.star_border,
+                              ),
+                              tooltip: 'Show Favorites Only',
+                              color: _showFavoritesOnly
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                              onPressed: _toggleShowFavoritesOnly,
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(12),
+                            ),
+                            const SizedBox(width: 4),
+                            TextButton.icon(
+                              icon: const Icon(Icons.filter_alt_off),
+                              label: const Text('Clear Filters'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.secondary,
+                              ),
+                              onPressed: () {
+                                FocusScope.of(context).unfocus();
+                                setState(() {
+                                  _searchController.clear();
+                                  _showFavoritesOnly = false;
+                                  _selectedCategories.clear();
+                                  _selectedPluginType = _pluginTypeAll;
+                                  _saveShowFavoritesOnlyState();
+                                  _filterAlgorithms();
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _buildPluginTypeFilterButton(),
+                            const SizedBox(width: 16),
+                            Expanded(child: _buildCategoryFilterButton()),
+                            const SizedBox(width: 16),
+                            _buildViewModeSelector(),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Showing ${_filteredAlgorithms.length} of ${_allAlgorithms.length} algorithms',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                        const Divider(),
+
+                        // --- Algorithm Display (Expanded to take remaining space) ---
+                        Expanded(
+                          child: _filteredAlgorithms.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    _showFavoritesOnly
+                                        ? (_favoriteGuids.isEmpty
+                                              ? 'No algorithms marked as favorite.'
+                                              : 'No favorites match "${_searchController.text}".')
+                                        : 'No algorithms match "${_searchController.text}".',
+                                  ),
+                                )
+                              : _buildAlgorithmView(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // --- Bottom Section with background (outside padding) ---
+                Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // --- Specification Inputs (Auto-sized to content) ---
+                      if (_currentAlgoInfo != null &&
+                          _currentAlgoInfo!.numSpecifications > 0) ...[
+                        const Divider(),
+                        const SizedBox(height: 12),
+                        _buildSpecificationInputs(_currentAlgoInfo!, isOffline),
+                      ],
+
+                      // --- Action Buttons (fixed at the bottom) ---
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        padding: EdgeInsets.only(
+                          top: 16.0,
+                          // Add extra padding when FAB is visible to prevent overlap
+                          right: _isHelpAvailableForSelected ? 72.0 : 0.0,
+                        ),
+                        child: _buildActionButton(isOffline),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }(),
+          _ => const Center(child: CircularProgressIndicator()),
+        },
       ),
     );
   }
@@ -780,6 +798,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       onSelectionChanged: (selected) {
         setState(() => _selectedViewMode = selected.first);
         _saveViewModeState();
+        // Scroll to selected item after view rebuilds
+        if (selectedAlgorithmGuid != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _scrollToSelectedItem();
+          });
+        }
       },
       showSelectedIcon: false,
     );
@@ -837,6 +861,57 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     }
 
     return KeyEventResult.ignored;
+  }
+
+  void _scrollToSelectedItem() {
+    if (selectedAlgorithmGuid == null) return;
+
+    final index = _filteredAlgorithms.indexWhere(
+      (algo) => algo.guid == selectedAlgorithmGuid,
+    );
+    if (index < 0) return;
+
+    final ScrollController controller = switch (_selectedViewMode) {
+      AlgorithmViewMode.chipGrid => _chipScrollController,
+      AlgorithmViewMode.list => _listScrollController,
+      AlgorithmViewMode.column => _columnScrollController,
+    };
+
+    if (!controller.hasClients) return;
+
+    final viewportHeight = controller.position.viewportDimension;
+    final maxScroll = controller.position.maxScrollExtent;
+
+    double targetOffset;
+
+    if (_selectedViewMode == AlgorithmViewMode.column) {
+      // Grid view: calculate row index based on column count
+      // Get actual width from MediaQuery
+      final screenWidth = MediaQuery.of(context).size.width - 32; // Account for padding
+      final columnCount = screenWidth < 600 ? 2 : 3;
+      final rowIndex = index ~/ columnCount;
+      // Item height in grid (aspect ratio 1.5 means height = width / 1.5)
+      // With spacing of 8, estimate row height
+      final itemWidth = (screenWidth - (columnCount - 1) * 8) / columnCount;
+      final rowHeight = itemWidth / 1.5 + 8;
+      targetOffset = (rowIndex * rowHeight) - (viewportHeight / 2) + (rowHeight / 2);
+    } else {
+      // List views: simple index * height
+      final double itemHeight = switch (_selectedViewMode) {
+        AlgorithmViewMode.chipGrid => 48.0,
+        AlgorithmViewMode.list => 120.0,
+        AlgorithmViewMode.column => 150.0, // Won't reach here
+      };
+      targetOffset = (index * itemHeight) - (viewportHeight / 2) + (itemHeight / 2);
+    }
+
+    final scrollTo = targetOffset.clamp(0.0, maxScroll);
+
+    controller.animateTo(
+      scrollTo,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _scrollToIndex(int index) {
@@ -961,9 +1036,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   Widget _buildListView() {
     return Scrollbar(
       controller: _listScrollController,
-      child: ListView.builder(
+      child: ListView.separated(
         controller: _listScrollController,
         itemCount: _filteredAlgorithms.length,
+        separatorBuilder: (context, index) => const Divider(height: 16),
         itemBuilder: (context, index) {
           final algo = _filteredAlgorithms[index];
           final isSelected = algo.guid == selectedAlgorithmGuid;
@@ -999,9 +1075,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                     ),
                 ],
               ),
-              subtitle: metadata != null
-                  ? _buildListSubtitle(metadata)
-                  : null,
+              subtitle: _buildListSubtitle(metadata, isCommunityPlugin),
               onTap: () => _selectAlgorithm(algo.guid),
               onLongPress: () => _toggleFavorite(algo.guid),
             ),
@@ -1011,9 +1085,14 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     );
   }
 
-  Widget _buildListSubtitle(AlgorithmMetadata metadata) {
-    final categories = metadata.categories;
-    final description = metadata.description;
+  Widget _buildListSubtitle(AlgorithmMetadata? metadata, bool isCommunityPlugin) {
+    // For community plugins, show simplified metadata
+    final categories = isCommunityPlugin
+        ? ['Community Plugin']
+        : (metadata?.categories ?? <String>[]);
+    final description = isCommunityPlugin
+        ? 'Manually installed community plugin.'
+        : (metadata?.description ?? '');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1081,8 +1160,13 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final isCommunityPlugin = _isPlugin(algo.guid);
     final metadata =
         _metadataService.getAlgorithmByGuid(algo.guid.toLowerCase());
-    final categories = metadata?.categories ?? <String>[];
-    final description = metadata?.description ?? '';
+    // For community plugins, show simplified metadata
+    final categories = isCommunityPlugin
+        ? ['Community Plugin']
+        : (metadata?.categories ?? <String>[]);
+    final description = isCommunityPlugin
+        ? 'Manually installed community plugin.'
+        : (metadata?.description ?? '');
     final theme = Theme.of(context);
 
     return Card(
