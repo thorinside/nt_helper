@@ -786,8 +786,25 @@ class _GalleryViewState extends State<_GalleryView>
             horizontal: 16,
             vertical: 8,
           ),
-          leading: plugin.featured
-              ? Icon(Icons.star, color: Theme.of(context).colorScheme.primary)
+          leading: (plugin.featured || plugin.isCollection)
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (plugin.featured)
+                      Icon(
+                        Icons.star,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    if (plugin.isCollection)
+                      Padding(
+                        padding: EdgeInsets.only(left: plugin.featured ? 4 : 0),
+                        child: Icon(
+                          Icons.folder_copy,
+                          color: Theme.of(context).colorScheme.tertiary,
+                        ),
+                      ),
+                  ],
+                )
               : null,
           title: Row(
             children: [
@@ -1041,6 +1058,14 @@ class _GalleryViewState extends State<_GalleryView>
                                 Icons.star,
                                 size: 16,
                                 color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (plugin.isCollection) ...[
+                              Icon(
+                                Icons.folder_copy,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.tertiary,
                               ),
                               const SizedBox(width: 8),
                             ],

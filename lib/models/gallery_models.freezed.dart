@@ -3248,7 +3248,7 @@ as int,
 /// @nodoc
 mixin _$GalleryPlugin {
 
- String get id; String get name; String get description; String? get longDescription; GalleryPluginType get type; String? get category; List<String> get tags; String get author; PluginRepository get repository; PluginReleases get releases; PluginInstallation get installation; PluginCompatibility? get compatibility; List<PluginScreenshot> get screenshots; PluginDocumentation? get documentation; PluginMetrics? get metrics; bool get featured; bool get verified; DateTime? get createdAt; DateTime? get updatedAt;
+ String get id; String get name; String get description; String? get longDescription; GalleryPluginType get type; String? get category; List<String> get tags; String get author; PluginRepository get repository; PluginReleases get releases; PluginInstallation get installation; PluginCompatibility? get compatibility; List<PluginScreenshot> get screenshots; PluginDocumentation? get documentation; PluginMetrics? get metrics; bool get featured; bool get verified; bool get isCollection; String? get guid; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of GalleryPlugin
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3261,16 +3261,16 @@ $GalleryPluginCopyWith<GalleryPlugin> get copyWith => _$GalleryPluginCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GalleryPlugin&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.longDescription, longDescription) || other.longDescription == longDescription)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&const DeepCollectionEquality().equals(other.tags, tags)&&(identical(other.author, author) || other.author == author)&&(identical(other.repository, repository) || other.repository == repository)&&(identical(other.releases, releases) || other.releases == releases)&&(identical(other.installation, installation) || other.installation == installation)&&(identical(other.compatibility, compatibility) || other.compatibility == compatibility)&&const DeepCollectionEquality().equals(other.screenshots, screenshots)&&(identical(other.documentation, documentation) || other.documentation == documentation)&&(identical(other.metrics, metrics) || other.metrics == metrics)&&(identical(other.featured, featured) || other.featured == featured)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GalleryPlugin&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.longDescription, longDescription) || other.longDescription == longDescription)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&const DeepCollectionEquality().equals(other.tags, tags)&&(identical(other.author, author) || other.author == author)&&(identical(other.repository, repository) || other.repository == repository)&&(identical(other.releases, releases) || other.releases == releases)&&(identical(other.installation, installation) || other.installation == installation)&&(identical(other.compatibility, compatibility) || other.compatibility == compatibility)&&const DeepCollectionEquality().equals(other.screenshots, screenshots)&&(identical(other.documentation, documentation) || other.documentation == documentation)&&(identical(other.metrics, metrics) || other.metrics == metrics)&&(identical(other.featured, featured) || other.featured == featured)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.isCollection, isCollection) || other.isCollection == isCollection)&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,name,description,longDescription,type,category,const DeepCollectionEquality().hash(tags),author,repository,releases,installation,compatibility,const DeepCollectionEquality().hash(screenshots),documentation,metrics,featured,verified,createdAt,updatedAt]);
+int get hashCode => Object.hashAll([runtimeType,id,name,description,longDescription,type,category,const DeepCollectionEquality().hash(tags),author,repository,releases,installation,compatibility,const DeepCollectionEquality().hash(screenshots),documentation,metrics,featured,verified,isCollection,guid,createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'GalleryPlugin(id: $id, name: $name, description: $description, longDescription: $longDescription, type: $type, category: $category, tags: $tags, author: $author, repository: $repository, releases: $releases, installation: $installation, compatibility: $compatibility, screenshots: $screenshots, documentation: $documentation, metrics: $metrics, featured: $featured, verified: $verified, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'GalleryPlugin(id: $id, name: $name, description: $description, longDescription: $longDescription, type: $type, category: $category, tags: $tags, author: $author, repository: $repository, releases: $releases, installation: $installation, compatibility: $compatibility, screenshots: $screenshots, documentation: $documentation, metrics: $metrics, featured: $featured, verified: $verified, isCollection: $isCollection, guid: $guid, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -3281,7 +3281,7 @@ abstract mixin class $GalleryPluginCopyWith<$Res>  {
   factory $GalleryPluginCopyWith(GalleryPlugin value, $Res Function(GalleryPlugin) _then) = _$GalleryPluginCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description, String? longDescription, GalleryPluginType type, String? category, List<String> tags, String author, PluginRepository repository, PluginReleases releases, PluginInstallation installation, PluginCompatibility? compatibility, List<PluginScreenshot> screenshots, PluginDocumentation? documentation, PluginMetrics? metrics, bool featured, bool verified, DateTime? createdAt, DateTime? updatedAt
+ String id, String name, String description, String? longDescription, GalleryPluginType type, String? category, List<String> tags, String author, PluginRepository repository, PluginReleases releases, PluginInstallation installation, PluginCompatibility? compatibility, List<PluginScreenshot> screenshots, PluginDocumentation? documentation, PluginMetrics? metrics, bool featured, bool verified, bool isCollection, String? guid, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -3298,7 +3298,7 @@ class _$GalleryPluginCopyWithImpl<$Res>
 
 /// Create a copy of GalleryPlugin
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? longDescription = freezed,Object? type = null,Object? category = freezed,Object? tags = null,Object? author = null,Object? repository = null,Object? releases = null,Object? installation = null,Object? compatibility = freezed,Object? screenshots = null,Object? documentation = freezed,Object? metrics = freezed,Object? featured = null,Object? verified = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? longDescription = freezed,Object? type = null,Object? category = freezed,Object? tags = null,Object? author = null,Object? repository = null,Object? releases = null,Object? installation = null,Object? compatibility = freezed,Object? screenshots = null,Object? documentation = freezed,Object? metrics = freezed,Object? featured = null,Object? verified = null,Object? isCollection = null,Object? guid = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -3317,7 +3317,9 @@ as List<PluginScreenshot>,documentation: freezed == documentation ? _self.docume
 as PluginDocumentation?,metrics: freezed == metrics ? _self.metrics : metrics // ignore: cast_nullable_to_non_nullable
 as PluginMetrics?,featured: null == featured ? _self.featured : featured // ignore: cast_nullable_to_non_nullable
 as bool,verified: null == verified ? _self.verified : verified // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as bool,isCollection: null == isCollection ? _self.isCollection : isCollection // ignore: cast_nullable_to_non_nullable
+as bool,guid: freezed == guid ? _self.guid : guid // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -3464,10 +3466,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  String? longDescription,  GalleryPluginType type,  String? category,  List<String> tags,  String author,  PluginRepository repository,  PluginReleases releases,  PluginInstallation installation,  PluginCompatibility? compatibility,  List<PluginScreenshot> screenshots,  PluginDocumentation? documentation,  PluginMetrics? metrics,  bool featured,  bool verified,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  String? longDescription,  GalleryPluginType type,  String? category,  List<String> tags,  String author,  PluginRepository repository,  PluginReleases releases,  PluginInstallation installation,  PluginCompatibility? compatibility,  List<PluginScreenshot> screenshots,  PluginDocumentation? documentation,  PluginMetrics? metrics,  bool featured,  bool verified,  bool isCollection,  String? guid,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GalleryPlugin() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.longDescription,_that.type,_that.category,_that.tags,_that.author,_that.repository,_that.releases,_that.installation,_that.compatibility,_that.screenshots,_that.documentation,_that.metrics,_that.featured,_that.verified,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.name,_that.description,_that.longDescription,_that.type,_that.category,_that.tags,_that.author,_that.repository,_that.releases,_that.installation,_that.compatibility,_that.screenshots,_that.documentation,_that.metrics,_that.featured,_that.verified,_that.isCollection,_that.guid,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -3485,10 +3487,10 @@ return $default(_that.id,_that.name,_that.description,_that.longDescription,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  String? longDescription,  GalleryPluginType type,  String? category,  List<String> tags,  String author,  PluginRepository repository,  PluginReleases releases,  PluginInstallation installation,  PluginCompatibility? compatibility,  List<PluginScreenshot> screenshots,  PluginDocumentation? documentation,  PluginMetrics? metrics,  bool featured,  bool verified,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  String? longDescription,  GalleryPluginType type,  String? category,  List<String> tags,  String author,  PluginRepository repository,  PluginReleases releases,  PluginInstallation installation,  PluginCompatibility? compatibility,  List<PluginScreenshot> screenshots,  PluginDocumentation? documentation,  PluginMetrics? metrics,  bool featured,  bool verified,  bool isCollection,  String? guid,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _GalleryPlugin():
-return $default(_that.id,_that.name,_that.description,_that.longDescription,_that.type,_that.category,_that.tags,_that.author,_that.repository,_that.releases,_that.installation,_that.compatibility,_that.screenshots,_that.documentation,_that.metrics,_that.featured,_that.verified,_that.createdAt,_that.updatedAt);}
+return $default(_that.id,_that.name,_that.description,_that.longDescription,_that.type,_that.category,_that.tags,_that.author,_that.repository,_that.releases,_that.installation,_that.compatibility,_that.screenshots,_that.documentation,_that.metrics,_that.featured,_that.verified,_that.isCollection,_that.guid,_that.createdAt,_that.updatedAt);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -3502,10 +3504,10 @@ return $default(_that.id,_that.name,_that.description,_that.longDescription,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  String? longDescription,  GalleryPluginType type,  String? category,  List<String> tags,  String author,  PluginRepository repository,  PluginReleases releases,  PluginInstallation installation,  PluginCompatibility? compatibility,  List<PluginScreenshot> screenshots,  PluginDocumentation? documentation,  PluginMetrics? metrics,  bool featured,  bool verified,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  String? longDescription,  GalleryPluginType type,  String? category,  List<String> tags,  String author,  PluginRepository repository,  PluginReleases releases,  PluginInstallation installation,  PluginCompatibility? compatibility,  List<PluginScreenshot> screenshots,  PluginDocumentation? documentation,  PluginMetrics? metrics,  bool featured,  bool verified,  bool isCollection,  String? guid,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _GalleryPlugin() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.longDescription,_that.type,_that.category,_that.tags,_that.author,_that.repository,_that.releases,_that.installation,_that.compatibility,_that.screenshots,_that.documentation,_that.metrics,_that.featured,_that.verified,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.name,_that.description,_that.longDescription,_that.type,_that.category,_that.tags,_that.author,_that.repository,_that.releases,_that.installation,_that.compatibility,_that.screenshots,_that.documentation,_that.metrics,_that.featured,_that.verified,_that.isCollection,_that.guid,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -3517,7 +3519,7 @@ return $default(_that.id,_that.name,_that.description,_that.longDescription,_tha
 @JsonSerializable()
 
 class _GalleryPlugin implements GalleryPlugin {
-  const _GalleryPlugin({required this.id, required this.name, required this.description, this.longDescription, required this.type, this.category, final  List<String> tags = const [], required this.author, required this.repository, required this.releases, required this.installation, this.compatibility, final  List<PluginScreenshot> screenshots = const [], this.documentation, this.metrics, this.featured = false, this.verified = false, this.createdAt, this.updatedAt}): _tags = tags,_screenshots = screenshots;
+  const _GalleryPlugin({required this.id, required this.name, required this.description, this.longDescription, required this.type, this.category, final  List<String> tags = const [], required this.author, required this.repository, required this.releases, required this.installation, this.compatibility, final  List<PluginScreenshot> screenshots = const [], this.documentation, this.metrics, this.featured = false, this.verified = false, this.isCollection = false, this.guid, this.createdAt, this.updatedAt}): _tags = tags,_screenshots = screenshots;
   factory _GalleryPlugin.fromJson(Map<String, dynamic> json) => _$GalleryPluginFromJson(json);
 
 @override final  String id;
@@ -3549,6 +3551,8 @@ class _GalleryPlugin implements GalleryPlugin {
 @override final  PluginMetrics? metrics;
 @override@JsonKey() final  bool featured;
 @override@JsonKey() final  bool verified;
+@override@JsonKey() final  bool isCollection;
+@override final  String? guid;
 @override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
 
@@ -3565,16 +3569,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GalleryPlugin&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.longDescription, longDescription) || other.longDescription == longDescription)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&const DeepCollectionEquality().equals(other._tags, _tags)&&(identical(other.author, author) || other.author == author)&&(identical(other.repository, repository) || other.repository == repository)&&(identical(other.releases, releases) || other.releases == releases)&&(identical(other.installation, installation) || other.installation == installation)&&(identical(other.compatibility, compatibility) || other.compatibility == compatibility)&&const DeepCollectionEquality().equals(other._screenshots, _screenshots)&&(identical(other.documentation, documentation) || other.documentation == documentation)&&(identical(other.metrics, metrics) || other.metrics == metrics)&&(identical(other.featured, featured) || other.featured == featured)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GalleryPlugin&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.longDescription, longDescription) || other.longDescription == longDescription)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&const DeepCollectionEquality().equals(other._tags, _tags)&&(identical(other.author, author) || other.author == author)&&(identical(other.repository, repository) || other.repository == repository)&&(identical(other.releases, releases) || other.releases == releases)&&(identical(other.installation, installation) || other.installation == installation)&&(identical(other.compatibility, compatibility) || other.compatibility == compatibility)&&const DeepCollectionEquality().equals(other._screenshots, _screenshots)&&(identical(other.documentation, documentation) || other.documentation == documentation)&&(identical(other.metrics, metrics) || other.metrics == metrics)&&(identical(other.featured, featured) || other.featured == featured)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.isCollection, isCollection) || other.isCollection == isCollection)&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,name,description,longDescription,type,category,const DeepCollectionEquality().hash(_tags),author,repository,releases,installation,compatibility,const DeepCollectionEquality().hash(_screenshots),documentation,metrics,featured,verified,createdAt,updatedAt]);
+int get hashCode => Object.hashAll([runtimeType,id,name,description,longDescription,type,category,const DeepCollectionEquality().hash(_tags),author,repository,releases,installation,compatibility,const DeepCollectionEquality().hash(_screenshots),documentation,metrics,featured,verified,isCollection,guid,createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'GalleryPlugin(id: $id, name: $name, description: $description, longDescription: $longDescription, type: $type, category: $category, tags: $tags, author: $author, repository: $repository, releases: $releases, installation: $installation, compatibility: $compatibility, screenshots: $screenshots, documentation: $documentation, metrics: $metrics, featured: $featured, verified: $verified, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'GalleryPlugin(id: $id, name: $name, description: $description, longDescription: $longDescription, type: $type, category: $category, tags: $tags, author: $author, repository: $repository, releases: $releases, installation: $installation, compatibility: $compatibility, screenshots: $screenshots, documentation: $documentation, metrics: $metrics, featured: $featured, verified: $verified, isCollection: $isCollection, guid: $guid, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -3585,7 +3589,7 @@ abstract mixin class _$GalleryPluginCopyWith<$Res> implements $GalleryPluginCopy
   factory _$GalleryPluginCopyWith(_GalleryPlugin value, $Res Function(_GalleryPlugin) _then) = __$GalleryPluginCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description, String? longDescription, GalleryPluginType type, String? category, List<String> tags, String author, PluginRepository repository, PluginReleases releases, PluginInstallation installation, PluginCompatibility? compatibility, List<PluginScreenshot> screenshots, PluginDocumentation? documentation, PluginMetrics? metrics, bool featured, bool verified, DateTime? createdAt, DateTime? updatedAt
+ String id, String name, String description, String? longDescription, GalleryPluginType type, String? category, List<String> tags, String author, PluginRepository repository, PluginReleases releases, PluginInstallation installation, PluginCompatibility? compatibility, List<PluginScreenshot> screenshots, PluginDocumentation? documentation, PluginMetrics? metrics, bool featured, bool verified, bool isCollection, String? guid, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -3602,7 +3606,7 @@ class __$GalleryPluginCopyWithImpl<$Res>
 
 /// Create a copy of GalleryPlugin
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? longDescription = freezed,Object? type = null,Object? category = freezed,Object? tags = null,Object? author = null,Object? repository = null,Object? releases = null,Object? installation = null,Object? compatibility = freezed,Object? screenshots = null,Object? documentation = freezed,Object? metrics = freezed,Object? featured = null,Object? verified = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? longDescription = freezed,Object? type = null,Object? category = freezed,Object? tags = null,Object? author = null,Object? repository = null,Object? releases = null,Object? installation = null,Object? compatibility = freezed,Object? screenshots = null,Object? documentation = freezed,Object? metrics = freezed,Object? featured = null,Object? verified = null,Object? isCollection = null,Object? guid = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_GalleryPlugin(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -3621,7 +3625,9 @@ as List<PluginScreenshot>,documentation: freezed == documentation ? _self.docume
 as PluginDocumentation?,metrics: freezed == metrics ? _self.metrics : metrics // ignore: cast_nullable_to_non_nullable
 as PluginMetrics?,featured: null == featured ? _self.featured : featured // ignore: cast_nullable_to_non_nullable
 as bool,verified: null == verified ? _self.verified : verified // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as bool,isCollection: null == isCollection ? _self.isCollection : isCollection // ignore: cast_nullable_to_non_nullable
+as bool,guid: freezed == guid ? _self.guid : guid // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

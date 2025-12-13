@@ -224,6 +224,8 @@ sealed class GalleryPlugin with _$GalleryPlugin {
     PluginMetrics? metrics,
     @Default(false) bool featured,
     @Default(false) bool verified,
+    @Default(false) bool isCollection,
+    String? guid,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _GalleryPlugin;

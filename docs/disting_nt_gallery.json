@@ -87,6 +87,7 @@
       "type": "cpp",
       "featured": true,
       "verified": true,
+      "guid": "grdT",
       "tags": [
         "drums",
         "sequencer",
@@ -185,6 +186,7 @@
       "type": "lua",
       "featured": true,
       "verified": true,
+      "isCollection": true,
       "tags": [
         "lua",
         "3pot",
@@ -372,6 +374,7 @@
       "type": "threepot",
       "featured": true,
       "verified": true,
+      "isCollection": true,
       "tags": [
         "3pot",
         "utilities",
@@ -419,6 +422,7 @@
       "type": "lua",
       "featured": true,
       "verified": true,
+      "isCollection": true,
       "tags": [
         "lua",
         "scripts",

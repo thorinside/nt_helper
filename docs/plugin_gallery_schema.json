@@ -372,6 +372,15 @@
             "description": "Whether plugin is verified by maintainers",
             "default": false
           },
+          "isCollection": {
+            "type": "boolean",
+            "description": "Whether this plugin is a collection containing multiple installable items",
+            "default": false
+          },
+          "guid": {
+            "type": "string",
+            "description": "The GUID of a C++ plugin (4 character identifier used by the Disting NT)"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
