@@ -106,6 +106,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
+          omitBodyDuringUpdate: true
           artifacts: "**/nt_helper-${{ env.VERSION }}.apk"
 
   android_aab_play_store:
@@ -222,6 +223,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
+          omitBodyDuringUpdate: true
           artifacts: "**/nt_helper-${{ env.VERSION }}-windows.zip"
 
   linux:
@@ -268,4 +270,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
+          omitBodyDuringUpdate: true
           artifacts: "**/nt_helper-${{ env.VERSION }}-linux.zip"

@@ -126,6 +126,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
+          omitBodyDuringUpdate: true
           artifacts: "**/nt_helper-${{ env.VERSION }}-macos.zip"
 
       - name: Delete temporary keychain
