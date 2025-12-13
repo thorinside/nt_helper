@@ -1,0 +1,329 @@
+# Story 12.3: Migrate Gallery Service to GraphQL API
+
+Status: ready
+
+## Story
+
+As the NT Helper app,
+I want to fetch plugin gallery data from the GraphQL API instead of the REST endpoint,
+So that I get accurate real-time data including `isCollection` and `guid` fields without caching delays.
+
+## Epic Context
+
+This story is part of Epic 12 focused on UX improvements. The Plugin Gallery currently uses a REST endpoint (`/api/gallery.json`) that has aggressive caching and data synchronization issues. The GraphQL API used by the web frontend provides accurate, real-time data.
+
+- **Goal**: Use the same data source as the web frontend for consistency
+- **Value**: Accurate `isCollection` display, proper `guid` values, reduced data staleness
+- **Constraints**: Must maintain backward compatibility with existing gallery features
+- **Reference**: Web frontend queries at `nt_gallery/frontend/src/lib/graphql/queries.ts`
+
+## Background
+
+### Current Implementation
+
+The `GalleryService` (`lib/services/gallery_service.dart`) fetches from:
+```
+https://nt-gallery.nosuch.dev/api/gallery.json
+```
+
+This REST endpoint:
+- Has 1-hour Redis cache TTL
+- Returns stale cached data even after server updates
+- Requires server-side cache invalidation for updates
+- Uses a custom JSON schema transformation
+
+### How isCollection is Determined
+
+For C++ plugins, `is_collection` is computed during plugin detection/publishing:
+- The server downloads the release zip and extracts all `.o` files
+- Each `.o` file is scanned for its 4-character GUID
+- Multiple GUIDs → `is_collection: true`, `collection_guids: ["GUID1", "GUID2", ...]`
+- Single GUID → `is_collection: false`, `guid: "GUID"`
+
+For Lua/3pot plugins, `is_collection` defaults to `false` (no automatic detection).
+
+This data is stored in the database at publish time. Both GraphQL and REST read from the same database - the REST endpoint just has caching issues.
+
+### GraphQL Endpoint
+
+The backend provides GraphQL at:
+```
+https://nt-gallery-backend.fly.dev/api/graphql
+```
+
+Query for plugins:
+```graphql
+query GetPlugins($filter: PluginFilterInput) {
+  plugins(filter: $filter) {
+    id
+    slug
+    name
+    description
+    pluginType
+    categoryId
+    authorId
+    repositoryOwner
+    repositoryName
+    repositoryUrl
+    installationPath
+    minFirmwareVersion
+    verified
+    verificationStatus
+    featured
+    featuredAt
+    featuredReason
+    latestReleaseTag
+    latestReleaseUrl
+    latestReleaseDate
+    guid
+    isCollection
+    collectionGuids
+    selectedArtifactUrl
+    selectedArtifactName
+    createdAt
+    updatedAt
+    downloadCount
+  }
+}
+
+query GetCategories {
+  categories {
+    id
+    name
+    sortOrder
+  }
+}
+```
+
+Filter options:
+```graphql
+input PluginFilterInput {
+  verified: Boolean
+  featured: Boolean
+  categoryId: String
+  pluginType: PluginType  # LUA, THREEPOT, CPP
+  authorId: UUID
+  searchQuery: String
+}
+```
+
+## Acceptance Criteria
+
+### GraphQL Client Integration
+
+1. Add `graphql` and `gql` packages to `pubspec.yaml` dependencies
+2. Create `lib/services/graphql_client.dart` with configured GraphQL client
+3. GraphQL endpoint URL configurable via `SettingsService` (default: `https://nt-gallery-backend.fly.dev/api/graphql`)
+4. Client handles network errors gracefully with appropriate exceptions
+
+### Gallery Service Refactor
+
+5. Refactor `fetchGallery()` to use GraphQL `plugins` query with `verified: true` filter
+6. Fetch categories via separate `categories` query
+7. Map GraphQL response to existing `Gallery`, `GalleryPlugin`, `PluginCategory` models
+8. Preserve existing 1-hour client-side cache behavior (optional: reduce to 15 minutes since server cache is removed)
+9. `isCollection` field populated correctly from GraphQL response
+10. `guid` field populated correctly from GraphQL response
+11. `collectionGuids` field added to model and populated (new field for future use)
+
+### Model Updates
+
+12. Add `collectionGuids` field to `GalleryPlugin` model: `@Default([]) List<String> collectionGuids`
+13. Update `gallery_models.dart` with new field
+14. Run `flutter pub run build_runner build` to regenerate freezed files
+15. Update JSON schema `docs/plugin_gallery_schema.json` with `collectionGuids` array field
+
+### Field Mapping
+
+Map GraphQL fields to existing model fields:
+
+| GraphQL Field | Model Field | Notes |
+|---------------|-------------|-------|
+| `slug` | `id` | Use slug as plugin ID |
+| `name` | `name` | Direct map |
+| `description` | `description` | Direct map |
+| `description` | `longDescription` | Same as description (no separate field) |
+| `pluginType` | `type` | Map LUA→lua, THREEPOT→threepot, CPP→cpp |
+| `categoryId` | `category` | Direct map |
+| `repositoryOwner` | `repository.owner` | Direct map |
+| `repositoryName` | `repository.name` | Direct map |
+| `repositoryUrl` | `repository.url` | Direct map |
+| `installationPath` | `installation.targetPath` | Direct map |
+| `selectedArtifactUrl` | `installation.downloadUrl` | Direct map |
+| `latestReleaseTag` | `releases.latest` | Direct map |
+| `minFirmwareVersion` | `compatibility.minFirmwareVersion` | Direct map |
+| `featured` | `featured` | Direct map |
+| `verified` | `verified` | Direct map |
+| `isCollection` | `isCollection` | Direct map |
+| `guid` | `guid` | Direct map |
+| `collectionGuids` | `collectionGuids` | New field, direct map |
+| `createdAt` | `createdAt` | Direct map |
+| `updatedAt` | `updatedAt` | Direct map |
+| `downloadCount` | `metrics.downloads` | Direct map |
+
+### Authors Handling
+
+16. Authors data not available in plugin query - derive from `authorId` or fetch separately if needed
+17. For now, use repository owner as author identifier (existing behavior)
+18. Author display name can be fetched on-demand if detailed author info is needed
+
+### Backward Compatibility
+
+19. Existing `searchPlugins()` method continues to work unchanged
+20. Existing `addToQueue()` and installation flow unchanged
+21. All existing tests pass
+22. `flutter analyze` passes with zero warnings
+
+### Error Handling
+
+23. Network errors throw `GalleryException` with descriptive message
+24. GraphQL errors (partial data) handled gracefully
+25. Fallback to cached data on network failure (if cache exists)
+
+## Tasks / Subtasks
+
+- [ ] Task 1: Add GraphQL dependencies (AC: 1)
+  - [ ] Add `graphql: ^5.1.0` to pubspec.yaml
+  - [ ] Add `gql: ^1.0.0` to pubspec.yaml
+  - [ ] Run `flutter pub get`
+
+- [ ] Task 2: Create GraphQL client service (AC: 2-4)
+  - [ ] Create `lib/services/graphql_client.dart`
+  - [ ] Configure `HttpLink` with endpoint URL from SettingsService
+  - [ ] Add `graphqlEndpoint` to SettingsService with default value
+  - [ ] Create `GraphQLClient` singleton with proper initialization
+  - [ ] Add error handling wrapper for GraphQL operations
+
+- [ ] Task 3: Update models (AC: 12-15)
+  - [ ] Add `@Default([]) List<String> collectionGuids` to `GalleryPlugin` in `gallery_models.dart`
+  - [ ] Run `flutter pub run build_runner build`
+  - [ ] Update `docs/plugin_gallery_schema.json` with collectionGuids field
+  - [ ] Verify generated files compile correctly
+
+- [ ] Task 4: Refactor fetchGallery (AC: 5-11, 16-18)
+  - [ ] Create `_fetchPluginsViaGraphQL()` private method
+  - [ ] Create `_fetchCategoriesViaGraphQL()` private method
+  - [ ] Create `_mapGraphQLToGallery()` to convert response to Gallery model
+  - [ ] Handle plugin type enum mapping (LUA/THREEPOT/CPP → lua/threepot/cpp)
+  - [ ] Derive author map from plugin data (use authorId or repositoryOwner)
+  - [ ] Update `fetchGallery()` to call GraphQL methods
+  - [ ] Preserve cache behavior with `_cachedGallery` and `_lastFetch`
+
+- [ ] Task 5: Testing and validation (AC: 19-25)
+  - [ ] Verify `searchPlugins()` works with GraphQL data
+  - [ ] Verify `addToQueue()` works with GraphQL data
+  - [ ] Test network error handling
+  - [ ] Test cache fallback behavior
+  - [ ] Run `flutter analyze` - zero warnings
+  - [ ] Run existing gallery tests
+  - [ ] Manual test: verify isCollection shows correctly for airwindows
+  - [ ] Manual test: verify guid shows for C++ plugins
+
+## Technical Notes
+
+### GraphQL Query Example
+
+```dart
+const String getPluginsQuery = r'''
+  query GetPlugins($filter: PluginFilterInput) {
+    plugins(filter: $filter) {
+      slug
+      name
+      description
+      pluginType
+      categoryId
+      repositoryOwner
+      repositoryName
+      repositoryUrl
+      installationPath
+      minFirmwareVersion
+      verified
+      featured
+      featuredReason
+      latestReleaseTag
+      latestReleaseUrl
+      selectedArtifactUrl
+      guid
+      isCollection
+      collectionGuids
+      createdAt
+      updatedAt
+      downloadCount
+    }
+  }
+''';
+
+const String getCategoriesQuery = r'''
+  query GetCategories {
+    categories {
+      id
+      name
+      sortOrder
+    }
+  }
+''';
+```
+
+### GraphQL Client Setup
+
+```dart
+import 'package:graphql/client.dart';
+
+class GalleryGraphQLClient {
+  static final GalleryGraphQLClient _instance = GalleryGraphQLClient._internal();
+  factory GalleryGraphQLClient() => _instance;
+
+  late GraphQLClient _client;
+
+  GalleryGraphQLClient._internal();
+
+  void initialize(String endpoint) {
+    final httpLink = HttpLink(endpoint);
+    _client = GraphQLClient(
+      link: httpLink,
+      cache: GraphQLCache(),
+    );
+  }
+
+  Future<QueryResult> query(QueryOptions options) => _client.query(options);
+}
+```
+
+### Settings Service Addition
+
+```dart
+// In SettingsService
+static const String _defaultGraphQLEndpoint =
+    'https://nt-gallery-backend.fly.dev/api/graphql';
+
+String get graphqlEndpoint =>
+    _prefs?.getString('graphql_endpoint') ?? _defaultGraphQLEndpoint;
+```
+
+## Out of Scope
+
+- User authentication for GraphQL (public endpoint only)
+- Real-time subscriptions (future enhancement)
+- Offline-first with local GraphQL cache persistence
+- Author detail fetching (use existing authorId approach)
+
+## Definition of Done
+
+- [ ] GraphQL client fetches plugins successfully
+- [ ] `isCollection: true` displays correctly for airwindows and expert-sleepers-examples
+- [ ] `guid` field populated for C++ plugins (e.g., "TidS" for Tides)
+- [ ] All existing gallery functionality works unchanged
+- [ ] `flutter analyze` passes with zero warnings
+- [ ] Story status updated to "done"
+
+## File List
+
+- lib/services/graphql_client.dart (new)
+- lib/services/gallery_service.dart (modified)
+- lib/services/settings_service.dart (modified)
+- lib/models/gallery_models.dart (modified)
+- lib/models/gallery_models.freezed.dart (regenerated)
+- lib/models/gallery_models.g.dart (regenerated)
+- docs/plugin_gallery_schema.json (modified)
+- pubspec.yaml (modified)
+- docs/sprint-artifacts/sprint-status.yaml (modified)

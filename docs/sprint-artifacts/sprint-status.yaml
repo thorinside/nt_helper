@@ -156,4 +156,5 @@ development_status:
   epic-12: in-progress
   12-1-add-algorithm-screen-view-modes: done
   12-2-plugin-gallery-view-modes: done
+  12-3-gallery-graphql-migration: ready
   epic-12-retrospective: optional
