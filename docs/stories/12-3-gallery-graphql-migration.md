@@ -109,12 +109,13 @@ input PluginFilterInput {
 
 ## Acceptance Criteria
 
-### GraphQL Client Integration
+### GraphQL Integration (No New Dependencies)
 
-1. Add `graphql` and `gql` packages to `pubspec.yaml` dependencies
-2. Create `lib/services/graphql_client.dart` with configured GraphQL client
-3. GraphQL endpoint URL configurable via `SettingsService` (default: `https://nt-gallery-backend.fly.dev/api/graphql`)
-4. Client handles network errors gracefully with appropriate exceptions
+1. Use existing `http` package - GraphQL is just JSON via POST
+2. GraphQL endpoint URL configurable via `SettingsService` (default: `https://nt-gallery-backend.fly.dev/api/graphql`)
+3. Send query as JSON body: `{"query": "{ plugins(...) { ... } }"}`
+4. Parse response JSON: `response['data']['plugins']`
+5. Handle network errors gracefully with appropriate exceptions
 
 ### Gallery Service Refactor
 
@@ -182,25 +183,14 @@ Map GraphQL fields to existing model fields:
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add GraphQL dependencies (AC: 1)
-  - [ ] Add `graphql: ^5.1.0` to pubspec.yaml
-  - [ ] Add `gql: ^1.0.0` to pubspec.yaml
-  - [ ] Run `flutter pub get`
-
-- [ ] Task 2: Create GraphQL client service (AC: 2-4)
-  - [ ] Create `lib/services/graphql_client.dart`
-  - [ ] Configure `HttpLink` with endpoint URL from SettingsService
-  - [ ] Add `graphqlEndpoint` to SettingsService with default value
-  - [ ] Create `GraphQLClient` singleton with proper initialization
-  - [ ] Add error handling wrapper for GraphQL operations
-
-- [ ] Task 3: Update models (AC: 12-15)
+- [ ] Task 1: Update models (AC: 12-15)
   - [ ] Add `@Default([]) List<String> collectionGuids` to `GalleryPlugin` in `gallery_models.dart`
   - [ ] Run `flutter pub run build_runner build`
   - [ ] Update `docs/plugin_gallery_schema.json` with collectionGuids field
   - [ ] Verify generated files compile correctly
 
-- [ ] Task 4: Refactor fetchGallery (AC: 5-11, 16-18)
+- [ ] Task 2: Refactor fetchGallery (AC: 1-11, 16-18)
+  - [ ] Add `graphqlEndpoint` to SettingsService with default value
   - [ ] Create `_fetchPluginsViaGraphQL()` private method
   - [ ] Create `_fetchCategoriesViaGraphQL()` private method
   - [ ] Create `_mapGraphQLToGallery()` to convert response to Gallery model
@@ -209,7 +199,7 @@ Map GraphQL fields to existing model fields:
   - [ ] Update `fetchGallery()` to call GraphQL methods
   - [ ] Preserve cache behavior with `_cachedGallery` and `_lastFetch`
 
-- [ ] Task 5: Testing and validation (AC: 19-25)
+- [ ] Task 3: Testing and validation (AC: 19-25)
   - [ ] Verify `searchPlugins()` works with GraphQL data
   - [ ] Verify `addToQueue()` works with GraphQL data
   - [ ] Test network error handling
@@ -264,28 +254,30 @@ const String getCategoriesQuery = r'''
 ''';
 ```
 
-### GraphQL Client Setup
+### Simple HTTP-based GraphQL Request
 
 ```dart
-import 'package:graphql/client.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-class GalleryGraphQLClient {
-  static final GalleryGraphQLClient _instance = GalleryGraphQLClient._internal();
-  factory GalleryGraphQLClient() => _instance;
+Future<List<dynamic>> fetchPluginsViaGraphQL(String endpoint) async {
+  final response = await http.post(
+    Uri.parse(endpoint),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'query': getPluginsQuery}),
+  );
 
-  late GraphQLClient _client;
-
-  GalleryGraphQLClient._internal();
-
-  void initialize(String endpoint) {
-    final httpLink = HttpLink(endpoint);
-    _client = GraphQLClient(
-      link: httpLink,
-      cache: GraphQLCache(),
-    );
+  if (response.statusCode != 200) {
+    throw GalleryException('GraphQL request failed: ${response.statusCode}');
   }
 
-  Future<QueryResult> query(QueryOptions options) => _client.query(options);
+  final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+  if (json.containsKey('errors')) {
+    throw GalleryException('GraphQL error: ${json['errors']}');
+  }
+
+  return json['data']['plugins'] as List<dynamic>;
 }
 ```
 
@@ -318,12 +310,10 @@ String get graphqlEndpoint =>
 
 ## File List
 
-- lib/services/graphql_client.dart (new)
 - lib/services/gallery_service.dart (modified)
 - lib/services/settings_service.dart (modified)
 - lib/models/gallery_models.dart (modified)
 - lib/models/gallery_models.freezed.dart (regenerated)
 - lib/models/gallery_models.g.dart (regenerated)
 - docs/plugin_gallery_schema.json (modified)
-- pubspec.yaml (modified)
 - docs/sprint-artifacts/sprint-status.yaml (modified)
