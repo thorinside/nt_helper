@@ -1,3 +1,0 @@
-# Differentiators
-
-[DIFFERENTIATORS_CONTENT]

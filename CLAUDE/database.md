@@ -1,3 +1,0 @@
-# Database
-
-- **Primary Database:** [DATABASE]

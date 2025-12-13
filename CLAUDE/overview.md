@@ -1,3 +1,0 @@
-# Overview
-
-[OVERVIEW_CONTENT]

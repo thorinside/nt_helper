@@ -1,3 +1,0 @@
-# Pitch
-
-[PITCH_CONTENT]

@@ -1,3 +1,0 @@
-# Approach
-
-[APPROACH_CONTENT]
