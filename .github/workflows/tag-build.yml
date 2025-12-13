@@ -6,7 +6,7 @@ on:
       - "v*" # e.g., v1.0, v1.2.3, etc.
 
 env:
-  FLUTTER_VERSION: "3.38.1"
+  FLUTTER_VERSION: "3.38.5"
 
 permissions:
   contents: write # Needed for creating/updating GitHub releases
