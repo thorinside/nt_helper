@@ -3,15 +3,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:cross_file/cross_file.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:nt_helper/ui/widgets/plugin_selection_dialog.dart';
+import 'package:nt_helper/ui/widgets/linkified_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:nt_helper/utils/responsive.dart';
+
+/// View mode for the Plugin Gallery explore tab
+enum GalleryViewMode { card, list }
 
 /// A beautiful gallery screen for discovering and installing plugins
 class GalleryScreen extends StatelessWidget {
@@ -61,6 +66,10 @@ class _GalleryViewState extends State<_GalleryView>
   // UI state
   late TabController _tabController;
 
+  // View mode state
+  static const _viewModeKey = 'gallery_view_mode';
+  GalleryViewMode _selectedViewMode = GalleryViewMode.card;
+
   // Drag and drop state
   bool _isDragOver = false;
   bool _isInstalling = false;
@@ -76,6 +85,21 @@ class _GalleryViewState extends State<_GalleryView>
         searchQuery: _searchController.text,
       );
     });
+
+    // Load saved view mode preference
+    SharedPreferences.getInstance().then((prefs) {
+      final modeIndex = prefs.getInt(_viewModeKey) ?? 0;
+      if (mounted) {
+        setState(() {
+          _selectedViewMode = GalleryViewMode.values[modeIndex.clamp(0, 1)];
+        });
+      }
+    });
+  }
+
+  Future<void> _saveViewMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_viewModeKey, _selectedViewMode.index);
   }
 
   @override
@@ -429,6 +453,8 @@ class _GalleryViewState extends State<_GalleryView>
                     SizedBox(width: filterSpacing),
                     _buildClearFilter(),
                   ],
+                  SizedBox(width: filterSpacing),
+                  _buildViewModeSelector(),
                 ],
               ),
             ),
@@ -470,6 +496,8 @@ class _GalleryViewState extends State<_GalleryView>
                 _buildTypeFilter(state),
                 const SizedBox(width: 8),
                 _buildFeaturedFilter(state),
+                const SizedBox(width: 8),
+                _buildViewModeSelector(),
                 const SizedBox(width: 8),
 
                 // Clear filters
@@ -627,44 +655,84 @@ class _GalleryViewState extends State<_GalleryView>
     );
   }
 
+  Widget _buildViewModeSelector() {
+    return SegmentedButton<GalleryViewMode>(
+      segments: const [
+        ButtonSegment(
+          value: GalleryViewMode.card,
+          icon: Icon(Icons.grid_view),
+          tooltip: 'Card View',
+        ),
+        ButtonSegment(
+          value: GalleryViewMode.list,
+          icon: Icon(Icons.view_list),
+          tooltip: 'List View',
+        ),
+      ],
+      selected: {_selectedViewMode},
+      onSelectionChanged: (selected) {
+        setState(() => _selectedViewMode = selected.first);
+        _saveViewMode();
+      },
+      showSelectedIcon: false,
+    );
+  }
+
   Widget _buildPluginGrid(GalleryState state) {
+    if (state is! GalleryLoaded) {
+      return _buildCardView(state); // Fallback for non-loaded states
+    }
+
+    switch (_selectedViewMode) {
+      case GalleryViewMode.card:
+        return _buildCardView(state);
+      case GalleryViewMode.list:
+        return _buildListView(state);
+    }
+  }
+
+  Widget _buildEmptyPluginState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No plugins found',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try adjusting your search or filters',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardView(GalleryState state) {
     final filteredPlugins = state is GalleryLoaded
         ? state.filteredPlugins
         : <GalleryPlugin>[];
 
     if (filteredPlugins.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No plugins found',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try adjusting your search or filters',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyPluginState();
     }
 
     return SingleChildScrollView(
@@ -678,6 +746,243 @@ class _GalleryViewState extends State<_GalleryView>
         }).toList(),
       ),
     );
+  }
+
+  Widget _buildListView(GalleryLoaded state) {
+    final filteredPlugins = state.filteredPlugins;
+
+    if (filteredPlugins.isEmpty) {
+      return _buildEmptyPluginState();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: filteredPlugins.length,
+      itemBuilder: (context, index) {
+        final plugin = filteredPlugins[index];
+        return _buildPluginListTile(plugin, state, context);
+      },
+    );
+  }
+
+  Widget _buildPluginListTile(
+    GalleryPlugin plugin,
+    GalleryLoaded state,
+    BuildContext parentContext,
+  ) {
+    final author = plugin.getAuthor(state.gallery);
+    final category = plugin.getCategory(state.gallery);
+    final updateInfo = state.updateInfo[plugin.id];
+    final hasUpdate = updateInfo?.hasUpdate ?? false;
+    final isInstalled = updateInfo != null;
+    final isInQueue = state.queue.any((q) => q.plugin.id == plugin.id);
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 72),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          leading: plugin.featured
+              ? Icon(Icons.star, color: Theme.of(context).colorScheme.primary)
+              : null,
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  plugin.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (hasUpdate) _buildListBadge('UPDATE', Colors.orange),
+              if (isInstalled && !hasUpdate)
+                _buildListBadge('INSTALLED', Colors.green),
+            ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  if (author != null) ...[
+                    Icon(
+                      Icons.person,
+                      size: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      author.name,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  // Type badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondary,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      plugin.type.displayName,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSecondary,
+                      ),
+                    ),
+                  ),
+                  // Category badge
+                  if (category != null) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        category.name,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              LinkifiedText(
+                text: plugin.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (plugin.formattedLatestVersion.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    plugin.formattedLatestVersion,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              // Documentation button
+              if (plugin.hasReadmeDocumentation)
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _showReadmeDialog(parentContext, plugin),
+                      child: Tooltip(
+                        message: 'View Documentation',
+                        child: Icon(
+                          Icons.description_outlined,
+                          size: 16,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 4),
+              _buildListActionButton(
+                plugin,
+                isInQueue,
+                hasUpdate,
+                isInstalled,
+                parentContext,
+              ),
+            ],
+          ),
+          onTap: () {
+            // Tap action: same as card button action
+            if (isInQueue) {
+              parentContext.read<GalleryCubit>().removeFromQueue(plugin.id);
+            } else if (!isInstalled || hasUpdate) {
+              parentContext.read<GalleryCubit>().addToQueue(plugin);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListBadge(String label, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListActionButton(
+    GalleryPlugin plugin,
+    bool isInQueue,
+    bool hasUpdate,
+    bool isInstalled,
+    BuildContext parentContext,
+  ) {
+    if (isInQueue) {
+      return IconButton(
+        icon: const Icon(Icons.remove_from_queue),
+        onPressed: () =>
+            parentContext.read<GalleryCubit>().removeFromQueue(plugin.id),
+        tooltip: 'Remove from queue',
+        color: Theme.of(context).colorScheme.error,
+      );
+    } else if (hasUpdate) {
+      return IconButton(
+        icon: const Icon(Icons.update),
+        onPressed: () async =>
+            await parentContext.read<GalleryCubit>().addToQueue(plugin),
+        tooltip: 'Update',
+        color: Colors.orange,
+      );
+    } else if (isInstalled) {
+      return const Icon(Icons.check_circle, color: Colors.green);
+    } else {
+      return IconButton(
+        icon: const Icon(Icons.add_to_queue),
+        onPressed: () async =>
+            await parentContext.read<GalleryCubit>().addToQueue(plugin),
+        tooltip: 'Add to queue',
+        color: Theme.of(context).colorScheme.primary,
+      );
+    }
   }
 
   Widget _buildPluginCard(
@@ -861,8 +1166,8 @@ class _GalleryViewState extends State<_GalleryView>
                     height:
                         116, // Fixed height for 5 lines + padding (100 + 16)
                     padding: const EdgeInsets.all(8),
-                    child: Text(
-                      plugin.description,
+                    child: LinkifiedText(
+                      text: plugin.description,
                       style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 5,
                       overflow: TextOverflow.ellipsis,
