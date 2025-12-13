@@ -119,20 +119,20 @@ input PluginFilterInput {
 
 ### Gallery Service Refactor
 
-5. Refactor `fetchGallery()` to use GraphQL `plugins` query with `verified: true` filter
-6. Fetch categories via separate `categories` query
-7. Map GraphQL response to existing `Gallery`, `GalleryPlugin`, `PluginCategory` models
-8. Preserve existing 1-hour client-side cache behavior (optional: reduce to 15 minutes since server cache is removed)
-9. `isCollection` field populated correctly from GraphQL response
-10. `guid` field populated correctly from GraphQL response
-11. `collectionGuids` field added to model and populated (new field for future use)
+6. Refactor `fetchGallery()` to use GraphQL `plugins` query with `verified: true` filter
+7. Fetch categories via separate `categories` query
+8. Map GraphQL response to existing `Gallery`, `GalleryPlugin`, `PluginCategory` models
+9. Preserve existing 1-hour client-side cache behavior (optional: reduce to 15 minutes since server cache is removed)
+10. `isCollection` field populated correctly from GraphQL response
+11. `guid` field populated correctly from GraphQL response
+12. `collectionGuids` field added to model and populated (new field for future use)
 
 ### Model Updates
 
-12. Add `collectionGuids` field to `GalleryPlugin` model: `@Default([]) List<String> collectionGuids`
-13. Update `gallery_models.dart` with new field
-14. Run `flutter pub run build_runner build` to regenerate freezed files
-15. Update JSON schema `docs/plugin_gallery_schema.json` with `collectionGuids` array field
+13. Add `collectionGuids` field to `GalleryPlugin` model: `@Default([]) List<String> collectionGuids`
+14. Update `gallery_models.dart` with new field
+15. Run `flutter pub run build_runner build` to regenerate freezed files
+16. Update JSON schema `docs/plugin_gallery_schema.json` with `collectionGuids` array field
 
 ### Field Mapping
 
@@ -164,38 +164,38 @@ Map GraphQL fields to existing model fields:
 
 ### Authors Handling
 
-16. Authors data not available in plugin query - derive from `authorId` or fetch separately if needed
-17. For now, use repository owner as author identifier (existing behavior)
-18. Author display name can be fetched on-demand if detailed author info is needed
+17. Authors data not available in plugin query - derive from `authorId` or fetch separately if needed
+18. For now, use repository owner as author identifier (existing behavior)
+19. Author display name can be fetched on-demand if detailed author info is needed
 
 ### Backward Compatibility
 
-19. Existing `searchPlugins()` method continues to work unchanged
-20. Existing `addToQueue()` and installation flow unchanged
-21. All existing tests pass
-22. `flutter analyze` passes with zero warnings
+20. Existing `searchPlugins()` method continues to work unchanged
+21. Existing `addToQueue()` and installation flow unchanged
+22. All existing tests pass
+23. `flutter analyze` passes with zero warnings
 
 ### Error Handling
 
-23. Network errors throw `GalleryException` with descriptive message
-24. GraphQL errors (partial data) handled gracefully
-25. Fallback to cached data on network failure (if cache exists)
+24. Network errors throw `GalleryException` with descriptive message
+25. GraphQL errors (partial data) handled gracefully
+26. Fallback to cached data on network failure (if cache exists)
 
 ### Local Cache Persistence
 
-26. Persist gallery JSON to local storage (file or SharedPreferences)
-27. On app launch, load from local cache first (instant display)
-28. Background refresh from GraphQL if cache is stale (>24 hours or user-triggered)
-29. Cache includes timestamp for staleness check
-30. Reduces server load - gallery data changes infrequently
+27. Persist gallery JSON to local storage (file or SharedPreferences)
+28. On app launch, load from local cache first (instant display)
+29. Background refresh from GraphQL if cache is stale (>24 hours or user-triggered)
+30. Cache includes timestamp for staleness check
+31. Reduces server load - gallery data changes infrequently
 
 ### GUID-Based Plugin Lookup
 
-31. Build a GUID → GalleryPlugin lookup map from cached gallery data
-32. Add `getPluginByGuid(String guid)` method to GalleryService
-33. Method returns `GalleryPlugin?` - null if GUID not found in gallery
-34. Lookup map rebuilt when gallery cache is refreshed
-35. For C++ collections, also index by each GUID in `collectionGuids`
+32. Build a GUID → GalleryPlugin lookup map from cached gallery data
+33. Add `getPluginByGuid(String guid)` method to GalleryService
+34. Method returns `GalleryPlugin?` - null if GUID not found in gallery
+35. Lookup map rebuilt when gallery cache is refreshed
+36. For C++ collections, also index by each GUID in `collectionGuids`
 
 This enables the app to display rich metadata for community plugins when their GUID matches a gallery entry:
 - Plugin name instead of raw GUID
@@ -206,13 +206,13 @@ This enables the app to display rich metadata for community plugins when their G
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update models (AC: 12-15)
+- [ ] Task 1: Update models (AC: 13-16)
   - [ ] Add `@Default([]) List<String> collectionGuids` to `GalleryPlugin` in `gallery_models.dart`
   - [ ] Run `flutter pub run build_runner build`
   - [ ] Update `docs/plugin_gallery_schema.json` with collectionGuids field
   - [ ] Verify generated files compile correctly
 
-- [ ] Task 2: Refactor fetchGallery (AC: 1-11, 16-18)
+- [ ] Task 2: Refactor fetchGallery (AC: 1-12, 17-19)
   - [ ] Add `graphqlEndpoint` to SettingsService with default value
   - [ ] Create `_fetchPluginsViaGraphQL()` private method
   - [ ] Create `_fetchCategoriesViaGraphQL()` private method
@@ -222,7 +222,7 @@ This enables the app to display rich metadata for community plugins when their G
   - [ ] Update `fetchGallery()` to call GraphQL methods
   - [ ] Preserve cache behavior with `_cachedGallery` and `_lastFetch`
 
-- [ ] Task 3: Implement local cache persistence (AC: 26-30)
+- [ ] Task 3: Implement local cache persistence (AC: 27-31)
   - [ ] Create cache file path using `path_provider` (applicationDocumentsDirectory)
   - [ ] Save gallery JSON + timestamp to `gallery_cache.json` after successful fetch
   - [ ] Load from cache file on `fetchGallery()` if exists and not forcing refresh
@@ -230,7 +230,7 @@ This enables the app to display rich metadata for community plugins when their G
   - [ ] Consider cache stale after 24 hours (configurable)
   - [ ] Background refresh: return cached data immediately, fetch new data async
 
-- [ ] Task 4: Implement GUID lookup (AC: 31-35)
+- [ ] Task 4: Implement GUID lookup (AC: 32-36)
   - [ ] Add `Map<String, GalleryPlugin> _guidLookup = {}` private field
   - [ ] Create `_buildGuidLookup(Gallery gallery)` that populates map from:
     - Single plugins: `plugin.guid` → plugin
@@ -239,7 +239,7 @@ This enables the app to display rich metadata for community plugins when their G
   - [ ] Add public `GalleryPlugin? getPluginByGuid(String guid)` method
   - [ ] Handle case-insensitive GUID matching (GUIDs are 4 chars, case matters but be lenient)
 
-- [ ] Task 5: Testing and validation (AC: 19-25)
+- [ ] Task 5: Testing and validation (AC: 20-26)
   - [ ] Verify `searchPlugins()` works with GraphQL data
   - [ ] Verify `addToQueue()` works with GraphQL data
   - [ ] Verify `getPluginByGuid()` returns correct plugin for known GUIDs
