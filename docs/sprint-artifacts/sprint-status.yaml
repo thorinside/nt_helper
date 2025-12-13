@@ -152,3 +152,7 @@ development_status:
   epic-11: contexted
   11-1-android-edge-to-edge: done
   epic-11-retrospective: optional
+
+  epic-12: contexted
+  12-1-add-algorithm-screen-view-modes: done
+  epic-12-retrospective: optional

@@ -2,14 +2,19 @@ import 'dart:async'; // Added for Timer
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 
 import 'package:collection/collection.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
+
+/// View modes for displaying algorithms in the Add Algorithm screen
+enum AlgorithmViewMode { chipGrid, list, column }
 
 class AddAlgorithmScreen extends StatefulWidget {
   const AddAlgorithmScreen({super.key});
@@ -23,6 +28,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   static const _showFavOnlyKey =
       'add_algo_show_fav_only'; // Key for toggle state
   static const _pluginTypeKey = 'add_algo_plugin_type';
+  static const _viewModeKey = 'add_algorithm_view_mode';
 
   // Plugin type options
   static const String _pluginTypeAll = 'all';
@@ -45,8 +51,20 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   // Plugin type filter state
   String _selectedPluginType = _pluginTypeAll;
 
-  // Scroll controller for algorithm chips
+  // View mode state
+  AlgorithmViewMode _selectedViewMode = AlgorithmViewMode.chipGrid;
+
+  // Scroll controllers for algorithm views
   final ScrollController _chipScrollController = ScrollController();
+  final ScrollController _listScrollController = ScrollController();
+  final ScrollController _columnScrollController = ScrollController();
+
+  // Cached metadata service instance
+  final _metadataService = AlgorithmMetadataService();
+
+  // Keyboard navigation state
+  int _focusedIndex = -1;
+  final FocusNode _viewFocusNode = FocusNode();
 
   // Original state variables
   String? selectedAlgorithmGuid;
@@ -81,6 +99,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     _searchController.dispose();
     _debounce?.cancel();
     _chipScrollController.dispose();
+    _listScrollController.dispose();
+    _columnScrollController.dispose();
+    _viewFocusNode.dispose();
     super.dispose();
   }
 
@@ -102,10 +123,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final favs = prefs.getStringList(_favKey) ?? [];
     final showOnlyFavs = prefs.getBool(_showFavOnlyKey) ?? false;
     final pluginType = prefs.getString(_pluginTypeKey) ?? _pluginTypeAll;
+    final modeIndex = prefs.getInt(_viewModeKey) ?? 0;
     setState(() {
       _favoriteGuids = favs.toSet();
       _showFavoritesOnly = showOnlyFavs;
       _selectedPluginType = pluginType;
+      _selectedViewMode = AlgorithmViewMode.values[modeIndex.clamp(0, 2)];
       // Re-filter after loading settings
       _filterAlgorithms();
     });
@@ -124,6 +147,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   Future<void> _savePluginTypeState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_pluginTypeKey, _selectedPluginType);
+  }
+
+  Future<void> _saveViewModeState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_viewModeKey, _selectedViewMode.index);
   }
 
   void _toggleFavorite(String guid) {
@@ -152,7 +180,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   void _showDocumentation(String guid) async {
     // Unfocus search field when showing docs
     FocusScope.of(context).unfocus();
-    final metadata = AlgorithmMetadataService().getAlgorithmByGuid(guid);
+    final metadata = _metadataService.getAlgorithmByGuid(guid);
     if (metadata != null && mounted) {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -174,7 +202,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   }
 
   void _loadCategories() {
-    final allAlgos = AlgorithmMetadataService().getAllAlgorithms();
+    final allAlgos = _metadataService.getAllAlgorithms();
     final allCats = allAlgos.expand((algo) => algo.categories).toSet().toList();
     allCats.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     if (mounted) {
@@ -227,10 +255,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
     // Filter by selected categories
     if (_selectedCategories.isNotEmpty) {
-      final service = AlgorithmMetadataService();
       baseList = baseList.where((algoInfo) {
-        final metadata = service.getAlgorithmByGuid(algoInfo.guid);
-        if (metadata == null) return false;
+        // Normalize GUID to lowercase for consistent lookup
+        final metadata = _metadataService.getAlgorithmByGuid(algoInfo.guid.toLowerCase());
+        // If no metadata, show algorithm (don't filter it out)
+        if (metadata == null) return true;
         return metadata.categories.any(
           (cat) => _selectedCategories.contains(cat),
         );
@@ -251,20 +280,16 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
     // Use WidgetsBinding to ensure setState is called safely after build if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          // If the currently selected algorithm is no longer in the filtered list, deselect it
-          if (selectedAlgorithmGuid != null &&
-              !_filteredAlgorithms.any(
-                (algo) => algo.guid == selectedAlgorithmGuid,
-              )) {
-            _clearSelection(); // This already calls setState
-          } else {
-            // Ensure UI rebuilds with the filtered list
-            // This setState might be redundant if _clearSelection was called, but safe to include.
-            setState(() {});
-          }
-        });
+      if (!mounted) return;
+      // If the currently selected algorithm is no longer in the filtered list, deselect it
+      if (selectedAlgorithmGuid != null &&
+          !_filteredAlgorithms.any(
+            (algo) => algo.guid == selectedAlgorithmGuid,
+          )) {
+        _clearSelection(); // Calls setState internally
+      } else {
+        // Trigger UI rebuild with the filtered list
+        setState(() {});
       }
     });
   }
@@ -281,7 +306,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           .toList();
 
       if (guid != null) {
-        final metadata = AlgorithmMetadataService().getAlgorithmByGuid(guid);
+        final metadata = _metadataService.getAlgorithmByGuid(guid);
         _isHelpAvailableForSelected = metadata != null;
       } else {
         _isHelpAvailableForSelected = false;
@@ -579,11 +604,20 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       _buildPluginTypeFilterButton(),
                       const SizedBox(width: 16),
                       Expanded(child: _buildCategoryFilterButton()),
+                      const SizedBox(width: 16),
+                      _buildViewModeSelector(),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Showing ${_filteredAlgorithms.length} of ${_allAlgorithms.length} algorithms',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                   const Divider(),
 
-                  // --- Algorithm Chips (Expanded to take remaining space) ---
+                  // --- Algorithm Display (Expanded to take remaining space) ---
                   Expanded(
                     child: _filteredAlgorithms.isEmpty
                         ? Center(
@@ -595,84 +629,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                   : 'No algorithms match "${_searchController.text}".',
                             ),
                           )
-                        : Scrollbar(
-                            controller: _chipScrollController,
-                            child: SingleChildScrollView(
-                              controller: _chipScrollController,
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Wrap(
-                                spacing: 8.0,
-                                runSpacing: 4.0,
-                                children: _filteredAlgorithms.map((algo) {
-                                  final bool isSelected =
-                                      selectedAlgorithmGuid == algo.guid;
-                                  final bool isFavorite = _favoriteGuids
-                                      .contains(algo.guid);
-                                  final bool isCommunityPlugin =
-                                      algo.guid != algo.guid.toLowerCase();
-                                  return GestureDetector(
-                                    onLongPress: () =>
-                                        _toggleFavorite(algo.guid),
-                                    child: ChoiceChip(
-                                      label: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Flexible(
-                                            child: Text(
-                                              algo.name,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          if (isFavorite) ...[
-                                            const SizedBox(width: 4.0),
-                                            Icon(
-                                              Icons.star,
-                                              size: 16,
-                                              color: isSelected
-                                                  ? Theme.of(context)
-                                                        .colorScheme
-                                                        .onPrimaryContainer
-                                                  : Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary,
-                                            ),
-                                          ],
-                                          if (isCommunityPlugin) ...[
-                                            const SizedBox(width: 4.0),
-                                            Icon(
-                                              Icons.extension,
-                                              size: 14,
-                                              color: isSelected
-                                                  ? Theme.of(context)
-                                                        .colorScheme
-                                                        .onPrimaryContainer
-                                                  : Theme.of(
-                                                      context,
-                                                    ).colorScheme.secondary,
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                      selected: isSelected,
-                                      onSelected: (bool selected) {
-                                        if (selected) {
-                                          _selectAlgorithm(algo.guid);
-                                        } else {
-                                          if (isSelected) {
-                                            _selectAlgorithm(null);
-                                          }
-                                        }
-                                      },
-                                      selectedColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer,
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
+                        : _buildAlgorithmView(),
                   ),
 
                   // --- Specification Inputs (Auto-sized to content) ---
@@ -796,6 +753,420 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           }
         },
       ),
+    );
+  }
+
+  // --- View Mode Selector ---
+  Widget _buildViewModeSelector() {
+    return SegmentedButton<AlgorithmViewMode>(
+      segments: const [
+        ButtonSegment(
+          value: AlgorithmViewMode.chipGrid,
+          icon: Icon(Icons.grid_view),
+          tooltip: 'Chip Grid',
+        ),
+        ButtonSegment(
+          value: AlgorithmViewMode.list,
+          icon: Icon(Icons.view_list),
+          tooltip: 'List',
+        ),
+        ButtonSegment(
+          value: AlgorithmViewMode.column,
+          icon: Icon(Icons.view_column),
+          tooltip: 'Column',
+        ),
+      ],
+      selected: {_selectedViewMode},
+      onSelectionChanged: (selected) {
+        setState(() => _selectedViewMode = selected.first);
+        _saveViewModeState();
+      },
+      showSelectedIcon: false,
+    );
+  }
+
+  // --- Algorithm View (Conditional Rendering) ---
+  Widget _buildAlgorithmView() {
+    return Focus(
+      focusNode: _viewFocusNode,
+      onKeyEvent: _handleKeyEvent,
+      child: switch (_selectedViewMode) {
+        AlgorithmViewMode.chipGrid => _buildChipGridView(),
+        AlgorithmViewMode.list => _buildListView(),
+        AlgorithmViewMode.column => _buildColumnView(),
+      },
+    );
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (_filteredAlgorithms.isEmpty) return KeyEventResult.ignored;
+
+    // Initialize focus index if not set
+    if (_focusedIndex < 0 && selectedAlgorithmGuid != null) {
+      _focusedIndex = _filteredAlgorithms.indexWhere(
+        (algo) => algo.guid == selectedAlgorithmGuid,
+      );
+    }
+    if (_focusedIndex < 0) _focusedIndex = 0;
+
+    int newIndex = _focusedIndex;
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+        event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      newIndex = (_focusedIndex + 1).clamp(0, _filteredAlgorithms.length - 1);
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
+        event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      newIndex = (_focusedIndex - 1).clamp(0, _filteredAlgorithms.length - 1);
+    } else if (event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.space) {
+      if (_focusedIndex >= 0 && _focusedIndex < _filteredAlgorithms.length) {
+        _selectAlgorithm(_filteredAlgorithms[_focusedIndex].guid);
+        return KeyEventResult.handled;
+      }
+    } else {
+      return KeyEventResult.ignored;
+    }
+
+    if (newIndex != _focusedIndex) {
+      setState(() {
+        _focusedIndex = newIndex;
+      });
+      _scrollToIndex(newIndex);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _scrollToIndex(int index) {
+    if (_filteredAlgorithms.isEmpty) return;
+
+    // Estimate item height based on view mode
+    final double estimatedItemHeight = switch (_selectedViewMode) {
+      AlgorithmViewMode.chipGrid => 40.0,
+      AlgorithmViewMode.list => 72.0,
+      AlgorithmViewMode.column => 120.0,
+    };
+
+    final ScrollController controller = switch (_selectedViewMode) {
+      AlgorithmViewMode.chipGrid => _chipScrollController,
+      AlgorithmViewMode.list => _listScrollController,
+      AlgorithmViewMode.column => _columnScrollController,
+    };
+
+    if (!controller.hasClients) return;
+
+    // For list view, we can calculate exact position
+    if (_selectedViewMode == AlgorithmViewMode.list) {
+      final targetOffset = index * estimatedItemHeight;
+      final viewportHeight = controller.position.viewportDimension;
+      final maxScroll = controller.position.maxScrollExtent;
+      final scrollTo =
+          (targetOffset - viewportHeight / 2 + estimatedItemHeight / 2)
+              .clamp(0.0, maxScroll);
+      controller.animateTo(
+        scrollTo,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+      );
+    }
+    // For column view, we need to account for columns
+    else if (_selectedViewMode == AlgorithmViewMode.column) {
+      final columnCount = controller.position.viewportDimension < 600 ? 2 : 3;
+      final rowIndex = index ~/ columnCount;
+      final targetOffset = rowIndex * (estimatedItemHeight + 8);
+      final viewportHeight = controller.position.viewportDimension;
+      final maxScroll = controller.position.maxScrollExtent;
+      final scrollTo = (targetOffset - viewportHeight / 2 + estimatedItemHeight / 2)
+          .clamp(0.0, maxScroll);
+      controller.animateTo(
+        scrollTo,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  // --- Chip Grid View (Original View) ---
+  Widget _buildChipGridView() {
+    return Scrollbar(
+      controller: _chipScrollController,
+      child: SingleChildScrollView(
+        controller: _chipScrollController,
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: Wrap(
+          spacing: 8.0,
+          runSpacing: 4.0,
+          children: _filteredAlgorithms.map((algo) {
+            final bool isSelected = selectedAlgorithmGuid == algo.guid;
+            final bool isFavorite = _favoriteGuids.contains(algo.guid);
+            final bool isCommunityPlugin =
+                algo.guid != algo.guid.toLowerCase();
+            return GestureDetector(
+              onLongPress: () => _toggleFavorite(algo.guid),
+              child: ChoiceChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        algo.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isFavorite) ...[
+                      const SizedBox(width: 4.0),
+                      Icon(
+                        Icons.star,
+                        size: 16,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                    if (isCommunityPlugin) ...[
+                      const SizedBox(width: 4.0),
+                      Icon(
+                        Icons.extension,
+                        size: 14,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.secondary,
+                      ),
+                    ],
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (bool selected) {
+                  if (selected) {
+                    _selectAlgorithm(algo.guid);
+                  } else {
+                    if (isSelected) {
+                      _selectAlgorithm(null);
+                    }
+                  }
+                },
+                selectedColor: Theme.of(context).colorScheme.primaryContainer,
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // --- List View ---
+  Widget _buildListView() {
+    return Scrollbar(
+      controller: _listScrollController,
+      child: ListView.builder(
+        controller: _listScrollController,
+        itemCount: _filteredAlgorithms.length,
+        itemBuilder: (context, index) {
+          final algo = _filteredAlgorithms[index];
+          final isSelected = algo.guid == selectedAlgorithmGuid;
+          final isFavorite = _favoriteGuids.contains(algo.guid);
+          final isCommunityPlugin = _isPlugin(algo.guid);
+          final metadata =
+              _metadataService.getAlgorithmByGuid(algo.guid.toLowerCase());
+
+          // ConstrainedBox ensures 56px minimum height for touch targets (AC 17)
+          return ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
+            child: ListTile(
+              selected: isSelected,
+              selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+              minVerticalPadding: 8,
+              leading: isFavorite
+                  ? const Icon(Icons.star, color: Colors.amber)
+                  : const SizedBox(width: 24),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      algo.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isCommunityPlugin)
+                    Icon(
+                      Icons.extension,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                ],
+              ),
+              subtitle: metadata != null
+                  ? _buildListSubtitle(metadata)
+                  : null,
+              onTap: () => _selectAlgorithm(algo.guid),
+              onLongPress: () => _toggleFavorite(algo.guid),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildListSubtitle(AlgorithmMetadata metadata) {
+    final categories = metadata.categories;
+    final description = metadata.description;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (categories.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 2,
+              children: categories.take(3).map((cat) => Chip(
+                    label: Text(cat, style: const TextStyle(fontSize: 10)),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  )).toList(),
+            ),
+          ),
+        if (description.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // --- Column View ---
+  Widget _buildColumnView() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 600px breakpoint follows Material 3 compact/medium guidelines
+        final columnCount = constraints.maxWidth < 600 ? 2 : 3;
+
+        return Scrollbar(
+          controller: _columnScrollController,
+          child: GridView.builder(
+            controller: _columnScrollController,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columnCount,
+              childAspectRatio: 1.5,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            padding: const EdgeInsets.all(8),
+            itemCount: _filteredAlgorithms.length,
+            itemBuilder: (context, index) =>
+                _buildAlgorithmCard(context, _filteredAlgorithms[index]),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAlgorithmCard(BuildContext context, AlgorithmInfo algo) {
+    final isSelected = algo.guid == selectedAlgorithmGuid;
+    final isFavorite = _favoriteGuids.contains(algo.guid);
+    final isCommunityPlugin = _isPlugin(algo.guid);
+    final metadata =
+        _metadataService.getAlgorithmByGuid(algo.guid.toLowerCase());
+    final categories = metadata?.categories ?? <String>[];
+    final description = metadata?.description ?? '';
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: isSelected ? 4 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isSelected
+            ? BorderSide(color: theme.colorScheme.primary, width: 2)
+            : BorderSide.none,
+      ),
+      child: InkWell(
+        onTap: () => _selectAlgorithm(algo.guid),
+        onLongPress: () => _toggleFavorite(algo.guid),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      algo.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isFavorite)
+                    const Icon(Icons.star, color: Colors.amber, size: 18),
+                  if (isCommunityPlugin)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Icon(
+                        Icons.extension,
+                        color: theme.colorScheme.secondary,
+                        size: 18,
+                      ),
+                    ),
+                ],
+              ),
+              if (categories.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _buildCategoryChips(categories),
+              ],
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final style = theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      );
+                      // Estimate line height (fontSize * height factor, default ~1.2)
+                      final lineHeight = (style?.fontSize ?? 12) * 1.4;
+                      final maxLines = (constraints.maxHeight / lineHeight).floor().clamp(1, 100);
+                      return Text(
+                        description,
+                        maxLines: maxLines,
+                        overflow: TextOverflow.ellipsis,
+                        style: style,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChips(List<String> categories) {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: categories.map((cat) => Chip(
+            label: Text(cat, style: const TextStyle(fontSize: 10)),
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          )).toList(),
     );
   }
 

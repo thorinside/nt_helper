@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show rootBundle, AssetManifest;
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/models/algorithm_feature.dart';
 import 'package:nt_helper/models/algorithm_parameter.dart';
@@ -49,14 +49,12 @@ class AlgorithmMetadataService {
       // Try to import bundled metadata
       const bundledMetadataPath = 'assets/metadata/full_metadata.json';
 
-      // Check if the asset exists
+      // Check if the asset exists using AssetManifest API (Flutter 3.x)
       try {
-        final manifestContent = await rootBundle.loadString(
-          'AssetManifest.json',
-        );
-        final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+        final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+        final allAssets = manifest.listAssets();
 
-        if (!manifestMap.containsKey(bundledMetadataPath)) {
+        if (!allAssets.contains(bundledMetadataPath)) {
           return;
         }
 
@@ -67,7 +65,8 @@ class AlgorithmMetadataService {
         );
 
         if (success) {
-        } else {}
+          // Successfully imported
+        }
       } catch (e) {
         // Asset doesn't exist, which is normal if metadata hasn't been exported yet
       }
@@ -97,10 +96,11 @@ class AlgorithmMetadataService {
 
   Future<void> _loadAlgorithms() async {
     try {
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+      // Use AssetManifest API (Flutter 3.x uses binary format, not JSON)
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final allAssets = manifest.listAssets();
 
-      final algorithmFiles = manifestMap.keys
+      final algorithmFiles = allAssets
           .where(
             (path) =>
                 path.startsWith('docs/algorithms/') && path.endsWith('.json'),
@@ -113,9 +113,8 @@ class AlgorithmMetadataService {
           final Map<String, dynamic> jsonMap = json.decode(jsonString);
           final algorithm = AlgorithmMetadata.fromJson(jsonMap);
           _algorithms[algorithm.guid] = algorithm;
-          // print('Loaded algorithm: ${algorithm.name} (${algorithm.guid})');
         } catch (e) {
-          // Intentionally empty
+          // Intentionally empty - skip malformed files
         }
       }
     } catch (e) {
@@ -125,10 +124,11 @@ class AlgorithmMetadataService {
 
   Future<void> _loadFeatures() async {
     try {
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+      // Use AssetManifest API (Flutter 3.x uses binary format, not JSON)
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final allAssets = manifest.listAssets();
 
-      final featureFiles = manifestMap.keys
+      final featureFiles = allAssets
           .where(
             (path) => path.startsWith('docs/features/') && path.endsWith('.json'),
           )
@@ -140,9 +140,8 @@ class AlgorithmMetadataService {
           final Map<String, dynamic> jsonMap = json.decode(jsonString);
           final feature = AlgorithmFeature.fromJson(jsonMap);
           _features[feature.guid] = feature;
-          // print('Loaded feature: ${feature.name} (${feature.guid})');
         } catch (e) {
-          // Intentionally empty
+          // Intentionally empty - skip malformed files
         }
       }
     } catch (e) {
