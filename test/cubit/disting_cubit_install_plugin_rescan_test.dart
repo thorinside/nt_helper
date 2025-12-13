@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
@@ -48,20 +49,31 @@ void main() {
         .thenAnswer((_) async => SdCardStatus(success: true, message: 'ok'));
     when(() => mockDisting.requestRescanPlugins()).thenAnswer((_) async {});
     when(() => mockDisting.requestNumberOfAlgorithms()).thenAnswer((_) async => 0);
+
+    // For C++ plugin workflow (reference implementation pattern)
+    when(() => mockDisting.requestNewPreset()).thenAnswer((_) async {});
+    when(() => mockDisting.requestLoadPreset(any(), any())).thenAnswer((_) async {});
+
+    // For _refreshStateFromManager() at end of installPlugin
+    when(() => mockDisting.requestNumAlgorithmsInPreset()).thenAnswer((_) async => 0);
+    when(() => mockDisting.requestPresetName()).thenAnswer((_) async => 'Test');
   });
 
   tearDown(() {
     cubit.close();
   });
 
-  DistingStateSynchronized createSynchronizedState() {
+  DistingStateSynchronized createSynchronizedState({
+    List<AlgorithmInfo>? algorithms,
+    List<Slot>? slots,
+  }) {
     return DistingStateSynchronized(
       disting: mockDisting,
       distingVersion: '1.12.0',
       firmwareVersion: FirmwareVersion('1.12.0'),
       presetName: 'Test',
-      algorithms: [],
-      slots: [],
+      algorithms: algorithms ?? [],
+      slots: slots ?? [],
       unitStrings: [],
       inputDevice: null,
       outputDevice: null,
@@ -70,6 +82,70 @@ void main() {
       screenshot: null,
       demo: false,
       videoStream: null,
+    );
+  }
+
+  /// Creates a state where a plugin is installed and being used by a slot
+  DistingStateSynchronized createStateWithPluginInUse(String pluginPath) {
+    const pluginGuid = 'test-plugin-guid';
+    final algorithmInfo = AlgorithmInfo(
+      algorithmIndex: 0,
+      name: 'Test Plugin',
+      guid: pluginGuid,
+      specifications: [],
+      isPlugin: true,
+      filename: pluginPath,
+    );
+    final algorithm = Algorithm(
+      algorithmIndex: 0,
+      guid: pluginGuid,
+      name: 'Test Plugin',
+    );
+    final slot = Slot(
+      algorithm: algorithm,
+      routing: RoutingInfo.filler(),
+      pages: ParameterPages(algorithmIndex: 0, pages: []),
+      parameters: [],
+      values: [],
+      enums: [],
+      mappings: [],
+      valueStrings: [],
+    );
+    return createSynchronizedState(
+      algorithms: [algorithmInfo],
+      slots: [slot],
+    );
+  }
+
+  /// Creates a state where a plugin exists but is NOT being used by any slot
+  DistingStateSynchronized createStateWithPluginNotInUse(String pluginPath) {
+    final algorithmInfo = AlgorithmInfo(
+      algorithmIndex: 0,
+      name: 'Test Plugin',
+      guid: 'test-plugin-guid',
+      specifications: [],
+      isPlugin: true,
+      filename: pluginPath,
+    );
+    // Create a slot with a DIFFERENT algorithm (built-in, not the plugin)
+    final differentAlgorithm = Algorithm(
+      algorithmIndex: 0,
+      guid: 'different-built-in-guid',
+      name: 'Built-in Algorithm',
+    );
+    final slot = Slot(
+      algorithm: differentAlgorithm,
+      routing: RoutingInfo.filler(),
+      pages: ParameterPages(algorithmIndex: 0, pages: []),
+      parameters: [],
+      values: [],
+      enums: [],
+      mappings: [],
+      valueStrings: [],
+    );
+    return createSynchronizedState(
+      algorithms: [algorithmInfo],
+      slots: [slot],
     );
   }
 
@@ -148,6 +224,86 @@ void main() {
 
       // Assert - rescan should be called regardless of path structure
       verify(() => mockDisting.requestRescanPlugins()).called(1);
+    });
+
+    test('creates blank preset before uploading C++ plugin when plugin IS in use', () async {
+      // Arrange - plugin is currently used by a slot
+      cubit.emit(createStateWithPluginInUse('/programs/plug-ins/test_plugin.o'));
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act
+      await cubit.installPlugin('test_plugin.o', testData);
+
+      // Assert - newPreset should be called to release plugin locks
+      verify(() => mockDisting.requestNewPreset()).called(1);
+    });
+
+    test('reloads previous preset after C++ plugin installation when plugin was in use', () async {
+      // Arrange - plugin is currently used by a slot
+      cubit.emit(createStateWithPluginInUse('/programs/plug-ins/test_plugin.o'));
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act
+      await cubit.installPlugin('test_plugin.o', testData);
+
+      // Assert - loadPreset should be called with the original preset path
+      verify(() => mockDisting.requestLoadPreset('/presets/Test.json', false)).called(1);
+    });
+
+    test('skips preset dance when C++ plugin is NOT in use by any slot', () async {
+      // Arrange - plugin exists but no slot uses it
+      cubit.emit(createStateWithPluginNotInUse('/programs/plug-ins/test_plugin.o'));
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act
+      await cubit.installPlugin('test_plugin.o', testData);
+
+      // Assert - newPreset should NOT be called since plugin isn't in use
+      verifyNever(() => mockDisting.requestNewPreset());
+      verifyNever(() => mockDisting.requestLoadPreset(any(), any()));
+      // But rescan should still be called
+      verify(() => mockDisting.requestRescanPlugins()).called(1);
+    });
+
+    test('skips preset dance when installing a new C++ plugin (not yet in algorithms list)', () async {
+      // Arrange - empty state, plugin doesn't exist yet
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act
+      await cubit.installPlugin('brand_new_plugin.o', testData);
+
+      // Assert - newPreset should NOT be called for new plugins
+      verifyNever(() => mockDisting.requestNewPreset());
+      verifyNever(() => mockDisting.requestLoadPreset(any(), any()));
+      // But rescan should still be called
+      verify(() => mockDisting.requestRescanPlugins()).called(1);
+    });
+
+    test('does NOT create blank preset for .lua files', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act
+      await cubit.installPlugin('test_script.lua', testData);
+
+      // Assert - newPreset should NOT be called for non-C++ plugins
+      verifyNever(() => mockDisting.requestNewPreset());
+      verifyNever(() => mockDisting.requestLoadPreset(any(), any()));
+    });
+
+    test('does NOT create blank preset for .3pot files', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act
+      await cubit.installPlugin('test_script.3pot', testData);
+
+      // Assert - newPreset should NOT be called for non-C++ plugins
+      verifyNever(() => mockDisting.requestNewPreset());
+      verifyNever(() => mockDisting.requestLoadPreset(any(), any()));
     });
   });
 }

@@ -3450,6 +3450,18 @@ class DistingCubit extends Cubit<DistingState> {
     final parentPath = targetPath.substring(0, targetPath.lastIndexOf('/'));
     await _ensureDirectoryExists(parentPath, disting);
 
+    // For C++ plugins (.o files), check if the plugin is currently in use
+    // by any algorithm in the preset. If so, follow reference implementation
+    // workflow: save preset, create blank preset to release plugin locks.
+    String? savedPresetName;
+    if (extension == 'o') {
+      final isPluginInUse = _isPluginInUseByPreset(targetPath, currentState);
+      if (isPluginInUse) {
+        savedPresetName = currentState.presetName;
+        await disting.requestNewPreset();
+      }
+    }
+
     // Upload in 512-byte chunks (matching JavaScript tool behavior)
     const chunkSize = 512;
     int uploadPos = 0;
@@ -3478,20 +3490,28 @@ class DistingCubit extends Cubit<DistingState> {
       }
     }
 
-    // For C++ plugins (.o files), trigger hardware rescan after upload
+    // For C++ plugins (.o files), complete the workflow:
+    // - Always rescan plugins to make the new one available
+    // - If we did the preset dance (plugin was in use), reload the original preset
     if (extension == 'o') {
       try {
         // Brief delay to allow hardware to finish file operations
         await Future.delayed(const Duration(milliseconds: 200));
         await disting.requestRescanPlugins();
+
+        // Only reload preset if we did the preset dance (plugin was in use)
+        if (savedPresetName != null) {
+          final presetPath = '/presets/$savedPresetName.json';
+          await disting.requestLoadPreset(presetPath, false);
+        }
       } catch (e) {
-        // Fire-and-forget: log but don't block on rescan errors
-        debugPrint('Rescan plugins failed (non-blocking): $e');
+        // Fire-and-forget: log but don't block on rescan/reload errors
+        debugPrint('Post-install operations failed (non-blocking): $e');
       }
     }
 
-    // Refresh algorithm list to include newly installed plugin
-    _refreshAlgorithmsInBackground();
+    // Refresh state from manager to pick up any changes
+    await _refreshStateFromManager();
   }
 
   /// Uploads a single chunk of file data.
@@ -3517,6 +3537,32 @@ class DistingCubit extends Cubit<DistingState> {
         "Chunk upload failed: ${result?.message ?? 'Unknown error'}",
       );
     }
+  }
+
+  /// Checks if the plugin at the given path is currently in use by any
+  /// algorithm in the preset.
+  ///
+  /// Returns true if any slot contains an algorithm whose source file
+  /// matches the target path.
+  bool _isPluginInUseByPreset(
+    String targetPath,
+    DistingStateSynchronized currentState,
+  ) {
+    // Find all algorithm GUIDs that correspond to plugins with this filename
+    final matchingGuids = currentState.algorithms
+        .where((algo) => algo.isPlugin && algo.filename == targetPath)
+        .map((algo) => algo.guid)
+        .toSet();
+
+    if (matchingGuids.isEmpty) {
+      // Plugin not in the available algorithms list (new plugin being installed)
+      return false;
+    }
+
+    // Check if any slot uses one of these GUIDs
+    return currentState.slots.any(
+      (slot) => matchingGuids.contains(slot.algorithm.guid),
+    );
   }
 
   /// Ensures the specified directory exists on the SD card, creating it if necessary.
