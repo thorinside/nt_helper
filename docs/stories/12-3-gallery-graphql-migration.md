@@ -181,13 +181,21 @@ Map GraphQL fields to existing model fields:
 24. GraphQL errors (partial data) handled gracefully
 25. Fallback to cached data on network failure (if cache exists)
 
+### Local Cache Persistence
+
+26. Persist gallery JSON to local storage (file or SharedPreferences)
+27. On app launch, load from local cache first (instant display)
+28. Background refresh from GraphQL if cache is stale (>24 hours or user-triggered)
+29. Cache includes timestamp for staleness check
+30. Reduces server load - gallery data changes infrequently
+
 ### GUID-Based Plugin Lookup
 
-26. Build a GUID → GalleryPlugin lookup map from cached gallery data
-27. Add `getPluginByGuid(String guid)` method to GalleryService
-28. Method returns `GalleryPlugin?` - null if GUID not found in gallery
-29. Lookup map rebuilt when gallery cache is refreshed
-30. For C++ collections, also index by each GUID in `collectionGuids`
+31. Build a GUID → GalleryPlugin lookup map from cached gallery data
+32. Add `getPluginByGuid(String guid)` method to GalleryService
+33. Method returns `GalleryPlugin?` - null if GUID not found in gallery
+34. Lookup map rebuilt when gallery cache is refreshed
+35. For C++ collections, also index by each GUID in `collectionGuids`
 
 This enables the app to display rich metadata for community plugins when their GUID matches a gallery entry:
 - Plugin name instead of raw GUID
@@ -214,7 +222,15 @@ This enables the app to display rich metadata for community plugins when their G
   - [ ] Update `fetchGallery()` to call GraphQL methods
   - [ ] Preserve cache behavior with `_cachedGallery` and `_lastFetch`
 
-- [ ] Task 3: Implement GUID lookup (AC: 26-30)
+- [ ] Task 3: Implement local cache persistence (AC: 26-30)
+  - [ ] Create cache file path using `path_provider` (applicationDocumentsDirectory)
+  - [ ] Save gallery JSON + timestamp to `gallery_cache.json` after successful fetch
+  - [ ] Load from cache file on `fetchGallery()` if exists and not forcing refresh
+  - [ ] Add `_cacheTimestamp` field to track when cache was written
+  - [ ] Consider cache stale after 24 hours (configurable)
+  - [ ] Background refresh: return cached data immediately, fetch new data async
+
+- [ ] Task 4: Implement GUID lookup (AC: 31-35)
   - [ ] Add `Map<String, GalleryPlugin> _guidLookup = {}` private field
   - [ ] Create `_buildGuidLookup(Gallery gallery)` that populates map from:
     - Single plugins: `plugin.guid` → plugin
@@ -223,7 +239,7 @@ This enables the app to display rich metadata for community plugins when their G
   - [ ] Add public `GalleryPlugin? getPluginByGuid(String guid)` method
   - [ ] Handle case-insensitive GUID matching (GUIDs are 4 chars, case matters but be lenient)
 
-- [ ] Task 4: Testing and validation (AC: 19-25)
+- [ ] Task 5: Testing and validation (AC: 19-25)
   - [ ] Verify `searchPlugins()` works with GraphQL data
   - [ ] Verify `addToQueue()` works with GraphQL data
   - [ ] Verify `getPluginByGuid()` returns correct plugin for known GUIDs
