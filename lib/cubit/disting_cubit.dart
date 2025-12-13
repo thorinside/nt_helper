@@ -2105,6 +2105,20 @@ class DistingCubit extends Cubit<DistingState> {
     });
   }
 
+  /// Reboots the Disting NT module.
+  /// This will cause the module to restart as if power cycled.
+  Future<void> reboot() async {
+    final disting = requireDisting();
+    await disting.requestReboot();
+  }
+
+  /// Remounts the SD card file system.
+  /// This refreshes the file system without a full reboot.
+  Future<void> remountSd() async {
+    final disting = requireDisting();
+    await disting.requestRemountSd();
+  }
+
   static List<MappedParameter> buildMappedParameterList(DistingState state) {
     switch (state) {
       case DistingStateSynchronized():

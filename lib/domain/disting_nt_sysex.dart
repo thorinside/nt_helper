@@ -436,6 +436,7 @@ enum DistingNTRequestMessageType {
   requestRouting(0x61),
   requestCpuUsage(0x62),
   sdCardOperation(0x7A),
+  reboot(0x7F),
 
   // Unknown/unsupported
   unknown(0xFF);

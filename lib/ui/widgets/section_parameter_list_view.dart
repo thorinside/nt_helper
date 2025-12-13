@@ -424,6 +424,39 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                           },
                           child: const Text('Reset Outputs'),
                         ),
+                        PopupMenuItem(
+                          value: 'Remount SD Card',
+                          onTap: () {
+                            context.read<DistingCubit>().remountSd();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('SD card remount requested'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Remount SD Card'),
+                              Icon(Icons.sd_card, size: 20),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        PopupMenuItem(
+                          value: 'Developer Options',
+                          onTap: () {
+                            _showDeveloperOptionsDialog(context);
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Developer Options...'),
+                              Icon(Icons.developer_mode, size: 20),
+                            ],
+                          ),
+                        ),
                       ];
                     },
                   ),
@@ -498,6 +531,147 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
             const SizedBox(height: 24), // Bottom padding
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDeveloperOptionsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Developer Options'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'These options are for advanced users only.',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.dangerous, color: Colors.red),
+              title: const Text('Danger Zone'),
+              subtitle: const Text('Proceed with caution...'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                _showDangerZoneDialog(context);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDangerZoneDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.local_fire_department, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Danger Zone', style: TextStyle(color: Colors.red)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Here be dragons. You have been warned.',
+              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.restart_alt, color: Colors.red),
+              title: const Text('Reboot Device'),
+              subtitle: const Text('Restart the Disting NT'),
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                _showRebootConfirmationDialog(context);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Retreat to Safety'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRebootConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.psychology_alt, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Are You Sure?'),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You are about to reboot your Disting NT.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('This will:'),
+            SizedBox(height: 4),
+            Text('  \u2022 Interrupt any audio processing'),
+            Text('  \u2022 Cause a brief moment of silence'),
+            Text('  \u2022 Make your modular setup very confused'),
+            SizedBox(height: 12),
+            Text(
+              'Unsaved changes will be lost to the void.',
+              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('No, I panicked'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.read<DistingCubit>().reboot();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Reboot command sent. Goodbye, cruel world...'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            child: const Text('Yes, reboot it'),
+          ),
+        ],
       ),
     );
   }

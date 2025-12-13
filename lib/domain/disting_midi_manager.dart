@@ -45,6 +45,7 @@ import 'package:nt_helper/domain/sysex/requests/set_performance_page_message.dar
 import 'package:nt_helper/domain/sysex/requests/set_preset_name.dart';
 import 'package:nt_helper/domain/sysex/requests/set_real_time_clock.dart';
 import 'package:nt_helper/domain/sysex/requests/set_slot_name.dart';
+import 'package:nt_helper/domain/sysex/requests/request_reboot.dart';
 import 'package:nt_helper/domain/sysex/requests/take_screenshot.dart';
 import 'package:nt_helper/domain/sysex/requests/wake.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -57,6 +58,7 @@ import 'package:nt_helper/domain/sysex/requests/request_file_upload.dart';
 import 'package:nt_helper/domain/sysex/requests/request_file_upload_chunk.dart';
 import 'package:nt_helper/domain/sysex/requests/request_directory_create.dart';
 import 'package:nt_helper/domain/sysex/requests/request_rescan_plugins.dart';
+import 'package:nt_helper/domain/sysex/requests/request_remount_sd.dart';
 import 'package:nt_helper/domain/sysex/requests/request_scl_file.dart';
 import 'package:nt_helper/domain/sysex/requests/request_kbm_file.dart';
 import 'package:nt_helper/domain/sysex/requests/request_cpu_usage.dart';
@@ -531,6 +533,17 @@ class DistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestWake() {
     final message = WakeMessage(sysExId: sysExId);
+    final packet = message.encode();
+    return _scheduler.sendRequest<void>(
+      packet,
+      RequestKey(sysExId: sysExId),
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  @override
+  Future<void> requestReboot() {
+    final message = RebootMessage(sysExId: sysExId);
     final packet = message.encode();
     return _scheduler.sendRequest<void>(
       packet,
@@ -1182,6 +1195,21 @@ class DistingMidiManager implements IDistingMidiManager {
         messageType: DistingNTRespMessageType.respSdStatus,
       ),
       responseExpectation: ResponseExpectation.none, // Fire-and-forget
+    );
+  }
+
+  @override
+  Future<void> requestRemountSd() async {
+    await _checkSdCardSupport();
+    final message = RequestRemountSdMessage(sysExId: sysExId);
+    final packet = message.encode();
+    await _scheduler.sendRequest<void>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respSdStatus,
+      ),
+      responseExpectation: ResponseExpectation.optional,
     );
   }
 

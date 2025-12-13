@@ -53,6 +53,7 @@ abstract class IDistingMidiManager {
 
   // Actions (may return Future<void> or void)
   Future<void> requestWake();
+  Future<void> requestReboot();
   Future<void> setParameterValue(
     int algorithmIndex,
     int parameterNumber,
@@ -115,6 +116,7 @@ abstract class IDistingMidiManager {
   });
   Future<SdCardStatus?> requestDirectoryCreate(String path);
   Future<void> requestRescanPlugins();
+  Future<void> requestRemountSd();
 
   // Scala/Tuning Operations
   Future<void> requestSclFile(String filePath);

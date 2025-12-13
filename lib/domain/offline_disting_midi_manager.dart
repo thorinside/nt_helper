@@ -732,6 +732,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestWake() async {}
 
+  @override
+  Future<void> requestReboot() async {}
+
   Stream<MidiPacket> get midiDataStream => Stream.empty();
 
   Future<MidiDevice?> get inputDevice async => null;
@@ -965,6 +968,11 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestRescanPlugins() async {
     // No-op in offline mode - rescan not applicable without hardware
+  }
+
+  @override
+  Future<void> requestRemountSd() async {
+    // No-op in offline mode - remount not applicable without hardware
   }
 
   @override

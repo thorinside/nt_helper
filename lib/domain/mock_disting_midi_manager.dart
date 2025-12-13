@@ -1180,6 +1180,11 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<void> requestReboot() async {
+    // No-op in mock mode
+  }
+
+  @override
   Future<void> setParameterValue(
     int algorithmIndex,
     int parameterNumber,
@@ -1299,6 +1304,11 @@ class MockDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestRescanPlugins() async {
     // No-op in mock mode - rescan not applicable without hardware
+  }
+
+  @override
+  Future<void> requestRemountSd() async {
+    // No-op in mock mode - remount not applicable without hardware
   }
 
   @override
