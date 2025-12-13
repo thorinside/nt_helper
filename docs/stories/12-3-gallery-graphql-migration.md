@@ -181,6 +181,21 @@ Map GraphQL fields to existing model fields:
 24. GraphQL errors (partial data) handled gracefully
 25. Fallback to cached data on network failure (if cache exists)
 
+### GUID-Based Plugin Lookup
+
+26. Build a GUID → GalleryPlugin lookup map from cached gallery data
+27. Add `getPluginByGuid(String guid)` method to GalleryService
+28. Method returns `GalleryPlugin?` - null if GUID not found in gallery
+29. Lookup map rebuilt when gallery cache is refreshed
+30. For C++ collections, also index by each GUID in `collectionGuids`
+
+This enables the app to display rich metadata for community plugins when their GUID matches a gallery entry:
+- Plugin name instead of raw GUID
+- Author information
+- Description
+- Repository link
+- Installation status (if also tracking installations)
+
 ## Tasks / Subtasks
 
 - [ ] Task 1: Update models (AC: 12-15)
@@ -199,9 +214,20 @@ Map GraphQL fields to existing model fields:
   - [ ] Update `fetchGallery()` to call GraphQL methods
   - [ ] Preserve cache behavior with `_cachedGallery` and `_lastFetch`
 
-- [ ] Task 3: Testing and validation (AC: 19-25)
+- [ ] Task 3: Implement GUID lookup (AC: 26-30)
+  - [ ] Add `Map<String, GalleryPlugin> _guidLookup = {}` private field
+  - [ ] Create `_buildGuidLookup(Gallery gallery)` that populates map from:
+    - Single plugins: `plugin.guid` → plugin
+    - Collections: each GUID in `plugin.collectionGuids` → plugin
+  - [ ] Call `_buildGuidLookup()` after caching gallery in `fetchGallery()`
+  - [ ] Add public `GalleryPlugin? getPluginByGuid(String guid)` method
+  - [ ] Handle case-insensitive GUID matching (GUIDs are 4 chars, case matters but be lenient)
+
+- [ ] Task 4: Testing and validation (AC: 19-25)
   - [ ] Verify `searchPlugins()` works with GraphQL data
   - [ ] Verify `addToQueue()` works with GraphQL data
+  - [ ] Verify `getPluginByGuid()` returns correct plugin for known GUIDs
+  - [ ] Verify `getPluginByGuid()` returns null for unknown GUIDs
   - [ ] Test network error handling
   - [ ] Test cache fallback behavior
   - [ ] Run `flutter analyze` - zero warnings
@@ -290,6 +316,54 @@ static const String _defaultGraphQLEndpoint =
 
 String get graphqlEndpoint =>
     _prefs?.getString('graphql_endpoint') ?? _defaultGraphQLEndpoint;
+```
+
+### GUID Lookup Implementation
+
+```dart
+// In GalleryService
+Map<String, GalleryPlugin> _guidLookup = {};
+
+void _buildGuidLookup(Gallery gallery) {
+  _guidLookup.clear();
+  for (final plugin in gallery.plugins) {
+    // Index single plugins by their GUID
+    if (plugin.guid != null && plugin.guid!.isNotEmpty) {
+      _guidLookup[plugin.guid!] = plugin;
+    }
+    // Index collection plugins by each GUID in collectionGuids
+    for (final guid in plugin.collectionGuids) {
+      _guidLookup[guid] = plugin;
+    }
+  }
+}
+
+/// Look up a plugin by its 4-character GUID
+/// Returns null if no matching plugin found in gallery
+GalleryPlugin? getPluginByGuid(String guid) {
+  return _guidLookup[guid];
+}
+```
+
+### Usage Example - Enriching Community Plugin Display
+
+```dart
+// When displaying a community C++ plugin loaded from the device:
+final devicePlugin = slot.algorithm; // Has GUID like "TidS"
+final guid = devicePlugin.guid;
+
+if (guid != null) {
+  final galleryPlugin = galleryService.getPluginByGuid(guid);
+  if (galleryPlugin != null) {
+    // Display rich metadata from gallery
+    Text(galleryPlugin.name); // "Tides Port" instead of "TidS"
+    Text(galleryPlugin.description);
+    Text('by ${galleryPlugin.author}');
+  } else {
+    // Fallback to device info only
+    Text(devicePlugin.name);
+  }
+}
 ```
 
 ## Out of Scope
