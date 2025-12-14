@@ -14,6 +14,15 @@ class PhysicalInputNode extends StatelessWidget {
   /// Callback when a port is tapped.
   final Function(Port)? onPortTapped;
 
+  /// Callback when a port is long-pressed (for connection deletion).
+  final Function(Port)? onPortLongPress;
+
+  /// Callback when long press starts on a port (for animated deletion).
+  final Function(Port)? onPortLongPressStart;
+
+  /// Callback when long press is cancelled on a port.
+  final VoidCallback? onPortLongPressCancel;
+
   /// Callback when drag starts from a port.
   final Function(Port)? onDragStart;
 
@@ -60,6 +69,9 @@ class PhysicalInputNode extends StatelessWidget {
     super.key,
     required this.ports,
     this.onPortTapped,
+    this.onPortLongPress,
+    this.onPortLongPressStart,
+    this.onPortLongPressCancel,
     this.onDragStart,
     this.onDragUpdate,
     this.onDragEnd,
@@ -90,6 +102,9 @@ class PhysicalInputNode extends StatelessWidget {
         isInput: true,
         onPositionChanged: onPositionChanged,
         onPortTapped: onPortTapped,
+        onPortLongPress: onPortLongPress,
+        onPortLongPressStart: onPortLongPressStart,
+        onPortLongPressCancel: onPortLongPressCancel,
         onPortDragStart: onDragStart,
         onPortDragUpdate: onDragUpdate,
         onPortDragEnd: onDragEnd,

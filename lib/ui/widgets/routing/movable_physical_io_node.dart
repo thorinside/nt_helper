@@ -30,6 +30,15 @@ class MovablePhysicalIONode extends StatefulWidget {
   /// Callback when a port is tapped.
   final Function(Port)? onPortTapped;
 
+  /// Callback when a port is long-pressed (for connection deletion).
+  final Function(Port)? onPortLongPress;
+
+  /// Callback when long press starts on a port (for animated deletion).
+  final Function(Port)? onPortLongPressStart;
+
+  /// Callback when long press is cancelled on a port.
+  final VoidCallback? onPortLongPressCancel;
+
   /// Callback when drag starts from a port.
   final Function(Port)? onPortDragStart;
 
@@ -69,6 +78,9 @@ class MovablePhysicalIONode extends StatefulWidget {
     required this.isInput,
     this.onPositionChanged,
     this.onPortTapped,
+    this.onPortLongPress,
+    this.onPortLongPressStart,
+    this.onPortLongPressCancel,
     this.onPortDragStart,
     this.onPortDragUpdate,
     this.onPortDragEnd,
@@ -227,9 +239,17 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
               widget.onPortPositionResolved!(port, globalCenter);
             }
           : null,
-      // Only allow tap/deletion for inputs (physical outputs act as inputs)
-      onTap: !widget.isInput ? () => widget.onPortTapped?.call(port) : null,
+      // Long-press to delete connections - available on all ports
+      onLongPress: widget.onPortLongPress != null
+          ? () => widget.onPortLongPress!(port)
+          : null,
+      // Animated long press (for desktop)
+      onLongPressStart: widget.onPortLongPressStart != null
+          ? () => widget.onPortLongPressStart!(port)
+          : null,
+      onLongPressCancel: widget.onPortLongPressCancel,
       onRoutingAction: widget.onRoutingAction,
+      // Drag to create connections - available on all ports
       onDragStart: () => widget.onPortDragStart?.call(port),
       onDragUpdate: (position) => widget.onPortDragUpdate?.call(port, position),
       onDragEnd: (position) => widget.onPortDragEnd?.call(port, position),

@@ -51,8 +51,17 @@ class AlgorithmNodeWidget extends StatefulWidget {
   // Callback for routing actions from ports
   final void Function(String portId, String action)? onRoutingAction;
 
-  // Callback when a port is tapped (for connection deletion)
+  // Callback when a port is tapped
   final void Function(String portId)? onPortTapped;
+
+  // Callback when a port is long-pressed (for connection deletion)
+  final void Function(String portId)? onPortLongPress;
+
+  // Callback when long press starts on a port (for animated deletion)
+  final void Function(String portId)? onPortLongPressStart;
+
+  // Callback when long press is cancelled on a port
+  final VoidCallback? onPortLongPressCancel;
 
   // Port drag callbacks for connection creation
   final void Function(String portId)? onPortDragStart;
@@ -97,6 +106,9 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.onPortPositionResolved,
     this.onRoutingAction,
     this.onPortTapped,
+    this.onPortLongPress,
+    this.onPortLongPressStart,
+    this.onPortLongPressCancel,
     this.onPortDragStart,
     this.onPortDragUpdate,
     this.onPortDragEnd,
@@ -463,17 +475,23 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       showShadowDot: showShadowDot,
       onPortPositionResolved: widget.onPortPositionResolved,
       onRoutingAction: widget.onRoutingAction,
-      onTap: portId != null && isInput
-          ? () => widget.onPortTapped?.call(portId)
+      // Long-press to delete - available on both inputs and outputs
+      onLongPress: portId != null && widget.onPortLongPress != null
+          ? () => widget.onPortLongPress!(portId)
           : null,
-      onDragStart: portId != null && !isInput && widget.onPortDragStart != null
+      // Animated long press (for desktop)
+      onLongPressStart: portId != null && widget.onPortLongPressStart != null
+          ? () => widget.onPortLongPressStart!(portId)
+          : null,
+      onLongPressCancel: widget.onPortLongPressCancel,
+      // Drag to create connections - now available on both inputs and outputs
+      onDragStart: portId != null && widget.onPortDragStart != null
           ? () => widget.onPortDragStart!(portId)
           : null,
-      onDragUpdate:
-          portId != null && !isInput && widget.onPortDragUpdate != null
+      onDragUpdate: portId != null && widget.onPortDragUpdate != null
           ? (position) => widget.onPortDragUpdate!(portId, position)
           : null,
-      onDragEnd: portId != null && !isInput && widget.onPortDragEnd != null
+      onDragEnd: portId != null && widget.onPortDragEnd != null
           ? (position) => widget.onPortDragEnd!(portId, position)
           : null,
     );

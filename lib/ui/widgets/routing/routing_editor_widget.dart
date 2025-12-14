@@ -65,7 +65,8 @@ class RoutingEditorWidget extends StatefulWidget {
   State<RoutingEditorWidget> createState() => _RoutingEditorWidgetState();
 }
 
-class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
+class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
+    with TickerProviderStateMixin {
   // Map of node IDs to their positions
   final Map<String, Offset> _nodePositions = {};
   // Map of node IDs to their actual rendered sizes
@@ -87,6 +88,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   String? _errorMessage;
   Timer? _errorDismissTimer;
   Timer? _dragUpdateDebounceTimer;
+
+  // Delete animation state
+  late AnimationController _deleteAnimationController;
+  late Animation<double> _deleteAnimation;
+  late AnimationController _fadeOutAnimationController;
+  late Animation<double> _fadeOutAnimation;
+  String? _deletingPortId;
+  Port? _deletingPort;
+  bool _isFadingOut = false; // True during the final fade-out phase (not cancellable)
 
   // Platform service for hover detection
   late final PlatformInteractionService _platformService;
@@ -115,6 +125,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   final Map<String, Offset> _portPositions = {};
   StreamSubscription<ZoomHotkeyAction>? _zoomHotkeySubscription;
 
+  // Ephemeral fading overlays for labels of connections deleted instantly (click delete).
+  final List<_FadingDeletedConnectionLabel> _fadingDeletedConnectionLabels = [];
+
   @override
   void initState() {
     super.initState();
@@ -124,6 +137,30 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         KeyBindingService(platformInteractionService: _platformService);
     _horizontalScrollController = ScrollController();
     _verticalScrollController = ScrollController();
+
+    // Initialize delete animation controller (red → orange → white phase)
+    _deleteAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _deleteAnimation = CurvedAnimation(
+      parent: _deleteAnimationController,
+      curve: Curves.easeInOut,
+    );
+    _deleteAnimationController.addStatusListener(_onDeleteAnimationStatus);
+    _deleteAnimationController.addListener(_onDeleteAnimationTick);
+
+    // Initialize fade-out animation controller (quick white → transparent phase)
+    _fadeOutAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _fadeOutAnimation = CurvedAnimation(
+      parent: _fadeOutAnimationController,
+      curve: Curves.easeOut,
+    );
+    _fadeOutAnimationController.addStatusListener(_onFadeOutAnimationStatus);
+    _fadeOutAnimationController.addListener(_onDeleteAnimationTick);
 
     // Attach controller if provided
     widget.controller?.attach(
@@ -208,7 +245,142 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
     _zoomHotkeySubscription?.cancel();
+    _deleteAnimationController.removeStatusListener(_onDeleteAnimationStatus);
+    _deleteAnimationController.removeListener(_onDeleteAnimationTick);
+    _deleteAnimationController.dispose();
+    _fadeOutAnimationController.removeStatusListener(_onFadeOutAnimationStatus);
+    _fadeOutAnimationController.removeListener(_onDeleteAnimationTick);
+    _fadeOutAnimationController.dispose();
     super.dispose();
+  }
+
+  /// Trigger rebuild on each animation frame
+  void _onDeleteAnimationTick() {
+    if (mounted) {
+      setState(() {
+        // Just trigger rebuild - the animation value will be read by the painters
+      });
+    }
+  }
+
+  /// Handle delete animation completion (phase 1: red → orange → white)
+  void _onDeleteAnimationStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && _deletingPort != null) {
+      // Phase 1 completed - start the fade-out phase (no longer cancellable)
+      setState(() {
+        _isFadingOut = true;
+      });
+      _fadeOutAnimationController.forward();
+    } else if (status == AnimationStatus.dismissed) {
+      // Animation was cancelled/reversed - just reset state (only if not fading out)
+      if (!_isFadingOut) {
+        setState(() {
+          _deletingPortId = null;
+          _deletingPort = null;
+        });
+      }
+    }
+  }
+
+  /// Handle fade-out animation completion (phase 2: white → transparent)
+  void _onFadeOutAnimationStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && _deletingPort != null) {
+      // Fade-out completed - delete the connections
+      final cubit = context.read<RoutingEditorCubit>();
+      cubit.deleteConnectionsForPort(_deletingPort!.id);
+
+      // Reset all delete state
+      setState(() {
+        _deletingPortId = null;
+        _deletingPort = null;
+        _isFadingOut = false;
+      });
+      _deleteAnimationController.reset();
+      _fadeOutAnimationController.reset();
+    }
+  }
+
+  /// Handle long press start on a port (begin delete animation)
+  void _handlePortLongPressStart(Port port) {
+    // Only animate if the port has connections
+    final state = context.read<RoutingEditorCubit>().state;
+    if (state is! RoutingEditorStateLoaded) return;
+
+    final hasConnections = state.connections.any(
+      (conn) =>
+          conn.sourcePortId == port.id || conn.destinationPortId == port.id,
+    );
+
+    if (!hasConnections) return;
+
+    setState(() {
+      _deletingPortId = port.id;
+      _deletingPort = port;
+    });
+    _deleteAnimationController.forward();
+  }
+
+  /// Handle long press cancel on a port (reverse delete animation)
+  void _handlePortLongPressCancel() {
+    // Don't allow cancellation during fade-out phase
+    if (_deletingPortId != null && !_isFadingOut) {
+      // Reverse the animation
+      _deleteAnimationController.reverse();
+    }
+  }
+
+  /// Handle long press start by port ID
+  void _handlePortLongPressStartById(String portId) {
+    // Find the actual port
+    final state = context.read<RoutingEditorCubit>().state;
+    if (state is! RoutingEditorStateLoaded) return;
+
+    Port? foundPort;
+
+    // Check physical inputs
+    for (final port in state.physicalInputs) {
+      if (port.id == portId) {
+        foundPort = port;
+        break;
+      }
+    }
+
+    // Check physical outputs
+    if (foundPort == null) {
+      for (final port in state.physicalOutputs) {
+        if (port.id == portId) {
+          foundPort = port;
+          break;
+        }
+      }
+    }
+
+    // Check algorithm ports
+    if (foundPort == null) {
+      for (final algorithm in state.algorithms) {
+        for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
+          if (port.id == portId) {
+            foundPort = port;
+            break;
+          }
+        }
+        if (foundPort != null) break;
+      }
+    }
+
+    // Check ES-5 ports
+    if (foundPort == null) {
+      for (final port in state.es5Inputs) {
+        if (port.id == portId) {
+          foundPort = port;
+          break;
+        }
+      }
+    }
+
+    if (foundPort != null) {
+      _handlePortLongPressStart(foundPort);
+    }
   }
 
   void _handleZoomHotkeyAction(ZoomHotkeyAction action) {
@@ -1293,6 +1465,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
                     // Connection label overlays (for tap detection)
                     ..._buildConnectionLabelOverlays(),
+
+                    // Labels for instant-deleted connections fade out here.
+                    ..._buildFadingDeletedConnectionLabelOverlays(),
                   ],
                 ),
                 ),
@@ -1349,6 +1524,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           },
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
+          onPortLongPress: (port) => _handlePortLongPress(port),
+          // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
+          onPortLongPressStart: _platformService.isMobilePlatform()
+              ? null
+              : (port) => _handlePortLongPressStart(port),
+          onPortLongPressCancel: _platformService.isMobilePlatform()
+              ? null
+              : _handlePortLongPressCancel,
           onDragStart: (port) => _handlePortDragStart(port),
           onDragUpdate: (port, position) =>
               _handlePortDragUpdate(port, position),
@@ -1419,6 +1602,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           },
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
+          onPortLongPress: (port) => _handlePortLongPress(port),
+          // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
+          onPortLongPressStart: _platformService.isMobilePlatform()
+              ? null
+              : (port) => _handlePortLongPressStart(port),
+          onPortLongPressCancel: _platformService.isMobilePlatform()
+              ? null
+              : _handlePortLongPressCancel,
           onDragStart: (port) => _handlePortDragStart(port),
           onDragUpdate: (port, position) =>
               _handlePortDragUpdate(port, position),
@@ -1490,6 +1681,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           },
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
+          onPortLongPress: (port) => _handlePortLongPress(port),
+          // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
+          onPortLongPressStart: _platformService.isMobilePlatform()
+              ? null
+              : (port) => _handlePortLongPressStart(port),
+          onPortLongPressCancel: _platformService.isMobilePlatform()
+              ? null
+              : _handlePortLongPressCancel,
           onDragStart: (port) => _handlePortDragStart(port),
           onDragUpdate: (port, position) =>
               _handlePortDragUpdate(port, position),
@@ -1614,6 +1813,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             onRoutingAction: (portId, action) =>
                 _handlePortRoutingAction(portId, action, connections),
             onPortTapped: (portId) => _handlePortTapById(portId),
+            onPortLongPress: (portId) => _handlePortLongPressById(portId),
+            // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
+            onPortLongPressStart: _platformService.isMobilePlatform()
+                ? null
+                : (portId) => _handlePortLongPressStartById(portId),
+            onPortLongPressCancel: _platformService.isMobilePlatform()
+                ? null
+                : _handlePortLongPressCancel,
             onPortDragStart: _handleAlgorithmPortDragStart,
             onPortDragUpdate: _handleAlgorithmPortDragUpdate,
             onPortDragEnd: _handleAlgorithmPortDragEnd,
@@ -2084,11 +2291,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     // Choose rendering approach based on platform capabilities
     if (_platformService.supportsHoverInteractions()) {
-      // Desktop: Use individual hoverable connections for delete functionality
-      // Note: Hoverable connections don't support partial drawing yet, but that's fine for now
-      // as we only use dual-pass for the main visual lines.
-      // If drawEndpointsOnly is true, we might want to skip hoverable widgets or adjust them.
-      // For now, we'll assume hoverable widgets are only used for the full background pass.
+      // Desktop: Draw connections in two passes:
+      // - background: full paths behind nodes, no labels
+      // - foreground: clipped tips + labels above nodes (labels need bounds for hover)
       if (drawEndpointsOnly) {
         return Positioned(
           left: 0,
@@ -2105,14 +2310,49 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                   hoveredConnectionId: _hoveredLabelConnectionId,
                   obstacles: _calculateNodeBounds(),
                   drawEndpointsOnly: true,
-                  onBoundsUpdated: (_) {}, // No bounds update for tips
+                  onBoundsUpdated: (bounds) {
+                    if (!_areBoundsEqual(_connectionLabelBounds, bounds)) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        setState(() {
+                          _connectionLabelBounds = bounds;
+                        });
+                      });
+                    }
+                  },
+                  deletingPortId: _deletingPortId,
+                  deleteAnimationProgress: _deleteAnimation.value,
+                  fadeOutProgress: _fadeOutAnimation.value,
                 ),
               ),
             ),
           ),
         );
       }
-      return _buildHoverableConnections(connectionDataList);
+      return Positioned(
+        left: 0,
+        top: 0,
+        child: IgnorePointer(
+          child: RepaintBoundary(
+            child: CustomPaint(
+              size: Size(_canvasWidth, _canvasHeight),
+              painter: _ConnectionPainterWithBounds(
+                connections: connectionDataList,
+                theme: Theme.of(context),
+                showLabels: false, // Labels are drawn in the foreground pass
+                enableAnimations: true,
+                hoveredConnectionId: null,
+                obstacles: _calculateNodeBounds(),
+                drawEndpointsOnly: false,
+                onBoundsUpdated: (_) {},
+                deletingPortId: _deletingPortId,
+                deleteAnimationProgress: _deleteAnimation.value,
+                fadeOutProgress: _fadeOutAnimation.value,
+              ),
+            ),
+          ),
+        ),
+      );
     } else {
       // Mobile/other: Use unified painter
       return Positioned(
@@ -2143,6 +2383,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     });
                   }
                 },
+                deletingPortId: _deletingPortId,
+                deleteAnimationProgress: _deleteAnimation.value,
+                fadeOutProgress: _fadeOutAnimation.value,
               ),
             ),
           ),
@@ -2236,42 +2479,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       }
     }
     return true;
-  }
-
-  /// Build individual hoverable connections for desktop platforms
-  Widget _buildHoverableConnections(
-    List<painter.ConnectionData> connectionDataList, {
-    bool showLabels = false,
-  }) {
-    // For desktop, we use a hybrid approach:
-    // 1. Render all connections with unified painter (efficient)
-    // 2. Overlay individual hover detection areas for delete functionality
-
-    return Stack(
-      children: [
-        // Base connection rendering (efficient batch painting) - ignore pointer events
-        IgnorePointer(
-          child: CustomPaint(
-            painter: _ConnectionPainterWithBounds(
-              connections: connectionDataList,
-              theme: Theme.of(context),
-              showLabels: showLabels,
-              enableAnimations: true,
-              hoveredConnectionId:
-                  _hoveredLabelConnectionId, // Use label hover state for label highlighting
-              obstacles: _calculateNodeBounds(),
-              onBoundsUpdated: (bounds) {
-                _connectionLabelBounds = bounds;
-              },
-            ),
-            child: const SizedBox.expand(),
-          ),
-        ),
-
-        // Keep existing label overlays for output mode toggling
-        ..._buildConnectionLabelOverlays(),
-      ],
-    );
   }
 
   Widget _buildTemporaryConnection() {
@@ -2375,11 +2582,78 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   void _deleteConnection(String connectionId, List<Connection> connections) {
+    _startDeletedConnectionLabelFade(connectionId, connections);
+
     // Call the cubit to delete the connection
     context.read<RoutingEditorCubit>().deleteConnection(connectionId);
 
     // Clear highlighting
     _clearConnectionHighlight();
+  }
+
+  void _startDeletedConnectionLabelFade(
+    String connectionId,
+    List<Connection> connections,
+  ) {
+    final bounds = _connectionLabelBounds[connectionId];
+    if (bounds == null) return;
+
+    Connection? conn;
+    for (final c in connections) {
+      if (c.id == connectionId) {
+        conn = c;
+        break;
+      }
+    }
+    if (conn == null) return;
+
+    final label = painter.ConnectionPainter.formatBusLabelWithMode(
+      conn.busNumber,
+      conn.outputMode,
+    );
+    if (label.isEmpty) return;
+
+    setState(() {
+      _fadingDeletedConnectionLabels.add(
+        _FadingDeletedConnectionLabel(
+          key: UniqueKey(),
+          bounds: bounds,
+          label: label,
+        ),
+      );
+    });
+  }
+
+  List<Widget> _buildFadingDeletedConnectionLabelOverlays() {
+    if (_fadingDeletedConnectionLabels.isEmpty) return const [];
+
+    final overlays = <Widget>[];
+    for (final entry in _fadingDeletedConnectionLabels) {
+      overlays.add(
+        Positioned(
+          left: entry.bounds.left,
+          top: entry.bounds.top,
+          width: entry.bounds.width,
+          height: entry.bounds.height,
+          child: IgnorePointer(
+            child: _FadingLabelOverlay(
+              key: entry.key,
+              label: entry.label,
+              onDone: () {
+                if (!mounted) return;
+                setState(() {
+                  _fadingDeletedConnectionLabels.removeWhere(
+                    (e) => e.key == entry.key,
+                  );
+                });
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    return overlays;
   }
 
   void _clearConnectionHighlight() {
@@ -2435,18 +2709,77 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   // Port and node interaction handlers
   void _handlePortTap(Port port) {
-    // Only allow deletion from input ports
-    if (!port.isInput) {
-      return;
-    }
+    // Tap is now reserved for future functionality (e.g., selection)
+    // Deletion has moved to long-press for consistency
+  }
 
+  /// Handle long-press on a port to delete its connections.
+  /// Works on both inputs and outputs for consistent UX.
+  void _handlePortLongPress(Port port) {
     if (_platformService.isMobilePlatform()) {
       // Mobile: Show confirmation dialog
       _showPortConnectionsDeleteConfirmation(port.id, port.name);
     } else {
-      // Desktop: Keep immediate deletion
+      // Desktop: Immediate deletion on long-press
       final cubit = context.read<RoutingEditorCubit>();
       cubit.deleteConnectionsForPort(port.id);
+    }
+  }
+
+  /// Handle long-press on a port by its ID (for algorithm nodes).
+  void _handlePortLongPressById(String portId) {
+    // Find the actual port
+    final state = context.read<RoutingEditorCubit>().state;
+    if (state is! RoutingEditorStateLoaded) {
+      return;
+    }
+
+    // Search through all ports
+    Port? foundPort;
+
+    // Check physical inputs
+    for (final port in state.physicalInputs) {
+      if (port.id == portId) {
+        foundPort = port;
+        break;
+      }
+    }
+
+    // Check physical outputs
+    if (foundPort == null) {
+      for (final port in state.physicalOutputs) {
+        if (port.id == portId) {
+          foundPort = port;
+          break;
+        }
+      }
+    }
+
+    // Check algorithm ports
+    if (foundPort == null) {
+      for (final algorithm in state.algorithms) {
+        for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
+          if (port.id == portId) {
+            foundPort = port;
+            break;
+          }
+        }
+        if (foundPort != null) break;
+      }
+    }
+
+    // Check ES-5 ports
+    if (foundPort == null) {
+      for (final port in state.es5Inputs) {
+        if (port.id == portId) {
+          foundPort = port;
+          break;
+        }
+      }
+    }
+
+    if (foundPort != null) {
+      _handlePortLongPress(foundPort);
     }
   }
 
@@ -2514,13 +2847,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   void _handlePortDragStart(Port port) {
-    // Only start drag from output ports
-    if (!port.isOutput) {
-      return;
-    }
-
-    // Allow dragging from output ports even when connected to enable fan-out patterns
-    // (Input port check above already prevents dragging from inputs)
+    // Allow dragging from both input and output ports for bidirectional connection creation
+    // - From output: drag to input (original behavior)
+    // - From input: drag to output (new bidirectional support)
 
     // Get the current port position
     final portPosition = _getPortPosition(port.id);
@@ -2567,7 +2896,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       }
 
       final targetPort = _findPortAtPosition(localPosition);
-      final newHighlight = targetPort?.isInput == true ? targetPort?.id : null;
+      // Highlight valid targets: opposite direction from source
+      // - Dragging from output: highlight inputs
+      // - Dragging from input: highlight outputs
+      final sourceIsOutput = _dragSourcePort?.isOutput ?? false;
+      final isValidTarget = sourceIsOutput
+          ? targetPort?.isInput == true
+          : targetPort?.isOutput == true;
+      final newHighlight = isValidTarget ? targetPort?.id : null;
 
       // Only setState if highlight actually changed
       if (newHighlight != _highlightedPortId) {
@@ -2584,10 +2920,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) return;
 
-    // Find port in algorithms
+    // Find port in algorithms (check both input and output ports for bidirectional support)
     Port? port;
     for (final algorithm in state.algorithms) {
+      // Check output ports first
       port = algorithm.outputPorts.firstWhereOrNull((p) => p.id == portId);
+      if (port != null) break;
+      // Then check input ports
+      port = algorithm.inputPorts.firstWhereOrNull((p) => p.id == portId);
       if (port != null) break;
     }
 
@@ -2595,8 +2935,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       return;
     }
 
-    // Allow dragging from output ports even when connected to enable fan-out patterns
-    // (Only output ports can be dragged from, checked above)
+    // Allow dragging from both input and output ports for bidirectional connection creation
 
     // Get the current port position
     final portPosition = _getPortPosition(portId);
@@ -2639,7 +2978,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       }
 
       final targetPort = _findPortAtPosition(localPosition);
-      final newHighlight = targetPort?.isInput == true ? targetPort?.id : null;
+      // Highlight valid targets: opposite direction from source
+      final sourceIsOutput = _dragSourcePort?.isOutput ?? false;
+      final isValidTarget = sourceIsOutput
+          ? targetPort?.isInput == true
+          : targetPort?.isOutput == true;
+      final newHighlight = isValidTarget ? targetPort?.id : null;
 
       // Only setState if highlight actually changed
       if (newHighlight != _highlightedPortId) {
@@ -2672,40 +3016,52 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     try {
       // Find port at drop position
       final targetPort = _findPortAtPosition(localPosition);
+      final sourcePort = _dragSourcePort;
 
-      if (targetPort != null) {}
+      if (targetPort == null || sourcePort == null) {
+        return;
+      }
 
-      if (targetPort != null && targetPort.isInput) {
+      // Determine valid connection based on source direction
+      // - From output: target must be input
+      // - From input: target must be output
+      final sourceIsOutput = sourcePort.isOutput;
+      final isValidConnection = sourceIsOutput
+          ? targetPort.isInput
+          : targetPort.isOutput;
+
+      if (isValidConnection) {
+        // Determine the actual source (output) and destination (input) for the connection
+        // Connections always flow from output to input
+        final actualSourcePortId = sourceIsOutput ? sourcePort.id : targetPort.id;
+        final actualTargetPortId = sourceIsOutput ? targetPort.id : sourcePort.id;
+
         // Check for duplicate connection before attempting to create
         final cubit = context.read<RoutingEditorCubit>();
         final currentState = cubit.state;
         if (currentState is RoutingEditorStateLoaded) {
           final exists = currentState.connections.any(
             (conn) =>
-                conn.sourcePortId == _dragSourcePort!.id &&
-                conn.destinationPortId == targetPort.id,
+                conn.sourcePortId == actualSourcePortId &&
+                conn.destinationPortId == actualTargetPortId,
           );
 
           if (exists) {
             _showError('Connection already exists between these ports');
             return;
           }
-
-          // Let the cubit choose a suitable internal bus (aux preferred),
-          // so we do not hard-block when aux buses are exhausted.
-          // Hardware connections remain always available.
         }
 
         // Create the connection
         try {
           await cubit.createConnection(
-            sourcePortId: _dragSourcePort!.id,
-            targetPortId: targetPort.id,
+            sourcePortId: actualSourcePortId,
+            targetPortId: actualTargetPortId,
           );
         } catch (e) {
           _showError('Failed to create connection: ${e.toString()}');
         }
-      } else {}
+      }
     } finally {
       // Always clear drag state
       setState(() {
@@ -2738,17 +3094,33 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     try {
       // Find port at drop position
       final targetPort = _findPortAtPosition(localPosition);
+      final sourcePort = _dragSourcePort;
 
-      if (targetPort != null) {}
+      if (targetPort == null || sourcePort == null) {
+        return;
+      }
 
-      if (targetPort != null && targetPort.isInput) {
+      // Determine valid connection based on source direction
+      // - From output: target must be input
+      // - From input: target must be output
+      final sourceIsOutput = sourcePort.isOutput;
+      final isValidConnection = sourceIsOutput
+          ? targetPort.isInput
+          : targetPort.isOutput;
+
+      if (isValidConnection) {
+        // Determine the actual source (output) and destination (input) for the connection
+        // Connections always flow from output to input
+        final actualSourcePortId = sourceIsOutput ? sourcePort.id : targetPort.id;
+        final actualTargetPortId = sourceIsOutput ? targetPort.id : sourcePort.id;
+
         // Check for duplicate connection before attempting to create
         final currentState = context.read<RoutingEditorCubit>().state;
         if (currentState is RoutingEditorStateLoaded) {
           final existingConnection = currentState.connections.any(
             (conn) =>
-                conn.sourcePortId == _dragSourcePort!.id &&
-                conn.destinationPortId == targetPort.id,
+                conn.sourcePortId == actualSourcePortId &&
+                conn.destinationPortId == actualTargetPortId,
           );
 
           if (existingConnection) {
@@ -2761,11 +3133,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         final cubit = context.read<RoutingEditorCubit>();
         await _createConnectionWithErrorHandling(
           cubit,
-          _dragSourcePort!.id,
-          targetPort.id,
+          actualSourcePortId,
+          actualTargetPortId,
         );
-      } else {
-        // Invalid drop - silently clear drag state (no error message)
       }
     } catch (e) {
       _showError('Failed to create connection: ${e.toString()}');
@@ -3434,6 +3804,62 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
 }
 
+class _FadingDeletedConnectionLabel {
+  final Key key;
+  final Rect bounds;
+  final String label;
+
+  const _FadingDeletedConnectionLabel({
+    required this.key,
+    required this.bounds,
+    required this.label,
+  });
+}
+
+class _FadingLabelOverlay extends StatelessWidget {
+  final String label;
+  final VoidCallback onDone;
+
+  const _FadingLabelOverlay({
+    super.key,
+    required this.label,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 1.0, end: 0.0),
+      duration: const Duration(milliseconds: 200),
+      onEnd: onDone,
+      builder: (context, value, child) {
+        return Opacity(opacity: value, child: child);
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            width: 2.0,
+            color: Colors.black,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CanvasGridPainter extends CustomPainter {
   /* same as canvas */
   final Color minorGridColor;
@@ -3486,6 +3912,12 @@ class _ConnectionPainterWithBounds extends CustomPainter {
   final List<Rect> obstacles;
   final bool drawEndpointsOnly;
   final Function(Map<String, Rect>) onBoundsUpdated;
+  /// Port ID being long-pressed for deletion animation
+  final String? deletingPortId;
+  /// Progress of delete animation (0.0 to 1.0) - red → orange → white
+  final double deleteAnimationProgress;
+  /// Progress of fade-out animation (0.0 to 1.0) - white → transparent
+  final double fadeOutProgress;
 
   late final painter.ConnectionPainter _delegate;
 
@@ -3498,6 +3930,9 @@ class _ConnectionPainterWithBounds extends CustomPainter {
     required this.obstacles,
     this.drawEndpointsOnly = false,
     required this.onBoundsUpdated,
+    this.deletingPortId,
+    this.deleteAnimationProgress = 0.0,
+    this.fadeOutProgress = 0.0,
   }) {
     _delegate = painter.ConnectionPainter(
       connections: connections,
@@ -3507,6 +3942,9 @@ class _ConnectionPainterWithBounds extends CustomPainter {
       hoveredConnectionId: hoveredConnectionId,
       obstacles: obstacles,
       drawEndpointsOnly: drawEndpointsOnly,
+      deletingPortId: deletingPortId,
+      deleteAnimationProgress: deleteAnimationProgress,
+      fadeOutProgress: fadeOutProgress,
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 
@@ -53,6 +55,15 @@ class PortWidget extends StatefulWidget {
   /// Callback for port tap events
   final VoidCallback? onTap;
 
+  /// Callback for long press events (used for deletion)
+  final VoidCallback? onLongPress;
+
+  /// Callback for long press start (used for animated deletion)
+  final VoidCallback? onLongPressStart;
+
+  /// Callback for long press cancel/end (used for animated deletion)
+  final VoidCallback? onLongPressCancel;
+
   /// Callback for drag start events
   final VoidCallback? onDragStart;
 
@@ -94,6 +105,9 @@ class PortWidget extends StatefulWidget {
     this.theme,
     this.onPortPositionResolved,
     this.onTap,
+    this.onLongPress,
+    this.onLongPressStart,
+    this.onLongPressCancel,
     this.onDragStart,
     this.onDragUpdate,
     this.onDragEnd,
@@ -112,11 +126,48 @@ class PortWidget extends StatefulWidget {
 
 class _PortWidgetState extends State<PortWidget> {
   late final GlobalKey _dotKey;
+  Timer? _hoverTimer;
+  bool _showDeleteHint = false;
+
+  /// Duration to wait before showing the delete hint tooltip
+  static const _hoverHintDelay = Duration(seconds: 2);
 
   @override
   void initState() {
     super.initState();
     _dotKey = GlobalKey();
+  }
+
+  @override
+  void dispose() {
+    _hoverTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startHoverTimer() {
+    // Only start timer if port is connected and has long press handler
+    // Check both onLongPress (mobile) and onLongPressStart (desktop animated)
+    final hasLongPressHandler = widget.onLongPress != null || widget.onLongPressStart != null;
+    if (!widget.isConnected || !hasLongPressHandler) return;
+
+    _hoverTimer?.cancel();
+    _hoverTimer = Timer(_hoverHintDelay, () {
+      if (mounted) {
+        setState(() {
+          _showDeleteHint = true;
+        });
+      }
+    });
+  }
+
+  void _cancelHoverTimer() {
+    _hoverTimer?.cancel();
+    _hoverTimer = null;
+    if (_showDeleteHint && mounted) {
+      setState(() {
+        _showDeleteHint = false;
+      });
+    }
   }
 
   @override
@@ -136,11 +187,22 @@ class _PortWidgetState extends State<PortWidget> {
 
     // Add gesture detection for interaction callbacks
     if (widget.onTap != null ||
+        widget.onLongPress != null ||
+        widget.onLongPressStart != null ||
         widget.onDragStart != null ||
         widget.onDragUpdate != null ||
         widget.onDragEnd != null) {
       portWidget = GestureDetector(
         onTap: widget.onTap,
+        // Use animated long press if callbacks are provided, otherwise immediate
+        onLongPress: widget.onLongPressStart == null ? widget.onLongPress : null,
+        onLongPressStart: widget.onLongPressStart != null
+            ? (_) => widget.onLongPressStart!()
+            : null,
+        onLongPressEnd: widget.onLongPressStart != null
+            ? (_) => widget.onLongPressCancel?.call()
+            : null,
+        onLongPressCancel: widget.onLongPressCancel,
         onPanStart: widget.onDragStart != null
             ? (_) => widget.onDragStart!()
             : null,
@@ -207,6 +269,7 @@ class _PortWidgetState extends State<PortWidget> {
       jackDot = MouseRegion(
         onEnter: (_) {
           widget.onHoverEnter?.call();
+          _startHoverTimer();
           // Notify routing cubit about hover start - it will determine if port is connected
           if (widget.portId != null) {
             widget.onRoutingAction?.call(widget.portId!, 'hover_start');
@@ -214,6 +277,7 @@ class _PortWidgetState extends State<PortWidget> {
         },
         onExit: (_) {
           widget.onHoverExit?.call();
+          _cancelHoverTimer();
           // Notify routing cubit about hover end
           if (widget.portId != null) {
             widget.onRoutingAction?.call(widget.portId!, 'hover_end');
@@ -221,6 +285,16 @@ class _PortWidgetState extends State<PortWidget> {
         },
         child: jackDot,
       );
+
+      // Wrap with tooltip when delete hint should show
+      if (_showDeleteHint) {
+        jackDot = Tooltip(
+          message: 'Long-press to delete connection',
+          preferBelow: true,
+          showDuration: const Duration(seconds: 3),
+          child: jackDot,
+        );
+      }
     }
 
     return SizedBox(
@@ -361,21 +435,35 @@ class _PortWidgetState extends State<PortWidget> {
 
     // Add hover detection only when routing action callback is provided
     if (widget.onRoutingAction != null) {
-      return MouseRegion(
+      Widget result = MouseRegion(
         onEnter: (_) {
           widget.onHoverEnter?.call();
+          _startHoverTimer();
           if (widget.portId != null) {
             widget.onRoutingAction?.call(widget.portId!, 'hover_start');
           }
         },
         onExit: (_) {
           widget.onHoverExit?.call();
+          _cancelHoverTimer();
           if (widget.portId != null) {
             widget.onRoutingAction?.call(widget.portId!, 'hover_end');
           }
         },
         child: withOverlay,
       );
+
+      // Wrap with tooltip when delete hint should show
+      if (_showDeleteHint) {
+        result = Tooltip(
+          message: 'Long-press to delete connection',
+          preferBelow: true,
+          showDuration: const Duration(seconds: 3),
+          child: result,
+        );
+      }
+
+      return result;
     }
 
     return withOverlay;

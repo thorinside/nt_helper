@@ -72,6 +72,12 @@ class ConnectionPainter extends CustomPainter {
   final String? hoveredConnectionId;
   final List<Rect> obstacles;
   final bool drawEndpointsOnly;
+  /// Port ID being long-pressed for deletion animation
+  final String? deletingPortId;
+  /// Progress of delete animation (0.0 to 1.0) - red → orange → white
+  final double deleteAnimationProgress;
+  /// Progress of fade-out animation (0.0 to 1.0) - white → transparent
+  final double fadeOutProgress;
 
   /// Map storing label bounds for hit testing
   final Map<String, Rect> _labelBounds = {};
@@ -87,6 +93,9 @@ class ConnectionPainter extends CustomPainter {
     this.hoveredConnectionId,
     this.obstacles = const [],
     this.drawEndpointsOnly = false,
+    this.deletingPortId,
+    this.deleteAnimationProgress = 0.0,
+    this.fadeOutProgress = 0.0,
   });
 
   @override
@@ -140,12 +149,11 @@ class ConnectionPainter extends CustomPainter {
       ConnectionVisualType.selected,
     );
 
-    // Draw labels
+    // Draw labels for regular connections only
+    // Partial connections get their bus label drawn at the endpoint
+    // via _drawPartialConnectionBusLabel, not at the midpoint
     if (showLabels) {
       for (final conn in regularConnections) {
-        _drawConnectionLabel(canvas, conn);
-      }
-      for (final conn in partialConnections) {
         _drawConnectionLabel(canvas, conn);
       }
     }
@@ -352,6 +360,22 @@ class ConnectionPainter extends CustomPainter {
       return;
     }
 
+    // Check if this connection is being deleted (involves the deleting port)
+    final isBeingDeleted = deletingPortId != null &&
+        (conn.connection.sourcePortId == deletingPortId ||
+            conn.connection.destinationPortId == deletingPortId);
+
+    if (isBeingDeleted) {
+      // Two-phase animation:
+      // Phase 1 (deleteAnimationProgress): red → orange → white
+      // Phase 2 (fadeOutProgress): white → transparent
+      final color = _getDeleteAnimationColor(deleteAnimationProgress, fadeOutProgress);
+      paint
+        ..strokeWidth = 3.0 // Slightly thicker during delete animation
+        ..color = color;
+      return;
+    }
+
     // Get style from theme manager if available, otherwise fall back to defaults
     ConnectionStyle style;
 
@@ -376,21 +400,45 @@ class ConnectionPainter extends CustomPainter {
     );
     Color finalColor;
 
-    // For highlighted connections, use pure red for maximum visibility
+    // Replace mode only affects the "normal" (non-highlighted) appearance.
+    // Hover/delete highlighting must always win.
     if (conn.isHighlighted) {
       finalColor = Colors.red;
     } else {
       finalColor = Color.lerp(baseColor, style.color, 0.7) ?? style.color;
-    }
-
-    // Apply replace mode styling
-    if (conn.outputMode == OutputMode.replace) {
-      finalColor = Colors.blue.withValues(alpha: finalColor.a);
+      if (conn.outputMode == OutputMode.replace) {
+        finalColor = Colors.blue.withValues(alpha: finalColor.a);
+      }
     }
 
     paint
       ..strokeWidth = style.strokeWidth
       ..color = finalColor;
+  }
+
+  /// Calculate the delete animation color based on two-phase progress
+  /// Phase 1 (deleteProgress): red (0.0) → orange (0.5) → white (1.0)
+  /// Phase 2 (fadeOutProgress): white → transparent
+  Color _getDeleteAnimationColor(double deleteProgress, double fadeOutProgress) {
+    // Clamp progress values
+    final dp = deleteProgress.clamp(0.0, 1.0);
+    final fp = fadeOutProgress.clamp(0.0, 1.0);
+
+    // Phase 2: If we're fading out, just fade white to transparent
+    if (fp > 0.0) {
+      return Colors.white.withValues(alpha: 1.0 - fp);
+    }
+
+    // Phase 1: Red → orange → white
+    if (dp < 0.5) {
+      // Red to orange (0.0 - 0.5)
+      final t = dp / 0.5;
+      return Color.lerp(Colors.red, Colors.orange, t)!;
+    } else {
+      // Orange to white (0.5 - 1.0)
+      final t = (dp - 0.5) / 0.5;
+      return Color.lerp(Colors.orange, Colors.white, t)!;
+    }
   }
 
   /// Draw a dashed path for ghost connections
@@ -595,11 +643,17 @@ class ConnectionPainter extends CustomPainter {
       return;
     }
 
+    // If this connection is being deleted, fade the label out during the fade-out phase.
+    final isBeingDeleted = deletingPortId != null &&
+        (conn.connection.sourcePortId == deletingPortId ||
+            conn.connection.destinationPortId == deletingPortId);
+    final labelAlpha = isBeingDeleted ? (1.0 - fadeOutProgress).clamp(0.0, 1.0) : 1.0;
+
     // Create text painter with enhanced text style
     final textStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.bold,
-      color: Colors.black, // Explicit black color for visibility
+      color: Colors.black.withValues(alpha: labelAlpha), // Explicit black for visibility
     );
 
     final textPainter = createLabelTextPainter(label, textStyle);
@@ -671,7 +725,7 @@ class ConnectionPainter extends CustomPainter {
     final backgroundPaint = Paint()
       ..style = PaintingStyle.fill
       ..color = Colors.white.withValues(
-        alpha: 0.95,
+        alpha: 0.95 * labelAlpha,
       ); // High contrast white background
 
     // Check hover state and apply styling
@@ -679,7 +733,9 @@ class ConnectionPainter extends CustomPainter {
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = isHovered ? 3.0 : 2.0
-      ..color = isHovered ? Colors.teal : Colors.black;
+      ..color = (isHovered ? Colors.teal : Colors.black).withValues(
+        alpha: labelAlpha,
+      );
 
     // Save canvas state
     canvas.save();
@@ -712,6 +768,11 @@ class ConnectionPainter extends CustomPainter {
       return;
     }
 
+    final isBeingDeleted = deletingPortId != null &&
+        (conn.connection.sourcePortId == deletingPortId ||
+            conn.connection.destinationPortId == deletingPortId);
+    final labelAlpha = isBeingDeleted ? (1.0 - fadeOutProgress).clamp(0.0, 1.0) : 1.0;
+
     // Determine which end has the label
     final connectionType = conn.connection.connectionType;
     final isOutputTobus = connectionType == ConnectionType.partialOutputToBus;
@@ -725,7 +786,7 @@ class ConnectionPainter extends CustomPainter {
     final textStyle = TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.bold,
-      color: theme.colorScheme.onSurface,
+      color: theme.colorScheme.onSurface.withValues(alpha: labelAlpha),
     );
 
     final textPainter = createLabelTextPainter(conn.busLabel!, textStyle);
@@ -752,12 +813,12 @@ class ConnectionPainter extends CustomPainter {
     // Draw label background with subtle styling
     final backgroundPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = theme.colorScheme.surface.withValues(alpha: 0.9);
+      ..color = theme.colorScheme.surface.withValues(alpha: 0.9 * labelAlpha);
 
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
-      ..color = theme.colorScheme.outline.withValues(alpha: 0.5);
+      ..color = theme.colorScheme.outline.withValues(alpha: 0.5 * labelAlpha);
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(labelRect, const Radius.circular(4)),
@@ -891,6 +952,9 @@ class ConnectionPainter extends CustomPainter {
         oldDelegate.animationProgress != animationProgress ||
         oldDelegate.hoveredConnectionId != hoveredConnectionId ||
         oldDelegate.theme != theme ||
+        oldDelegate.deletingPortId != deletingPortId ||
+        oldDelegate.deleteAnimationProgress != deleteAnimationProgress ||
+        oldDelegate.fadeOutProgress != fadeOutProgress ||
         !ListEquality().equals(oldDelegate.obstacles, obstacles);
   }
 }

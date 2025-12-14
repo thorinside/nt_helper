@@ -98,13 +98,13 @@ class BusLabelFormatter {
     final busType = getBusType(busNumber);
     switch (busType) {
       case BusType.input:
-        final baseLabel = 'I$localNumber';
-        return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
+        return 'I$localNumber';
       case BusType.output:
         final baseLabel = 'O$localNumber';
         return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
       case BusType.auxiliary:
-        return 'A$localNumber';
+        final baseLabel = 'A$localNumber';
+        return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
       case BusType.es5:
         return busNumber == 29 ? 'ES-5 L' : 'ES-5 R';
       case null:
