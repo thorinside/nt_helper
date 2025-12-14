@@ -321,6 +321,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               children: [
                 BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
                   builder: (context, state) {
+                    final isMobile = _platformService.isMobilePlatform();
+                    final buttonStyle = isMobile
+                        ? const ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                            padding: WidgetStatePropertyAll(EdgeInsets.all(8)),
+                          )
+                        : null;
                     return Row(
                       children: [
                         // Zoom controls
@@ -330,9 +337,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 context.read<RoutingEditorCubit>().zoomOut(),
                             icon: const Icon(Icons.zoom_out),
                             tooltip: 'Zoom out (Ctrl/Cmd + -)',
+                            style: buttonStyle,
                           ),
                           Container(
-                            constraints: const BoxConstraints(minWidth: 80),
+                            constraints: BoxConstraints(minWidth: isMobile ? 60 : 80),
                             child: DropdownButton<double>(
                               value: _findClosestZoomLevel(state.zoomLevel),
                               onChanged: (value) {
@@ -359,23 +367,26 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 context.read<RoutingEditorCubit>().zoomIn(),
                             icon: const Icon(Icons.zoom_in),
                             tooltip: 'Zoom in (Ctrl/Cmd + +)',
+                            style: buttonStyle,
                           ),
                           IconButton(
                             onPressed: () =>
                                 context.read<RoutingEditorCubit>().resetZoom(),
                             icon: const Icon(Icons.zoom_out_map),
                             tooltip: 'Reset zoom (100%)',
+                            style: buttonStyle,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: isMobile ? 4 : 8),
                           Container(
                             height: 24,
                             width: 1,
                             color: Theme.of(context).dividerColor,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: isMobile ? 4 : 8),
                         ],
                         IconButton(
                           icon: const Icon(Icons.refresh),
+                          style: buttonStyle,
                           onPressed: state.maybeWhen(
                             loaded:
                                 (
@@ -437,6 +448,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                     ),
                                     onPressed: null,
                                     tooltip: 'Calculating Layout...',
+                                    style: buttonStyle,
                                   );
                                 }
 
@@ -449,6 +461,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                         .applyLayoutAlgorithm();
                                   },
                                   tooltip: 'Apply Layout Algorithm',
+                                  style: buttonStyle,
                                 );
                               },
                           orElse: () => const SizedBox.shrink(),
@@ -458,23 +471,25 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           icon: const Icon(Icons.center_focus_strong),
                           onPressed: () => _editorController.fitToView(),
                           tooltip: 'Center View',
+                          style: buttonStyle,
                         ),
 
                         // Share/Copy Nodes Image (tight bounds, 24px margin)
                         IconButton(
-                          icon: Icon(_platformService.isMobilePlatform() 
-                              ? Icons.share 
+                          icon: Icon(isMobile
+                              ? Icons.share
                               : Icons.image_outlined),
                           onPressed: () {
-                            if (_platformService.isMobilePlatform()) {
+                            if (isMobile) {
                               _editorController.shareNodesImage();
                             } else {
                               _editorController.copyNodesImage();
                             }
                           },
-                          tooltip: _platformService.isMobilePlatform() 
-                              ? 'Share Nodes Image' 
+                          tooltip: isMobile
+                              ? 'Share Nodes Image'
                               : 'Copy Nodes Image',
+                          style: buttonStyle,
                         ),
                       ],
                     );
@@ -792,9 +807,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     final cubit = context.read<DistingCubit>();
     return AppBar(
       title: const Text('NT Helper'),
+      titleTextStyle: Theme.of(context).textTheme.titleLarge,
       actions: _buildAppBarActions(cubit),
       elevation: 0,
-      scrolledUnderElevation: 3,
+      scrolledUnderElevation: 0,
       notificationPredicate: (ScrollNotification notification) =>
           notification.depth == 1,
       bottom: PreferredSize(
@@ -832,16 +848,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             ? null
             : () {
                 cubit.refresh();
-              },
-      ),
-      // Wake: Disabled by loading OR offline
-      IconButton(
-        icon: const Icon(Icons.alarm_on_rounded),
-        tooltip: "Wake",
-        onPressed: widget.loading || isOffline
-            ? null
-            : () {
-                cubit.requireDisting().requestWake();
               },
       ),
       // Mode-specific actions with AnimatedSwitcher
@@ -946,6 +952,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           _ => false,
         };
         return [
+          PopupMenuItem(
+            value: "wake",
+            enabled: !widget.loading && !isOffline,
+            onTap: widget.loading || isOffline
+                ? null
+                : () {
+                    cubit.requireDisting().requestWake();
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Wake Display'), Icon(Icons.alarm_on_rounded)],
+            ),
+          ),
           PopupMenuItem(
             value: "browse",
             enabled: !widget.loading && !isOffline,
