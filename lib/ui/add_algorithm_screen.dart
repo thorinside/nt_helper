@@ -537,17 +537,20 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                 // --- Top Section with padding ---
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // --- Search Row ---
-                        Row(
-                          // Align items vertically center
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: TextField(
+                        // --- Filter Header (wrapped in Material to prevent ink bleed) ---
+                        Material(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // --- Search Row ---
+                                TextField(
                                 controller: _searchController,
                                 decoration: InputDecoration(
                                   labelText: 'Search Algorithms',
@@ -566,61 +569,64 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                   border: const OutlineInputBorder(),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: Icon(
-                                _showFavoritesOnly ? Icons.star : Icons.star_border,
+                              const SizedBox(height: 12),
+                              // --- Filter Controls Row ---
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      _showFavoritesOnly ? Icons.star : Icons.star_border,
+                                    ),
+                                    tooltip: 'Show Favorites Only',
+                                    color: _showFavoritesOnly
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                                    onPressed: _toggleShowFavoritesOnly,
+                                    style: const ButtonStyle(
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.filter_alt_off),
+                                    tooltip: 'Clear Filters',
+                                    style: ButtonStyle(
+                                      foregroundColor: WidgetStatePropertyAll(
+                                        Theme.of(context).colorScheme.secondary,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    onPressed: () {
+                                      FocusScope.of(context).unfocus();
+                                      setState(() {
+                                        _searchController.clear();
+                                        _showFavoritesOnly = false;
+                                        _selectedCategories.clear();
+                                        _selectedPluginType = _pluginTypeAll;
+                                        _saveShowFavoritesOnlyState();
+                                        _filterAlgorithms();
+                                      });
+                                    },
+                                  ),
+                                  _buildPluginTypeFilterButton(),
+                                  _buildCategoryFilterButton(),
+                                  _buildViewModeSelector(),
+                                ],
                               ),
-                              tooltip: 'Show Favorites Only',
-                              color: _showFavoritesOnly
-                                  ? Theme.of(context).colorScheme.primary
-                                  : null,
-                              onPressed: _toggleShowFavoritesOnly,
-                              constraints: const BoxConstraints(),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                            const SizedBox(width: 4),
-                            TextButton.icon(
-                              icon: const Icon(Icons.filter_alt_off),
-                              label: const Text('Clear Filters'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.secondary,
+                              const SizedBox(height: 8),
+                              Text(
+                                'Showing ${_filteredAlgorithms.length} of ${_allAlgorithms.length} algorithms',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
                               ),
-                              onPressed: () {
-                                FocusScope.of(context).unfocus();
-                                setState(() {
-                                  _searchController.clear();
-                                  _showFavoritesOnly = false;
-                                  _selectedCategories.clear();
-                                  _selectedPluginType = _pluginTypeAll;
-                                  _saveShowFavoritesOnlyState();
-                                  _filterAlgorithms();
-                                });
-                              },
+                                const Divider(),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            _buildPluginTypeFilterButton(),
-                            const SizedBox(width: 16),
-                            Expanded(child: _buildCategoryFilterButton()),
-                            const SizedBox(width: 16),
-                            _buildViewModeSelector(),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Showing ${_filteredAlgorithms.length} of ${_allAlgorithms.length} algorithms',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                        const Divider(),
 
                         // --- Algorithm Display (Expanded to take remaining space) ---
                         Expanded(
@@ -642,33 +648,36 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                 ),
 
                 // --- Bottom Section with background (outside padding) ---
-                Container(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // --- Specification Inputs (Auto-sized to content) ---
-                      if (_currentAlgoInfo != null &&
-                          _currentAlgoInfo!.numSpecifications > 0) ...[
-                        const Divider(),
-                        const SizedBox(height: 12),
-                        _buildSpecificationInputs(_currentAlgoInfo!, isOffline),
-                      ],
+                SafeArea(
+                  top: false,
+                  child: Container(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // --- Specification Inputs (Auto-sized to content) ---
+                        if (_currentAlgoInfo != null &&
+                            _currentAlgoInfo!.numSpecifications > 0) ...[
+                          const Divider(),
+                          const SizedBox(height: 12),
+                          _buildSpecificationInputs(_currentAlgoInfo!, isOffline),
+                        ],
 
-                      // --- Action Buttons (fixed at the bottom) ---
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        padding: EdgeInsets.only(
-                          top: 16.0,
-                          // Add extra padding when FAB is visible to prevent overlap
-                          right: _isHelpAvailableForSelected ? 72.0 : 0.0,
+                        // --- Action Buttons (fixed at the bottom) ---
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          padding: EdgeInsets.only(
+                            top: 16.0,
+                            // Add extra padding when FAB is visible to prevent overlap
+                            right: _isHelpAvailableForSelected ? 72.0 : 0.0,
+                          ),
+                          child: _buildActionButton(isOffline),
                         ),
-                        child: _buildActionButton(isOffline),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -682,17 +691,19 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   // --- Plugin Type Filter Button (Dialog-based Select) ---
   Widget _buildPluginTypeFilterButton() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.extension),
-        label: Text(
-          _selectedPluginType == _pluginTypeAll
-              ? 'Plugin Type'
-              : _selectedPluginType == _pluginTypeFactory
-              ? 'Factory'
-              : 'Community',
-        ),
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.extension, size: 18),
+      label: Text(
+        _selectedPluginType == _pluginTypeAll
+            ? 'Plugin Type'
+            : _selectedPluginType == _pluginTypeFactory
+            ? 'Factory'
+            : 'Community',
+      ),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        visualDensity: VisualDensity.compact,
+      ),
         onPressed: () async {
           final selected = await showDialog<String>(
             context: context,
@@ -770,31 +781,40 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             });
           }
         },
-      ),
     );
   }
 
   // --- View Mode Selector ---
   Widget _buildViewModeSelector() {
+    final isMobile = defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+
+    // On mobile, if column mode was previously selected, fall back to list
+    final effectiveMode = isMobile && _selectedViewMode == AlgorithmViewMode.column
+        ? AlgorithmViewMode.list
+        : _selectedViewMode;
+
     return SegmentedButton<AlgorithmViewMode>(
-      segments: const [
-        ButtonSegment(
+      segments: [
+        const ButtonSegment(
           value: AlgorithmViewMode.chipGrid,
-          icon: Icon(Icons.grid_view),
+          icon: Icon(Icons.grid_view, size: 18),
           tooltip: 'Chip Grid',
         ),
-        ButtonSegment(
+        const ButtonSegment(
           value: AlgorithmViewMode.list,
-          icon: Icon(Icons.view_list),
+          icon: Icon(Icons.view_list, size: 18),
           tooltip: 'List',
         ),
-        ButtonSegment(
-          value: AlgorithmViewMode.column,
-          icon: Icon(Icons.view_column),
-          tooltip: 'Column',
-        ),
+        // Only show column mode on desktop/tablet
+        if (!isMobile)
+          const ButtonSegment(
+            value: AlgorithmViewMode.column,
+            icon: Icon(Icons.view_column, size: 18),
+            tooltip: 'Column',
+          ),
       ],
-      selected: {_selectedViewMode},
+      selected: {effectiveMode},
       onSelectionChanged: (selected) {
         setState(() => _selectedViewMode = selected.first);
         _saveViewModeState();
@@ -806,15 +826,26 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         }
       },
       showSelectedIcon: false,
+      style: const ButtonStyle(
+        visualDensity: VisualDensity.compact,
+      ),
     );
   }
 
   // --- Algorithm View (Conditional Rendering) ---
   Widget _buildAlgorithmView() {
+    final isMobile = defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+
+    // On mobile, column mode falls back to list
+    final effectiveMode = isMobile && _selectedViewMode == AlgorithmViewMode.column
+        ? AlgorithmViewMode.list
+        : _selectedViewMode;
+
     return Focus(
       focusNode: _viewFocusNode,
       onKeyEvent: _handleKeyEvent,
-      child: switch (_selectedViewMode) {
+      child: switch (effectiveMode) {
         AlgorithmViewMode.chipGrid => _buildChipGridView(),
         AlgorithmViewMode.list => _buildListView(),
         AlgorithmViewMode.column => _buildColumnView(),
@@ -969,7 +1000,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       controller: _chipScrollController,
       child: SingleChildScrollView(
         controller: _chipScrollController,
-        padding: const EdgeInsets.only(bottom: 8.0),
+        padding: const EdgeInsets.only(bottom: 16.0),
         child: Wrap(
           spacing: 8.0,
           runSpacing: 4.0,
@@ -1038,8 +1069,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       controller: _listScrollController,
       child: ListView.separated(
         controller: _listScrollController,
+        padding: const EdgeInsets.only(bottom: 16),
         itemCount: _filteredAlgorithms.length,
-        separatorBuilder: (context, index) => const Divider(height: 16),
+        separatorBuilder: (context, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final algo = _filteredAlgorithms[index];
           final isSelected = algo.guid == selectedAlgorithmGuid;
@@ -1048,36 +1080,54 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           final metadata =
               _metadataService.getAlgorithmByGuid(algo.guid.toLowerCase());
 
-          // ConstrainedBox ensures 56px minimum height for touch targets (AC 17)
-          return ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
-            child: ListTile(
-              selected: isSelected,
-              selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-              minVerticalPadding: 8,
-              leading: isFavorite
-                  ? const Icon(Icons.star, color: Colors.amber)
-                  : const SizedBox(width: 24),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      algo.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (isCommunityPlugin)
-                    Icon(
-                      Icons.extension,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                ],
-              ),
-              subtitle: _buildListSubtitle(metadata, isCommunityPlugin),
-              onTap: () => _selectAlgorithm(algo.guid),
+          return Material(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primaryContainer
+                : Colors.transparent,
+            child: InkWell(
+              onTap: () => _selectAlgorithm(isSelected ? null : algo.guid),
               onLongPress: () => _toggleFavorite(algo.guid),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Stack(
+                  children: [
+                    // Main content
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                algo.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            ),
+                            // Space for favorite icon
+                            if (isFavorite) const SizedBox(width: 28),
+                            if (isCommunityPlugin)
+                              Icon(
+                                Icons.extension,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                          ],
+                        ),
+                        _buildListSubtitle(metadata, isCommunityPlugin),
+                      ],
+                    ),
+                    // Favorite icon in top right
+                    if (isFavorite)
+                      const Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Icon(Icons.star, color: Colors.amber, size: 20),
+                      ),
+                  ],
+                ),
+              ),
             ),
           );
         },
@@ -1144,7 +1194,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
             itemCount: _filteredAlgorithms.length,
             itemBuilder: (context, index) =>
                 _buildAlgorithmCard(context, _filteredAlgorithms[index]),
@@ -1178,7 +1228,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             : BorderSide.none,
       ),
       child: InkWell(
-        onTap: () => _selectAlgorithm(algo.guid),
+        onTap: () => _selectAlgorithm(isSelected ? null : algo.guid),
         onLongPress: () => _toggleFavorite(algo.guid),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -1256,16 +1306,18 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   // --- Category Filter Button (Dialog-based Multi-Select) ---
   Widget _buildCategoryFilterButton() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.filter_list),
-        label: Text(
-          _selectedCategories.isEmpty
-              ? 'Filter by Category'
-              : 'Categories (${_selectedCategories.length})',
-        ),
-        onPressed: () async {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.filter_list, size: 18),
+      label: Text(
+        _selectedCategories.isEmpty
+            ? 'Category'
+            : 'Category (${_selectedCategories.length})',
+      ),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        visualDensity: VisualDensity.compact,
+      ),
+      onPressed: () async {
           final selected = await showDialog<Set<String>>(
             context: context,
             builder: (context) {
@@ -1325,7 +1377,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             });
           }
         },
-      ),
     );
   }
 
