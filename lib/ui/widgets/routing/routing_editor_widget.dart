@@ -78,6 +78,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   Port? _dragSourcePort;
   Offset? _dragCurrentPosition;
   String? _hoveredConnectionId; // For port hover (connection deletion)
+  String? _selectedConnectionId; // For tap selection + keyboard delete
   String? _hoveredLabelConnectionId; // For label hover (mode switching)
   String? _highlightedPortId; // For port highlighting during drag operations
   Timer? _connectionHighlightTimer;
@@ -123,6 +124,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   // Actual port positions from widget callbacks
   final Map<String, Offset> _portPositions = {};
+  List<Connection> _latestConnections = const [];
   StreamSubscription<ZoomHotkeyAction>? _zoomHotkeySubscription;
 
   // Ephemeral fading overlays for labels of connections deleted instantly (click delete).
@@ -396,6 +398,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     if (!mounted) {
       return;
     }
+    _clearSelectedConnection();
     final routingCubit = context.read<RoutingEditorCubit>();
     switch (action) {
       case ZoomHotkeyAction.zoomIn:
@@ -1128,6 +1131,25 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         _cancelDragOperation();
         return KeyEventResult.handled;
       }
+      if (_selectedConnectionId != null) {
+        setState(() {
+          _selectedConnectionId = null;
+        });
+        return KeyEventResult.handled;
+      }
+    }
+
+    if (event is KeyDownEvent &&
+        (event.logicalKey == LogicalKeyboardKey.delete ||
+            event.logicalKey == LogicalKeyboardKey.backspace)) {
+      final selectedId = _selectedConnectionId;
+      if (selectedId != null) {
+        _deleteConnection(selectedId, _latestConnections);
+        setState(() {
+          _selectedConnectionId = null;
+        });
+        return KeyEventResult.handled;
+      }
     }
 
     return KeyEventResult.ignored;
@@ -1173,6 +1195,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
+  }
+
+  void _clearSelectedConnection() {
+    if (_selectedConnectionId == null) return;
+    setState(() {
+      _selectedConnectionId = null;
+    });
   }
 
   /// Create connection with comprehensive error handling
@@ -1286,6 +1315,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     double zoomLevel,
     Offset panOffset,
   ) {
+    _latestConnections = connections;
     final routingCubit = context.read<RoutingEditorCubit>();
 
     final nodeBoundsMap = _calculateNodeBoundsMap();
@@ -1330,6 +1360,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             // Handle mouse wheel and trackpad scrolling/zooming
             onPointerSignal: (pointerSignal) {
               if (pointerSignal is PointerScrollEvent) {
+                _clearSelectedConnection();
+
                 // Check for zoom modifier keys (Ctrl/Cmd + wheel)
                 if (_keyBindingService.isZoomModifierPressed()) {
                   // Zoom with mouse wheel
@@ -1780,6 +1812,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
               _updatePortAnchor(portId, globalCenter, isInput);
             },
             onDragStart: () {
+              _clearSelectedConnection();
               if (!_isDraggingNode) {
                 setState(() {
                   _isDraggingNode = true;
@@ -2196,6 +2229,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     Map<String, Rect> nodeBoundsMap,
   ) {
     final connectionDataList = <painter.ConnectionData>[];
+    final highlightedConnectionId =
+        _selectedConnectionId ??
+        _hoveredConnectionId ??
+        (_selectedPortConnectionIds.isNotEmpty
+            ? _selectedPortConnectionIds.first
+            : null);
 
     for (final connection in connections) {
       // For partial connections, we need special handling
@@ -2259,12 +2298,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           destinationPosition: targetPosition,
           busNumber: busNumber,
           outputMode: connection.outputMode,
-          isSelected: false,
-          isHighlighted:
-              _hoveredConnectionId == connection.id ||
-              _selectedPortConnectionIds.contains(
-                connection.id,
-              ), // Highlight if hovered or selected for deletion
+          isSelected: _selectedConnectionId == connection.id,
+          isHighlighted: highlightedConnectionId == connection.id,
           isPhysicalConnection: isPhysicalConnection,
           isInputConnection: isInputConnection,
           busLabel: connection
@@ -2517,41 +2552,46 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   void _handleCanvasTap(Offset tapPosition, List<Connection> connections) {
-    // If there's a highlighted connection, check if the tap hits it
-    if (_hoveredConnectionId != null) {
-      final highlightedConnection = connections.firstWhere(
-        (conn) => conn.id == _hoveredConnectionId,
-        orElse: () => Connection(
-          id: '',
-          sourcePortId: '',
-          destinationPortId: '',
-          connectionType: ConnectionType.algorithmToAlgorithm,
-        ),
-      );
+    final hitId = _findConnectionNearPoint(tapPosition, connections);
+    if (hitId != null) {
+      setState(() {
+        _selectedConnectionId = hitId;
+        // Ensure only one highlighted connection at a time.
+        _hoveredConnectionId = null;
+        _selectedPortConnectionIds.clear();
+      });
+      return;
+    }
 
-      if (highlightedConnection.id.isNotEmpty &&
-          _isPointNearConnection(tapPosition, highlightedConnection)) {
-        // Tap hit the highlighted connection - delete it
-        _deleteConnection(_hoveredConnectionId!, connections);
-        return;
+    // Tap didn't hit a connection - clear selection/highlights
+    setState(() {
+      _selectedConnectionId = null;
+      _hoveredConnectionId = null;
+      _selectedPortConnectionIds.clear();
+    });
+  }
+
+  String? _findConnectionNearPoint(
+    Offset tapPoint,
+    List<Connection> connections,
+  ) {
+    const hitRadius = 15.0;
+    String? bestId;
+    double bestDistance = double.infinity;
+
+    for (final connection in connections) {
+      final sourcePos = _getPortPosition(connection.sourcePortId);
+      final destPos = _getPortPosition(connection.destinationPortId);
+      if (sourcePos == null || destPos == null) continue;
+
+      final d = _distanceFromPointToLine(tapPoint, sourcePos, destPos);
+      if (d <= hitRadius && d < bestDistance) {
+        bestDistance = d;
+        bestId = connection.id;
       }
     }
 
-    // Tap didn't hit highlighted connection - deselect it
-    _clearConnectionHighlight();
-  }
-
-  bool _isPointNearConnection(Offset tapPoint, Connection connection) {
-    // Get connection line positions
-    final sourcePos = _getPortPosition(connection.sourcePortId);
-    final destPos = _getPortPosition(connection.destinationPortId);
-
-    if (sourcePos == null || destPos == null) return false;
-
-    // Check if tap is within ~15px of the connection line
-    const double hitRadius = 15.0;
-    final distance = _distanceFromPointToLine(tapPoint, sourcePos, destPos);
-    return distance <= hitRadius;
+    return bestId;
   }
 
   double _distanceFromPointToLine(
@@ -2765,6 +2805,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   void _handleCanvasPanStart(DragStartDetails details) {
     // Only start panning if we're not dragging a node
     if (!_isDraggingNode) {
+      _clearSelectedConnection();
       _isPanning = true;
       _lastPanPosition = details.globalPosition;
     }
@@ -2807,6 +2848,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   // Port and node interaction handlers
   void _handlePortTap(Port port) {
+    _clearSelectedConnection();
     // Tap is now reserved for future functionality (e.g., selection)
     // Deletion has moved to long-press for consistency
   }
@@ -2814,6 +2856,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   /// Handle long-press on a port to delete its connections.
   /// Works on both inputs and outputs for consistent UX.
   void _handlePortLongPress(Port port) {
+    _clearSelectedConnection();
     if (_platformService.isMobilePlatform()) {
       // Mobile: Show confirmation dialog
       _showPortConnectionsDeleteConfirmation(port.id, port.name);
@@ -2826,6 +2869,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   /// Handle long-press on a port by its ID (for algorithm nodes).
   void _handlePortLongPressById(String portId) {
+    _clearSelectedConnection();
     // Find the actual port
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) {
@@ -2882,6 +2926,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   void _handlePortTapById(String portId) {
+    _clearSelectedConnection();
     // Find the actual port to check if it's an input
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) {
@@ -2945,6 +2990,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   void _handlePortDragStart(Port port) {
+    _clearSelectedConnection();
     // Allow dragging from both input and output ports for bidirectional connection creation
     // - From output: drag to input (original behavior)
     // - From input: drag to output (new bidirectional support)
@@ -3014,6 +3060,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   // Handler methods for algorithm port drags (using port ID instead of Port object)
   void _handleAlgorithmPortDragStart(String portId) {
+    _clearSelectedConnection();
     // Find the port in the current state
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) return;
@@ -3270,7 +3317,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
     // Highlight the connections that will be deleted
     setState(() {
-      _selectedPortConnectionIds = portConnections.map((c) => c.id).toSet();
+      // Only allow a single highlighted connection at a time.
+      _selectedConnectionId = null;
+      _hoveredConnectionId = null;
+      _selectedPortConnectionIds = {portConnections.first.id};
     });
 
     // Build connection descriptions for the dialog
@@ -3696,6 +3746,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         if (portConnections.isNotEmpty) {
           _connectionHighlightTimer?.cancel();
           setState(() {
+            // Ensure only one highlighted connection at a time.
+            _selectedConnectionId = null;
+            _selectedPortConnectionIds.clear();
             _hoveredConnectionId = portConnections.first.id;
           });
 
@@ -3807,6 +3860,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       Widget overlay = GestureDetector(
         behavior: HitTestBehavior.opaque, // Capture all taps in this area
         onTap: () {
+          _clearSelectedConnection();
           _toggleConnectionOutputMode(connectionId);
         },
         child: const SizedBox.expand(), // Fill the entire positioned area
