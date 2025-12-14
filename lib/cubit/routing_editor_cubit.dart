@@ -2050,6 +2050,28 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           for (final algorithm in state.algorithms) {
             for (final port in algorithm.outputPorts) {
               if (port.id == sourcePort.id && port.parameterNumber != null) {
+                if (!_canClearBusAssignment(
+                  algorithmIndex: algorithm.index,
+                  parameterNumber: port.parameterNumber!,
+                )) {
+                  // Some outputs have no "None" (min > 0). In that case, "disconnect"
+                  // from physical outputs by moving the output to an unused
+                  // non-physical-output bus (aux preferred).
+                  final newBus = await _findFirstAvailableNonPhysicalOutputBus(
+                    state,
+                    algorithmIndex: algorithm.index,
+                    parameterNumber: port.parameterNumber!,
+                  );
+                  if (newBus == null) return;
+
+                  await _distingCubit.updateParameterValue(
+                    algorithmIndex: algorithm.index,
+                    parameterNumber: port.parameterNumber!,
+                    value: newBus,
+                    userIsChangingTheValue: false,
+                  );
+                  return;
+                }
                 await _distingCubit.updateParameterValue(
                   algorithmIndex: algorithm.index,
                   parameterNumber: port.parameterNumber!,
@@ -2069,6 +2091,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           for (final algorithm in state.algorithms) {
             for (final port in algorithm.inputPorts) {
               if (port.id == targetPort.id && port.parameterNumber != null) {
+                if (!_canClearBusAssignment(
+                  algorithmIndex: algorithm.index,
+                  parameterNumber: port.parameterNumber!,
+                )) {
+                  return;
+                }
                 await _distingCubit.updateParameterValue(
                   algorithmIndex: algorithm.index,
                   parameterNumber: port.parameterNumber!,
@@ -2084,6 +2112,124 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     } catch (e) {
       // Don't rethrow - we still want to delete the connection from UI
     }
+  }
+
+  bool _canClearBusAssignment({
+    required int algorithmIndex,
+    required int parameterNumber,
+  }) {
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized) {
+      return true;
+    }
+    if (algorithmIndex < 0 || algorithmIndex >= distingState.slots.length) {
+      return true;
+    }
+    final slot = distingState.slots[algorithmIndex];
+    for (final p in slot.parameters) {
+      if (p.parameterNumber == parameterNumber) {
+        // If min > 0, parameter doesn't support "None" (0).
+        return p.min <= 0;
+      }
+    }
+    return true;
+  }
+
+  ({int min, int max})? _getBusParameterRange({
+    required int algorithmIndex,
+    required int parameterNumber,
+  }) {
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized) {
+      return null;
+    }
+    if (algorithmIndex < 0 || algorithmIndex >= distingState.slots.length) {
+      return null;
+    }
+    final slot = distingState.slots[algorithmIndex];
+    for (final p in slot.parameters) {
+      if (p.parameterNumber == parameterNumber) {
+        return (min: p.min, max: p.max);
+      }
+    }
+    return null;
+  }
+
+  Future<int?> _findFirstAvailableNonPhysicalOutputBus(
+    RoutingEditorStateLoaded state, {
+    required int algorithmIndex,
+    required int parameterNumber,
+  }) async {
+    final range = _getBusParameterRange(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+    );
+    if (range == null) return null;
+
+    // Determine currently-used bus numbers from live hardware values.
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized) {
+      return null;
+    }
+
+    final usedBuses = <int>{};
+    for (final algorithm in state.algorithms) {
+      if (algorithm.index >= distingState.slots.length) continue;
+      final slot = distingState.slots[algorithm.index];
+
+      for (final port in algorithm.inputPorts) {
+        final paramNumber = port.parameterNumber;
+        if (paramNumber == null) continue;
+        final v = slot.values
+            .firstWhere(
+              (pv) => pv.parameterNumber == paramNumber,
+              orElse: () => ParameterValue(
+                algorithmIndex: algorithm.index,
+                parameterNumber: paramNumber,
+                value: 0,
+              ),
+            )
+            .value;
+        if (v > 0) usedBuses.add(v);
+      }
+
+      for (final port in algorithm.outputPorts) {
+        final paramNumber = port.parameterNumber;
+        if (paramNumber == null) continue;
+        final v = slot.values
+            .firstWhere(
+              (pv) => pv.parameterNumber == paramNumber,
+              orElse: () => ParameterValue(
+                algorithmIndex: algorithm.index,
+                parameterNumber: paramNumber,
+                value: 0,
+              ),
+            )
+            .value;
+        if (v > 0) usedBuses.add(v);
+      }
+    }
+
+    bool inRange(int b) => b >= range.min && b <= range.max;
+    bool isPhysicalOutputBus(int b) => b >= 13 && b <= 20;
+
+    // Prefer auxiliary buses (21–28), then fall back to input buses (1–12),
+    // always avoiding physical output buses (13–20).
+    for (int b = 21; b <= 28; b++) {
+      if (inRange(b) && !usedBuses.contains(b)) return b;
+    }
+    for (int b = 1; b <= 12; b++) {
+      if (inRange(b) && !usedBuses.contains(b)) return b;
+    }
+
+    // As a last resort, scan the parameter's allowed range for any unused bus
+    // that isn't a physical output bus.
+    for (int b = range.min; b <= range.max; b++) {
+      if (isPhysicalOutputBus(b)) continue;
+      if (!usedBuses.contains(b)) return b;
+    }
+
+    return null;
   }
 
   /// Inject the layout algorithm service

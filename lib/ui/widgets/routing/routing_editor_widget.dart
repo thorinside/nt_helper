@@ -306,12 +306,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) return;
 
-    final hasConnections = state.connections.any(
-      (conn) =>
-          conn.sourcePortId == port.id || conn.destinationPortId == port.id,
-    );
+    final connectionsToDelete = state.connections
+        .where(
+          (conn) =>
+              conn.sourcePortId == port.id || conn.destinationPortId == port.id,
+        )
+        .toList();
 
-    if (!hasConnections) return;
+    if (connectionsToDelete.isEmpty) return;
+
+    // If any of these connections can't be cleared in hardware, don't start the animation.
+    final allDeletable = connectionsToDelete.every(_canDeleteConnection);
+    if (!allDeletable) {
+      _showError('Some connections cannot be removed (required bus assignment)');
+      return;
+    }
 
     setState(() {
       _deletingPortId = port.id;
@@ -1809,7 +1818,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             onMoveDown: algorithm.index < algorithms.length - 1
                 ? () => _handleAlgorithmMoveDown(algorithm.index)
                 : null,
-            onDelete: () => _handleAlgorithmDelete(algorithm.index),
+            // Deletion is performed inside AlgorithmNodeWidget after confirmation.
+            // This callback is used for local UI cleanup only to avoid double-deletes.
+            onDelete: () => _handleAlgorithmDeleted(nodeId),
             onRoutingAction: (portId, action) =>
                 _handlePortRoutingAction(portId, action, connections),
             onPortTapped: (portId) => _handlePortTapById(portId),
@@ -2582,6 +2593,19 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   void _deleteConnection(String connectionId, List<Connection> connections) {
+    Connection? conn;
+    for (final c in connections) {
+      if (c.id == connectionId) {
+        conn = c;
+        break;
+      }
+    }
+    if (conn != null && !_canDeleteConnection(conn)) {
+      _showError('This connection cannot be removed (required bus assignment)');
+      _clearConnectionHighlight();
+      return;
+    }
+
     _startDeletedConnectionLabelFade(connectionId, connections);
 
     // Call the cubit to delete the connection
@@ -2622,6 +2646,80 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         ),
       );
     });
+  }
+
+  bool _canDeleteConnection(Connection connection) {
+    // Mirrors RoutingEditorCubit's delete semantics:
+    // - If destination is a physical output (or ES-5): clear SOURCE output bus
+    // - Otherwise: clear TARGET input bus
+    final clearsSource =
+        connection.destinationPortId.startsWith('hw_out_') ||
+        connection.destinationPortId.startsWith('es5_');
+
+    // Output→physical-output "deletion" may require reassigning the output bus when
+    // the parameter doesn't support "None" (min > 0). Allow the attempt and let
+    // the cubit perform the reassignment.
+    if (clearsSource) {
+      return true;
+    }
+
+    final portId = clearsSource
+        ? connection.sourcePortId
+        : connection.destinationPortId;
+
+    // Physical ports have no parameters; deletability is determined by the
+    // algorithm-side bus assignment, which we may not be able to infer here.
+    if (portId.startsWith('hw_') || portId.startsWith('es5_')) {
+      return true;
+    }
+
+    final parameterInfo = _getParameterInfoForPortId(
+      portId,
+      direction: clearsSource ? PortDirection.output : PortDirection.input,
+    );
+    if (parameterInfo == null) return true;
+
+    // If min > 0, the parameter doesn't support "None" (0), so we can't clear it.
+    return parameterInfo.min <= 0;
+  }
+
+  ParameterInfo? _getParameterInfoForPortId(
+    String portId, {
+    required PortDirection direction,
+  }) {
+    final routingState = context.read<RoutingEditorCubit>().state;
+    final distingState = context.read<DistingCubit>().state;
+    if (routingState is! RoutingEditorStateLoaded ||
+        distingState is! DistingStateSynchronized) {
+      return null;
+    }
+
+    for (final algorithm in routingState.algorithms) {
+      final ports = direction == PortDirection.input
+          ? algorithm.inputPorts
+          : algorithm.outputPorts;
+
+      for (final port in ports) {
+        if (port.id != portId) continue;
+        final paramNumber = port.parameterNumber;
+        if (paramNumber == null) return null;
+
+        if (algorithm.index < 0 ||
+            algorithm.index >= distingState.slots.length) {
+          return null;
+        }
+
+        final slot = distingState.slots[algorithm.index];
+        for (final p in slot.parameters) {
+          if (p.parameterNumber == paramNumber) {
+            return p;
+          }
+        }
+        return null;
+      }
+    }
+
+    return null;
   }
 
   List<Widget> _buildFadingDeletedConnectionLabelOverlays() {
@@ -3405,9 +3503,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     cubit.moveAlgorithmDown(algorithmIndex);
   }
 
-  void _handleAlgorithmDelete(int algorithmIndex) {
-    final cubit = context.read<DistingCubit>();
-    cubit.onRemoveAlgorithm(algorithmIndex);
+  void _handleAlgorithmDeleted(String algorithmId) {
+    setState(() {
+      _selectedNodes.remove(algorithmId);
+      _nodePositions.remove(algorithmId);
+      _nodeSizes.remove(algorithmId);
+      _portPositions.removeWhere((portId, _) => portId.startsWith(algorithmId));
+    });
   }
 
   /// Calculate port position based on node position and port layout

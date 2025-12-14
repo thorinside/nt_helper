@@ -128,6 +128,7 @@ class _PortWidgetState extends State<PortWidget> {
   late final GlobalKey _dotKey;
   Timer? _hoverTimer;
   bool _showDeleteHint = false;
+  bool _suppressDeleteHint = false;
 
   /// Duration to wait before showing the delete hint tooltip
   static const _hoverHintDelay = Duration(seconds: 2);
@@ -148,7 +149,7 @@ class _PortWidgetState extends State<PortWidget> {
     // Only start timer if port is connected and has long press handler
     // Check both onLongPress (mobile) and onLongPressStart (desktop animated)
     final hasLongPressHandler = widget.onLongPress != null || widget.onLongPressStart != null;
-    if (!widget.isConnected || !hasLongPressHandler) return;
+    if (!widget.isConnected || !hasLongPressHandler || _suppressDeleteHint) return;
 
     _hoverTimer?.cancel();
     _hoverTimer = Timer(_hoverHintDelay, () {
@@ -168,6 +169,16 @@ class _PortWidgetState extends State<PortWidget> {
         _showDeleteHint = false;
       });
     }
+  }
+
+  void _suppressHoverHint() {
+    if (_suppressDeleteHint) return;
+    _suppressDeleteHint = true;
+    _cancelHoverTimer();
+  }
+
+  void _unsuppressHoverHint() {
+    _suppressDeleteHint = false;
   }
 
   @override
@@ -197,12 +208,24 @@ class _PortWidgetState extends State<PortWidget> {
         // Use animated long press if callbacks are provided, otherwise immediate
         onLongPress: widget.onLongPressStart == null ? widget.onLongPress : null,
         onLongPressStart: widget.onLongPressStart != null
-            ? (_) => widget.onLongPressStart!()
+            ? (_) {
+                // Prevent the delayed hover tooltip from appearing mid-delete.
+                _suppressHoverHint();
+                widget.onLongPressStart!();
+              }
             : null,
         onLongPressEnd: widget.onLongPressStart != null
-            ? (_) => widget.onLongPressCancel?.call()
+            ? (_) {
+                widget.onLongPressCancel?.call();
+                _unsuppressHoverHint();
+              }
             : null,
-        onLongPressCancel: widget.onLongPressCancel,
+        onLongPressCancel: widget.onLongPressStart != null
+            ? () {
+                widget.onLongPressCancel?.call();
+                _unsuppressHoverHint();
+              }
+            : widget.onLongPressCancel,
         onPanStart: widget.onDragStart != null
             ? (_) => widget.onDragStart!()
             : null,

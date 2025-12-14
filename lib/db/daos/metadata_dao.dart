@@ -322,6 +322,22 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Get all output mode usage for a specific algorithm.
+  /// Returns a map from mode parameter number to list of affected output numbers.
+  Future<Map<int, List<int>>> getOutputModeUsageForAlgorithm(
+    String algorithmGuid,
+  ) async {
+    final entries = await (select(parameterOutputModeUsage)
+          ..where((t) => t.algorithmGuid.equals(algorithmGuid)))
+        .get();
+
+    final result = <int, List<int>>{};
+    for (final entry in entries) {
+      result[entry.parameterNumber] = entry.affectedOutputNumbers;
+    }
+    return result;
+  }
+
   /// Upsert output mode usage entries.
   Future<void> upsertOutputModeUsage(
     List<ParameterOutputModeUsageEntry> entries,

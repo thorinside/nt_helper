@@ -2556,10 +2556,23 @@ class DistingCubit extends Cubit<DistingState> {
         // Mark as queried
         queriedParams.add(paramIndex);
         _queriedOutputModeParameters[slotIndex] = queriedParams;
+
+        // Update the slot with the new outputModeMap and emit state change
+        // This ensures the routing editor gets the modeParameterNumber for output ports
+        final refreshedState = state;
+        if (refreshedState is DistingStateSynchronized &&
+            slotIndex < refreshedState.slots.length) {
+          final currentSlot = refreshedState.slots[slotIndex];
+          final updatedSlot = currentSlot.copyWith(
+            outputModeMap: _outputModeUsageMap[slotIndex] ?? {},
+          );
+          final updatedSlots = List<Slot>.from(refreshedState.slots);
+          updatedSlots[slotIndex] = updatedSlot;
+          emit(refreshedState.copyWith(slots: updatedSlots));
+        }
       }
     } catch (e) {
       // Silently fail - output mode usage is optional data
-      debugPrint('Failed to query output mode usage for slot $slotIndex param $paramIndex: $e');
     }
   }
 
@@ -2885,6 +2898,24 @@ class DistingCubit extends Cubit<DistingState> {
     /* ------------------------------------------------------------------ *
    * 5. Assemble the Slot                                               *
    * ------------------------------------------------------------------ */
+
+    // Pre-populate output mode usage from database if not already populated
+    // This ensures mode parameters are available even if isOutputMode flag isn't set
+    if (_outputModeUsageMap[algorithmIndex] == null ||
+        _outputModeUsageMap[algorithmIndex]!.isEmpty) {
+      final algorithmGuid = guid?.guid;
+      if (algorithmGuid != null) {
+        try {
+          final dbOutputModeUsage =
+              await _metadataDao.getOutputModeUsageForAlgorithm(algorithmGuid);
+          if (dbOutputModeUsage.isNotEmpty) {
+            _outputModeUsageMap[algorithmIndex] = dbOutputModeUsage;
+          }
+        } catch (e) {
+          // Silently ignore database errors - output mode is optional
+        }
+      }
+    }
 
     return Slot(
       algorithm:
