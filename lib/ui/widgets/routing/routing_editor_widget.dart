@@ -77,13 +77,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   bool _isDraggingConnection = false;
   Port? _dragSourcePort;
   Offset? _dragCurrentPosition;
-  String? _hoveredConnectionId; // For port hover (connection deletion)
-  String? _selectedConnectionId; // For tap selection + keyboard delete
+  _ConnectionHighlight? _connectionHighlight; // single highlighted connection
   String? _hoveredLabelConnectionId; // For label hover (mode switching)
   String? _highlightedPortId; // For port highlighting during drag operations
   Timer? _connectionHighlightTimer;
-  Set<String> _selectedPortConnectionIds =
-      {}; // For mobile port tap confirmation
 
   // Error handling state
   String? _errorMessage;
@@ -125,6 +122,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   // Actual port positions from widget callbacks
   final Map<String, Offset> _portPositions = {};
   List<Connection> _latestConnections = const [];
+  final Map<String, Port> _portById = {};
   StreamSubscription<ZoomHotkeyAction>? _zoomHotkeySubscription;
 
   // Ephemeral fading overlays for labels of connections deleted instantly (click delete).
@@ -317,10 +315,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
     if (connectionsToDelete.isEmpty) return;
 
-    // If any of these connections can't be cleared in hardware, don't start the animation.
-    final allDeletable = connectionsToDelete.every(_canDeleteConnection);
-    if (!allDeletable) {
-      _showError('Some connections cannot be removed (required bus assignment)');
+    final reason = context
+        .read<RoutingEditorCubit>()
+        .deletionBlockReasonForPortConnections(port.id);
+    if (reason != null) {
+      _showError('Some connections cannot be removed ($reason)');
       return;
     }
 
@@ -342,55 +341,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   /// Handle long press start by port ID
   void _handlePortLongPressStartById(String portId) {
-    // Find the actual port
-    final state = context.read<RoutingEditorCubit>().state;
-    if (state is! RoutingEditorStateLoaded) return;
-
-    Port? foundPort;
-
-    // Check physical inputs
-    for (final port in state.physicalInputs) {
-      if (port.id == portId) {
-        foundPort = port;
-        break;
-      }
-    }
-
-    // Check physical outputs
-    if (foundPort == null) {
-      for (final port in state.physicalOutputs) {
-        if (port.id == portId) {
-          foundPort = port;
-          break;
-        }
-      }
-    }
-
-    // Check algorithm ports
-    if (foundPort == null) {
-      for (final algorithm in state.algorithms) {
-        for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
-          if (port.id == portId) {
-            foundPort = port;
-            break;
-          }
-        }
-        if (foundPort != null) break;
-      }
-    }
-
-    // Check ES-5 ports
-    if (foundPort == null) {
-      for (final port in state.es5Inputs) {
-        if (port.id == portId) {
-          foundPort = port;
-          break;
-        }
-      }
-    }
-
-    if (foundPort != null) {
-      _handlePortLongPressStart(foundPort);
+    final port = _portById[portId];
+    if (port != null) {
+      _handlePortLongPressStart(port);
     }
   }
 
@@ -1131,10 +1084,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         _cancelDragOperation();
         return KeyEventResult.handled;
       }
-      if (_selectedConnectionId != null) {
-        setState(() {
-          _selectedConnectionId = null;
-        });
+      if (_connectionHighlight?.source == _ConnectionHighlightSource.selected) {
+        _clearSelectedConnection();
         return KeyEventResult.handled;
       }
     }
@@ -1142,12 +1093,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     if (event is KeyDownEvent &&
         (event.logicalKey == LogicalKeyboardKey.delete ||
             event.logicalKey == LogicalKeyboardKey.backspace)) {
-      final selectedId = _selectedConnectionId;
-      if (selectedId != null) {
-        _deleteConnection(selectedId, _latestConnections);
-        setState(() {
-          _selectedConnectionId = null;
-        });
+      final highlight = _connectionHighlight;
+      if (highlight != null && highlight.source == _ConnectionHighlightSource.selected) {
+        _deleteConnection(highlight.id, _latestConnections);
+        _clearSelectedConnection();
         return KeyEventResult.handled;
       }
     }
@@ -1197,10 +1146,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     );
   }
 
-  void _clearSelectedConnection() {
-    if (_selectedConnectionId == null) return;
+  void _clearSelectedConnection() => _clearConnectionHighlightState(
+    source: _ConnectionHighlightSource.selected,
+  );
+
+  void _setConnectionHighlight(String connectionId, _ConnectionHighlightSource source) {
     setState(() {
-      _selectedConnectionId = null;
+      _connectionHighlight = _ConnectionHighlight(id: connectionId, source: source);
+    });
+  }
+
+  void _clearConnectionHighlightState({_ConnectionHighlightSource? source}) {
+    if (_connectionHighlight == null) return;
+    if (source != null && _connectionHighlight!.source != source) return;
+    setState(() {
+      _connectionHighlight = null;
     });
   }
 
@@ -1317,6 +1277,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   ) {
     _latestConnections = connections;
     final routingCubit = context.read<RoutingEditorCubit>();
+
+    // Rebuild port lookup map for this frame.
+    _portById
+      ..clear()
+      ..addEntries(physicalInputs.map((p) => MapEntry(p.id, p)))
+      ..addEntries(physicalOutputs.map((p) => MapEntry(p.id, p)))
+      ..addEntries(es5Inputs.map((p) => MapEntry(p.id, p)));
+    for (final algo in algorithms) {
+      for (final p in algo.inputPorts) {
+        _portById[p.id] = p;
+      }
+      for (final p in algo.outputPorts) {
+        _portById[p.id] = p;
+      }
+    }
 
     final nodeBoundsMap = _calculateNodeBoundsMap();
     final portToNodeIdMap = <String, String>{};
@@ -2229,12 +2204,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     Map<String, Rect> nodeBoundsMap,
   ) {
     final connectionDataList = <painter.ConnectionData>[];
-    final highlightedConnectionId =
-        _selectedConnectionId ??
-        _hoveredConnectionId ??
-        (_selectedPortConnectionIds.isNotEmpty
-            ? _selectedPortConnectionIds.first
-            : null);
+    final highlightedConnectionId = _connectionHighlight?.id;
 
     for (final connection in connections) {
       // For partial connections, we need special handling
@@ -2298,7 +2268,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           destinationPosition: targetPosition,
           busNumber: busNumber,
           outputMode: connection.outputMode,
-          isSelected: _selectedConnectionId == connection.id,
+          isSelected:
+              _connectionHighlight?.source == _ConnectionHighlightSource.selected &&
+              highlightedConnectionId == connection.id,
           isHighlighted: highlightedConnectionId == connection.id,
           isPhysicalConnection: isPhysicalConnection,
           isInputConnection: isInputConnection,
@@ -2554,21 +2526,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   void _handleCanvasTap(Offset tapPosition, List<Connection> connections) {
     final hitId = _findConnectionNearPoint(tapPosition, connections);
     if (hitId != null) {
-      setState(() {
-        _selectedConnectionId = hitId;
-        // Ensure only one highlighted connection at a time.
-        _hoveredConnectionId = null;
-        _selectedPortConnectionIds.clear();
-      });
+      _setConnectionHighlight(hitId, _ConnectionHighlightSource.selected);
       return;
     }
 
     // Tap didn't hit a connection - clear selection/highlights
-    setState(() {
-      _selectedConnectionId = null;
-      _hoveredConnectionId = null;
-      _selectedPortConnectionIds.clear();
-    });
+    _clearSelectedConnection();
+    _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
+    _clearConnectionHighlightState(source: _ConnectionHighlightSource.deleteConfirm);
   }
 
   String? _findConnectionNearPoint(
@@ -2633,15 +2598,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   void _deleteConnection(String connectionId, List<Connection> connections) {
-    Connection? conn;
-    for (final c in connections) {
-      if (c.id == connectionId) {
-        conn = c;
-        break;
-      }
-    }
-    if (conn != null && !_canDeleteConnection(conn)) {
-      _showError('This connection cannot be removed (required bus assignment)');
+    final routingCubit = context.read<RoutingEditorCubit>();
+    final conn = connections.firstWhereOrNull((c) => c.id == connectionId);
+    final reason =
+        conn == null ? null : routingCubit.deletionBlockReasonForConnection(conn);
+    if (reason != null) {
+      _showError('This connection cannot be removed ($reason)');
       _clearConnectionHighlight();
       return;
     }
@@ -2688,80 +2650,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     });
   }
 
-  bool _canDeleteConnection(Connection connection) {
-    // Mirrors RoutingEditorCubit's delete semantics:
-    // - If destination is a physical output (or ES-5): clear SOURCE output bus
-    // - Otherwise: clear TARGET input bus
-    final clearsSource =
-        connection.destinationPortId.startsWith('hw_out_') ||
-        connection.destinationPortId.startsWith('es5_');
-
-    // Output→physical-output "deletion" may require reassigning the output bus when
-    // the parameter doesn't support "None" (min > 0). Allow the attempt and let
-    // the cubit perform the reassignment.
-    if (clearsSource) {
-      return true;
-    }
-
-    final portId = clearsSource
-        ? connection.sourcePortId
-        : connection.destinationPortId;
-
-    // Physical ports have no parameters; deletability is determined by the
-    // algorithm-side bus assignment, which we may not be able to infer here.
-    if (portId.startsWith('hw_') || portId.startsWith('es5_')) {
-      return true;
-    }
-
-    final parameterInfo = _getParameterInfoForPortId(
-      portId,
-      direction: clearsSource ? PortDirection.output : PortDirection.input,
-    );
-    if (parameterInfo == null) return true;
-
-    // If min > 0, the parameter doesn't support "None" (0), so we can't clear it.
-    return parameterInfo.min <= 0;
-  }
-
-  ParameterInfo? _getParameterInfoForPortId(
-    String portId, {
-    required PortDirection direction,
-  }) {
-    final routingState = context.read<RoutingEditorCubit>().state;
-    final distingState = context.read<DistingCubit>().state;
-    if (routingState is! RoutingEditorStateLoaded ||
-        distingState is! DistingStateSynchronized) {
-      return null;
-    }
-
-    for (final algorithm in routingState.algorithms) {
-      final ports = direction == PortDirection.input
-          ? algorithm.inputPorts
-          : algorithm.outputPorts;
-
-      for (final port in ports) {
-        if (port.id != portId) continue;
-        final paramNumber = port.parameterNumber;
-        if (paramNumber == null) return null;
-
-        if (algorithm.index < 0 ||
-            algorithm.index >= distingState.slots.length) {
-          return null;
-        }
-
-        final slot = distingState.slots[algorithm.index];
-        for (final p in slot.parameters) {
-          if (p.parameterNumber == paramNumber) {
-            return p;
-          }
-        }
-        return null;
-      }
-    }
-
-    return null;
-  }
-
   List<Widget> _buildFadingDeletedConnectionLabelOverlays() {
     if (_fadingDeletedConnectionLabels.isEmpty) return const [];
 
@@ -2796,9 +2684,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   void _clearConnectionHighlight() {
     _connectionHighlightTimer?.cancel();
-    setState(() {
-      _hoveredConnectionId = null;
-    });
+    _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
   }
 
   // Transform-aware event handlers for InteractiveViewer
@@ -2870,114 +2756,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   /// Handle long-press on a port by its ID (for algorithm nodes).
   void _handlePortLongPressById(String portId) {
     _clearSelectedConnection();
-    // Find the actual port
-    final state = context.read<RoutingEditorCubit>().state;
-    if (state is! RoutingEditorStateLoaded) {
-      return;
-    }
-
-    // Search through all ports
-    Port? foundPort;
-
-    // Check physical inputs
-    for (final port in state.physicalInputs) {
-      if (port.id == portId) {
-        foundPort = port;
-        break;
-      }
-    }
-
-    // Check physical outputs
-    if (foundPort == null) {
-      for (final port in state.physicalOutputs) {
-        if (port.id == portId) {
-          foundPort = port;
-          break;
-        }
-      }
-    }
-
-    // Check algorithm ports
-    if (foundPort == null) {
-      for (final algorithm in state.algorithms) {
-        for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
-          if (port.id == portId) {
-            foundPort = port;
-            break;
-          }
-        }
-        if (foundPort != null) break;
-      }
-    }
-
-    // Check ES-5 ports
-    if (foundPort == null) {
-      for (final port in state.es5Inputs) {
-        if (port.id == portId) {
-          foundPort = port;
-          break;
-        }
-      }
-    }
-
-    if (foundPort != null) {
-      _handlePortLongPress(foundPort);
+    final port = _portById[portId];
+    if (port != null) {
+      _handlePortLongPress(port);
     }
   }
 
   void _handlePortTapById(String portId) {
     _clearSelectedConnection();
-    // Find the actual port to check if it's an input
-    final state = context.read<RoutingEditorCubit>().state;
-    if (state is! RoutingEditorStateLoaded) {
-      return;
-    }
-
-    // Search through all ports to find the tapped port
-    Port? tappedPort;
-
-    // Check physical inputs
-    for (final port in state.physicalInputs) {
-      if (port.id == portId) {
-        tappedPort = port;
-        break;
-      }
-    }
-
-    // Check physical outputs if not found
-    if (tappedPort == null) {
-      for (final port in state.physicalOutputs) {
-        if (port.id == portId) {
-          tappedPort = port;
-          break;
-        }
-      }
-    }
-
-    // Check algorithm ports if not found
-    if (tappedPort == null) {
-      for (final algorithm in state.algorithms) {
-        for (final port in [
-          ...algorithm.inputPorts,
-          ...algorithm.outputPorts,
-        ]) {
-          if (port.id == portId) {
-            tappedPort = port;
-            break;
-          }
-        }
-        if (tappedPort != null) break;
-      }
-    }
-
-    if (tappedPort == null) {
-      return;
-    }
-
-    // Only allow deletion from input ports
-    if (!tappedPort.isInput) {
-      return;
-    }
+    final tappedPort = _portById[portId];
+    if (tappedPort == null || !tappedPort.isInput) return;
 
     if (_platformService.isMobilePlatform()) {
       // Mobile: Show confirmation dialog
@@ -3061,24 +2849,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   // Handler methods for algorithm port drags (using port ID instead of Port object)
   void _handleAlgorithmPortDragStart(String portId) {
     _clearSelectedConnection();
-    // Find the port in the current state
-    final state = context.read<RoutingEditorCubit>().state;
-    if (state is! RoutingEditorStateLoaded) return;
-
-    // Find port in algorithms (check both input and output ports for bidirectional support)
-    Port? port;
-    for (final algorithm in state.algorithms) {
-      // Check output ports first
-      port = algorithm.outputPorts.firstWhereOrNull((p) => p.id == portId);
-      if (port != null) break;
-      // Then check input ports
-      port = algorithm.inputPorts.firstWhereOrNull((p) => p.id == portId);
-      if (port != null) break;
-    }
-
-    if (port == null) {
-      return;
-    }
+    final port = _portById[portId];
+    if (port == null) return;
 
     // Allow dragging from both input and output ports for bidirectional connection creation
 
@@ -3318,9 +3090,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     // Highlight the connections that will be deleted
     setState(() {
       // Only allow a single highlighted connection at a time.
-      _selectedConnectionId = null;
-      _hoveredConnectionId = null;
-      _selectedPortConnectionIds = {portConnections.first.id};
+      _connectionHighlight = _ConnectionHighlight(
+        id: portConnections.first.id,
+        source: _ConnectionHighlightSource.deleteConfirm,
+      );
     });
 
     // Build connection descriptions for the dialog
@@ -3403,9 +3176,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     );
 
     // Clear highlighting
-    setState(() {
-      _selectedPortConnectionIds.clear();
-    });
+    _clearConnectionHighlightState(source: _ConnectionHighlightSource.deleteConfirm);
 
     // Delete connections if confirmed
     if (shouldDelete == true && mounted) {
@@ -3747,22 +3518,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           _connectionHighlightTimer?.cancel();
           setState(() {
             // Ensure only one highlighted connection at a time.
-            _selectedConnectionId = null;
-            _selectedPortConnectionIds.clear();
-            _hoveredConnectionId = portConnections.first.id;
+            _connectionHighlight = _ConnectionHighlight(
+              id: portConnections.first.id,
+              source: _ConnectionHighlightSource.hover,
+            );
           });
 
           // Auto-deselect after 5 seconds
           _connectionHighlightTimer = Timer(const Duration(seconds: 5), () {
-            _clearConnectionHighlight();
+            _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
           });
         }
         break;
 
       case 'hover_end':
-        setState(() {
-          _hoveredConnectionId = null;
-        });
+        _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
         break;
 
       case 'delete_connections':
@@ -3970,6 +3740,15 @@ class _FadingDeletedConnectionLabel {
     required this.bounds,
     required this.label,
   });
+}
+
+enum _ConnectionHighlightSource { selected, hover, deleteConfirm }
+
+class _ConnectionHighlight {
+  final String id;
+  final _ConnectionHighlightSource source;
+
+  const _ConnectionHighlight({required this.id, required this.source});
 }
 
 class _FadingLabelOverlay extends StatelessWidget {

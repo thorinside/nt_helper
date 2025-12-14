@@ -1070,6 +1070,66 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
   }
 
+  /// Returns a user-facing reason if the connection cannot be deleted, otherwise null.
+  ///
+  /// Some parameters (notably certain bus inputs/outputs) have `min > 0` and do not
+  /// support a "None" (0) value. Attempting to clear those would immediately be
+  /// reverted by hardware truth on the next sync.
+  String? deletionBlockReasonForConnection(Connection connection) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) {
+      return null;
+    }
+
+    // Output→physical-output connections are always "deletable" from the editor
+    // perspective: if the output doesn't support "None", we can reassign it to a
+    // non-physical-output bus instead of clearing it.
+    if (connection.destinationPortId.startsWith('hw_out_') ||
+        connection.destinationPortId.startsWith('es5_')) {
+      return null;
+    }
+
+    // For algorithm-input connections, we clear the destination input bus.
+    final targetPort = _findPortById(currentState, connection.destinationPortId);
+    final targetParamNumber = targetPort?.parameterNumber;
+    if (targetParamNumber == null) {
+      return null;
+    }
+
+    final algorithmIndex = _findAlgorithmIndexForPort(
+      currentState,
+      connection.destinationPortId,
+    );
+    if (algorithmIndex == null) {
+      return null;
+    }
+
+    final canClear = _canClearBusAssignment(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: targetParamNumber,
+    );
+    return canClear ? null : 'required bus assignment';
+  }
+
+  /// Returns a user-facing reason if any connection for this port cannot be deleted.
+  String? deletionBlockReasonForPortConnections(String portId) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) {
+      return null;
+    }
+
+    final portConnections = currentState.connections
+        .where(
+          (conn) => conn.sourcePortId == portId || conn.destinationPortId == portId,
+        )
+        .toList();
+    for (final conn in portConnections) {
+      final reason = deletionBlockReasonForConnection(conn);
+      if (reason != null) return reason;
+    }
+    return null;
+  }
+
   /// Update an existing connection's properties
   Future<void> updateConnection({
     required String connectionId,
