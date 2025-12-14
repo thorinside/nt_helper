@@ -226,6 +226,7 @@ sealed class GalleryPlugin with _$GalleryPlugin {
     @Default(false) bool verified,
     @Default(false) bool isCollection,
     String? guid,
+    @Default([]) List<String> collectionGuids,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _GalleryPlugin;

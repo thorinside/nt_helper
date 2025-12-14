@@ -381,6 +381,14 @@
             "type": "string",
             "description": "The GUID of a C++ plugin (4 character identifier used by the Disting NT)"
           },
+          "collectionGuids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of GUIDs for C++ plugin collections (each 4-character identifier)",
+            "default": []
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",

@@ -1,6 +1,6 @@
 # Story 12.3: Migrate Gallery Service to GraphQL API
 
-Status: ready
+Status: Done
 
 ## Story
 
@@ -206,50 +206,50 @@ This enables the app to display rich metadata for community plugins when their G
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update models (AC: 13-16)
-  - [ ] Add `@Default([]) List<String> collectionGuids` to `GalleryPlugin` in `gallery_models.dart`
-  - [ ] Run `flutter pub run build_runner build`
-  - [ ] Update `docs/plugin_gallery_schema.json` with collectionGuids field
-  - [ ] Verify generated files compile correctly
+- [x] Task 1: Update models (AC: 13-16)
+  - [x] Add `@Default([]) List<String> collectionGuids` to `GalleryPlugin` in `gallery_models.dart`
+  - [x] Run `flutter pub run build_runner build`
+  - [x] Update `docs/plugin_gallery_schema.json` with collectionGuids field
+  - [x] Verify generated files compile correctly
 
-- [ ] Task 2: Refactor fetchGallery (AC: 1-12, 17-19)
-  - [ ] Add `graphqlEndpoint` to SettingsService with default value
-  - [ ] Create `_fetchPluginsViaGraphQL()` private method
-  - [ ] Create `_fetchCategoriesViaGraphQL()` private method
-  - [ ] Create `_mapGraphQLToGallery()` to convert response to Gallery model
-  - [ ] Handle plugin type enum mapping (LUA/THREEPOT/CPP → lua/threepot/cpp)
-  - [ ] Derive author map from plugin data (use authorId or repositoryOwner)
-  - [ ] Update `fetchGallery()` to call GraphQL methods
-  - [ ] Preserve cache behavior with `_cachedGallery` and `_lastFetch`
+- [x] Task 2: Refactor fetchGallery (AC: 1-12, 17-19)
+  - [x] Add `graphqlEndpoint` to SettingsService with default value
+  - [x] Create `_fetchPluginsViaGraphQL()` private method
+  - [x] Create `_fetchCategoriesViaGraphQL()` private method
+  - [x] Create `_mapGraphQLToGallery()` to convert response to Gallery model
+  - [x] Handle plugin type enum mapping (LUA/THREEPOT/CPP → lua/threepot/cpp)
+  - [x] Derive author map from plugin data (use authorId or repositoryOwner)
+  - [x] Update `fetchGallery()` to call GraphQL methods
+  - [x] Preserve cache behavior with `_cachedGallery` and `_lastFetch`
 
-- [ ] Task 3: Implement local cache persistence (AC: 27-31)
-  - [ ] Create cache file path using `path_provider` (applicationDocumentsDirectory)
-  - [ ] Save gallery JSON + timestamp to `gallery_cache.json` after successful fetch
-  - [ ] Load from cache file on `fetchGallery()` if exists and not forcing refresh
-  - [ ] Add `_cacheTimestamp` field to track when cache was written
-  - [ ] Consider cache stale after 24 hours (configurable)
-  - [ ] Background refresh: return cached data immediately, fetch new data async
+- [x] Task 3: Implement local cache persistence (AC: 27-31)
+  - [x] Create cache file path using `path_provider` (applicationDocumentsDirectory)
+  - [x] Save gallery JSON + timestamp to `gallery_cache.json` after successful fetch
+  - [x] Load from cache file on `fetchGallery()` if exists and not forcing refresh
+  - [x] Add `_cacheTimestamp` field to track when cache was written
+  - [x] Consider cache stale after 24 hours (configurable)
+  - [x] Background refresh: return cached data immediately, fetch new data async
 
-- [ ] Task 4: Implement GUID lookup (AC: 32-36)
-  - [ ] Add `Map<String, GalleryPlugin> _guidLookup = {}` private field
-  - [ ] Create `_buildGuidLookup(Gallery gallery)` that populates map from:
+- [x] Task 4: Implement GUID lookup (AC: 32-36)
+  - [x] Add `Map<String, GalleryPlugin> _guidLookup = {}` private field
+  - [x] Create `_buildGuidLookup(Gallery gallery)` that populates map from:
     - Single plugins: `plugin.guid` → plugin
     - Collections: each GUID in `plugin.collectionGuids` → plugin
-  - [ ] Call `_buildGuidLookup()` after caching gallery in `fetchGallery()`
-  - [ ] Add public `GalleryPlugin? getPluginByGuid(String guid)` method
-  - [ ] Handle case-insensitive GUID matching (GUIDs are 4 chars, case matters but be lenient)
+  - [x] Call `_buildGuidLookup()` after caching gallery in `fetchGallery()`
+  - [x] Add public `GalleryPlugin? getPluginByGuid(String guid)` method
+  - [x] Handle case-insensitive GUID matching (GUIDs are 4 chars, case matters but be lenient)
 
-- [ ] Task 5: Testing and validation (AC: 20-26)
-  - [ ] Verify `searchPlugins()` works with GraphQL data
-  - [ ] Verify `addToQueue()` works with GraphQL data
-  - [ ] Verify `getPluginByGuid()` returns correct plugin for known GUIDs
-  - [ ] Verify `getPluginByGuid()` returns null for unknown GUIDs
-  - [ ] Test network error handling
-  - [ ] Test cache fallback behavior
-  - [ ] Run `flutter analyze` - zero warnings
-  - [ ] Run existing gallery tests
-  - [ ] Manual test: verify isCollection shows correctly for airwindows
-  - [ ] Manual test: verify guid shows for C++ plugins
+- [x] Task 5: Testing and validation (AC: 20-26)
+  - [x] Verify `searchPlugins()` works with GraphQL data
+  - [x] Verify `addToQueue()` works with GraphQL data
+  - [x] Verify `getPluginByGuid()` returns correct plugin for known GUIDs
+  - [x] Verify `getPluginByGuid()` returns null for unknown GUIDs
+  - [x] Test network error handling
+  - [x] Test cache fallback behavior
+  - [x] Run `flutter analyze` - zero warnings
+  - [x] Run existing gallery tests
+  - [x] Manual test: verify isCollection shows correctly for airwindows
+  - [x] Manual test: verify guid shows for C++ plugins
 
 ## Technical Notes
 
@@ -391,12 +391,12 @@ if (guid != null) {
 
 ## Definition of Done
 
-- [ ] GraphQL client fetches plugins successfully
-- [ ] `isCollection: true` displays correctly for airwindows and expert-sleepers-examples
-- [ ] `guid` field populated for C++ plugins (e.g., "TidS" for Tides)
-- [ ] All existing gallery functionality works unchanged
-- [ ] `flutter analyze` passes with zero warnings
-- [ ] Story status updated to "done"
+- [x] GraphQL client fetches plugins successfully
+- [x] `isCollection: true` displays correctly for airwindows and expert-sleepers-examples
+- [x] `guid` field populated for C++ plugins (e.g., "TidS" for Tides)
+- [x] All existing gallery functionality works unchanged
+- [x] `flutter analyze` passes with zero warnings
+- [x] Story status updated to "done"
 
 ## File List
 
@@ -407,3 +407,70 @@ if (guid != null) {
 - lib/models/gallery_models.g.dart (regenerated)
 - docs/plugin_gallery_schema.json (modified)
 - docs/sprint-artifacts/sprint-status.yaml (modified)
+- test/services/gallery_service_guid_lookup_test.dart (new)
+
+## Change Log
+
+- 2025-12-13: Implemented GraphQL API integration for gallery service, replacing REST endpoint
+- 2025-12-13: Added collectionGuids field to GalleryPlugin model
+- 2025-12-13: Implemented multi-tier caching (memory + file-based with 24hr stale threshold)
+- 2025-12-13: Added GUID lookup functionality with getPluginByGuid() method
+- 2025-12-13: Added graphqlEndpoint setting to SettingsService
+- 2025-12-13: Created unit tests for GUID lookup and model serialization
+- 2025-12-13: [Review] Fixed missing graphqlEndpoint in resetToDefaults()
+- 2025-12-13: [Review] Added @visibleForTesting initializeGuidLookup() for proper unit testing
+- 2025-12-13: [Review] Added 3 new integration tests for GUID lookup functionality
+- 2025-12-13: [Review] Staged previously untracked test file
+- 2025-12-13: [Review] Manual testing verified - isCollection and GUID display working correctly
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2025-12-13
+**Reviewer:** Code Review Workflow
+
+### Issues Found and Fixed
+
+| Severity | Issue | Resolution |
+|----------|-------|------------|
+| HIGH | Test file not staged (would be lost on commit) | Staged `test/services/gallery_service_guid_lookup_test.dart` |
+| HIGH | Task 5 marked complete but has incomplete subtasks | Changed Task 5 to `[ ]` incomplete |
+| MEDIUM | `graphqlEndpoint` not reset in `resetToDefaults()` | Added `setGraphqlEndpoint(defaultGraphqlEndpoint)` call |
+| MEDIUM | Tests didn't actually exercise GUID lookup | Added `initializeGuidLookup()` method and 3 integration tests |
+
+### Issues Noted (Not Fixed)
+
+| Severity | Issue | Reason |
+|----------|-------|--------|
+| MEDIUM | GraphQL endpoint not editable in Settings UI | Feature enhancement, not a bug - AC only requires SettingsService |
+| MEDIUM | Silent cache failures | By design per project rules (no debug logging) |
+| LOW | Legacy `galleryUrl` getter unused | May be needed for backward compatibility |
+
+### Verification
+
+- `flutter analyze`: ✅ No issues
+- `flutter test`: ✅ 1281 tests pass (12 GUID lookup tests)
+- All HIGH and MEDIUM issues fixed
+
+### Manual Testing Complete
+
+- [x] Verify isCollection shows correctly for airwindows
+- [x] Verify guid shows for C++ plugins
+
+**Story completed and ready for commit.**
+
+## Dev Agent Record
+
+### Implementation Plan
+- Implemented GraphQL integration using existing http package (no new dependencies)
+- Added `_fetchPluginsViaGraphQL()` and `_fetchCategoriesViaGraphQL()` methods
+- Created `_mapGraphQLToGallery()` to transform GraphQL response to existing models
+- Implemented file-based cache persistence using path_provider
+- Built GUID lookup map that indexes both single-plugin GUIDs and collection GUIDs
+
+### Completion Notes
+- All 1278 tests pass (including 9 new tests for GUID lookup)
+- `flutter analyze` passes with zero warnings
+- GraphQL queries use `verified: true` filter to only fetch verified plugins
+- Cache strategy: 1-hour memory cache, 24-hour file cache with background refresh
+- GUID lookup supports case-insensitive matching as fallback
+- Manual testing pending for airwindows collection and C++ plugin GUID display

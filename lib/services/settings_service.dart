@@ -28,6 +28,7 @@ class SettingsService {
   static const String _mcpEnabledKey = 'mcp_enabled';
   static const String _startPagesCollapsedKey = 'start_pages_collapsed';
   static const String _galleryUrlKey = 'gallery_url';
+  static const String _graphqlEndpointKey = 'graphql_endpoint';
   static const String _includeCommunityPluginsKey =
       'include_community_plugins_in_presets';
   static const String _overlayPositionXKey = 'overlay_position_x';
@@ -43,6 +44,8 @@ class SettingsService {
   static const bool defaultStartPagesCollapsed = false;
   static const String defaultGalleryUrl =
       'https://nt-gallery.nosuch.dev/api/gallery.json';
+  static const String defaultGraphqlEndpoint =
+      'https://nt-gallery-backend.fly.dev/api/graphql';
   static const bool defaultIncludeCommunityPlugins = false;
   static const double defaultOverlayPositionX =
       -1.0; // -1 means use default positioning
@@ -109,6 +112,15 @@ class SettingsService {
     return await _prefs?.setString(_galleryUrlKey, value) ?? false;
   }
 
+  /// Get the GraphQL endpoint URL
+  String get graphqlEndpoint =>
+      _prefs?.getString(_graphqlEndpointKey) ?? defaultGraphqlEndpoint;
+
+  /// Set the GraphQL endpoint URL
+  Future<bool> setGraphqlEndpoint(String value) async {
+    return await _prefs?.setString(_graphqlEndpointKey, value) ?? false;
+  }
+
   /// Check if community plugins should be included in preset packages by default
   bool get includeCommunityPlugins =>
       _prefs?.getBool(_includeCommunityPluginsKey) ??
@@ -163,6 +175,7 @@ class SettingsService {
     await setMcpEnabled(defaultMcpEnabled);
     await setStartPagesCollapsed(defaultStartPagesCollapsed);
     await setGalleryUrl(defaultGalleryUrl);
+    await setGraphqlEndpoint(defaultGraphqlEndpoint);
     await setIncludeCommunityPlugins(defaultIncludeCommunityPlugins);
     await setOverlayPositionX(defaultOverlayPositionX);
     await setOverlayPositionY(defaultOverlayPositionY);

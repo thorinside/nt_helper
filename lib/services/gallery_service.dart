@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/models/gallery_models.dart';
@@ -10,7 +11,49 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:pub_semver/pub_semver.dart';
+
+/// GraphQL queries for the gallery
+const String _getPluginsQuery = r'''
+  query GetPlugins($filter: PluginFilterInput) {
+    plugins(filter: $filter) {
+      slug
+      name
+      description
+      pluginType
+      categoryId
+      authorId
+      repositoryOwner
+      repositoryName
+      repositoryUrl
+      installationPath
+      minFirmwareVersion
+      verified
+      featured
+      featuredReason
+      latestReleaseTag
+      latestReleaseUrl
+      selectedArtifactUrl
+      guid
+      isCollection
+      collectionGuids
+      createdAt
+      updatedAt
+      downloadCount
+    }
+  }
+''';
+
+const String _getCategoriesQuery = r'''
+  query GetCategories {
+    categories {
+      id
+      name
+      sortOrder
+    }
+  }
+''';
 
 /// Service for managing the plugin gallery
 class GalleryService {
@@ -19,7 +62,13 @@ class GalleryService {
   PluginUpdateChecker? _updateChecker;
   Gallery? _cachedGallery;
   DateTime? _lastFetch;
+  DateTime? _persistedCacheTimestamp;
   final Duration _cacheTimeout = const Duration(hours: 1);
+  final Duration _persistedCacheStaleTimeout = const Duration(hours: 24);
+  static const String _cacheFileName = 'gallery_cache.json';
+
+  /// GUID to GalleryPlugin lookup map for fast plugin discovery
+  final Map<String, GalleryPlugin> _guidLookup = {};
 
   final List<QueuedPlugin> _installQueue = [];
   final StreamController<List<QueuedPlugin>> _queueController =
@@ -46,17 +95,25 @@ class GalleryService {
   /// Current install queue
   List<QueuedPlugin> get installQueue => List.unmodifiable(_installQueue);
 
-  /// Current gallery URL
+  /// Current gallery URL (legacy REST endpoint)
   String get galleryUrl => _settingsService.galleryUrl;
+
+  /// Current GraphQL endpoint URL
+  String get graphqlEndpoint => _settingsService.graphqlEndpoint;
 
   /// Force clear the cache (useful for testing new URLs)
   void clearCache() {
     _invalidateCache();
   }
 
-  /// Fetch gallery data with caching
+  /// Fetch gallery data with caching via GraphQL
+  ///
+  /// Uses a multi-tier caching strategy:
+  /// 1. Memory cache (1 hour TTL)
+  /// 2. Persisted file cache (24 hour stale threshold)
+  /// 3. Fresh fetch from GraphQL API
   Future<Gallery> fetchGallery({bool forceRefresh = false}) async {
-    // Return cached data if valid and not forcing refresh
+    // Return memory cached data if valid and not forcing refresh
     if (!forceRefresh &&
         _cachedGallery != null &&
         _lastFetch != null &&
@@ -64,47 +121,340 @@ class GalleryService {
       return _cachedGallery!;
     }
 
-    try {
-      final url = galleryUrl;
+    // Try to load from persisted cache if memory cache is empty or stale
+    if (!forceRefresh && _cachedGallery == null) {
+      final persistedGallery = await _loadFromPersistedCache();
+      if (persistedGallery != null) {
+        _cachedGallery = persistedGallery;
+        _lastFetch = _persistedCacheTimestamp;
 
-      final response = await http
-          .get(
-            Uri.parse(url),
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'Disting-NT-Helper/1.0',
-              'Cache-Control': 'no-cache',
-            },
-          )
-          .timeout(const Duration(seconds: 30));
+        // Build GUID lookup from cached data
+        _buildGuidLookup(persistedGallery);
 
-      if (response.statusCode == 200) {
-        // Check if the response looks like HTML (Google Drive error page)
-        if (response.body.trim().startsWith('<')) {
-          throw GalleryException(
-            'Received HTML instead of JSON. This might be a Google Drive access issue or the file is not publicly accessible.',
-          );
+        // Check if persisted cache is stale and trigger background refresh
+        if (_persistedCacheTimestamp != null &&
+            DateTime.now().difference(_persistedCacheTimestamp!) >
+                _persistedCacheStaleTimeout) {
+          // Background refresh - don't await
+          _refreshInBackground();
         }
 
-        final jsonData = json.decode(response.body) as Map<String, dynamic>;
-
-        // Log basic gallery information
-
-        final gallery = Gallery.fromJson(jsonData);
-
-        _cachedGallery = gallery;
-        _lastFetch = DateTime.now();
-
-        return gallery;
-      } else {
-        throw GalleryException(
-          'Failed to fetch gallery: HTTP ${response.statusCode} - ${response.reasonPhrase}',
-        );
+        return persistedGallery;
       }
+    }
+
+    try {
+      // Fetch plugins and categories via GraphQL
+      final plugins = await _fetchPluginsViaGraphQL();
+      final categories = await _fetchCategoriesViaGraphQL();
+
+      final gallery = _mapGraphQLToGallery(plugins, categories);
+
+      _cachedGallery = gallery;
+      _lastFetch = DateTime.now();
+
+      // Build GUID lookup from fetched data
+      _buildGuidLookup(gallery);
+
+      // Persist to file cache
+      await _saveToPersistedCache(gallery);
+
+      return gallery;
     } catch (e) {
+      // On network failure, try to return persisted cache if available
+      if (_cachedGallery != null) {
+        return _cachedGallery!;
+      }
+
+      final persistedGallery = await _loadFromPersistedCache();
+      if (persistedGallery != null) {
+        _cachedGallery = persistedGallery;
+        _buildGuidLookup(persistedGallery);
+        return persistedGallery;
+      }
+
       if (e is GalleryException) rethrow;
       throw GalleryException('Network error: ${e.toString()}');
     }
+  }
+
+  /// Refresh gallery data in background without blocking
+  Future<void> _refreshInBackground() async {
+    try {
+      final plugins = await _fetchPluginsViaGraphQL();
+      final categories = await _fetchCategoriesViaGraphQL();
+
+      final gallery = _mapGraphQLToGallery(plugins, categories);
+
+      _cachedGallery = gallery;
+      _lastFetch = DateTime.now();
+
+      // Rebuild GUID lookup with fresh data
+      _buildGuidLookup(gallery);
+
+      await _saveToPersistedCache(gallery);
+    } catch (e) {
+      // Silently fail background refresh - we still have cached data
+    }
+  }
+
+  /// Get the cache file path
+  Future<File> _getCacheFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File(path.join(directory.path, _cacheFileName));
+  }
+
+  /// Save gallery data to persisted file cache
+  Future<void> _saveToPersistedCache(Gallery gallery) async {
+    try {
+      final file = await _getCacheFile();
+      final timestamp = DateTime.now().toIso8601String();
+
+      final cacheData = {
+        'timestamp': timestamp,
+        'gallery': gallery.toJson(),
+      };
+
+      await file.writeAsString(json.encode(cacheData));
+      _persistedCacheTimestamp = DateTime.now();
+    } catch (e) {
+      // Silently fail cache write - not critical
+    }
+  }
+
+  /// Load gallery data from persisted file cache
+  Future<Gallery?> _loadFromPersistedCache() async {
+    try {
+      final file = await _getCacheFile();
+
+      if (!await file.exists()) {
+        return null;
+      }
+
+      final contents = await file.readAsString();
+      final cacheData = json.decode(contents) as Map<String, dynamic>;
+
+      final timestampStr = cacheData['timestamp'] as String?;
+      if (timestampStr != null) {
+        _persistedCacheTimestamp = DateTime.parse(timestampStr);
+      }
+
+      final galleryJson = cacheData['gallery'] as Map<String, dynamic>;
+      return Gallery.fromJson(galleryJson);
+    } catch (e) {
+      // Return null if cache is corrupted or unreadable
+      return null;
+    }
+  }
+
+  /// Build the GUID lookup map from gallery data
+  ///
+  /// Indexes plugins by:
+  /// - Single plugins: their `guid` field
+  /// - Collection plugins: each GUID in `collectionGuids`
+  void _buildGuidLookup(Gallery gallery) {
+    _guidLookup.clear();
+    for (final plugin in gallery.plugins) {
+      // Index single plugins by their GUID
+      if (plugin.guid != null && plugin.guid!.isNotEmpty) {
+        _guidLookup[plugin.guid!] = plugin;
+      }
+      // Index collection plugins by each GUID in collectionGuids
+      for (final guid in plugin.collectionGuids) {
+        _guidLookup[guid] = plugin;
+      }
+    }
+  }
+
+  /// Initialize the GUID lookup from a gallery (for testing purposes)
+  @visibleForTesting
+  void initializeGuidLookup(Gallery gallery) {
+    _buildGuidLookup(gallery);
+  }
+
+  /// Look up a plugin by its 4-character GUID
+  ///
+  /// Returns the GalleryPlugin matching the GUID, or null if not found.
+  /// For C++ collections, each individual algorithm GUID maps to the parent collection.
+  GalleryPlugin? getPluginByGuid(String guid) {
+    // Try exact match first
+    if (_guidLookup.containsKey(guid)) {
+      return _guidLookup[guid];
+    }
+    // Try case-insensitive match as fallback (GUIDs should be consistent but be lenient)
+    final upperGuid = guid.toUpperCase();
+    for (final entry in _guidLookup.entries) {
+      if (entry.key.toUpperCase() == upperGuid) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
+
+  /// Fetch plugins via GraphQL API
+  Future<List<dynamic>> _fetchPluginsViaGraphQL() async {
+    final endpoint = graphqlEndpoint;
+
+    final response = await http
+        .post(
+          Uri.parse(endpoint),
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Disting-NT-Helper/1.0',
+          },
+          body: json.encode({
+            'query': _getPluginsQuery,
+            'variables': {
+              'filter': {'verified': true},
+            },
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      throw GalleryException(
+        'GraphQL request failed: HTTP ${response.statusCode}',
+      );
+    }
+
+    final jsonData = json.decode(response.body) as Map<String, dynamic>;
+
+    if (jsonData.containsKey('errors')) {
+      throw GalleryException('GraphQL error: ${jsonData['errors']}');
+    }
+
+    return jsonData['data']['plugins'] as List<dynamic>;
+  }
+
+  /// Fetch categories via GraphQL API
+  Future<List<dynamic>> _fetchCategoriesViaGraphQL() async {
+    final endpoint = graphqlEndpoint;
+
+    final response = await http
+        .post(
+          Uri.parse(endpoint),
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Disting-NT-Helper/1.0',
+          },
+          body: json.encode({'query': _getCategoriesQuery}),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      throw GalleryException(
+        'GraphQL request failed: HTTP ${response.statusCode}',
+      );
+    }
+
+    final jsonData = json.decode(response.body) as Map<String, dynamic>;
+
+    if (jsonData.containsKey('errors')) {
+      throw GalleryException('GraphQL error: ${jsonData['errors']}');
+    }
+
+    return jsonData['data']['categories'] as List<dynamic>;
+  }
+
+  /// Map GraphQL response to Gallery model
+  Gallery _mapGraphQLToGallery(
+    List<dynamic> pluginsData,
+    List<dynamic> categoriesData,
+  ) {
+    // Map categories
+    final categories = categoriesData.map((cat) {
+      return PluginCategory(
+        id: cat['id'] as String,
+        name: cat['name'] as String,
+      );
+    }).toList();
+
+    // Build authors map from plugin data (use repositoryOwner as author)
+    final Map<String, PluginAuthor> authors = {};
+
+    // Map plugins
+    final plugins = pluginsData.map((p) {
+      final repositoryOwner = p['repositoryOwner'] as String? ?? '';
+      final repositoryName = p['repositoryName'] as String? ?? '';
+      final repositoryUrl = p['repositoryUrl'] as String? ?? '';
+
+      // Add author to map if not already present
+      if (repositoryOwner.isNotEmpty && !authors.containsKey(repositoryOwner)) {
+        authors[repositoryOwner] = PluginAuthor(name: repositoryOwner);
+      }
+
+      // Map plugin type (LUA, THREEPOT, CPP -> lua, threepot, cpp)
+      final pluginTypeStr = (p['pluginType'] as String? ?? 'LUA').toLowerCase();
+      final pluginType = switch (pluginTypeStr) {
+        'lua' => GalleryPluginType.lua,
+        'threepot' => GalleryPluginType.threepot,
+        'cpp' => GalleryPluginType.cpp,
+        _ => GalleryPluginType.lua,
+      };
+
+      // Parse dates safely
+      DateTime? createdAt;
+      DateTime? updatedAt;
+      if (p['createdAt'] != null) {
+        createdAt = DateTime.tryParse(p['createdAt'] as String);
+      }
+      if (p['updatedAt'] != null) {
+        updatedAt = DateTime.tryParse(p['updatedAt'] as String);
+      }
+
+      // Parse collectionGuids safely
+      final collectionGuidsRaw = p['collectionGuids'] as List<dynamic>?;
+      final collectionGuids =
+          collectionGuidsRaw?.map((g) => g as String).toList() ?? [];
+
+      return GalleryPlugin(
+        id: p['slug'] as String? ?? '',
+        name: p['name'] as String? ?? '',
+        description: p['description'] as String? ?? '',
+        longDescription: p['description'] as String?,
+        type: pluginType,
+        category: p['categoryId'] as String?,
+        author: repositoryOwner,
+        repository: PluginRepository(
+          owner: repositoryOwner,
+          name: repositoryName,
+          url: repositoryUrl,
+        ),
+        releases: PluginReleases(
+          latest: p['latestReleaseTag'] as String? ?? '',
+        ),
+        installation: PluginInstallation(
+          targetPath: p['installationPath'] as String? ?? '',
+          downloadUrl: p['selectedArtifactUrl'] as String?,
+        ),
+        compatibility: PluginCompatibility(
+          minFirmwareVersion: p['minFirmwareVersion'] as String?,
+        ),
+        metrics: PluginMetrics(
+          downloads: (p['downloadCount'] as int?) ?? 0,
+        ),
+        featured: p['featured'] as bool? ?? false,
+        verified: p['verified'] as bool? ?? false,
+        isCollection: p['isCollection'] as bool? ?? false,
+        guid: p['guid'] as String?,
+        collectionGuids: collectionGuids,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+    }).toList();
+
+    return Gallery(
+      version: '2.0.0',
+      lastUpdated: DateTime.now(),
+      metadata: const GalleryMetadata(
+        name: 'Disting NT Plugin Gallery',
+        description: 'Community plugins for the Disting NT',
+        maintainer: GalleryMaintainer(name: 'NT Gallery'),
+      ),
+      categories: categories,
+      authors: authors,
+      plugins: plugins,
+    );
   }
 
   /// Search plugins with optional filters

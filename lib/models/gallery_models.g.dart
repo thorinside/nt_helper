@@ -250,6 +250,11 @@ _GalleryPlugin _$GalleryPluginFromJson(Map<String, dynamic> json) =>
       verified: json['verified'] as bool? ?? false,
       isCollection: json['isCollection'] as bool? ?? false,
       guid: json['guid'] as String?,
+      collectionGuids:
+          (json['collectionGuids'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
@@ -279,6 +284,7 @@ Map<String, dynamic> _$GalleryPluginToJson(_GalleryPlugin instance) =>
       'verified': instance.verified,
       'isCollection': instance.isCollection,
       'guid': instance.guid,
+      'collectionGuids': instance.collectionGuids,
       'createdAt': instance.createdAt?.toIso8601String(),
       'updatedAt': instance.updatedAt?.toIso8601String(),
     };
