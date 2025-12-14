@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:nt_helper/services/settings_service.dart';
 
@@ -9,6 +11,7 @@ class DraggableResizableOverlay extends StatefulWidget {
   final double minWidth;
   final double maxWidth;
   final double aspectRatio; // width / height
+  final Duration controlsHideDelay;
 
   const DraggableResizableOverlay({
     super.key,
@@ -19,6 +22,7 @@ class DraggableResizableOverlay extends StatefulWidget {
     this.minWidth = 128.0, // 0.5x scale (256 * 0.5)
     this.maxWidth = 1024.0, // 4x scale (256 * 4)
     this.aspectRatio = 4.0, // 4:1 aspect ratio for Disting NT display
+    this.controlsHideDelay = const Duration(seconds: 10),
   });
 
   @override
@@ -33,6 +37,8 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
   late double _y;
   bool _isDragging = false;
   bool _isResizing = false;
+  bool _controlsVisible = true;
+  Timer? _hideTimer;
   final SettingsService _settings = SettingsService();
 
   @override
@@ -48,6 +54,33 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSettings();
     });
+
+    // Start the hide timer
+    _startHideTimer();
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(widget.controlsHideDelay, () {
+      if (mounted) {
+        setState(() {
+          _controlsVisible = false;
+        });
+      }
+    });
+  }
+
+  void _showControls() {
+    setState(() {
+      _controlsVisible = true;
+    });
+    _startHideTimer();
   }
 
   void _loadSettings() {
@@ -91,6 +124,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
   }
 
   void _onPanStart(DragStartDetails details) {
+    _showControls();
     setState(() {
       _isDragging = true;
     });
@@ -112,6 +146,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
   }
 
   void _onResizeStart(DragStartDetails details) {
+    _showControls();
     setState(() {
       _isResizing = true;
     });
@@ -141,6 +176,8 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final showControls = _controlsVisible || _isResizing || _isDragging;
+
     return Positioned(
       left: _x,
       top: _y,
@@ -152,6 +189,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
             // Main content
             Positioned.fill(
               child: GestureDetector(
+                onTap: _showControls,
                 onPanStart: _onPanStart,
                 onPanUpdate: _onPanUpdate,
                 onPanEnd: _onPanEnd,
@@ -179,47 +217,64 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
               ),
             ),
 
-            // Resize handle (bottom-right corner)
+            // Close button (top-right corner)
             Positioned(
-              right: 0,
-              bottom: 0,
-              child: GestureDetector(
-                onPanStart: _onResizeStart,
-                onPanUpdate: _onResizeUpdate,
-                onPanEnd: _onResizeEnd,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(
-                      alpha: _isResizing ? 0.8 : 0.0,
+              top: 4,
+              right: 4,
+              child: AnimatedOpacity(
+                opacity: showControls ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: GestureDetector(
+                  onTap: () {
+                    widget.overlayEntry.remove();
+                  },
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    borderRadius: const BorderRadius.only(
-                      bottomRight: Radius.circular(6),
+                    child: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.white,
                     ),
                   ),
-                  child: _isResizing
-                      ? const Icon(
-                          Icons.zoom_out_map,
-                          size: 12,
-                          color: Colors.white,
-                        )
-                      : null,
                 ),
               ),
             ),
 
-            // Show resize handle on hover (for desktop)
-            if (_isResizing)
-              Positioned(
-                right: 2,
-                bottom: 2,
-                child: Icon(
-                  Icons.zoom_out_map,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
+            // Resize handle (bottom-right corner)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: AnimatedOpacity(
+                opacity: showControls ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: GestureDetector(
+                  onPanStart: _onResizeStart,
+                  onPanUpdate: _onResizeUpdate,
+                  onPanEnd: _onResizeEnd,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        bottomRight: Radius.circular(6),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.open_in_full,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
+            ),
           ],
         ),
       ),

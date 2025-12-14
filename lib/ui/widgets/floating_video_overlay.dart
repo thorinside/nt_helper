@@ -92,7 +92,6 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
       child: FloatingVideoContent(
         cubit: widget.cubit,
         videoFrameCubit: widget.videoFrameCubit,
-        overlayEntry: widget.overlayEntry,
         lastFrame: _lastFrame,
         displayFrame: _displayFrame,
         onCopyToClipboard: _copyToClipboard,
@@ -115,7 +114,6 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
 class FloatingVideoContent extends StatelessWidget {
   final DistingCubit cubit;
   final VideoFrameCubit videoFrameCubit;
-  final OverlayEntry overlayEntry;
   final Uint8List? lastFrame;
   final Uint8List? displayFrame;
   final VoidCallback onCopyToClipboard;
@@ -125,7 +123,6 @@ class FloatingVideoContent extends StatelessWidget {
     super.key,
     required this.cubit,
     required this.videoFrameCubit,
-    required this.overlayEntry,
     required this.lastFrame,
     required this.displayFrame,
     required this.onCopyToClipboard,
@@ -274,39 +271,9 @@ class FloatingVideoContent extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           color: Theme.of(context).colorScheme.surface,
         ),
-        child: Stack(
-          children: [
-            // Main video content - use VideoFrameCubit for all platforms
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: _buildVideoContent(context),
-            ),
-
-            // Close button positioned on the right side
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  iconSize: 16,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 24,
-                    minHeight: 24,
-                  ),
-                  onPressed: () {
-                    overlayEntry.remove();
-                  },
-                  tooltip: 'Close',
-                ),
-              ),
-            ),
-          ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: _buildVideoContent(context),
         ),
       ),
     );
