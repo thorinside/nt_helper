@@ -40,14 +40,14 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   flutter_midi_command: ^0.5.3
-  image: ^4.5.4
-  shared_preferences: ^2.5.3
+  image: ^4.6.0
+  shared_preferences: ^2.5.4
   package_info_plus: ^9.0.0
   flutter_launcher_icons: ^0.14.4
   pasteboard: ^0.4.0
   retry: ^3.1.2
   async: ^2.13.0
-  haptic_feedback: ^0.6.0
+  haptic_feedback: ^0.6.4+2
   bitsdojo_window: 0.1.6
   camera: ^0.11.3
   dart_mcp: ^0.4.0
@@ -58,12 +58,13 @@ dependencies:
 
   # Drift dependencies
   drift: ^2.30.0
-  sqlite3: ^2.6.0
+  sqlite3: ^2.9.4
+  sqlite3_flutter_libs: ^0.5.0
   path_provider: ^2.1.5
   permission_handler: ^12.0.1
   path: ^1.9.1
   intl: ^0.20.2
-  file_picker: ^10.3.6
+  file_picker: ^10.3.7
 
   # UI & State Management
   flutter_bloc: ^9.1.1
@@ -78,7 +79,7 @@ dependencies:
 
   archive: ^4.0.7
   provider: ^6.1.5+1
-  get_it: ^9.1.0
+  get_it: ^9.2.0
   dart_elf: ^1.0.1
   http: ^1.6.0
   pub_semver: ^2.2.0
@@ -105,13 +106,13 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.10.4
   json_serializable: ^6.11.2
-  mockito: ^5.5.1
+  mockito: ^5.6.1
   mocktail: ^1.0.4
   freezed: ^3.2.3
   bloc_test: ^10.0.0
 
   # Drift dev dependencies
-  drift_dev: ^2.29.0
+  drift_dev: ^2.30.0
 
 dependency_overrides:
   flutter_midi_command_linux:

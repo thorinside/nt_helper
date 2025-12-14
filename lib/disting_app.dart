@@ -412,55 +412,65 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 },
               ),
               const SizedBox(height: 32),
-              // Button row: Refresh, Work Offline, Connect
+              // Secondary actions: Refresh, Offline
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween, // Space buttons out
                 children: [
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.refresh),
-                    label: const Text("Refresh"),
-                    onPressed: widget.onRefresh,
-                  ),
-                  if (widget.canWorkOffline)
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.cloud_off),
-                      label: const Text("Offline"),
-                      onPressed: widget.onOfflinePressed,
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      label: const Text("Refresh"),
+                      onPressed: widget.onRefresh,
                     ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.link),
-                    label: const Text("Connect"),
-                    onPressed:
-                        (selectedInputDevice != null &&
-                            selectedOutputDevice != null &&
-                            selectedSysExId != null)
-                        ? () {
-                            widget.onDeviceSelected(
-                              selectedInputDevice!,
-                              selectedOutputDevice!,
-                              selectedSysExId!,
-                            );
-                          }
-                        : null,
                   ),
-                ],
-              ),
-              // Demo button section (if no device selected)
-              if (selectedInputDevice == null ||
-                  selectedOutputDevice == null ||
-                  selectedSysExId == null)
-                Column(
-                  children: [
-                    const SizedBox(height: 24),
-                    const Text("No Disting? Try the demo:"),
-                    const SizedBox(height: 16),
-                    OutlinedButton(
-                      onPressed: widget.onDemoPressed,
-                      child: const Text("Demo"),
+                  if (widget.canWorkOffline) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.cloud_off),
+                        label: const Text("Offline"),
+                        onPressed: widget.onOfflinePressed,
+                      ),
                     ),
                   ],
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Primary action: Connect
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.link),
+                  label: const Text("Connect"),
+                  onPressed:
+                      (selectedInputDevice != null &&
+                          selectedOutputDevice != null &&
+                          selectedSysExId != null)
+                      ? () {
+                          widget.onDeviceSelected(
+                            selectedInputDevice!,
+                            selectedOutputDevice!,
+                            selectedSysExId!,
+                          );
+                        }
+                      : null,
                 ),
+              ),
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+              // Demo section
+              Text(
+                "No Disting? Try the demo:",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.play_arrow),
+                onPressed: widget.onDemoPressed,
+                label: const Text("Demo Mode"),
+              ),
             ],
           ),
         ),
