@@ -75,6 +75,9 @@ class DistingCubit extends Cubit<DistingState> {
 
   MidiCommand _midiCommand = MidiCommand();
 
+  // MIDI setup change subscription for auto-detecting device connections
+  StreamSubscription<String>? _midiSetupSubscription;
+
   // Simple program refresh queue with retry
   Timer? _programRefreshTimer;
   int? _programRefreshSlot;
@@ -153,6 +156,9 @@ class DistingCubit extends Cubit<DistingState> {
     _programRefreshTimer?.cancel();
     _parameterRefreshTimer?.cancel();
 
+    // Cancel MIDI setup listener
+    _midiSetupSubscription?.cancel();
+
     // Dispose CPU usage streaming resources
     _cpuUsageTimer?.cancel();
     _cpuUsageController.close();
@@ -208,6 +214,8 @@ class DistingCubit extends Cubit<DistingState> {
             canWorkOffline: canWorkOffline, // Pass the flag
           ),
         );
+        // Start listening for MIDI device connection changes
+        _startMidiSetupListener();
       }
     } else {
       // No saved settings found, load devices and show selection
@@ -219,10 +227,15 @@ class DistingCubit extends Cubit<DistingState> {
           canWorkOffline: canWorkOffline, // Pass the flag
         ),
       );
+      // Start listening for MIDI device connection changes
+      _startMidiSetupListener();
     }
   }
 
   Future<void> onDemo() async {
+    // Stop listening for MIDI setup changes when entering demo mode
+    _stopMidiSetupListener();
+
     // --- Create Mock Manager and Fetch State ---
     final mockManager = MockDistingMidiManager();
     final distingVersion =
@@ -490,6 +503,9 @@ class DistingCubit extends Cubit<DistingState> {
           canWorkOffline: canWorkOffline, // Pass the flag here
         ),
       );
+
+      // Start listening for MIDI device connection changes
+      _startMidiSetupListener();
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
       // Emit default state on error
@@ -500,7 +516,32 @@ class DistingCubit extends Cubit<DistingState> {
           canWorkOffline: false,
         ),
       );
+
+      // Still start listening even on error
+      _startMidiSetupListener();
     }
+  }
+
+  /// Starts listening for MIDI setup changes (device connections/disconnections).
+  /// Automatically refreshes device list when changes are detected.
+  void _startMidiSetupListener() {
+    // Cancel any existing subscription to avoid duplicates
+    _midiSetupSubscription?.cancel();
+    _midiSetupSubscription = null;
+
+    // Subscribe to MIDI setup changes
+    _midiSetupSubscription = _midiCommand.onMidiSetupChanged?.listen((_) {
+      // Only refresh if we're still in the device selection state
+      if (state is DistingStateInitial || state is DistingStateSelectDevice) {
+        loadDevices();
+      }
+    });
+  }
+
+  /// Stops listening for MIDI setup changes.
+  void _stopMidiSetupListener() {
+    _midiSetupSubscription?.cancel();
+    _midiSetupSubscription = null;
   }
 
   Future<Uint8List?> getHardwareScreenshot() async {
@@ -653,6 +694,9 @@ class DistingCubit extends Cubit<DistingState> {
     }
     final existingManager = disting(); // Get manager separately
 
+    // Stop listening for MIDI setup changes while connecting
+    _stopMidiSetupListener();
+
     try {
       // Disconnect and dispose any existing managers first
       if (existingManager != null) {
@@ -745,6 +789,9 @@ class DistingCubit extends Cubit<DistingState> {
     if (currentState is DistingStateSynchronized && currentState.offline) {
       return; // Already offline
     }
+
+    // Stop listening for MIDI setup changes when going offline
+    _stopMidiSetupListener();
 
     // Get devices and manager from CURRENT state before changing it
     MidiDevice? currentInputDevice;
