@@ -41,10 +41,14 @@ class ConnectionData {
     this.onLabelTap,
     this.sourceNodeBounds,
     this.destinationNodeBounds,
+    this.sourceOccluderBounds = const [],
+    this.destinationOccluderBounds = const [],
   });
 
   final Rect? sourceNodeBounds;
   final Rect? destinationNodeBounds;
+  final List<Rect> sourceOccluderBounds;
+  final List<Rect> destinationOccluderBounds;
 
   /// Convenience getter for ghost connection status from the connection model
   bool get isGhostConnection => connection.isGhostConnection;
@@ -207,19 +211,28 @@ class ConnectionPainter extends CustomPainter {
       } else {
         // Draw the path
         if (drawEndpointsOnly) {
-          // Draw path clipped to source and destination node bounds
+          // Draw path clipped to source and destination node bounds.
+          // Additionally, subtract ("difference") any node bounds that are above
+          // the endpoint node in z-order so overlapping nodes still occlude the
+          // endpoint overlay.
           if (conn.sourceNodeBounds != null) {
-            canvas.save();
-            canvas.clipRect(conn.sourceNodeBounds!);
-            canvas.drawPath(path, paint);
-            canvas.restore();
+            _drawClippedEndpointPath(
+              canvas,
+              path,
+              paint,
+              endpointBounds: conn.sourceNodeBounds!,
+              occluderBounds: conn.sourceOccluderBounds,
+            );
           }
 
           if (conn.destinationNodeBounds != null) {
-            canvas.save();
-            canvas.clipRect(conn.destinationNodeBounds!);
-            canvas.drawPath(path, paint);
-            canvas.restore();
+            _drawClippedEndpointPath(
+              canvas,
+              path,
+              paint,
+              endpointBounds: conn.destinationNodeBounds!,
+              occluderBounds: conn.destinationOccluderBounds,
+            );
           }
         } else {
           // Draw full path
@@ -232,6 +245,23 @@ class ConnectionPainter extends CustomPainter {
         _drawEndpoints(canvas, conn);
       }
     }
+  }
+
+  void _drawClippedEndpointPath(
+    Canvas canvas,
+    Path path,
+    Paint paint, {
+    required Rect endpointBounds,
+    required List<Rect> occluderBounds,
+  }) {
+    canvas.save();
+    canvas.clipRect(endpointBounds);
+    for (final rect in occluderBounds) {
+      if (!rect.overlaps(endpointBounds)) continue;
+      canvas.clipRect(rect, clipOp: dart_ui.ClipOp.difference);
+    }
+    canvas.drawPath(path, paint);
+    canvas.restore();
   }
 
   // Removed _clipPathAgainstObstacles as it is no longer used
@@ -952,6 +982,7 @@ class ConnectionPainter extends CustomPainter {
         oldDelegate.animationProgress != animationProgress ||
         oldDelegate.hoveredConnectionId != hoveredConnectionId ||
         oldDelegate.theme != theme ||
+        oldDelegate.drawEndpointsOnly != drawEndpointsOnly ||
         oldDelegate.deletingPortId != deletingPortId ||
         oldDelegate.deleteAnimationProgress != deleteAnimationProgress ||
         oldDelegate.fadeOutProgress != fadeOutProgress ||

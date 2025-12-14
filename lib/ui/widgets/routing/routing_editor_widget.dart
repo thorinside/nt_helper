@@ -1295,6 +1295,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
     final nodeBoundsMap = _calculateNodeBoundsMap();
     final portToNodeIdMap = <String, String>{};
+    final zIndexByNodeId = <String, int>{};
 
     // Build port ID to Node ID map
     for (final port in physicalInputs) {
@@ -1313,6 +1314,25 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       for (final port in algo.outputPorts) {
         portToNodeIdMap[port.id] = algo.id;
       }
+    }
+
+    // Compute node z-order indices matching the Stack child order: later children
+    // are on top. Foreground connection overlays should only appear on top of
+    // their endpoint node, while still allowing nodes above to occlude them.
+    var zIndex = 0;
+    if (widget.showPhysicalPorts) {
+      if (physicalOutputs.isNotEmpty) {
+        zIndexByNodeId['physical_outputs'] = zIndex++;
+      }
+      if (physicalInputs.isNotEmpty) {
+        zIndexByNodeId['physical_inputs'] = zIndex++;
+      }
+      if (es5Inputs.isNotEmpty) {
+        zIndexByNodeId['es5_node'] = zIndex++;
+      }
+    }
+    for (var i = 0; i < algorithms.length; i++) {
+      zIndexByNodeId[algorithms[i].id] = zIndex + i;
     }
 
     return Semantics(
@@ -1432,6 +1452,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                       connections,
                       portToNodeIdMap,
                       nodeBoundsMap,
+                      zIndexByNodeId,
                     ),
 
                     // 2. Nodes (Stacked from bottom to top)
@@ -1472,6 +1493,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                       connections,
                       portToNodeIdMap,
                       nodeBoundsMap,
+                      zIndexByNodeId,
                       drawEndpointsOnly: true,
                     ),
 
@@ -2202,9 +2224,24 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     List<Connection> connections,
     Map<String, String> portToNodeIdMap,
     Map<String, Rect> nodeBoundsMap,
+    Map<String, int> zIndexByNodeId,
   ) {
     final connectionDataList = <painter.ConnectionData>[];
     final highlightedConnectionId = _connectionHighlight?.id;
+
+    List<Rect> buildOccluderBoundsForNode(String? nodeId) {
+      if (nodeId == null) return const [];
+      final nodeZ = zIndexByNodeId[nodeId];
+      if (nodeZ == null) return const [];
+      final occluders = <Rect>[];
+      nodeBoundsMap.forEach((otherNodeId, otherBounds) {
+        final otherZ = zIndexByNodeId[otherNodeId];
+        if (otherZ == null) return;
+        if (otherZ <= nodeZ) return;
+        occluders.add(otherBounds);
+      });
+      return occluders;
+    }
 
     for (final connection in connections) {
       // For partial connections, we need special handling
@@ -2261,6 +2298,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         }
       }
 
+      final sourceNodeId = portToNodeIdMap[connection.sourcePortId];
+      final destinationNodeId = portToNodeIdMap[connection.destinationPortId];
+
       connectionDataList.add(
         painter.ConnectionData(
           connection: connection,
@@ -2279,8 +2319,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           onLabelHover:
               null, // Label hover is handled by the overlay widgets, not here
           onLabelTap: () => _toggleConnectionOutputMode(connection.id),
-          sourceNodeBounds: nodeBoundsMap[portToNodeIdMap[connection.sourcePortId]],
-          destinationNodeBounds: nodeBoundsMap[portToNodeIdMap[connection.destinationPortId]],
+          sourceNodeBounds: nodeBoundsMap[sourceNodeId],
+          destinationNodeBounds: nodeBoundsMap[destinationNodeId],
+          sourceOccluderBounds: buildOccluderBoundsForNode(sourceNodeId),
+          destinationOccluderBounds: buildOccluderBoundsForNode(destinationNodeId),
         ),
       );
     }
@@ -2290,7 +2332,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   Widget _buildConnections(
     List<Connection> connections,
     Map<String, String> portToNodeIdMap,
-    Map<String, Rect> nodeBoundsMap, {
+    Map<String, Rect> nodeBoundsMap,
+    Map<String, int> zIndexByNodeId, {
     bool drawEndpointsOnly = false,
   }) {
     if (connections.isEmpty) {
@@ -2301,6 +2344,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       connections,
       portToNodeIdMap,
       nodeBoundsMap,
+      zIndexByNodeId,
     );
 
     if (connectionDataList.isEmpty) {
