@@ -37,6 +37,7 @@ part 'disting_cubit_parameter_fetch_delegate.dart';
 part 'disting_cubit_plugin_delegate.dart';
 part 'disting_cubit_connection_delegate.dart';
 part 'disting_cubit_parameter_refresh_delegate.dart';
+part 'disting_cubit_monitoring_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -97,6 +98,7 @@ class DistingCubit extends _DistingCubitBase
   late final _ConnectionDelegate _connectionDelegate = _ConnectionDelegate(this);
   late final _ParameterRefreshDelegate _parameterRefreshDelegate =
       _ParameterRefreshDelegate(this);
+  late final _MonitoringDelegate _monitoringDelegate = _MonitoringDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -104,12 +106,6 @@ class DistingCubit extends _DistingCubitBase
       super(const DistingState.initial()) {
     _metadataDao =
         database.metadataDao; // Initialize DAO using public database field
-
-    // Initialize CPU usage stream
-    _cpuUsageController = StreamController<CpuUsage>.broadcast(
-      onListen: _startCpuUsagePolling,
-      onCancel: _checkStopCpuUsagePolling,
-    );
   }
 
   MidiCommand _midiCommand = MidiCommand();
@@ -130,17 +126,8 @@ class DistingCubit extends _DistingCubitBase
   // Track which output mode parameters we've already queried to avoid duplicates
   final Map<int, Set<int>> _queriedOutputModeParameters = {};
 
-  // CPU Usage Streaming
-  late final StreamController<CpuUsage> _cpuUsageController;
-  Timer? _cpuUsageTimer;
-  StreamSubscription<VideoStreamState>? _videoStateSubscription;
-  static const Duration _cpuUsagePollingInterval = Duration(seconds: 10);
-
   /// Stream of CPU usage updates that polls every 10 seconds when listeners are active
-  Stream<CpuUsage> get cpuUsageStream => _cpuUsageController.stream;
-
-  // Video Streaming
-  UsbVideoManager? _videoManager;
+  Stream<CpuUsage> get cpuUsageStream => _monitoringDelegate.cpuUsageStream;
 
   /// Stream of video state updates from the cubit's state
   Stream<VideoStreamState?> get videoStreamState => stream.map(
@@ -184,13 +171,7 @@ class DistingCubit extends _DistingCubitBase
     // Cancel MIDI setup listener
     _midiSetupSubscription?.cancel();
 
-    // Dispose CPU usage streaming resources
-    _cpuUsageTimer?.cancel();
-    _cpuUsageController.close();
-
-    // Dispose video streaming resources
-    _videoStateSubscription?.cancel();
-    _videoManager?.dispose();
+    _monitoringDelegate.dispose();
 
     return super.close();
   }
@@ -445,24 +426,7 @@ class DistingCubit extends _DistingCubitBase
   /// Returns null if the device is not connected or if the request fails.
   /// Only works when connected to a physical device (not in offline or demo mode).
   Future<CpuUsage?> getCpuUsage() async {
-    final currentState = state;
-    if (currentState is! DistingStateSynchronized) {
-      return null;
-    }
-
-    if (currentState.offline || currentState.demo) {
-      return null;
-    }
-
-    try {
-      final disting = requireDisting();
-      await disting.requestWake();
-      final cpuUsage = await disting.requestCpuUsage();
-      return cpuUsage;
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      return null;
-    }
+    return _monitoringDelegate.getCpuUsage();
   }
 
   void disconnect() {
@@ -1782,92 +1746,28 @@ class DistingCubit extends _DistingCubitBase
 
   /// Starts the USB video stream from the Disting NT device
   Future<void> startVideoStream() async {
-    final currentState = state;
-    if (currentState is! DistingStateSynchronized) {
-      return;
-    }
-
-    // Initialize video manager if not already created
-    _videoManager ??= UsbVideoManager();
-    await _videoManager!.initialize();
-
-    // Subscribe to video state changes and update cubit state
-    _videoStateSubscription?.cancel();
-    _videoStateSubscription = _videoManager!.stateStream.listen((videoState) {
-      if (state is DistingStateSynchronized) {
-        final syncState = state as DistingStateSynchronized;
-        emit(syncState.copyWith(videoStream: videoState));
-      }
-    });
-
-    // Try to auto-connect to Disting NT or any available USB camera
-    await _videoManager!.autoConnect();
+    return _monitoringDelegate.startVideoStream();
   }
 
   /// Stops the USB video stream
   Future<void> stopVideoStream() async {
-    _videoStateSubscription?.cancel();
-    _videoStateSubscription = null;
-    await _videoManager?.disconnect();
-
-    final currentState = state;
-    if (currentState is DistingStateSynchronized) {
-      emit(currentState.copyWith(videoStream: null));
-    }
+    return _monitoringDelegate.stopVideoStream();
   }
 
   /// Gets the current video stream state
-  VideoStreamState? get currentVideoState => _videoManager?.currentState;
+  VideoStreamState? get currentVideoState => _monitoringDelegate.currentVideoState;
 
   /// Gets the video manager for direct stream access
-  UsbVideoManager? get videoManager => _videoManager;
-
-  // CPU Usage Streaming
-  void _startCpuUsagePolling() {
-    // Cancel any existing timer
-    _cpuUsageTimer?.cancel();
-
-    // Start polling immediately, then every 10 seconds
-    _pollCpuUsageOnce();
-    _cpuUsageTimer = Timer.periodic(_cpuUsagePollingInterval, (_) {
-      _pollCpuUsageOnce();
-    });
-  }
-
-  void _checkStopCpuUsagePolling() {
-    // Use a small delay to check if there are still listeners
-    // This prevents stopping polling when one listener cancels but others remain
-    Timer(const Duration(milliseconds: 100), () {
-      if (!_cpuUsageController.hasListener) {
-        _cpuUsageTimer?.cancel();
-        _cpuUsageTimer = null;
-      }
-    });
-  }
-
-  Future<void> _pollCpuUsageOnce() async {
-    try {
-      final cpuUsage = await getCpuUsage();
-      if (cpuUsage != null && !_cpuUsageController.isClosed) {
-        _cpuUsageController.add(cpuUsage);
-      }
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      // Don't add error to stream, just log it
-    }
-  }
+  UsbVideoManager? get videoManager => _monitoringDelegate.videoManager;
 
   /// Temporarily pause CPU usage polling (useful during sync operations)
   void pauseCpuMonitoring() {
-    _cpuUsageTimer?.cancel();
-    _cpuUsageTimer = null;
+    return _monitoringDelegate.pauseCpuMonitoring();
   }
 
   /// Resume CPU usage polling if there are listeners
   void resumeCpuMonitoring() {
-    if (_cpuUsageController.hasListener && _cpuUsageTimer == null) {
-      _startCpuUsagePolling();
-    }
+    return _monitoringDelegate.resumeCpuMonitoring();
   }
 
   /// Sends a delete command for a plugin file on the SD card.
