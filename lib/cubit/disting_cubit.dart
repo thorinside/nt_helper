@@ -32,6 +32,7 @@ part 'disting_state.dart';
 part 'disting_cubit_algorithm_ops.dart';
 part 'disting_cubit_preset_ops.dart';
 part 'disting_cubit_slot_ops.dart';
+part 'disting_cubit_offline_demo_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -83,6 +84,9 @@ class DistingCubit extends _DistingCubitBase
   late final MetadataDao _metadataDao; // Added
   final Future<SharedPreferences> _prefs;
   FirmwareVersion? _lastKnownFirmwareVersion;
+  late final _OfflineDemoDelegate _offlineDemoDelegate = _OfflineDemoDelegate(
+    this,
+  );
 
   // Modified constructor
   DistingCubit(this.database)
@@ -256,47 +260,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> onDemo() async {
-    // Stop listening for MIDI setup changes when entering demo mode
-    _stopMidiSetupListener();
-
-    // --- Create Mock Manager and Fetch State ---
-    final mockManager = MockDistingMidiManager();
-    final distingVersion =
-        await mockManager.requestVersionString() ?? "Demo Error";
-    final firmwareVersion = FirmwareVersion(distingVersion);
-    _lastKnownFirmwareVersion = firmwareVersion;
-    final presetName =
-        await mockManager.requestPresetName() ?? "Demo Preset Error";
-    final algorithms = await _fetchMockAlgorithms(mockManager);
-    final unitStrings = await mockManager.requestUnitStrings() ?? [];
-    final numSlots = await mockManager.requestNumAlgorithmsInPreset() ?? 0;
-    final slots = await fetchSlots(
-      numSlots,
-      mockManager,
-    ); // Use fetchSlots with mockManager
-
-    // Debug: Check slots immediately after fetching
-    for (int i = 0; i < slots.length; i++) {
-      slots[i];
-    }
-
-    // --- Emit the State ---
-    emit(
-      DistingState.synchronized(
-        disting: mockManager,
-        // Use the created mock manager instance
-        distingVersion: distingVersion,
-        firmwareVersion: firmwareVersion,
-        presetName: presetName,
-        algorithms: algorithms,
-        slots: slots,
-        unitStrings: unitStrings,
-        demo: true,
-      ),
-    );
-
-    // Create parameter queue for demo manager
-    _createParameterQueue();
+    return _offlineDemoDelegate.onDemo();
   }
 
   // Helper to determine if an algorithm is a factory algorithm (lowercase GUID)
@@ -815,130 +779,11 @@ class DistingCubit extends _DistingCubitBase
   // --- Offline Mode Handling ---
 
   Future<void> goOffline() async {
-    final currentState = state;
-    if (currentState is DistingStateSynchronized && currentState.offline) {
-      return; // Already offline
-    }
-
-    // Stop listening for MIDI setup changes when going offline
-    _stopMidiSetupListener();
-
-    // Get devices and manager from CURRENT state before changing it
-    MidiDevice? currentInputDevice;
-    MidiDevice? currentOutputDevice;
-    IDistingMidiManager? currentManager = disting(); // Get current manager
-
-    if (currentState is DistingStateConnected) {
-      currentInputDevice = currentState.inputDevice;
-      currentOutputDevice = currentState.outputDevice;
-    } else if (currentState is DistingStateSynchronized) {
-      currentInputDevice = currentState.inputDevice;
-      currentOutputDevice = currentState.outputDevice;
-    }
-
-    emit(
-      DistingState.connected(disting: MockDistingMidiManager(), loading: true),
-    );
-
-    try {
-      // Disconnect existing MIDI connection IF devices were present
-      if (currentManager != null) {
-        // Check if there *was* a manager
-        if (currentInputDevice != null) {
-          _midiCommand.disconnectDevice(currentInputDevice);
-        }
-        if (currentOutputDevice != null &&
-            currentOutputDevice.id != currentInputDevice?.id) {
-          _midiCommand.disconnectDevice(currentOutputDevice);
-        }
-        currentManager.dispose(); // Dispose the old manager (online or offline)
-      }
-      _offlineManager
-          ?.dispose(); // Ensure offline is disposed if manager wasn't it
-
-      // Create and initialize the offline manager
-      _offlineManager = OfflineDistingMidiManager(database);
-      await _offlineManager!.initializeFromDb(null);
-      final version =
-          await _offlineManager!.requestVersionString() ?? "Offline";
-      final firmwareVersion = FirmwareVersion(version);
-      _lastKnownFirmwareVersion = firmwareVersion;
-      final units = await _offlineManager!.requestUnitStrings() ?? [];
-      final availableAlgorithmsInfo = await _fetchOfflineAlgorithms();
-      final presetName =
-          await _offlineManager!.requestPresetName() ?? "Offline Preset";
-      final numAlgorithmsInPreset =
-          await _offlineManager!.requestNumAlgorithmsInPreset() ?? 0;
-      final List<Slot> initialSlots = await fetchSlots(
-        numAlgorithmsInPreset,
-        _offlineManager!,
-      );
-
-      // Emit state WITHOUT devices or custom names map
-      emit(
-        DistingState.synchronized(
-          disting: _offlineManager!,
-          // Use offline manager
-          distingVersion: version,
-          firmwareVersion: firmwareVersion,
-          presetName: presetName,
-          algorithms: availableAlgorithmsInfo,
-          slots: initialSlots,
-          unitStrings: units,
-          inputDevice: null,
-          // No devices when offline
-          outputDevice: null,
-          offline: true,
-          loading: false,
-        ),
-      );
-
-      // Create parameter queue for offline manager
-      _createParameterQueue();
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      await loadDevices();
-    }
+    return _offlineDemoDelegate.goOffline();
   }
 
   Future<void> goOnline() async {
-    final currentState = state;
-    if (!(currentState is DistingStateSynchronized && currentState.offline)) {
-      // Only proceed if currently offline and synchronized
-      // If already online or in a different state, loadDevices handles it
-      await loadDevices();
-      return;
-    }
-
-    // Dispose offline manager first
-    _offlineManager?.dispose();
-    _offlineManager = null;
-
-    // Check if we have details from the last online session
-    if (_lastOnlineInputDevice != null &&
-        _lastOnlineOutputDevice != null &&
-        _lastOnlineSysExId != null) {
-      try {
-        // Attempt direct connection using stored details
-        await connectToDevices(
-          _lastOnlineInputDevice!,
-          _lastOnlineOutputDevice!,
-          _lastOnlineSysExId!,
-        ); // Use stored details
-        // If connectToDevices succeeds, it will emit the connected/synchronized state
-        return; // Successfully reconnected
-      } catch (e) {
-        // Clear potentially stale details if reconnection failed
-        _lastOnlineInputDevice = null;
-        _lastOnlineOutputDevice = null;
-        _lastOnlineSysExId = null;
-        // Fall through to loadDevices below
-      }
-    }
-
-    // If no last connection details or direct reconnect failed, load devices normally
-    disconnect(); // Ensure any residual MIDI connection is closed
-    await loadDevices(); // Go back to device selection / auto-connect
+    return _offlineDemoDelegate.goOnline();
   }
 
   Future<void> cancelSync() async {
@@ -947,54 +792,11 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> loadPresetOffline(FullPresetDetails presetDetails) async {
-    final currentState = state;
-    if (!(currentState is DistingStateSynchronized && currentState.offline)) {
-      return;
-    }
-    if (_offlineManager == null) {
-      return;
-    }
+    return _offlineDemoDelegate.loadPresetOffline(presetDetails);
+  }
 
-    emit(currentState.copyWith(loading: true)); // Show loading
-
-    try {
-      // 1. Tell the offline manager to load the preset
-      await _offlineManager!.initializeFromDb(presetDetails);
-
-      // 2. Fetch the updated state FROM the manager
-      final presetName = await _offlineManager!.requestPresetName() ?? "Error";
-      final numAlgorithmsInPreset =
-          await _offlineManager!.requestNumAlgorithmsInPreset() ?? 0;
-      final slots = await fetchSlots(numAlgorithmsInPreset, _offlineManager!);
-
-      // 3. Re-fetch metadata (algorithms and units don't change)
-      final availableAlgorithmsInfo = await _fetchOfflineAlgorithms();
-      final units = await _offlineManager!.requestUnitStrings() ?? [];
-      final version =
-          await _offlineManager!.requestVersionString() ?? "Offline";
-
-      // 4. Emit the new synchronized state, still marked offline
-      emit(
-        DistingState.synchronized(
-          disting: _offlineManager!,
-          distingVersion: version,
-          firmwareVersion: FirmwareVersion(version),
-          presetName: presetName,
-          algorithms: availableAlgorithmsInfo,
-          slots: slots,
-          unitStrings: units,
-          offline: true,
-          // Remain offline
-          loading: false,
-          screenshot: currentState.screenshot,
-          // Preserve screenshot if any
-          demo: currentState.demo, // Preserve demo status if any
-        ),
-      );
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      emit(currentState.copyWith(loading: false)); // Stop loading on error
-    }
+  void _emitState(DistingState next) {
+    emit(next);
   }
 
   // Helper to fetch algorithm metadata for offline mode
