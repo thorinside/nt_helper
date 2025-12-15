@@ -36,6 +36,7 @@ part 'disting_cubit_offline_demo_delegate.dart';
 part 'disting_cubit_parameter_fetch_delegate.dart';
 part 'disting_cubit_plugin_delegate.dart';
 part 'disting_cubit_connection_delegate.dart';
+part 'disting_cubit_parameter_refresh_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -94,6 +95,8 @@ class DistingCubit extends _DistingCubitBase
       _ParameterFetchDelegate(this);
   late final _PluginDelegate _pluginDelegate = _PluginDelegate(this);
   late final _ConnectionDelegate _connectionDelegate = _ConnectionDelegate(this);
+  late final _ParameterRefreshDelegate _parameterRefreshDelegate =
+      _ParameterRefreshDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -113,17 +116,6 @@ class DistingCubit extends _DistingCubitBase
 
   // MIDI setup change subscription for auto-detecting device connections
   StreamSubscription<String>? _midiSetupSubscription;
-
-  // Simple program refresh queue with retry
-  Timer? _programRefreshTimer;
-  int? _programRefreshSlot;
-  int _programRefreshRetries = 0;
-
-  // Parameter refresh debounce timer (300ms)
-  Timer? _parameterRefreshTimer;
-  static const Duration _parameterRefreshDebounceDelay = Duration(
-    milliseconds: 300,
-  );
 
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
@@ -187,8 +179,7 @@ class DistingCubit extends _DistingCubitBase
     _midiCommand.dispose();
 
     // Cancel timers
-    _programRefreshTimer?.cancel();
-    _parameterRefreshTimer?.cancel();
+    _parameterRefreshDelegate.dispose();
 
     // Cancel MIDI setup listener
     _midiSetupSubscription?.cancel();
@@ -871,43 +862,7 @@ class DistingCubit extends _DistingCubitBase
   /// This ensures only one refresh request is sent after a batch of parameter edits.
   /// The actual refresh occurs 300ms after the last call to this method.
   void scheduleParameterRefresh(int algorithmIndex) {
-    final syncState = state;
-    if (syncState is! DistingStateSynchronized) {
-      return; // Only schedule refresh when synchronized
-    }
-
-    // Cancel any pending timer
-    _parameterRefreshTimer?.cancel();
-
-    // Schedule a new refresh after the debounce delay
-    _parameterRefreshTimer = Timer(_parameterRefreshDebounceDelay, () async {
-      final manager = disting();
-      if (manager != null) {
-        final allParameterValues = await manager.requestAllParameterValues(
-          algorithmIndex,
-        );
-
-        if (allParameterValues != null) {
-          // Get current state (might have changed since timer was scheduled)
-          final currentState = state;
-          if (currentState is DistingStateSynchronized) {
-            // Update the slot with the refreshed parameter values
-            final currentSlot = currentState.slots[algorithmIndex];
-            final updatedSlot = currentSlot.copyWith(
-              values: allParameterValues.values,
-            );
-
-            // Create new slots list with the updated slot
-            final updatedSlots = List<Slot>.from(currentState.slots);
-            updatedSlots[algorithmIndex] = updatedSlot;
-
-            // Emit the updated state
-            emit(currentState.copyWith(slots: updatedSlots));
-          }
-        }
-      }
-      _parameterRefreshTimer = null; // Clear timer reference
-    });
+    return _parameterRefreshDelegate.scheduleParameterRefresh(algorithmIndex);
   }
 
   Future<void> onAlgorithmSelected(
@@ -1278,73 +1233,7 @@ class DistingCubit extends _DistingCubitBase
 
   // Simple program refresh queue with retry logic
   void _queueProgramRefresh(int algorithmIndex) {
-    // Cancel existing timer if any
-    _programRefreshTimer?.cancel();
-
-    // Store the slot to refresh and reset retry counter
-    _programRefreshSlot = algorithmIndex;
-    _programRefreshRetries = 0;
-
-    // Start new timer with 2 second delay to give hardware time to load the new program
-    _programRefreshTimer = Timer(const Duration(seconds: 2), () {
-      _executeProgramRefresh();
-    });
-  }
-
-  Future<void> _executeProgramRefresh() async {
-    final slotIndex = _programRefreshSlot;
-    if (slotIndex == null) return;
-
-    final currentState = state;
-    if (currentState is! DistingStateSynchronized) {
-      _programRefreshTimer = null;
-      _programRefreshSlot = null;
-      return;
-    }
-
-    try {
-      final disting = requireDisting();
-      final updatedSlot = await fetchSlot(
-        disting,
-        slotIndex,
-      );
-
-      // Check if state is still synchronized
-      final newState = state;
-      if (newState is! DistingStateSynchronized) {
-        return;
-      }
-
-      // Update the slot in the state
-      emit(
-        newState.copyWith(
-          slots: updateSlot(slotIndex, newState.slots, (slot) => updatedSlot),
-        ),
-      );
-
-      // Clear the queue
-      _programRefreshTimer = null;
-      _programRefreshSlot = null;
-      _programRefreshRetries = 0;
-    } catch (e, stackTrace) {
-      // Retry with exponential backoff if we haven't exceeded max retries
-      if (_programRefreshRetries < 3) {
-        _programRefreshRetries++;
-        final delaySeconds = _programRefreshRetries; // 1s, 2s, 3s
-
-        _programRefreshTimer = Timer(
-          Duration(seconds: delaySeconds),
-          _executeProgramRefresh,
-        );
-      } else {
-        debugPrintStack(stackTrace: stackTrace);
-
-        // Clear the queue
-        _programRefreshTimer = null;
-        _programRefreshSlot = null;
-        _programRefreshRetries = 0;
-      }
-    }
+    return _parameterRefreshDelegate.queueProgramRefresh(algorithmIndex);
   }
 
   void setDisplayMode(DisplayMode displayMode) {
@@ -1404,113 +1293,14 @@ class DistingCubit extends _DistingCubitBase
     }
   }
 
-  // Map to hold an active polling task for each mapped parameter,
-  // keyed by a composite key (e.g. "algorithmIndex_parameterNumber").
-  final Map<String, _PollingTask> _pollingTasks = {};
-
   // Starts polling for each mapped parameter.
   void startPollingMappedParameters() {
-    stopPollingMappedParameters(); // Clear any previous tasks.
-    if (state is! DistingStateSynchronized) return;
-    final mappedParams = buildMappedParameterList(state);
-    for (final param in mappedParams) {
-      final key =
-          '${param.parameter.algorithmIndex}_${param.parameter.parameterNumber}';
-      _pollingTasks[key] = _PollingTask();
-      _pollIndividualParameter(param, key);
-    }
+    return _parameterRefreshDelegate.startPollingMappedParameters();
   }
 
   // Stops all polling tasks.
   void stopPollingMappedParameters() {
-    _pollingTasks.clear();
-  }
-
-  // Polls a single mapped parameter recursively.
-  Future<void> _pollIndividualParameter(
-    MappedParameter mapped,
-    String key,
-  ) async {
-    // If the task has been cancelled or state is not synchronized, stop.
-    final task = _pollingTasks[key];
-    if (task == null || !task.active || state is! DistingStateSynchronized) {
-      return;
-    }
-
-    // Define intervals and threshold.
-    const Duration fastInterval = Duration(milliseconds: 100);
-    const Duration slowInterval = Duration(milliseconds: 1000);
-    const int fastToSlowThreshold = 3;
-
-    try {
-      final disting = requireDisting();
-      // Request the current parameter value.
-      final newValue = await disting.requestParameterValue(
-        mapped.parameter.algorithmIndex,
-        mapped.parameter.parameterNumber,
-      );
-      if (newValue == null) return;
-
-      // Anomaly Check
-      if (newValue.value < mapped.parameter.min ||
-          newValue.value > mapped.parameter.max) {
-        _refreshSlotAfterAnomaly(mapped.parameter.algorithmIndex);
-        // Unlike in updateParameterValue, we don't return early here.
-        // The polling loop will continue, and the refresh will eventually correct the state.
-      }
-      // End Anomaly Check
-
-      final currentState = state;
-      if (currentState is DistingStateSynchronized) {
-        // Add boundary checks before accessing slots and values
-        if (mapped.parameter.algorithmIndex >= currentState.slots.length) {
-          _pollingTasks.remove(key); // Remove task to stop polling
-          return;
-        }
-        final currentSlot = currentState.slots[mapped.parameter.algorithmIndex];
-        // Check if parameter number is still valid
-        if (mapped.parameter.parameterNumber >= currentSlot.values.length) {
-          _pollingTasks.remove(key); // Remove task to stop polling
-          return;
-        }
-        final currentValue =
-            currentSlot.values[mapped.parameter.parameterNumber];
-        if (newValue.value != currentValue.value ||
-            newValue.isDisabled != currentValue.isDisabled) {
-          // A change was detected (value or disabled state): update state and reset no-change count.
-          final updatedSlots = updateSlot(
-            mapped.parameter.algorithmIndex,
-            currentState.slots,
-            (slot) => slot.copyWith(
-              values: replaceInList(
-                slot.values,
-                newValue,
-                index: mapped.parameter.parameterNumber,
-              ),
-            ),
-          );
-          emit(currentState.copyWith(slots: updatedSlots));
-          task.noChangeCount = 0;
-          // Continue polling quickly.
-          await Future.delayed(fastInterval);
-        } else {
-          // No change: increment counter and choose interval.
-          task.noChangeCount++;
-          final delay = (task.noChangeCount >= fastToSlowThreshold)
-              ? slowInterval
-              : fastInterval;
-          await Future.delayed(delay);
-        }
-      }
-    } catch (e) {
-      // In case of an error, wait a bit before retrying.
-      await Future.delayed(slowInterval);
-    }
-
-    // Continue polling this parameter if it's still active.
-    if (_pollingTasks.containsKey(key)) {
-      _pollIndividualParameter(mapped, key);
-    }
+    return _parameterRefreshDelegate.stopPollingMappedParameters();
   }
 
   Future<void> resetOutputs(Slot slot, int outputIndex) async {
