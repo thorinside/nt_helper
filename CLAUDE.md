@@ -7,10 +7,27 @@ Flutter app for Disting NT Eurorack module: preset management, algorithm loading
 
 ## Architecture
 
-- **State:** Cubit pattern (`lib/cubit/disting_cubit.dart`)
+- **State:** Cubit pattern with delegate decomposition (`lib/cubit/disting_cubit.dart`)
 - **MIDI:** Interface-based with mock/offline/live implementations (`lib/domain/i_disting_midi_manager.dart`)
 - **Database:** Drift ORM (`lib/db/database.dart`)
 - **MCP:** Model Context Protocol server (`lib/services/mcp_server_service.dart`)
+
+### DistingCubit Delegates
+
+The main cubit is decomposed into delegates and mixins for maintainability:
+
+| File | Type | Purpose |
+|------|------|---------|
+| `*_connection_delegate.dart` | Delegate | MIDI device connection |
+| `*_parameter_fetch_delegate.dart` | Delegate | Parameter loading with retry |
+| `*_parameter_refresh_delegate.dart` | Delegate | Live parameter polling |
+| `*_plugin_delegate.dart` | Delegate | Plugin installation |
+| `*_offline_demo_delegate.dart` | Delegate | Demo/offline mode |
+| `*_algorithm_ops.dart` | Mixin | Algorithm operations |
+| `*_preset_ops.dart` | Mixin | Preset operations |
+| `*_slot_ops.dart` | Mixin | Slot operations |
+
+All use `part of 'disting_cubit.dart'` for private access. See `docs/architecture/coding-standards.md` for pattern details.
 
 ## Routing System
 
@@ -25,7 +42,7 @@ OO framework in `lib/core/routing/` for data-driven routing visualization.
 
 | Area | Path |
 |------|------|
-| State | `lib/cubit/disting_cubit.dart` |
+| State | `lib/cubit/disting_cubit.dart` (+ delegates/mixins) |
 | Routing | `lib/core/routing/algorithm_routing.dart` |
 | Main UI | `lib/ui/synchronized_screen.dart` |
 | Routing UI | `lib/ui/widgets/routing/routing_editor_widget.dart` |

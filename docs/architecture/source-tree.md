@@ -10,7 +10,15 @@ nt_helper/
 │   ├── constants.dart               # App constants
 │   │
 │   ├── cubit/                       # State management (Cubit pattern)
-│   │   ├── disting_cubit.dart       # PRIMARY STATE - central to everything
+│   │   ├── disting_cubit.dart       # Primary Cubit (composed via delegates/mixins)
+│   │   ├── disting_cubit_connection_delegate.dart
+│   │   ├── disting_cubit_parameter_fetch_delegate.dart
+│   │   ├── disting_cubit_parameter_refresh_delegate.dart
+│   │   ├── disting_cubit_plugin_delegate.dart
+│   │   ├── disting_cubit_offline_demo_delegate.dart
+│   │   ├── disting_cubit_algorithm_ops.dart
+│   │   ├── disting_cubit_preset_ops.dart
+│   │   ├── disting_cubit_slot_ops.dart
 │   │   ├── disting_state.dart       # State variants (freezed)
 │   │   ├── routing_editor_cubit.dart # Routing visualization state
 │   │   ├── routing_editor_state.dart

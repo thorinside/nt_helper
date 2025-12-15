@@ -128,3 +128,23 @@ import 'package:bloc/bloc.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/slot.dart';
 ```
+
+## Cubit Delegate Pattern
+
+Some Cubits (especially `DistingCubit`) are intentionally decomposed using a delegate + forwarding pattern to keep files maintainable without changing public APIs.
+
+**Pattern**:
+- Keep the public Cubit API on the Cubit class (forwarding methods are fine).
+- Extract cohesive responsibilities into a private delegate class (e.g. `_PluginDelegate`).
+- Implement delegates as `part` files using `part of 'disting_cubit.dart';` so they can access private state safely.
+
+**Do**:
+- Prefer delegates for code that needs access to private fields, timers, or multiple helpers.
+- Add a `dispose()` method on delegates that own timers/subscriptions and call it from `DistingCubit.close()`.
+- Use `DistingCubit._emitState(...)` from delegates instead of calling `emit(...)` directly (because `emit` is protected and should only be called from the Cubit itself).
+- Keep extraction cohesive: one delegate per concern (connection, plugin management, parameter fetch/retry, parameter refresh/polling).
+
+**Don’t**:
+- Don’t expand the Cubit surface area just to satisfy a mixin (prefer delegates when this happens).
+- Don’t introduce debug logging as part of refactors.
+- Don’t change behavior while extracting unless explicitly requested.
