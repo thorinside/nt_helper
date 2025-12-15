@@ -63,6 +63,69 @@ class DistingCubit extends Cubit<DistingState> {
   CancelableOperation<void>? _renamePresetVerificationOperation;
   final Map<int, CancelableOperation<void>> _renameSlotVerificationOperations =
       {};
+  CancelableOperation<void>? _addAlgorithmVerificationOperation;
+
+  String _deriveOptimisticAlgorithmNameForAdd({
+    required String algorithmGuid,
+    required String baseName,
+    required List<Slot> existingSlots,
+  }) {
+    final used = <int>{};
+
+    for (final slot in existingSlots) {
+      final a = slot.algorithm;
+      if (a.guid != algorithmGuid) continue;
+
+      if (a.name == baseName) {
+        used.add(1);
+        continue;
+      }
+
+      final match = RegExp('^${RegExp.escape(baseName)}\\((\\d+)\\)\$')
+          .firstMatch(a.name);
+      if (match == null) continue;
+      final n = int.tryParse(match.group(1) ?? '');
+      if (n != null && n >= 2) {
+        used.add(n);
+      }
+    }
+
+    if (!used.contains(1)) return baseName;
+
+    var i = 2;
+    while (used.contains(i)) {
+      i++;
+    }
+    return '$baseName($i)';
+  }
+
+  Slot _createPlaceholderSlotForAdd({
+    required int slotIndex,
+    required AlgorithmInfo algorithm,
+    required List<Slot> existingSlots,
+  }) {
+    final displayName = _deriveOptimisticAlgorithmNameForAdd(
+      algorithmGuid: algorithm.guid,
+      baseName: algorithm.name,
+      existingSlots: existingSlots,
+    );
+
+    return Slot(
+      algorithm: Algorithm(
+        algorithmIndex: slotIndex,
+        guid: algorithm.guid,
+        name: displayName,
+        specifications: algorithm.specifications.map((s) => s.defaultValue).toList(),
+      ),
+      routing: RoutingInfo(algorithmIndex: slotIndex, routingInfo: List.filled(6, 0)),
+      pages: ParameterPages(algorithmIndex: slotIndex, pages: const []),
+      parameters: const [],
+      values: const [],
+      enums: const [],
+      mappings: const [],
+      valueStrings: const [],
+    );
+  }
 
   // Modified constructor
   DistingCubit(this.database)
@@ -1398,26 +1461,100 @@ class DistingCubit extends Cubit<DistingState> {
           } else {}
         }
 
-        // Send the add algorithm request
-        await disting.requestAddAlgorithm(algorithm, specsToSend);
+        // An algorithm can only be added to the next empty slot, so we can be
+        // optimistic and only reconcile the newly-added slot.
+        final newSlotIndex = syncstate.slots.length;
 
-          // Optimistic update: fetch just the new slot that was added
-          try {
-            final newSlotIndex =
-                syncstate.slots.length; // New slot will be at the end
-            final newSlot = await fetchSlot(
-              disting,
-              newSlotIndex,
-            );
+        // 1) Optimistic placeholder slot for instant UI feedback
+        final placeholder = _createPlaceholderSlotForAdd(
+          slotIndex: newSlotIndex,
+          algorithm: algorithm,
+          existingSlots: syncstate.slots,
+        );
+        final expectedPlaceholderName = placeholder.algorithm.name;
+        emit(
+          syncstate.copyWith(
+            slots: [...syncstate.slots, placeholder],
+            loading: false,
+          ),
+        );
 
-            // Update state with the new slot appended
-            final updatedSlots = [...syncstate.slots, newSlot];
-            emit(syncstate.copyWith(slots: updatedSlots, loading: false));
+        // 2) Send the add algorithm request
+        try {
+          await disting.requestAddAlgorithm(algorithm, specsToSend);
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);
-          // Fall back to full refresh on error
-          await _refreshStateFromManager();
+          // Roll back optimistic slot if still present
+          final st = state;
+          if (st is DistingStateSynchronized &&
+              st.slots.length == syncstate.slots.length + 1) {
+            emit(st.copyWith(slots: List<Slot>.from(st.slots)..removeLast()));
+          }
+          return;
         }
+
+        // 3) Verification/reconciliation: fetch only the new slot and correct if needed.
+        _addAlgorithmVerificationOperation?.cancel();
+        _addAlgorithmVerificationOperation = CancelableOperation.fromFuture(
+          Future.delayed(const Duration(milliseconds: 700), () async {
+            final current = state;
+            if (current is! DistingStateSynchronized) return;
+
+            // Only proceed if the state still reflects our optimistic add.
+            if (current.slots.length != newSlotIndex + 1) return;
+            if (current.slots[newSlotIndex].algorithm.guid != algorithm.guid) return;
+            if (current.slots[newSlotIndex].algorithm.name != expectedPlaceholderName) return;
+
+            // Retry fetching just the new slot a few times; the module may need a moment.
+            Slot? fetched;
+            for (final delay in const [
+              Duration(milliseconds: 0),
+              Duration(milliseconds: 400),
+              Duration(milliseconds: 900),
+            ]) {
+              if (delay != Duration.zero) {
+                await Future.delayed(delay);
+              }
+              try {
+                fetched = await fetchSlot(disting, newSlotIndex);
+                break;
+              } catch (_) {
+                // Try again
+              }
+            }
+
+            if (fetched != null) {
+              final verified = state;
+              if (verified is! DistingStateSynchronized) return;
+              if (verified.slots.length != newSlotIndex + 1) return;
+              final updatedSlots =
+                  updateSlot(newSlotIndex, verified.slots, (_) => fetched!);
+              emit(verified.copyWith(slots: updatedSlots, loading: false));
+              return;
+            }
+
+            // If we couldn't fetch the new slot, reconcile minimally via slot count.
+            try {
+              final actualCount = await disting.requestNumAlgorithmsInPreset();
+              if (actualCount == syncstate.slots.length) {
+                // Device didn't add: remove placeholder.
+                final verified = state;
+                if (verified is! DistingStateSynchronized) return;
+                if (verified.slots.length == syncstate.slots.length + 1) {
+                  emit(
+                    verified.copyWith(
+                      slots: List<Slot>.from(verified.slots)..removeLast(),
+                      loading: false,
+                    ),
+                  );
+                }
+              }
+            } catch (_) {
+              // If even verification fails, do nothing; user can manual refresh.
+            }
+          }),
+          onCancel: () {},
+        );
         break;
     }
   }
