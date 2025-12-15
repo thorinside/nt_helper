@@ -98,7 +98,7 @@ class _ParameterFetchDelegate {
               request.paramIndex,
             );
             if (info != null) {
-              await _cubit._updateSlotParameterInfo(
+              await _cubit._slotStateDelegate.updateSlotParameterInfo(
                 request.slotIndex,
                 request.paramIndex,
                 info,
@@ -111,7 +111,7 @@ class _ParameterFetchDelegate {
               request.paramIndex,
             );
             if (enums != null) {
-              await _cubit._updateSlotParameterEnums(
+              await _cubit._slotStateDelegate.updateSlotParameterEnums(
                 request.slotIndex,
                 request.paramIndex,
                 enums,
@@ -124,7 +124,7 @@ class _ParameterFetchDelegate {
               request.paramIndex,
             );
             if (mappings != null) {
-              await _cubit._updateSlotParameterMappings(
+              await _cubit._slotStateDelegate.updateSlotParameterMappings(
                 request.slotIndex,
                 request.paramIndex,
                 mappings,
@@ -137,7 +137,7 @@ class _ParameterFetchDelegate {
               request.paramIndex,
             );
             if (valueStrings != null) {
-              await _cubit._updateSlotParameterValueStrings(
+              await _cubit._slotStateDelegate.updateSlotParameterValueStrings(
                 request.slotIndex,
                 request.paramIndex,
                 valueStrings,
@@ -415,20 +415,12 @@ class _ParameterFetchDelegate {
 
     // Pre-populate output mode usage from database if not already populated
     // This ensures mode parameters are available even if isOutputMode flag isn't set
-    if (_cubit._outputModeUsageMap[algorithmIndex] == null ||
-        _cubit._outputModeUsageMap[algorithmIndex]!.isEmpty) {
-      final algorithmGuid = guid?.guid;
-      if (algorithmGuid != null) {
-        try {
-          final dbOutputModeUsage = await _cubit._metadataDao
-              .getOutputModeUsageForAlgorithm(algorithmGuid);
-          if (dbOutputModeUsage.isNotEmpty) {
-            _cubit._outputModeUsageMap[algorithmIndex] = dbOutputModeUsage;
-          }
-        } catch (e) {
-          // Silently ignore database errors - output mode is optional
-        }
-      }
+    final algorithmGuid = guid?.guid;
+    if (algorithmGuid != null) {
+      await _cubit._slotStateDelegate.ensureOutputModeUsageFromDb(
+        slotIndex: algorithmIndex,
+        algorithmGuid: algorithmGuid,
+      );
     }
 
     return Slot(
@@ -446,7 +438,9 @@ class _ParameterFetchDelegate {
       mappings: mappings,
       valueStrings: valueStrings,
       routing: RoutingInfo.filler(), // unchanged – still skipped
-      outputModeMap: _cubit._outputModeUsageMap[algorithmIndex] ?? {},
+      outputModeMap: _cubit._slotStateDelegate.outputModeMapForSlot(
+        algorithmIndex,
+      ),
     );
   }
 
@@ -479,4 +473,3 @@ class _ParameterFetchDelegate {
     }
   }
 }
-
