@@ -58,4 +58,9 @@ class FirmwareVersion {
     if (patch > other.patch) return true;
     return false;
   }
+
+  bool isExactly(String otherVersionString) {
+    final other = FirmwareVersion(otherVersionString);
+    return major == other.major && minor == other.minor && patch == other.patch;
+  }
 }

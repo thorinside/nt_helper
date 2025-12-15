@@ -58,6 +58,7 @@ class DistingCubit extends Cubit<DistingState> {
   final AppDatabase database; // Renamed from _database to make it public
   late final MetadataDao _metadataDao; // Added
   final Future<SharedPreferences> _prefs;
+  FirmwareVersion? _lastKnownFirmwareVersion;
 
   // Modified constructor
   DistingCubit(this.database)
@@ -240,6 +241,8 @@ class DistingCubit extends Cubit<DistingState> {
     final mockManager = MockDistingMidiManager();
     final distingVersion =
         await mockManager.requestVersionString() ?? "Demo Error";
+    final firmwareVersion = FirmwareVersion(distingVersion);
+    _lastKnownFirmwareVersion = firmwareVersion;
     final presetName =
         await mockManager.requestPresetName() ?? "Demo Preset Error";
     final algorithms = await _fetchMockAlgorithms(mockManager);
@@ -261,7 +264,7 @@ class DistingCubit extends Cubit<DistingState> {
         disting: mockManager,
         // Use the created mock manager instance
         distingVersion: distingVersion,
-        firmwareVersion: FirmwareVersion(distingVersion),
+        firmwareVersion: firmwareVersion,
         presetName: presetName,
         algorithms: algorithms,
         slots: slots,
@@ -644,16 +647,21 @@ class DistingCubit extends Cubit<DistingState> {
       }
 
       final distingVersion = await distingManager.requestVersionString() ?? "";
+      final firmwareVersion = FirmwareVersion(distingVersion);
+      _lastKnownFirmwareVersion = firmwareVersion;
       final presetName = await distingManager.requestPresetName() ?? "Default";
       var unitStrings = await distingManager.requestUnitStrings() ?? [];
-      List<Slot> slots = await fetchSlots(numInPreset, distingManager);
+      List<Slot> slots = await fetchSlots(
+        numInPreset,
+        distingManager,
+      );
 
       // --- Emit final synchronized state --- (Ensure offline is false)
       emit(
         DistingState.synchronized(
           disting: distingManager,
           distingVersion: distingVersion,
-          firmwareVersion: FirmwareVersion(distingVersion),
+          firmwareVersion: firmwareVersion,
           presetName: presetName,
           algorithms: algorithms,
           slots: slots,
@@ -831,6 +839,8 @@ class DistingCubit extends Cubit<DistingState> {
       await _offlineManager!.initializeFromDb(null);
       final version =
           await _offlineManager!.requestVersionString() ?? "Offline";
+      final firmwareVersion = FirmwareVersion(version);
+      _lastKnownFirmwareVersion = firmwareVersion;
       final units = await _offlineManager!.requestUnitStrings() ?? [];
       final availableAlgorithmsInfo = await _fetchOfflineAlgorithms();
       final presetName =
@@ -848,7 +858,7 @@ class DistingCubit extends Cubit<DistingState> {
           disting: _offlineManager!,
           // Use offline manager
           distingVersion: version,
-          firmwareVersion: FirmwareVersion(version),
+          firmwareVersion: firmwareVersion,
           presetName: presetName,
           algorithms: availableAlgorithmsInfo,
           slots: initialSlots,
@@ -1387,15 +1397,18 @@ class DistingCubit extends Cubit<DistingState> {
         // Send the add algorithm request
         await disting.requestAddAlgorithm(algorithm, specsToSend);
 
-        // Optimistic update: fetch just the new slot that was added
-        try {
-          final newSlotIndex =
-              syncstate.slots.length; // New slot will be at the end
-          final newSlot = await fetchSlot(disting, newSlotIndex);
+          // Optimistic update: fetch just the new slot that was added
+          try {
+            final newSlotIndex =
+                syncstate.slots.length; // New slot will be at the end
+            final newSlot = await fetchSlot(
+              disting,
+              newSlotIndex,
+            );
 
-          // Update state with the new slot appended
-          final updatedSlots = [...syncstate.slots, newSlot];
-          emit(syncstate.copyWith(slots: updatedSlots, loading: false));
+            // Update state with the new slot appended
+            final updatedSlots = [...syncstate.slots, newSlot];
+            emit(syncstate.copyWith(slots: updatedSlots, loading: false));
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);
           // Fall back to full refresh on error
@@ -1958,7 +1971,10 @@ class DistingCubit extends Cubit<DistingState> {
       final numAlgorithmsInPreset =
           (await disting.requestNumAlgorithmsInPreset()) ?? 0;
       final presetName = await disting.requestPresetName() ?? "Error";
-      List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+      List<Slot> slots = await fetchSlots(
+        numAlgorithmsInPreset,
+        disting,
+      );
 
       emit(
         currentState.copyWith(
@@ -2105,7 +2121,10 @@ class DistingCubit extends Cubit<DistingState> {
 
     try {
       final disting = requireDisting();
-      final updatedSlot = await fetchSlot(disting, slotIndex);
+      final updatedSlot = await fetchSlot(
+        disting,
+        slotIndex,
+      );
 
       // Check if state is still synchronized
       final newState = state;
@@ -2690,6 +2709,11 @@ class DistingCubit extends Cubit<DistingState> {
         (essentialResults[1] as NumParameters?)?.numParameters ?? 0;
     final guid = essentialResults[2] as Algorithm?;
 
+    final currentState = state;
+    final firmware = currentState is DistingStateSynchronized
+        ? currentState.firmwareVersion
+        : _lastKnownFirmwareVersion;
+
     // Try to get parameter values with retry and longer timeout
     List<ParameterValue> allValues;
     try {
@@ -2788,8 +2812,9 @@ class DistingCubit extends Cubit<DistingState> {
     // Macro Oscillator (maco) param 1 (Model) causes firmware to send truncated
     // SysEx that can corrupt the MIDI stream
     bool shouldSkipEnumStrings(int param) {
-      if (guid?.guid == 'maco' && param == 1) return true;
-      return false;
+      return firmware?.isExactly('1.12.0') == true &&
+          guid?.guid == 'maco' &&
+          param == 1;
     }
 
     await Future.wait([
@@ -3002,7 +3027,8 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> _refreshSlotAfterAnomaly(int algorithmIndex) async {
     await Future.delayed(const Duration(seconds: 1));
 
-    if (state is! DistingStateSynchronized) {
+    final syncState = state;
+    if (syncState is! DistingStateSynchronized) {
       return;
     }
 
@@ -3016,7 +3042,10 @@ class DistingCubit extends Cubit<DistingState> {
 
     try {
       final disting = requireDisting();
-      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex);
+      final Slot updatedSlot = await fetchSlot(
+        disting,
+        algorithmIndex,
+      );
       final currentState = state as DistingStateSynchronized;
       final newSlots = List<Slot>.from(currentState.slots);
       newSlots[algorithmIndex] = updatedSlot;
@@ -3290,13 +3319,17 @@ class DistingCubit extends Cubit<DistingState> {
 
   /// Refreshes a single slot's data from the module
   Future<void> refreshSlot(int algorithmIndex) async {
-    if (state is! DistingStateSynchronized) {
+    final syncState = state;
+    if (syncState is! DistingStateSynchronized) {
       return;
     }
 
     try {
       final disting = requireDisting();
-      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex);
+      final Slot updatedSlot = await fetchSlot(
+        disting,
+        algorithmIndex,
+      );
       final currentState = state as DistingStateSynchronized;
       final newSlots = List<Slot>.from(currentState.slots);
       newSlots[algorithmIndex] = updatedSlot;

@@ -9,6 +9,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/elf_guid_extractor.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
 
@@ -18,6 +19,14 @@ class MetadataSyncService {
   final AppDatabase _database;
 
   MetadataSyncService(this._distingManager, this._database);
+
+  Future<FirmwareVersion> _requestFirmwareVersionSafe() async {
+    try {
+      return FirmwareVersion(await _distingManager.requestVersionString() ?? '');
+    } catch (_) {
+      return FirmwareVersion('');
+    }
+  }
 
   /// Fetches all static algorithm metadata from the connected device
   /// by temporarily manipulating a preset, and caches it in the database.
@@ -47,6 +56,7 @@ class MetadataSyncService {
     final metadataDao = _database.metadataDao;
     int totalAlgorithms = 0;
     int algorithmsProcessed = 0;
+    late final FirmwareVersion firmwareVersion;
 
     void reportProgress(
       String mainMessage,
@@ -80,6 +90,8 @@ class MetadataSyncService {
       await _distingManager.requestWake();
       await Future.delayed(const Duration(milliseconds: 200));
       if (checkCancel()) return;
+
+      firmwareVersion = await _requestFirmwareVersionSafe();
 
       // Clear device preset and DB cache (only if not resuming)
       if (resumeFromIndex == null) {
@@ -334,6 +346,7 @@ class MetadataSyncService {
             algorithmToQuery,
             unitIdMap,
             dbUnitStrings,
+            firmwareVersion,
           );
 
           // E. Remove algorithm from slot 0
@@ -533,6 +546,7 @@ class MetadataSyncService {
                   algorithmToQuery,
                   unitIdMap,
                   dbUnitStrings,
+                  firmwareVersion,
                 );
 
                 // E. Remove algorithm from slot 0
@@ -598,6 +612,7 @@ class MetadataSyncService {
     AlgorithmInfo algoInfo, // Contains the GUID
     Map<String, int> unitIdMap, // Map of unit string -> db id
     List<String> dbUnitStrings, // List of known unit strings
+    FirmwareVersion firmwareVersion,
   ) async {
     // Queries use slot index 0
     final numParamsResult = await _distingManager.requestNumberOfParameters(0);
@@ -619,7 +634,9 @@ class MetadataSyncService {
         parameterInfos.add(paramInfo);
         if (paramInfo.unit == 1) {
           // Skip enum strings for Macro Oscillator Model parameter (firmware bug)
-          if (algoInfo.guid == 'maco' && pNum == 1) {
+          if (firmwareVersion.isExactly('1.12.0') &&
+              algoInfo.guid == 'maco' &&
+              pNum == 1) {
             continue;
           }
           final enumsResult = await _distingManager.requestParameterEnumStrings(
@@ -778,6 +795,7 @@ class MetadataSyncService {
 
   /// Rescan a single algorithm's parameters
   Future<void> rescanSingleAlgorithm(AlgorithmInfo algoInfo) async {
+    final firmwareVersion = await _requestFirmwareVersionSafe();
     final dbUnits = await _database.metadataDao.getAllUnits();
     final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();
     final unitIdMap = <String, int>{};
@@ -829,6 +847,7 @@ class MetadataSyncService {
       algorithmToQuery,
       unitIdMap,
       dbUnitStrings,
+      firmwareVersion,
     );
 
     // Remove from preset
@@ -860,6 +879,7 @@ class MetadataSyncService {
     bool Function()? isCancelled,
   }) async {
     final metadataDao = _database.metadataDao;
+    late final FirmwareVersion firmwareVersion;
 
     void reportProgress(
       String mainMessage,
@@ -882,6 +902,8 @@ class MetadataSyncService {
       await _distingManager.requestWake();
       await Future.delayed(const Duration(milliseconds: 200));
       if (checkCancel()) return;
+
+      firmwareVersion = await _requestFirmwareVersionSafe();
 
       // Get current algorithm list from device
       reportProgress(
@@ -1096,6 +1118,7 @@ class MetadataSyncService {
             algorithmToQuery,
             unitIdMap,
             dbUnitStrings,
+            firmwareVersion,
           );
 
           // Remove algorithm from slot 0
