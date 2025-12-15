@@ -176,7 +176,10 @@ class _ConnectionDelegate {
 
         // Start background loading for ALL algorithms (slots contain their own algorithm info for UI)
         if (numAlgorithms > 0) {
-          _cubit._loadAllAlgorithmsInBackground(distingManager, numAlgorithms);
+          _cubit._algorithmLibraryDelegate.loadAllAlgorithmsInBackground(
+            distingManager,
+            numAlgorithms,
+          );
         }
       } catch (e, stackTrace) {
         debugPrintStack(stackTrace: stackTrace);

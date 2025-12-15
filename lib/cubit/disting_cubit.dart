@@ -39,6 +39,7 @@ part 'disting_cubit_connection_delegate.dart';
 part 'disting_cubit_parameter_refresh_delegate.dart';
 part 'disting_cubit_monitoring_delegate.dart';
 part 'disting_cubit_slot_state_delegate.dart';
+part 'disting_cubit_algorithm_library_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -101,6 +102,8 @@ class DistingCubit extends _DistingCubitBase
       _ParameterRefreshDelegate(this);
   late final _MonitoringDelegate _monitoringDelegate = _MonitoringDelegate(this);
   late final _SlotStateDelegate _slotStateDelegate = _SlotStateDelegate(this);
+  late final _AlgorithmLibraryDelegate _algorithmLibraryDelegate =
+      _AlgorithmLibraryDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -180,214 +183,11 @@ class DistingCubit extends _DistingCubitBase
     return _offlineDemoDelegate.onDemo();
   }
 
-  // Helper to determine if an algorithm is a factory algorithm (lowercase GUID)
-  // vs community plugin (any uppercase letters in GUID)
-  bool _isFactoryAlgorithm(String guid) {
-    return guid == guid.toLowerCase();
-  }
-
-  // Helper to fetch algorithm info with prioritization (factory first, then community)
-  Future<List<AlgorithmInfo>> _fetchAlgorithmsWithPriority(
-    IDistingMidiManager manager, {
-    bool enableBackgroundCommunityLoading = false,
-  }) async {
-    final numAlgorithms = await manager.requestNumberOfAlgorithms() ?? 0;
-
-    if (enableBackgroundCommunityLoading) {
-      // Optimized approach: only fetch factory algorithms synchronously
-      return _fetchFactoryAlgorithmsAndStartBackgroundLoading(
-        manager,
-        numAlgorithms,
-      );
-    } else {
-      // Original approach: fetch all algorithms synchronously with prioritization
-      return _fetchAllAlgorithmsSynchronously(manager, numAlgorithms);
-    }
-  }
-
-  // Optimized method: fetch factory algorithms quickly, queue slow ones for background
-  Future<List<AlgorithmInfo>> _fetchFactoryAlgorithmsAndStartBackgroundLoading(
-    IDistingMidiManager manager,
-    int numAlgorithms,
-  ) async {
-    final List<AlgorithmInfo> factoryResults = [];
-    final List<int> backgroundIndices = [];
-
-    // Quick pass with short timeout to catch fast-responding factory algorithms
-    for (int i = 0; i < numAlgorithms; i++) {
-      try {
-        // Use very short timeout - factory algorithms should respond quickly
-        final algorithmInfo = await manager
-            .requestAlgorithmInfo(i)
-            .timeout(const Duration(milliseconds: 200), onTimeout: () => null);
-
-        if (algorithmInfo != null && _isFactoryAlgorithm(algorithmInfo.guid)) {
-          factoryResults.add(algorithmInfo);
-        } else if (algorithmInfo != null) {
-          // Got response but it's a community plugin - queue for background
-          backgroundIndices.add(i);
-        } else {
-          // Timed out - likely a community plugin that's not loaded, queue for background
-          backgroundIndices.add(i);
-        }
-      } catch (e) {
-        // Error - queue for background retry
-        backgroundIndices.add(i);
-      }
-    }
-
-    // Start background loading for community plugins and timed-out algorithms
-    if (backgroundIndices.isNotEmpty) {
-      _loadCommunityPluginsInBackground(
-        manager,
-        backgroundIndices,
-        List.from(factoryResults),
-      );
-    }
-
-    return factoryResults;
-  }
-
-  // Original method: fetch all algorithms with full categorization pass
-  Future<List<AlgorithmInfo>> _fetchAllAlgorithmsSynchronously(
-    IDistingMidiManager manager,
-    int numAlgorithms,
-  ) async {
-    final List<int> factoryIndices = [];
-    final List<int> communityIndices = [];
-
-    // First pass: categorize algorithms by requesting basic info
-    for (int i = 0; i < numAlgorithms; i++) {
-      try {
-        final algorithmInfo = await manager.requestAlgorithmInfo(i);
-        if (algorithmInfo != null) {
-          if (_isFactoryAlgorithm(algorithmInfo.guid)) {
-            factoryIndices.add(i);
-          } else {
-            communityIndices.add(i);
-          }
-        }
-      } catch (e) {
-        // If we can't determine, treat as community (lower priority)
-        communityIndices.add(i);
-      }
-    }
-
-    final List<AlgorithmInfo> results = [];
-
-    // Fetch factory algorithms first (higher priority)
-    for (int i in factoryIndices) {
-      try {
-        final algorithmInfo = await manager.requestAlgorithmInfo(i);
-        if (algorithmInfo != null) {
-          results.add(algorithmInfo);
-        }
-      } catch (e) {
-        // Intentionally empty
-      }
-    }
-
-    // Synchronous community algorithm loading
-    for (int i in communityIndices) {
-      try {
-        final algorithmInfo = await manager.requestAlgorithmInfo(i);
-        if (algorithmInfo != null) {
-          results.add(algorithmInfo);
-        }
-      } catch (e) {
-        // Intentionally empty
-      }
-    }
-
-    return results;
-  }
-
-  // Background loading of ALL algorithms with prioritization and state merging
-  Future<void> _loadAllAlgorithmsInBackground(
-    IDistingMidiManager manager,
-    int numAlgorithms,
-  ) async {
-    final List<AlgorithmInfo> factoryResults = [];
-    final List<AlgorithmInfo> communityResults = [];
-
-    // Load all algorithms with prioritization (factory first, then community)
-    for (int i = 0; i < numAlgorithms; i++) {
-      try {
-        final algorithmInfo = await manager.requestAlgorithmInfo(i);
-        if (algorithmInfo != null) {
-          if (_isFactoryAlgorithm(algorithmInfo.guid)) {
-            factoryResults.add(algorithmInfo);
-
-            // Update state immediately when we get factory algorithms
-            final currentState = state;
-            if (currentState is DistingStateSynchronized &&
-                !currentState.offline) {
-              final currentAlgorithms = [
-                ...factoryResults,
-                ...communityResults,
-              ];
-              emit(currentState.copyWith(algorithms: currentAlgorithms));
-            }
-          } else {
-            communityResults.add(algorithmInfo);
-
-            // Update state when we get community plugins too
-            final currentState = state;
-            if (currentState is DistingStateSynchronized &&
-                !currentState.offline) {
-              final currentAlgorithms = [
-                ...factoryResults,
-                ...communityResults,
-              ];
-              emit(currentState.copyWith(algorithms: currentAlgorithms));
-            }
-          }
-        }
-      } catch (e) {
-        // Continue with next algorithm
-      }
-    }
-
-    factoryResults.length + communityResults.length;
-  }
-
-  // Background loading of community plugins with single retry and state merging
-  Future<void> _loadCommunityPluginsInBackground(
-    IDistingMidiManager manager,
-    List<int> communityIndices,
-    List<AlgorithmInfo> baseResults,
-  ) async {
-    final List<AlgorithmInfo> communityResults = [];
-
-    for (int i in communityIndices) {
-      try {
-        // Single attempt to fetch community plugin
-        final algorithmInfo = await manager.requestAlgorithmInfo(i);
-        if (algorithmInfo != null) {
-          communityResults.add(algorithmInfo);
-        }
-      } catch (e) {
-        // Move on to next plugin - no retry
-      }
-    }
-
-    // Merge results and update state if still synchronized
-    if (communityResults.isNotEmpty) {
-      final mergedResults = [...baseResults, ...communityResults];
-
-      // Only update state if we're still in synchronized mode and not offline
-      final currentState = state;
-      if (currentState is DistingStateSynchronized && !currentState.offline) {
-        emit(currentState.copyWith(algorithms: mergedResults));
-      }
-    } else {}
-  }
-
   // Helper to fetch AlgorithmInfo list from mock/offline manager
   Future<List<AlgorithmInfo>> _fetchMockAlgorithms(
     IDistingMidiManager manager,
   ) async {
-    return _fetchAlgorithmsWithPriority(manager);
+    return _algorithmLibraryDelegate.fetchAlgorithmsWithPriority(manager);
   }
 
   Future<void> loadDevices() async {
@@ -521,8 +321,9 @@ class DistingCubit extends _DistingCubitBase
         await _refreshStateFromManager();
 
         // Check if we should refresh algorithms in the background (online only)
-        if (!currentState.offline && _shouldRefreshAlgorithms(currentState)) {
-          _refreshAlgorithmsInBackground();
+        if (!currentState.offline &&
+            _algorithmLibraryDelegate.shouldRefreshAlgorithms(currentState)) {
+          _algorithmLibraryDelegate.refreshAlgorithmsInBackground();
         }
       }
     } else {
@@ -542,62 +343,14 @@ class DistingCubit extends _DistingCubitBase
     }
   }
 
-  // Helper to determine if algorithm library should be refreshed
-  bool _shouldRefreshAlgorithms(DistingStateSynchronized currentState) {
-    // For now, be conservative and only refresh algorithms if the list is empty
-    // In the future, we could add more sophisticated logic like checking timestamps,
-    // firmware version changes, or comparing algorithm counts
-    return currentState.algorithms.isEmpty;
-  }
-
-  // Background refresh of algorithm library without blocking the UI
-  void _refreshAlgorithmsInBackground() {
-    // Run asynchronously without awaiting
-    () async {
-      try {
-        final currentState = state;
-        if (currentState is! DistingStateSynchronized || currentState.offline) {
-          return; // State changed, abort
-        }
-
-        final distingManager = requireDisting();
-
-        // Fetch algorithm info in the background with prioritization
-        try {
-          final algorithms = await _fetchAlgorithmsWithPriority(
-            distingManager,
-            enableBackgroundCommunityLoading: true,
-          );
-
-          // Only update if state is still synchronized and algorithms changed
-          final newState = state;
-          if (newState is DistingStateSynchronized &&
-              !newState.offline &&
-              algorithms.length != newState.algorithms.length) {
-            emit(newState.copyWith(algorithms: algorithms));
-          }
-        } catch (e, stackTrace) {
-          debugPrintStack(stackTrace: stackTrace);
-          // Don't update state on algorithm fetch failure during background refresh
-        }
-      } catch (e, stackTrace) {
-        debugPrintStack(stackTrace: stackTrace);
-        // Don't emit error state for background refresh failures
-      }
-    }();
-  }
-
-  // Public method to trigger algorithm list refresh from UI
   void refreshAlgorithms() {
-    _refreshAlgorithmsInBackground();
+    _algorithmLibraryDelegate.refreshAlgorithms();
   }
 
   /// Sends rescan plugins command to hardware and refreshes algorithm list.
   /// Used by the Add Algorithm screen's manual rescan button.
   Future<void> rescanPlugins() async {
-    final disting = requireDisting();
-    await disting.requestRescanPlugins();
-    _refreshAlgorithmsInBackground();
+    return _algorithmLibraryDelegate.rescanPlugins();
   }
 
   // Handle parameter string updates from the queue
