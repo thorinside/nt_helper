@@ -106,6 +106,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   // Canvas container key for coordinate transforms
   final GlobalKey _canvasKey = GlobalKey();
   final GlobalKey _captureKey = GlobalKey();
+  final FocusNode _canvasFocusNode = FocusNode();
 
   // Canvas dimensions
   static const double _canvasWidth = 5000.0;
@@ -245,6 +246,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
     _zoomHotkeySubscription?.cancel();
+    _canvasFocusNode.dispose();
     _deleteAnimationController.removeStatusListener(_onDeleteAnimationStatus);
     _deleteAnimationController.removeListener(_onDeleteAnimationTick);
     _deleteAnimationController.dispose();
@@ -919,6 +921,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                                 context.read<RoutingEditorCubit>().resetZoom(),
                           ),
                           child: Focus(
+                            focusNode: _canvasFocusNode,
                             autofocus: true,
                             onKeyEvent: _handleKeyEvent,
                             child: _buildCanvasContent(context, state),
@@ -2568,6 +2571,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   void _handleCanvasTap(Offset tapPosition, List<Connection> connections) {
+    _requestCanvasFocus();
     final hitId = _findConnectionNearPoint(tapPosition, connections);
     if (hitId != null) {
       _setConnectionHighlight(hitId, _ConnectionHighlightSource.selected);
@@ -2578,6 +2582,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     _clearSelectedConnection();
     _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
     _clearConnectionHighlightState(source: _ConnectionHighlightSource.deleteConfirm);
+  }
+
+  void _requestCanvasFocus() {
+    if (!_platformService.isDesktopPlatform()) return;
+    if (_canvasFocusNode.hasFocus) return;
+    _canvasFocusNode.requestFocus();
   }
 
   String? _findConnectionNearPoint(
@@ -2735,6 +2745,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   void _handleCanvasPanStart(DragStartDetails details) {
     // Only start panning if we're not dragging a node
     if (!_isDraggingNode) {
+      _requestCanvasFocus();
       _clearSelectedConnection();
       _isPanning = true;
       _lastPanPosition = details.globalPosition;
@@ -3549,6 +3560,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   ) {
     switch (action) {
       case 'hover_start':
+        // Do not override an explicit user selection with a transient hover
+        // highlight; selection has priority for keyboard delete.
+        if (_connectionHighlight?.source ==
+            _ConnectionHighlightSource.selected) {
+          break;
+        }
         // Find connections involving this port and highlight the first one
         final portConnections = connections
             .where(
@@ -3576,6 +3593,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         break;
 
       case 'hover_end':
+        if (_connectionHighlight?.source ==
+            _ConnectionHighlightSource.selected) {
+          break;
+        }
         _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
         break;
 
@@ -3674,6 +3695,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       Widget overlay = GestureDetector(
         behavior: HitTestBehavior.opaque, // Capture all taps in this area
         onTap: () {
+          _requestCanvasFocus();
           _clearSelectedConnection();
           _toggleConnectionOutputMode(connectionId);
         },
