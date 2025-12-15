@@ -60,6 +60,10 @@ class DistingCubit extends Cubit<DistingState> {
   final Future<SharedPreferences> _prefs;
   FirmwareVersion? _lastKnownFirmwareVersion;
 
+  CancelableOperation<void>? _renamePresetVerificationOperation;
+  final Map<int, CancelableOperation<void>> _renameSlotVerificationOperations =
+      {};
+
   // Modified constructor
   DistingCubit(this.database)
     : _prefs = SharedPreferences.getInstance(),
@@ -1501,14 +1505,47 @@ class DistingCubit extends Cubit<DistingState> {
   void renamePreset(String newName) async {
     final currentState = state;
     if (currentState is DistingStateSynchronized) {
-      final disting = currentState.disting;
-      // Allow renaming offline, OfflineDistingMidiManager handles it
-      disting.requestSetPresetName(newName);
+      final trimmed = newName.trim();
+      if (trimmed.isEmpty || trimmed == currentState.presetName) return;
 
-      await Future.delayed(
-        const Duration(milliseconds: 50),
-      ); // Shorter delay okay?
-      await _refreshStateFromManager(); // Refresh state from manager
+      // 1) Optimistic update for instant UI response
+      emit(currentState.copyWith(presetName: trimmed, loading: false));
+
+      // 2) Send request in background (works for online + offline managers)
+      final disting = currentState.disting;
+      disting.requestSetPresetName(trimmed).catchError((e, s) {
+        // If rename fails, fall back to device truth via a lightweight read.
+        _renamePresetVerificationOperation?.cancel();
+        _renamePresetVerificationOperation = CancelableOperation.fromFuture(
+          Future.delayed(const Duration(milliseconds: 250), () async {
+            if (state is! DistingStateSynchronized) return;
+            final verificationState = state as DistingStateSynchronized;
+            final actual = await disting.requestPresetName();
+            if (actual == null) return;
+            if (verificationState.presetName != actual) {
+              emit(verificationState.copyWith(presetName: actual));
+            }
+          }),
+          onCancel: () {},
+        );
+      });
+
+      // 3) Verification (lightweight): read name back and correct if needed.
+      _renamePresetVerificationOperation?.cancel();
+      _renamePresetVerificationOperation = CancelableOperation.fromFuture(
+        Future.delayed(const Duration(milliseconds: 500), () async {
+          if (state is! DistingStateSynchronized) return;
+          final verificationState = state as DistingStateSynchronized;
+          if (verificationState.presetName != trimmed) return;
+
+          final actual = await disting.requestPresetName();
+          if (actual == null) return;
+          if (actual != trimmed) {
+            emit(verificationState.copyWith(presetName: actual));
+          }
+        }),
+        onCancel: () {},
+      );
     }
   }
 
@@ -1794,12 +1831,70 @@ class DistingCubit extends Cubit<DistingState> {
   void renameSlot(int algorithmIndex, String newName) async {
     final currentState = state;
     if (currentState is DistingStateSynchronized) {
-      final disting = requireDisting();
-      // Send the name update to the manager (online or offline)
-      await disting.requestSendSlotName(algorithmIndex, newName);
+      if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) {
+        return;
+      }
 
-      // Trigger a refresh to get the updated name from the manager
-      await _refreshStateFromManager();
+      final trimmed = newName.trim();
+      if (trimmed.isEmpty) return;
+
+      final slot = currentState.slots[algorithmIndex];
+      final currentAlgorithm = slot.algorithm;
+      if (trimmed == currentAlgorithm.name) return;
+
+      // 1) Optimistic update for instant UI response
+      final optimisticAlgorithm = Algorithm(
+        algorithmIndex: currentAlgorithm.algorithmIndex,
+        guid: currentAlgorithm.guid,
+        name: trimmed,
+        specifications: currentAlgorithm.specifications,
+      );
+      final optimisticSlots = updateSlot(
+        algorithmIndex,
+        currentState.slots,
+        (s) => s.copyWith(algorithm: optimisticAlgorithm),
+      );
+      emit(currentState.copyWith(slots: optimisticSlots, loading: false));
+
+      // 2) Send request in background
+      final disting = requireDisting();
+      disting.requestSendSlotName(algorithmIndex, trimmed).catchError((e, s) {
+        // If send fails, let the verification pass reconcile state.
+      });
+
+      // 3) Verification: read back just this slot's Algorithm and correct if needed.
+      _renameSlotVerificationOperations[algorithmIndex]?.cancel();
+      _renameSlotVerificationOperations[algorithmIndex] =
+          CancelableOperation.fromFuture(
+            Future.delayed(const Duration(milliseconds: 750), () async {
+              if (state is! DistingStateSynchronized) return;
+              final verificationState = state as DistingStateSynchronized;
+
+              // Only proceed if the slot still exists and still matches our optimistic edit.
+              if (algorithmIndex < 0 ||
+                  algorithmIndex >= verificationState.slots.length) {
+                return;
+              }
+
+              final currentSlot = verificationState.slots[algorithmIndex];
+              if (currentSlot.algorithm.guid != currentAlgorithm.guid) return;
+              if (currentSlot.algorithm.name != trimmed) return;
+
+              final actual = await disting.requestAlgorithmGuid(algorithmIndex);
+              if (actual == null) return;
+
+              // If the device accepted it, the name should match. Otherwise, correct locally.
+              if (actual.name != trimmed) {
+                final correctedSlots = updateSlot(
+                  algorithmIndex,
+                  verificationState.slots,
+                  (s) => s.copyWith(algorithm: actual),
+                );
+                emit(verificationState.copyWith(slots: correctedSlots));
+              }
+            }),
+            onCancel: () {},
+          );
     }
   }
 
