@@ -1748,6 +1748,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           onNodeDragEnd: () {
             // Node drag end handler
           },
+          onSizeResolved: (size) => _handleNodeSizeResolved('es5_node', size),
         ),
       ),
     ];

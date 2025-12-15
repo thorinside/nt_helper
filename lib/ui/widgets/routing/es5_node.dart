@@ -64,6 +64,9 @@ class ES5Node extends StatelessWidget {
   /// ID of the port that should be highlighted (during drag operations)
   final String? highlightedPortId;
 
+  /// Callback when the node's size is resolved.
+  final ValueChanged<Size>? onSizeResolved;
+
   const ES5Node({
     super.key,
     required this.ports,
@@ -84,6 +87,7 @@ class ES5Node extends StatelessWidget {
     this.onNodeDragEnd,
     this.onRoutingAction,
     this.highlightedPortId,
+    this.onSizeResolved,
   });
 
   @override
@@ -112,6 +116,7 @@ class ES5Node extends StatelessWidget {
         onNodeDragEnd: onNodeDragEnd,
         onRoutingAction: onRoutingAction,
         highlightedPortId: highlightedPortId,
+        onSizeResolved: onSizeResolved,
       ),
     );
   }
