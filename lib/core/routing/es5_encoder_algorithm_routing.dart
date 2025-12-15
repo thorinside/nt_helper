@@ -196,14 +196,16 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
                   .value
             : channelNumber;
 
+        final outputLabel = outputValue <= 0 ? 'None' : outputValue.toString();
+
         ports.add(
           Port(
             id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_output',
-            name: 'To ES-5 $outputValue',
+            name: 'To ES-5 $outputLabel',
             type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
             direction: PortDirection.output,
-            description: 'Channel $channelNumber → ES-5 Output $outputValue',
-            channelNumber: outputValue, // FIX: Use Output parameter value
+            description: 'Channel $channelNumber → ES-5 Output $outputLabel',
+            channelNumber: outputValue > 0 ? outputValue : null,
             busParam: mirrorBusParam, // Special marker for connection discovery
           ),
         );

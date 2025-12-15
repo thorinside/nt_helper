@@ -53,18 +53,22 @@ abstract class Es5DirectOutputAlgorithmRouting
 
       if (es5ExpanderValue != null && es5ExpanderValue > 0) {
         // ES-5 MODE: Ignore Output parameter completely
-        final es5OutputValue =
+        final configuredEs5OutputValue =
             getChannelParameter(channel, es5OutputParamName) ?? channel;
+        final es5OutputLabel = configuredEs5OutputValue <= 0
+            ? 'None'
+            : configuredEs5OutputValue.toString();
 
         ports.add(
           Port(
             id: '${algorithmUuid}_channel_${channel}_es5_output',
-            name: 'Ch$channel → ES-5 $es5OutputValue',
+            name: 'Ch$channel → ES-5 $es5OutputLabel',
             type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
             direction: PortDirection.output,
-            description: 'Direct to ES-5 Output $es5OutputValue',
+            description: 'Direct to ES-5 Output $es5OutputLabel',
             busParam: es5DirectBusParam, // Special marker
-            channelNumber: es5OutputValue, // ES-5 port number
+            channelNumber:
+                configuredEs5OutputValue > 0 ? configuredEs5OutputValue : null,
           ),
         );
       } else {
@@ -72,7 +76,7 @@ abstract class Es5DirectOutputAlgorithmRouting
         // Try 'Output' first, then fall back to any parameter ending with 'output' (e.g., 'Clock output')
         final outputBusResult = _getOutputBusWithName(channel);
 
-        if (outputBusResult != null && outputBusResult.busValue > 0) {
+        if (outputBusResult != null) {
           // For single-channel algorithms, use the actual parameter name (e.g., "Clock output")
           // For multi-channel, use "Channel N" format
           final portName =
@@ -87,7 +91,7 @@ abstract class Es5DirectOutputAlgorithmRouting
               type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
               direction: PortDirection.output,
               description: 'Gate output for channel $channel',
-              busValue: outputBusResult.busValue,
+              busValue: outputBusResult.busValue > 0 ? outputBusResult.busValue : null,
               channelNumber: channel,
               parameterNumber: outputBusResult.parameterNumber,
             ),
@@ -106,7 +110,7 @@ abstract class Es5DirectOutputAlgorithmRouting
   _getOutputBusWithName(int channel) {
     // Try 'Output' first
     final outputParam = getParameterValueAndNumber(channel, outputParamName);
-    if (outputParam != null && outputParam.value > 0) {
+    if (outputParam != null) {
       return (
         busValue: outputParam.value,
         paramName: outputParamName,
@@ -137,13 +141,11 @@ abstract class Es5DirectOutputAlgorithmRouting
             )
             .value;
 
-        if (value > 0) {
-          return (
-            busValue: value,
-            paramName: param.name,
-            parameterNumber: param.parameterNumber,
-          );
-        }
+        return (
+          busValue: value,
+          paramName: param.name,
+          parameterNumber: param.parameterNumber,
+        );
       }
     }
 

@@ -247,7 +247,7 @@ void main() {
           }
         });
 
-        test('skips channels with Output = 0', () {
+        test('includes channels with Output = 0 but with null busValue', () {
           final slot = createClockSlot(
             channelCount: 3,
             channelConfigs: [
@@ -257,7 +257,7 @@ void main() {
                 es5Expander: 0,
                 es5Output: 2,
                 output: 0,
-              ), // No output
+              ), // No bus assignment
               (channel: 3, es5Expander: 0, es5Output: 3, output: 15),
             ],
           );
@@ -268,11 +268,14 @@ void main() {
             algorithmUuid: 'clock_test',
           );
 
-          // Should have 2 output ports (channel 2 skipped)
-          expect(routing.outputPorts.length, equals(2));
+          // Should have 3 output ports (all channels included)
+          expect(routing.outputPorts.length, equals(3));
 
-          // Verify channel 2 is not present
-          expect(routing.outputPorts.any((p) => p.channelNumber == 2), isFalse);
+          // Channel 2 should be present but with null busValue
+          final channel2Port = routing.outputPorts.firstWhere(
+            (p) => p.channelNumber == 2,
+          );
+          expect(channel2Port.busValue, isNull);
         });
       });
 
