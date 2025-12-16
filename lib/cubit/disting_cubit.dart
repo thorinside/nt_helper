@@ -43,6 +43,7 @@ part 'disting_cubit_algorithm_library_delegate.dart';
 part 'disting_cubit_sd_card_delegate.dart';
 part 'disting_cubit_lua_reload_delegate.dart';
 part 'disting_cubit_parameter_string_delegate.dart';
+part 'disting_cubit_mapping_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -111,6 +112,7 @@ class DistingCubit extends _DistingCubitBase
   late final _LuaReloadDelegate _luaReloadDelegate = _LuaReloadDelegate(this);
   late final _ParameterStringDelegate _parameterStringDelegate =
       _ParameterStringDelegate(this);
+  late final _MappingDelegate _mappingDelegate = _MappingDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -602,15 +604,7 @@ class DistingCubit extends _DistingCubitBase
     int parameterNumber,
     PackedMappingData data,
   ) async {
-    switch (state) {
-      case DistingStateSynchronized _:
-        final disting = requireDisting();
-        await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
-        await _refreshStateFromManager(); // Refresh state from manager
-        break;
-      default:
-      // Handle other cases or errors
-    }
+    return _mappingDelegate.saveMapping(algorithmIndex, parameterNumber, data);
   }
 
   void renameSlot(int algorithmIndex, String newName) async {
@@ -633,136 +627,11 @@ class DistingCubit extends _DistingCubitBase
     int parameterNumber,
     int perfPageIndex,
   ) async {
-    final currentState = state;
-    if (currentState is! DistingStateSynchronized) {
-      return;
-    }
-
-    if (slotIndex >= currentState.slots.length) {
-      return;
-    }
-
-    final disting = requireDisting();
-
-    // 1. Optimistic Update - Update local state immediately
-    final slot = currentState.slots[slotIndex];
-
-    if (parameterNumber >= slot.mappings.length) {
-      return;
-    }
-
-    final originalMapping = slot.mappings[parameterNumber];
-    final optimisticMapping = Mapping(
-      algorithmIndex: originalMapping.algorithmIndex,
-      parameterNumber: originalMapping.parameterNumber,
-      packedMappingData: originalMapping.packedMappingData.copyWith(
-        perfPageIndex: perfPageIndex,
-      ),
+    return _mappingDelegate.setPerformancePageMapping(
+      slotIndex,
+      parameterNumber,
+      perfPageIndex,
     );
-
-    // Emit optimistic state immediately for instant UI feedback
-    emit(
-      currentState.copyWith(
-        slots: updateSlot(slotIndex, currentState.slots, (slot) {
-          return slot.copyWith(
-            mappings: replaceInList(
-              slot.mappings,
-              optimisticMapping,
-              index: parameterNumber,
-            ),
-          );
-        }),
-      ),
-    );
-
-    // 2. Send update to hardware (non-blocking)
-    disting
-        .setPerformancePageMapping(slotIndex, parameterNumber, perfPageIndex)
-        .catchError((e, s) {
-          debugPrintStack(stackTrace: s);
-        });
-
-    // 3. Verify by reading back the specific parameter mapping with retry
-    const maxRetries = 4; // Try up to 4 times
-    const baseDelay = Duration(milliseconds: 100);
-    bool verified = false;
-
-    for (int attempt = 0; attempt < maxRetries && !verified; attempt++) {
-      try {
-        // Exponential backoff: 100ms, 200ms, 400ms, 800ms
-        final delay = baseDelay * (1 << attempt);
-        await Future.delayed(delay);
-
-        final actualMapping = await disting.requestMappings(
-          slotIndex,
-          parameterNumber,
-        );
-
-        if (actualMapping == null) {
-          continue; // Retry
-        }
-
-        // 4. If hardware value differs from optimistic value, hardware wins
-        if (actualMapping.packedMappingData.perfPageIndex !=
-            optimisticMapping.packedMappingData.perfPageIndex) {
-          // Check if this is the last attempt
-          if (attempt == maxRetries - 1) {
-            // Last attempt - accept hardware value as final
-
-            // Update UI with actual hardware value
-            final verificationState = state;
-            if (verificationState is DistingStateSynchronized) {
-              emit(
-                verificationState.copyWith(
-                  slots: updateSlot(slotIndex, verificationState.slots, (slot) {
-                    return slot.copyWith(
-                      mappings: replaceInList(
-                        slot.mappings,
-                        actualMapping,
-                        index: parameterNumber,
-                      ),
-                    );
-                  }),
-                ),
-              );
-            }
-            verified = true;
-          } else {
-            // Not the last attempt - retry to see if hardware catches up
-            continue;
-          }
-        } else {
-          // Hardware matches optimistic value - success!
-          verified = true;
-        }
-      } catch (e, stackTrace) {
-        debugPrintStack(stackTrace: stackTrace);
-
-        if (attempt == maxRetries - 1) {
-          // Last attempt failed - log error
-        }
-      }
-    }
-
-    if (!verified) {
-      // Revert to original mapping since we couldn't verify the change
-      final revertState = state;
-      if (revertState is DistingStateSynchronized) {
-        emit(
-          revertState.copyWith(
-            slots: updateSlot(slotIndex, revertState.slots, (slot) {
-              return slot.copyWith(
-                mappings: replaceInList(
-                  slot.mappings,
-                  originalMapping,
-                  index: parameterNumber,
-                ),
-              );
-            }),
-          ),
-        );
-      }
-    }
   }
 
   // --- Helper Methods ---
