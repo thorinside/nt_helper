@@ -42,6 +42,7 @@ part 'disting_cubit_slot_state_delegate.dart';
 part 'disting_cubit_algorithm_library_delegate.dart';
 part 'disting_cubit_sd_card_delegate.dart';
 part 'disting_cubit_lua_reload_delegate.dart';
+part 'disting_cubit_parameter_string_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -108,6 +109,8 @@ class DistingCubit extends _DistingCubitBase
       _AlgorithmLibraryDelegate(this);
   late final _SdCardDelegate _sdCardDelegate = _SdCardDelegate(this);
   late final _LuaReloadDelegate _luaReloadDelegate = _LuaReloadDelegate(this);
+  late final _ParameterStringDelegate _parameterStringDelegate =
+      _ParameterStringDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -342,7 +345,7 @@ class DistingCubit extends _DistingCubitBase
       _parameterQueue?.dispose();
       _parameterQueue = ParameterUpdateQueue(
         midiManager: manager,
-        onParameterStringUpdated: _onParameterStringUpdated,
+        onParameterStringUpdated: _parameterStringDelegate.onParameterStringUpdated,
       );
     }
   }
@@ -355,48 +358,6 @@ class DistingCubit extends _DistingCubitBase
   /// Used by the Add Algorithm screen's manual rescan button.
   Future<void> rescanPlugins() async {
     return _algorithmLibraryDelegate.rescanPlugins();
-  }
-
-  // Handle parameter string updates from the queue
-  void _onParameterStringUpdated(
-    int algorithmIndex,
-    int parameterNumber,
-    String value,
-  ) {
-    final currentState = state;
-    if (currentState is! DistingStateSynchronized) return;
-
-    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) {
-      return;
-    }
-
-    final currentSlot = currentState.slots[algorithmIndex];
-    if (parameterNumber < 0 ||
-        parameterNumber >= currentSlot.valueStrings.length) {
-      return;
-    }
-
-    try {
-      // Update the parameter string in the UI
-      final updatedValueStrings = List<ParameterValueString>.from(
-        currentSlot.valueStrings,
-      );
-      updatedValueStrings[parameterNumber] = ParameterValueString(
-        algorithmIndex: algorithmIndex,
-        parameterNumber: parameterNumber,
-        value: value,
-      );
-
-      final updatedSlot = currentSlot.copyWith(
-        valueStrings: updatedValueStrings,
-      );
-      final updatedSlots = List<Slot>.from(currentState.slots);
-      updatedSlots[algorithmIndex] = updatedSlot;
-
-      emit(currentState.copyWith(slots: updatedSlots));
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-    }
   }
 
   @override
@@ -1135,52 +1096,7 @@ class DistingCubit extends _DistingCubitBase
 
   /// Refreshes parameter strings for a specific slot only
   Future<void> refreshSlotParameterStrings(int algorithmIndex) async {
-    final currentState = state;
-    if (currentState is! DistingStateSynchronized) {
-      return;
-    }
-
-    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) {
-      return;
-    }
-
-    final disting = requireDisting();
-    final currentSlot = currentState.slots[algorithmIndex];
-
-    try {
-      // Only update parameter strings for string-type parameters (units 13, 14, 17)
-      var updatedValueStrings = List<ParameterValueString>.from(
-        currentSlot.valueStrings,
-      );
-
-      for (
-        int parameterNumber = 0;
-        parameterNumber < currentSlot.parameters.length;
-        parameterNumber++
-      ) {
-        final parameter = currentSlot.parameters[parameterNumber];
-        if ([13, 14, 17].contains(parameter.unit)) {
-          final newValueString = await disting.requestParameterValueString(
-            algorithmIndex,
-            parameterNumber,
-          );
-          if (newValueString != null) {
-            updatedValueStrings[parameterNumber] = newValueString;
-          }
-        }
-      }
-
-      // Update the slot with new parameter strings
-      final updatedSlot = currentSlot.copyWith(
-        valueStrings: updatedValueStrings,
-      );
-      final updatedSlots = List<Slot>.from(currentState.slots);
-      updatedSlots[algorithmIndex] = updatedSlot;
-
-      emit(currentState.copyWith(slots: updatedSlots));
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-    }
+    return _parameterStringDelegate.refreshSlotParameterStrings(algorithmIndex);
   }
 
   /// Refreshes a single slot's data from the module
@@ -1211,53 +1127,11 @@ class DistingCubit extends _DistingCubitBase
     required int parameterNumber,
     required String value,
   }) async {
-    // Acquire semaphore to block retry queue during user parameter string updates
-    _parameterFetchDelegate.acquireCommandSemaphore();
-
-    try {
-      switch (state) {
-        case DistingStateInitial():
-        case DistingStateSelectDevice():
-        case DistingStateConnected():
-          break;
-        case DistingStateSynchronized _:
-          var disting = requireDisting();
-
-          await disting.setParameterString(
-            algorithmIndex,
-            parameterNumber,
-            value,
-          );
-
-          // Refresh the parameter value string to reflect the change
-          final newValueString = await disting.requestParameterValueString(
-            algorithmIndex,
-            parameterNumber,
-          );
-
-          if (newValueString != null) {
-            final state = (this.state as DistingStateSynchronized);
-
-            emit(
-              state.copyWith(
-                slots: updateSlot(algorithmIndex, state.slots, (slot) {
-                  return slot.copyWith(
-                    valueStrings: replaceInList(
-                      slot.valueStrings,
-                      newValueString,
-                      index: parameterNumber,
-                    ),
-                  );
-                }),
-              ),
-            );
-          }
-          break;
-      }
-    } finally {
-      // Always release semaphore to allow retry queue to proceed
-      _parameterFetchDelegate.releaseCommandSemaphore();
-    }
+    return _parameterStringDelegate.updateParameterString(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      value: value,
+    );
   }
 
   /// Starts the USB video stream from the Disting NT device
