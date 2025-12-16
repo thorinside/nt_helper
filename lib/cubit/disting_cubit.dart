@@ -45,6 +45,7 @@ part 'disting_cubit_lua_reload_delegate.dart';
 part 'disting_cubit_parameter_string_delegate.dart';
 part 'disting_cubit_mapping_delegate.dart';
 part 'disting_cubit_state_refresh_delegate.dart';
+part 'disting_cubit_slot_maintenance_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -116,6 +117,8 @@ class DistingCubit extends _DistingCubitBase
   late final _MappingDelegate _mappingDelegate = _MappingDelegate(this);
   late final _StateRefreshDelegate _stateRefreshDelegate =
       _StateRefreshDelegate(this);
+  late final _SlotMaintenanceDelegate _slotMaintenanceDelegate =
+      _SlotMaintenanceDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -132,7 +135,6 @@ class DistingCubit extends _DistingCubitBase
 
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
-  final Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
 
   // Parameter update queue for consolidated parameter changes
   ParameterUpdateQueue? _parameterQueue;
@@ -683,72 +685,7 @@ class DistingCubit extends _DistingCubitBase
 
   @override
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex) {
-    // Run through all of the parts of the slot and replace the algorithm index
-    // with the new one by manually constructing new objects.
-    return Slot(
-      algorithm: slot.algorithm.copyWith(algorithmIndex: algorithmIndex),
-      routing: RoutingInfo(
-        algorithmIndex: algorithmIndex,
-        routingInfo: slot.routing.routingInfo,
-      ),
-      pages: ParameterPages(
-        algorithmIndex: algorithmIndex,
-        pages: slot.pages.pages,
-      ),
-      parameters: slot.parameters
-          .map(
-            (parameter) => ParameterInfo(
-              algorithmIndex: algorithmIndex,
-              parameterNumber: parameter.parameterNumber,
-              min: parameter.min,
-              max: parameter.max,
-              defaultValue: parameter.defaultValue,
-              unit: parameter.unit,
-              name: parameter.name,
-              powerOfTen: parameter.powerOfTen,
-              ioFlags: parameter.ioFlags,
-            ),
-          )
-          .toList(),
-      values: slot.values
-          .map(
-            (value) => ParameterValue(
-              algorithmIndex: algorithmIndex,
-              parameterNumber: value.parameterNumber,
-              value: value.value,
-              isDisabled: value.isDisabled,
-            ),
-          )
-          .toList(),
-      enums: slot.enums
-          .map(
-            (enums) => ParameterEnumStrings(
-              algorithmIndex: algorithmIndex,
-              parameterNumber: enums.parameterNumber,
-              values: enums.values,
-            ),
-          )
-          .toList(),
-      mappings: slot.mappings
-          .map(
-            (mapping) => Mapping(
-              algorithmIndex: algorithmIndex,
-              parameterNumber: mapping.parameterNumber,
-              packedMappingData: mapping.packedMappingData,
-            ),
-          )
-          .toList(),
-      valueStrings: slot.valueStrings
-          .map(
-            (valueStrings) => ParameterValueString(
-              algorithmIndex: algorithmIndex,
-              parameterNumber: valueStrings.parameterNumber,
-              value: valueStrings.value,
-            ),
-          )
-          .toList(),
-      outputModeMap: slot.outputModeMap,
-    );
+    return _slotMaintenanceDelegate.fixAlgorithmIndex(slot, algorithmIndex);
   }
 
   // Simple program refresh queue with retry logic
@@ -824,23 +761,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> resetOutputs(Slot slot, int outputIndex) async {
-    final disting = requireDisting();
-
-    slot.parameters
-        .where(
-          (p) =>
-              p.name.toLowerCase().contains("output") &&
-              p.min == 0 &&
-              p.max == 28,
-        )
-        .forEach(
-          (p) => disting.setParameterValue(
-            p.algorithmIndex,
-            p.parameterNumber,
-            outputIndex,
-          ),
-        );
-    refresh();
+    return _slotMaintenanceDelegate.resetOutputs(slot, outputIndex);
   }
 
   @override
@@ -875,36 +796,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> _refreshSlotAfterAnomaly(int algorithmIndex) async {
-    await Future.delayed(const Duration(seconds: 1));
-
-    final syncState = state;
-    if (syncState is! DistingStateSynchronized) {
-      return;
-    }
-
-    final now = DateTime.now();
-    final lastAttempt = _lastAnomalyRefreshAttempt[algorithmIndex];
-    if (lastAttempt != null &&
-        now.difference(lastAttempt) < const Duration(seconds: 10)) {
-      return;
-    }
-    _lastAnomalyRefreshAttempt[algorithmIndex] = now;
-
-    try {
-      final disting = requireDisting();
-      final Slot updatedSlot = await fetchSlot(
-        disting,
-        algorithmIndex,
-      );
-      final currentState = state as DistingStateSynchronized;
-      final newSlots = List<Slot>.from(currentState.slots);
-      newSlots[algorithmIndex] = updatedSlot;
-      emit(currentState.copyWith(slots: newSlots));
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      // Optionally, clear the timestamp to allow immediate retry if fetch failed
-      // _lastAnomalyRefreshAttempt.remove(algorithmIndex);
-    }
+    return _slotMaintenanceDelegate.refreshSlotAfterAnomaly(algorithmIndex);
   }
 
   Future<List<String>> scanSdCardPresets() async {
@@ -943,25 +835,7 @@ class DistingCubit extends _DistingCubitBase
 
   /// Refreshes a single slot's data from the module
   Future<void> refreshSlot(int algorithmIndex) async {
-    final syncState = state;
-    if (syncState is! DistingStateSynchronized) {
-      return;
-    }
-
-    try {
-      final disting = requireDisting();
-      final Slot updatedSlot = await fetchSlot(
-        disting,
-        algorithmIndex,
-      );
-      final currentState = state as DistingStateSynchronized;
-      final newSlots = List<Slot>.from(currentState.slots);
-      newSlots[algorithmIndex] = updatedSlot;
-      emit(currentState.copyWith(slots: newSlots));
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      rethrow;
-    }
+    return _slotMaintenanceDelegate.refreshSlot(algorithmIndex);
   }
 
   Future<void> updateParameterString({
