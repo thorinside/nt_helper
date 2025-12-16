@@ -46,6 +46,7 @@ part 'disting_cubit_parameter_string_delegate.dart';
 part 'disting_cubit_mapping_delegate.dart';
 part 'disting_cubit_state_refresh_delegate.dart';
 part 'disting_cubit_slot_maintenance_delegate.dart';
+part 'disting_cubit_parameter_value_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -119,6 +120,8 @@ class DistingCubit extends _DistingCubitBase
       _StateRefreshDelegate(this);
   late final _SlotMaintenanceDelegate _slotMaintenanceDelegate =
       _SlotMaintenanceDelegate(this);
+  late final _ParameterValueDelegate _parameterValueDelegate =
+      _ParameterValueDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -415,131 +418,12 @@ class DistingCubit extends _DistingCubitBase
     required int value,
     required bool userIsChangingTheValue,
   }) async {
-    // Acquire semaphore to block retry queue during user parameter updates
-    _parameterFetchDelegate.acquireCommandSemaphore();
-
-    try {
-      switch (state) {
-        case DistingStateInitial():
-        case DistingStateSelectDevice():
-        case DistingStateConnected():
-          break;
-        case DistingStateSynchronized syncstate:
-          requireDisting();
-
-          // Always queue the parameter update for sending to device
-          final currentSlot = syncstate.slots[algorithmIndex];
-          final needsStringUpdate =
-              parameterNumber < currentSlot.parameters.length &&
-              [
-                13,
-                14,
-                17,
-              ].contains(currentSlot.parameters[parameterNumber].unit);
-
-          _parameterQueue?.updateParameter(
-            algorithmIndex: algorithmIndex,
-            parameterNumber: parameterNumber,
-            value: value,
-            needsStringUpdate: needsStringUpdate,
-            isRealTimeUpdate: userIsChangingTheValue,
-          );
-
-          if (userIsChangingTheValue) {
-            // Optimistic update during slider movement - just update the UI
-            // Preserve isDisabled state from current value
-            final currentValue = currentSlot.values.elementAtOrNull(
-              parameterNumber,
-            );
-            final newValue = ParameterValue(
-              algorithmIndex: algorithmIndex,
-              parameterNumber: parameterNumber,
-              value: value,
-              isDisabled: currentValue?.isDisabled ?? false,
-            );
-
-            emit(
-              syncstate.copyWith(
-                slots: updateSlot(algorithmIndex, syncstate.slots, (slot) {
-                  return slot.copyWith(
-                    values: replaceInList(
-                      slot.values,
-                      newValue,
-                      index: parameterNumber,
-                    ),
-                  );
-                }),
-              ),
-            );
-          } else {
-            // When user releases slider - do minimal additional processing
-
-            // Special case for switching programs
-            if (_isProgramParameter(
-              syncstate,
-              algorithmIndex,
-              parameterNumber,
-            )) {
-              _queueProgramRefresh(algorithmIndex);
-            }
-
-            // Anomaly Check - using the value we're setting
-            if (parameterNumber < currentSlot.parameters.length) {
-              final parameterInfo = currentSlot.parameters.elementAt(
-                parameterNumber,
-              );
-              if (value < parameterInfo.min || value > parameterInfo.max) {
-                _refreshSlotAfterAnomaly(algorithmIndex);
-                return; // Return early as the slot will be refreshed
-              }
-            }
-
-            // Update UI with the final value immediately (optimistic)
-            // Preserve isDisabled state from current value
-            final currentValue = currentSlot.values.elementAtOrNull(
-              parameterNumber,
-            );
-            final newValue = ParameterValue(
-              algorithmIndex: algorithmIndex,
-              parameterNumber: parameterNumber,
-              value: value,
-              isDisabled: currentValue?.isDisabled ?? false,
-            );
-
-            emit(
-              syncstate.copyWith(
-                slots: updateSlot(algorithmIndex, syncstate.slots, (slot) {
-                  return slot.copyWith(
-                    values: replaceInList(
-                      slot.values,
-                      newValue,
-                      index: parameterNumber,
-                    ),
-                  );
-                }),
-              ),
-            );
-
-            // The parameter queue will handle:
-            // 1. Sending the parameter value to device
-            // 2. Querying parameter string if needed
-            // 3. Rate limiting and consolidation
-
-            // Trigger a debounced refresh to re-sync state after the user lets go
-            // Skip if we're already doing a full program refresh (which includes all values)
-            if (!_isProgramParameter(
-              syncstate,
-              algorithmIndex,
-              parameterNumber,
-            )) {
-              scheduleParameterRefresh(algorithmIndex);
-            }
-          }
-      }
-    } finally {
-      // Always release semaphore to allow retry queue to proceed
-      _parameterFetchDelegate.releaseCommandSemaphore();
-    }
+    return _parameterValueDelegate.updateParameterValue(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      value: value,
+      userIsChangingTheValue: userIsChangingTheValue,
+    );
   }
 
   /// Schedules a debounced parameter refresh (requestAllParameterValues).
