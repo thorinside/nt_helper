@@ -40,6 +40,7 @@ part 'disting_cubit_parameter_refresh_delegate.dart';
 part 'disting_cubit_monitoring_delegate.dart';
 part 'disting_cubit_slot_state_delegate.dart';
 part 'disting_cubit_algorithm_library_delegate.dart';
+part 'disting_cubit_sd_card_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -104,6 +105,7 @@ class DistingCubit extends _DistingCubitBase
   late final _SlotStateDelegate _slotStateDelegate = _SlotStateDelegate(this);
   late final _AlgorithmLibraryDelegate _algorithmLibraryDelegate =
       _AlgorithmLibraryDelegate(this);
+  late final _SdCardDelegate _sdCardDelegate = _SdCardDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -1101,72 +1103,14 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<List<String>> scanSdCardPresets() async {
-    final presets = <String>{};
-    final disting = requireDisting();
-    await disting.requestWake();
-
-    try {
-      final rootListing = await disting.requestDirectoryListing('/');
-      if (rootListing != null) {
-        for (final entry in rootListing.entries) {
-          if (entry.isDirectory &&
-              entry.name.toLowerCase().contains('presets')) {
-            final presetPaths = await _scanDirectory('/${entry.name}');
-            presets.addAll(presetPaths);
-          }
-        }
-      }
-    } catch (e, stack) {
-      debugPrintStack(
-        label: "Error scanning SD card presets",
-        stackTrace: stack,
-      );
-    }
-
-    return presets.toList()..sort();
-  }
-
-  Future<Set<String>> _scanDirectory(String path) async {
-    final presets = <String>{};
-    final disting = requireDisting();
-
-    try {
-      final listing = await disting.requestDirectoryListing(path);
-      if (listing != null) {
-        for (final entry in listing.entries) {
-          final newPath = '$path/${entry.name}';
-          if (entry.isDirectory) {
-            presets.addAll(await _scanDirectory(newPath));
-          } else if (entry.name.toLowerCase().endsWith('.json')) {
-            presets.add(newPath);
-          }
-        }
-      }
-    } catch (e, stack) {
-      debugPrintStack(
-        label: "Error scanning directory $path",
-        stackTrace: stack,
-      );
-    }
-
-    return presets;
+    return _sdCardDelegate.scanSdCardPresets();
   }
 
   /// Scans the SD card on the connected disting for .json files.
   /// Returns a sorted list of relative paths (e.g., "presets/my_preset.json").
   /// Only available if firmware has SD card support.
   Future<List<String>> fetchSdCardPresets() async {
-    final currentState = state;
-
-    if (currentState is! DistingStateSynchronized || currentState.offline) {
-      return [];
-    }
-
-    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
-      return [];
-    }
-
-    return scanSdCardPresets(); // Reuse the existing private method
+    return _sdCardDelegate.fetchSdCardPresets();
   }
 
   /// Scans for Lua script plugins in the /programs/lua directory.
