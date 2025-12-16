@@ -47,6 +47,7 @@ part 'disting_cubit_mapping_delegate.dart';
 part 'disting_cubit_state_refresh_delegate.dart';
 part 'disting_cubit_slot_maintenance_delegate.dart';
 part 'disting_cubit_parameter_value_delegate.dart';
+part 'disting_cubit_hardware_commands_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -122,6 +123,8 @@ class DistingCubit extends _DistingCubitBase
       _SlotMaintenanceDelegate(this);
   late final _ParameterValueDelegate _parameterValueDelegate =
       _ParameterValueDelegate(this);
+  late final _HardwareCommandsDelegate _hardwareCommandsDelegate =
+      _HardwareCommandsDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -216,23 +219,11 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<Uint8List?> getHardwareScreenshot() async {
-    final disting = requireDisting();
-    await disting.requestWake();
-    final screenshot = await disting.encodeTakeScreenshot();
-    return screenshot;
+    return _hardwareCommandsDelegate.getHardwareScreenshot();
   }
 
   Future<void> updateScreenshot() async {
-    final disting = requireDisting();
-    await disting.requestWake();
-    final screenshot = await disting.encodeTakeScreenshot();
-    switch (state) {
-      case DistingStateSynchronized syncstate:
-        emit(syncstate.copyWith(screenshot: screenshot));
-        break;
-      default:
-      // Handle other cases or errors
-    }
+    return _hardwareCommandsDelegate.updateScreenshot();
   }
 
   /// Gets the current CPU usage information from the Disting device.
@@ -578,24 +569,19 @@ class DistingCubit extends _DistingCubitBase
   }
 
   void setDisplayMode(DisplayMode displayMode) {
-    requireDisting().let((disting) {
-      disting.requestWake();
-      disting.requestSetDisplayMode(displayMode);
-    });
+    return _hardwareCommandsDelegate.setDisplayMode(displayMode);
   }
 
   /// Reboots the Disting NT module.
   /// This will cause the module to restart as if power cycled.
   Future<void> reboot() async {
-    final disting = requireDisting();
-    await disting.requestReboot();
+    return _hardwareCommandsDelegate.reboot();
   }
 
   /// Remounts the SD card file system.
   /// This refreshes the file system without a full reboot.
   Future<void> remountSd() async {
-    final disting = requireDisting();
-    await disting.requestRemountSd();
+    return _hardwareCommandsDelegate.remountSd();
   }
 
   static List<MappedParameter> buildMappedParameterList(DistingState state) {
