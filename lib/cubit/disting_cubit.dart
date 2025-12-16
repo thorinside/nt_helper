@@ -44,6 +44,7 @@ part 'disting_cubit_sd_card_delegate.dart';
 part 'disting_cubit_lua_reload_delegate.dart';
 part 'disting_cubit_parameter_string_delegate.dart';
 part 'disting_cubit_mapping_delegate.dart';
+part 'disting_cubit_state_refresh_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -113,6 +114,8 @@ class DistingCubit extends _DistingCubitBase
   late final _ParameterStringDelegate _parameterStringDelegate =
       _ParameterStringDelegate(this);
   late final _MappingDelegate _mappingDelegate = _MappingDelegate(this);
+  late final _StateRefreshDelegate _stateRefreshDelegate =
+      _StateRefreshDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -641,37 +644,7 @@ class DistingCubit extends _DistingCubitBase
   Future<void> _refreshStateFromManager({
     Duration delay = const Duration(milliseconds: 50), // Shorter default delay
   }) async {
-    final currentState = state;
-    if (currentState is! DistingStateSynchronized) {
-      return;
-    }
-
-    emit(currentState.copyWith(loading: true)); // Show loading
-    await Future.delayed(delay);
-
-    final disting = currentState.disting; // Could be online or offline
-
-    try {
-      final numAlgorithmsInPreset =
-          (await disting.requestNumAlgorithmsInPreset()) ?? 0;
-      final presetName = await disting.requestPresetName() ?? "Error";
-      List<Slot> slots = await fetchSlots(
-        numAlgorithmsInPreset,
-        disting,
-      );
-
-      emit(
-        currentState.copyWith(
-          loading: false,
-          presetName: presetName,
-          slots: slots,
-          // Keep other fields like disting, version, algorithms, units, offline status
-        ),
-      );
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      emit(currentState.copyWith(loading: false)); // Stop loading on error
-    }
+    return _stateRefreshDelegate.refreshStateFromManager(delay: delay);
   }
 
   List<RoutingInformation> buildRoutingInformation() {
