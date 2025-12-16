@@ -48,6 +48,7 @@ part 'disting_cubit_state_refresh_delegate.dart';
 part 'disting_cubit_slot_maintenance_delegate.dart';
 part 'disting_cubit_parameter_value_delegate.dart';
 part 'disting_cubit_hardware_commands_delegate.dart';
+part 'disting_cubit_state_helpers_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -125,6 +126,8 @@ class DistingCubit extends _DistingCubitBase
       _ParameterValueDelegate(this);
   late final _HardwareCommandsDelegate _hardwareCommandsDelegate =
       _HardwareCommandsDelegate(this);
+  late final _StateHelpersDelegate _stateHelpersDelegate =
+      _StateHelpersDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -275,44 +278,7 @@ class DistingCubit extends _DistingCubitBase
 
   // Helper to fetch algorithm metadata for offline mode
   Future<List<AlgorithmInfo>> _fetchOfflineAlgorithms() async {
-    try {
-      final allBasicAlgoEntries = await _metadataDao.getAllAlgorithms();
-      final List<AlgorithmInfo> availableAlgorithmsInfo = [];
-
-      final detailedFutures = allBasicAlgoEntries.map((basicEntry) async {
-        return await _metadataDao.getFullAlgorithmDetails(basicEntry.guid);
-      }).toList();
-
-      final detailedResults = await Future.wait(detailedFutures);
-
-      for (final details in detailedResults.whereType<FullAlgorithmDetails>()) {
-        availableAlgorithmsInfo.add(
-          AlgorithmInfo(
-            guid: details.algorithm.guid,
-            name: details.algorithm.name,
-            algorithmIndex: -1,
-            specifications: details.specifications
-                .map(
-                  (specEntry) => Specification(
-                    name: specEntry.name,
-                    min: specEntry.minValue,
-                    max: specEntry.maxValue,
-                    defaultValue: specEntry.defaultValue,
-                    type: specEntry.type,
-                  ),
-                )
-                .toList(),
-          ),
-        );
-      }
-      availableAlgorithmsInfo.sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
-      return availableAlgorithmsInfo;
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
-      return []; // Return empty on error
-    }
+    return _stateHelpersDelegate.fetchOfflineAlgorithms();
   }
 
   /// Refreshes the state from the current manager (online or offline).
@@ -525,27 +491,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   List<RoutingInformation> buildRoutingInformation() {
-    switch (state) {
-      case DistingStateSynchronized syncstate:
-        return syncstate.slots
-            .where((slot) => slot.routing.algorithmIndex != -1)
-            .map(
-              (slot) => RoutingInformation(
-                algorithmIndex: slot.routing.algorithmIndex,
-                routingInfo: slot.routing.routingInfo,
-                algorithmName: (slot.algorithm.name.isNotEmpty)
-                    ? slot.algorithm.name
-                    : syncstate.algorithms
-                          .firstWhere(
-                            (element) => element.guid == slot.algorithm.guid,
-                          )
-                          .name,
-              ),
-            )
-            .toList();
-      default:
-        return [];
-    }
+    return _stateHelpersDelegate.buildRoutingInformation();
   }
 
   bool _isProgramParameter(
@@ -553,10 +499,11 @@ class DistingCubit extends _DistingCubitBase
     int algorithmIndex,
     int parameterNumber,
   ) =>
-      (state.slots[algorithmIndex].parameters[parameterNumber].name ==
-          "Program") &&
-      (("spin" == state.slots[algorithmIndex].algorithm.guid) ||
-          ("lua " == state.slots[algorithmIndex].algorithm.guid));
+      _stateHelpersDelegate.isProgramParameter(
+        state,
+        algorithmIndex,
+        parameterNumber,
+      );
 
   @override
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex) {
