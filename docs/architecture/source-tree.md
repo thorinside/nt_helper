@@ -11,14 +11,28 @@ nt_helper/
 │   │
 │   ├── cubit/                       # State management (Cubit pattern)
 │   │   ├── disting_cubit.dart       # Primary Cubit (composed via delegates/mixins)
+│   │   ├── disting_cubit_algorithm_library_delegate.dart
 │   │   ├── disting_cubit_connection_delegate.dart
+│   │   ├── disting_cubit_hardware_commands_delegate.dart
+│   │   ├── disting_cubit_internal_types.dart
+│   │   ├── disting_cubit_lua_reload_delegate.dart
+│   │   ├── disting_cubit_mapping_delegate.dart
+│   │   ├── disting_cubit_monitoring_delegate.dart
 │   │   ├── disting_cubit_parameter_fetch_delegate.dart
 │   │   ├── disting_cubit_parameter_refresh_delegate.dart
+│   │   ├── disting_cubit_parameter_string_delegate.dart
+│   │   ├── disting_cubit_parameter_value_delegate.dart
 │   │   ├── disting_cubit_plugin_delegate.dart
 │   │   ├── disting_cubit_offline_demo_delegate.dart
+│   │   ├── disting_cubit_refresh_delegate.dart
+│   │   ├── disting_cubit_sd_card_delegate.dart
 │   │   ├── disting_cubit_algorithm_ops.dart
 │   │   ├── disting_cubit_preset_ops.dart
 │   │   ├── disting_cubit_slot_ops.dart
+│   │   ├── disting_cubit_slot_maintenance_delegate.dart
+│   │   ├── disting_cubit_slot_state_delegate.dart
+│   │   ├── disting_cubit_state_helpers_delegate.dart
+│   │   ├── disting_cubit_state_refresh_delegate.dart
 │   │   ├── disting_state.dart       # State variants (freezed)
 │   │   ├── routing_editor_cubit.dart # Routing visualization state
 │   │   ├── routing_editor_state.dart

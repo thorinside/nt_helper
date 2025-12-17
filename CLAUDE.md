@@ -14,20 +14,35 @@ Flutter app for Disting NT Eurorack module: preset management, algorithm loading
 
 ### DistingCubit Delegates
 
-The main cubit is decomposed into delegates and mixins for maintainability:
+The main cubit is decomposed into delegates and mixins for maintainability.
+
+**Rule of thumb**: keep `lib/cubit/disting_cubit.dart` as an orchestration/facade layer. Add new non-trivial behavior in a delegate or an existing ops mixin.
 
 | File | Type | Purpose |
 |------|------|---------|
 | `*_connection_delegate.dart` | Delegate | MIDI device connection |
 | `*_parameter_fetch_delegate.dart` | Delegate | Parameter loading with retry |
 | `*_parameter_refresh_delegate.dart` | Delegate | Live parameter polling |
+| `*_parameter_value_delegate.dart` | Delegate | Parameter value writes + verification |
+| `*_parameter_string_delegate.dart` | Delegate | Parameter value-string reads/writes |
+| `*_mapping_delegate.dart` | Delegate | CV/MIDI/i2c/performance mappings |
+| `*_slot_state_delegate.dart` | Delegate | Slot state updates + routing refresh |
+| `*_slot_maintenance_delegate.dart` | Delegate | Slot repair/refresh/reset helpers |
+| `*_state_refresh_delegate.dart` | Delegate | Refresh state from MIDI manager |
+| `*_state_helpers_delegate.dart` | Delegate | Routing + offline metadata helpers |
+| `*_algorithm_library_delegate.dart` | Delegate | Algorithm library refresh/rescan |
 | `*_plugin_delegate.dart` | Delegate | Plugin installation |
+| `*_sd_card_delegate.dart` | Delegate | SD card preset listing/scanning |
+| `*_lua_reload_delegate.dart` | Delegate | Lua reload with state preservation |
 | `*_offline_demo_delegate.dart` | Delegate | Demo/offline mode |
+| `*_hardware_commands_delegate.dart` | Delegate | Screenshot/display/reboot/remount |
+| `*_monitoring_delegate.dart` | Delegate | CPU monitoring + USB video |
+| `*_refresh_delegate.dart` | Delegate | Refresh/cancelSync orchestration |
 | `*_algorithm_ops.dart` | Mixin | Algorithm operations |
 | `*_preset_ops.dart` | Mixin | Preset operations |
 | `*_slot_ops.dart` | Mixin | Slot operations |
 
-All use `part of 'disting_cubit.dart'` for private access. See `docs/architecture/coding-standards.md` for pattern details.
+All use `part of 'disting_cubit.dart'` for private access. See `docs/architecture/coding-standards.md` for pattern details and guardrails.
 
 ## Routing System
 

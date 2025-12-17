@@ -30,7 +30,7 @@ Comprehensive documentation of the entire system with emphasis on:
 - `lib/main.dart` - App initialization, window management, database setup, routing service locator
 
 **Core State Management**:
-- `lib/cubit/disting_cubit.dart` - Primary application state (1000+ lines, central to everything)
+- `lib/cubit/disting_cubit.dart` - Primary application state (facade + delegates/mixins)
 - `lib/cubit/disting_state.dart` - State variants (initial, selectDevice, connected, synchronized)
 - `lib/cubit/routing_editor_cubit.dart` - Routing visualization state management
 
@@ -150,7 +150,7 @@ nt_helper/
 │   ├── constants.dart               # App constants
 │   │
 │   ├── cubit/                       # State management (Cubit pattern)
-│   │   ├── disting_cubit.dart       # PRIMARY STATE - central to everything
+│   │   ├── disting_cubit.dart       # Primary Cubit (facade + delegates/mixins)
 │   │   ├── disting_state.dart       # State variants (freezed)
 │   │   ├── routing_editor_cubit.dart # Routing visualization state
 │   │   ├── routing_editor_state.dart
@@ -306,8 +306,23 @@ nt_helper/
 ### Key Modules and Their Purpose
 
 **State Management** (`lib/cubit/`):
-- **DistingCubit** - THE central state manager. Manages MIDI connections, algorithm loading, parameter updates, preset management, CPU monitoring, and video capture. Everything flows through this.
+- **DistingCubit** - The central state manager. Implemented as a small facade that forwards cohesive responsibilities into private delegates and ops mixins (keeps public API stable and code maintainable).
 - **RoutingEditorCubit** - Watches DistingCubit for synchronized state, processes routing data into visual representation
+
+### DistingCubit Decomposition (Delegate + Mixin Pattern)
+
+`DistingCubit` uses `part` files so delegates can share private state without turning everything into public API.
+
+**How it works**
+- `lib/cubit/disting_cubit.dart` owns public methods, wiring, and lifecycle (`close()`).
+- Delegates live in `lib/cubit/disting_cubit_*_delegate.dart` (private classes like `_ConnectionDelegate`).
+- Ops mixins live in `lib/cubit/disting_cubit_*_ops.dart` (user-facing operations grouped by domain).
+
+**Guardrails (avoid re-refactoring)**
+- Don’t add new non-trivial behavior directly to `disting_cubit.dart`; add it to the most relevant existing delegate/mixin or create a new delegate.
+- Keep delegates cohesive (one responsibility per delegate) and prefer extending an existing delegate over creating a “misc” delegate.
+- Delegates should not call `emit(...)` directly; use `DistingCubit._emitState(...)`.
+- Delegates that own timers/subscriptions must provide `dispose()` and be disposed from `DistingCubit.close()`.
 
 **MIDI Layer** (`lib/domain/`):
 - **IDistingMidiManager** - Interface defining all 50+ MIDI operations

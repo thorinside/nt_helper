@@ -140,6 +140,7 @@ Some Cubits (especially `DistingCubit`) are intentionally decomposed using a del
 
 **Do**:
 - Prefer delegates for code that needs access to private fields, timers, or multiple helpers.
+- Prefer adding to an existing delegate/mixin over creating a new one, if the responsibility is the same.
 - Add a `dispose()` method on delegates that own timers/subscriptions and call it from `DistingCubit.close()`.
 - Use `DistingCubit._emitState(...)` from delegates instead of calling `emit(...)` directly (because `emit` is protected and should only be called from the Cubit itself).
 - Keep extraction cohesive: one delegate per concern (connection, plugin management, parameter fetch/retry, parameter refresh/polling).
@@ -148,3 +149,29 @@ Some Cubits (especially `DistingCubit`) are intentionally decomposed using a del
 - Don’t expand the Cubit surface area just to satisfy a mixin (prefer delegates when this happens).
 - Don’t introduce debug logging as part of refactors.
 - Don’t change behavior while extracting unless explicitly requested.
+
+### Where New Code Should Go (Avoid Re-refactoring)
+
+When adding features to the app, treat `lib/cubit/disting_cubit.dart` as a facade:
+- Public Cubit API and simple forwarding methods live on `DistingCubit`.
+- Real behavior belongs in a delegate/mixin.
+
+**Prefer an ops mixin** (`*_ops.dart`) when:
+- It’s a user-facing “command” (preset/slot/algorithm operations).
+- It reads/writes state but doesn’t need its own timers/subscriptions/lifecycle.
+
+**Prefer a delegate** (`*_delegate.dart`) when:
+- The code needs timers, stream subscriptions, retry queues, or background polling.
+- The code needs access to multiple private helpers/fields.
+- The code is a cohesive subsystem (connection, monitoring, SD card, plugins, mappings, etc).
+
+**Checklist for adding a new delegate**
+1. Create `lib/cubit/disting_cubit_<topic>_delegate.dart` with `part of 'disting_cubit.dart';`.
+2. Add a `part 'disting_cubit_<topic>_delegate.dart';` entry to `lib/cubit/disting_cubit.dart`.
+3. Add a `late final _<Topic>Delegate _<topic>Delegate = _<Topic>Delegate(this);` field.
+4. Add (or update) forwarding methods on `DistingCubit` to call into the delegate.
+5. If the delegate owns resources, add `dispose()` and call it from `DistingCubit.close()`.
+
+**Keep delegates cohesive**
+- Avoid “misc” delegates; if it doesn’t fit, it probably indicates a missing domain boundary.
+- If a new method fits an existing delegate (same responsibility), add it there.
