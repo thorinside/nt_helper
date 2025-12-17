@@ -3,6 +3,32 @@ part of 'disting_cubit.dart';
 mixin _DistingCubitPresetOps on _DistingCubitBase {
   CancelableOperation<void>? _renamePresetVerificationOperation;
 
+  Future<void> newPresetImpl() async {
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      final disting = requireDisting();
+      await disting.requestNewPreset();
+      await _refreshStateFromManager();
+    }
+  }
+
+  Future<void> loadPresetImpl(String name, bool append) async {
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      // Prevent online load preset when offline
+      if (currentState.offline) {
+        return;
+      }
+      final disting = requireDisting();
+
+      emit(currentState.copyWith(loading: true));
+
+      await disting.requestLoadPreset(name, append);
+
+      await _refreshStateFromManager();
+    }
+  }
+
   void renamePresetImpl(String newName) async {
     final currentState = state;
     if (currentState is DistingStateSynchronized) {

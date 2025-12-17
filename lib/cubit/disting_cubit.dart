@@ -376,34 +376,11 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> newPreset() async {
-    final currentState = state;
-    if (currentState is DistingStateSynchronized) {
-      final disting = requireDisting();
-      await disting.requestNewPreset();
-      await _refreshStateFromManager(); // Use helper
-    } else {
-      // Handle other cases or errors
-    }
+    return newPresetImpl();
   }
 
   Future<void> loadPreset(String name, bool append) async {
-    final currentState = state;
-    if (currentState is DistingStateSynchronized) {
-      // Prevent online load preset when offline
-      if (currentState.offline) {
-        return;
-      }
-      final disting = requireDisting();
-
-      emit(currentState.copyWith(loading: true));
-
-      await disting.requestLoadPreset(name, append);
-
-      // Use the common refresh helper
-      await _refreshStateFromManager();
-    } else {
-      // Handle other cases or errors
-    }
+    return loadPresetImpl(name, append);
   }
 
   Future<void> saveMapping(
