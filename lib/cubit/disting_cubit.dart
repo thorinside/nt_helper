@@ -50,30 +50,7 @@ part 'disting_cubit_parameter_value_delegate.dart';
 part 'disting_cubit_hardware_commands_delegate.dart';
 part 'disting_cubit_state_helpers_delegate.dart';
 part 'disting_cubit_refresh_delegate.dart';
-
-// A helper class to track each parameter's polling state.
-class _PollingTask {
-  bool active = true;
-  int noChangeCount = 0;
-
-  _PollingTask();
-}
-
-// Retry request types for background parameter retry queue
-enum _ParameterRetryType { info, enumStrings, mappings, valueStrings }
-
-// Retry request data structure for background parameter retry queue
-class _ParameterRetryRequest {
-  final int slotIndex;
-  final int paramIndex;
-  final _ParameterRetryType type;
-
-  _ParameterRetryRequest({
-    required this.slotIndex,
-    required this.paramIndex,
-    required this.type,
-  });
-}
+part 'disting_cubit_internal_types.dart';
 
 abstract class _DistingCubitBase extends Cubit<DistingState> {
   _DistingCubitBase(super.initialState);
