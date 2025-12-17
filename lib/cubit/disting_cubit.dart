@@ -49,6 +49,7 @@ part 'disting_cubit_slot_maintenance_delegate.dart';
 part 'disting_cubit_parameter_value_delegate.dart';
 part 'disting_cubit_hardware_commands_delegate.dart';
 part 'disting_cubit_state_helpers_delegate.dart';
+part 'disting_cubit_refresh_delegate.dart';
 
 // A helper class to track each parameter's polling state.
 class _PollingTask {
@@ -128,6 +129,7 @@ class DistingCubit extends _DistingCubitBase
       _HardwareCommandsDelegate(this);
   late final _StateHelpersDelegate _stateHelpersDelegate =
       _StateHelpersDelegate(this);
+  late final _RefreshDelegate _refreshDelegate = _RefreshDelegate(this);
 
   // Modified constructor
   DistingCubit(this.database)
@@ -264,8 +266,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> cancelSync() async {
-    disconnect();
-    await loadDevices();
+    return _refreshDelegate.cancelSync();
   }
 
   Future<void> loadPresetOffline(FullPresetDetails presetDetails) async {
@@ -285,24 +286,7 @@ class DistingCubit extends _DistingCubitBase
   /// By default, performs a fast refresh of preset data only.
   /// Set [fullRefresh] to true to also re-download the algorithm library (online only).
   Future<void> refresh({bool fullRefresh = false}) async {
-    final currentState = state;
-    if (currentState is DistingStateSynchronized) {
-      if (fullRefresh && !currentState.offline) {
-        // Full refresh: re-download everything including algorithm library (online only)
-        await _performSyncAndEmit();
-      } else {
-        // Fast refresh: only update preset from manager (works in both online and offline)
-        await _refreshStateFromManager();
-
-        // Check if we should refresh algorithms in the background (online only)
-        if (!currentState.offline &&
-            _algorithmLibraryDelegate.shouldRefreshAlgorithms(currentState)) {
-          _algorithmLibraryDelegate.refreshAlgorithmsInBackground();
-        }
-      }
-    } else {
-      // Optionally handle error or do nothing
-    }
+    return _refreshDelegate.refresh(fullRefresh: fullRefresh);
   }
 
   // Helper to create parameter queue for current manager
