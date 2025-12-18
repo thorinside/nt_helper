@@ -1329,9 +1329,7 @@ class GalleryService {
     // Version comparison failed - fall back to date comparison
     if (galleryUpdatedAt != null) {
       // Plugin was updated in gallery after local installation
-      // Add 1 hour buffer to avoid false positives from clock skew
-      final buffer = const Duration(hours: 1);
-      return galleryUpdatedAt.isAfter(installedAt.add(buffer));
+      return galleryUpdatedAt.isAfter(installedAt);
     }
 
     // No way to determine - conservative approach
