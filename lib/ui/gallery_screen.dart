@@ -35,7 +35,20 @@ class GalleryScreen extends StatelessWidget {
       providers: [
         BlocProvider.value(value: distingCubit),
         BlocProvider(
-          create: (context) => GalleryCubit(galleryService)..loadGallery(),
+          create: (context) {
+            // Get device plugin GUIDs from DistingCubit state to detect manually installed plugins
+            final distingState = distingCubit.state;
+            final devicePluginGuids = distingState is DistingStateSynchronized
+                ? distingState.algorithms
+                    .where((algo) => algo.isPlugin)
+                    .map((algo) => algo.guid)
+                    .where((guid) => guid.isNotEmpty)
+                    .toSet()
+                : <String>{};
+
+            return GalleryCubit(galleryService)
+              ..loadGallery(devicePluginGuids: devicePluginGuids);
+          },
         ),
       ],
       child: _GalleryView(
@@ -107,6 +120,19 @@ class _GalleryViewState extends State<_GalleryView>
     _searchController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// Get device plugin GUIDs from DistingCubit state for detecting manually installed plugins
+  Set<String> _getDevicePluginGuids() {
+    final distingState = widget.distingCubit.state;
+    if (distingState is DistingStateSynchronized) {
+      return distingState.algorithms
+          .where((algo) => algo.isPlugin)
+          .map((algo) => algo.guid)
+          .where((guid) => guid.isNotEmpty)
+          .toSet();
+    }
+    return {};
   }
 
   /// Open README documentation in browser for a plugin
@@ -272,7 +298,9 @@ class _GalleryViewState extends State<_GalleryView>
                   ),
             onPressed: isRefreshing
                 ? null
-                : () => context.read<GalleryCubit>().refreshUpdates(),
+                : () => context.read<GalleryCubit>().refreshUpdates(
+                      devicePluginGuids: _getDevicePluginGuids(),
+                    ),
             tooltip: isRefreshing
                 ? 'Refreshing gallery...'
                 : updateCount > 0
@@ -293,8 +321,10 @@ class _GalleryViewState extends State<_GalleryView>
         ),
         IconButton(
           icon: const Icon(Icons.refresh),
-          onPressed: () =>
-              context.read<GalleryCubit>().loadGallery(forceRefresh: true),
+          onPressed: () => context.read<GalleryCubit>().loadGallery(
+                forceRefresh: true,
+                devicePluginGuids: _getDevicePluginGuids(),
+              ),
           tooltip: 'Refresh',
         ),
         IconButton(
@@ -379,8 +409,10 @@ class _GalleryViewState extends State<_GalleryView>
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () =>
-                  context.read<GalleryCubit>().loadGallery(forceRefresh: true),
+              onPressed: () => context.read<GalleryCubit>().loadGallery(
+                    forceRefresh: true,
+                    devicePluginGuids: _getDevicePluginGuids(),
+                  ),
               child: const Text('Retry'),
             ),
           ],
@@ -1902,6 +1934,10 @@ class _GalleryViewState extends State<_GalleryView>
               backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           );
+          // Refresh gallery to update installed indicators
+          context.read<GalleryCubit>().refreshUpdates(
+                devicePluginGuids: _getDevicePluginGuids(),
+              );
         },
         onPluginError: (plugin, error) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2004,6 +2040,16 @@ class _GalleryViewState extends State<_GalleryView>
           backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
+
+      // Refresh gallery after a short delay to allow device state to update
+      // and show installed indicators for plugins that match gallery entries
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          context.read<GalleryCubit>().refreshUpdates(
+                devicePluginGuids: _getDevicePluginGuids(),
+              );
+        }
+      });
     } catch (e) {
       setState(() {
         _isInstalling = false;

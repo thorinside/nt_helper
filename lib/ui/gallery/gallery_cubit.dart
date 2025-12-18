@@ -21,7 +21,10 @@ class GalleryCubit extends Cubit<GalleryState> {
     });
   }
 
-  Future<void> loadGallery({bool forceRefresh = false}) async {
+  Future<void> loadGallery({
+    bool forceRefresh = false,
+    Set<String>? devicePluginGuids,
+  }) async {
     emit(const GalleryState.loading());
 
     try {
@@ -32,8 +35,10 @@ class GalleryCubit extends Cubit<GalleryState> {
       final queue = _galleryService.installQueue;
 
       // Compare gallery plugins with installed versions immediately
+      // Pass device plugin GUIDs to detect manually installed plugins
       final updateInfo = await _galleryService.compareWithInstalledVersions(
         gallery,
+        devicePluginGuids: devicePluginGuids,
       );
 
       emit(
@@ -165,8 +170,11 @@ class GalleryCubit extends Cubit<GalleryState> {
   // --- Update Management Methods ---
 
   /// Refresh update information by reloading gallery data
-  Future<void> refreshUpdates() async {
-    await loadGallery(forceRefresh: true);
+  Future<void> refreshUpdates({Set<String>? devicePluginGuids}) async {
+    await loadGallery(
+      forceRefresh: true,
+      devicePluginGuids: devicePluginGuids,
+    );
   }
 
   /// Get update info for a specific plugin

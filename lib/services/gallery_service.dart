@@ -1183,9 +1183,14 @@ class GalleryService {
   }
 
   /// Compare gallery plugins with installed versions and return update info
+  ///
+  /// Checks both:
+  /// 1. Database records (for plugins installed via gallery)
+  /// 2. Device GUIDs (for manually installed plugins)
   Future<Map<String, PluginUpdateInfo>> compareWithInstalledVersions(
-    Gallery gallery,
-  ) async {
+    Gallery gallery, {
+    Set<String>? devicePluginGuids,
+  }) async {
     final Map<String, PluginUpdateInfo> updateInfo = {};
 
     if (_database == null) {
@@ -1193,30 +1198,40 @@ class GalleryService {
     }
 
     try {
-      // Get all installed plugins
+      // Get all installed plugins from database
       final installedPlugins = await _database.pluginInstallationsDao
           .getAllInstalledPlugins();
 
       for (final galleryPlugin in gallery.plugins) {
-        // Find matching installed plugin(s)
+        // Check 1: Find matching installed plugin(s) in database by ID
         final matchingInstalled = installedPlugins
             .where((installed) => installed.pluginId == galleryPlugin.id)
             .toList();
 
-        if (matchingInstalled.isEmpty) {
+        // Check 2: Also check if plugin GUID exists on device
+        // (catches manually installed plugins not in database)
+        final isInstalledOnDevice = devicePluginGuids != null &&
+            galleryPlugin.guid != null &&
+            devicePluginGuids.contains(galleryPlugin.guid);
+
+        if (matchingInstalled.isEmpty && !isInstalledOnDevice) {
           // Plugin not installed - no update info needed
           continue;
         }
 
-        // Get the latest installed version
-        final latestInstalled = matchingInstalled.reduce(
-          (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b,
-        );
-
         // Get the best available version from gallery channels
         final availableVersion = _getBestAvailableVersion(galleryPlugin);
 
-        if (availableVersion != null) {
+        if (availableVersion == null) {
+          continue;
+        }
+
+        if (matchingInstalled.isNotEmpty) {
+          // Use database version info for comparison
+          final latestInstalled = matchingInstalled.reduce(
+            (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b,
+          );
+
           // Compare versions
           final hasUpdate =
               _compareVersions(
@@ -1231,6 +1246,17 @@ class GalleryService {
             installedVersion: latestInstalled.pluginVersion,
             availableVersion: availableVersion,
             updateAvailable: hasUpdate,
+            lastChecked: DateTime.now(),
+          );
+        } else if (isInstalledOnDevice) {
+          // Plugin is on device but not in database (manual installation)
+          // Show as installed with unknown version
+          updateInfo[galleryPlugin.id] = PluginUpdateInfo(
+            pluginId: galleryPlugin.id,
+            pluginName: galleryPlugin.name,
+            installedVersion: 'unknown',
+            availableVersion: availableVersion,
+            updateAvailable: false, // Can't determine update status without version
             lastChecked: DateTime.now(),
           );
         }
