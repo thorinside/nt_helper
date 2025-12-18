@@ -379,5 +379,160 @@ void main() {
         expect(updateInfo, isEmpty);
       });
     });
+
+    group('Date-based comparison fallback', () {
+      test('uses date comparison when versions are invalid', () async {
+        // Create plugin with invalid version but recent updatedAt
+        final plugin = GalleryPlugin(
+          id: 'date-plugin',
+          name: 'Date Plugin',
+          description: 'Plugin with invalid version',
+          type: GalleryPluginType.lua,
+          author: 'test-author',
+          repository: const PluginRepository(
+            owner: 'test-owner',
+            name: 'test-repo',
+            url: 'https://github.com/test-owner/test-repo',
+          ),
+          releases: const PluginReleases(latest: 'invalid-version'),
+          installation: const PluginInstallation(targetPath: '/programs/lua'),
+          guid: 'DATE',
+          updatedAt: DateTime.now(), // Recently updated
+        );
+
+        // Install with invalid version 2 days ago
+        await database.pluginInstallationsDao.recordPluginInstallation(
+          plugin: plugin,
+          installedVersion: 'old-invalid-version',
+          installationPath: '/programs/lua',
+        );
+
+        // Manually update installedAt to 2 days ago
+        final installed = await database.pluginInstallationsDao
+            .getAllInstalledPlugins();
+        final id = installed.first.id;
+        await database.into(database.pluginInstallations).update(
+              database.pluginInstallations.companion(
+                installedAt: Value(DateTime.now().subtract(const Duration(days: 2))),
+              ),
+              where: (tbl) => tbl.id.equals(id),
+            );
+
+        final gallery = createTestGallery([plugin]);
+        final updateInfo = await galleryService.compareWithInstalledVersions(
+          gallery,
+        );
+
+        // Should detect update via date comparison
+        expect(updateInfo, contains('date-plugin'));
+        expect(updateInfo['date-plugin']!.updateAvailable, isTrue);
+      });
+
+      test('no update when gallery updatedAt is older than installation', () async {
+        final plugin = GalleryPlugin(
+          id: 'old-plugin',
+          name: 'Old Plugin',
+          description: 'Plugin with old updatedAt',
+          type: GalleryPluginType.lua,
+          author: 'test-author',
+          repository: const PluginRepository(
+            owner: 'test-owner',
+            name: 'test-repo',
+            url: 'https://github.com/test-owner/test-repo',
+          ),
+          releases: const PluginReleases(latest: 'invalid-version'),
+          installation: const PluginInstallation(targetPath: '/programs/lua'),
+          guid: 'OLDP',
+          updatedAt: DateTime.now().subtract(const Duration(days: 5)), // Old update
+        );
+
+        // Install recently
+        await database.pluginInstallationsDao.recordPluginInstallation(
+          plugin: plugin,
+          installedVersion: 'current-version',
+          installationPath: '/programs/lua',
+        );
+
+        final gallery = createTestGallery([plugin]);
+        final updateInfo = await galleryService.compareWithInstalledVersions(
+          gallery,
+        );
+
+        // Should not detect update - installed version is newer
+        expect(updateInfo, contains('old-plugin'));
+        expect(updateInfo['old-plugin']!.updateAvailable, isFalse);
+      });
+
+      test('handles plugins with no updatedAt date gracefully', () async {
+        final plugin = GalleryPlugin(
+          id: 'no-date-plugin',
+          name: 'No Date Plugin',
+          description: 'Plugin without dates',
+          type: GalleryPluginType.lua,
+          author: 'test-author',
+          repository: const PluginRepository(
+            owner: 'test-owner',
+            name: 'test-repo',
+            url: 'https://github.com/test-owner/test-repo',
+          ),
+          releases: const PluginReleases(latest: 'invalid'),
+          installation: const PluginInstallation(targetPath: '/programs/lua'),
+          guid: 'NODT',
+          updatedAt: null, // No date
+        );
+
+        await database.pluginInstallationsDao.recordPluginInstallation(
+          plugin: plugin,
+          installedVersion: 'unknown',
+          installationPath: '/programs/lua',
+        );
+
+        final gallery = createTestGallery([plugin]);
+        final updateInfo = await galleryService.compareWithInstalledVersions(
+          gallery,
+        );
+
+        // Should not detect update - conservative approach
+        expect(updateInfo, contains('no-date-plugin'));
+        expect(updateInfo['no-date-plugin']!.updateAvailable, isFalse);
+      });
+
+      test('prefers version comparison over date comparison', () async {
+        // Plugin with both valid version AND updatedAt
+        final plugin = GalleryPlugin(
+          id: 'version-priority',
+          name: 'Version Priority Plugin',
+          description: 'Plugin with both version and date',
+          type: GalleryPluginType.lua,
+          author: 'test-author',
+          repository: const PluginRepository(
+            owner: 'test-owner',
+            name: 'test-repo',
+            url: 'https://github.com/test-owner/test-repo',
+          ),
+          releases: const PluginReleases(latest: 'v2.0.0'),
+          installation: const PluginInstallation(targetPath: '/programs/lua'),
+          guid: 'VPRI',
+          updatedAt: DateTime.now().subtract(const Duration(days: 10)), // Old date
+        );
+
+        // Install v1.0.0 recently
+        await database.pluginInstallationsDao.recordPluginInstallation(
+          plugin: plugin,
+          installedVersion: 'v1.0.0',
+          installationPath: '/programs/lua',
+        );
+
+        final gallery = createTestGallery([plugin]);
+        final updateInfo = await galleryService.compareWithInstalledVersions(
+          gallery,
+        );
+
+        // Should detect update via version comparison (v1 < v2)
+        // even though date suggests no update
+        expect(updateInfo, contains('version-priority'));
+        expect(updateInfo['version-priority']!.updateAvailable, isTrue);
+      });
+    });
   });
 }
