@@ -2,297 +2,9 @@ import 'dart:math' show pow;
 
 /// Constants and utilities for MCP tools
 class MCPConstants {
-  // Bus mapping constants
-  static const String busMapping = '''
-Physical name to bus mapping:
-- Input N = Bus N
-- Output N = Bus N+12  
-- Aux N = Bus N+20
-- None = Bus 0
-
-Never show bus numbers to users - use physical names only.''';
-
   // Common tool help references
-  static const String getPresetHelp =
-      'Use `get_current_preset` for parameter numbers';
   static const String getAlgorithmHelp =
-      'Use `get_algorithm_details` or `list_algorithms` for GUIDs';
-  static const String routingHelp =
-      'Use `get_routing` for current bus assignments';
-
-  // MCP Resource Documentation
-  static const String busMappingDoc = '''# Bus Mapping Reference
-
-## IO to Bus Conversion Rules
-
-The Disting NT uses a bus-based internal routing system. Physical inputs/outputs map to internal buses as follows:
-
-### Mapping Rules
-- **Input N** = Bus N (e.g., Input 1 = Bus 1, Input 2 = Bus 2)
-- **Output N** = Bus N+12 (e.g., Output 1 = Bus 13, Output 2 = Bus 14)  
-- **Aux N** = Bus N+20 (e.g., Aux 1 = Bus 21, Aux 2 = Bus 22)
-- **None** = Bus 0 (used for unused/disconnected signals)
-
-### Bus Range Summary
-- **Bus 0**: None/unused
-- **Buses 1-12**: Physical inputs (Input 1-12)
-- **Buses 13-20**: Physical outputs (Output 1-8) — current UI limit
-- **Buses 13-24**: Physical outputs (Output 1-12) — hardware supports up to 12 outputs
-- **Buses 21-28**: Aux inputs/outputs (Aux 1-8)
-
-### Important Notes
-- Always use physical names (Input N, Output N, Aux N) when communicating with users
-- Bus numbers are internal implementation details and should not be exposed to users
-- The UI currently renders Outputs 1–8 (buses 13–20). Hardware supports up to Outputs 1–12 (buses 13–24).
-- Use the `get_routing` tool to see current bus assignments for loaded algorithms
-''';
-
-  static const String mcpUsageGuide = '''# MCP Usage Guide for Disting NT
-
-## Essential Tools for Small LLMs
-
-### Getting Started
-1. **`get_current_preset`** - Always start here to understand the current state
-2. **`list_algorithms`** - Find available algorithms by category or search
-3. **`get_algorithm_details`** - Get detailed info about specific algorithms
-
-### Building Presets
-1. **`new_preset`** - Start with a clean slate
-2. **`add_algorithm`** - Add algorithms using GUID or name (fuzzy matching ≥70%)
-3. **`set_parameter_value`** - Configure algorithm parameters
-4. **`save_preset`** - Persist changes to device
-
-### Working with Parameters
-- Use `parameter_number` from `get_current_preset` for reliable parameter access
-- Alternatively use `parameter_name` if unique within the algorithm
-- Values are automatically scaled (use display values, not raw internal values)
-- Always check min/max ranges from `get_current_preset`
-
-### Routing and Signal Flow
-- **`get_routing`** - See current bus assignments and signal flow
-- Algorithms process top-to-bottom (slot 0 → slot N)
-- Use `move_algorithm_up`/`move_algorithm_down` to change processing order
-- Physical names only: Input N, Output N, Aux N, None
-
-### Batch Operations
-- **`set_multiple_parameters`** - Efficient multi-parameter updates
-- **`build_preset_from_json`** - Create complete presets from structured data
-
-### Debugging and Diagnostics
-- **`mcp_diagnostics`** - Check MCP server health and connection status
-- **`get_cpu_usage`** - Monitor device performance
-- **`get_module_screenshot`** - Visual confirmation of device state
-
-### Best Practices
-- Check device connection status if operations fail
-- Use exact algorithm names or GUIDs for reliable results
-- Always verify parameter ranges before setting values
-- Save presets after making changes to persist them
-''';
-
-  static const String algorithmCategories = '''# Algorithm Categories Reference
-
-## Complete List of Available Categories
-
-The Disting NT includes 44 algorithm categories organizing hundreds of algorithms:
-
-### Audio Processing
-- **Audio-IO** - Audio input/output utilities
-- **Delay** - Echo, tape delay, ping-pong delay, reverse delay
-- **Distortion** - Overdrive, fuzz, bit crusher, wave shaper
-- **Dynamics** - Compression, gating, limiting, expansion
-- **Effect** - General effects processing
-- **EQ** - Equalization and tone shaping
-- **Filter** - Low-pass, high-pass, band-pass, notch filters
-- **Reverb** - Room, hall, plate, spring reverb algorithms
-
-### Synthesis & Generation
-- **Chiptune** - Retro 8-bit style sound generation
-- **FM** - Frequency modulation synthesis
-- **Granular** - Granular synthesis and processing
-- **Noise** - White, pink, brown noise generation
-- **Oscillator** - Basic waveform oscillators
-- **Physical-Modeling** - Plucked string, resonator, modal synthesis
-- **Polysynth** - Polyphonic synthesis capabilities
-- **Resonator** - Resonant filters and physical modeling
-- **Sampler** - Sample playback and manipulation
-- **VCO** - Voltage-controlled oscillators
-- **Vocoder** - Voice synthesis and vocoding effects
-- **Waveshaper** - Waveshaping algorithms
-- **Wavetable** - Wavetable synthesis
-
-### Modulation & Control
-- **CV** - Control voltage processing and utilities
-- **Envelope** - Envelope generators (ADSR, complex envelopes)
-- **LFO** - Low-frequency oscillators for modulation
-- **Modulation** - Chorus, flanger, phaser, tremolo
-- **Random** - Random voltage and stepped random generation
-- **VCA** - Voltage-controlled amplifiers
-
-### Sequencing & Timing
-- **Clock** - Clock generation, division, multiplication
-- **Rhythm** - Rhythm generators and timing utilities
-- **Sequencer** - Step sequencers, Euclidean rhythms, Turing machine
-
-### Utility & Processing
-- **Convolution** - Convolution-based effects and processing
-- **Logic** - Boolean logic, comparators, trigger processing
-- **MIDI** - MIDI to CV, CV to MIDI, clock generation
-- **Mixer** - Audio/CV mixing, crossfading, VCA functions
-- **Pitch** - Pitch shifting, harmonization, tuning
-- **Quantizer** - CV and MIDI quantization to scales
-- **Routing** - Signal routing, switching, matrix mixing
-- **Spectral** - FFT-based spectral processing
-- **Tuning** - Tuning references and calibration
-- **Utility** - General utility algorithms
-
-### Specialized
-- **Looper** - Real-time looping and recording
-- **Scripting** - Lua scripting for custom algorithms
-- **Source** - Signal sources and generators
-- **Visualization** - Oscilloscope, tuner, analysis tools
-
-## Usage in MCP Tools
-
-### Filtering by Category
-Use the `list_algorithms` tool with the `category` parameter:
-```
-list_algorithms(category="Filter")
-list_algorithms(category="LFO") 
-list_algorithms(category="Reverb")
-```
-
-### Category Search
-Categories are also searchable with the `query` parameter:
-```
-list_algorithms(query="delay")      # Finds algorithms in Delay category
-list_algorithms(query="modulation") # Finds Modulation category algorithms
-```
-
-### Multiple Categories
-Many algorithms belong to multiple categories. For example:
-- **Quantizer**: ["Pitch", "Utility", "CV"]
-- **Looper**: ["Looper", "Sampler", "Effect"]
-- **Vocoder**: ["Effect", "Vocoder"]
-
-This categorization helps organize the extensive algorithm library for easier discovery and selection.
-''';
-
-  static const String presetFormatDoc = '''# Preset Format Reference
-
-## JSON Structure for `build_preset_from_json`
-
-### Complete Preset Structure
-```json
-{
-  "preset_name": "My Preset",
-  "slots": [
-    {
-      "algorithm": {
-        "guid": "algorithm_guid",
-        "name": "Algorithm Name"
-      },
-      "parameters": [
-        {
-          "parameter_number": 0,
-          "value": 1.5
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Required Fields
-- **`preset_name`**: String name for the preset
-- **`slots`**: Array of slot configurations (max 32 slots)
-
-### Slot Structure
-- **`algorithm`**: Algorithm to load in this slot
-  - **`guid`**: Exact algorithm GUID (preferred)
-  - **`name`**: Algorithm name (fuzzy matching ≥70%)
-- **`parameters`**: Array of parameter configurations (optional)
-
-### Parameter Structure  
-- **`parameter_number`**: 0-based parameter index (from `get_current_preset`)
-- **`value`**: Display value (automatically scaled for device)
-
-### Alternative Parameter Syntax
-```json
-{
-  "parameter_name": "Frequency",
-  "value": 440.0
-}
-```
-
-### Empty Slots
-- Use `null` in slots array for empty slots
-- Slots are 0-indexed, so slot 4 is `slots[4]` (the 5th slot)
-
-### Example: Audio Processing Chain
-```json
-{
-  "preset_name": "Audio Chain",
-  "slots": [
-    {
-      "algorithm": {"guid": "filt"},
-      "parameters": [
-        {"parameter_number": 0, "value": 1000},
-        {"parameter_number": 1, "value": 0.7}
-      ]
-    },
-    null,
-    {
-      "algorithm": {"name": "Reverb"},
-      "parameters": [
-        {"parameter_name": "Size", "value": 0.5}
-      ]
-    }
-  ]
-}
-```
-''';
-
-  static const String routingConcepts = '''# Routing Concepts for Disting NT
-
-## Signal Flow Fundamentals
-
-### Processing Order
-- Algorithms execute in slot order: Slot 0 → Slot 1 → ... → Slot N
-- **Earlier slots** process signals before later slots
-- **Modulation sources** must be in earlier slots than their targets
-
-### Input/Output Behavior
-- **Inputs**: Algorithms read from assigned input buses
-- **Outputs**: Algorithms write to assigned output buses  
-- **Signal Replacement**: When multiple algorithms output to the same bus, later slots replace earlier signals
-- **Signal Combination**: Some algorithms can combine/mix signals rather than replace
-
-### Bus Assignment Patterns
-- **Audio Processing**: Often Input 1,2 → Output 1,2
-- **CV Generation**: Often None → Output N (generating new CV signals)
-- **CV Processing**: Often Input N → Output N (processing incoming CV)
-- **Mixing**: Multiple inputs → Single output
-- **Splitting**: Single input → Multiple outputs
-
-### Routing Visualization
-Use `get_routing` to see:
-- Which buses each algorithm reads from (inputs)
-- Which buses each algorithm writes to (outputs)
-- Signal flow through the entire preset
-
-### Common Routing Patterns
-1. **Audio Chain**: Input 1,2 → Filter → Reverb → Output 1,2
-2. **CV Modulation**: LFO (None → Output 3) → VCA CV Input (Input 3)
-3. **Parallel Processing**: Input 1 → [Delay, Chorus] → Mixer → Output 1
-4. **Feedback Loops**: Output bus routed back as input to earlier slot
-
-### Troubleshooting Routing
-- **No sound**: Check input/output bus assignments
-- **Unexpected behavior**: Verify algorithm processing order
-- **Missing modulation**: Ensure modulation source is in earlier slot
-- **Signal conflicts**: Check for multiple algorithms writing to same bus
-''';
+      'Use search tool to find algorithms by name or category';
 
   // Error message templates
   static const String missingParamError = 'Missing required parameter';
@@ -366,13 +78,12 @@ class AlgorithmResolver {
         return AlgorithmResolutionResult.success(exactMatches.first.guid);
       } else {
         // Multiple exact matches - ambiguous
-        final candidates = exactMatches
-            .map((alg) => {'name': alg.name, 'guid': alg.guid})
-            .toList();
+        final candidateNames =
+            exactMatches.map((alg) => '"${alg.name}" (${alg.guid})').toList();
         return AlgorithmResolutionResult.error(
           MCPUtils.buildError(
-            '${MCPConstants.ambiguousError}: "$algorithmName" matches: $candidates',
-            helpCommand: 'Use GUID or be more specific',
+            'Multiple algorithms match "$algorithmName": ${candidateNames.join(", ")}. '
+            'Use guid instead of name to select one.',
           ),
         );
       }
@@ -387,8 +98,8 @@ class AlgorithmResolver {
     if (fuzzyMatches.isEmpty) {
       return AlgorithmResolutionResult.error(
         MCPUtils.buildError(
-          '${MCPConstants.notFoundError}: No algorithm named "$algorithmName"',
-          helpCommand: MCPConstants.getAlgorithmHelp,
+          'No algorithm found matching "$algorithmName". '
+          'Use search tool with target: "algorithm" to find available algorithms.',
         ),
       );
     }
@@ -397,13 +108,12 @@ class AlgorithmResolver {
       return AlgorithmResolutionResult.success(fuzzyMatches.first.guid);
     } else {
       // Multiple fuzzy matches - ambiguous
-      final candidates = fuzzyMatches
-          .map((alg) => {'name': alg.name, 'guid': alg.guid})
-          .toList();
+      final candidateNames =
+          fuzzyMatches.map((alg) => '"${alg.name}" (${alg.guid})').toList();
       return AlgorithmResolutionResult.error(
         MCPUtils.buildError(
-          '${MCPConstants.ambiguousError}: "$algorithmName" matches: $candidates',
-          helpCommand: 'Use GUID or be more specific',
+          'Multiple algorithms match "$algorithmName": ${candidateNames.join(", ")}. '
+          'Use the exact name or guid to select one.',
         ),
       );
     }

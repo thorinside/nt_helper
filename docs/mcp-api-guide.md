@@ -2,23 +2,15 @@
 
 ## Overview
 
-The Disting NT MCP (Model Context Protocol) API provides a streamlined, four-tool interface for interacting with your hardware. This replaces the previous 20+ tool approach, focusing on simplicity and composability.
+The Disting NT MCP (Model Context Protocol) API provides a streamlined, six-tool interface for interacting with your hardware.
 
 ### Design Philosophy
 
-- **Four core tools** cover all operations: search (discovery), new (initialization), edit (modification), show (inspection)
+- **Six core tools**: search, show, new, save, add, edit
 - **Granular control**: edit tool supports three granularity levels (preset, slot, parameter)
+- **Insert semantics**: add tool inserts algorithms without replacing existing ones
 - **Mapping support**: Full CV/MIDI/i2c/performance page mapping for parameter control
 - **Snake_case JSON**: All response fields use snake_case for LLM compatibility
-- **Auto-save**: Changes persist automatically to the device
-
-### Benefits Over Previous API
-
-- Fewer tools to learn (4 vs 20+)
-- Composable operations (combine tools for complex workflows)
-- Consistent naming and structure across all tools
-- Better LLM optimization with snake_case fields
-- Complete mapping integration
 
 ### Important: Field Naming Convention
 
@@ -35,15 +27,11 @@ This naming convention has been tested with smaller language models and provides
 
 Find algorithms by name, category, or fuzzy matching.
 
-**Purpose**: Locate algorithms for use in presets, explore available options by category
-
 **Parameters**:
-- `type` (required, string): "algorithm" (only supported type)
-- `query` (required, string): Search term (algorithm name, partial name, or category)
+- `target` (required): "algorithm" or "parameter"
+- `query` (required): Search term (algorithm name, partial name, or category)
 
-**Returns**: Top 10 matches sorted by relevance with GUID, name, category, and description
-
-**Fuzzy Matching**: 70% similarity threshold for name matching. Works with partial names and abbreviations.
+**Returns**: Top 10 matches sorted by relevance with GUID, name, category, and description.
 
 **Examples**:
 
@@ -51,7 +39,7 @@ Find algorithms by name, category, or fuzzy matching.
 {
   "tool": "search",
   "arguments": {
-    "type": "algorithm",
+    "target": "algorithm",
     "query": "filter"
   }
 }
@@ -63,7 +51,7 @@ Response: Shows all filter algorithms with matching names and related filters.
 {
   "tool": "search",
   "arguments": {
-    "type": "algorithm",
+    "target": "algorithm",
     "query": "Audio-IO"
   }
 }
@@ -124,6 +112,93 @@ Response: Empty preset created with given name.
 ```
 
 Response: Preset created with three algorithms in slots 0, 1, 2.
+
+---
+
+### 2.5. save - Save Preset
+
+Save the current preset to the device.
+
+**Parameters**: None
+
+**Returns**: Success confirmation.
+
+```json
+{
+  "tool": "save",
+  "arguments": {}
+}
+```
+
+---
+
+### 2.6. add - Simple Algorithm Addition
+
+Add an algorithm to the preset with insert semantics.
+
+**Parameters**:
+- `target` (required): Must be "algorithm"
+- `slot_index` (optional): Target slot (0-31). Omit to use first empty slot.
+- `name` (optional): Algorithm name (fuzzy matching ≥70%)
+- `guid` (optional): Algorithm GUID (exact match)
+
+**Behavior**: If `slot_index` is specified and occupied, the new algorithm is inserted at that position and existing algorithms are pushed down (not replaced).
+
+**Returns**: Success confirmation with slot index.
+
+**Comparison with edit tool**:
+
+The `add` tool has a simpler structure than using `edit` for the same operation:
+
+```json
+// Using 'add' (simpler)
+{
+  "tool": "add",
+  "arguments": {
+    "target": "algorithm",
+    "name": "VCO"
+  }
+}
+
+// Using 'edit' (more complex)
+{
+  "tool": "edit",
+  "arguments": {
+    "target": "slot",
+    "slot_index": 0,
+    "data": {
+      "algorithm": {
+        "name": "VCO"
+      }
+    }
+  }
+}
+```
+
+**Examples**:
+
+Add to first empty slot:
+```json
+{
+  "tool": "add",
+  "arguments": {
+    "target": "algorithm",
+    "name": "Dual VCO"
+  }
+}
+```
+
+Add to specific slot:
+```json
+{
+  "tool": "add",
+  "arguments": {
+    "target": "algorithm",
+    "slot_index": 3,
+    "guid": "vcod"
+  }
+}
+```
 
 ---
 
@@ -522,7 +597,7 @@ Get signal routing configuration.
 {
   "tool": "search",
   "arguments": {
-    "type": "algorithm",
+    "target": "algorithm",
     "query": "Delay"
   }
 }
@@ -533,7 +608,7 @@ Get signal routing configuration.
 {
   "tool": "search",
   "arguments": {
-    "type": "algorithm",
+    "target": "algorithm",
     "query": "Ping Pong Delay"
   }
 }
@@ -1105,17 +1180,17 @@ Get signal routing configuration.
 {
   "type": "object",
   "properties": {
-    "type": {
+    "target": {
       "type": "string",
-      "enum": ["algorithm"],
-      "description": "Search type (only 'algorithm' supported)"
+      "enum": ["algorithm", "parameter"],
+      "description": "Search target type"
     },
     "query": {
       "type": "string",
       "description": "Search term (name, partial name, or category)"
     }
   },
-  "required": ["type", "query"]
+  "required": ["target", "query"]
 }
 ```
 
@@ -1383,11 +1458,11 @@ Identify parameters, then map to MIDI:
 
 ## Migration from Old API
 
-If you're familiar with the old 20+ tool API, here's how tools map to the new 4-tool API:
+If you're familiar with the old 20+ tool API, here's how tools map to the new 6-tool API:
 
 | Old Tool | New Equivalent |
 |----------|-----------------|
-| list_algorithms | search with type="algorithm" |
+| list_algorithms | search with target="algorithm" |
 | get_algorithm_details | search (exact match) |
 | get_current_preset | show with target="preset" |
 | add_algorithm | new or edit with target="slot" |
@@ -1399,7 +1474,7 @@ If you're familiar with the old 20+ tool API, here's how tools map to the new 4-
 | move_algorithm_up/down | edit with target="preset" (reorder slots) |
 | get_module_screenshot | show with target="screen" |
 | new_preset | new without algorithms |
-| save_preset | auto-save (no tool needed) |
+| save_preset | save |
 | get_cpu_usage | get_cpu_usage (unchanged) |
 
 ---
@@ -1526,7 +1601,6 @@ For issues or questions about the MCP API:
 1. Check the [Troubleshooting section](#troubleshooting) above
 2. Review [Workflow Examples](#workflow-examples) for similar use cases
 3. Consult [Mapping Guide](./mcp-mapping-guide.md) for mapping-specific questions
-4. Check device connection and mode with mcp_diagnostics tool
 
 ---
 
@@ -1615,7 +1689,7 @@ Potential enhancements based on testing insights:
 
 ---
 
-**Last Updated**: 2025-11-08
+**Last Updated**: 2025-12-17
 **MCP Library**: mcp_dart 0.6.4
 **Disting NT Firmware**: Compatible with all recent versions
 **Story**: 4.10 - Test with smaller LLM and iterate on usability

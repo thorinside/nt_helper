@@ -91,9 +91,6 @@ class McpServerService extends ChangeNotifier {
   HttpServer? _httpServer;
   StreamSubscription<HttpRequest>? _httpSubscription;
 
-  // Pre-loaded resource cache
-  final Map<String, String> _resourceCache = {};
-
   bool get isRunning => _httpServer != null;
 
   /// Get basic connection diagnostics
@@ -113,9 +110,6 @@ class McpServerService extends ChangeNotifier {
     }
 
     try {
-      // Pre-load all resources before starting server
-      await _preloadResources();
-
       final address = bindAddress ?? InternetAddress.anyIPv4;
 
       // Create HTTP server
@@ -355,142 +349,7 @@ class McpServerService extends ChangeNotifier {
     _httpServer = null;
     _transports.clear();
     _servers.clear();
-    _resourceCache.clear();
     notifyListeners();
-  }
-
-  /// Pre-load all documentation resources at startup
-  Future<void> _preloadResources() async {
-    // DEBUGGING: Use hardcoded content to test if the resource mechanism works
-    // This bypasses asset loading entirely to isolate the issue
-    final hardcodedContent = {
-      'bus-mapping': '''# Bus Mapping Reference
-
-## IO to Bus Conversion Rules
-
-The Disting NT uses a bus-based internal routing system. Physical inputs/outputs map to internal buses as follows:
-
-### Mapping Rules
-- **Input N** = Bus N (e.g., Input 1 = Bus 1, Input 2 = Bus 2)
-- **Output N** = Bus N+12 (e.g., Output 1 = Bus 13, Output 2 = Bus 14)  
-- **Aux N** = Bus N+20 (e.g., Aux 1 = Bus 21, Aux 2 = Bus 22)
-- **None** = Bus 0 (used for unused/disconnected signals)
-
-### Important Notes
-- Always use physical names (Input N, Output N, Aux N) when communicating with users
-- Bus numbers are internal implementation details and should not be exposed to users
-- Use the `get_routing` tool to see current bus assignments for loaded algorithms
-''',
-      'mcp-usage-guide': '''# MCP Usage Guide for Disting NT
-
-## Essential Tools for Small LLMs
-
-### Getting Started
-1. **`get_current_preset`** - Always start here to understand the current state
-2. **`list_algorithms`** - Find available algorithms by category or search
-3. **`get_algorithm_details`** - Get detailed info about specific algorithms
-
-### Building Presets
-1. **`new_preset`** - Start with a clean slate
-2. **`add_algorithm`** - Add algorithms using GUID or name (fuzzy matching ≥70%)
-3. **`set_parameter_value`** - Configure algorithm parameters
-4. **`save_preset`** - Persist changes to device
-
-### Best Practices
-- Check device connection status if operations fail
-- Use exact algorithm names or GUIDs for reliable results
-- Always verify parameter ranges before setting values
-- Save presets after making changes to persist them
-''',
-      'algorithm-categories': '''# Algorithm Categories Reference
-
-## Complete List of Available Categories
-
-The Disting NT includes 44 algorithm categories organizing hundreds of algorithms:
-
-### Audio Processing
-- **Audio-IO** - Audio input/output utilities
-- **Delay** - Echo, tape delay, ping-pong delay, reverse delay
-- **Distortion** - Overdrive, fuzz, bit crusher, wave shaper
-- **Dynamics** - Compression, gating, limiting, expansion
-- **Effect** - General effects processing
-- **EQ** - Equalization and tone shaping
-- **Filter** - Low-pass, high-pass, band-pass, notch filters
-- **Reverb** - Room, hall, plate, spring reverb algorithms
-
-### Synthesis & Generation
-- **Chiptune** - Retro 8-bit style sound generation
-- **FM** - Frequency modulation synthesis
-- **Granular** - Granular synthesis and processing
-- **Noise** - White, pink, brown noise generation
-- **Oscillator** - Basic waveform oscillators
-- **Physical-Modeling** - Plucked string, resonator, modal synthesis
-''',
-      'preset-format': '''# Preset Format Reference
-
-## JSON Structure for `build_preset_from_json`
-
-### Complete Preset Structure
-```json
-{
-  "preset_name": "My Preset",
-  "slots": [
-    {
-      "algorithm": {
-        "guid": "algorithm_guid",
-        "name": "Algorithm Name"
-      },
-      "parameters": [
-        {
-          "parameter_number": 0,
-          "value": 1.5
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Required Fields
-- **`preset_name`**: String name for the preset
-- **`slots`**: Array of slot configurations (max 32 slots)
-
-### Slot Structure
-- **`algorithm`**: Algorithm to load in this slot
-  - **`guid`**: Exact algorithm GUID (preferred)
-  - **`name`**: Algorithm name (fuzzy matching ≥70%)
-- **`parameters`**: Array of parameter configurations (optional)
-''',
-      'routing-concepts': '''# Routing Concepts for Disting NT
-
-## Signal Flow Fundamentals
-
-### Processing Order
-- Algorithms execute in slot order: Slot 0 → Slot 1 → ... → Slot N
-- **Earlier slots** process signals before later slots
-- **Modulation sources** must be in earlier slots than their targets
-
-### Input/Output Behavior
-- **Inputs**: Algorithms read from assigned input buses
-- **Outputs**: Algorithms write to assigned output buses  
-- **Signal Replacement**: When multiple algorithms output to the same bus, later slots replace earlier signals
-- **Signal Combination**: Some algorithms can combine/mix signals rather than replace
-
-### Common Routing Patterns
-1. **Audio Chain**: Input 1,2 → Filter → Reverb → Output 1,2
-2. **CV Modulation**: LFO (None → Output 3) → VCA CV Input (Input 3)
-3. **Parallel Processing**: Input 1 → [Delay, Chorus] → Mixer → Output 1
-4. **Feedback Loops**: Output bus routed back as input to earlier slot
-''',
-    };
-
-    // Load hardcoded content into cache
-    for (final entry in hardcodedContent.entries) {
-      _resourceCache[entry.key] = entry.value;
-    }
-
-    // Debug: Show what's in the cache
-    for (final _ in _resourceCache.entries) {}
   }
 
   McpServer _buildServer() {
@@ -502,21 +361,14 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       Implementation(name: 'nt-helper-flutter', version: '1.39.0'),
       options: ServerOptions(
         capabilities: ServerCapabilities(
-          resources: ServerCapabilitiesResources(),
           tools: ServerCapabilitiesTools(),
-          prompts: ServerCapabilitiesPrompts(),
         ),
       ),
     );
 
-    // Register MCP tools - preserving existing tool definitions
+    // Register MCP tools
     _registerAlgorithmTools(server, mcpAlgorithmTools, distingTools);
     _registerDistingTools(server, distingTools);
-    _registerDiagnosticTools(server);
-
-    // Register MCP resources and prompts
-    _registerDocumentationResources(server);
-    _registerHelpfulPrompts(server);
 
     return server;
   }
@@ -661,17 +513,17 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     server.tool(
       'new',
       description:
-          'Create new blank preset or preset with initial algorithms. WARNING: Clears current preset (unsaved changes lost). Device must be in connected mode.',
+          'Create new blank preset or preset with initial algorithms. WARNING: Clears current preset.',
       toolInputSchema: const ToolInputSchema(
         properties: {
           'name': {
             'type': 'string',
-            'description': 'Name for the new preset (required)',
+            'description': 'Name for the new preset.',
           },
           'algorithms': {
             'type': 'array',
             'description':
-                'Array of algorithms to add (optional). Each item: {guid: string, name: string, specifications: array}. Algorithms added sequentially to slots 0, 1, 2, etc.',
+                'Algorithms to add. Each: {name: string} or {guid: string}. Added to slots 0, 1, 2, etc.',
             'items': {
               'type': 'object',
               'properties': {
@@ -681,21 +533,64 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
                 },
                 'name': {
                   'type': 'string',
-                  'description':
-                      'Algorithm name (fuzzy matching ≥70%, alternative to guid)',
-                },
-                'specifications': {
-                  'type': 'array',
-                  'description': 'Algorithm-specific specification values (optional)',
-                  'items': {'type': 'object'},
+                  'description': 'Algorithm name (fuzzy matching)',
                 },
               },
             },
           },
         },
+        required: ['name'],
       ),
       callback: ({args, extra}) async {
         final resultJson = await tools.newWithAlgorithms(args ?? {});
+        return CallToolResult.fromContent(
+          content: [TextContent(text: resultJson)],
+        );
+      },
+    );
+
+    server.tool(
+      'save',
+      description: 'Save the current preset to the device.',
+      toolInputSchema: const ToolInputSchema(properties: {}),
+      callback: ({args, extra}) async {
+        final resultJson = await tools.savePreset(args ?? {});
+        return CallToolResult.fromContent(
+          content: [TextContent(text: resultJson)],
+        );
+      },
+    );
+
+    // Simple 'add' tool with flat parameter structure for reduced cognitive load
+    server.tool(
+      'add',
+      description: 'Add an algorithm to the preset. Requires name or guid.',
+      toolInputSchema: const ToolInputSchema(
+        properties: {
+          'target': {
+            'type': 'string',
+            'enum': ['algorithm'],
+            'description': 'Must be "algorithm".',
+          },
+          'name': {
+            'type': 'string',
+            'description': 'Algorithm name (fuzzy matching). Required if no guid.',
+          },
+          'guid': {
+            'type': 'string',
+            'description': 'Algorithm GUID. Required if no name.',
+          },
+          'slot_index': {
+            'type': 'integer',
+            'minimum': 0,
+            'maximum': 31,
+            'description': 'Insert position (0-31). Omit for first empty slot.',
+          },
+        },
+        required: ['target'],
+      ),
+      callback: ({args, extra}) async {
+        final resultJson = await tools.addSimple(args ?? {});
         return CallToolResult.fromContent(
           content: [TextContent(text: resultJson)],
         );
@@ -945,366 +840,6 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
 
   void _registerUtilityTools(McpServer server, DistingTools tools) {
     // Utility tools can be added here as needed
-  }
-
-  void _registerDiagnosticTools(McpServer server) {
-    server.tool(
-      'mcp_diagnostics',
-      description:
-          'Get MCP server connection diagnostics and health information',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        // Get current Disting state
-        final distingState = _distingCubit.state;
-
-        // Build state-specific diagnostics
-        final Map<String, dynamic> stateInfo = {
-          'state_type': distingState.runtimeType.toString(),
-        };
-
-        if (distingState is DistingStateSynchronized) {
-          // Get manager type for connection mode
-          final manager = distingState.disting;
-          String connectionMode = 'unknown';
-          if (manager.runtimeType.toString().contains('Mock')) {
-            connectionMode = 'demo';
-          } else if (manager.runtimeType.toString().contains('Offline')) {
-            connectionMode = 'offline';
-          } else {
-            connectionMode = 'connected';
-          }
-
-          stateInfo.addAll({
-            'connection_mode': connectionMode,
-            'firmware_version': distingState.firmwareVersion.versionString,
-            'disting_version': distingState.distingVersion,
-            'preset_name': distingState.presetName,
-            'num_slots': distingState.slots.length,
-            'num_algorithms_available': distingState.algorithms.length,
-            'num_unit_strings': distingState.unitStrings.length,
-          });
-
-          // Count non-empty slots
-          final nonEmptySlots = distingState.slots
-              .where(
-                (slot) =>
-                    slot.algorithm.guid.isNotEmpty &&
-                    slot.algorithm.guid != 'ERROR',
-              )
-              .length;
-          stateInfo['num_loaded_slots'] = nonEmptySlots;
-        }
-
-        final diagnostics = {
-          'server_info': connectionDiagnostics,
-          'transport_info': {
-            'active_transports': _transports.length,
-            'sessions': _transports.keys.toList(),
-            'transport_type': 'StreamableHTTPServerTransport',
-          },
-          'disting_state': stateInfo,
-        };
-
-        return CallToolResult.fromContent(
-          content: [TextContent(text: jsonEncode(diagnostics))],
-        );
-      },
-    );
-  }
-
-  /// Helper method to create resource callback with pre-loaded content
-  ReadResourceCallback _createResourceCallback(
-    String resourceName,
-    String content,
-  ) {
-    return (uri, extra) async {
-      final startTime = DateTime.now();
-
-      // DEBUGGING: Add more detailed logging for resource requests
-
-      // Double-check cache state at request time
-      final originalContent = _resourceCache[resourceName];
-      if (originalContent != null) {
-      } else {}
-
-      // Use real content now that we know the mechanism works
-      var rawContent =
-          originalContent ??
-          'Documentation not available - Resource not found in cache: $resourceName';
-
-      // SANITIZE: Replace Unicode characters that break MCP JSON serialization
-      final originalLength = rawContent.length;
-      final finalContent = rawContent
-          .replaceAll('≥', '>=') // U+2265 → ASCII equivalent
-          .replaceAll('→', '->') // U+2192 → ASCII equivalent
-          .replaceAll('←', '<-') // U+2190 → ASCII equivalent
-          .replaceAll('↑', '^') // U+2191 → ASCII equivalent
-          .replaceAll('↓', 'v') // U+2193 → ASCII equivalent
-          .replaceAll('\'', "'") // U+2019 → ASCII apostrophe
-          .replaceAll('"', '"') // U+201C → ASCII quote
-          .replaceAll('"', '"'); // U+201D → ASCII quote
-
-      final sanitizedLength = finalContent.length;
-      if (originalLength != sanitizedLength) {
-      } else {}
-
-      // Return pre-loaded content immediately - no async operations
-      // Try different ways to construct the ResourceContents
-
-      try {
-        final resourceContents = ResourceContents.fromJson({
-          'uri': uri.toString(),
-          'text': finalContent,
-          'mimeType': 'text/markdown',
-        });
-
-        final result = ReadResourceResult(contents: [resourceContents]);
-
-        DateTime.now().difference(startTime);
-
-        return result;
-      } catch (e) {
-        // Last resort: return empty result
-        DateTime.now().difference(startTime);
-
-        return ReadResourceResult(contents: []);
-      }
-    };
-  }
-
-  void _registerDocumentationResources(McpServer server) {
-    // Define resource metadata
-    final resourceMeta = {
-      'bus-mapping': 'IO to Bus conversion rules and routing concepts',
-      // 'mcp-usage-guide': 'Essential tools and workflows for MCP clients',
-      // 'algorithm-categories':
-      //     'Complete list of algorithm categories and descriptions',
-      // 'preset-format': 'JSON schema and examples for preset data',
-      'routing-concepts': 'Signal flow and routing fundamentals',
-    };
-
-    // Register each resource with pre-loaded content
-    for (final entry in resourceMeta.entries) {
-      final resourceName = entry.key;
-      final description = entry.value;
-
-      // Get content from cache - fallback to error message if not found
-      final content =
-          _resourceCache[resourceName] ??
-          'Documentation not available - Resource not cached: $resourceName';
-
-      // DEBUGGING: Add more detailed logging for registration
-
-      if (_resourceCache.containsKey(resourceName)) {
-      } else {}
-
-      server.resource(
-        resourceName,
-        resourceName,
-        _createResourceCallback(resourceName, content),
-        metadata: (mimeType: 'text/markdown', description: description),
-      );
-    }
-  }
-
-  void _registerHelpfulPrompts(McpServer server) {
-    // Preset builder prompt - guides through building a preset step by step
-    server.prompt(
-      'preset-builder',
-      description: 'Guides you through building a custom preset step by step',
-      argsSchema: {
-        'use_case': PromptArgumentDefinition(
-          description:
-              'Describe what you want the preset to do (e.g., "audio delay with modulation", "CV sequencer setup")',
-          required: true,
-        ),
-        'skill_level': PromptArgumentDefinition(
-          description:
-              'Your experience level: "beginner", "intermediate", or "advanced"',
-          required: false,
-        ),
-      },
-      callback: (args, extra) async {
-        final useCase = args!['use_case'] as String;
-        final skillLevel = args['skill_level'] as String? ?? 'intermediate';
-
-        return GetPromptResult(
-          messages: [
-            PromptMessage(
-              role: PromptMessageRole.user,
-              content: TextContent(
-                text:
-                    'I want to build a Disting NT preset for: "$useCase"\n\nMy skill level is: $skillLevel\n\nPlease help me build this preset step by step. Start by:\n1. Understanding the current state with show tool (target="preset")\n2. Suggesting appropriate algorithms from search results\n3. Setting up the signal routing properly\n4. Configuring parameters for the desired sound/behavior\n\nUse the 4-tool MCP API to build the preset interactively: search (find algorithms), new (create preset), edit (modify state), show (inspect state). Explain each step clearly and ask for feedback before proceeding.',
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    // Algorithm recommender prompt
-    server.prompt(
-      'algorithm-recommender',
-      description:
-          'Recommends algorithms based on musical/technical requirements',
-      argsSchema: {
-        'requirement': PromptArgumentDefinition(
-          description:
-              'What you need the algorithm to do (e.g., "filter bass frequencies", "generate random CV", "create stereo delay")',
-          required: true,
-        ),
-        'context': PromptArgumentDefinition(
-          description: 'Additional context about your setup or constraints',
-          required: false,
-        ),
-      },
-      callback: (args, extra) async {
-        final requirement = args!['requirement'] as String;
-        final context = args['context'] as String? ?? '';
-
-        final contextText = context.isNotEmpty
-            ? '\nAdditional context: $context'
-            : '';
-
-        return GetPromptResult(
-          messages: [
-            PromptMessage(
-              role: PromptMessageRole.user,
-              content: TextContent(
-                text:
-                    'I need an algorithm that can: "$requirement"$contextText\n\nPlease help me find the best algorithm(s) for this by:\n1. Using search tool with relevant query and optional category filter\n2. Analyzing the results and explaining each option\n3. Recommending the best choice with reasoning\n4. Suggesting how to integrate it into a preset effectively\n\nFocus on practical recommendations that will work well for my specific use case.',
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    // Routing analyzer prompt
-    server.prompt(
-      'routing-analyzer',
-      description: 'Analyzes and explains current routing configuration',
-      argsSchema: {
-        'focus': PromptArgumentDefinition(
-          description:
-              'What to focus on: "signal_flow", "problems", "optimization", or "explanation"',
-          required: false,
-        ),
-      },
-      callback: (args, extra) async {
-        final focus = args?['focus'] as String? ?? 'explanation';
-
-        String focusInstructions;
-        switch (focus) {
-          case 'signal_flow':
-            focusInstructions =
-                'Focus on explaining the signal flow path through each algorithm.';
-            break;
-          case 'problems':
-            focusInstructions =
-                'Look for potential routing problems, conflicts, or inefficiencies.';
-            break;
-          case 'optimization':
-            focusInstructions =
-                'Suggest ways to optimize the routing for better performance or sound.';
-            break;
-          default:
-            focusInstructions =
-                'Provide a clear explanation of how the routing works.';
-        }
-
-        return GetPromptResult(
-          messages: [
-            PromptMessage(
-              role: PromptMessageRole.user,
-              content: TextContent(
-                text:
-                    'Please analyze the current routing configuration of my Disting NT preset.\n\n$focusInstructions\n\nSteps to follow:\n1. Get the current preset state with show tool (target="preset")\n2. Get the routing information with show tool (target="routing")\n3. Analyze the signal flow between algorithms\n4. Explain how signals move through the bus system\n5. Identify any issues or suggest improvements\n\nPlease use the physical names (Input N, Output N, Aux N) when explaining the routing, not internal bus numbers. Make the explanation clear and educational.',
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    // Parameter tuner prompt
-    server.prompt(
-      'parameter-tuner',
-      description:
-          'Helps tune algorithm parameters for specific sounds or behaviors',
-      argsSchema: {
-        'slot_index': PromptArgumentDefinition(
-          description: 'Slot index of algorithm to tune (0-31)',
-          required: true,
-        ),
-        'desired_sound': PromptArgumentDefinition(
-          description: 'Describe the sound or behavior you want to achieve',
-          required: true,
-        ),
-        'current_issue': PromptArgumentDefinition(
-          description:
-              'What is not working about the current settings (optional)',
-          required: false,
-        ),
-      },
-      callback: (args, extra) async {
-        final slotIndex = args!['slot_index'];
-        final desiredSound = args['desired_sound'] as String;
-        final currentIssue = args['current_issue'] as String? ?? '';
-
-        final issueText = currentIssue.isNotEmpty
-            ? '\nCurrent issue: $currentIssue'
-            : '';
-
-        return GetPromptResult(
-          messages: [
-            PromptMessage(
-              role: PromptMessageRole.user,
-              content: TextContent(
-                text:
-                    'I want to tune the algorithm in slot $slotIndex to achieve: "$desiredSound"$issueText\n\nPlease help me tune the parameters by:\n1. Getting the current preset state to see what algorithm is in slot $slotIndex using show (target="preset")\n2. Using search to get detailed information about the algorithm and its parameters\n3. Understanding the current parameter values and their ranges\n4. Suggesting specific parameter changes using edit tool (target="parameter")\n5. Explaining what each parameter does and how it affects the sound\n6. Making the changes step by step with explanations\n\nBe specific about parameter values and explain the reasoning behind each suggestion.',
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    // Troubleshooter prompt
-    server.prompt(
-      'troubleshooter',
-      description: 'Helps diagnose and fix common Disting NT issues',
-      argsSchema: {
-        'problem': PromptArgumentDefinition(
-          description: 'Describe the problem you are experiencing',
-          required: true,
-        ),
-        'symptoms': PromptArgumentDefinition(
-          description: 'Additional symptoms or context about the issue',
-          required: false,
-        ),
-      },
-      callback: (args, extra) async {
-        final problem = args!['problem'] as String;
-        final symptoms = args['symptoms'] as String? ?? '';
-
-        final symptomsText = symptoms.isNotEmpty
-            ? '\nAdditional symptoms: $symptoms'
-            : '';
-
-        return GetPromptResult(
-          messages: [
-            PromptMessage(
-              role: PromptMessageRole.user,
-              content: TextContent(
-                text:
-                    'I am having this problem with my Disting NT: "$problem"$symptomsText\n\nPlease help me troubleshoot this by:\n1. Checking the connection status with mcp_diagnostics\n2. Getting the current preset state to understand the configuration using show (target="preset")\n3. Checking routing and signal flow if audio-related using show (target="routing")\n4. Looking at CPU usage if performance-related using get_cpu_usage\n5. Suggesting step-by-step solutions to try\n6. Explaining what each diagnostic step reveals\n\nWork through the troubleshooting systematically and explain what we are checking at each step.',
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   /// Create a new transport and connect server following example pattern

@@ -251,6 +251,142 @@ class DistingTools {
     }
   }
 
+  /// MCP Tool: Simple interface to add an algorithm to the preset.
+  /// Designed for minimal cognitive load - flat parameter structure.
+  /// Parameters:
+  ///   - target (string, required): Must be "algorithm"
+  ///   - slot_index (int, optional): Target slot (0-31). If omitted, adds to first empty slot.
+  ///   - name (string, optional): Algorithm name (fuzzy matching ≥70%)
+  ///   - guid (string, optional): Algorithm GUID (exact match)
+  /// Returns:
+  ///   A JSON string with the slot index where the algorithm was added, or an error.
+  Future<String> addSimple(Map<String, dynamic> params) async {
+    // Validate target parameter
+    final String? target = params['target'] as String?;
+    if (target == null || target.isEmpty) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'Missing "target". Use: {"target": "algorithm", "name": "VCO"}',
+          ),
+        ),
+      );
+    }
+
+    if (target != 'algorithm') {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'Invalid target "$target". Use target: "algorithm".',
+          ),
+        ),
+      );
+    }
+
+    // Extract algorithm identifier (name or guid)
+    final String? name = params['name'] as String?;
+    final String? guid = params['guid'] as String?;
+    final int? slotIndex = params['slot_index'] as int?;
+
+    // Validate that at least one of name or guid is provided
+    if (name == null && guid == null) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'Missing algorithm identifier. Use "name" (e.g., "VCO", "Delay") or "guid". '
+            'Use search tool to find algorithms.',
+          ),
+        ),
+      );
+    }
+
+    // Validate slot_index if provided
+    if (slotIndex != null && (slotIndex < 0 || slotIndex >= maxSlots)) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'slot_index $slotIndex invalid. Must be 0-${maxSlots - 1}. Omit to auto-select first empty slot.',
+          ),
+        ),
+      );
+    }
+
+    // Use shared algorithm resolver
+    final algorithms = AlgorithmMetadataService().getAllAlgorithms();
+    final resolution = AlgorithmResolver.resolveAlgorithm(
+      guid: guid,
+      algorithmName: name,
+      allAlgorithms: algorithms,
+    );
+
+    if (!resolution.isSuccess) {
+      return jsonEncode(convertToSnakeCaseKeys(resolution.error!));
+    }
+
+    try {
+      final resolvedGuid = resolution.resolvedGuid!;
+      final algorithmMetadata =
+          AlgorithmMetadataService().getAlgorithmByGuid(resolvedGuid);
+
+      final algoStub = Algorithm(
+        algorithmIndex: -1,
+        guid: resolvedGuid,
+        name: algorithmMetadata?.name ?? '',
+      );
+
+      // Add the algorithm (goes to first empty slot)
+      await _controller.addAlgorithm(algoStub);
+
+      // Find which slot it was added to
+      var allSlots = await _controller.getAllSlots();
+      int? addedSlotIndex;
+      for (int i = 0; i < maxSlots; i++) {
+        final algo = allSlots[i];
+        if (algo != null && algo.guid == resolvedGuid) {
+          addedSlotIndex = i;
+          break;
+        }
+      }
+
+      if (addedSlotIndex == null) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Algorithm was added but could not find its slot.'),
+          ),
+        );
+      }
+
+      // If a specific slot was requested and it's different from where it was added,
+      // move the algorithm to the target slot (insert semantics - pushes others down)
+      int finalSlotIndex = addedSlotIndex;
+      if (slotIndex != null && slotIndex < addedSlotIndex) {
+        // Move up from addedSlotIndex to slotIndex
+        // Each moveAlgorithmUp swaps with the slot above, pushing others down
+        for (int currentPos = addedSlotIndex; currentPos > slotIndex; currentPos--) {
+          await _controller.moveAlgorithmUp(currentPos);
+        }
+        finalSlotIndex = slotIndex;
+      }
+
+      final message =
+          'Algorithm "${algorithmMetadata?.name ?? resolvedGuid}" inserted at slot $finalSlotIndex';
+
+      final responseData = <String, dynamic>{
+        'slot_index': finalSlotIndex,
+        'algorithm_name': algorithmMetadata?.name ?? '',
+        'algorithm_guid': resolvedGuid,
+      };
+
+      return jsonEncode(
+        convertToSnakeCaseKeys(MCPUtils.buildSuccess(message, data: responseData)),
+      );
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())),
+      );
+    }
+  }
+
   /// MCP Tool: Removes (clears) the algorithm from a specific slot.
   /// Parameters:
   ///   - slot_index (int, required): The index of the slot to clear.
@@ -305,7 +441,7 @@ class DistingTools {
     final paramError = MCPUtils.validateExactlyOne(params, [
       'parameter_number',
       'parameter_name',
-    ], helpCommand: MCPConstants.getPresetHelp);
+    ]);
     if (paramError != null) {
       return jsonEncode(convertToSnakeCaseKeys(paramError));
     }
@@ -688,16 +824,35 @@ class DistingTools {
   }
 
   /// MCP Tool: Tells the device to save the current working preset.
-  /// Parameters: None (can accept a dummy string for consistency if MCP requires it).
+  /// Parameters: None.
   /// Returns: A JSON string confirming the action or an error.
   Future<String> savePreset(Map<String, dynamic> params) async {
     try {
+      // Check preset name from cubit state
+      final state = _distingCubit.state;
+      if (state is! DistingStateSynchronized) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('Device not synchronized. Cannot save preset.'),
+          ),
+        );
+      }
+
+      final presetName = state.presetName;
+      if (presetName.isEmpty || presetName == 'Init') {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'Cannot save preset named "Init". Use new tool to create a preset with a name first.',
+            ),
+          ),
+        );
+      }
+
       await _controller.savePreset();
       return jsonEncode(
         convertToSnakeCaseKeys(
-          MCPUtils.buildSuccess(
-            'Request to save current preset sent to the device.',
-          ),
+          MCPUtils.buildSuccess('Preset "$presetName" saved to device.'),
         ),
       );
     } catch (e) {
@@ -1981,7 +2136,9 @@ class DistingTools {
       if (name == null || name.isEmpty) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('${MCPConstants.missingParamError}: "name"'),
+            MCPUtils.buildError(
+              'Missing "name". Example: {"name": "My Preset", "algorithms": [{"name": "VCO"}]}',
+            ),
           ),
         );
       }
@@ -2479,7 +2636,9 @@ class DistingTools {
       if (target == null || target.isEmpty) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('${MCPConstants.missingParamError}: "target"'),
+            MCPUtils.buildError(
+              'Missing "target". Use target: "slot" or target: "parameter".',
+            ),
           ),
         );
       }
@@ -2491,7 +2650,10 @@ class DistingTools {
       if (target != 'slot') {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('Invalid target "$target". Must be "slot" or "parameter".'),
+            MCPUtils.buildError(
+              'Invalid target "$target". Use "slot" to change algorithm/parameters, '
+              'or "parameter" to change a single value/mapping.',
+            ),
           ),
         );
       }
@@ -2500,7 +2662,9 @@ class DistingTools {
       if (slotIndex == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('${MCPConstants.missingParamError}: "slot_index"'),
+            MCPUtils.buildError(
+              'Missing "slot_index". Use show tool with target: "preset" to see occupied slots.',
+            ),
           ),
         );
       }
@@ -2510,7 +2674,7 @@ class DistingTools {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'slot_index must be 0-${maxSlots - 1}, got $slotIndex',
+              'slot_index $slotIndex out of range. Must be 0-${maxSlots - 1}.',
             ),
           ),
         );
@@ -2521,7 +2685,9 @@ class DistingTools {
       if (data == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('${MCPConstants.missingParamError}: "data"'),
+            MCPUtils.buildError(
+              'Missing "data" object. Example: {"data": {"algorithm": {"name": "VCO"}}}',
+            ),
           ),
         );
       }
@@ -2854,7 +3020,9 @@ class DistingTools {
       if (slotIndex == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('${MCPConstants.missingParamError}: "slot_index"'),
+            MCPUtils.buildError(
+              'Missing "slot_index". Use show tool with target: "preset" to see occupied slots.',
+            ),
           ),
         );
       }
@@ -2864,7 +3032,7 @@ class DistingTools {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'slot_index must be 0-${maxSlots - 1}, got $slotIndex',
+              'slot_index $slotIndex out of range. Must be 0-${maxSlots - 1}.',
             ),
           ),
         );
@@ -2875,7 +3043,9 @@ class DistingTools {
       if (parameterIdent == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('${MCPConstants.missingParamError}: "parameter"'),
+            MCPUtils.buildError(
+              'Missing "parameter". Use show tool with target: "slot", slot_index: $slotIndex to see parameter names.',
+            ),
           ),
         );
       }
@@ -2887,7 +3057,9 @@ class DistingTools {
       if (value == null && (mapping == null || mapping.isEmpty)) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('Must provide either "value" or "mapping"'),
+            MCPUtils.buildError(
+              'Missing "value" or "mapping". Provide at least one. Example: {"value": 100}',
+            ),
           ),
         );
       }
@@ -2909,7 +3081,10 @@ class DistingTools {
       if (algorithm == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('Slot $slotIndex is empty, no algorithm loaded'),
+            MCPUtils.buildError(
+              'Slot $slotIndex is empty. Use add tool to add an algorithm first, '
+              'or show tool with target: "preset" to see which slots have algorithms.',
+            ),
           ),
         );
       }
