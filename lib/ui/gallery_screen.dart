@@ -40,8 +40,8 @@ class GalleryScreen extends StatelessWidget {
             final distingState = distingCubit.state;
             final devicePluginGuids = distingState is DistingStateSynchronized
                 ? distingState.algorithms
-                    .where((algo) => algo.isPlugin)
-                    .map((algo) => algo.guid)
+                    .where((algorithm) => algorithm.isPlugin)
+                    .map((algorithm) => algorithm.guid)
                     .where((guid) => guid.isNotEmpty)
                     .toSet()
                 : <String>{};
@@ -127,8 +127,8 @@ class _GalleryViewState extends State<_GalleryView>
     final distingState = widget.distingCubit.state;
     if (distingState is DistingStateSynchronized) {
       return distingState.algorithms
-          .where((algo) => algo.isPlugin)
-          .map((algo) => algo.guid)
+          .where((algorithm) => algorithm.isPlugin)
+          .map((algorithm) => algorithm.guid)
           .where((guid) => guid.isNotEmpty)
           .toSet();
     }

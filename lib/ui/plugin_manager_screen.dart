@@ -408,14 +408,14 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       // Try to find the plugin's GUID from device algorithms
       if (distingState is DistingStateSynchronized) {
         // Find algorithm with matching filename
-        final matchingAlgo = distingState.algorithms.firstWhere(
-          (algo) => algo.isPlugin && algo.filename == plugin.path,
+        final matchingAlgorithm = distingState.algorithms.firstWhere(
+          (algorithm) => algorithm.isPlugin && algorithm.filename == plugin.path,
           orElse: () => distingState.algorithms.first, // dummy, we check below
         );
 
-        if (matchingAlgo.isPlugin && matchingAlgo.filename == plugin.path) {
+        if (matchingAlgorithm.isPlugin && matchingAlgorithm.filename == plugin.path) {
           // Found the algorithm - get its GUID and look up in database
-          final guid = matchingAlgo.guid;
+          final guid = matchingAlgorithm.guid;
           if (guid.isNotEmpty) {
             // Look up all installations with this plugin's metadata
             final allInstalled = await widget.database.pluginInstallationsDao
