@@ -399,6 +399,54 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     );
   }
 
+  /// Remove a plugin from the database cache
+  /// This ensures deleted plugins don't show as installed in the gallery
+  Future<void> _removePluginFromDatabase(PluginInfo plugin) async {
+    try {
+      final distingState = widget.distingCubit.state;
+
+      // Try to find the plugin's GUID from device algorithms
+      if (distingState is DistingStateSynchronized) {
+        // Find algorithm with matching filename
+        final matchingAlgorithm = distingState.algorithms.firstWhere(
+          (algorithm) => algorithm.isPlugin && algorithm.filename == plugin.path,
+          orElse: () => distingState.algorithms.first, // dummy, we check below
+        );
+
+        if (matchingAlgorithm.isPlugin && matchingAlgorithm.filename == plugin.path) {
+          // Found the algorithm - get its GUID and look up in database
+          final guid = matchingAlgorithm.guid;
+          if (guid.isNotEmpty) {
+            // Look up all installations with this plugin's metadata
+            final allInstalled = await widget.database.pluginInstallationsDao
+                .getAllInstalledPlugins();
+
+            // Find matching by checking if the stored GUID matches
+            for (final installed in allInstalled) {
+              // Check if this installation's metadata contains the GUID
+              if (installed.repositoryUrl.contains(guid) ||
+                  installed.pluginId.contains(guid) ||
+                  installed.installationPath == plugin.path) {
+                await widget.database.pluginInstallationsDao
+                    .removePluginInstallation(installed.pluginId, installed.pluginVersion);
+              }
+            }
+          }
+        }
+      }
+
+      // Also try to remove by installation path as a fallback
+      await widget.database.pluginInstallationsDao
+          .removeByInstallationPath(plugin.path);
+
+      // Also try with just the directory (for plugins installed via gallery)
+      await widget.database.pluginInstallationsDao
+          .removeByInstallationPath(plugin.type.directory);
+    } catch (e) {
+      // Silently fail - database cleanup is not critical for deletion
+    }
+  }
+
   Future<void> _deletePlugin(PluginInfo plugin) async {
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -462,6 +510,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       try {
         // Send delete command (fire-and-forget, assumes success)
         await widget.distingCubit.deletePlugin(plugin);
+
+        // Remove from database cache if present
+        // This ensures the gallery won't show it as installed anymore
+        await _removePluginFromDatabase(plugin);
 
         // Refresh the plugin list in the background to verify deletion
         // Use a slight delay to allow the device to process the delete

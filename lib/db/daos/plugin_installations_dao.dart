@@ -161,6 +161,12 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
     pluginInstallations,
   )..where((tbl) => tbl.pluginId.equals(pluginId))).go();
 
+  /// Remove plugin installation records by installation path
+  /// This is useful when deleting plugins from the device without knowing their plugin ID
+  Future<int> removeByInstallationPath(String installationPath) => (delete(
+    pluginInstallations,
+  )..where((tbl) => tbl.installationPath.equals(installationPath))).go();
+
   /// Get installation statistics
   Future<Map<String, int>> getInstallationStats() async {
     final total = await (selectOnly(

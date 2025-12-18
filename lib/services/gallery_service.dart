@@ -1183,9 +1183,14 @@ class GalleryService {
   }
 
   /// Compare gallery plugins with installed versions and return update info
+  ///
+  /// Checks both:
+  /// 1. Database records (for plugins installed via gallery)
+  /// 2. Device GUIDs (for manually installed plugins)
   Future<Map<String, PluginUpdateInfo>> compareWithInstalledVersions(
-    Gallery gallery,
-  ) async {
+    Gallery gallery, {
+    Set<String>? devicePluginGuids,
+  }) async {
     final Map<String, PluginUpdateInfo> updateInfo = {};
 
     if (_database == null) {
@@ -1193,37 +1198,47 @@ class GalleryService {
     }
 
     try {
-      // Get all installed plugins
+      // Get all installed plugins from database
       final installedPlugins = await _database.pluginInstallationsDao
           .getAllInstalledPlugins();
 
       for (final galleryPlugin in gallery.plugins) {
-        // Find matching installed plugin(s)
+        // Check 1: Find matching installed plugin(s) in database by ID
         final matchingInstalled = installedPlugins
             .where((installed) => installed.pluginId == galleryPlugin.id)
             .toList();
 
-        if (matchingInstalled.isEmpty) {
+        // Check 2: Also check if plugin GUID exists on device
+        // (catches manually installed plugins not in database)
+        final isInstalledOnDevice = devicePluginGuids != null &&
+            galleryPlugin.guid != null &&
+            devicePluginGuids.contains(galleryPlugin.guid);
+
+        if (matchingInstalled.isEmpty && !isInstalledOnDevice) {
           // Plugin not installed - no update info needed
           continue;
         }
 
-        // Get the latest installed version
-        final latestInstalled = matchingInstalled.reduce(
-          (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b,
-        );
-
         // Get the best available version from gallery channels
         final availableVersion = _getBestAvailableVersion(galleryPlugin);
 
-        if (availableVersion != null) {
-          // Compare versions
-          final hasUpdate =
-              _compareVersions(
-                latestInstalled.pluginVersion,
-                availableVersion,
-              ) <
-              0;
+        if (availableVersion == null) {
+          continue;
+        }
+
+        if (matchingInstalled.isNotEmpty) {
+          // Use database version info for comparison
+          final latestInstalled = matchingInstalled.reduce(
+            (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b,
+          );
+
+          // Compare versions, with date fallback for plugins without versions
+          final hasUpdate = _hasUpdateAvailable(
+            installedVersion: latestInstalled.pluginVersion,
+            availableVersion: availableVersion,
+            installedAt: latestInstalled.installedAt,
+            galleryUpdatedAt: galleryPlugin.updatedAt,
+          );
 
           updateInfo[galleryPlugin.id] = PluginUpdateInfo(
             pluginId: galleryPlugin.id,
@@ -1231,6 +1246,32 @@ class GalleryService {
             installedVersion: latestInstalled.pluginVersion,
             availableVersion: availableVersion,
             updateAvailable: hasUpdate,
+            lastChecked: DateTime.now(),
+          );
+        } else if (isInstalledOnDevice) {
+          // Plugin is on device but not in database (manual installation)
+          // Cache it in the database for future lookups
+          try {
+            final installationPath = _getInstallationPath(galleryPlugin);
+            await _database.pluginInstallationsDao.recordPluginInstallation(
+              plugin: galleryPlugin,
+              installedVersion: 'unknown',
+              installationPath: installationPath,
+              fileCount: 1,
+              totalBytes: null,
+              installationNotes: 'Detected via device GUID matching',
+            );
+          } catch (dbError) {
+            // Don't fail if database caching fails
+          }
+
+          // Show as installed with unknown version
+          updateInfo[galleryPlugin.id] = PluginUpdateInfo(
+            pluginId: galleryPlugin.id,
+            pluginName: galleryPlugin.name,
+            installedVersion: 'unknown',
+            availableVersion: availableVersion,
+            updateAvailable: false, // Can't determine update status without version
             lastChecked: DateTime.now(),
           );
         }
@@ -1257,7 +1298,70 @@ class GalleryService {
     return null;
   }
 
+  /// Determine if an update is available using version comparison with date fallback
+  ///
+  /// Handles cases where:
+  /// 1. Both versions are valid semver - uses version comparison
+  /// 2. Versions are missing or invalid - falls back to date comparison
+  /// 3. Dates are missing - returns false (conservative approach)
+  bool _hasUpdateAvailable({
+    required String installedVersion,
+    required String availableVersion,
+    required DateTime installedAt,
+    DateTime? galleryUpdatedAt,
+  }) {
+    // Skip comparison for unknown versions without dates
+    if (installedVersion == 'unknown' && galleryUpdatedAt == null) {
+      return false;
+    }
+
+    // Try version comparison first
+    final versionComparison = _tryCompareVersions(
+      installedVersion,
+      availableVersion,
+    );
+
+    if (versionComparison != null) {
+      // Valid version comparison succeeded
+      return versionComparison < 0; // Update available if installed < available
+    }
+
+    // Version comparison failed - fall back to date comparison
+    if (galleryUpdatedAt != null) {
+      // Plugin was updated in gallery after local installation
+      return galleryUpdatedAt.isAfter(installedAt);
+    }
+
+    // No way to determine - conservative approach
+    return false;
+  }
+
+  /// Try to compare two version strings, returns null if comparison fails
+  /// Returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2
+  int? _tryCompareVersions(String version1, String version2) {
+    // Skip comparison for unknown versions
+    if (version1 == 'unknown' || version2 == 'unknown') {
+      return null;
+    }
+
+    // Skip comparison for empty versions
+    if (version1.isEmpty || version2.isEmpty) {
+      return null;
+    }
+
+    try {
+      // Try semantic version comparison
+      final v1 = Version.parse(version1.replaceAll(RegExp(r'^v'), ''));
+      final v2 = Version.parse(version2.replaceAll(RegExp(r'^v'), ''));
+      return v1.compareTo(v2);
+    } catch (e) {
+      // Semantic version parsing failed - return null to trigger date fallback
+      return null;
+    }
+  }
+
   /// Compare two version strings (returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2)
+  /// Used for sorting, not for update detection (use _hasUpdateAvailable for that)
   int _compareVersions(String version1, String version2) {
     try {
       // Try semantic version comparison first
