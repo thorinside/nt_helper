@@ -758,6 +758,61 @@ class _GalleryViewState extends State<_GalleryView>
     );
   }
 
+  Widget _buildSectionHeader(String title, int count, GalleryState state) {
+    final showUpdateAll = title == 'Available Updates' && count > 1;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          '$title ($count)',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        if (showUpdateAll && state is GalleryLoaded)
+          FilledButton.tonalIcon(
+            onPressed: () => _updateAllPlugins(state),
+            icon: const Icon(Icons.system_update, size: 18),
+            label: const Text('Update All'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _updateAllPlugins(GalleryLoaded state) async {
+    // Get all plugins with updates
+    final pluginsToUpdate = state.filteredPlugins
+        .where((plugin) => state.updateInfo[plugin.id]?.hasUpdate ?? false)
+        .toList();
+
+    if (pluginsToUpdate.isEmpty) return;
+
+    // Add all to queue
+    for (final plugin in pluginsToUpdate) {
+      await context.read<GalleryCubit>().addToQueue(plugin);
+    }
+
+    // Show confirmation
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Added ${pluginsToUpdate.length} plugin(s) to install queue',
+          ),
+          action: SnackBarAction(
+            label: 'View Queue',
+            onPressed: () => _tabController.animateTo(1),
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildCardView(GalleryState state) {
     final filteredPlugins = state is GalleryLoaded
         ? state.filteredPlugins
@@ -767,15 +822,66 @@ class _GalleryViewState extends State<_GalleryView>
       return _buildEmptyPluginState();
     }
 
+    // Separate plugins with updates from others
+    final pluginsWithUpdates = state is GalleryLoaded
+        ? filteredPlugins
+            .where((plugin) => state.updateInfo[plugin.id]?.hasUpdate ?? false)
+            .toList()
+        : <GalleryPlugin>[];
+
+    final otherPlugins = filteredPlugins
+        .where(
+          (plugin) =>
+              state is! GalleryLoaded ||
+              !(state.updateInfo[plugin.id]?.hasUpdate ?? false),
+        )
+        .toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Wrap(
-        alignment: WrapAlignment.start, // Left-justify the cards
-        spacing: 12, // Horizontal spacing between cards
-        runSpacing: 12, // Vertical spacing between rows
-        children: filteredPlugins.map((plugin) {
-          return _buildPluginCard(plugin, state, context);
-        }).toList(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Updates section
+          if (pluginsWithUpdates.isNotEmpty) ...[
+            _buildSectionHeader(
+              'Available Updates',
+              pluginsWithUpdates.length,
+              state,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              alignment: WrapAlignment.start,
+              spacing: 12,
+              runSpacing: 12,
+              children: pluginsWithUpdates.map((plugin) {
+                return _buildPluginCard(plugin, state, context);
+              }).toList(),
+            ),
+            const SizedBox(height: 32),
+            // Divider
+            Divider(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              thickness: 1,
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // All plugins section
+          if (pluginsWithUpdates.isNotEmpty)
+            _buildSectionHeader('All Plugins', otherPlugins.length, state)
+          else
+            _buildSectionHeader('Plugins', filteredPlugins.length, state),
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.start,
+            spacing: 12,
+            runSpacing: 12,
+            children: otherPlugins.map((plugin) {
+              return _buildPluginCard(plugin, state, context);
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -787,13 +893,48 @@ class _GalleryViewState extends State<_GalleryView>
       return _buildEmptyPluginState();
     }
 
-    return ListView.builder(
+    // Separate plugins with updates from others
+    final pluginsWithUpdates = filteredPlugins
+        .where((plugin) => state.updateInfo[plugin.id]?.hasUpdate ?? false)
+        .toList();
+
+    final otherPlugins = filteredPlugins
+        .where((plugin) => !(state.updateInfo[plugin.id]?.hasUpdate ?? false))
+        .toList();
+
+    return ListView(
       padding: const EdgeInsets.all(16),
-      itemCount: filteredPlugins.length,
-      itemBuilder: (context, index) {
-        final plugin = filteredPlugins[index];
-        return _buildPluginListTile(plugin, state, context);
-      },
+      children: [
+        // Updates section
+        if (pluginsWithUpdates.isNotEmpty) ...[
+          _buildSectionHeader(
+            'Available Updates',
+            pluginsWithUpdates.length,
+            state,
+          ),
+          const SizedBox(height: 12),
+          ...pluginsWithUpdates.map((plugin) {
+            return _buildPluginListTile(plugin, state, context);
+          }),
+          const SizedBox(height: 24),
+          // Divider
+          Divider(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            thickness: 1,
+          ),
+          const SizedBox(height: 24),
+        ],
+
+        // All plugins section
+        if (pluginsWithUpdates.isNotEmpty)
+          _buildSectionHeader('All Plugins', otherPlugins.length, state)
+        else
+          _buildSectionHeader('Plugins', filteredPlugins.length, state),
+        const SizedBox(height: 12),
+        ...otherPlugins.map((plugin) {
+          return _buildPluginListTile(plugin, state, context);
+        }),
+      ],
     );
   }
 
