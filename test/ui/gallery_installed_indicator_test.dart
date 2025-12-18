@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
-import 'package:nt_helper/ui/gallery/gallery_state.dart';
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 

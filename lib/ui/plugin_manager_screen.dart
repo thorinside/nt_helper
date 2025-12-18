@@ -424,7 +424,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
             // Find matching by checking if the stored GUID matches
             for (final installed in allInstalled) {
               // Check if this installation's metadata contains the GUID
-              if (installed.repositoryUrl.contains(guid) ||
+              if ((installed.repositoryUrl?.contains(guid) ?? false) ||
                   installed.pluginId.contains(guid) ||
                   installed.installationPath == plugin.path) {
                 await widget.database.pluginInstallationsDao

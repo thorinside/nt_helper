@@ -1360,20 +1360,6 @@ class GalleryService {
     }
   }
 
-  /// Compare two version strings (returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2)
-  /// Used for sorting, not for update detection (use _hasUpdateAvailable for that)
-  int _compareVersions(String version1, String version2) {
-    try {
-      // Try semantic version comparison first
-      final v1 = Version.parse(version1.replaceAll(RegExp(r'^v'), ''));
-      final v2 = Version.parse(version2.replaceAll(RegExp(r'^v'), ''));
-      return v1.compareTo(v2);
-    } catch (e) {
-      // Fall back to string comparison if semantic parsing fails
-      return version1.compareTo(version2);
-    }
-  }
-
   /// Dispose of resources
   void dispose() {
     _queueController.close();

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/db/database.dart';
@@ -411,12 +412,11 @@ void main() {
         final installed = await database.pluginInstallationsDao
             .getAllInstalledPlugins();
         final id = installed.first.id;
-        await database.into(database.pluginInstallations).update(
-              database.pluginInstallations.companion(
-                installedAt: Value(DateTime.now().subtract(const Duration(days: 2))),
-              ),
-              where: (tbl) => tbl.id.equals(id),
-            );
+        await (database.update(database.pluginInstallations)
+              ..where((tbl) => tbl.id.equals(id)))
+            .write(PluginInstallationsCompanion(
+          installedAt: Value(DateTime.now().subtract(const Duration(days: 2))),
+        ));
 
         final gallery = createTestGallery([plugin]);
         final updateInfo = await galleryService.compareWithInstalledVersions(
