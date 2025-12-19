@@ -157,7 +157,6 @@ flutter:
   assets:
     - docs/algorithms/
     - docs/features/
-    - assets/mcp_docs/
     - assets/metadata/
 
 flutter_launcher_icons:
