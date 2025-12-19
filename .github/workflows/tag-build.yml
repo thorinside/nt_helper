@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "v*" # e.g., v1.0, v1.2.3, etc.
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build (comma-separated: android,android_aab,windows,linux,macos,ios) or "all"'
+        required: false
+        default: 'all'
+        type: string
 
 env:
   FLUTTER_VERSION: "3.38.5"
@@ -12,51 +19,79 @@ permissions:
   contents: write # Needed for creating/updating GitHub releases
 
 jobs:
+  setup:
+    name: Setup Build Info
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      tag: ${{ steps.get_version.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history and tags
+
+      - name: Get version and tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Tag push - use the tag
+            TAG="${{ github.ref_name }}"
+          else
+            # Manual dispatch - get latest tag
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          fi
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG, version: $VERSION"
+
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    needs: setup
+    # Only create release on tag push
+    if: github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Fetch all history and tags for release notes
 
-      - name: Extract Version (for the create-release job)
-        id: extract_version
-        run: |
-          # e.g. "v1.2.3" => "1.2.3"
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
       - name: Generate Release Notes
         run: |
           chmod +x ./scripts/release-notes-for-workflow.sh
-          ./scripts/release-notes-for-workflow.sh ${{ github.ref_name }}
+          ./scripts/release-notes-for-workflow.sh ${{ needs.setup.outputs.tag }}
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
-          name: "${{ github.ref_name }} - Automated Release"
+          tag: ${{ needs.setup.outputs.tag }}
+          name: "${{ needs.setup.outputs.tag }} - Automated Release"
           bodyFile: release_notes.md
           generateReleaseNotes: false
 
   android:
     name: Build and Sign Android APK
     runs-on: ubuntu-latest
-    needs: create-release
+    needs: [setup, create-release]
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
+      (
+        github.event_name == 'push' ||
+        contains(github.event.inputs.platforms, 'android') ||
+        github.event.inputs.platforms == 'all' ||
+        github.event.inputs.platforms == ''
+      )
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Extract Version
-        id: extract_version
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Set Version
+        run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -104,7 +139,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
+          tag: ${{ needs.setup.outputs.tag }}
           allowUpdates: true
           omitBodyDuringUpdate: true
           artifacts: "**/nt_helper-${{ env.VERSION }}.apk"
@@ -112,17 +147,23 @@ jobs:
   android_aab_play_store:
     name: Build Android AAB and Upload to Play Store
     runs-on: ubuntu-latest
-    needs: create-release
+    needs: [setup, create-release]
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
+      (
+        github.event_name == 'push' ||
+        contains(github.event.inputs.platforms, 'android_aab') ||
+        github.event.inputs.platforms == 'all' ||
+        github.event.inputs.platforms == ''
+      )
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Extract Version
-        id: extract_version
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Set Version
+        run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -184,17 +225,25 @@ jobs:
   windows:
     name: Build Windows App
     runs-on: windows-latest
-    needs: create-release
+    needs: [setup, create-release]
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
+      (
+        github.event_name == 'push' ||
+        contains(github.event.inputs.platforms, 'windows') ||
+        github.event.inputs.platforms == 'all' ||
+        github.event.inputs.platforms == ''
+      )
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Extract Version
+      - name: Set Version
         shell: pwsh
         run: |
-          $version = '${{ github.ref_name }}'
-          $version = $version.Substring(1)  # strip leading 'v'
-          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VERSION=${{ needs.setup.outputs.version }}" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -221,7 +270,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
+          tag: ${{ needs.setup.outputs.tag }}
           allowUpdates: true
           omitBodyDuringUpdate: true
           artifacts: "**/nt_helper-${{ env.VERSION }}-windows.zip"
@@ -229,17 +278,23 @@ jobs:
   linux:
     name: Build Linux App
     runs-on: ubuntu-latest
-    needs: create-release
+    needs: [setup, create-release]
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
+      (
+        github.event_name == 'push' ||
+        contains(github.event.inputs.platforms, 'linux') ||
+        github.event.inputs.platforms == 'all' ||
+        github.event.inputs.platforms == ''
+      )
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Extract Version
-        id: extract_version
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Set Version
+        run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -268,7 +323,244 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
+          tag: ${{ needs.setup.outputs.tag }}
           allowUpdates: true
           omitBodyDuringUpdate: true
           artifacts: "**/nt_helper-${{ env.VERSION }}-linux.zip"
+
+  macos:
+    name: Build macOS App
+    runs-on: macos-latest
+    needs: [setup, create-release]
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
+      (
+        github.event_name == 'push' ||
+        contains(github.event.inputs.platforms, 'macos') ||
+        github.event.inputs.platforms == 'all' ||
+        github.event.inputs.platforms == ''
+      )
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set Version
+        run: echo "VERSION=${{ needs.setup.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Decode certificate from Base64
+        run: echo "${{ secrets.APPLE_CERTIFICATES }}" | base64 --decode > apple_certificates.p12
+
+      - name: Create & unlock keychain
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+          KEYCHAIN_PASSWORD=""
+
+          echo "Creating keychain..."
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
+
+          echo "Unlocking keychain..."
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+          echo "Setting $KEYCHAIN_NAME as default..."
+          security default-keychain -s "$KEYCHAIN_NAME"
+
+          echo "List of keychains now:"
+          security list-keychains
+        shell: bash
+
+      - name: Import certificate
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+
+          security import apple_certificates.p12 \
+            -k "$KEYCHAIN_NAME" \
+            -P "${{ secrets.APPLE_CERTIFICATES_PASSWORD }}" \
+            -T /usr/bin/codesign
+
+          security set-key-partition-list -S apple-tool:,apple: -k "" "$KEYCHAIN_NAME"
+
+          echo "Identities in keychain:"
+          security find-identity -v -p codesigning "$KEYCHAIN_NAME" || true
+
+      - name: Build macOS
+        run: flutter build macos
+
+      - name: Codesign the macOS App
+        run: |
+          codesign --deep --force --verbose --options runtime \
+            --sign "Developer ID Application: Neal Sanche (KN424RZG26)" \
+            --entitlements macos/Runner/Release.entitlements \
+            build/macos/Build/Products/Release/nt_helper.app
+
+      - name: Zip the macOS App for Notarization
+        run: |
+          cd build/macos/Build/Products/Release
+          ditto -c -k --keepParent nt_helper.app nt_helper.zip
+
+      - name: Notarize the macOS App
+        env:
+          MACOS_APPLE_ID: ${{ secrets.MACOS_APPLE_ID }}
+          MACOS_APPLE_ID_PASSWORD: ${{ secrets.MACOS_APPLE_ID_PASSWORD }}
+          MACOS_APPLE_TEAM_ID: ${{ secrets.MACOS_APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool submit build/macos/Build/Products/Release/nt_helper.zip \
+            --apple-id "$MACOS_APPLE_ID" \
+            --password "$MACOS_APPLE_ID_PASSWORD" \
+            --team-id "$MACOS_APPLE_TEAM_ID" \
+            --wait
+
+      - name: Staple Notarization to the App
+        run: |
+          xcrun stapler staple build/macos/Build/Products/Release/nt_helper.app
+
+      - name: Zip macOS App
+        run: |
+          cd build/macos/Build/Products/Release
+          ditto -c -k --keepParent nt_helper.app nt_helper-${VERSION}-macos.zip
+
+      - name: List build output (debug)
+        run: ls -R build/macos/Build/Products/Release
+
+      - name: Upload macOS Artifact to Release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ needs.setup.outputs.tag }}
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          artifacts: "**/nt_helper-${{ env.VERSION }}-macos.zip"
+
+      - name: Delete temporary keychain
+        if: always()
+        run: |
+          security delete-keychain build.keychain
+
+  ios:
+    name: Build & Sign iOS
+    runs-on: macos-latest
+    needs: [setup, create-release]
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
+      (
+        github.event_name == 'push' ||
+        contains(github.event.inputs.platforms, 'ios') ||
+        github.event.inputs.platforms == 'all' ||
+        github.event.inputs.platforms == ''
+      )
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Print macOS & Xcode info (debug)
+        run: |
+          echo "macOS version:"
+          sw_vers
+          echo "Xcode version:"
+          xcodebuild -version
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Flutter Doctor (debug)
+        run: flutter doctor -v
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Decode iOS certificate from Base64
+        run: echo "${{ secrets.APPLE_CERTIFICATES }}" | base64 --decode > apple_certificates.p12
+
+      - name: Decode provisioning profile from Base64
+        run: echo "${{ secrets.APP_STORE_MOBILEPROVISION }}" | base64 --decode > distribution.mobileprovision
+
+      - name: Create & unlock keychain
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+          KEYCHAIN_PASSWORD=""
+
+          echo "Creating keychain..."
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
+
+          echo "Unlocking keychain..."
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+          echo "Setting $KEYCHAIN_NAME as default..."
+          security default-keychain -s "$KEYCHAIN_NAME"
+
+          echo "List of keychains now:"
+          security list-keychains
+        shell: bash
+
+      - name: Import certificate
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+
+          security import apple_certificates.p12 \
+            -k "$KEYCHAIN_NAME" \
+            -P "${{ secrets.APPLE_CERTIFICATES_PASSWORD }}" \
+            -T /usr/bin/codesign
+
+          security set-key-partition-list -S apple-tool:,apple: -k "" "$KEYCHAIN_NAME"
+
+          echo "Identities in keychain:"
+          security find-identity -v -p codesigning "$KEYCHAIN_NAME" || true
+
+      - name: Install provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp distribution.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "Provisioning profiles in that folder:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Install iOS Simulator Runtime
+        run: |
+          echo "Available Xcode simulators:"
+          xcrun simctl list runtimes
+          echo "Installing iOS simulator runtime if needed..."
+          xcodebuild -downloadPlatform iOS || true
+          echo "Available simulators after install attempt:"
+          xcrun simctl list runtimes
+
+      - name: Flutter build IPA
+        run: |
+          set -x
+          flutter clean
+          flutter pub get
+          flutter build ipa --export-options-plist=ios/ExportOptions.plist
+
+      - name: Debug List final artifacts
+        run: ls -R build/ios/ipa || true
+
+      - name: Upload to TestFlight
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            --file "./build/ios/ipa/nt_helper.ipa" \
+            --username "${{ secrets.MACOS_APPLE_ID }}" \
+            --password "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
+            --verbose
+
+      - name: Delete temporary keychain
+        if: always()
+        run: |
+          security delete-keychain build.keychain
