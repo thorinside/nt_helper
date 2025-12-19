@@ -50,7 +50,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   @override
   void initState() {
     super.initState();
-    _galleryService = GalleryService(settingsService: SettingsService());
+    _galleryService = GalleryService(
+      settingsService: SettingsService(),
+      database: widget.database,
+    );
     _loadInstalledPlugins();
   }
 

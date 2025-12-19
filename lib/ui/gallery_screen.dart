@@ -822,20 +822,26 @@ class _GalleryViewState extends State<_GalleryView>
       return _buildEmptyPluginState();
     }
 
-    // Separate plugins with updates from others
+    // Separate plugins into categories
     final pluginsWithUpdates = state is GalleryLoaded
         ? filteredPlugins
             .where((plugin) => state.updateInfo[plugin.id]?.hasUpdate ?? false)
             .toList()
         : <GalleryPlugin>[];
 
-    final otherPlugins = filteredPlugins
-        .where(
-          (plugin) =>
-              state is! GalleryLoaded ||
-              !(state.updateInfo[plugin.id]?.hasUpdate ?? false),
-        )
-        .toList();
+    final installedPlugins = state is GalleryLoaded
+        ? filteredPlugins
+            .where((plugin) =>
+                state.updateInfo[plugin.id] != null &&
+                !(state.updateInfo[plugin.id]?.hasUpdate ?? false))
+            .toList()
+        : <GalleryPlugin>[];
+
+    final availablePlugins = state is GalleryLoaded
+        ? filteredPlugins
+            .where((plugin) => state.updateInfo[plugin.id] == null)
+            .toList()
+        : filteredPlugins;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -845,7 +851,7 @@ class _GalleryViewState extends State<_GalleryView>
           // Updates section
           if (pluginsWithUpdates.isNotEmpty) ...[
             _buildSectionHeader(
-              'Available Updates',
+              'Updates Available',
               pluginsWithUpdates.length,
               state,
             ),
@@ -858,29 +864,41 @@ class _GalleryViewState extends State<_GalleryView>
                 return _buildPluginCard(plugin, state, context);
               }).toList(),
             ),
-            const SizedBox(height: 32),
-            // Divider
-            Divider(
-              color: Theme.of(context).colorScheme.outlineVariant,
-              thickness: 1,
+            const SizedBox(height: 24),
+          ],
+
+          // Installed section
+          if (installedPlugins.isNotEmpty) ...[
+            _buildSectionHeader(
+              'Installed',
+              installedPlugins.length,
+              state,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              alignment: WrapAlignment.start,
+              spacing: 12,
+              runSpacing: 12,
+              children: installedPlugins.map((plugin) {
+                return _buildPluginCard(plugin, state, context);
+              }).toList(),
             ),
             const SizedBox(height: 24),
           ],
 
-          // All plugins section
-          if (pluginsWithUpdates.isNotEmpty)
-            _buildSectionHeader('All Plugins', otherPlugins.length, state)
-          else
-            _buildSectionHeader('Plugins', filteredPlugins.length, state),
-          const SizedBox(height: 12),
-          Wrap(
-            alignment: WrapAlignment.start,
-            spacing: 12,
-            runSpacing: 12,
-            children: otherPlugins.map((plugin) {
-              return _buildPluginCard(plugin, state, context);
-            }).toList(),
-          ),
+          // Available plugins section
+          if (availablePlugins.isNotEmpty) ...[
+            _buildSectionHeader('Available', availablePlugins.length, state),
+            const SizedBox(height: 12),
+            Wrap(
+              alignment: WrapAlignment.start,
+              spacing: 12,
+              runSpacing: 12,
+              children: availablePlugins.map((plugin) {
+                return _buildPluginCard(plugin, state, context);
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -893,13 +911,19 @@ class _GalleryViewState extends State<_GalleryView>
       return _buildEmptyPluginState();
     }
 
-    // Separate plugins with updates from others
+    // Separate plugins into categories
     final pluginsWithUpdates = filteredPlugins
         .where((plugin) => state.updateInfo[plugin.id]?.hasUpdate ?? false)
         .toList();
 
-    final otherPlugins = filteredPlugins
-        .where((plugin) => !(state.updateInfo[plugin.id]?.hasUpdate ?? false))
+    final installedPlugins = filteredPlugins
+        .where((plugin) =>
+            state.updateInfo[plugin.id] != null &&
+            !(state.updateInfo[plugin.id]?.hasUpdate ?? false))
+        .toList();
+
+    final availablePlugins = filteredPlugins
+        .where((plugin) => state.updateInfo[plugin.id] == null)
         .toList();
 
     return ListView(
@@ -908,7 +932,7 @@ class _GalleryViewState extends State<_GalleryView>
         // Updates section
         if (pluginsWithUpdates.isNotEmpty) ...[
           _buildSectionHeader(
-            'Available Updates',
+            'Updates Available',
             pluginsWithUpdates.length,
             state,
           ),
@@ -917,23 +941,30 @@ class _GalleryViewState extends State<_GalleryView>
             return _buildPluginListTile(plugin, state, context);
           }),
           const SizedBox(height: 24),
-          // Divider
-          Divider(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            thickness: 1,
+        ],
+
+        // Installed section
+        if (installedPlugins.isNotEmpty) ...[
+          _buildSectionHeader(
+            'Installed',
+            installedPlugins.length,
+            state,
           ),
+          const SizedBox(height: 12),
+          ...installedPlugins.map((plugin) {
+            return _buildPluginListTile(plugin, state, context);
+          }),
           const SizedBox(height: 24),
         ],
 
-        // All plugins section
-        if (pluginsWithUpdates.isNotEmpty)
-          _buildSectionHeader('All Plugins', otherPlugins.length, state)
-        else
-          _buildSectionHeader('Plugins', filteredPlugins.length, state),
-        const SizedBox(height: 12),
-        ...otherPlugins.map((plugin) {
-          return _buildPluginListTile(plugin, state, context);
-        }),
+        // Available plugins section
+        if (availablePlugins.isNotEmpty) ...[
+          _buildSectionHeader('Available', availablePlugins.length, state),
+          const SizedBox(height: 12),
+          ...availablePlugins.map((plugin) {
+            return _buildPluginListTile(plugin, state, context);
+          }),
+        ],
       ],
     );
   }
@@ -954,6 +985,17 @@ class _GalleryViewState extends State<_GalleryView>
       constraints: const BoxConstraints(minHeight: 72),
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
+        shape: isInstalled
+            ? RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: hasUpdate
+                      ? Theme.of(context).colorScheme.tertiary
+                      : Theme.of(context).colorScheme.secondary,
+                  width: 2,
+                ),
+              )
+            : null,
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -990,8 +1032,6 @@ class _GalleryViewState extends State<_GalleryView>
                 ),
               ),
               if (hasUpdate) _buildListBadge('UPDATE', Colors.orange),
-              if (isInstalled && !hasUpdate)
-                _buildListBadge('INSTALLED', Colors.green),
             ],
           ),
           subtitle: Column(
@@ -1162,9 +1202,11 @@ class _GalleryViewState extends State<_GalleryView>
         tooltip: 'Update',
         color: Colors.orange,
       );
-    } else if (isInstalled) {
-      return const Icon(Icons.check_circle, color: Colors.green);
+    } else if (isInstalled && !plugin.isCollection) {
+      // Single plugin is installed - no button needed
+      return const SizedBox.shrink();
     } else {
+      // Not installed, OR is a collection (can always add more)
       return IconButton(
         icon: const Icon(Icons.add_to_queue),
         onPressed: () async =>
@@ -1199,6 +1241,17 @@ class _GalleryViewState extends State<_GalleryView>
       child: Card(
         elevation: 2,
         clipBehavior: Clip.antiAlias,
+        shape: isInstalled
+            ? RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: hasUpdate
+                      ? Theme.of(context).colorScheme.tertiary
+                      : Theme.of(context).colorScheme.secondary,
+                  width: 2,
+                ),
+              )
+            : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1254,28 +1307,6 @@ class _GalleryViewState extends State<_GalleryView>
                                 ),
                                 child: Text(
                                   'UPDATE',
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 10,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            if (isInstalled && !hasUpdate) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  'INSTALLED',
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: Colors.white,
@@ -1348,142 +1379,91 @@ class _GalleryViewState extends State<_GalleryView>
             ),
 
             // Content with fixed layout sections
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                8,
-                8,
-                8,
-                12,
-              ), // 12px bottom margin
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min, // Shrink to fit content
-                children: [
-                  // Fixed description area (5 lines) with padding
-                  Container(
-                    height:
-                        116, // Fixed height for 5 lines + padding (100 + 16)
-                    padding: const EdgeInsets.all(8),
-                    child: LinkifiedText(
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  8,
+                  8,
+                  8,
+                  12,
+                ), // 12px bottom margin
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Description area
+                    LinkifiedText(
                       text: plugin.description,
                       style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 5,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
 
-                  const SizedBox(height: 16), // Space after description
-                  // Metadata section (author, downloads, ratings)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          if (author != null) ...[
-                            Icon(
-                              Icons.person,
-                              size: 14,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                author.name,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ] else
-                            const Spacer(),
-                          if (plugin.formattedLatestVersion.isNotEmpty)
-                            Text(
-                              plugin.formattedLatestVersion,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
+                    const Spacer(), // Push metadata to bottom
+                    // Metadata section (author, version, docs)
+                    Row(
+                      children: [
+                        if (author != null) ...[
+                          Icon(
+                            Icons.person,
+                            size: 14,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.6),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              author.name,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurface
                                         .withValues(alpha: 0.6),
                                   ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          // Small documentation icon button
-                          if (plugin.hasReadmeDocumentation)
-                            SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(12),
-                                  onTap: () =>
-                                      _showReadmeDialog(parentContext, plugin),
-                                  child: Tooltip(
-                                    message: 'View Documentation',
-                                    child: Icon(
-                                      Icons.description_outlined,
-                                      size: 16,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
+                          ),
+                        ] else
+                          const Spacer(),
+                        if (plugin.formattedLatestVersion.isNotEmpty)
+                          Text(
+                            plugin.formattedLatestVersion,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                          ),
+                        if (plugin.hasReadmeDocumentation)
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () =>
+                                    _showReadmeDialog(parentContext, plugin),
+                                child: Tooltip(
+                                  message: 'View Documentation',
+                                  child: Icon(
+                                    Icons.description_outlined,
+                                    size: 16,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
                                   ),
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                      // Version information row
-                      if (isInstalled) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 14,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                hasUpdate
-                                    ? 'v${updateInfo.installedVersion} → v${updateInfo.availableVersion}'
-                                    : 'v${updateInfo.installedVersion} (up to date)',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: hasUpdate
-                                          ? Colors.orange
-                                          : Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.6),
-                                      fontWeight: hasUpdate
-                                          ? FontWeight.w500
-                                          : FontWeight.normal,
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
                       ],
-                    ],
-                  ),
-
-                  const SizedBox(height: 8), // Reduced spacing above button
+                    ),
+                    const SizedBox(height: 8),
                   // Action button at bottom
                   SizedBox(
                     width: double.infinity,
@@ -1523,22 +1503,11 @@ class _GalleryViewState extends State<_GalleryView>
                             foregroundColor: Colors.white,
                           ),
                         );
-                      } else if (isInstalled) {
-                        // Plugin is installed and up to date - show installed status
-                        return ElevatedButton.icon(
-                          onPressed:
-                              null, // No action needed - updates are detected automatically
-                          icon: const Icon(Icons.check_circle),
-                          label: const Text('Installed'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.green,
-                            disabledForegroundColor: Colors.white,
-                          ),
-                        );
+                      } else if (isInstalled && !plugin.isCollection) {
+                        // Single plugin is installed - no button needed
+                        return const SizedBox.shrink();
                       } else {
-                        // Plugin not installed - show add to queue button
+                        // Not installed, OR is a collection (can always add more)
                         return ElevatedButton.icon(
                           onPressed: () async => await parentContext
                               .read<GalleryCubit>()
@@ -1557,7 +1526,8 @@ class _GalleryViewState extends State<_GalleryView>
                       }
                     }(),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

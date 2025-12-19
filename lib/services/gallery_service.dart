@@ -1210,9 +1210,12 @@ class GalleryService {
 
         // Check 2: Also check if plugin GUID exists on device
         // (catches manually installed plugins not in database)
+        // For collections, check if ANY of the collection's plugins are installed
         final isInstalledOnDevice = devicePluginGuids != null &&
-            galleryPlugin.guid != null &&
-            devicePluginGuids.contains(galleryPlugin.guid);
+            ((galleryPlugin.guid != null &&
+                    devicePluginGuids.contains(galleryPlugin.guid)) ||
+                galleryPlugin.collectionGuids
+                    .any((guid) => devicePluginGuids.contains(guid)));
 
         if (matchingInstalled.isEmpty && !isInstalledOnDevice) {
           // Plugin not installed - no update info needed

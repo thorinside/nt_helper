@@ -70,7 +70,10 @@ class _DistingAppState extends State<DistingApp> {
         seedColor: Colors.tealAccent.shade700,
         dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
         brightness: Brightness.light,
-      ).copyWith(surfaceTint: Colors.transparent),
+      ).copyWith(
+        surfaceTint: Colors.transparent,
+        tertiary: Colors.orange.shade800,
+      ),
     );
 
     final darkTheme = buildThemeData(
@@ -78,7 +81,10 @@ class _DistingAppState extends State<DistingApp> {
         seedColor: Colors.tealAccent.shade100,
         dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
         brightness: Brightness.dark,
-      ).copyWith(surfaceTint: Colors.transparent),
+      ).copyWith(
+        surfaceTint: Colors.transparent,
+        tertiary: Colors.orange,
+      ),
     );
 
     return MaterialApp(
