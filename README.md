@@ -15,6 +15,16 @@ A cross-platform Flutter application designed for editing presets on the Expert 
 - **Drag & Drop Installation**: Install preset packages by simply dragging and dropping them onto the load dialog (desktop platforms).
 - **Cross-Platform**: Runs on Windows, macOS, Linux, iOS, and Android.
 
+## System Requirements
+
+| Platform | Minimum Version |
+|----------|-----------------|
+| macOS    | 10.15 (Catalina) |
+| iOS      | 15.6 |
+| Android  | API 24 (7.0 Nougat) |
+| Windows  | 10 |
+| Linux    | Ubuntu 20.04 LTS+ |
+
 ## Getting Started
 
 1.  Download the latest release for your platform from the [GitHub Releases](https://github.com/thorinside/nt_helper/releases) page (or [TestFlight](https://testflight.apple.com/join/BSFFSpd3) for iOS).
