@@ -653,6 +653,24 @@ class DistingCubit extends _DistingCubitBase
     );
   }
 
+  /// Installs a sample file to a specific path on the SD card, if it doesn't already exist.
+  ///
+  /// Returns `true` if the file was installed, `false` if it was skipped (already exists).
+  /// Throws an exception on failure.
+  ///
+  /// This is used by the gallery plugin installation to install sample dependencies.
+  Future<bool> installSampleFile(
+    String targetPath,
+    Uint8List fileData, {
+    Function(double)? onProgress,
+  }) async {
+    return _pluginDelegate.installSampleFile(
+      targetPath,
+      fileData,
+      onProgress: onProgress,
+    );
+  }
+
   /// Forces a Lua script reload while preserving all parameter state.
   /// This is specifically designed for development mode where a script file
   /// has been modified and needs to be reloaded without losing user settings.

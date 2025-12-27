@@ -2020,12 +2020,23 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   Future<void> _installQueue() async {
+    // Store sample results by plugin ID for use in completion message
+    final sampleResults = <String, SampleInstallationResult>{};
+
     try {
       await widget.galleryService.installQueuedPlugins(
         distingInstallPlugin: (fileName, fileData, {onProgress}) async {
           // Use the DistingCubit's installPlugin method
           await context.read<DistingCubit>().installPlugin(
             fileName,
+            fileData,
+            onProgress: onProgress,
+          );
+        },
+        distingInstallSample: (targetPath, fileData, {onProgress}) async {
+          // Use the DistingCubit's installSampleFile method for sample dependencies
+          return await context.read<DistingCubit>().installSampleFile(
+            targetPath,
             fileData,
             onProgress: onProgress,
           );
@@ -2039,24 +2050,80 @@ class _GalleryViewState extends State<_GalleryView>
           );
         },
         onPluginComplete: (plugin) {
+          // Build message with sample summary if available
+          final sampleResult = sampleResults[plugin.plugin.id];
+          final message = _buildInstallationCompleteMessage(
+            plugin.plugin.name,
+            sampleResult,
+          );
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Successfully installed ${plugin.plugin.name}'),
+              content: Text(message),
               backgroundColor: Theme.of(context).colorScheme.primary,
+              duration: const Duration(seconds: 3),
+              action: sampleResult != null &&
+                      sampleResult.skippedSamples.isNotEmpty
+                  ? SnackBarAction(
+                      label: 'Details',
+                      textColor: Theme.of(context).colorScheme.onPrimary,
+                      onPressed: () => _showSkippedSamplesDialog(
+                        context,
+                        plugin.plugin.name,
+                        sampleResult,
+                      ),
+                    )
+                  : null,
             ),
           );
+
+          // Clean up stored result
+          sampleResults.remove(plugin.plugin.id);
+
           // Refresh gallery to update installed indicators
           context.read<GalleryCubit>().refreshUpdates(
                 devicePluginGuids: _getDevicePluginGuids(),
               );
         },
         onPluginError: (plugin, error) {
+          // Include sample failure info if available
+          final sampleResult = sampleResults[plugin.plugin.id];
+          String message = 'Failed to install ${plugin.plugin.name}: $error';
+          if (sampleResult != null && sampleResult.hasFailures) {
+            final failedFiles = sampleResult.failedSamples.keys
+                .map((p) => p.split('/').last)
+                .take(3)
+                .join(', ');
+            final moreCount = sampleResult.failedCount - 3;
+            final moreText = moreCount > 0 ? ' (+$moreCount more)' : '';
+            message += '\nSample failures: $failedFiles$moreText';
+          }
+          sampleResults.remove(plugin.plugin.id);
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to install ${plugin.plugin.name}: $error'),
+              content: Text(message),
               backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 5),
             ),
           );
+        },
+        onSampleInstallComplete: (plugin, sampleResult) {
+          // Store result for use in completion message
+          sampleResults[plugin.plugin.id] = sampleResult;
+
+          // Show warning snackbar if samples failed (main success will still show)
+          if (sampleResult.hasFailures) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${plugin.plugin.name}: ${sampleResult.failedCount} sample(s) failed to install',
+                ),
+                backgroundColor: Theme.of(context).colorScheme.error,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         },
       );
     } catch (e) {
@@ -2068,6 +2135,130 @@ class _GalleryViewState extends State<_GalleryView>
         ),
       );
     }
+  }
+
+  /// Build the installation complete message with sample summary
+  String _buildInstallationCompleteMessage(
+    String pluginName,
+    SampleInstallationResult? sampleResult,
+  ) {
+    if (sampleResult == null || sampleResult.totalSamples == 0) {
+      // No samples - use simple message
+      return 'Installed $pluginName';
+    }
+
+    final installed = sampleResult.installedCount;
+    final skipped = sampleResult.skippedCount;
+    final failed = sampleResult.failedCount;
+
+    if (failed > 0) {
+      // Some samples failed
+      if (installed > 0 || skipped > 0) {
+        return 'Installed $pluginName with $installed sample(s). $failed failed.';
+      } else {
+        return 'Installed $pluginName. All $failed sample(s) failed.';
+      }
+    } else if (skipped > 0) {
+      // Some samples skipped
+      return 'Installed $pluginName with $installed sample(s) ($skipped skipped)';
+    } else {
+      // All samples installed
+      return 'Installed $pluginName with $installed sample(s)';
+    }
+  }
+
+  /// Show dialog with list of skipped sample files
+  void _showSkippedSamplesDialog(
+    BuildContext context,
+    String pluginName,
+    SampleInstallationResult sampleResult,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Sample Installation Details'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (sampleResult.installedSamples.isNotEmpty) ...[
+                Text(
+                  'Installed (${sampleResult.installedCount}):',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                ...sampleResult.installedSamples.map(
+                  (path) => Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 2),
+                    child: Text(
+                      path.split('/').last,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (sampleResult.skippedSamples.isNotEmpty) ...[
+                Text(
+                  'Skipped - Already Exist (${sampleResult.skippedCount}):',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                ...sampleResult.skippedSamples.map(
+                  (path) => Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 2),
+                    child: Text(
+                      path.split('/').last,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (sampleResult.failedSamples.isNotEmpty) ...[
+                Text(
+                  'Failed (${sampleResult.failedCount}):',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                ...sampleResult.failedSamples.entries.map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.key.split('/').last,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          entry.value,
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   // Drag and drop handlers

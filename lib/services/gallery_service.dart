@@ -55,6 +55,73 @@ const String _getCategoriesQuery = r'''
   }
 ''';
 
+/// Result of extracting a plugin archive, separating plugin files from sample files
+class ExtractedArchiveContents {
+  /// Plugin files (*.o, *.lua, *.3pot) to be installed
+  final List<MapEntry<String, List<int>>> pluginFiles;
+
+  /// Sample files from the samples/ directory
+  final List<MapEntry<String, List<int>>> sampleFiles;
+
+  const ExtractedArchiveContents({
+    required this.pluginFiles,
+    required this.sampleFiles,
+  });
+
+  /// Whether this archive contains sample files
+  bool get hasSamples => sampleFiles.isNotEmpty;
+
+  /// Total number of files in the archive
+  int get totalFileCount => pluginFiles.length + sampleFiles.length;
+}
+
+/// Result of installing sample files for a plugin
+class SampleInstallationResult {
+  /// Sample files that were successfully installed
+  final List<String> installedSamples;
+
+  /// Sample files that were skipped because they already exist
+  final List<String> skippedSamples;
+
+  /// Sample files that failed to install, with error messages
+  final Map<String, String> failedSamples;
+
+  const SampleInstallationResult({
+    this.installedSamples = const [],
+    this.skippedSamples = const [],
+    this.failedSamples = const {},
+  });
+
+  /// Total number of samples that were in the package
+  int get totalSamples =>
+      installedSamples.length + skippedSamples.length + failedSamples.length;
+
+  /// Whether any samples failed to install
+  bool get hasFailures => failedSamples.isNotEmpty;
+
+  /// Whether any samples were installed or skipped (not all failed)
+  bool get hasSuccesses =>
+      installedSamples.isNotEmpty || skippedSamples.isNotEmpty;
+
+  /// Number of samples that were actually installed (not skipped or failed)
+  int get installedCount => installedSamples.length;
+
+  /// Number of samples skipped because they already existed
+  int get skippedCount => skippedSamples.length;
+
+  /// Number of samples that failed to install
+  int get failedCount => failedSamples.length;
+}
+
+/// Callback type for installing a single sample file to the SD card.
+/// Returns `true` if installed, `false` if skipped (already exists).
+/// Throws an exception on failure.
+typedef SampleInstallCallback = Future<bool> Function(
+  String targetPath,
+  Uint8List data, {
+  Function(double)? onProgress,
+});
+
 /// Service for managing the plugin gallery
 class GalleryService {
   final SettingsService _settingsService;
@@ -270,6 +337,24 @@ class GalleryService {
   @visibleForTesting
   void initializeGuidLookup(Gallery gallery) {
     _buildGuidLookup(gallery);
+  }
+
+  /// Extract archive contents for testing purposes
+  @visibleForTesting
+  Future<ExtractedArchiveContents> extractArchiveForTesting(
+    List<int> archiveBytes,
+    GalleryPlugin plugin, {
+    QueuedPlugin? queuedPlugin,
+  }) {
+    return _extractArchive(archiveBytes, plugin, queuedPlugin: queuedPlugin);
+  }
+
+  /// Check if a file path is a sample file (for testing purposes)
+  @visibleForTesting
+  static bool isSampleFileForTesting(String filePath) {
+    final lowerPath = filePath.toLowerCase();
+    return lowerPath.startsWith('samples/') ||
+        lowerPath.startsWith('/samples/');
   }
 
   /// Look up a plugin by its 4-character GUID
@@ -679,6 +764,11 @@ class GalleryService {
   }
 
   /// Install all plugins in the queue using Disting upload functionality
+  ///
+  /// [distingInstallPlugin] - Callback to install plugin files (.o, .lua, .3pot)
+  /// [distingInstallSample] - Optional callback to install sample files.
+  ///   If provided, sample files in plugin zips will be installed to /samples/.
+  ///   The callback should return true if installed, false if skipped (file exists).
   Future<void> installQueuedPlugins({
     required Function(
       String fileName,
@@ -686,10 +776,12 @@ class GalleryService {
       Function(double)? onProgress,
     })
     distingInstallPlugin,
+    SampleInstallCallback? distingInstallSample,
     Function(QueuedPlugin)? onPluginStart,
     Function(QueuedPlugin, double)? onProgress,
     Function(QueuedPlugin)? onPluginComplete,
     Function(QueuedPlugin, String)? onPluginError,
+    Function(QueuedPlugin, SampleInstallationResult)? onSampleInstallComplete,
   }) async {
     final pluginsToInstall = _installQueue
         .where((q) => q.status == QueuedPluginStatus.queued)
@@ -700,15 +792,22 @@ class GalleryService {
         onPluginStart?.call(queuedPlugin);
 
         // Track installation details for database recording
+        SampleInstallationResult? sampleResult;
 
-        await _installSinglePluginViaDisting(
+        sampleResult = await _installSinglePluginViaDisting(
           queuedPlugin,
           distingInstallPlugin,
+          distingInstallSample: distingInstallSample,
           onProgress: onProgress,
           onInstallationDetails: (files, bytes) {
             // Installation details tracked
           },
         );
+
+        // Notify about sample installation results
+        if (sampleResult != null && sampleResult.totalSamples > 0) {
+          onSampleInstallComplete?.call(queuedPlugin, sampleResult);
+        }
 
         _updateQueuedPlugin(
           queuedPlugin.plugin.id,
@@ -767,7 +866,9 @@ class GalleryService {
   }
 
   /// Install a single plugin using Disting upload functionality
-  Future<void> _installSinglePluginViaDisting(
+  ///
+  /// Returns [SampleInstallationResult] if samples were processed, null otherwise.
+  Future<SampleInstallationResult?> _installSinglePluginViaDisting(
     QueuedPlugin queuedPlugin,
     Function(
       String fileName,
@@ -775,6 +876,7 @@ class GalleryService {
       Function(double)? onProgress,
     })
     distingInstallPlugin, {
+    SampleInstallCallback? distingInstallSample,
     Function(QueuedPlugin, double)? onProgress,
     Function(int, int)? onInstallationDetails,
   }) async {
@@ -793,9 +895,9 @@ class GalleryService {
     final fileBytes = await _downloadWithProgress(downloadUrl, (progress) {
       _updateQueuedPlugin(
         plugin.id,
-        progress: progress * 0.6,
-      ); // 60% for download
-      onProgress?.call(queuedPlugin, progress * 0.6);
+        progress: progress * 0.5,
+      ); // 50% for download (reduced to make room for samples)
+      onProgress?.call(queuedPlugin, progress * 0.5);
     });
 
     // Determine file type from download URL
@@ -804,21 +906,23 @@ class GalleryService {
     final fileExtension = path.extension(fileName).toLowerCase();
 
     List<MapEntry<String, List<int>>> filesToInstall;
+    ExtractedArchiveContents? extractedContents;
 
     if (fileExtension == '.zip') {
       // Update status to extracting for zip files
       _updateQueuedPlugin(
         plugin.id,
         status: QueuedPluginStatus.extracting,
-        progress: 0.6,
+        progress: 0.5,
       );
 
       // Extract the zip archive
-      filesToInstall = await _extractArchive(
+      extractedContents = await _extractArchive(
         fileBytes,
         plugin,
         queuedPlugin: queuedPlugin,
       );
+      filesToInstall = extractedContents.pluginFiles;
     } else if (_isRawPluginFile(fileExtension)) {
       // Handle raw plugin files (.o, .lua, .3pot)
 
@@ -834,20 +938,38 @@ class GalleryService {
     _updateQueuedPlugin(
       plugin.id,
       status: QueuedPluginStatus.installing,
-      progress: 0.8,
+      progress: 0.6,
     );
 
-    // Install files using Disting upload functionality
+    // Install plugin files using Disting upload functionality
     await _installFilesViaDisting(
       filesToInstall,
       plugin,
       distingInstallPlugin,
       (uploadProgress) {
-        final totalProgress = 0.8 + (uploadProgress * 0.2); // 20% for upload
+        // Plugin files take 60-80% of progress
+        final totalProgress = 0.6 + (uploadProgress * 0.2);
         _updateQueuedPlugin(plugin.id, progress: totalProgress);
         onProgress?.call(queuedPlugin, totalProgress);
       },
     );
+
+    // Install sample files if present and callback is provided
+    SampleInstallationResult? sampleResult;
+    if (extractedContents != null &&
+        extractedContents.hasSamples &&
+        distingInstallSample != null) {
+      sampleResult = await _installSampleFiles(
+        extractedContents.sampleFiles,
+        distingInstallSample,
+        (sampleProgress) {
+          // Sample files take 80-100% of progress
+          final totalProgress = 0.8 + (sampleProgress * 0.2);
+          _updateQueuedPlugin(plugin.id, progress: totalProgress);
+          onProgress?.call(queuedPlugin, totalProgress);
+        },
+      );
+    }
 
     // Update progress to complete
     _updateQueuedPlugin(plugin.id, progress: 1.0);
@@ -857,6 +979,116 @@ class GalleryService {
       final totalBytes = fileBytes.length;
       onInstallationDetails(filesToInstall.length, totalBytes);
     }
+
+    return sampleResult;
+  }
+
+  /// Install sample files to the SD card
+  ///
+  /// Returns [SampleInstallationResult] with details about installed/skipped/failed samples.
+  Future<SampleInstallationResult> _installSampleFiles(
+    List<MapEntry<String, List<int>>> sampleFiles,
+    SampleInstallCallback installSample,
+    Function(double)? onProgress,
+  ) async {
+    final installedSamples = <String>[];
+    final skippedSamples = <String>[];
+    final failedSamples = <String, String>{};
+
+    int filesProcessed = 0;
+
+    for (final sampleEntry in sampleFiles) {
+      final samplePath = sampleEntry.key;
+      final sampleData = Uint8List.fromList(sampleEntry.value);
+
+      // Transform path: "samples/x.wav" -> "/samples/x.wav"
+      final targetPath = _getSampleTargetPath(samplePath);
+
+      try {
+        final wasInstalled = await _installSampleWithRetry(
+          targetPath,
+          sampleData,
+          installSample,
+          onProgress: (fileProgress) {
+            final overallProgress =
+                (filesProcessed + fileProgress) / sampleFiles.length;
+            onProgress?.call(overallProgress);
+          },
+        );
+
+        if (wasInstalled) {
+          installedSamples.add(targetPath);
+        } else {
+          skippedSamples.add(targetPath);
+        }
+      } catch (e) {
+        // Log the error but continue with remaining samples
+        failedSamples[targetPath] = e.toString();
+      }
+
+      filesProcessed++;
+      onProgress?.call(filesProcessed / sampleFiles.length);
+    }
+
+    return SampleInstallationResult(
+      installedSamples: installedSamples,
+      skippedSamples: skippedSamples,
+      failedSamples: failedSamples,
+    );
+  }
+
+  /// Install a sample file with retry logic for transient failures
+  ///
+  /// Retries up to [maxRetries] times with exponential backoff.
+  /// SD card operations can be flaky due to device sleep or USB issues.
+  Future<bool> _installSampleWithRetry(
+    String targetPath,
+    Uint8List sampleData,
+    SampleInstallCallback installSample, {
+    Function(double)? onProgress,
+    int maxRetries = 2,
+  }) async {
+    Exception? lastException;
+
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await installSample(
+          targetPath,
+          sampleData,
+          onProgress: onProgress,
+        );
+      } catch (e) {
+        lastException = e is Exception ? e : Exception(e.toString());
+
+        // Don't retry on the last attempt
+        if (attempt < maxRetries) {
+          // Exponential backoff: 200ms, 400ms
+          await Future.delayed(Duration(milliseconds: 200 * (attempt + 1)));
+        }
+      }
+    }
+
+    // All retries exhausted
+    throw lastException ?? Exception('Sample installation failed');
+  }
+
+  /// Transform sample path from zip format to SD card target path
+  ///
+  /// Normalizes the path to lowercase to avoid case-sensitivity issues
+  /// on different filesystems. The samples/ prefix is always lowercase.
+  String _getSampleTargetPath(String zipPath) {
+    // zipPath: "samples/drums/kick.wav" or "Samples/drums/kick.wav"
+    // returns: "/samples/drums/kick.wav" (normalized to lowercase samples/)
+    String path = zipPath;
+    if (!path.startsWith('/')) {
+      path = '/$path';
+    }
+    // Normalize the samples directory prefix to lowercase
+    // This ensures consistent paths regardless of zip file case
+    if (path.toLowerCase().startsWith('/samples/')) {
+      path = '/samples/${path.substring('/samples/'.length)}';
+    }
+    return path;
   }
 
   /// Get download URL for a plugin - prioritizes downloadUrl from installation config
@@ -960,14 +1192,22 @@ class GalleryService {
     return bytes;
   }
 
-  /// Extract archive and filter relevant files
-  Future<List<MapEntry<String, List<int>>>> _extractArchive(
+  /// Check if a file path is a sample file (case-insensitive check for samples/ prefix)
+  bool _isSampleFile(String filePath) {
+    final lowerPath = filePath.toLowerCase();
+    return lowerPath.startsWith('samples/') ||
+        lowerPath.startsWith('/samples/');
+  }
+
+  /// Extract archive and filter relevant files, separating plugin files from sample files
+  Future<ExtractedArchiveContents> _extractArchive(
     List<int> archiveBytes,
     GalleryPlugin plugin, {
     QueuedPlugin? queuedPlugin,
   }) async {
     final archive = ZipDecoder().decodeBytes(archiveBytes);
-    final extractedFiles = <MapEntry<String, List<int>>>[];
+    final pluginFiles = <MapEntry<String, List<int>>>[];
+    final sampleFiles = <MapEntry<String, List<int>>>[];
     final installation = plugin.installation;
 
     // Compile regex pattern for file filtering if extractPattern is provided
@@ -986,6 +1226,13 @@ class GalleryService {
 
       String filePath = file.name;
       final originalFilePath = filePath;
+
+      // Check for sample files first (before any path manipulation)
+      // Sample files are extracted with their full relative path preserved
+      if (_isSampleFile(originalFilePath)) {
+        sampleFiles.add(MapEntry(originalFilePath, file.content as List<int>));
+        continue;
+      }
 
       // For directory-based installations, filter by source directory
       if (installation.sourceDirectoryPath != null &&
@@ -1034,16 +1281,19 @@ class GalleryService {
         }
       }
 
-      extractedFiles.add(MapEntry(filePath, file.content as List<int>));
+      pluginFiles.add(MapEntry(filePath, file.content as List<int>));
     }
 
-    if (extractedFiles.isEmpty) {
+    if (pluginFiles.isEmpty) {
       throw GalleryException(
         'No plugin files found in archive for ${plugin.name}. Extract pattern: ${installation.extractPattern ?? "none"}',
       );
     }
 
-    return extractedFiles;
+    return ExtractedArchiveContents(
+      pluginFiles: pluginFiles,
+      sampleFiles: sampleFiles,
+    );
   }
 
   /// Install extracted files using Disting upload functionality

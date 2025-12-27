@@ -491,6 +491,95 @@ class _PluginDelegate {
     }
   }
 
+  /// Install a sample file to a specific path on the SD card, if it doesn't already exist.
+  ///
+  /// Returns `true` if the file was installed, `false` if it was skipped (already exists).
+  /// Throws an exception on failure.
+  ///
+  /// This method:
+  /// 1. Checks if the file already exists at the target path
+  /// 2. If exists, returns false (skipped)
+  /// 3. If not exists, creates parent directories and uploads the file
+  Future<bool> installSampleFile(
+    String targetPath,
+    Uint8List fileData, {
+    Function(double)? onProgress,
+  }) async {
+    final currentState = _cubit.state;
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      throw Exception("Cannot install sample: Not synchronized or offline.");
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      throw Exception("Firmware does not support SD card operations.");
+    }
+
+    final disting = _cubit.requireDisting();
+    await disting.requestWake();
+
+    // Check if file already exists
+    final fileExists = await _sampleFileExists(targetPath, disting);
+    if (fileExists) {
+      return false; // Skip - file already exists
+    }
+
+    // Ensure parent directory exists
+    final parentPath = targetPath.substring(0, targetPath.lastIndexOf('/'));
+    if (parentPath.isNotEmpty) {
+      await _ensureDirectoryExists(parentPath, disting);
+    }
+
+    // Upload the file
+    await installFileToPath(targetPath, fileData, onProgress: onProgress);
+
+    return true; // Installed
+  }
+
+  /// Check if a sample file exists at the given path on the SD card
+  ///
+  /// Returns a tuple-like result:
+  /// - `true` if the file exists (should skip)
+  /// - `false` if the file doesn't exist (should upload)
+  /// - throws if a directory exists at the file path (conflict)
+  Future<bool> _sampleFileExists(
+    String filePath,
+    IDistingMidiManager disting,
+  ) async {
+    final lastSlash = filePath.lastIndexOf('/');
+    if (lastSlash == -1) return false;
+
+    final directory = filePath.substring(0, lastSlash);
+    final filename = filePath.substring(lastSlash + 1);
+
+    try {
+      final listing = await disting.requestDirectoryListing(directory);
+      if (listing == null || listing.entries.isEmpty) {
+        return false;
+      }
+
+      // Check for exact filename match
+      for (final entry in listing.entries) {
+        if (entry.name == filename) {
+          if (entry.isDirectory) {
+            // A directory exists where we want to put a file - conflict
+            throw Exception(
+              'Cannot install sample: a directory exists at path $filePath',
+            );
+          }
+          return true; // File exists
+        }
+      }
+      return false; // File doesn't exist
+    } catch (e) {
+      // Re-throw our own exceptions (directory conflict)
+      if (e.toString().contains('Cannot install sample')) {
+        rethrow;
+      }
+      // If we can't check, assume file doesn't exist and try to upload
+      return false;
+    }
+  }
+
   /// Load a plugin using the dedicated 0x38 Load Plugin SysEx command
   /// and refresh the specific algorithm info with updated specifications
   Future<AlgorithmInfo?> loadPlugin(String guid) async {
