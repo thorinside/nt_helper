@@ -506,6 +506,9 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         // This ensures the gallery won't show it as installed anymore
         await _removePluginFromDatabase(plugin);
 
+        // Refresh the algorithm list so Gallery view sees updated state
+        widget.distingCubit.refreshAlgorithms();
+
         // Refresh the plugin list in the background to verify deletion
         // Use a slight delay to allow the device to process the delete
         Future.delayed(const Duration(seconds: 1), () {
