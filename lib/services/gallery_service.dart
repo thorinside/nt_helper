@@ -819,9 +819,12 @@ class GalleryService {
         if (_database != null) {
           try {
             final installationPath = _getInstallationPath(queuedPlugin.plugin);
+            // Resolve 'latest'/'stable'/'beta' to actual version tag
+            final resolvedVersion = queuedPlugin.plugin
+                .getVersionTag(queuedPlugin.selectedVersion);
             await _database.pluginInstallationsDao.recordPluginInstallation(
               plugin: queuedPlugin.plugin,
-              installedVersion: queuedPlugin.selectedVersion,
+              installedVersion: resolvedVersion,
               installationPath: installationPath,
               fileCount: 1, // Default value, can be enhanced later
               totalBytes: null, // Can be enhanced to track actual bytes
@@ -847,10 +850,13 @@ class GalleryService {
         if (_database != null) {
           try {
             final installationPath = _getInstallationPath(queuedPlugin.plugin);
+            // Resolve 'latest'/'stable'/'beta' to actual version tag
+            final resolvedVersion = queuedPlugin.plugin
+                .getVersionTag(queuedPlugin.selectedVersion);
             await _database.pluginInstallationsDao
                 .recordPluginInstallationFailure(
                   plugin: queuedPlugin.plugin,
-                  attemptedVersion: queuedPlugin.selectedVersion,
+                  attemptedVersion: resolvedVersion,
                   installationPath: installationPath,
                   errorMessage: errorMessage,
                 );
@@ -1448,6 +1454,10 @@ class GalleryService {
     }
 
     try {
+      // Clean up any old records that have channel names instead of versions
+      // This is a one-time migration for records created before the bug fix
+      await _database.pluginInstallationsDao.cleanupChannelVersionRecords();
+
       // Get all installed plugins from database
       final installedPlugins = await _database.pluginInstallationsDao
           .getAllInstalledPlugins();

@@ -284,6 +284,17 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
       ),
     );
   }
+
+  /// Remove installation records that have channel names ('latest', 'stable', 'beta')
+  /// instead of actual version tags. These are artifacts from a bug where the
+  /// resolved version wasn't being recorded.
+  Future<int> cleanupChannelVersionRecords() async {
+    const channelNames = ['latest', 'stable', 'beta'];
+
+    return (delete(pluginInstallations)..where(
+      (tbl) => tbl.pluginVersion.isIn(channelNames),
+    )).go();
+  }
 }
 
 /// Data class for plugin update information
