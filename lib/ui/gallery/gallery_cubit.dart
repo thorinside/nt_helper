@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,14 +12,21 @@ part 'gallery_state.dart';
 
 class GalleryCubit extends Cubit<GalleryState> {
   final GalleryService _galleryService;
+  StreamSubscription<List<QueuedPlugin>>? _queueSubscription;
 
   GalleryCubit(this._galleryService) : super(const GalleryState.initial()) {
     // Listen to queue changes from the service
-    _galleryService.queueStream.listen((queue) {
+    _queueSubscription = _galleryService.queueStream.listen((queue) {
       if (state is GalleryLoaded) {
         emit((state as GalleryLoaded).copyWith(queue: queue));
       }
     });
+  }
+
+  @override
+  Future<void> close() {
+    _queueSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> loadGallery({
