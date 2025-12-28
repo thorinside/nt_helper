@@ -153,14 +153,6 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
             if (mounted) {
               Navigator.of(context).pop();
 
-              // Show success message
-              scaffoldMessenger.showSnackBar(
-                SnackBar(
-                  content: Text('Successfully installed "$fileName"'),
-                  backgroundColor: theme.colorScheme.primary,
-                ),
-              );
-
               // Refresh plugin list
               await _loadInstalledPlugins();
             }
@@ -494,14 +486,6 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
             break;
         }
       });
-
-      // Show immediate feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Deleting "${plugin.name}"...'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
 
       try {
         // Send delete command (fire-and-forget, assumes success)
@@ -1090,18 +1074,12 @@ class _BackupProgressDialogState extends State<_BackupProgressDialog> {
             onPressed: () {
               Navigator.of(context).pop();
 
-              // Show result message
-              if (mounted) {
+              // Show error message only
+              if (mounted && _error != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      _error != null
-                          ? 'Backup failed: $_error'
-                          : 'Successfully backed up plugins to ${widget.directoryPath}',
-                    ),
-                    backgroundColor: _error != null
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).colorScheme.primary,
+                    content: Text('Backup failed: $_error'),
+                    backgroundColor: Theme.of(context).colorScheme.error,
                   ),
                 );
               }
