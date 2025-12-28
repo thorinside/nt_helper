@@ -64,10 +64,17 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   }
 
   Future<void> _loadInstalledPlugins() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    // Only show loading spinner if we have no data at all
+    final hasData = _luaPlugins.isNotEmpty ||
+        _threePotPlugins.isNotEmpty ||
+        _cppPlugins.isNotEmpty;
+
+    if (!hasData) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
 
     try {
       final results = await Future.wait([
@@ -76,17 +83,21 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         widget.distingCubit.fetchCppPlugins(),
       ]);
 
-      setState(() {
-        _luaPlugins = results[0];
-        _threePotPlugins = results[1];
-        _cppPlugins = results[2];
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _luaPlugins = results[0];
+          _threePotPlugins = results[1];
+          _cppPlugins = results[2];
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load plugins: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load plugins: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
