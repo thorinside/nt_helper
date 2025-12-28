@@ -42,10 +42,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   List<PluginInfo> _threePotPlugins = [];
   List<PluginInfo> _cppPlugins = [];
 
-  // Expansion state for collapsible sections
-  bool _luaExpanded = true;
-  bool _threePotExpanded = true;
-  bool _cppExpanded = true;
+  // Expansion state for collapsible sections (collapsed by default)
+  bool _luaExpanded = false;
+  bool _threePotExpanded = false;
+  bool _cppExpanded = false;
 
   @override
   void initState() {
@@ -417,22 +417,15 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         );
 
         if (matchingAlgorithm.isPlugin && matchingAlgorithm.filename == plugin.path) {
-          // Found the algorithm - get its GUID and look up in database
+          // Found the algorithm - get its GUID and look up via gallery service
           final guid = matchingAlgorithm.guid;
           if (guid.isNotEmpty) {
-            // Look up all installations with this plugin's metadata
-            final allInstalled = await widget.database.pluginInstallationsDao
-                .getAllInstalledPlugins();
-
-            // Find matching by checking if the stored GUID matches
-            for (final installed in allInstalled) {
-              // Check if this installation's metadata contains the GUID
-              if ((installed.repositoryUrl?.contains(guid) ?? false) ||
-                  installed.pluginId.contains(guid) ||
-                  installed.installationPath == plugin.path) {
-                await widget.database.pluginInstallationsDao
-                    .removePluginInstallation(installed.pluginId, installed.pluginVersion);
-              }
+            // Use GalleryService to find the plugin by GUID
+            final galleryPlugin = _galleryService.getPluginByGuid(guid);
+            if (galleryPlugin != null) {
+              // Remove all version records for this plugin
+              await widget.database.pluginInstallationsDao
+                  .removeAllPluginVersions(galleryPlugin.id);
             }
           }
         }
