@@ -790,21 +790,6 @@ class _GalleryViewState extends State<_GalleryView>
     for (final plugin in pluginsToUpdate) {
       await context.read<GalleryCubit>().addToQueue(plugin);
     }
-
-    // Show confirmation
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Added ${pluginsToUpdate.length} plugin(s) to install queue',
-          ),
-          action: SnackBarAction(
-            label: 'View Queue',
-            onPressed: () => _tabController.animateTo(1),
-          ),
-        ),
-      );
-    }
   }
 
   Widget _buildCardView(GalleryState state) {
@@ -1197,7 +1182,31 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   /// Find the device plugin by GUID and create a PluginInfo for deletion
-  PluginInfo? _findDevicePluginByGuid(String guid) {
+  /// Uses the gallery plugin's installation.targetPath which is the expected
+  /// location on the device, avoiding the need to have the plugin loaded.
+  Future<PluginInfo?> _findDevicePluginByGuid(
+    String guid,
+    GalleryPlugin galleryPlugin,
+  ) async {
+    // Use the gallery plugin's installation target path directly
+    // This is where the plugin should be installed on the device
+    final targetPath = galleryPlugin.installation.targetPath;
+    if (targetPath.isNotEmpty) {
+      final type = targetPath.contains('/programs/3-pot-plug-ins/')
+          ? PluginType.threePot
+          : targetPath.endsWith('.lua')
+              ? PluginType.lua
+              : PluginType.cpp;
+
+      return PluginInfo(
+        name: galleryPlugin.name,
+        path: targetPath,
+        type: type,
+        sizeBytes: 0,
+      );
+    }
+
+    // Fallback: try to get path from device algorithm (if loaded)
     final distingState = widget.distingCubit.state;
     if (distingState is! DistingStateSynchronized) return null;
 
@@ -1205,22 +1214,23 @@ class _GalleryViewState extends State<_GalleryView>
         .where((a) => a.isPlugin && a.guid == guid)
         .firstOrNull;
 
-    if (algorithm == null || algorithm.filename == null) return null;
+    if (algorithm?.filename != null && algorithm!.filename!.isNotEmpty) {
+      final path = algorithm.filename!;
+      final type = path.contains('/programs/3-pot-plug-ins/')
+          ? PluginType.threePot
+          : path.endsWith('.lua')
+              ? PluginType.lua
+              : PluginType.cpp;
 
-    // Determine plugin type from path
-    final path = algorithm.filename!;
-    final type = path.contains('/programs/3-pot-plug-ins/')
-        ? PluginType.threePot
-        : path.endsWith('.lua')
-            ? PluginType.lua
-            : PluginType.cpp;
+      return PluginInfo(
+        name: algorithm.name,
+        path: path,
+        type: type,
+        sizeBytes: 0,
+      );
+    }
 
-    return PluginInfo(
-      name: algorithm.name,
-      path: path,
-      type: type,
-      sizeBytes: 0, // Not needed for deletion
-    );
+    return null;
   }
 
   /// Show confirmation dialog and delete the plugin
@@ -1228,6 +1238,9 @@ class _GalleryViewState extends State<_GalleryView>
     GalleryPlugin plugin,
     BuildContext parentContext,
   ) async {
+    // Capture cubit reference before async operations
+    final galleryCubit = parentContext.read<GalleryCubit>();
+
     // Find the device plugin
     final guid = plugin.guid;
     if (guid == null) {
@@ -1239,18 +1252,17 @@ class _GalleryViewState extends State<_GalleryView>
       return;
     }
 
-    final devicePlugin = _findDevicePluginByGuid(guid);
+    final devicePlugin = await _findDevicePluginByGuid(guid, plugin);
     if (devicePlugin == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Plugin not found on device')),
+          const SnackBar(content: Text('Could not determine plugin path')),
         );
       }
       return;
     }
 
-    // Capture cubit reference before async operations
-    final galleryCubit = parentContext.read<GalleryCubit>();
+    if (!mounted) return;
 
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -1293,10 +1305,6 @@ class _GalleryViewState extends State<_GalleryView>
         galleryCubit.loadGallery(
           forceRefresh: true,
           devicePluginGuids: deviceGuids,
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Deleted "${plugin.name}"')),
         );
       }
     } catch (e) {
@@ -1990,16 +1998,6 @@ class _GalleryViewState extends State<_GalleryView>
           queuedPlugin.plugin.id,
           autoSelectedPlugins,
         );
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Auto-selected single plugin from ${queuedPlugin.plugin.name}',
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
         return;
       }
 
@@ -2121,42 +2119,8 @@ class _GalleryViewState extends State<_GalleryView>
             onProgress: onProgress,
           );
         },
-        onPluginStart: (plugin) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Installing ${plugin.plugin.name}...'),
-              duration: const Duration(seconds: 1),
-            ),
-          );
-        },
+        onPluginStart: (plugin) {},
         onPluginComplete: (plugin) {
-          // Build message with sample summary if available
-          final sampleResult = sampleResults[plugin.plugin.id];
-          final message = _buildInstallationCompleteMessage(
-            plugin.plugin.name,
-            sampleResult,
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              duration: const Duration(seconds: 3),
-              action: sampleResult != null &&
-                      sampleResult.skippedSamples.isNotEmpty
-                  ? SnackBarAction(
-                      label: 'Details',
-                      textColor: Theme.of(context).colorScheme.onPrimary,
-                      onPressed: () => _showSkippedSamplesDialog(
-                        context,
-                        plugin.plugin.name,
-                        sampleResult,
-                      ),
-                    )
-                  : null,
-            ),
-          );
-
           // Clean up stored result
           sampleResults.remove(plugin.plugin.id);
 
@@ -2215,130 +2179,6 @@ class _GalleryViewState extends State<_GalleryView>
         ),
       );
     }
-  }
-
-  /// Build the installation complete message with sample summary
-  String _buildInstallationCompleteMessage(
-    String pluginName,
-    SampleInstallationResult? sampleResult,
-  ) {
-    if (sampleResult == null || sampleResult.totalSamples == 0) {
-      // No samples - use simple message
-      return 'Installed $pluginName';
-    }
-
-    final installed = sampleResult.installedCount;
-    final skipped = sampleResult.skippedCount;
-    final failed = sampleResult.failedCount;
-
-    if (failed > 0) {
-      // Some samples failed
-      if (installed > 0 || skipped > 0) {
-        return 'Installed $pluginName with $installed sample(s). $failed failed.';
-      } else {
-        return 'Installed $pluginName. All $failed sample(s) failed.';
-      }
-    } else if (skipped > 0) {
-      // Some samples skipped
-      return 'Installed $pluginName with $installed sample(s) ($skipped skipped)';
-    } else {
-      // All samples installed
-      return 'Installed $pluginName with $installed sample(s)';
-    }
-  }
-
-  /// Show dialog with list of skipped sample files
-  void _showSkippedSamplesDialog(
-    BuildContext context,
-    String pluginName,
-    SampleInstallationResult sampleResult,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Sample Installation Details'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (sampleResult.installedSamples.isNotEmpty) ...[
-                Text(
-                  'Installed (${sampleResult.installedCount}):',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: 4),
-                ...sampleResult.installedSamples.map(
-                  (path) => Padding(
-                    padding: const EdgeInsets.only(left: 8, bottom: 2),
-                    child: Text(
-                      path.split('/').last,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (sampleResult.skippedSamples.isNotEmpty) ...[
-                Text(
-                  'Skipped - Already Exist (${sampleResult.skippedCount}):',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: 4),
-                ...sampleResult.skippedSamples.map(
-                  (path) => Padding(
-                    padding: const EdgeInsets.only(left: 8, bottom: 2),
-                    child: Text(
-                      path.split('/').last,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (sampleResult.failedSamples.isNotEmpty) ...[
-                Text(
-                  'Failed (${sampleResult.failedCount}):',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                ...sampleResult.failedSamples.entries.map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.only(left: 8, bottom: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.key.split('/').last,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        Text(
-                          entry.value,
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   // Drag and drop handlers
@@ -2414,15 +2254,6 @@ class _GalleryViewState extends State<_GalleryView>
         _isInstalling = false;
       });
 
-      // Show success message
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Successfully installed "$fileName"'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
-
       // Refresh gallery after a short delay to allow device state to update
       // and show installed indicators for plugins that match gallery entries
       Future.delayed(const Duration(seconds: 2), () {
@@ -2438,12 +2269,14 @@ class _GalleryViewState extends State<_GalleryView>
       });
 
       // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to install "${file.name}": $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to install "${file.name}": $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
