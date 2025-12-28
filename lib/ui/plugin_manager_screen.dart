@@ -409,38 +409,28 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   /// This ensures deleted plugins don't show as installed in the gallery
   Future<void> _removePluginFromDatabase(PluginInfo plugin) async {
     try {
-      final distingState = widget.distingCubit.state;
-
-      // Try to find the plugin's GUID from device algorithms
-      if (distingState is DistingStateSynchronized) {
-        // Find algorithm with matching filename
-        final matchingAlgorithm = distingState.algorithms.firstWhere(
-          (algorithm) => algorithm.isPlugin && algorithm.filename == plugin.path,
-          orElse: () => distingState.algorithms.first, // dummy, we check below
-        );
-
-        if (matchingAlgorithm.isPlugin && matchingAlgorithm.filename == plugin.path) {
-          // Found the algorithm - get its GUID and look up via gallery service
-          final guid = matchingAlgorithm.guid;
-          if (guid.isNotEmpty) {
-            // Use GalleryService to find the plugin by GUID
-            final galleryPlugin = _galleryService.getPluginByGuid(guid);
-            if (galleryPlugin != null) {
-              // Remove all version records for this plugin
-              await widget.database.pluginInstallationsDao
-                  .removeAllPluginVersions(galleryPlugin.id);
-            }
-          }
-        }
-      }
-
-      // Also try to remove by installation path as a fallback
+      // Try to remove by installation path (exact match)
       await widget.database.pluginInstallationsDao
           .removeByInstallationPath(plugin.path);
 
-      // Also try with just the directory (for plugins installed via gallery)
-      await widget.database.pluginInstallationsDao
-          .removeByInstallationPath(plugin.type.directory);
+      // Also try to find and remove by GUID lookup
+      final distingState = widget.distingCubit.state;
+      if (distingState is DistingStateSynchronized) {
+        // Find algorithm with matching filename (only works for loaded plugins)
+        final matchingAlgorithm = distingState.algorithms
+            .where((a) => a.isPlugin && a.filename == plugin.path)
+            .firstOrNull;
+
+        if (matchingAlgorithm != null && matchingAlgorithm.guid.isNotEmpty) {
+          final galleryPlugin = _galleryService.getPluginByGuid(
+            matchingAlgorithm.guid,
+          );
+          if (galleryPlugin != null) {
+            await widget.database.pluginInstallationsDao
+                .removeAllPluginVersions(galleryPlugin.id);
+          }
+        }
+      }
     } catch (e) {
       // Silently fail - database cleanup is not critical for deletion
     }

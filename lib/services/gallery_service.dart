@@ -1454,6 +1454,48 @@ class GalleryService {
     await _database.pluginInstallationsDao.removeAllPluginVersions(pluginId);
   }
 
+  /// Sync database records with actual device state
+  /// Removes any database records for plugins that are no longer on the device
+  Future<void> syncDatabaseWithDevice(
+    Gallery gallery,
+    Set<String> devicePluginGuids,
+  ) async {
+    if (_database == null) return;
+
+    try {
+      final installedPlugins =
+          await _database.pluginInstallationsDao.getAllInstalledPlugins();
+
+      for (final dbRecord in installedPlugins) {
+        // Find the gallery plugin for this database record
+        final galleryPlugin = gallery.plugins
+            .where((p) => p.id == dbRecord.pluginId)
+            .firstOrNull;
+
+        if (galleryPlugin == null) {
+          // Plugin no longer in gallery - remove record
+          await _database.pluginInstallationsDao
+              .removeAllPluginVersions(dbRecord.pluginId);
+          continue;
+        }
+
+        // Check if this plugin is actually on the device
+        final isOnDevice = (galleryPlugin.guid != null &&
+                devicePluginGuids.contains(galleryPlugin.guid)) ||
+            galleryPlugin.collectionGuids
+                .any((guid) => devicePluginGuids.contains(guid));
+
+        if (!isOnDevice) {
+          // Plugin not on device - remove stale database record
+          await _database.pluginInstallationsDao
+              .removeAllPluginVersions(dbRecord.pluginId);
+        }
+      }
+    } catch (e) {
+      // Silently fail - sync is best effort
+    }
+  }
+
   /// Compare gallery plugins with installed versions and return update info
   ///
   /// Checks both:
@@ -1467,6 +1509,11 @@ class GalleryService {
 
     if (_database == null) {
       return updateInfo;
+    }
+
+    // Sync database with device state - remove stale records
+    if (devicePluginGuids != null) {
+      await syncDatabaseWithDevice(gallery, devicePluginGuids);
     }
 
     try {
