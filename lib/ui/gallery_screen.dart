@@ -14,7 +14,6 @@ import 'package:nt_helper/ui/widgets/linkified_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:nt_helper/utils/responsive.dart';
-import 'package:nt_helper/models/plugin_info.dart';
 
 /// View mode for the Plugin Gallery explore tab
 enum GalleryViewMode { card, list }
@@ -1162,12 +1161,12 @@ class _GalleryViewState extends State<_GalleryView>
         color: Colors.orange,
       );
     } else if (isInstalled && !plugin.isCollection) {
-      // Single plugin is installed - show delete button
+      // Single plugin is installed - show checkmark (no action)
       return IconButton(
-        icon: const Icon(Icons.delete_outline),
-        onPressed: () => _confirmAndDeletePlugin(plugin, parentContext),
-        tooltip: 'Delete plugin',
-        color: Theme.of(context).colorScheme.error,
+        icon: const Icon(Icons.check_circle),
+        onPressed: null,
+        tooltip: 'Installed',
+        color: Theme.of(context).colorScheme.primary,
       );
     } else {
       // Not installed, OR is a collection (can always add more)
@@ -1178,141 +1177,6 @@ class _GalleryViewState extends State<_GalleryView>
         tooltip: 'Add to queue',
         color: Theme.of(context).colorScheme.primary,
       );
-    }
-  }
-
-  /// Find the device plugin by GUID and create a PluginInfo for deletion
-  /// Uses the gallery plugin's installation.targetPath which is the expected
-  /// location on the device, avoiding the need to have the plugin loaded.
-  Future<PluginInfo?> _findDevicePluginByGuid(
-    String guid,
-    GalleryPlugin galleryPlugin,
-  ) async {
-    // Use the gallery plugin's installation target path directly
-    // This is where the plugin should be installed on the device
-    final targetPath = galleryPlugin.installation.targetPath;
-    if (targetPath.isNotEmpty) {
-      final type = targetPath.contains('/programs/3-pot-plug-ins/')
-          ? PluginType.threePot
-          : targetPath.endsWith('.lua')
-              ? PluginType.lua
-              : PluginType.cpp;
-
-      return PluginInfo(
-        name: galleryPlugin.name,
-        path: targetPath,
-        type: type,
-        sizeBytes: 0,
-      );
-    }
-
-    // Fallback: try to get path from device algorithm (if loaded)
-    final distingState = widget.distingCubit.state;
-    if (distingState is! DistingStateSynchronized) return null;
-
-    final algorithm = distingState.algorithms
-        .where((a) => a.isPlugin && a.guid == guid)
-        .firstOrNull;
-
-    if (algorithm?.filename != null && algorithm!.filename!.isNotEmpty) {
-      final path = algorithm.filename!;
-      final type = path.contains('/programs/3-pot-plug-ins/')
-          ? PluginType.threePot
-          : path.endsWith('.lua')
-              ? PluginType.lua
-              : PluginType.cpp;
-
-      return PluginInfo(
-        name: algorithm.name,
-        path: path,
-        type: type,
-        sizeBytes: 0,
-      );
-    }
-
-    return null;
-  }
-
-  /// Show confirmation dialog and delete the plugin
-  Future<void> _confirmAndDeletePlugin(
-    GalleryPlugin plugin,
-    BuildContext parentContext,
-  ) async {
-    // Capture cubit reference before async operations
-    final galleryCubit = parentContext.read<GalleryCubit>();
-
-    // Find the device plugin
-    final guid = plugin.guid;
-    if (guid == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Plugin has no GUID')),
-        );
-      }
-      return;
-    }
-
-    final devicePlugin = await _findDevicePluginByGuid(guid, plugin);
-    if (devicePlugin == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not determine plugin path')),
-        );
-      }
-      return;
-    }
-
-    if (!mounted) return;
-
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Plugin'),
-        content: Text('Are you sure you want to delete "${plugin.name}"?\n\n'
-            'This will remove the plugin from your Disting NT.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    try {
-      // Delete from device
-      await widget.distingCubit.deletePlugin(devicePlugin);
-
-      // Remove from gallery database
-      await widget.galleryService.removePluginInstallation(plugin.id);
-
-      // Refresh gallery to update UI
-      // Exclude the deleted plugin's GUID since device state hasn't refreshed yet
-      if (mounted) {
-        final deviceGuids = _getDevicePluginGuids();
-        deviceGuids.remove(guid);
-
-        galleryCubit.loadGallery(
-          forceRefresh: true,
-          devicePluginGuids: deviceGuids,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete plugin: $e')),
-        );
-      }
     }
   }
 
@@ -1581,17 +1445,16 @@ class _GalleryViewState extends State<_GalleryView>
                           ),
                         );
                       } else if (isInstalled && !plugin.isCollection) {
-                        // Single plugin is installed - show delete button
+                        // Single plugin is installed - show installed indicator
                         return ElevatedButton.icon(
-                          onPressed: () =>
-                              _confirmAndDeletePlugin(plugin, parentContext),
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text('Delete'),
+                          onPressed: null,
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Installed'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                Theme.of(context).colorScheme.errorContainer,
+                                Theme.of(context).colorScheme.primaryContainer,
                             foregroundColor:
-                                Theme.of(context).colorScheme.onErrorContainer,
+                                Theme.of(context).colorScheme.onPrimaryContainer,
                           ),
                         );
                       } else {
