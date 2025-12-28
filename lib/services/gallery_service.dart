@@ -384,7 +384,9 @@ class GalleryService {
         .post(
           Uri.parse(endpoint),
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
+            'Accept': 'application/json; charset=utf-8',
+            'Accept-Charset': 'utf-8',
             'User-Agent': 'Disting-NT-Helper/1.0',
           },
           body: json.encode({
@@ -402,7 +404,10 @@ class GalleryService {
       );
     }
 
-    final jsonData = json.decode(response.body) as Map<String, dynamic>;
+    // Explicitly decode as UTF-8 to handle special characters correctly
+    // (http package defaults to latin-1 if charset not specified in headers)
+    final jsonData =
+        json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
 
     if (jsonData.containsKey('errors')) {
       throw GalleryException('GraphQL error: ${jsonData['errors']}');
@@ -419,7 +424,9 @@ class GalleryService {
         .post(
           Uri.parse(endpoint),
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
+            'Accept': 'application/json; charset=utf-8',
+            'Accept-Charset': 'utf-8',
             'User-Agent': 'Disting-NT-Helper/1.0',
           },
           body: json.encode({'query': _getCategoriesQuery}),
@@ -432,7 +439,9 @@ class GalleryService {
       );
     }
 
-    final jsonData = json.decode(response.body) as Map<String, dynamic>;
+    // Explicitly decode as UTF-8 to handle special characters correctly
+    final jsonData =
+        json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
 
     if (jsonData.containsKey('errors')) {
       throw GalleryException('GraphQL error: ${jsonData['errors']}');
@@ -1120,7 +1129,8 @@ class GalleryService {
       );
 
       if (response.statusCode == 200) {
-        final releaseData = json.decode(response.body) as Map<String, dynamic>;
+        final releaseData =
+            json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         final assets = releaseData['assets'] as List;
 
         if (assets.isNotEmpty) {
@@ -1436,6 +1446,12 @@ class GalleryService {
   String _getInstallationPath(GalleryPlugin plugin) {
     // Return the target path from the plugin's installation configuration
     return plugin.installation.targetPath;
+  }
+
+  /// Remove a plugin installation record from the database
+  Future<void> removePluginInstallation(String pluginId) async {
+    if (_database == null) return;
+    await _database.pluginInstallationsDao.removeAllPluginVersions(pluginId);
   }
 
   /// Compare gallery plugins with installed versions and return update info

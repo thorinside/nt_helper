@@ -33,6 +33,57 @@ class GalleryCubit extends Cubit<GalleryState> {
     bool forceRefresh = false,
     Set<String>? devicePluginGuids,
   }) async {
+    // Stale-while-revalidate: show cached data immediately, refresh in background
+    final currentState = state;
+
+    // If we already have loaded data, show it with refreshing indicator
+    if (currentState is GalleryLoaded && !forceRefresh) {
+      emit(currentState.copyWith(isRefreshing: true));
+      _refreshInBackground(devicePluginGuids: devicePluginGuids);
+      return;
+    }
+
+    // Try to load cached data first (fast path)
+    if (currentState is! GalleryLoaded) {
+      try {
+        final cachedGallery = await _galleryService.fetchGallery(
+          forceRefresh: false,
+        );
+
+        final queue = _galleryService.installQueue;
+        final updateInfo = await _galleryService.compareWithInstalledVersions(
+          cachedGallery,
+          devicePluginGuids: devicePluginGuids,
+        );
+
+        // Emit cached data immediately with refreshing flag
+        emit(
+          GalleryState.loaded(
+            gallery: cachedGallery,
+            filteredPlugins: cachedGallery.plugins,
+            queue: queue,
+            selectedCategory: null,
+            selectedType: null,
+            showFeaturedOnly: false,
+            showVerifiedOnly: false,
+            searchQuery: '',
+            updateInfo: updateInfo,
+            isRefreshing: true,
+          ),
+        );
+
+        // Refresh in background
+        _refreshInBackground(
+          devicePluginGuids: devicePluginGuids,
+          forceRefresh: true,
+        );
+        return;
+      } catch (_) {
+        // No cached data available, fall through to loading state
+      }
+    }
+
+    // No cached data - show loading spinner
     emit(const GalleryState.loading());
 
     try {
@@ -64,6 +115,67 @@ class GalleryCubit extends Cubit<GalleryState> {
       );
     } catch (e) {
       emit(GalleryState.error(e.toString()));
+    }
+  }
+
+  /// Background refresh without blocking UI
+  Future<void> _refreshInBackground({
+    Set<String>? devicePluginGuids,
+    bool forceRefresh = true,
+  }) async {
+    try {
+      final gallery = await _galleryService.fetchGallery(
+        forceRefresh: forceRefresh,
+      );
+
+      final queue = _galleryService.installQueue;
+      final updateInfo = await _galleryService.compareWithInstalledVersions(
+        gallery,
+        devicePluginGuids: devicePluginGuids,
+      );
+
+      // Preserve current filters when updating with fresh data
+      final currentState = state;
+      if (currentState is GalleryLoaded) {
+        final filteredPlugins = _galleryService.searchPlugins(
+          gallery,
+          query: currentState.searchQuery,
+          category: currentState.selectedCategory,
+          type: currentState.selectedType,
+          featured: currentState.showFeaturedOnly ? true : null,
+          verified: currentState.showVerifiedOnly ? true : null,
+        );
+
+        emit(
+          currentState.copyWith(
+            gallery: gallery,
+            filteredPlugins: filteredPlugins,
+            queue: queue,
+            updateInfo: updateInfo,
+            isRefreshing: false,
+          ),
+        );
+      } else {
+        emit(
+          GalleryState.loaded(
+            gallery: gallery,
+            filteredPlugins: gallery.plugins,
+            queue: queue,
+            selectedCategory: null,
+            selectedType: null,
+            showFeaturedOnly: false,
+            showVerifiedOnly: false,
+            searchQuery: '',
+            updateInfo: updateInfo,
+          ),
+        );
+      }
+    } catch (e) {
+      // Background refresh failed - just clear refreshing flag
+      final currentState = state;
+      if (currentState is GalleryLoaded) {
+        emit(currentState.copyWith(isRefreshing: false));
+      }
     }
   }
 

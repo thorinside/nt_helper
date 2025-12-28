@@ -16,6 +16,7 @@ class GalleryState with _$GalleryState {
     required bool showFeaturedOnly,
     required bool showVerifiedOnly,
     @Default({}) Map<String, PluginUpdateInfo> updateInfo,
+    @Default(false) bool isRefreshing,
   }) = GalleryLoaded;
 
   const factory GalleryState.error(String message) = GalleryError;

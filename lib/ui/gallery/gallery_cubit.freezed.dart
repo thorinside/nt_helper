@@ -128,12 +128,12 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  List<QueuedPlugin> queue,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  List<QueuedPlugin> queue,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case GalleryInitial() when initial != null:
 return initial();case GalleryLoading() when loading != null:
 return loading();case GalleryLoaded() when loaded != null:
-return loaded(_that.gallery,_that.filteredPlugins,_that.queue,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo);case GalleryError() when error != null:
+return loaded(_that.gallery,_that.filteredPlugins,_that.queue,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing);case GalleryError() when error != null:
 return error(_that.message);case _:
   return orElse();
 
@@ -152,12 +152,12 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  List<QueuedPlugin> queue,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  List<QueuedPlugin> queue,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case GalleryInitial():
 return initial();case GalleryLoading():
 return loading();case GalleryLoaded():
-return loaded(_that.gallery,_that.filteredPlugins,_that.queue,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo);case GalleryError():
+return loaded(_that.gallery,_that.filteredPlugins,_that.queue,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing);case GalleryError():
 return error(_that.message);case _:
   throw StateError('Unexpected subclass');
 
@@ -175,12 +175,12 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  List<QueuedPlugin> queue,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( Gallery gallery,  List<GalleryPlugin> filteredPlugins,  List<QueuedPlugin> queue,  String searchQuery,  String? selectedCategory,  GalleryPluginType? selectedType,  bool showFeaturedOnly,  bool showVerifiedOnly,  Map<String, PluginUpdateInfo> updateInfo,  bool isRefreshing)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case GalleryInitial() when initial != null:
 return initial();case GalleryLoading() when loading != null:
 return loading();case GalleryLoaded() when loaded != null:
-return loaded(_that.gallery,_that.filteredPlugins,_that.queue,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo);case GalleryError() when error != null:
+return loaded(_that.gallery,_that.filteredPlugins,_that.queue,_that.searchQuery,_that.selectedCategory,_that.selectedType,_that.showFeaturedOnly,_that.showVerifiedOnly,_that.updateInfo,_that.isRefreshing);case GalleryError() when error != null:
 return error(_that.message);case _:
   return null;
 
@@ -257,7 +257,7 @@ String toString() {
 
 
 class GalleryLoaded implements GalleryState {
-  const GalleryLoaded({required this.gallery, required final  List<GalleryPlugin> filteredPlugins, required final  List<QueuedPlugin> queue, required this.searchQuery, this.selectedCategory, this.selectedType, required this.showFeaturedOnly, required this.showVerifiedOnly, final  Map<String, PluginUpdateInfo> updateInfo = const {}}): _filteredPlugins = filteredPlugins,_queue = queue,_updateInfo = updateInfo;
+  const GalleryLoaded({required this.gallery, required final  List<GalleryPlugin> filteredPlugins, required final  List<QueuedPlugin> queue, required this.searchQuery, this.selectedCategory, this.selectedType, required this.showFeaturedOnly, required this.showVerifiedOnly, final  Map<String, PluginUpdateInfo> updateInfo = const {}, this.isRefreshing = false}): _filteredPlugins = filteredPlugins,_queue = queue,_updateInfo = updateInfo;
   
 
  final  Gallery gallery;
@@ -287,6 +287,7 @@ class GalleryLoaded implements GalleryState {
   return EqualUnmodifiableMapView(_updateInfo);
 }
 
+@JsonKey() final  bool isRefreshing;
 
 /// Create a copy of GalleryState
 /// with the given fields replaced by the non-null parameter values.
@@ -298,16 +299,16 @@ $GalleryLoadedCopyWith<GalleryLoaded> get copyWith => _$GalleryLoadedCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GalleryLoaded&&(identical(other.gallery, gallery) || other.gallery == gallery)&&const DeepCollectionEquality().equals(other._filteredPlugins, _filteredPlugins)&&const DeepCollectionEquality().equals(other._queue, _queue)&&(identical(other.searchQuery, searchQuery) || other.searchQuery == searchQuery)&&(identical(other.selectedCategory, selectedCategory) || other.selectedCategory == selectedCategory)&&(identical(other.selectedType, selectedType) || other.selectedType == selectedType)&&(identical(other.showFeaturedOnly, showFeaturedOnly) || other.showFeaturedOnly == showFeaturedOnly)&&(identical(other.showVerifiedOnly, showVerifiedOnly) || other.showVerifiedOnly == showVerifiedOnly)&&const DeepCollectionEquality().equals(other._updateInfo, _updateInfo));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GalleryLoaded&&(identical(other.gallery, gallery) || other.gallery == gallery)&&const DeepCollectionEquality().equals(other._filteredPlugins, _filteredPlugins)&&const DeepCollectionEquality().equals(other._queue, _queue)&&(identical(other.searchQuery, searchQuery) || other.searchQuery == searchQuery)&&(identical(other.selectedCategory, selectedCategory) || other.selectedCategory == selectedCategory)&&(identical(other.selectedType, selectedType) || other.selectedType == selectedType)&&(identical(other.showFeaturedOnly, showFeaturedOnly) || other.showFeaturedOnly == showFeaturedOnly)&&(identical(other.showVerifiedOnly, showVerifiedOnly) || other.showVerifiedOnly == showVerifiedOnly)&&const DeepCollectionEquality().equals(other._updateInfo, _updateInfo)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,gallery,const DeepCollectionEquality().hash(_filteredPlugins),const DeepCollectionEquality().hash(_queue),searchQuery,selectedCategory,selectedType,showFeaturedOnly,showVerifiedOnly,const DeepCollectionEquality().hash(_updateInfo));
+int get hashCode => Object.hash(runtimeType,gallery,const DeepCollectionEquality().hash(_filteredPlugins),const DeepCollectionEquality().hash(_queue),searchQuery,selectedCategory,selectedType,showFeaturedOnly,showVerifiedOnly,const DeepCollectionEquality().hash(_updateInfo),isRefreshing);
 
 @override
 String toString() {
-  return 'GalleryState.loaded(gallery: $gallery, filteredPlugins: $filteredPlugins, queue: $queue, searchQuery: $searchQuery, selectedCategory: $selectedCategory, selectedType: $selectedType, showFeaturedOnly: $showFeaturedOnly, showVerifiedOnly: $showVerifiedOnly, updateInfo: $updateInfo)';
+  return 'GalleryState.loaded(gallery: $gallery, filteredPlugins: $filteredPlugins, queue: $queue, searchQuery: $searchQuery, selectedCategory: $selectedCategory, selectedType: $selectedType, showFeaturedOnly: $showFeaturedOnly, showVerifiedOnly: $showVerifiedOnly, updateInfo: $updateInfo, isRefreshing: $isRefreshing)';
 }
 
 
@@ -318,7 +319,7 @@ abstract mixin class $GalleryLoadedCopyWith<$Res> implements $GalleryStateCopyWi
   factory $GalleryLoadedCopyWith(GalleryLoaded value, $Res Function(GalleryLoaded) _then) = _$GalleryLoadedCopyWithImpl;
 @useResult
 $Res call({
- Gallery gallery, List<GalleryPlugin> filteredPlugins, List<QueuedPlugin> queue, String searchQuery, String? selectedCategory, GalleryPluginType? selectedType, bool showFeaturedOnly, bool showVerifiedOnly, Map<String, PluginUpdateInfo> updateInfo
+ Gallery gallery, List<GalleryPlugin> filteredPlugins, List<QueuedPlugin> queue, String searchQuery, String? selectedCategory, GalleryPluginType? selectedType, bool showFeaturedOnly, bool showVerifiedOnly, Map<String, PluginUpdateInfo> updateInfo, bool isRefreshing
 });
 
 
@@ -335,7 +336,7 @@ class _$GalleryLoadedCopyWithImpl<$Res>
 
 /// Create a copy of GalleryState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? gallery = null,Object? filteredPlugins = null,Object? queue = null,Object? searchQuery = null,Object? selectedCategory = freezed,Object? selectedType = freezed,Object? showFeaturedOnly = null,Object? showVerifiedOnly = null,Object? updateInfo = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? gallery = null,Object? filteredPlugins = null,Object? queue = null,Object? searchQuery = null,Object? selectedCategory = freezed,Object? selectedType = freezed,Object? showFeaturedOnly = null,Object? showVerifiedOnly = null,Object? updateInfo = null,Object? isRefreshing = null,}) {
   return _then(GalleryLoaded(
 gallery: null == gallery ? _self.gallery : gallery // ignore: cast_nullable_to_non_nullable
 as Gallery,filteredPlugins: null == filteredPlugins ? _self._filteredPlugins : filteredPlugins // ignore: cast_nullable_to_non_nullable
@@ -346,7 +347,8 @@ as String?,selectedType: freezed == selectedType ? _self.selectedType : selected
 as GalleryPluginType?,showFeaturedOnly: null == showFeaturedOnly ? _self.showFeaturedOnly : showFeaturedOnly // ignore: cast_nullable_to_non_nullable
 as bool,showVerifiedOnly: null == showVerifiedOnly ? _self.showVerifiedOnly : showVerifiedOnly // ignore: cast_nullable_to_non_nullable
 as bool,updateInfo: null == updateInfo ? _self._updateInfo : updateInfo // ignore: cast_nullable_to_non_nullable
-as Map<String, PluginUpdateInfo>,
+as Map<String, PluginUpdateInfo>,isRefreshing: null == isRefreshing ? _self.isRefreshing : isRefreshing // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

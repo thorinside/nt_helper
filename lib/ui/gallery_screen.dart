@@ -14,6 +14,7 @@ import 'package:nt_helper/ui/widgets/linkified_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:nt_helper/utils/responsive.dart';
+import 'package:nt_helper/models/plugin_info.dart';
 
 /// View mode for the Plugin Gallery explore tab
 enum GalleryViewMode { card, list }
@@ -274,7 +275,8 @@ class _GalleryViewState extends State<_GalleryView>
     final updateCount = state is GalleryLoaded
         ? state.updateInfo.values.where((info) => info.updateAvailable).length
         : 0;
-    final isRefreshing = state is GalleryLoading;
+    final isRefreshing = state is GalleryLoading ||
+        (state is GalleryLoaded && state.isRefreshing);
 
     return Row(
       children: [
@@ -318,14 +320,6 @@ class _GalleryViewState extends State<_GalleryView>
             },
             tooltip: 'Install Queue ($queueCount)',
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () => context.read<GalleryCubit>().loadGallery(
-                forceRefresh: true,
-                devicePluginGuids: _getDevicePluginGuids(),
-              ),
-          tooltip: 'Refresh',
         ),
         IconButton(
           icon: const Icon(Icons.settings),
@@ -1031,7 +1025,6 @@ class _GalleryViewState extends State<_GalleryView>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (hasUpdate) _buildListBadge('UPDATE', Colors.orange),
             ],
           ),
           subtitle: Column(
@@ -1160,25 +1153,6 @@ class _GalleryViewState extends State<_GalleryView>
     );
   }
 
-  Widget _buildListBadge(String label, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(left: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 10,
-        ),
-      ),
-    );
-  }
-
   Widget _buildListActionButton(
     GalleryPlugin plugin,
     bool isInQueue,
@@ -1203,8 +1177,13 @@ class _GalleryViewState extends State<_GalleryView>
         color: Colors.orange,
       );
     } else if (isInstalled && !plugin.isCollection) {
-      // Single plugin is installed - no button needed
-      return const SizedBox.shrink();
+      // Single plugin is installed - show delete button
+      return IconButton(
+        icon: const Icon(Icons.delete_outline),
+        onPressed: () => _confirmAndDeletePlugin(plugin, parentContext),
+        tooltip: 'Delete plugin',
+        color: Theme.of(context).colorScheme.error,
+      );
     } else {
       // Not installed, OR is a collection (can always add more)
       return IconButton(
@@ -1214,6 +1193,114 @@ class _GalleryViewState extends State<_GalleryView>
         tooltip: 'Add to queue',
         color: Theme.of(context).colorScheme.primary,
       );
+    }
+  }
+
+  /// Find the device plugin by GUID and create a PluginInfo for deletion
+  PluginInfo? _findDevicePluginByGuid(String guid) {
+    final distingState = widget.distingCubit.state;
+    if (distingState is! DistingStateSynchronized) return null;
+
+    final algorithm = distingState.algorithms
+        .where((a) => a.isPlugin && a.guid == guid)
+        .firstOrNull;
+
+    if (algorithm == null || algorithm.filename == null) return null;
+
+    // Determine plugin type from path
+    final path = algorithm.filename!;
+    final type = path.contains('/programs/3-pot-plug-ins/')
+        ? PluginType.threePot
+        : path.endsWith('.lua')
+            ? PluginType.lua
+            : PluginType.cpp;
+
+    return PluginInfo(
+      name: algorithm.name,
+      path: path,
+      type: type,
+      sizeBytes: 0, // Not needed for deletion
+    );
+  }
+
+  /// Show confirmation dialog and delete the plugin
+  Future<void> _confirmAndDeletePlugin(
+    GalleryPlugin plugin,
+    BuildContext parentContext,
+  ) async {
+    // Find the device plugin
+    final guid = plugin.guid;
+    if (guid == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Plugin has no GUID')),
+        );
+      }
+      return;
+    }
+
+    final devicePlugin = _findDevicePluginByGuid(guid);
+    if (devicePlugin == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Plugin not found on device')),
+        );
+      }
+      return;
+    }
+
+    // Capture cubit reference before async operations
+    final galleryCubit = parentContext.read<GalleryCubit>();
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Plugin'),
+        content: Text('Are you sure you want to delete "${plugin.name}"?\n\n'
+            'This will remove the plugin from your Disting NT.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      // Delete from device
+      await widget.distingCubit.deletePlugin(devicePlugin);
+
+      // Remove from gallery database
+      await widget.galleryService.removePluginInstallation(plugin.id);
+
+      // Refresh gallery to update UI
+      if (mounted) {
+        galleryCubit.loadGallery(
+          forceRefresh: true,
+          devicePluginGuids: _getDevicePluginGuids(),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Deleted "${plugin.name}"')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete plugin: $e')),
+        );
+      }
     }
   }
 
@@ -1292,28 +1379,6 @@ class _GalleryViewState extends State<_GalleryView>
                                 Icons.folder_copy,
                                 size: 16,
                                 color: Theme.of(context).colorScheme.tertiary,
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                            if (hasUpdate) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  'UPDATE',
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 10,
-                                      ),
-                                ),
                               ),
                               const SizedBox(width: 8),
                             ],
@@ -1504,8 +1569,19 @@ class _GalleryViewState extends State<_GalleryView>
                           ),
                         );
                       } else if (isInstalled && !plugin.isCollection) {
-                        // Single plugin is installed - no button needed
-                        return const SizedBox.shrink();
+                        // Single plugin is installed - show delete button
+                        return ElevatedButton.icon(
+                          onPressed: () =>
+                              _confirmAndDeletePlugin(plugin, parentContext),
+                          icon: const Icon(Icons.delete_outline),
+                          label: const Text('Delete'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.errorContainer,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onErrorContainer,
+                          ),
+                        );
                       } else {
                         // Not installed, OR is a collection (can always add more)
                         return ElevatedButton.icon(

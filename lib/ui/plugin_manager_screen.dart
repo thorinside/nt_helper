@@ -35,7 +35,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   // Gallery service
   late GalleryService _galleryService;
 
-  final List<String> _sections = ['Installed', 'Available'];
+  final List<String> _sections = ['Available', 'Installed'];
 
   // Plugin data
   List<PluginInfo> _luaPlugins = [];
@@ -571,7 +571,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         title: const Text('Plugin Manager'),
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         actions: [
-          if (_selectedIndex == 0) // Only show buttons on Installed tab
+          if (_selectedIndex == 1) // Only show buttons on Installed tab
           ...[
             if (!kIsWeb &&
                 (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
@@ -705,9 +705,9 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
 
     switch (_selectedIndex) {
       case 0:
-        return _buildInstalledPluginsView();
-      case 1:
         return _buildAvailablePluginsView();
+      case 1:
+        return _buildInstalledPluginsView();
       default:
         return const Center(child: Text('Unknown section'));
     }
