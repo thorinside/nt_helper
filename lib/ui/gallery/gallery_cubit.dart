@@ -36,10 +36,13 @@ class GalleryCubit extends Cubit<GalleryState> {
     // Stale-while-revalidate: show cached data immediately, refresh in background
     final currentState = state;
 
-    // If we already have loaded data, show it with refreshing indicator
-    if (currentState is GalleryLoaded && !forceRefresh) {
+    // If we already have loaded data, refresh in background without spinner
+    if (currentState is GalleryLoaded) {
       emit(currentState.copyWith(isRefreshing: true));
-      _refreshInBackground(devicePluginGuids: devicePluginGuids);
+      _refreshInBackground(
+        devicePluginGuids: devicePluginGuids,
+        forceRefresh: forceRefresh,
+      );
       return;
     }
 
