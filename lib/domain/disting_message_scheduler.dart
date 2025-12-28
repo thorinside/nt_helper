@@ -6,6 +6,7 @@
 // • Single timer approach: no complex timer chains
 // • Immediate processing when idle
 // • Retains device filtering and sysEx ID support
+// • Auto-recovery from MIDI stream corruption
 // -----------------------------------------------------------------------------
 
 import 'dart:async';
@@ -81,15 +82,26 @@ class DistingMessageScheduler {
     required MidiDevice inputDevice,
     required MidiDevice outputDevice,
     required int sysExId,
-    this.messageInterval = const Duration(milliseconds: 50),
-    this.defaultTimeout = const Duration(milliseconds: 1000),
+    Duration messageInterval = const Duration(milliseconds: 50),
+    Duration defaultTimeout = const Duration(milliseconds: 1000),
     this.defaultMaxRetries = 5,
-    this.defaultRetryDelay = Duration.zero,
+    Duration defaultRetryDelay = Duration.zero,
   }) : _midi = midiCommand,
        _inputDevice = inputDevice,
        _outputDevice = outputDevice,
-       _sysExId = sysExId {
-    _subscription = _midi.onMidiDataReceived?.listen(_handleIncomingPacket);
+       _sysExId = sysExId,
+       messageInterval = _normalizeDuration(messageInterval),
+       defaultTimeout = _normalizeDuration(defaultTimeout),
+       defaultRetryDelay = _normalizeDuration(defaultRetryDelay) {
+    _subscription = _midi.onMidiDataReceived?.listen(
+      _handleIncomingPacket,
+      onError: _handleSubscriptionError,
+      onDone: _handleSubscriptionDone,
+      cancelOnError: false,
+    );
+    if (_subscription == null) {
+      _subscriptionActive = false;
+    }
   }
 
   // MIDI and device configuration
@@ -109,11 +121,123 @@ class DistingMessageScheduler {
   final Queue<_ScheduledRequest> _queue = Queue();
   _ScheduledRequest? _currentRequest;
   Timer? _nextProcessTimer;
+  Timer? _retryTimer;
+  Timer? _streamRecoveryTimer;
   StreamSubscription? _subscription;
+
+  // Diagnostic counters
+  int _totalPacketsReceived = 0;
+  int _sysexPacketsReceived = 0;
+  int _nonSysexPacketsReceived = 0;
+  int _packetsFromWrongDevice = 0;
+  DateTime? _lastPacketTime;
+  bool _subscriptionActive = true;
+  String? _lastSubscriptionError;
+
+  // Consecutive timeout tracking for stream health detection
+  int _consecutiveTimeouts = 0;
+  static const int _maxConsecutiveTimeoutsBeforeRecovery = 3;
 
   // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
+
+  static Duration _normalizeDuration(Duration duration) {
+    if (duration.isNegative) {
+      return Duration.zero;
+    }
+    return duration;
+  }
+
+  /// Returns diagnostic information about the scheduler's MIDI stream health.
+  Map<String, dynamic> getDiagnostics() {
+    final now = DateTime.now();
+    final timeSinceLastPacket = _lastPacketTime != null
+        ? now.difference(_lastPacketTime!).inMilliseconds
+        : -1;
+
+    return {
+      'subscriptionActive': _subscriptionActive,
+      'lastSubscriptionError': _lastSubscriptionError,
+      'totalPacketsReceived': _totalPacketsReceived,
+      'sysexPacketsReceived': _sysexPacketsReceived,
+      'nonSysexPacketsReceived': _nonSysexPacketsReceived,
+      'packetsFromWrongDevice': _packetsFromWrongDevice,
+      'timeSinceLastPacketMs': timeSinceLastPacket,
+      'currentState': _state.name,
+      'queueLength': _queue.length,
+      'hasCurrentRequest': _currentRequest != null,
+      'currentRequestCompleted': _currentRequest?.completer.isCompleted ?? false,
+    };
+  }
+
+  /// Attempts to re-establish the MIDI subscription if it's dead.
+  void tryReconnectSubscription() {
+    _subscription?.cancel();
+    _subscriptionActive = false;
+
+    _subscription = _midi.onMidiDataReceived?.listen(
+      _handleIncomingPacket,
+      onError: _handleSubscriptionError,
+      onDone: _handleSubscriptionDone,
+      cancelOnError: false,
+    );
+
+    if (_subscription != null) {
+      _subscriptionActive = true;
+      _lastSubscriptionError = null;
+    }
+  }
+
+  /// Forces a full MIDI device disconnect/reconnect cycle.
+  /// This is used to recover from corrupted MIDI state caused by rogue
+  /// non-SysEx bytes that break CoreMIDI/flutter_midi_command.
+  Future<void> forceDeviceReconnect() async {
+    // Cancel current subscription
+    _subscription?.cancel();
+    _subscriptionActive = false;
+
+    // Disconnect the device
+    try {
+      _midi.disconnectDevice(_inputDevice);
+
+      // Brief delay to let the system settle
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Reconnect the device
+      _midi.connectToDevice(_inputDevice);
+
+      // Re-establish subscription
+      await Future.delayed(const Duration(milliseconds: 200));
+      _subscription = _midi.onMidiDataReceived?.listen(
+        _handleIncomingPacket,
+        onError: _handleSubscriptionError,
+        onDone: _handleSubscriptionDone,
+        cancelOnError: false,
+      );
+
+      if (_subscription != null) {
+        _subscriptionActive = true;
+        _lastSubscriptionError = null;
+        // Reset diagnostic counters
+        _totalPacketsReceived = 0;
+        _sysexPacketsReceived = 0;
+        _nonSysexPacketsReceived = 0;
+        _packetsFromWrongDevice = 0;
+      }
+    } catch (e) {
+      // Recovery failed - will be retried on next timeout
+    }
+  }
+
+  void _handleSubscriptionError(Object error, StackTrace stackTrace) {
+    _subscriptionActive = false;
+    _lastSubscriptionError = error.toString();
+  }
+
+  void _handleSubscriptionDone() {
+    _subscriptionActive = false;
+  }
 
   Future<T?> sendRequest<T>(
     Uint8List packet,
@@ -129,9 +253,9 @@ class DistingMessageScheduler {
       key: key,
       expectation: responseExpectation,
       completer: completer,
-      timeout: timeout ?? defaultTimeout,
+      timeout: _normalizeDuration(timeout ?? defaultTimeout),
       maxRetries: maxRetries ?? defaultMaxRetries,
-      retryDelay: retryDelay ?? defaultRetryDelay,
+      retryDelay: _normalizeDuration(retryDelay ?? defaultRetryDelay),
     );
 
     _queue.add(request);
@@ -147,7 +271,15 @@ class DistingMessageScheduler {
   void dispose() {
     _subscription?.cancel();
     _nextProcessTimer?.cancel();
-    _currentRequest?.dispose();
+    _retryTimer?.cancel();
+    _streamRecoveryTimer?.cancel();
+    final current = _currentRequest;
+    if (current != null && !current.completer.isCompleted) {
+      current.completer.completeError(StateError('Scheduler disposed'));
+    }
+    current?.dispose();
+    _currentRequest = null;
+    _state = _SchedulerState.idle;
 
     // Fail all pending requests
     for (final request in _queue) {
@@ -178,11 +310,23 @@ class DistingMessageScheduler {
   }
 
   void _sendCurrentRequest() {
-    final request = _currentRequest!;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+
+    final request = _currentRequest;
+    if (request == null || request.completer.isCompleted) {
+      _finishCurrentRequest();
+      return;
+    }
     request.attemptCount++;
 
     // Send the message
-    _midi.sendData(request.packet, deviceId: _outputDevice.id);
+    try {
+      _midi.sendData(request.packet, deviceId: _outputDevice.id);
+    } catch (e) {
+      _handleSendFailure(request, e);
+      return;
+    }
 
     if (request.expectation == ResponseExpectation.none) {
       // Fire-and-forget: complete immediately and schedule next
@@ -196,10 +340,25 @@ class DistingMessageScheduler {
   }
 
   void _onTimeout() {
-    final request = _currentRequest!;
+    final request = _currentRequest;
+
+    // Guard against race conditions where response arrived just before timeout
+    if (request == null || request.completer.isCompleted) {
+      _consecutiveTimeouts = 0;
+      _finishCurrentRequest();
+      return;
+    }
 
     if (request.attemptCount >= request.maxRetries) {
       // Out of retries
+      _consecutiveTimeouts++;
+
+      // Check if we need to attempt stream recovery
+      if (_consecutiveTimeouts >= _maxConsecutiveTimeoutsBeforeRecovery) {
+        forceDeviceReconnect();
+        _consecutiveTimeouts = 0;
+      }
+
       if (request.expectation == ResponseExpectation.required) {
         request.completer.completeError(
           TimeoutException(
@@ -218,8 +377,30 @@ class DistingMessageScheduler {
       if (request.retryDelay == Duration.zero) {
         _sendCurrentRequest();
       } else {
-        Timer(request.retryDelay, _sendCurrentRequest);
+        _retryTimer = Timer(request.retryDelay, _sendCurrentRequest);
       }
+    }
+  }
+
+  void _handleSendFailure(_ScheduledRequest request, Object error) {
+    if (request.completer.isCompleted) {
+      _finishCurrentRequest();
+      return;
+    }
+
+    if (request.attemptCount >= request.maxRetries) {
+      request.completer.completeError(
+        StateError('Failed to send request after ${request.attemptCount} attempts: $error'),
+      );
+      _finishCurrentRequest();
+      return;
+    }
+
+    _state = _SchedulerState.sending;
+    if (request.retryDelay == Duration.zero) {
+      _sendCurrentRequest();
+    } else {
+      _retryTimer = Timer(request.retryDelay, _sendCurrentRequest);
     }
   }
 
@@ -227,6 +408,8 @@ class DistingMessageScheduler {
     _currentRequest?.dispose();
     _currentRequest = null;
     _state = _SchedulerState.idle;
+    _retryTimer?.cancel();
+    _retryTimer = null;
 
     // Schedule next request after message interval
     if (_queue.isNotEmpty) {
@@ -238,9 +421,41 @@ class DistingMessageScheduler {
   // Incoming message handling
   // ---------------------------------------------------------------------------
 
+  /// Extracts SysEx messages (F0...F7) from a raw MIDI packet.
+  /// Returns an empty list if no valid SysEx is found.
+  /// This handles cases where rogue MIDI messages (Program Change, Pitchwheel)
+  /// are prepended to or mixed with SysEx data by the MIDI library.
+  List<Uint8List> _extractSysExMessages(Uint8List raw) {
+    final messages = <Uint8List>[];
+    int searchStart = 0;
+
+    while (searchStart < raw.length) {
+      final startIndex = raw.indexOf(0xF0, searchStart);
+      if (startIndex == -1) {
+        break;
+      }
+
+      final endIndex = raw.indexOf(0xF7, startIndex);
+      if (endIndex == -1) {
+        break;
+      }
+
+      messages.add(raw.sublist(startIndex, endIndex + 1));
+      searchStart = endIndex + 1;
+    }
+
+    return messages;
+  }
+
   void _handleIncomingPacket(dynamic packet) {
+    _totalPacketsReceived++;
+    _lastPacketTime = DateTime.now();
+
     if (packet is MidiPacket) {
-      if (packet.device.id != _inputDevice.id) return;
+      if (packet.device.id != _inputDevice.id) {
+        _packetsFromWrongDevice++;
+        return;
+      }
       _handleIncoming(packet.data);
     } else if (packet is Uint8List) {
       _handleIncoming(packet);
@@ -248,25 +463,73 @@ class DistingMessageScheduler {
   }
 
   void _handleIncoming(Uint8List raw) {
-    try {
-      final parsed = decodeDistingNTSysEx(raw);
-      if (parsed == null) {
-        return;
+    // Extract SysEx messages from packet, filtering out any rogue MIDI bytes.
+    // Some plugins/algorithms send Program Change or Pitchwheel messages that
+    // may be combined with SysEx responses by the MIDI library.
+    final sysexMessages = _extractSysExMessages(raw);
+    if (sysexMessages.isEmpty) {
+      _nonSysexPacketsReceived++;
+
+      // CRITICAL: If we receive non-SysEx bytes while waiting for a response,
+      // this is a strong signal that the MIDI stream is corrupted.
+      // Some plugins send rogue MIDI messages that corrupt CoreMIDI/flutter_midi_command state.
+      if (_state == _SchedulerState.waitingForResponse) {
+        _scheduleStreamRecovery();
       }
+      return;
+    }
+
+    _sysexPacketsReceived++;
+    _cancelStreamRecovery();
+
+    for (final sysex in sysexMessages) {
+      if (_tryHandleSysEx(sysex)) {
+        break;
+      }
+    }
+  }
+
+  void _scheduleStreamRecovery() {
+    // Only schedule if not already scheduled
+    if (_streamRecoveryTimer?.isActive ?? false) {
+      return;
+    }
+
+    // Wait a bit to see if more rogue bytes come, then attempt recovery
+    _streamRecoveryTimer = Timer(const Duration(milliseconds: 500), () {
+      forceDeviceReconnect();
+    });
+  }
+
+  void _cancelStreamRecovery() {
+    _streamRecoveryTimer?.cancel();
+    _streamRecoveryTimer = null;
+  }
+
+  bool _tryHandleSysEx(Uint8List sysex) {
+    try {
+      final parsed = decodeDistingNTSysEx(sysex);
+      if (parsed == null) {
+        return false;
+      }
+
       if (parsed.sysExId != _sysExId) {
-        return;
+        return false;
       }
 
       final request = _currentRequest;
       if (request == null ||
           _state != _SchedulerState.waitingForResponse ||
           request.completer.isCompleted) {
-        return;
+        return false;
       }
 
       if (!request.key.matches(parsed)) {
-        return;
+        return false;
       }
+
+      // Successfully matched a response - reset consecutive timeout counter
+      _consecutiveTimeouts = 0;
 
       // Parse and complete the response
       final response = ResponseFactory.fromMessageType(
@@ -302,9 +565,11 @@ class DistingMessageScheduler {
       }
 
       _finishCurrentRequest();
+      return true;
     } catch (e) {
       // Catch any unexpected exceptions to prevent scheduler from getting stuck.
       // The timeout will eventually clean up the current request.
     }
+    return false;
   }
 }
