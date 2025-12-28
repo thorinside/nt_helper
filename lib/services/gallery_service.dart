@@ -1528,21 +1528,9 @@ class GalleryService {
             lastChecked: DateTime.now(),
           );
         } else if (isInstalledOnDevice) {
-          // Plugin is on device but not in database (manual installation)
-          // Cache it in the database for future lookups
-          try {
-            final installationPath = _getInstallationPath(galleryPlugin);
-            await _database.pluginInstallationsDao.recordPluginInstallation(
-              plugin: galleryPlugin,
-              installedVersion: 'unknown',
-              installationPath: installationPath,
-              fileCount: 1,
-              totalBytes: null,
-              installationNotes: 'Detected via device GUID matching',
-            );
-          } catch (dbError) {
-            // Don't fail if database caching fails
-          }
+          // Plugin is on device but not in database (manual installation or deleted)
+          // Don't auto-cache to database - only record when explicitly installed
+          // This allows deletions to persist
 
           // Show as installed with unknown version
           updateInfo[galleryPlugin.id] = PluginUpdateInfo(

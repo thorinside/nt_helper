@@ -1285,10 +1285,14 @@ class _GalleryViewState extends State<_GalleryView>
       await widget.galleryService.removePluginInstallation(plugin.id);
 
       // Refresh gallery to update UI
+      // Exclude the deleted plugin's GUID since device state hasn't refreshed yet
       if (mounted) {
+        final deviceGuids = _getDevicePluginGuids();
+        deviceGuids.remove(guid);
+
         galleryCubit.loadGallery(
           forceRefresh: true,
-          devicePluginGuids: _getDevicePluginGuids(),
+          devicePluginGuids: deviceGuids,
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
