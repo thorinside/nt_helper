@@ -418,7 +418,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       if (distingState is DistingStateSynchronized) {
         // Find algorithm with matching filename (only works for loaded plugins)
         final matchingAlgorithm = distingState.algorithms
-            .where((a) => a.isPlugin && a.filename == plugin.path)
+            .where((a) => a.filename == plugin.path)
             .firstOrNull;
 
         if (matchingAlgorithm != null && matchingAlgorithm.guid.isNotEmpty) {

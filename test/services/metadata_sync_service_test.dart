@@ -8,6 +8,7 @@ import 'package:drift/native.dart';
 
 class TestMockDistingMidiManager implements IDistingMidiManager {
   final List<AlgorithmInfo> testAlgorithms;
+  int _numAlgorithmsInPreset = 0;
 
   TestMockDistingMidiManager({required this.testAlgorithms});
 
@@ -51,16 +52,18 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   Future<void> requestWake() async {}
 
   @override
-  Future<void> requestNewPreset() async {}
-
-  @override
   Future<int?> requestNumAlgorithmsInPreset() async {
-    return 0;
+    return _numAlgorithmsInPreset;
   }
 
   @override
   Future<int?> requestNumberOfAlgorithms() async {
     return testAlgorithms.length;
+  }
+
+  @override
+  Future<NumParameters?> requestNumberOfParameters(int algorithmIndex) async {
+    return NumParameters(algorithmIndex: algorithmIndex, numParameters: 0);
   }
 
   @override
@@ -75,13 +78,22 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   Future<void> requestLoadPlugin(String guid) async {}
 
   @override
+  Future<void> requestRemoveAlgorithm(int index) async {
+    _numAlgorithmsInPreset = 0;
+  }
+
+  @override
+  Future<void> requestNewPreset() async {
+    _numAlgorithmsInPreset = 0;
+  }
+
+  @override
   Future<void> requestAddAlgorithm(
     AlgorithmInfo algorithm,
     List<int> specifications,
-  ) async {}
-
-  @override
-  Future<void> requestRemoveAlgorithm(int index) async {}
+  ) async {
+    _numAlgorithmsInPreset = 1;
+  }
 
   @override
   void noSuchMethod(Invocation invocation) {

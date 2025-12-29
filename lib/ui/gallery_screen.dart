@@ -8,6 +8,7 @@ import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:nt_helper/ui/widgets/plugin_selection_dialog.dart';
 import 'package:nt_helper/ui/widgets/linkified_text.dart';
@@ -17,6 +18,59 @@ import 'package:nt_helper/utils/responsive.dart';
 
 /// View mode for the Plugin Gallery explore tab
 enum GalleryViewMode { card, list }
+
+bool _isDevicePluginAlgorithm(AlgorithmInfo algorithm) {
+  if (algorithm.isPlugin) {
+    return true;
+  }
+
+  if (algorithm.filename != null && algorithm.filename!.isNotEmpty) {
+    return true;
+  }
+
+  return algorithm.guid != algorithm.guid.toLowerCase();
+}
+
+Set<String>? _getDevicePluginGuidsFromState(DistingState state) {
+  if (state is! DistingStateSynchronized || state.offline || state.demo) {
+    return null;
+  }
+
+  if (state.algorithms.isEmpty) {
+    return null;
+  }
+
+  return state.algorithms
+      .where(_isDevicePluginAlgorithm)
+      .map((algorithm) => algorithm.guid)
+      .where((guid) => guid.isNotEmpty)
+      .toSet();
+}
+
+Map<String, String>? _getDevicePluginPathsFromState(DistingState state) {
+  if (state is! DistingStateSynchronized || state.offline || state.demo) {
+    return null;
+  }
+
+  if (state.algorithms.isEmpty) {
+    return null;
+  }
+
+  final paths = <String, String>{};
+  for (final algorithm in state.algorithms) {
+    if (!_isDevicePluginAlgorithm(algorithm)) {
+      continue;
+    }
+
+    final guid = algorithm.guid;
+    final filename = algorithm.filename;
+    if (guid.isNotEmpty && filename != null && filename.isNotEmpty) {
+      paths[guid] = filename;
+    }
+  }
+
+  return paths;
+}
 
 /// A beautiful gallery screen for discovering and installing plugins
 class GalleryScreen extends StatelessWidget {
@@ -36,18 +90,18 @@ class GalleryScreen extends StatelessWidget {
         BlocProvider.value(value: distingCubit),
         BlocProvider(
           create: (context) {
-            // Get device plugin GUIDs from DistingCubit state to detect manually installed plugins
-            final distingState = distingCubit.state;
-            final devicePluginGuids = distingState is DistingStateSynchronized
-                ? distingState.algorithms
-                    .where((algorithm) => algorithm.isPlugin)
-                    .map((algorithm) => algorithm.guid)
-                    .where((guid) => guid.isNotEmpty)
-                    .toSet()
-                : <String>{};
+            final devicePluginGuids = _getDevicePluginGuidsFromState(
+              distingCubit.state,
+            );
+            final devicePluginPaths = _getDevicePluginPathsFromState(
+              distingCubit.state,
+            );
 
             return GalleryCubit(galleryService)
-              ..loadGallery(devicePluginGuids: devicePluginGuids);
+              ..loadGallery(
+                devicePluginGuids: devicePluginGuids,
+                devicePluginPaths: devicePluginPaths,
+              );
           },
         ),
       ],
@@ -123,16 +177,12 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   /// Get device plugin GUIDs from DistingCubit state for detecting manually installed plugins
-  Set<String> _getDevicePluginGuids() {
-    final distingState = widget.distingCubit.state;
-    if (distingState is DistingStateSynchronized) {
-      return distingState.algorithms
-          .where((algorithm) => algorithm.isPlugin)
-          .map((algorithm) => algorithm.guid)
-          .where((guid) => guid.isNotEmpty)
-          .toSet();
-    }
-    return {};
+  Set<String>? _getDevicePluginGuids() {
+    return _getDevicePluginGuidsFromState(widget.distingCubit.state);
+  }
+
+  Map<String, String>? _getDevicePluginPaths() {
+    return _getDevicePluginPathsFromState(widget.distingCubit.state);
   }
 
   /// Open README documentation in browser for a plugin
@@ -301,6 +351,7 @@ class _GalleryViewState extends State<_GalleryView>
                 ? null
                 : () => context.read<GalleryCubit>().refreshUpdates(
                       devicePluginGuids: _getDevicePluginGuids(),
+                      devicePluginPaths: _getDevicePluginPaths(),
                     ),
             tooltip: isRefreshing
                 ? 'Refreshing gallery...'
@@ -405,6 +456,7 @@ class _GalleryViewState extends State<_GalleryView>
               onPressed: () => context.read<GalleryCubit>().loadGallery(
                     forceRefresh: true,
                     devicePluginGuids: _getDevicePluginGuids(),
+                    devicePluginPaths: _getDevicePluginPaths(),
                   ),
               child: const Text('Retry'),
             ),
@@ -1988,8 +2040,10 @@ class _GalleryViewState extends State<_GalleryView>
           sampleResults.remove(plugin.plugin.id);
 
           // Refresh gallery to update installed indicators
+          // Database record is already saved before this callback
           context.read<GalleryCubit>().refreshUpdates(
                 devicePluginGuids: _getDevicePluginGuids(),
+                devicePluginPaths: _getDevicePluginPaths(),
               );
         },
         onPluginError: (plugin, error) {
@@ -2117,15 +2171,18 @@ class _GalleryViewState extends State<_GalleryView>
         _isInstalling = false;
       });
 
-      // Refresh gallery after a short delay to allow device state to update
-      // and show installed indicators for plugins that match gallery entries
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          context.read<GalleryCubit>().refreshUpdates(
-                devicePluginGuids: _getDevicePluginGuids(),
-              );
-        }
-      });
+      // Refresh algorithm list and gallery after installation
+      if (!mounted) return;
+      await context.read<DistingCubit>().rescanPlugins();
+
+      // Brief delay for algorithm list to update, then refresh gallery
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) {
+        context.read<GalleryCubit>().refreshUpdates(
+              devicePluginGuids: _getDevicePluginGuids(),
+              devicePluginPaths: _getDevicePluginPaths(),
+            );
+      }
     } catch (e) {
       setState(() {
         _isInstalling = false;

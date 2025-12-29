@@ -822,9 +822,9 @@ class GalleryService {
           queuedPlugin.plugin.id,
           status: QueuedPluginStatus.completed,
         );
-        onPluginComplete?.call(queuedPlugin);
 
-        // Record successful installation in database
+        // Record successful installation in database BEFORE calling onPluginComplete
+        // so the gallery refresh can find the database record
         if (_database != null) {
           try {
             final installationPath = _getInstallationPath(queuedPlugin.plugin);
@@ -843,6 +843,8 @@ class GalleryService {
             // Don't fail the installation if database recording fails
           }
         }
+
+        onPluginComplete?.call(queuedPlugin);
 
         // Remove successfully completed plugin from queue
         removeFromQueue(queuedPlugin.plugin.id);
@@ -1443,9 +1445,71 @@ class GalleryService {
   }
 
   /// Get installation path for a plugin
-  String _getInstallationPath(GalleryPlugin plugin) {
-    // Return the target path from the plugin's installation configuration
-    return plugin.installation.targetPath;
+  String _getInstallationPath(GalleryPlugin plugin, {String? devicePath}) {
+    if (devicePath != null && devicePath.isNotEmpty) {
+      return devicePath;
+    }
+
+    final targetPath = plugin.installation.targetPath;
+    if (targetPath.isNotEmpty) {
+      return targetPath;
+    }
+
+    return _defaultInstallationPathForType(plugin.type);
+  }
+
+  String _defaultInstallationPathForType(GalleryPluginType type) {
+    return switch (type) {
+      GalleryPluginType.lua => '/programs/lua',
+      GalleryPluginType.threepot => '/programs/three_pot',
+      GalleryPluginType.cpp => '/programs/plug-ins',
+    };
+  }
+
+  String? _getDevicePathForPlugin(
+    GalleryPlugin plugin,
+    Map<String, String>? devicePluginPaths,
+  ) {
+    if (devicePluginPaths == null) {
+      return null;
+    }
+
+    final guid = plugin.guid;
+    if (guid != null && guid.isNotEmpty) {
+      final path = _findDevicePath(devicePluginPaths, guid);
+      if (path != null) {
+        return path;
+      }
+    }
+
+    for (final guid in plugin.collectionGuids) {
+      final path = _findDevicePath(devicePluginPaths, guid);
+      if (path != null) {
+        return path;
+      }
+    }
+
+    return null;
+  }
+
+  String? _findDevicePath(Map<String, String> devicePluginPaths, String guid) {
+    final direct = devicePluginPaths[guid];
+    if (direct != null && direct.isNotEmpty) {
+      return direct;
+    }
+
+    final upperGuid = guid.toUpperCase();
+    for (final entry in devicePluginPaths.entries) {
+      if (entry.key.toUpperCase() == upperGuid && entry.value.isNotEmpty) {
+        return entry.value;
+      }
+    }
+
+    return null;
+  }
+
+  Set<String> _normalizeDeviceGuids(Set<String> devicePluginGuids) {
+    return devicePluginGuids.map((guid) => guid.toUpperCase()).toSet();
   }
 
   /// Remove a plugin installation record from the database
@@ -1461,6 +1525,8 @@ class GalleryService {
     Set<String> devicePluginGuids,
   ) async {
     if (_database == null) return;
+
+    final normalizedDeviceGuids = _normalizeDeviceGuids(devicePluginGuids);
 
     try {
       final installedPlugins =
@@ -1481,9 +1547,12 @@ class GalleryService {
 
         // Check if this plugin is actually on the device
         final isOnDevice = (galleryPlugin.guid != null &&
-                devicePluginGuids.contains(galleryPlugin.guid)) ||
-            galleryPlugin.collectionGuids
-                .any((guid) => devicePluginGuids.contains(guid));
+                normalizedDeviceGuids.contains(
+                  galleryPlugin.guid!.toUpperCase(),
+                )) ||
+            galleryPlugin.collectionGuids.any(
+              (guid) => normalizedDeviceGuids.contains(guid.toUpperCase()),
+            );
 
         if (!isOnDevice) {
           // Plugin not on device - remove stale database record
@@ -1504,8 +1573,12 @@ class GalleryService {
   Future<Map<String, PluginUpdateInfo>> compareWithInstalledVersions(
     Gallery gallery, {
     Set<String>? devicePluginGuids,
+    Map<String, String>? devicePluginPaths,
   }) async {
     final Map<String, PluginUpdateInfo> updateInfo = {};
+    final normalizedDeviceGuids = devicePluginGuids == null
+        ? null
+        : _normalizeDeviceGuids(devicePluginGuids);
 
     if (_database == null) {
       return updateInfo;
@@ -1528,17 +1601,24 @@ class GalleryService {
       for (final galleryPlugin in gallery.plugins) {
         // Check 1: Find matching installed plugin(s) in database by ID
         final matchingInstalled = installedPlugins
-            .where((installed) => installed.pluginId == galleryPlugin.id)
+            .where(
+              (installed) =>
+                  installed.pluginId == galleryPlugin.id &&
+                  installed.installationStatus == 'completed',
+            )
             .toList();
 
         // Check 2: Also check if plugin GUID exists on device
         // (catches manually installed plugins not in database)
         // For collections, check if ANY of the collection's plugins are installed
-        final isInstalledOnDevice = devicePluginGuids != null &&
+        final isInstalledOnDevice = normalizedDeviceGuids != null &&
             ((galleryPlugin.guid != null &&
-                    devicePluginGuids.contains(galleryPlugin.guid)) ||
-                galleryPlugin.collectionGuids
-                    .any((guid) => devicePluginGuids.contains(guid)));
+                    normalizedDeviceGuids.contains(
+                      galleryPlugin.guid!.toUpperCase(),
+                    )) ||
+                galleryPlugin.collectionGuids.any(
+                  (guid) => normalizedDeviceGuids.contains(guid.toUpperCase()),
+                ));
 
         if (matchingInstalled.isEmpty && !isInstalledOnDevice) {
           // Plugin not installed - no update info needed
@@ -1576,8 +1656,23 @@ class GalleryService {
           );
         } else if (isInstalledOnDevice) {
           // Plugin is on device but not in database (manual installation or deleted)
-          // Don't auto-cache to database - only record when explicitly installed
-          // This allows deletions to persist
+          try {
+            final devicePath = _getDevicePathForPlugin(
+              galleryPlugin,
+              devicePluginPaths,
+            );
+            await _database.pluginInstallationsDao.recordPluginInstallation(
+              plugin: galleryPlugin,
+              installedVersion: 'unknown',
+              installationPath: _getInstallationPath(
+                galleryPlugin,
+                devicePath: devicePath,
+              ),
+              installationNotes: 'Detected via device GUID matching',
+            );
+          } catch (e) {
+            // Best-effort cache only
+          }
 
           // Show as installed with unknown version
           updateInfo[galleryPlugin.id] = PluginUpdateInfo(

@@ -32,6 +32,7 @@ class GalleryCubit extends Cubit<GalleryState> {
   Future<void> loadGallery({
     bool forceRefresh = false,
     Set<String>? devicePluginGuids,
+    Map<String, String>? devicePluginPaths,
   }) async {
     // Stale-while-revalidate: show cached data immediately, refresh in background
     final currentState = state;
@@ -41,6 +42,7 @@ class GalleryCubit extends Cubit<GalleryState> {
       emit(currentState.copyWith(isRefreshing: true));
       _refreshInBackground(
         devicePluginGuids: devicePluginGuids,
+        devicePluginPaths: devicePluginPaths,
         forceRefresh: forceRefresh,
       );
       return;
@@ -57,6 +59,7 @@ class GalleryCubit extends Cubit<GalleryState> {
         final updateInfo = await _galleryService.compareWithInstalledVersions(
           cachedGallery,
           devicePluginGuids: devicePluginGuids,
+          devicePluginPaths: devicePluginPaths,
         );
 
         // Emit cached data immediately with refreshing flag
@@ -78,6 +81,7 @@ class GalleryCubit extends Cubit<GalleryState> {
         // Refresh in background
         _refreshInBackground(
           devicePluginGuids: devicePluginGuids,
+          devicePluginPaths: devicePluginPaths,
           forceRefresh: true,
         );
         return;
@@ -101,6 +105,7 @@ class GalleryCubit extends Cubit<GalleryState> {
       final updateInfo = await _galleryService.compareWithInstalledVersions(
         gallery,
         devicePluginGuids: devicePluginGuids,
+        devicePluginPaths: devicePluginPaths,
       );
 
       emit(
@@ -124,6 +129,7 @@ class GalleryCubit extends Cubit<GalleryState> {
   /// Background refresh without blocking UI
   Future<void> _refreshInBackground({
     Set<String>? devicePluginGuids,
+    Map<String, String>? devicePluginPaths,
     bool forceRefresh = true,
   }) async {
     try {
@@ -135,6 +141,7 @@ class GalleryCubit extends Cubit<GalleryState> {
       final updateInfo = await _galleryService.compareWithInstalledVersions(
         gallery,
         devicePluginGuids: devicePluginGuids,
+        devicePluginPaths: devicePluginPaths,
       );
 
       // Preserve current filters when updating with fresh data
@@ -293,10 +300,14 @@ class GalleryCubit extends Cubit<GalleryState> {
   // --- Update Management Methods ---
 
   /// Refresh update information by reloading gallery data
-  Future<void> refreshUpdates({Set<String>? devicePluginGuids}) async {
+  Future<void> refreshUpdates({
+    Set<String>? devicePluginGuids,
+    Map<String, String>? devicePluginPaths,
+  }) async {
     await loadGallery(
       forceRefresh: true,
       devicePluginGuids: devicePluginGuids,
+      devicePluginPaths: devicePluginPaths,
     );
   }
 

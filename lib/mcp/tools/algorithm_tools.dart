@@ -231,7 +231,30 @@ class MCPAlgorithmTools {
   /// Note: Called via the 'search' tool when target="algorithm". Target validation
   /// is handled by the dispatcher in mcp_server_service.dart.
   Future<String> searchAlgorithms(Map<String, dynamic> params) async {
+    final dynamic typeRaw = params['type'];
+    final dynamic targetRaw = params['target'];
+    final String? typeParam = typeRaw is String ? typeRaw : null;
+    final String? targetParam = targetRaw is String ? targetRaw : null;
+    final String? typeOrTarget = (typeParam ?? targetParam)?.toLowerCase();
     final String? query = params['query'];
+
+    if (typeOrTarget == null || typeOrTarget.isEmpty) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            '${MCPConstants.missingParamError}: "type"',
+          ),
+        ),
+      );
+    }
+
+    if (typeOrTarget != 'algorithm') {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError('Invalid type: "$typeOrTarget". Must be "algorithm".'),
+        ),
+      );
+    }
 
     if (query == null || query.isEmpty) {
       return jsonEncode(
@@ -519,7 +542,7 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Missing identifier. Use: {"target": "slot", "identifier": 0}',
+          'error': '${MCPConstants.missingParamError}: identifier',
         }),
       );
     }
@@ -531,7 +554,7 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'identifier must be an integer (0-31). Example: {"target": "slot", "identifier": 0}',
+          'error': 'Invalid identifier format: identifier must be an integer (0-31).',
         }),
       );
     }
@@ -540,7 +563,7 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'slot index $slotIndex out of range. Must be 0-31. Use target: "preset" to see all slots.',
+          'error': 'Invalid slot index: $slotIndex. Must be 0-31.',
         }),
       );
     }
@@ -574,7 +597,7 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Missing identifier. Use: {"target": "parameter", "identifier": "0:5"} for slot 0, parameter 5.',
+          'error': '${MCPConstants.missingParamError}: identifier',
         }),
       );
     }
@@ -585,7 +608,15 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'identifier format must be "slot:param". Example: "0:5" for slot 0, parameter 5.',
+          'error': 'Invalid identifier format: expected slot_index:parameter_number.',
+        }),
+      );
+    }
+    if (parts[0].isEmpty || parts[1].isEmpty) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Invalid identifier format: expected slot_index:parameter_number.',
         }),
       );
     }
@@ -599,7 +630,7 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'identifier must be integers. Example: "0:5" for slot 0, parameter 5.',
+          'error': 'slot_index and parameter_number must be integers.',
         }),
       );
     }
