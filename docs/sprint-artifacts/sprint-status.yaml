@@ -153,14 +153,14 @@ development_status:
   11-1-android-edge-to-edge: done
   epic-11-retrospective: optional
 
-  epic-12: in-progress
+  epic-12: done
   12-1-add-algorithm-screen-view-modes: done
   12-2-plugin-gallery-view-modes: done
   12-3-gallery-graphql-migration: done
   epic-12-retrospective: optional
 
-  epic-13: backlog
-  13-1-detect-and-extract-sample-files: review
-  13-2-install-sample-files-to-sd-card: review
-  13-3-display-sample-installation-summary: review
+  epic-13: done
+  13-1-detect-and-extract-sample-files: done
+  13-2-install-sample-files-to-sd-card: done
+  13-3-display-sample-installation-summary: done
   epic-13-retrospective: optional
