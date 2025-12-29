@@ -215,6 +215,12 @@ class _ConnectionDelegate {
             .processParameterRetryQueue(distingManager)
             .catchError((e) {});
       }
+
+      // Check for firmware updates in background (non-blocking, desktop only)
+      // This runs asynchronously and updates state if update is available
+      if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        _cubit.checkForFirmwareUpdate();
+      }
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
       // Do NOT store connection details if sync fails

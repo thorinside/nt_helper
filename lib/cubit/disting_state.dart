@@ -62,5 +62,7 @@ sealed class DistingState with _$DistingState {
     @Default(null) Uint8List? screenshot,
     @Default(false) bool demo,
     @Default(null) VideoStreamState? videoStream,
+    /// Available firmware update (null if no update available or not checked)
+    @Default(null) FirmwareRelease? availableFirmwareUpdate,
   }) = DistingStateSynchronized;
 }

@@ -93,6 +93,7 @@ dependencies:
       url: https://github.com/thorinside/UVCCamera
       ref: 31bdb66472a0cde05ee6ab3de426661c96f3bb45
       path: flutter
+  html: ^0.15.6
 
 dev_dependencies:
   flutter_test:
@@ -158,6 +159,7 @@ flutter:
     - docs/algorithms/
     - docs/features/
     - assets/metadata/
+    - assets/linux/
 
 flutter_launcher_icons:
   # ... (Keep existing launcher icon config)

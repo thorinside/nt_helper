@@ -63,4 +63,7 @@ class FirmwareVersion {
     final other = FirmwareVersion(otherVersionString);
     return major == other.major && minor == other.minor && patch == other.patch;
   }
+
+  @override
+  String toString() => versionString;
 }

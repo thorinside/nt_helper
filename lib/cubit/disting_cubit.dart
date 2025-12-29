@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:async/async.dart';
 import 'package:bloc/bloc.dart';
@@ -20,6 +21,8 @@ import 'package:nt_helper/models/package_file.dart';
 import 'package:nt_helper/models/plugin_info.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/models/firmware_release.dart';
+import 'package:nt_helper/services/firmware_version_service.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart'; // Add collection package import
@@ -108,6 +111,9 @@ class DistingCubit extends _DistingCubitBase
       _StateHelpersDelegate(this);
   late final _RefreshDelegate _refreshDelegate = _RefreshDelegate(this);
 
+  /// Service for checking firmware updates
+  final FirmwareVersionService _firmwareVersionService = FirmwareVersionService();
+
   // Modified constructor
   DistingCubit(this.database)
     : _prefs = SharedPreferences.getInstance(),
@@ -149,6 +155,7 @@ class DistingCubit extends _DistingCubitBase
             screenshot,
             demo,
             videoStream,
+            availableFirmwareUpdate,
           ) => videoStream,
       orElse: () => null,
     ),
@@ -173,6 +180,9 @@ class DistingCubit extends _DistingCubitBase
     _midiSetupSubscription?.cancel();
 
     _monitoringDelegate.dispose();
+
+    // Dispose firmware version service
+    _firmwareVersionService.dispose();
 
     return super.close();
   }
@@ -736,6 +746,55 @@ class DistingCubit extends _DistingCubitBase
   /// and refresh the specific algorithm info with updated specifications
   Future<AlgorithmInfo?> loadPlugin(String guid) async {
     return _pluginDelegate.loadPlugin(guid);
+  }
+
+  /// Check for firmware updates in the background (non-blocking)
+  ///
+  /// Updates the state with available firmware update if one is found.
+  /// Called automatically after successful connection on desktop platforms.
+  Future<void> checkForFirmwareUpdate() async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+    if (currentState.offline || currentState.demo) return;
+
+    try {
+      final versions = await _firmwareVersionService.fetchAvailableVersions();
+      final currentVersion = currentState.firmwareVersion.toString();
+
+      if (_firmwareVersionService.isUpdateAvailable(currentVersion, versions)) {
+        final latest = _firmwareVersionService.getLatestVersion(versions);
+        if (latest != null && state is DistingStateSynchronized) {
+          // Re-check state to avoid race condition
+          final syncState = state as DistingStateSynchronized;
+          _emitState(syncState.copyWith(availableFirmwareUpdate: latest));
+        }
+      }
+    } catch (e) {
+      // Silently fail - firmware check is non-critical
+    }
+  }
+
+  /// Get the firmware version service for UI access
+  FirmwareVersionService get firmwareVersionService => _firmwareVersionService;
+
+  /// Called after a successful firmware update to refresh device version
+  ///
+  /// This clears the update indicator and triggers a re-sync to get the new
+  /// firmware version from the device.
+  Future<void> onFirmwareUpdateComplete() async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+
+    // Clear the update indicator immediately
+    _emitState(currentState.copyWith(availableFirmwareUpdate: null));
+
+    // Clear firmware version cache so next check fetches fresh data
+    _firmwareVersionService.clearCache();
+
+    // Re-sync with device to get updated firmware version
+    // The device should report its new version after reboot
+    await cancelSync();
+    await refresh(fullRefresh: true);
   }
 }
 

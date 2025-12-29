@@ -80,6 +80,7 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
             screenshot,
             demo,
             videoStream,
+            availableFirmwareUpdate,
           ) {
             if (widget.slotIndex < slots.length) {
               return slots[widget.slotIndex];

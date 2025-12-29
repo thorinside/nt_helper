@@ -108,6 +108,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             screenshot,
             demo,
             videoStream,
+            availableFirmwareUpdate,
           ) {
             _processSynchronizedState(slots);
           },

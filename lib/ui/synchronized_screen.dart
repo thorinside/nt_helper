@@ -45,6 +45,7 @@ import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
 import 'package:nt_helper/ui/widgets/mcp_status_indicator.dart';
 import 'package:nt_helper/ui/widgets/debug_panel.dart';
 import 'package:nt_helper/services/debug_service.dart';
+import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 
 enum EditMode { parameters, routing }
 
@@ -659,9 +660,74 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           const SizedBox(width: 8),
           // Only show version on tablets and desktop, not mobile
           if (!isMobile)
-            DistingVersion(
-              distingVersion: widget.distingVersion,
-              requiredVersion: Constants.requiredDistingVersion,
+            BlocBuilder<DistingCubit, DistingState>(
+              buildWhen: (previous, current) {
+                // Only rebuild when availableFirmwareUpdate changes
+                final prevUpdate = previous is DistingStateSynchronized
+                    ? previous.availableFirmwareUpdate
+                    : null;
+                final currUpdate = current is DistingStateSynchronized
+                    ? current.availableFirmwareUpdate
+                    : null;
+                return prevUpdate != currUpdate;
+              },
+              builder: (context, state) {
+                final updateAvailable = state is DistingStateSynchronized
+                    ? state.availableFirmwareUpdate
+                    : null;
+                final isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Firmware update indicator (desktop only)
+                    if (updateAvailable != null && isDesktop)
+                      Tooltip(
+                        message: 'Update available: v${updateAvailable.version}',
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.arrow_circle_up,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            final distingCubit = context.read<DistingCubit>();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FirmwareUpdateScreen(
+                                  distingCubit: distingCubit,
+                                ),
+                              ),
+                            );
+                          },
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ),
+                    if (updateAvailable != null && isDesktop)
+                      const SizedBox(width: 4),
+                    DistingVersion(
+                      distingVersion: widget.distingVersion,
+                      requiredVersion: Constants.requiredDistingVersion,
+                      onTap: isDesktop
+                          ? () {
+                              final distingCubit = context.read<DistingCubit>();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FirmwareUpdateScreen(
+                                    distingCubit: distingCubit,
+                                  ),
+                                ),
+                              );
+                            }
+                          : null,
+                    ),
+                  ],
+                );
+              },
             ),
           // CPU Monitor Widget - only in wide-screen mode
           if (isWideScreen) ...[
