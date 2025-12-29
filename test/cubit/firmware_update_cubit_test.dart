@@ -356,9 +356,10 @@ void main() {
           progress: 0.5,
         ),
         act: (cubit) => cubit.cancel(),
-        expect: () => [
-          isA<FirmwareUpdateStateInitial>(),
-        ],
+        verify: (cubit) {
+          // First emitted state should be initial, then version loading kicks in
+          expect(cubit.state, isA<FirmwareUpdateStateInitial>());
+        },
       );
     });
 
@@ -496,19 +497,32 @@ void main() {
     group('cleanupAndReset', () {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'resets to initial state from error state',
-        build: () => createCubit(currentVersion: '1.11.0'),
+        build: () {
+          when(() => mockFirmwareVersionService.fetchAvailableVersions())
+              .thenAnswer((_) async => []);
+          return createCubit(currentVersion: '1.11.0');
+        },
         seed: () => const FirmwareUpdateState.error(
           message: 'Some error',
         ),
         act: (cubit) => cubit.cleanupAndReset(),
         expect: () => [
           isA<FirmwareUpdateStateInitial>(),
+          isA<FirmwareUpdateStateInitial>()
+              .having((s) => s.isLoadingVersions, 'isLoadingVersions', true),
+          isA<FirmwareUpdateStateInitial>()
+              .having((s) => s.isLoadingVersions, 'isLoadingVersions', false)
+              .having((s) => s.availableVersions, 'availableVersions', []),
         ],
       );
 
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'preserves currentVersion when resetting from any state',
-        build: () => createCubit(currentVersion: '1.11.0'),
+        build: () {
+          when(() => mockFirmwareVersionService.fetchAvailableVersions())
+              .thenAnswer((_) async => []);
+          return createCubit(currentVersion: '1.11.0');
+        },
         seed: () => const FirmwareUpdateState.flashing(
           targetVersion: '1.12.0',
           progress: FlashProgress(
@@ -524,6 +538,12 @@ void main() {
             'currentVersion',
             '1.11.0',
           ),
+          isA<FirmwareUpdateStateInitial>()
+              .having((s) => s.isLoadingVersions, 'isLoadingVersions', true)
+              .having((s) => s.currentVersion, 'currentVersion', '1.11.0'),
+          isA<FirmwareUpdateStateInitial>()
+              .having((s) => s.isLoadingVersions, 'isLoadingVersions', false)
+              .having((s) => s.currentVersion, 'currentVersion', '1.11.0'),
         ],
       );
     });
@@ -601,91 +621,91 @@ void main() {
 
       expect(
         initialState.when(
-          initial: (_, __, ___, ____) => 'initial',
-          downloading: (_, __) => 'downloading',
-          waitingForBootloader: (_, __) => 'waiting',
-          flashing: (_, __) => 'flashing',
+          initial: (_, _, _, _) => 'initial',
+          downloading: (_, _) => 'downloading',
+          waitingForBootloader: (_, _) => 'waiting',
+          flashing: (_, _) => 'flashing',
           success: (_) => 'success',
-          error: (_, __, ___, ____, _____) => 'error',
-          udevMissing: (_, __, ___) => 'udevMissing',
+          error: (_, _, _, _, _) => 'error',
+          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'initial',
       );
 
       expect(
         downloadingState.when(
-          initial: (_, __, ___, ____) => 'initial',
-          downloading: (_, __) => 'downloading',
-          waitingForBootloader: (_, __) => 'waiting',
-          flashing: (_, __) => 'flashing',
+          initial: (_, _, _, _) => 'initial',
+          downloading: (_, _) => 'downloading',
+          waitingForBootloader: (_, _) => 'waiting',
+          flashing: (_, _) => 'flashing',
           success: (_) => 'success',
-          error: (_, __, ___, ____, _____) => 'error',
-          udevMissing: (_, __, ___) => 'udevMissing',
+          error: (_, _, _, _, _) => 'error',
+          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'downloading',
       );
 
       expect(
         waitingState.when(
-          initial: (_, __, ___, ____) => 'initial',
-          downloading: (_, __) => 'downloading',
-          waitingForBootloader: (_, __) => 'waiting',
-          flashing: (_, __) => 'flashing',
+          initial: (_, _, _, _) => 'initial',
+          downloading: (_, _) => 'downloading',
+          waitingForBootloader: (_, _) => 'waiting',
+          flashing: (_, _) => 'flashing',
           success: (_) => 'success',
-          error: (_, __, ___, ____, _____) => 'error',
-          udevMissing: (_, __, ___) => 'udevMissing',
+          error: (_, _, _, _, _) => 'error',
+          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'waiting',
       );
 
       expect(
         flashingState.when(
-          initial: (_, __, ___, ____) => 'initial',
-          downloading: (_, __) => 'downloading',
-          waitingForBootloader: (_, __) => 'waiting',
-          flashing: (_, __) => 'flashing',
+          initial: (_, _, _, _) => 'initial',
+          downloading: (_, _) => 'downloading',
+          waitingForBootloader: (_, _) => 'waiting',
+          flashing: (_, _) => 'flashing',
           success: (_) => 'success',
-          error: (_, __, ___, ____, _____) => 'error',
-          udevMissing: (_, __, ___) => 'udevMissing',
+          error: (_, _, _, _, _) => 'error',
+          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'flashing',
       );
 
       expect(
         successState.when(
-          initial: (_, __, ___, ____) => 'initial',
-          downloading: (_, __) => 'downloading',
-          waitingForBootloader: (_, __) => 'waiting',
-          flashing: (_, __) => 'flashing',
+          initial: (_, _, _, _) => 'initial',
+          downloading: (_, _) => 'downloading',
+          waitingForBootloader: (_, _) => 'waiting',
+          flashing: (_, _) => 'flashing',
           success: (_) => 'success',
-          error: (_, __, ___, ____, _____) => 'error',
-          udevMissing: (_, __, ___) => 'udevMissing',
+          error: (_, _, _, _, _) => 'error',
+          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'success',
       );
 
       expect(
         errorState.when(
-          initial: (_, __, ___, ____) => 'initial',
-          downloading: (_, __) => 'downloading',
-          waitingForBootloader: (_, __) => 'waiting',
-          flashing: (_, __) => 'flashing',
+          initial: (_, _, _, _) => 'initial',
+          downloading: (_, _) => 'downloading',
+          waitingForBootloader: (_, _) => 'waiting',
+          flashing: (_, _) => 'flashing',
           success: (_) => 'success',
-          error: (_, __, ___, ____, _____) => 'error',
-          udevMissing: (_, __, ___) => 'udevMissing',
+          error: (_, _, _, _, _) => 'error',
+          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'error',
       );
 
       expect(
         udevMissingState.when(
-          initial: (_, __, ___, ____) => 'initial',
-          downloading: (_, __) => 'downloading',
-          waitingForBootloader: (_, __) => 'waiting',
-          flashing: (_, __) => 'flashing',
+          initial: (_, _, _, _) => 'initial',
+          downloading: (_, _) => 'downloading',
+          waitingForBootloader: (_, _) => 'waiting',
+          flashing: (_, _) => 'flashing',
           success: (_) => 'success',
-          error: (_, __, ___, ____, _____) => 'error',
-          udevMissing: (_, __, ___) => 'udevMissing',
+          error: (_, _, _, _, _) => 'error',
+          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'udevMissing',
       );
