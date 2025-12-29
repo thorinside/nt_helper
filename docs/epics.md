@@ -1161,4 +1161,106 @@ So that we can confidently release without breaking existing functionality.
 
 ---
 
+## Epic 13: Plugin Sample Dependency Installation
+
+**Expanded Goal:**
+
+Enable C++ plugin zip files from NT Gallery to include sample dependencies that are automatically extracted to the SD card's `/samples/` directory during plugin installation. When a plugin zip contains a `samples/` directory, nt_helper extracts those files to the corresponding paths on the SD card, preserving directory structure and skipping files that already exist.
+
+**Value Proposition:**
+
+C++ plugins often depend on sample files (WAV, audio data) to function correctly. Currently, users must manually locate and install samples after installing a plugin, creating friction and potential errors. By bundling samples with plugins and automatically extracting them during installation, users get a seamless one-click install experience where plugins work immediately without additional setup steps.
+
+**Story Breakdown:**
+
+**Story E13.1: Detect and extract sample files from plugin zip archives**
+
+As a developer maintaining plugin installation,
+I want `_extractArchive()` to also extract files from the `samples/` directory in plugin zips,
+So that sample dependencies are available for installation alongside plugin files.
+
+**Acceptance Criteria:**
+1. `_extractArchive()` detects files under `samples/` path in zip archive (case-insensitive check)
+2. Sample files are extracted with their full relative path preserved (e.g., `samples/drums/kick.wav`)
+3. Sample files are returned as separate list or tagged entries distinguishable from plugin files
+4. Existing plugin file filtering (`.o`, `.lua`, `.3pot`) continues to work unchanged
+5. Sample files of any extension are included (`.wav`, `.raw`, `.bin`, etc.)
+6. Empty `samples/` directories are ignored (only files extracted)
+7. Nested sample directories are supported (e.g., `samples/category/subcategory/file.wav`)
+8. Unit test verifies sample extraction from test zip with `samples/` directory
+9. Unit test verifies plugin-only zips continue to work (no samples directory)
+10. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** None
+
+**Story E13.2: Install sample files to SD card during plugin installation**
+
+As a user installing a C++ plugin with sample dependencies,
+I want sample files to be automatically written to the SD card's `/samples/` directory,
+So that my plugin works immediately without manual sample installation.
+
+**Acceptance Criteria:**
+1. `_installFilesViaDisting()` handles sample files separately from plugin files
+2. Sample files are uploaded to SD card using the path from the zip (e.g., `samples/drums/kick.wav` → `/samples/drums/kick.wav`)
+3. Before uploading each sample, check if file already exists at target path using existing SD card file listing
+4. If sample file already exists, skip upload (do not overwrite)
+5. Create parent directories as needed before uploading samples (use existing `requestCreateDirectory()`)
+6. Sample installation happens after plugin file installation
+7. Installation progress includes sample files in progress tracking
+8. Sample upload failures are logged but don't fail the entire plugin installation (warn, continue)
+9. `QueuedPluginStatus` states work correctly during sample extraction phase
+10. Integration test verifies sample files are uploaded to correct paths
+11. Integration test verifies existing samples are skipped (not overwritten)
+12. `flutter analyze` passes with zero warnings
+
+**Prerequisites:** Story E13.1
+
+**Story E13.3: Display sample installation summary to user**
+
+As a user installing a plugin with samples,
+I want to see what samples were installed or skipped,
+So that I know what happened during installation and can troubleshoot if needed.
+
+**Acceptance Criteria:**
+1. After installation completes, show summary in success snackbar: "Installed [plugin name] with X samples (Y skipped)"
+2. When samples are skipped, tooltip or expandable detail explains: "Skipped existing: [list of filenames]"
+3. Collection plugin installations aggregate sample counts across all selected plugins
+4. Installation failure message includes which sample(s) failed if applicable
+5. Queue status stream includes sample count information for UI display
+6. "Analyzing" status shown while scanning zip for samples (if noticeable delay)
+7. No UI changes if plugin has no samples (existing behavior preserved)
+8. `flutter analyze` passes with zero warnings
+9. All tests pass
+
+**Prerequisites:** Story E13.2
+
+**Technical Notes:**
+- Primary file: `lib/services/gallery_service.dart`
+- Methods to modify: `_extractArchive()`, `_installFilesViaDisting()`, `_installSinglePluginViaDisting()`
+- SD card operations: Use existing `IDistingMidiManager.requestCreateDirectory()` and file upload methods
+- File existence check: May need to call `requestListDirectory()` for target sample paths
+- Test files: Create `test/services/gallery_service_samples_test.dart`
+
 **For implementation:** Use the `create-story` workflow to generate individual story implementation plans from this epic breakdown.
+
+---
+
+## Epic 10: Visual Step Sequencer UI Widget
+
+See standalone epic file: [docs/epics/epic-10.md](./epics/epic-10.md)
+
+---
+
+## Epic 14: Firmware Update Integration
+
+See standalone epic file: [docs/epics/epic-14-firmware-update.md](./epics/epic-14-firmware-update.md)
+
+**Summary:** One-click firmware updates for musicians using the external `nt-flash` tool from [thorinside/nt-flash](https://github.com/thorinside/nt-flash).
+
+**4 Stories:**
+1. Flash tool infrastructure (auto-download, process bridge)
+2. Version check and download (current vs latest, one-tap download)
+3. Update wizard with progress visualization (single-screen flow, simple animation)
+4. Error handling and platform setup (inline troubleshooting, udev rules)
+
+**Design principles:** No configuration, no decisions, 3 clicks to complete.
