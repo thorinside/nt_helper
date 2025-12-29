@@ -158,3 +158,9 @@ development_status:
   12-2-plugin-gallery-view-modes: done
   12-3-gallery-graphql-migration: done
   epic-12-retrospective: optional
+
+  epic-13: backlog
+  13-1-detect-and-extract-sample-files: review
+  13-2-install-sample-files-to-sd-card: review
+  13-3-display-sample-installation-summary: review
+  epic-13-retrospective: optional
