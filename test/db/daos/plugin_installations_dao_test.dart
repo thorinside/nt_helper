@@ -120,6 +120,36 @@ void main() {
       expect(records[0].pluginVersion, equals('unknown'));
       expect(records[0].pluginAuthor, equals('Local Install'));
     });
+
+    test('gallery install replaces local install at same path', () async {
+      // First: local install (no pluginId provided)
+      await database.pluginInstallationsDao.recordPluginByPath(
+        installationPath: '/programs/lua/test.lua',
+        pluginName: 'test.lua',
+        pluginType: 'lua',
+      );
+
+      var records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(records[0].pluginId, startsWith('local:'));
+
+      // Second: gallery install at same path (with pluginId)
+      await database.pluginInstallationsDao.recordPluginByPath(
+        installationPath: '/programs/lua/test.lua',
+        pluginName: 'test.lua',
+        pluginType: 'lua',
+        pluginId: 'gallery-plugin',
+        pluginVersion: 'v1.0.0',
+      );
+
+      // Should have only ONE record (gallery install replaced local)
+      records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(records[0].pluginId, equals('gallery-plugin'));
+      expect(records[0].pluginVersion, equals('v1.0.0'));
+    });
   });
 
   group('PluginInstallationsDao - removeByInstallationPath', () {

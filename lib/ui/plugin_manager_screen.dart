@@ -442,8 +442,12 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
 
   /// Remove a plugin from the database cache by installation path
   Future<void> _removePluginFromDatabase(PluginInfo plugin) async {
-    await widget.database.pluginInstallationsDao
-        .removeByInstallationPath(plugin.path);
+    try {
+      await widget.database.pluginInstallationsDao
+          .removeByInstallationPath(plugin.path);
+    } catch (e) {
+      // Intentionally swallowed - DB errors shouldn't prevent plugin deletion
+    }
   }
 
   Future<void> _deletePlugin(PluginInfo plugin) async {
