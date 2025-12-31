@@ -65,8 +65,8 @@ class _PluginDelegate {
         pluginType,
       );
       plugins.addAll(pluginInfos);
-    } catch (e, stack) {
-      debugPrintStack(stackTrace: stack);
+    } catch (e) {
+      // Intentionally swallowed - scanning errors shouldn't crash the app
     }
 
     // Sort by name
@@ -139,8 +139,8 @@ class _PluginDelegate {
           }
         }
       }
-    } catch (e, stack) {
-      debugPrintStack(stackTrace: stack);
+    } catch (e) {
+      // Intentionally swallowed - scanning errors shouldn't crash the app
     }
 
     return plugins;
@@ -645,8 +645,8 @@ class _PluginDelegate {
         // Loading failed - either couldn't get info or plugin didn't load
         return null;
       }
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
+    } catch (e) {
+      // Intentionally swallowed - plugin loading errors shouldn't crash the app
       return null;
     }
   }

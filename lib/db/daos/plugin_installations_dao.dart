@@ -112,13 +112,6 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
     String? pluginId,
     String? pluginVersion,
   }) async {
-    // Delete any existing record at this path first.
-    // We can't rely on InsertMode.insertOrReplace because the unique constraint
-    // is on (plugin_id, plugin_version), not installation_path. This means a
-    // gallery install (with its own plugin_id) wouldn't replace a local install
-    // (with a different plugin_id) at the same path.
-    await removeByInstallationPath(installationPath);
-
     // Use path directly for local installs (not hashCode which is unstable across sessions).
     // For gallery installs, pluginId is provided by the caller.
     final companion = PluginInstallationsCompanion.insert(
@@ -133,7 +126,15 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
       totalBytes: Value(totalBytes),
     );
 
-    return into(pluginInstallations).insert(companion);
+    // Wrap delete+insert in a transaction for atomicity.
+    // We can't rely on InsertMode.insertOrReplace because the unique constraint
+    // is on (plugin_id, plugin_version), not installation_path. This means a
+    // gallery install (with its own plugin_id) wouldn't replace a local install
+    // (with a different plugin_id) at the same path.
+    return transaction(() async {
+      await removeByInstallationPath(installationPath);
+      return into(pluginInstallations).insert(companion);
+    });
   }
 
   /// Record a failed plugin installation
