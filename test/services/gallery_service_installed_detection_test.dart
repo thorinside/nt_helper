@@ -171,7 +171,10 @@ void main() {
         expect(updateInfo['manual-plugin']!.updateAvailable, isFalse);
       });
 
-      test('caches manually installed plugin in database', () async {
+      test('does not auto-cache manually installed plugin in database', () async {
+        // Note: Database recording is now handled by DistingCubit.installPlugin(),
+        // not by the gallery service's GUID detection. This test verifies the
+        // gallery service no longer auto-caches.
         final plugin = createTestPlugin(
           id: 'manual-plugin',
           name: 'Manual Plugin',
@@ -181,48 +184,44 @@ void main() {
         final gallery = createTestGallery([plugin]);
         final devicePluginGuids = {'MNPL'};
 
-        // First detection - should cache in database
+        // Detection - should NOT cache in database
         await galleryService.compareWithInstalledVersions(
           gallery,
           devicePluginGuids: devicePluginGuids,
         );
 
-        // Verify it was cached
+        // Verify nothing was cached (recording is now done by cubit)
         final cached = await database.pluginInstallationsDao
             .getAllInstalledPlugins();
-        expect(cached, hasLength(1));
-        expect(cached.first.pluginId, equals('manual-plugin'));
-        expect(cached.first.pluginVersion, equals('unknown'));
-        expect(
-          cached.first.installationNotes,
-          equals('Detected via device GUID matching'),
-        );
+        expect(cached, isEmpty);
       });
 
-      test('uses database cache on subsequent checks', () async {
+      test('GUID detection works without database caching', () async {
+        // Note: Database recording is now handled by DistingCubit.installPlugin(),
+        // not by GUID detection. This test verifies GUID detection still works
+        // but doesn't create database records.
         final plugin = createTestPlugin(
-          id: 'cached-plugin',
-          name: 'Cached Plugin',
-          guid: 'CACH',
+          id: 'detected-plugin',
+          name: 'Detected Plugin',
+          guid: 'DTCT',
         );
 
         final gallery = createTestGallery([plugin]);
-        final devicePluginGuids = {'CACH'};
+        final devicePluginGuids = {'DTCT'};
 
-        // First detection - caches in database
-        await galleryService.compareWithInstalledVersions(
+        // First check - detects via GUID
+        final updateInfo = await galleryService.compareWithInstalledVersions(
           gallery,
           devicePluginGuids: devicePluginGuids,
         );
 
-        // Second check without device GUID - should use database cache
-        final updateInfo = await galleryService.compareWithInstalledVersions(
-          gallery,
-          devicePluginGuids: null, // No device GUIDs provided
-        );
+        expect(updateInfo, contains('detected-plugin'));
+        expect(updateInfo['detected-plugin']!.installedVersion, equals('unknown'));
 
-        expect(updateInfo, contains('cached-plugin'));
-        expect(updateInfo['cached-plugin']!.installedVersion, equals('unknown'));
+        // Verify no database record was created
+        final cached = await database.pluginInstallationsDao
+            .getAllInstalledPlugins();
+        expect(cached, isEmpty);
       });
 
       test('does not detect plugin without matching GUID', () async {

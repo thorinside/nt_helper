@@ -283,6 +283,19 @@ class _PluginDelegate {
       }
     }
 
+    // Record the installation in the database
+    await _cubit.database.pluginInstallationsDao.recordPluginByPath(
+      installationPath: targetPath,
+      pluginName: fileName.split('/').last,
+      pluginType: switch (extension) {
+        'lua' => 'lua',
+        '3pot' => 'threepot',
+        'o' => 'cpp',
+        _ => 'unknown',
+      },
+      totalBytes: fileData.length,
+    );
+
     // Refresh state from manager to pick up any changes
     await _cubit._refreshStateFromManager();
   }

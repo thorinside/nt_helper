@@ -101,6 +101,34 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
     ).insert(companion, mode: InsertMode.insertOrReplace);
   }
 
+  /// Record a plugin installation by artifact path
+  /// Works for all plugin types (gallery and local installs)
+  /// Uses installation path as the primary identifier for upsert
+  Future<int> recordPluginByPath({
+    required String installationPath,
+    required String pluginName,
+    required String pluginType,
+    int? totalBytes,
+    String? pluginId,
+    String? pluginVersion,
+  }) async {
+    final companion = PluginInstallationsCompanion.insert(
+      pluginId: pluginId ?? 'local:${installationPath.hashCode}',
+      pluginName: pluginName,
+      pluginVersion: pluginVersion ?? 'unknown',
+      pluginType: pluginType,
+      pluginAuthor: pluginId != null ? '' : 'Local Install',
+      installationPath: installationPath,
+      installationStatus: const Value('completed'),
+      totalBytes: Value(totalBytes),
+    );
+
+    return into(pluginInstallations).insert(
+      companion,
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
   /// Record a failed plugin installation
   Future<int> recordPluginInstallationFailure({
     required GalleryPlugin plugin,

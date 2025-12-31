@@ -1,0 +1,210 @@
+import 'dart:typed_data';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/models/sd_card_file_system.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
+
+void main() {
+  late DistingCubit cubit;
+  late AppDatabase database;
+  late MockDistingMidiManager mockDisting;
+
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    registerFallbackValue(DistingState.initial());
+    registerFallbackValue(Uint8List(0));
+  });
+
+  setUp(() {
+    // Use real in-memory database so we can verify recording
+    database = AppDatabase.forTesting(NativeDatabase.memory());
+    mockDisting = MockDistingMidiManager();
+
+    cubit = DistingCubit(database);
+
+    // Setup common mocks for file upload
+    when(() => mockDisting.requestWake()).thenAnswer((_) async {});
+    when(() => mockDisting.requestDirectoryListing(any()))
+        .thenAnswer((_) async => DirectoryListing(entries: []));
+    when(() => mockDisting.requestDirectoryCreate(any())).thenAnswer(
+      (_) async => SdCardStatus(success: true, message: 'ok'),
+    );
+    when(
+      () => mockDisting.requestFileUploadChunk(
+        any(),
+        any(),
+        any(),
+        createAlways: any(named: 'createAlways'),
+      ),
+    ).thenAnswer((_) async => SdCardStatus(success: true, message: 'ok'));
+    when(() => mockDisting.requestRescanPlugins()).thenAnswer((_) async {});
+    when(() => mockDisting.requestNumberOfAlgorithms())
+        .thenAnswer((_) async => 0);
+    when(() => mockDisting.requestNewPreset()).thenAnswer((_) async {});
+    when(() => mockDisting.requestLoadPreset(any(), any()))
+        .thenAnswer((_) async {});
+    when(() => mockDisting.requestNumAlgorithmsInPreset())
+        .thenAnswer((_) async => 0);
+    when(() => mockDisting.requestPresetName()).thenAnswer((_) async => 'Test');
+  });
+
+  tearDown(() async {
+    await cubit.close();
+    await database.close();
+  });
+
+  DistingStateSynchronized createSynchronizedState({
+    List<AlgorithmInfo>? algorithms,
+    List<Slot>? slots,
+  }) {
+    return DistingStateSynchronized(
+      disting: mockDisting,
+      distingVersion: '1.12.0',
+      firmwareVersion: FirmwareVersion('1.12.0'),
+      presetName: 'Test',
+      algorithms: algorithms ?? [],
+      slots: slots ?? [],
+      unitStrings: [],
+      inputDevice: null,
+      outputDevice: null,
+      loading: false,
+      offline: false,
+      screenshot: null,
+      demo: false,
+      videoStream: null,
+    );
+  }
+
+  group('DistingCubit plugin recording', () {
+    test('records lua plugin installation to database', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act
+      await cubit.installPlugin('test_script.lua', testData);
+
+      // Assert - verify database record was created
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(records[0].installationPath, equals('/programs/lua/test_script.lua'));
+      expect(records[0].pluginType, equals('lua'));
+      expect(records[0].pluginName, equals('test_script.lua'));
+      expect(records[0].totalBytes, equals(3));
+    });
+
+    test('records 3pot plugin installation to database', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03, 0x04]);
+
+      // Act
+      await cubit.installPlugin('effect.3pot', testData);
+
+      // Assert
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(
+        records[0].installationPath,
+        equals('/programs/three_pot/effect.3pot'),
+      );
+      expect(records[0].pluginType, equals('threepot'));
+    });
+
+    test('records cpp plugin installation to database', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList(List.filled(100, 0x55));
+
+      // Act
+      await cubit.installPlugin('synth.o', testData);
+
+      // Assert
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(
+        records[0].installationPath,
+        equals('/programs/plug-ins/synth.o'),
+      );
+      expect(records[0].pluginType, equals('cpp'));
+      expect(records[0].totalBytes, equals(100));
+    });
+
+    test('updates existing record on reinstall (same path)', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final smallData = Uint8List.fromList([0x01, 0x02, 0x03]);
+      final largerData = Uint8List.fromList([0x01, 0x02, 0x03, 0x04, 0x05]);
+
+      // Act - install twice
+      await cubit.installPlugin('test.lua', smallData);
+      await cubit.installPlugin('test.lua', largerData);
+
+      // Assert - should have only one record (upsert)
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(records[0].totalBytes, equals(5)); // Updated to larger size
+    });
+
+    test('does not record on upload failure', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Make upload fail
+      when(
+        () => mockDisting.requestFileUploadChunk(
+          any(),
+          any(),
+          any(),
+          createAlways: any(named: 'createAlways'),
+        ),
+      ).thenAnswer(
+        (_) async => SdCardStatus(success: false, message: 'Upload failed'),
+      );
+
+      // Act & Assert
+      await expectLater(
+        cubit.installPlugin('test.lua', testData),
+        throwsException,
+      );
+
+      // Verify no database record was created
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records, isEmpty);
+    });
+
+    test('records correct path for plugin with subdirectory', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02]);
+
+      // Act
+      await cubit.installPlugin('subfolder/nested.lua', testData);
+
+      // Assert
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(
+        records[0].installationPath,
+        equals('/programs/lua/subfolder/nested.lua'),
+      );
+      expect(records[0].pluginName, equals('nested.lua'));
+    });
+  });
+}
