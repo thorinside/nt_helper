@@ -324,5 +324,35 @@ void main() {
       verifyNever(() => mockDisting.requestNewPreset());
       verifyNever(() => mockDisting.requestLoadPreset(any(), any()));
     });
+
+    test('continues successfully even if database recording fails', () async {
+      // Arrange - make DB recording throw
+      when(
+        () => mockPluginInstallationsDao.recordPluginByPath(
+          installationPath: any(named: 'installationPath'),
+          pluginName: any(named: 'pluginName'),
+          pluginType: any(named: 'pluginType'),
+          totalBytes: any(named: 'totalBytes'),
+          pluginId: any(named: 'pluginId'),
+          pluginVersion: any(named: 'pluginVersion'),
+        ),
+      ).thenThrow(Exception('Database error'));
+
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act - should not throw despite DB error
+      await cubit.installPlugin('test.lua', testData);
+
+      // Assert - upload was still called (install proceeded despite DB error)
+      verify(
+        () => mockDisting.requestFileUploadChunk(
+          any(),
+          any(),
+          any(),
+          createAlways: any(named: 'createAlways'),
+        ),
+      ).called(greaterThan(0));
+    });
   });
 }

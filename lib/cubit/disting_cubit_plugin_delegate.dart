@@ -278,8 +278,7 @@ class _PluginDelegate {
           await disting.requestLoadPreset(presetPath, false);
         }
       } catch (e) {
-        // Fire-and-forget: log but don't block on rescan/reload errors
-        debugPrint('Post-install operations failed (non-blocking): $e');
+        // Fire-and-forget: don't block on rescan/reload errors
       }
     }
 
@@ -297,7 +296,7 @@ class _PluginDelegate {
         totalBytes: fileData.length,
       );
     } catch (e) {
-      debugPrint('Failed to record plugin installation (non-blocking): $e');
+      // Intentionally swallowed - DB errors shouldn't fail installations
     }
 
     // Refresh state from manager to pick up any changes

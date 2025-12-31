@@ -7,6 +7,13 @@ import 'package:nt_helper/db/database.dart';
 ///
 /// These tests verify the behavior of the cleanup pattern used in
 /// PluginManagerScreen._cleanupStaleRecords()
+///
+/// Note: The actual _cleanupStaleRecords method has an offline guard that
+/// prevents cleanup when the device is disconnected. This guard ensures
+/// the 'removes all records when device has no plugins' scenario only
+/// happens when the device is truly connected and empty, not when we
+/// simply can't reach it. Testing that guard requires widget testing
+/// with a mocked DistingCubit.
 void main() {
   late AppDatabase database;
 

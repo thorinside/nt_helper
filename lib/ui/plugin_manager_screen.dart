@@ -133,7 +133,6 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       }
     } catch (e) {
       // Best-effort cleanup - don't fail the load
-      debugPrint('Plugin cleanup failed (non-blocking): $e');
     }
   }
 
