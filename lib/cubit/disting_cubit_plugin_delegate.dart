@@ -169,10 +169,15 @@ class _PluginDelegate {
   /// Uploads a plugin file to the appropriate directory on the SD card.
   /// Files are uploaded in 512-byte chunks to stay within SysEx message limits.
   /// Only works when connected to a physical device (not offline/demo mode).
+  ///
+  /// For gallery plugins, pass [galleryPluginId] and [galleryPluginVersion]
+  /// to properly track the installation for update checking.
   Future<void> installPlugin(
     String fileName,
     Uint8List fileData, {
     Function(double)? onProgress,
+    String? galleryPluginId,
+    String? galleryPluginVersion,
   }) async {
     final currentState = _cubit.state;
     if (currentState is! DistingStateSynchronized || currentState.offline) {
@@ -294,6 +299,8 @@ class _PluginDelegate {
           _ => 'unknown',
         },
         totalBytes: fileData.length,
+        pluginId: galleryPluginId,
+        pluginVersion: galleryPluginVersion,
       );
     } catch (e) {
       // Intentionally swallowed - DB errors shouldn't fail installations

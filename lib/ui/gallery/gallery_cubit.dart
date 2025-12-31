@@ -262,6 +262,8 @@ class GalleryCubit extends Cubit<GalleryState> {
       String fileName,
       Uint8List fileData, {
       Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
     })
     distingInstallPlugin,
   }) async {

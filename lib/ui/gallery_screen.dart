@@ -2018,12 +2018,20 @@ class _GalleryViewState extends State<_GalleryView>
 
     try {
       await widget.galleryService.installQueuedPlugins(
-        distingInstallPlugin: (fileName, fileData, {onProgress}) async {
+        distingInstallPlugin: (
+          fileName,
+          fileData, {
+          onProgress,
+          galleryPluginId,
+          galleryPluginVersion,
+        }) async {
           // Use the DistingCubit's installPlugin method
           await context.read<DistingCubit>().installPlugin(
             fileName,
             fileData,
             onProgress: onProgress,
+            galleryPluginId: galleryPluginId,
+            galleryPluginVersion: galleryPluginVersion,
           );
         },
         distingInstallSample: (targetPath, fileData, {onProgress}) async {

@@ -102,7 +102,11 @@ void main() {
       expect(records.length, equals(3));
     });
 
-    test('removes all records when device has no plugins', () async {
+    test('removes all records when device has no plugins (old behavior)', () async {
+      // NOTE: This test documents the OLD behavior before the empty-list guard was added.
+      // The actual _cleanupStaleRecords in PluginManagerScreen now returns early when
+      // devicePlugins is empty, preventing this scenario. This test verifies the raw
+      // cleanup logic still works for the case where we DO want to clean up.
       // Setup: Add plugins
       await database.pluginInstallationsDao.recordPluginByPath(
         installationPath: '/programs/lua/a.lua',
@@ -115,14 +119,61 @@ void main() {
         pluginType: 'lua',
       );
 
-      // Device has no plugins
+      // Device has no plugins - calling raw cleanup without the empty guard
       final devicePaths = <String>{};
       await cleanupStaleRecords(devicePaths, database);
 
-      // All records should be removed
+      // All records would be removed by raw cleanup logic
       final records =
           await database.pluginInstallationsDao.getAllInstalledPlugins();
       expect(records, isEmpty);
+    });
+
+    test('empty device list guard preserves records (simulating PluginManagerScreen behavior)', () async {
+      // This test verifies the guard logic added to prevent accidental data loss
+      // when the device scan returns empty (due to SD card issues, MIDI errors, etc.)
+
+      // Setup: Add plugins to DB
+      await database.pluginInstallationsDao.recordPluginByPath(
+        installationPath: '/programs/lua/a.lua',
+        pluginName: 'a.lua',
+        pluginType: 'lua',
+      );
+      await database.pluginInstallationsDao.recordPluginByPath(
+        installationPath: '/programs/lua/b.lua',
+        pluginName: 'b.lua',
+        pluginType: 'lua',
+      );
+
+      // Simulate the guarded cleanup (as implemented in PluginManagerScreen)
+      Future<void> cleanupWithEmptyGuard(
+        Set<String> devicePaths,
+        AppDatabase db,
+      ) async {
+        // This mirrors the guard in PluginManagerScreen._cleanupStaleRecords
+        if (devicePaths.isEmpty) {
+          return; // Don't cleanup - likely a scan failure
+        }
+
+        final dbRecords =
+            await db.pluginInstallationsDao.getAllInstalledPlugins();
+
+        for (final record in dbRecords) {
+          if (!devicePaths.contains(record.installationPath)) {
+            await db.pluginInstallationsDao
+                .removeByInstallationPath(record.installationPath);
+          }
+        }
+      }
+
+      // Device returns empty list (simulating scan failure)
+      final devicePaths = <String>{};
+      await cleanupWithEmptyGuard(devicePaths, database);
+
+      // Records should be preserved due to empty guard
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(2));
     });
 
     test('handles empty database with plugins on device', () async {

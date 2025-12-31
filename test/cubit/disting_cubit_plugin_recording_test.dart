@@ -206,5 +206,45 @@ void main() {
       );
       expect(records[0].pluginName, equals('nested.lua'));
     });
+
+    test('records gallery plugin with proper pluginId and version', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act - install with gallery metadata
+      await cubit.installPlugin(
+        'my-synth.o',
+        testData,
+        galleryPluginId: 'expert-sleepers/my-synth',
+        galleryPluginVersion: '1.2.0',
+      );
+
+      // Assert - verify gallery metadata was recorded
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(records[0].pluginId, equals('expert-sleepers/my-synth'));
+      expect(records[0].pluginVersion, equals('1.2.0'));
+      // Gallery installs should NOT have 'Local Install' as author
+      expect(records[0].pluginAuthor, isNot(equals('Local Install')));
+    });
+
+    test('local install without gallery metadata uses local prefix', () async {
+      // Arrange
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act - install without gallery metadata (local install)
+      await cubit.installPlugin('my-script.lua', testData);
+
+      // Assert - verify local prefix was used
+      final records =
+          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      expect(records.length, equals(1));
+      expect(records[0].pluginId, startsWith('local:'));
+      expect(records[0].pluginVersion, equals('unknown'));
+      expect(records[0].pluginAuthor, equals('Local Install'));
+    });
   });
 }

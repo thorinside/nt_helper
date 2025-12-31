@@ -783,6 +783,8 @@ class GalleryService {
       String fileName,
       Uint8List fileData, {
       Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
     })
     distingInstallPlugin,
     SampleInstallCallback? distingInstallSample,
@@ -858,6 +860,8 @@ class GalleryService {
       String fileName,
       Uint8List fileData, {
       Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
     })
     distingInstallPlugin, {
     SampleInstallCallback? distingInstallSample,
@@ -929,6 +933,7 @@ class GalleryService {
     await _installFilesViaDisting(
       filesToInstall,
       plugin,
+      version,
       distingInstallPlugin,
       (uploadProgress) {
         // Plugin files take 60-80% of progress
@@ -1285,10 +1290,13 @@ class GalleryService {
   Future<void> _installFilesViaDisting(
     List<MapEntry<String, List<int>>> files,
     GalleryPlugin plugin,
+    String resolvedVersion,
     Function(
       String fileName,
       Uint8List fileData, {
       Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
     })
     distingInstallPlugin,
     Function(double)? onProgress,
@@ -1312,6 +1320,8 @@ class GalleryService {
                     (filesProcessed + fileProgress) / files.length;
                 onProgress?.call(overallProgress);
               },
+              galleryPluginId: plugin.id,
+              galleryPluginVersion: resolvedVersion,
             );
 
             filesProcessed++;
@@ -1331,6 +1341,8 @@ class GalleryService {
                 (filesProcessed + fileProgress) / files.length;
             onProgress?.call(overallProgress);
           },
+          galleryPluginId: plugin.id,
+          galleryPluginVersion: resolvedVersion,
         );
 
         filesProcessed++;
