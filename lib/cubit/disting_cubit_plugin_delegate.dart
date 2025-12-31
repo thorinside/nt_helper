@@ -65,8 +65,8 @@ class _PluginDelegate {
         pluginType,
       );
       plugins.addAll(pluginInfos);
-    } catch (e, stack) {
-      debugPrintStack(stackTrace: stack);
+    } catch (e) {
+      // Intentionally swallowed - scanning errors shouldn't crash the app
     }
 
     // Sort by name
@@ -139,8 +139,8 @@ class _PluginDelegate {
           }
         }
       }
-    } catch (e, stack) {
-      debugPrintStack(stackTrace: stack);
+    } catch (e) {
+      // Intentionally swallowed - scanning errors shouldn't crash the app
     }
 
     return plugins;
@@ -169,10 +169,15 @@ class _PluginDelegate {
   /// Uploads a plugin file to the appropriate directory on the SD card.
   /// Files are uploaded in 512-byte chunks to stay within SysEx message limits.
   /// Only works when connected to a physical device (not offline/demo mode).
+  ///
+  /// For gallery plugins, pass [galleryPluginId] and [galleryPluginVersion]
+  /// to properly track the installation for update checking.
   Future<void> installPlugin(
     String fileName,
     Uint8List fileData, {
     Function(double)? onProgress,
+    String? galleryPluginId,
+    String? galleryPluginVersion,
   }) async {
     final currentState = _cubit.state;
     if (currentState is! DistingStateSynchronized || currentState.offline) {
@@ -278,9 +283,27 @@ class _PluginDelegate {
           await disting.requestLoadPreset(presetPath, false);
         }
       } catch (e) {
-        // Fire-and-forget: log but don't block on rescan/reload errors
-        debugPrint('Post-install operations failed (non-blocking): $e');
+        // Fire-and-forget: don't block on rescan/reload errors
       }
+    }
+
+    // Record the installation in the database (non-blocking - don't fail install on DB error)
+    try {
+      await _cubit.database.pluginInstallationsDao.recordPluginByPath(
+        installationPath: targetPath,
+        pluginName: fileName.split('/').last,
+        pluginType: switch (extension) {
+          'lua' => 'lua',
+          '3pot' => 'threepot',
+          'o' => 'cpp',
+          _ => 'unknown',
+        },
+        totalBytes: fileData.length,
+        pluginId: galleryPluginId,
+        pluginVersion: galleryPluginVersion,
+      );
+    } catch (e) {
+      // Intentionally swallowed - DB errors shouldn't fail installations
     }
 
     // Refresh state from manager to pick up any changes
@@ -629,8 +652,8 @@ class _PluginDelegate {
         // Loading failed - either couldn't get info or plugin didn't load
         return null;
       }
-    } catch (e, stackTrace) {
-      debugPrintStack(stackTrace: stackTrace);
+    } catch (e) {
+      // Intentionally swallowed - plugin loading errors shouldn't crash the app
       return null;
     }
   }

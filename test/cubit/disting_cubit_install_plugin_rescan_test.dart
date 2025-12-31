@@ -6,6 +6,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
+import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,12 +15,16 @@ class MockAppDatabase extends Mock implements AppDatabase {}
 
 class MockMetadataDao extends Mock implements MetadataDao {}
 
+class MockPluginInstallationsDao extends Mock
+    implements PluginInstallationsDao {}
+
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
 void main() {
   late DistingCubit cubit;
   late MockAppDatabase mockDatabase;
   late MockMetadataDao mockMetadataDao;
+  late MockPluginInstallationsDao mockPluginInstallationsDao;
   late MockDistingMidiManager mockDisting;
 
   setUpAll(() {
@@ -32,10 +37,24 @@ void main() {
   setUp(() {
     mockDatabase = MockAppDatabase();
     mockMetadataDao = MockMetadataDao();
+    mockPluginInstallationsDao = MockPluginInstallationsDao();
     mockDisting = MockDistingMidiManager();
 
     when(() => mockDatabase.metadataDao).thenReturn(mockMetadataDao);
-    when(() => mockMetadataDao.hasCachedAlgorithms()).thenAnswer((_) async => false);
+    when(() => mockDatabase.pluginInstallationsDao)
+        .thenReturn(mockPluginInstallationsDao);
+    when(() => mockMetadataDao.hasCachedAlgorithms())
+        .thenAnswer((_) async => false);
+    when(
+      () => mockPluginInstallationsDao.recordPluginByPath(
+        installationPath: any(named: 'installationPath'),
+        pluginName: any(named: 'pluginName'),
+        pluginType: any(named: 'pluginType'),
+        totalBytes: any(named: 'totalBytes'),
+        pluginId: any(named: 'pluginId'),
+        pluginVersion: any(named: 'pluginVersion'),
+      ),
+    ).thenAnswer((_) async => 1);
 
     cubit = DistingCubit(mockDatabase);
 
@@ -304,6 +323,36 @@ void main() {
       // Assert - newPreset should NOT be called for non-C++ plugins
       verifyNever(() => mockDisting.requestNewPreset());
       verifyNever(() => mockDisting.requestLoadPreset(any(), any()));
+    });
+
+    test('continues successfully even if database recording fails', () async {
+      // Arrange - make DB recording throw
+      when(
+        () => mockPluginInstallationsDao.recordPluginByPath(
+          installationPath: any(named: 'installationPath'),
+          pluginName: any(named: 'pluginName'),
+          pluginType: any(named: 'pluginType'),
+          totalBytes: any(named: 'totalBytes'),
+          pluginId: any(named: 'pluginId'),
+          pluginVersion: any(named: 'pluginVersion'),
+        ),
+      ).thenThrow(Exception('Database error'));
+
+      cubit.emit(createSynchronizedState());
+      final testData = Uint8List.fromList([0x01, 0x02, 0x03]);
+
+      // Act - should not throw despite DB error
+      await cubit.installPlugin('test.lua', testData);
+
+      // Assert - upload was still called (install proceeded despite DB error)
+      verify(
+        () => mockDisting.requestFileUploadChunk(
+          any(),
+          any(),
+          any(),
+          createAlways: any(named: 'createAlways'),
+        ),
+      ).called(greaterThan(0));
     });
   });
 }

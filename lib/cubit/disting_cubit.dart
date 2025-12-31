@@ -651,15 +651,22 @@ class DistingCubit extends _DistingCubitBase
   /// Uploads a plugin file to the appropriate directory on the SD card.
   /// Files are uploaded in 512-byte chunks to stay within SysEx message limits.
   /// Only works when connected to a physical device (not offline/demo mode).
+  ///
+  /// For gallery plugins, pass [galleryPluginId] and [galleryPluginVersion]
+  /// to properly track the installation for update checking.
   Future<void> installPlugin(
     String fileName,
     Uint8List fileData, {
     Function(double)? onProgress,
+    String? galleryPluginId,
+    String? galleryPluginVersion,
   }) async {
     return _pluginDelegate.installPlugin(
       fileName,
       fileData,
       onProgress: onProgress,
+      galleryPluginId: galleryPluginId,
+      galleryPluginVersion: galleryPluginVersion,
     );
   }
 

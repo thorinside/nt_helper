@@ -30,6 +30,7 @@ class PluginManagerScreen extends StatefulWidget {
 class _PluginManagerScreenState extends State<PluginManagerScreen> {
   int _selectedIndex = 0;
   bool _isLoading = false;
+  bool _isLoadingPlugins = false; // Guard against concurrent loads
   String? _error;
 
   // Gallery service
@@ -64,6 +65,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   }
 
   Future<void> _loadInstalledPlugins() async {
+    // Guard against concurrent loads (e.g., rapid refresh)
+    if (_isLoadingPlugins) return;
+    _isLoadingPlugins = true;
+
     // Only show loading spinner if we have no data at all
     final hasData = _luaPlugins.isNotEmpty ||
         _threePotPlugins.isNotEmpty ||
@@ -83,6 +88,9 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         widget.distingCubit.fetchCppPlugins(),
       ]);
 
+      // Cleanup: remove DB records for files no longer on device
+      await _cleanupStaleRecords([...results[0], ...results[1], ...results[2]]);
+
       if (mounted) {
         setState(() {
           _luaPlugins = results[0];
@@ -98,6 +106,33 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           _isLoading = false;
         });
       }
+    } finally {
+      _isLoadingPlugins = false;
+    }
+  }
+
+  /// Remove database records for plugins no longer on the device
+  Future<void> _cleanupStaleRecords(List<PluginInfo> devicePlugins) async {
+    // Only cleanup when we're connected to the device and can verify its state.
+    // If offline, fetching returns empty list which would incorrectly delete all records.
+    final state = widget.distingCubit.state;
+    if (state is! DistingStateSynchronized || state.offline) {
+      return;
+    }
+
+    try {
+      final devicePaths = devicePlugins.map((p) => p.path).toSet();
+      final dbRecords =
+          await widget.database.pluginInstallationsDao.getAllInstalledPlugins();
+
+      for (final record in dbRecords) {
+        if (!devicePaths.contains(record.installationPath)) {
+          await widget.database.pluginInstallationsDao
+              .removeByInstallationPath(record.installationPath);
+        }
+      }
+    } catch (e) {
+      // Best-effort cleanup - don't fail the load
     }
   }
 
@@ -405,34 +440,13 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     );
   }
 
-  /// Remove a plugin from the database cache
-  /// This ensures deleted plugins don't show as installed in the gallery
+  /// Remove a plugin from the database cache by installation path
   Future<void> _removePluginFromDatabase(PluginInfo plugin) async {
     try {
-      // Try to remove by installation path (exact match)
       await widget.database.pluginInstallationsDao
           .removeByInstallationPath(plugin.path);
-
-      // Also try to find and remove by GUID lookup
-      final distingState = widget.distingCubit.state;
-      if (distingState is DistingStateSynchronized) {
-        // Find algorithm with matching filename (only works for loaded plugins)
-        final matchingAlgorithm = distingState.algorithms
-            .where((a) => a.filename == plugin.path)
-            .firstOrNull;
-
-        if (matchingAlgorithm != null && matchingAlgorithm.guid.isNotEmpty) {
-          final galleryPlugin = _galleryService.getPluginByGuid(
-            matchingAlgorithm.guid,
-          );
-          if (galleryPlugin != null) {
-            await widget.database.pluginInstallationsDao
-                .removeAllPluginVersions(galleryPlugin.id);
-          }
-        }
-      }
     } catch (e) {
-      // Silently fail - database cleanup is not critical for deletion
+      // Intentionally swallowed - DB errors shouldn't prevent plugin deletion
     }
   }
 

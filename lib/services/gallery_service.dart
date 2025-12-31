@@ -783,6 +783,8 @@ class GalleryService {
       String fileName,
       Uint8List fileData, {
       Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
     })
     distingInstallPlugin,
     SampleInstallCallback? distingInstallSample,
@@ -823,26 +825,9 @@ class GalleryService {
           status: QueuedPluginStatus.completed,
         );
 
-        // Record successful installation in database BEFORE calling onPluginComplete
-        // so the gallery refresh can find the database record
-        if (_database != null) {
-          try {
-            final installationPath = _getInstallationPath(queuedPlugin.plugin);
-            // Resolve 'latest'/'stable'/'beta' to actual version tag
-            final resolvedVersion = queuedPlugin.plugin
-                .getVersionTag(queuedPlugin.selectedVersion);
-            await _database.pluginInstallationsDao.recordPluginInstallation(
-              plugin: queuedPlugin.plugin,
-              installedVersion: resolvedVersion,
-              installationPath: installationPath,
-              fileCount: 1, // Default value, can be enhanced later
-              totalBytes: null, // Can be enhanced to track actual bytes
-              installationNotes: 'Installed via gallery',
-            );
-          } catch (dbError) {
-            // Don't fail the installation if database recording fails
-          }
-        }
+        // Note: Database recording is now handled by DistingCubit.installPlugin()
+        // which records all installs (gallery and local) in one place using the
+        // installation path as the primary identifier.
 
         onPluginComplete?.call(queuedPlugin);
 
@@ -857,24 +842,8 @@ class GalleryService {
         );
         onPluginError?.call(queuedPlugin, errorMessage);
 
-        // Record failed installation in database
-        if (_database != null) {
-          try {
-            final installationPath = _getInstallationPath(queuedPlugin.plugin);
-            // Resolve 'latest'/'stable'/'beta' to actual version tag
-            final resolvedVersion = queuedPlugin.plugin
-                .getVersionTag(queuedPlugin.selectedVersion);
-            await _database.pluginInstallationsDao
-                .recordPluginInstallationFailure(
-                  plugin: queuedPlugin.plugin,
-                  attemptedVersion: resolvedVersion,
-                  installationPath: installationPath,
-                  errorMessage: errorMessage,
-                );
-          } catch (dbError) {
-            // Intentionally empty
-          }
-        }
+        // Note: No database recording for failed installs - the cubit won't
+        // record if the upload fails, which is the desired behavior.
 
         // Keep failed plugin in queue so user can see the error message
         // They can manually remove it if desired
@@ -891,6 +860,8 @@ class GalleryService {
       String fileName,
       Uint8List fileData, {
       Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
     })
     distingInstallPlugin, {
     SampleInstallCallback? distingInstallSample,
@@ -962,6 +933,7 @@ class GalleryService {
     await _installFilesViaDisting(
       filesToInstall,
       plugin,
+      version,
       distingInstallPlugin,
       (uploadProgress) {
         // Plugin files take 60-80% of progress
@@ -1318,10 +1290,13 @@ class GalleryService {
   Future<void> _installFilesViaDisting(
     List<MapEntry<String, List<int>>> files,
     GalleryPlugin plugin,
+    String resolvedVersion,
     Function(
       String fileName,
       Uint8List fileData, {
       Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
     })
     distingInstallPlugin,
     Function(double)? onProgress,
@@ -1345,6 +1320,8 @@ class GalleryService {
                     (filesProcessed + fileProgress) / files.length;
                 onProgress?.call(overallProgress);
               },
+              galleryPluginId: plugin.id,
+              galleryPluginVersion: resolvedVersion,
             );
 
             filesProcessed++;
@@ -1364,6 +1341,8 @@ class GalleryService {
                 (filesProcessed + fileProgress) / files.length;
             onProgress?.call(overallProgress);
           },
+          galleryPluginId: plugin.id,
+          galleryPluginVersion: resolvedVersion,
         );
 
         filesProcessed++;
@@ -1444,70 +1423,6 @@ class GalleryService {
     _lastFetch = null;
   }
 
-  /// Get installation path for a plugin
-  String _getInstallationPath(GalleryPlugin plugin, {String? devicePath}) {
-    if (devicePath != null && devicePath.isNotEmpty) {
-      return devicePath;
-    }
-
-    final targetPath = plugin.installation.targetPath;
-    if (targetPath.isNotEmpty) {
-      return targetPath;
-    }
-
-    return _defaultInstallationPathForType(plugin.type);
-  }
-
-  String _defaultInstallationPathForType(GalleryPluginType type) {
-    return switch (type) {
-      GalleryPluginType.lua => '/programs/lua',
-      GalleryPluginType.threepot => '/programs/three_pot',
-      GalleryPluginType.cpp => '/programs/plug-ins',
-    };
-  }
-
-  String? _getDevicePathForPlugin(
-    GalleryPlugin plugin,
-    Map<String, String>? devicePluginPaths,
-  ) {
-    if (devicePluginPaths == null) {
-      return null;
-    }
-
-    final guid = plugin.guid;
-    if (guid != null && guid.isNotEmpty) {
-      final path = _findDevicePath(devicePluginPaths, guid);
-      if (path != null) {
-        return path;
-      }
-    }
-
-    for (final guid in plugin.collectionGuids) {
-      final path = _findDevicePath(devicePluginPaths, guid);
-      if (path != null) {
-        return path;
-      }
-    }
-
-    return null;
-  }
-
-  String? _findDevicePath(Map<String, String> devicePluginPaths, String guid) {
-    final direct = devicePluginPaths[guid];
-    if (direct != null && direct.isNotEmpty) {
-      return direct;
-    }
-
-    final upperGuid = guid.toUpperCase();
-    for (final entry in devicePluginPaths.entries) {
-      if (entry.key.toUpperCase() == upperGuid && entry.value.isNotEmpty) {
-        return entry.value;
-      }
-    }
-
-    return null;
-  }
-
   Set<String> _normalizeDeviceGuids(Set<String> devicePluginGuids) {
     return devicePluginGuids.map((guid) => guid.toUpperCase()).toSet();
   }
@@ -1519,50 +1434,16 @@ class GalleryService {
   }
 
   /// Sync database records with actual device state
-  /// Removes any database records for plugins that are no longer on the device
+  /// @deprecated Cleanup is now handled by PluginManagerScreen._cleanupStaleRecords()
+  /// which uses installation path matching instead of GUID matching (GUIDs only
+  /// work for C++ plugins, not Lua/3pot).
+  @Deprecated('Use path-based cleanup in PluginManagerScreen instead')
   Future<void> syncDatabaseWithDevice(
     Gallery gallery,
     Set<String> devicePluginGuids,
   ) async {
-    if (_database == null) return;
-
-    final normalizedDeviceGuids = _normalizeDeviceGuids(devicePluginGuids);
-
-    try {
-      final installedPlugins =
-          await _database.pluginInstallationsDao.getAllInstalledPlugins();
-
-      for (final dbRecord in installedPlugins) {
-        // Find the gallery plugin for this database record
-        final galleryPlugin = gallery.plugins
-            .where((p) => p.id == dbRecord.pluginId)
-            .firstOrNull;
-
-        if (galleryPlugin == null) {
-          // Plugin no longer in gallery - remove record
-          await _database.pluginInstallationsDao
-              .removeAllPluginVersions(dbRecord.pluginId);
-          continue;
-        }
-
-        // Check if this plugin is actually on the device
-        final isOnDevice = (galleryPlugin.guid != null &&
-                normalizedDeviceGuids.contains(
-                  galleryPlugin.guid!.toUpperCase(),
-                )) ||
-            galleryPlugin.collectionGuids.any(
-              (guid) => normalizedDeviceGuids.contains(guid.toUpperCase()),
-            );
-
-        if (!isOnDevice) {
-          // Plugin not on device - remove stale database record
-          await _database.pluginInstallationsDao
-              .removeAllPluginVersions(dbRecord.pluginId);
-        }
-      }
-    } catch (e) {
-      // Silently fail - sync is best effort
-    }
+    // No-op: cleanup is now handled by PluginManagerScreen._cleanupStaleRecords()
+    // using path-based matching which works for all plugin types.
   }
 
   /// Compare gallery plugins with installed versions and return update info
@@ -1582,11 +1463,6 @@ class GalleryService {
 
     if (_database == null) {
       return updateInfo;
-    }
-
-    // Sync database with device state - remove stale records
-    if (devicePluginGuids != null) {
-      await syncDatabaseWithDevice(gallery, devicePluginGuids);
     }
 
     try {
@@ -1655,24 +1531,9 @@ class GalleryService {
             lastChecked: DateTime.now(),
           );
         } else if (isInstalledOnDevice) {
-          // Plugin is on device but not in database (manual installation or deleted)
-          try {
-            final devicePath = _getDevicePathForPlugin(
-              galleryPlugin,
-              devicePluginPaths,
-            );
-            await _database.pluginInstallationsDao.recordPluginInstallation(
-              plugin: galleryPlugin,
-              installedVersion: 'unknown',
-              installationPath: _getInstallationPath(
-                galleryPlugin,
-                devicePath: devicePath,
-              ),
-              installationNotes: 'Detected via device GUID matching',
-            );
-          } catch (e) {
-            // Best-effort cache only
-          }
+          // Plugin is on device (detected via GUID for C++ plugins)
+          // Note: Database recording is now handled by DistingCubit.installPlugin()
+          // using path-based tracking. GUID matching only works for C++ plugins.
 
           // Show as installed with unknown version
           updateInfo[galleryPlugin.id] = PluginUpdateInfo(
