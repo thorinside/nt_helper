@@ -1453,11 +1453,6 @@ class GalleryService {
       return updateInfo;
     }
 
-    // Sync database with device state - remove stale records
-    if (devicePluginGuids != null) {
-      await syncDatabaseWithDevice(gallery, devicePluginGuids);
-    }
-
     try {
       // Clean up any old records that have channel names instead of versions
       // This is a one-time migration for records created before the bug fix
