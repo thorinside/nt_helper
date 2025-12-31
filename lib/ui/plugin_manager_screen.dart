@@ -30,6 +30,7 @@ class PluginManagerScreen extends StatefulWidget {
 class _PluginManagerScreenState extends State<PluginManagerScreen> {
   int _selectedIndex = 0;
   bool _isLoading = false;
+  bool _isLoadingPlugins = false; // Guard against concurrent loads
   String? _error;
 
   // Gallery service
@@ -64,6 +65,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   }
 
   Future<void> _loadInstalledPlugins() async {
+    // Guard against concurrent loads (e.g., rapid refresh)
+    if (_isLoadingPlugins) return;
+    _isLoadingPlugins = true;
+
     // Only show loading spinner if we have no data at all
     final hasData = _luaPlugins.isNotEmpty ||
         _threePotPlugins.isNotEmpty ||
@@ -101,11 +106,20 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           _isLoading = false;
         });
       }
+    } finally {
+      _isLoadingPlugins = false;
     }
   }
 
   /// Remove database records for plugins no longer on the device
   Future<void> _cleanupStaleRecords(List<PluginInfo> devicePlugins) async {
+    // Only cleanup when we're connected to the device and can verify its state.
+    // If offline, fetching returns empty list which would incorrectly delete all records.
+    final state = widget.distingCubit.state;
+    if (state is! DistingStateSynchronized || state.offline) {
+      return;
+    }
+
     try {
       final devicePaths = devicePlugins.map((p) => p.path).toSet();
       final dbRecords =
@@ -119,6 +133,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       }
     } catch (e) {
       // Best-effort cleanup - don't fail the load
+      debugPrint('Plugin cleanup failed (non-blocking): $e');
     }
   }
 

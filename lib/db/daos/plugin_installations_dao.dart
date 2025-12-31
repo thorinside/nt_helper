@@ -112,11 +112,14 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
     String? pluginId,
     String? pluginVersion,
   }) async {
+    // Use path directly for local installs (not hashCode which is unstable across sessions).
+    // For gallery installs, pluginId is provided by the caller.
     final companion = PluginInstallationsCompanion.insert(
-      pluginId: pluginId ?? 'local:${installationPath.hashCode}',
+      pluginId: pluginId ?? 'local:$installationPath',
       pluginName: pluginName,
       pluginVersion: pluginVersion ?? 'unknown',
       pluginType: pluginType,
+      // Gallery installs get author from GalleryPlugin; local installs are marked as such
       pluginAuthor: pluginId != null ? '' : 'Local Install',
       installationPath: installationPath,
       installationStatus: const Value('completed'),
