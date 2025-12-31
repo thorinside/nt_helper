@@ -120,14 +120,6 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       return;
     }
 
-    // Guard against empty scan results - if device returns no plugins but we have
-    // records in the DB, this likely indicates a scan failure (SD card not mounted,
-    // MIDI error, etc.) rather than a truly empty device. Skip cleanup to avoid
-    // accidentally wiping all records.
-    if (devicePlugins.isEmpty) {
-      return;
-    }
-
     try {
       final devicePaths = devicePlugins.map((p) => p.path).toSet();
       final dbRecords =
