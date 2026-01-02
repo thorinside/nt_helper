@@ -26,9 +26,20 @@ class FlashToolBridge {
 
     final controller = StreamController<FlashProgress>();
 
+    // On Linux, use pkexec to run with elevated privileges
+    final String executable;
+    final List<String> args;
+    if (Platform.isLinux) {
+      executable = 'pkexec';
+      args = [toolPath, '--machine', firmwarePath];
+    } else {
+      executable = toolPath;
+      args = ['--machine', firmwarePath];
+    }
+
     _process = await Process.start(
-      toolPath,
-      ['--machine', firmwarePath],
+      executable,
+      args,
     );
 
     // Handle stdout
