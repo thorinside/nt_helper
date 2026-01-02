@@ -1,3 +1,0 @@
-# /etc/udev/rules.d/99-disting-nt.rules
-# Allow unprivileged access to Disting NT in SDP (bootloader) mode
-SUBSYSTEM=="usb", ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="0135", MODE="0666"

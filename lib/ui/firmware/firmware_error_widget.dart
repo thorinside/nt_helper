@@ -113,7 +113,6 @@ class FirmwareErrorWidget extends StatelessWidget {
       case FirmwareErrorType.flashWrite:
         return ('Retry Update', Icons.refresh, onRetryFlash);
       case FirmwareErrorType.download:
-      case FirmwareErrorType.udevMissing:
       case FirmwareErrorType.general:
         return ('Try Again', Icons.refresh, onTryAgain);
     }

@@ -613,11 +613,6 @@ void main() {
       );
       const successState = FirmwareUpdateState.success(newVersion: '1.12.0');
       const errorState = FirmwareUpdateState.error(message: 'Error');
-      const udevMissingState = FirmwareUpdateState.udevMissing(
-        firmwarePath: '/path',
-        targetVersion: '1.12.0',
-        rulesContent: 'content',
-      );
 
       expect(
         initialState.when(
@@ -627,7 +622,6 @@ void main() {
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
-          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'initial',
       );
@@ -640,7 +634,6 @@ void main() {
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
-          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'downloading',
       );
@@ -653,7 +646,6 @@ void main() {
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
-          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'waiting',
       );
@@ -666,7 +658,6 @@ void main() {
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
-          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'flashing',
       );
@@ -679,7 +670,6 @@ void main() {
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
-          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'success',
       );
@@ -692,22 +682,8 @@ void main() {
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
-          udevMissing: (_, _, _) => 'udevMissing',
         ),
         'error',
-      );
-
-      expect(
-        udevMissingState.when(
-          initial: (_, _, _, _) => 'initial',
-          downloading: (_, _) => 'downloading',
-          waitingForBootloader: (_, _) => 'waiting',
-          flashing: (_, _) => 'flashing',
-          success: (_) => 'success',
-          error: (_, _, _, _, _) => 'error',
-          udevMissing: (_, _, _) => 'udevMissing',
-        ),
-        'udevMissing',
       );
     });
   });
@@ -767,22 +743,6 @@ void main() {
         targetVersion: '1.12.0',
       ),
       act: (cubit) => cubit.returnToBootloaderInstructions(),
-      expect: () => [
-        isA<FirmwareUpdateStateWaitingForBootloader>()
-            .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
-            .having((s) => s.targetVersion, 'targetVersion', '1.12.0'),
-      ],
-    );
-
-    blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
-      'continueAfterUdevInstall transitions from udevMissing to waitingForBootloader',
-      build: () => createCubit(),
-      seed: () => const FirmwareUpdateState.udevMissing(
-        firmwarePath: '/tmp/firmware.zip',
-        targetVersion: '1.12.0',
-        rulesContent: 'content',
-      ),
-      act: (cubit) => cubit.continueAfterUdevInstall(),
       expect: () => [
         isA<FirmwareUpdateStateWaitingForBootloader>()
             .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')

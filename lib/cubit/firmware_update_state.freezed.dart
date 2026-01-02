@@ -55,7 +55,7 @@ extension FirmwareUpdateStatePatterns on FirmwareUpdateState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FirmwareUpdateStateInitial value)?  initial,TResult Function( FirmwareUpdateStateDownloading value)?  downloading,TResult Function( FirmwareUpdateStateWaitingForBootloader value)?  waitingForBootloader,TResult Function( FirmwareUpdateStateFlashing value)?  flashing,TResult Function( FirmwareUpdateStateSuccess value)?  success,TResult Function( FirmwareUpdateStateError value)?  error,TResult Function( FirmwareUpdateStateUdevMissing value)?  udevMissing,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FirmwareUpdateStateInitial value)?  initial,TResult Function( FirmwareUpdateStateDownloading value)?  downloading,TResult Function( FirmwareUpdateStateWaitingForBootloader value)?  waitingForBootloader,TResult Function( FirmwareUpdateStateFlashing value)?  flashing,TResult Function( FirmwareUpdateStateSuccess value)?  success,TResult Function( FirmwareUpdateStateError value)?  error,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
@@ -64,8 +64,7 @@ return downloading(_that);case FirmwareUpdateStateWaitingForBootloader() when wa
 return waitingForBootloader(_that);case FirmwareUpdateStateFlashing() when flashing != null:
 return flashing(_that);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that);case FirmwareUpdateStateError() when error != null:
-return error(_that);case FirmwareUpdateStateUdevMissing() when udevMissing != null:
-return udevMissing(_that);case _:
+return error(_that);case _:
   return orElse();
 
 }
@@ -83,7 +82,7 @@ return udevMissing(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FirmwareUpdateStateInitial value)  initial,required TResult Function( FirmwareUpdateStateDownloading value)  downloading,required TResult Function( FirmwareUpdateStateWaitingForBootloader value)  waitingForBootloader,required TResult Function( FirmwareUpdateStateFlashing value)  flashing,required TResult Function( FirmwareUpdateStateSuccess value)  success,required TResult Function( FirmwareUpdateStateError value)  error,required TResult Function( FirmwareUpdateStateUdevMissing value)  udevMissing,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FirmwareUpdateStateInitial value)  initial,required TResult Function( FirmwareUpdateStateDownloading value)  downloading,required TResult Function( FirmwareUpdateStateWaitingForBootloader value)  waitingForBootloader,required TResult Function( FirmwareUpdateStateFlashing value)  flashing,required TResult Function( FirmwareUpdateStateSuccess value)  success,required TResult Function( FirmwareUpdateStateError value)  error,}){
 final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial():
@@ -92,8 +91,7 @@ return downloading(_that);case FirmwareUpdateStateWaitingForBootloader():
 return waitingForBootloader(_that);case FirmwareUpdateStateFlashing():
 return flashing(_that);case FirmwareUpdateStateSuccess():
 return success(_that);case FirmwareUpdateStateError():
-return error(_that);case FirmwareUpdateStateUdevMissing():
-return udevMissing(_that);}
+return error(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -107,7 +105,7 @@ return udevMissing(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FirmwareUpdateStateInitial value)?  initial,TResult? Function( FirmwareUpdateStateDownloading value)?  downloading,TResult? Function( FirmwareUpdateStateWaitingForBootloader value)?  waitingForBootloader,TResult? Function( FirmwareUpdateStateFlashing value)?  flashing,TResult? Function( FirmwareUpdateStateSuccess value)?  success,TResult? Function( FirmwareUpdateStateError value)?  error,TResult? Function( FirmwareUpdateStateUdevMissing value)?  udevMissing,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FirmwareUpdateStateInitial value)?  initial,TResult? Function( FirmwareUpdateStateDownloading value)?  downloading,TResult? Function( FirmwareUpdateStateWaitingForBootloader value)?  waitingForBootloader,TResult? Function( FirmwareUpdateStateFlashing value)?  flashing,TResult? Function( FirmwareUpdateStateSuccess value)?  success,TResult? Function( FirmwareUpdateStateError value)?  error,}){
 final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
@@ -116,8 +114,7 @@ return downloading(_that);case FirmwareUpdateStateWaitingForBootloader() when wa
 return waitingForBootloader(_that);case FirmwareUpdateStateFlashing() when flashing != null:
 return flashing(_that);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that);case FirmwareUpdateStateError() when error != null:
-return error(_that);case FirmwareUpdateStateUdevMissing() when udevMissing != null:
-return udevMissing(_that);case _:
+return error(_that);case _:
   return null;
 
 }
@@ -134,7 +131,7 @@ return udevMissing(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult Function( FirmwareRelease version,  double progress)?  downloading,TResult Function( String firmwarePath,  String targetVersion)?  waitingForBootloader,TResult Function( String targetVersion,  FlashProgress progress)?  flashing,TResult Function( String newVersion)?  success,TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,TResult Function( String firmwarePath,  String targetVersion,  String rulesContent)?  udevMissing,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult Function( FirmwareRelease version,  double progress)?  downloading,TResult Function( String firmwarePath,  String targetVersion)?  waitingForBootloader,TResult Function( String targetVersion,  FlashProgress progress)?  flashing,TResult Function( String newVersion)?  success,TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading() when downloading != null:
@@ -142,8 +139,7 @@ return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaiting
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateFlashing() when flashing != null:
 return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that.newVersion);case FirmwareUpdateStateError() when error != null:
-return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateUdevMissing() when udevMissing != null:
-return udevMissing(_that.firmwarePath,_that.targetVersion,_that.rulesContent);case _:
+return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case _:
   return orElse();
 
 }
@@ -161,7 +157,7 @@ return udevMissing(_that.firmwarePath,_that.targetVersion,_that.rulesContent);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)  initial,required TResult Function( FirmwareRelease version,  double progress)  downloading,required TResult Function( String firmwarePath,  String targetVersion)  waitingForBootloader,required TResult Function( String targetVersion,  FlashProgress progress)  flashing,required TResult Function( String newVersion)  success,required TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)  error,required TResult Function( String firmwarePath,  String targetVersion,  String rulesContent)  udevMissing,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)  initial,required TResult Function( FirmwareRelease version,  double progress)  downloading,required TResult Function( String firmwarePath,  String targetVersion)  waitingForBootloader,required TResult Function( String targetVersion,  FlashProgress progress)  flashing,required TResult Function( String newVersion)  success,required TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)  error,}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial():
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading():
@@ -169,8 +165,7 @@ return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaiting
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateFlashing():
 return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess():
 return success(_that.newVersion);case FirmwareUpdateStateError():
-return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateUdevMissing():
-return udevMissing(_that.firmwarePath,_that.targetVersion,_that.rulesContent);}
+return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -184,7 +179,7 @@ return udevMissing(_that.firmwarePath,_that.targetVersion,_that.rulesContent);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult? Function( FirmwareRelease version,  double progress)?  downloading,TResult? Function( String firmwarePath,  String targetVersion)?  waitingForBootloader,TResult? Function( String targetVersion,  FlashProgress progress)?  flashing,TResult? Function( String newVersion)?  success,TResult? Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,TResult? Function( String firmwarePath,  String targetVersion,  String rulesContent)?  udevMissing,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult? Function( FirmwareRelease version,  double progress)?  downloading,TResult? Function( String firmwarePath,  String targetVersion)?  waitingForBootloader,TResult? Function( String targetVersion,  FlashProgress progress)?  flashing,TResult? Function( String newVersion)?  success,TResult? Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading() when downloading != null:
@@ -192,8 +187,7 @@ return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaiting
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateFlashing() when flashing != null:
 return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that.newVersion);case FirmwareUpdateStateError() when error != null:
-return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateUdevMissing() when udevMissing != null:
-return udevMissing(_that.firmwarePath,_that.targetVersion,_that.rulesContent);case _:
+return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case _:
   return null;
 
 }
@@ -646,79 +640,6 @@ as FirmwareErrorType,failedStage: freezed == failedStage ? _self.failedStage : f
 as FlashStage?,firmwarePath: freezed == firmwarePath ? _self.firmwarePath : firmwarePath // ignore: cast_nullable_to_non_nullable
 as String?,targetVersion: freezed == targetVersion ? _self.targetVersion : targetVersion // ignore: cast_nullable_to_non_nullable
 as String?,
-  ));
-}
-
-
-}
-
-/// @nodoc
-
-
-class FirmwareUpdateStateUdevMissing implements FirmwareUpdateState {
-  const FirmwareUpdateStateUdevMissing({required this.firmwarePath, required this.targetVersion, required this.rulesContent});
-  
-
-/// Path to the firmware file
- final  String firmwarePath;
-/// Target version being installed
- final  String targetVersion;
-/// Content of the udev rules file
- final  String rulesContent;
-
-/// Create a copy of FirmwareUpdateState
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$FirmwareUpdateStateUdevMissingCopyWith<FirmwareUpdateStateUdevMissing> get copyWith => _$FirmwareUpdateStateUdevMissingCopyWithImpl<FirmwareUpdateStateUdevMissing>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FirmwareUpdateStateUdevMissing&&(identical(other.firmwarePath, firmwarePath) || other.firmwarePath == firmwarePath)&&(identical(other.targetVersion, targetVersion) || other.targetVersion == targetVersion)&&(identical(other.rulesContent, rulesContent) || other.rulesContent == rulesContent));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,firmwarePath,targetVersion,rulesContent);
-
-@override
-String toString() {
-  return 'FirmwareUpdateState.udevMissing(firmwarePath: $firmwarePath, targetVersion: $targetVersion, rulesContent: $rulesContent)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $FirmwareUpdateStateUdevMissingCopyWith<$Res> implements $FirmwareUpdateStateCopyWith<$Res> {
-  factory $FirmwareUpdateStateUdevMissingCopyWith(FirmwareUpdateStateUdevMissing value, $Res Function(FirmwareUpdateStateUdevMissing) _then) = _$FirmwareUpdateStateUdevMissingCopyWithImpl;
-@useResult
-$Res call({
- String firmwarePath, String targetVersion, String rulesContent
-});
-
-
-
-
-}
-/// @nodoc
-class _$FirmwareUpdateStateUdevMissingCopyWithImpl<$Res>
-    implements $FirmwareUpdateStateUdevMissingCopyWith<$Res> {
-  _$FirmwareUpdateStateUdevMissingCopyWithImpl(this._self, this._then);
-
-  final FirmwareUpdateStateUdevMissing _self;
-  final $Res Function(FirmwareUpdateStateUdevMissing) _then;
-
-/// Create a copy of FirmwareUpdateState
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? firmwarePath = null,Object? targetVersion = null,Object? rulesContent = null,}) {
-  return _then(FirmwareUpdateStateUdevMissing(
-firmwarePath: null == firmwarePath ? _self.firmwarePath : firmwarePath // ignore: cast_nullable_to_non_nullable
-as String,targetVersion: null == targetVersion ? _self.targetVersion : targetVersion // ignore: cast_nullable_to_non_nullable
-as String,rulesContent: null == rulesContent ? _self.rulesContent : rulesContent // ignore: cast_nullable_to_non_nullable
-as String,
   ));
 }
 

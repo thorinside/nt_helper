@@ -16,9 +16,6 @@ enum FirmwareErrorType {
   /// Errors during firmware upload/write (SDP_UPLOAD, WRITE)
   flashWrite,
 
-  /// Linux udev rules missing
-  udevMissing,
-
   /// General/unknown error
   general,
 }
@@ -79,16 +76,4 @@ sealed class FirmwareUpdateState with _$FirmwareUpdateState {
     /// Target version being installed (for display)
     @Default(null) String? targetVersion,
   }) = FirmwareUpdateStateError;
-
-  /// Linux-specific: udev rules are missing
-  const factory FirmwareUpdateState.udevMissing({
-    /// Path to the firmware file
-    required String firmwarePath,
-
-    /// Target version being installed
-    required String targetVersion,
-
-    /// Content of the udev rules file
-    required String rulesContent,
-  }) = FirmwareUpdateStateUdevMissing;
 }

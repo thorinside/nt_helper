@@ -12,7 +12,6 @@ import 'package:nt_helper/services/flash_tool_bridge.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
 import 'package:nt_helper/ui/firmware/firmware_error_widget.dart';
 import 'package:nt_helper/ui/firmware/firmware_flow_diagram.dart';
-import 'package:nt_helper/ui/firmware/udev_missing_widget.dart';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -149,7 +148,6 @@ class _FirmwareUpdateView extends StatelessWidget {
       flashing: (s) => _FlashingStateView(state: s),
       success: (s) => _SuccessStateView(state: s),
       error: (s) => _ErrorView(state: s),
-      udevMissing: (s) => _UdevMissingView(state: s),
     );
   }
 
@@ -758,24 +756,6 @@ class _ErrorView extends StatelessWidget {
       onRetryFlash: () => cubit.retryFlash(),
       onTryAgain: () => cubit.cleanupAndReset(),
       onGetDiagnostics: () => cubit.getDiagnostics(),
-    );
-  }
-}
-
-/// Udev missing state - shows Linux setup instructions
-class _UdevMissingView extends StatelessWidget {
-  final FirmwareUpdateStateUdevMissing state;
-
-  const _UdevMissingView({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<FirmwareUpdateCubit>();
-
-    return UdevMissingWidget(
-      state: state,
-      onContinue: () => cubit.continueAfterUdevInstall(),
-      onCancel: () => cubit.cancel(),
     );
   }
 }

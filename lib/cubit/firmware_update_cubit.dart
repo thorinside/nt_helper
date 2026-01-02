@@ -11,16 +11,6 @@ import 'package:nt_helper/services/firmware_version_service.dart';
 import 'package:nt_helper/services/flash_tool_bridge.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
 
-/// Path to the udev rules on Linux
-const String kUdevRulesPath = '/etc/udev/rules.d/99-disting-nt.rules';
-
-/// Content of the udev rules file
-const String kUdevRulesContent = '''
-# /etc/udev/rules.d/99-disting-nt.rules
-# Allow unprivileged access to Disting NT in SDP (bootloader) mode
-SUBSYSTEM=="usb", ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="0135", MODE="0666"
-''';
-
 /// Cubit for managing the firmware update workflow
 class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
   final FirmwareVersionService _firmwareVersionService;
@@ -206,28 +196,10 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     }
   }
 
-  /// Check if udev rules are installed (Linux only)
-  Future<bool> _checkUdevRules() async {
-    if (!Platform.isLinux) return true;
-    return File(kUdevRulesPath).exists();
-  }
-
   /// Start the flash process after user confirms bootloader mode
   Future<void> startFlashing() async {
     final currentState = state;
     if (currentState is! FirmwareUpdateStateWaitingForBootloader) return;
-
-    // On Linux, check if udev rules are installed
-    if (Platform.isLinux && !await _checkUdevRules()) {
-      emit(
-        FirmwareUpdateState.udevMissing(
-          firmwarePath: currentState.firmwarePath,
-          targetVersion: currentState.targetVersion,
-          rulesContent: kUdevRulesContent,
-        ),
-      );
-      return;
-    }
 
     // First ensure the flash tool is available
     try {
@@ -430,19 +402,6 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     } else {
       // Can't retry without firmware path, reset instead
       emit(FirmwareUpdateState.initial(currentVersion: _getCurrentVersion()));
-    }
-  }
-
-  /// After udev rules are installed, continue with flashing
-  void continueAfterUdevInstall() {
-    final currentState = state;
-    if (currentState is FirmwareUpdateStateUdevMissing) {
-      emit(
-        FirmwareUpdateState.waitingForBootloader(
-          firmwarePath: currentState.firmwarePath,
-          targetVersion: currentState.targetVersion,
-        ),
-      );
     }
   }
 
