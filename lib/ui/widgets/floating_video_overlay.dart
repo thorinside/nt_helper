@@ -77,6 +77,11 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   Future<void> _copyToClipboard() async {
     if (_lastFrame != null) {
       Pasteboard.writeImage(_lastFrame);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Video frame copied to clipboard')),
+        );
+      }
     }
   }
 
