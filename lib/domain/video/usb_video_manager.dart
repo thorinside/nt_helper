@@ -15,7 +15,10 @@ class UsbVideoManager {
     : _channel = channel ?? UsbVideoChannel();
   StreamController<VideoStreamState>? _stateController;
   Timer? _recoveryTimer;
+  Timer? _stallWatchdogTimer;
   String? _lastConnectedDeviceId;
+  DateTime? _lastFrameReceivedTime;
+  Duration _currentBackoffDuration = _minBackoffDuration;
 
   Stream<VideoStreamState> get stateStream =>
       _stateController?.stream ?? const Stream.empty();
@@ -24,7 +27,14 @@ class UsbVideoManager {
   VideoStreamState get currentState => _currentState;
 
   static const int distintgVendorId = 0x16C0; // Expert Sleepers vendor ID
-  static const Duration _recoveryCheckInterval = Duration(seconds: 5);
+
+  // Exponential backoff configuration
+  static const Duration _minBackoffDuration = Duration(seconds: 2);
+  static const Duration _maxBackoffDuration = Duration(seconds: 60);
+
+  // Stall detection: consider stalled if no frames for this duration
+  static const Duration _stallThreshold = Duration(seconds: 3);
+  static const Duration _stallCheckInterval = Duration(seconds: 1);
 
   void _debugLog(String message) {
     _debugService.addLocalMessage('[UsbVideoManager] $message');
@@ -84,11 +94,13 @@ class UsbVideoManager {
       _debugLog('Starting video stream...');
       final videoStream = _channel.startVideoStream(deviceId);
 
-      // Add debug monitoring to the stream
+      // Add debug monitoring to the stream and track frame reception
       final monitoredStream = videoStream.map((data) {
         _debugLog(
           'Received frame data: ${data?.runtimeType} ${data is Uint8List ? data.length : 'unknown'} bytes',
         );
+        // Track frame reception time for stall detection
+        _onFrameReceived();
         return data;
       });
 
@@ -100,6 +112,9 @@ class UsbVideoManager {
 
       // Stop any recovery timer since we're now connected
       _stopRecoveryTimer();
+
+      // Start stall watchdog to detect if frames stop coming
+      _startStallWatchdog();
 
       // Set to streaming state with monitored stream
       _updateState(
@@ -130,6 +145,9 @@ class UsbVideoManager {
     try {
       await _channel.stopVideoStream();
       _stopRecoveryTimer();
+      _stopStallWatchdog();
+      _lastFrameReceivedTime = null;
+      _resetBackoff();
       _updateState(const VideoStreamState.disconnected());
     } catch (e) {
       // Intentionally empty
@@ -173,12 +191,24 @@ class UsbVideoManager {
   void _startRecoveryTimer() {
     _stopRecoveryTimer(); // Cancel any existing timer
 
-    _recoveryTimer = Timer.periodic(_recoveryCheckInterval, (timer) async {
+    _debugLog(
+      'Starting recovery timer with ${_currentBackoffDuration.inSeconds}s backoff',
+    );
+
+    _recoveryTimer = Timer(_currentBackoffDuration, () async {
       // Only attempt recovery if we're in error state
       if (!_currentState.maybeWhen(error: (_) => true, orElse: () => false)) {
         _stopRecoveryTimer();
         return;
       }
+
+      // Increase backoff for next attempt (exponential, capped at max)
+      _currentBackoffDuration = Duration(
+        milliseconds: (_currentBackoffDuration.inMilliseconds * 2).clamp(
+          _minBackoffDuration.inMilliseconds,
+          _maxBackoffDuration.inMilliseconds,
+        ),
+      );
 
       // Try to reconnect to the last known device first
       if (_lastConnectedDeviceId != null) {
@@ -195,12 +225,87 @@ class UsbVideoManager {
 
       // Fallback: try to find any Disting NT or USB camera
       await autoConnect();
+
+      // If still in error state after autoConnect, schedule another attempt
+      if (_currentState.maybeWhen(error: (_) => true, orElse: () => false)) {
+        _startRecoveryTimer();
+      }
     });
   }
 
   void _stopRecoveryTimer() {
     _recoveryTimer?.cancel();
     _recoveryTimer = null;
+  }
+
+  void _resetBackoff() {
+    _currentBackoffDuration = _minBackoffDuration;
+    _debugLog('Backoff reset to ${_minBackoffDuration.inSeconds}s');
+  }
+
+  /// Called when a frame is received from the video stream
+  void _onFrameReceived() {
+    final now = DateTime.now();
+    final wasStalled =
+        _lastFrameReceivedTime != null &&
+        now.difference(_lastFrameReceivedTime!) > _stallThreshold;
+
+    _lastFrameReceivedTime = now;
+
+    // If we were stalled and frames resumed, reset backoff
+    if (wasStalled) {
+      _debugLog('Frames resumed after stall - resetting backoff');
+      _resetBackoff();
+    }
+  }
+
+  void _startStallWatchdog() {
+    _stopStallWatchdog();
+
+    _stallWatchdogTimer = Timer.periodic(_stallCheckInterval, (timer) {
+      // Only check for stalls during streaming state
+      final isStreaming = _currentState.maybeWhen(
+        streaming: (stream, width, height, fps) => true,
+        orElse: () => false,
+      );
+      if (!isStreaming) {
+        return;
+      }
+
+      // Check if frames have stalled
+      if (_lastFrameReceivedTime != null) {
+        final timeSinceLastFrame = DateTime.now().difference(
+          _lastFrameReceivedTime!,
+        );
+        if (timeSinceLastFrame > _stallThreshold) {
+          _debugLog(
+            'Frame stall detected: ${timeSinceLastFrame.inSeconds}s since last frame',
+          );
+          _handleStall();
+        }
+      }
+    });
+  }
+
+  void _stopStallWatchdog() {
+    _stallWatchdogTimer?.cancel();
+    _stallWatchdogTimer = null;
+  }
+
+  Future<void> _handleStall() async {
+    _stopStallWatchdog();
+    _debugLog('Handling stall - disconnecting and attempting recovery');
+
+    // Stop the current stream
+    try {
+      await _channel.stopVideoStream();
+    } catch (e) {
+      _debugLog('Error stopping stream during stall recovery: $e');
+    }
+
+    // Set error state and start recovery
+    _updateState(const VideoStreamState.error('Video stream stalled'));
+    _startRecoveryTimer();
   }
 
   /// Called when app enters background (lifecycle pause)
@@ -217,6 +322,7 @@ class UsbVideoManager {
 
   Future<void> dispose() async {
     _stopRecoveryTimer();
+    _stopStallWatchdog();
     _stateController?.close();
     await _channel.stopVideoStream();
     await _channel.dispose();
