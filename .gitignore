@@ -86,6 +86,5 @@ node_modules/
 # Backup files
 docs/algorithms/*.bak 
 # BMAD (local only)
-.bmad-core/
-.bmad-*/
+_bmad*/**
 nt_helper.db
