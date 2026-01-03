@@ -1,0 +1,43 @@
+# Workflow Status - BMad Method Brownfield Track
+# Tracks progress through BMM methodology phases (Discovery, Planning, Solutioning)
+# Implementation phase is tracked separately in sprint-status.yaml
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/product-brief.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2026-01-02"
+project: "nt_helper"
+project_type: "software"
+selected_track: "bmad-method"
+field_type: "brownfield"
+workflow_path: "method-brownfield.yaml"
+
+workflow_status:
+  # Phase 0: Discovery (Optional)
+  brainstorm-project: skipped
+  research: "docs/research-step-sequencer-2025-11-23.md"
+  product-brief: skipped
+
+  # Phase 1: Planning
+  prd: "docs/PRD.md"
+  validate-prd: skipped
+  create-design: "docs/ux-design-specification.md"
+
+  # Phase 2: Solutioning
+  create-architecture: "docs/architecture.md"
+  create-epics-and-stories: "_bmad-output/planning-artifacts/"
+  test-design: skipped
+  validate-architecture: skipped
+  implementation-readiness: "docs/reports/implementation-readiness-report-2025-10-29.md"
+
+  # Phase 3: Implementation
+  sprint-planning: "_bmad-output/implementation-artifacts/sprint-status.yaml"
