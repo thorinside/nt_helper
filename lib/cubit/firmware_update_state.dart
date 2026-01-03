@@ -16,6 +16,9 @@ enum FirmwareErrorType {
   /// Errors during firmware upload/write (SDP_UPLOAD, WRITE)
   flashWrite,
 
+  /// Linux udev rules missing - need to install for USB access
+  udevMissing,
+
   /// General/unknown error
   general,
 }
@@ -56,9 +59,8 @@ sealed class FirmwareUpdateState with _$FirmwareUpdateState {
   }) = FirmwareUpdateStateFlashing;
 
   /// Firmware update completed successfully
-  const factory FirmwareUpdateState.success({
-    required String newVersion,
-  }) = FirmwareUpdateStateSuccess;
+  const factory FirmwareUpdateState.success({required String newVersion}) =
+      FirmwareUpdateStateSuccess;
 
   /// Error occurred during update
   const factory FirmwareUpdateState.error({

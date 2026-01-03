@@ -10,6 +10,7 @@ class FirmwareErrorWidget extends StatelessWidget {
   final VoidCallback onReturnToBootloader;
   final VoidCallback onRetryFlash;
   final VoidCallback onTryAgain;
+  final VoidCallback? onInstallUdevRules;
   final Future<String> Function() onGetDiagnostics;
 
   const FirmwareErrorWidget({
@@ -18,6 +19,7 @@ class FirmwareErrorWidget extends StatelessWidget {
     required this.onReturnToBootloader,
     required this.onRetryFlash,
     required this.onTryAgain,
+    this.onInstallUdevRules,
     required this.onGetDiagnostics,
   });
 
@@ -57,6 +59,12 @@ class FirmwareErrorWidget extends StatelessWidget {
           // Primary action button based on error type
           _buildPrimaryActionButton(context),
           const SizedBox(height: 16),
+
+          // Show udev installation instructions for Linux
+          if (state.errorType == FirmwareErrorType.udevMissing) ...[
+            const _UdevInstructionsSection(),
+            const SizedBox(height: 16),
+          ],
 
           // Copy diagnostics button
           OutlinedButton.icon(
@@ -112,6 +120,12 @@ class FirmwareErrorWidget extends StatelessWidget {
         );
       case FirmwareErrorType.flashWrite:
         return ('Retry Update', Icons.refresh, onRetryFlash);
+      case FirmwareErrorType.udevMissing:
+        // Use install callback if available, otherwise fall back to retry
+        if (onInstallUdevRules != null) {
+          return ('Install USB Rules', Icons.security, onInstallUdevRules!);
+        }
+        return ('Retry After Installing Rules', Icons.refresh, onRetryFlash);
       case FirmwareErrorType.download:
       case FirmwareErrorType.general:
         return ('Try Again', Icons.refresh, onTryAgain);
@@ -210,6 +224,52 @@ class _BootloaderHelpSection extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
         ],
+      ),
+    );
+  }
+}
+
+/// Information card explaining udev rules requirement on Linux
+class _UdevInstructionsSection extends StatelessWidget {
+  const _UdevInstructionsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'USB Access Required',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Linux requires special permissions to access USB devices for firmware updates. '
+              'Click "Install USB Rules" above to install the required udev rules.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You will be prompted for your password to authorize the installation.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

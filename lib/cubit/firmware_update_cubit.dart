@@ -31,13 +31,13 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     required String currentVersion,
     required bool isDemo,
     required bool isOffline,
-  })  : _firmwareVersionService = firmwareVersionService,
-        _flashToolManager = flashToolManager,
-        _flashToolBridge = flashToolBridge,
-        _isDemo = isDemo,
-        _isOffline = isOffline,
-        _initialCurrentVersion = currentVersion,
-        super(FirmwareUpdateState.initial(currentVersion: currentVersion));
+  }) : _firmwareVersionService = firmwareVersionService,
+       _flashToolManager = flashToolManager,
+       _flashToolBridge = flashToolBridge,
+       _isDemo = isDemo,
+       _isOffline = isOffline,
+       _initialCurrentVersion = currentVersion,
+       super(FirmwareUpdateState.initial(currentVersion: currentVersion));
 
   /// Whether firmware update is available (desktop only, not demo/offline)
   bool get isUpdateAvailable {
@@ -83,8 +83,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
           message: _isDemo
               ? 'Firmware updates not available in demo mode'
               : _isOffline
-                  ? 'Firmware updates not available in offline mode'
-                  : 'Firmware updates only available on desktop platforms',
+              ? 'Firmware updates not available in offline mode'
+              : 'Firmware updates only available on desktop platforms',
         ),
       );
       return;
@@ -116,15 +116,19 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
         ),
       );
     } on FirmwareDownloadException catch (e) {
-      emit(FirmwareUpdateState.error(
-        message: e.message,
-        errorType: FirmwareErrorType.download,
-      ));
+      emit(
+        FirmwareUpdateState.error(
+          message: e.message,
+          errorType: FirmwareErrorType.download,
+        ),
+      );
     } catch (e) {
-      emit(FirmwareUpdateState.error(
-        message: 'Download failed: $e',
-        errorType: FirmwareErrorType.download,
-      ));
+      emit(
+        FirmwareUpdateState.error(
+          message: 'Download failed: $e',
+          errorType: FirmwareErrorType.download,
+        ),
+      );
     }
   }
 
@@ -132,9 +136,7 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
   Future<void> useLocalFile(String path) async {
     if (!isUpdateAvailable) {
       emit(
-        FirmwareUpdateState.error(
-          message: 'Firmware updates not available',
-        ),
+        FirmwareUpdateState.error(message: 'Firmware updates not available'),
       );
       return;
     }
@@ -172,7 +174,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
       if (!hasFirmware) {
         emit(
           const FirmwareUpdateState.error(
-            message: 'ZIP does not contain expected firmware file (disting_NT.bin)',
+            message:
+                'ZIP does not contain expected firmware file (disting_NT.bin)',
           ),
         );
         return;
@@ -200,6 +203,27 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
   Future<void> startFlashing() async {
     final currentState = state;
     if (currentState is! FirmwareUpdateStateWaitingForBootloader) return;
+
+    // On Linux, automatically install udev rules if missing
+    if (Platform.isLinux) {
+      final udevRulesFile = File('/etc/udev/rules.d/99-disting-nt.rules');
+      if (!await udevRulesFile.exists()) {
+        final installed = await _installUdevRulesInternal();
+        if (!installed) {
+          emit(
+            FirmwareUpdateState.error(
+              message:
+                  'USB access rules are required for firmware updates. '
+                  'Please authorize the installation when prompted.',
+              errorType: FirmwareErrorType.udevMissing,
+              firmwarePath: currentState.firmwarePath,
+              targetVersion: currentState.targetVersion,
+            ),
+          );
+          return;
+        }
+      }
+    }
 
     // First ensure the flash tool is available
     try {
@@ -405,17 +429,91 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     }
   }
 
+  /// Install udev rules on Linux using pkexec for elevated privileges
+  /// Called from error state when user wants to retry after failed auto-install
+  Future<bool> installUdevRules() async {
+    if (!Platform.isLinux) return false;
+
+    final currentState = state;
+    if (currentState is! FirmwareUpdateStateError ||
+        currentState.errorType != FirmwareErrorType.udevMissing) {
+      return false;
+    }
+
+    final installed = await _installUdevRulesInternal();
+    if (installed) {
+      // Success - return to bootloader waiting state and retry
+      final firmwarePath = currentState.firmwarePath ?? _currentFirmwarePath;
+      final targetVersion = currentState.targetVersion ?? _currentTargetVersion;
+
+      if (firmwarePath != null && targetVersion != null) {
+        emit(
+          FirmwareUpdateState.waitingForBootloader(
+            firmwarePath: firmwarePath,
+            targetVersion: targetVersion,
+          ),
+        );
+        // Automatically retry flashing
+        await startFlashing();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Internal helper to install udev rules using pkexec
+  /// Returns true if successful, false if user cancelled or error occurred
+  Future<bool> _installUdevRulesInternal() async {
+    try {
+      // Create temp file with udev rules content
+      final tempDir = Directory.systemTemp;
+      final tempRulesFile = File('${tempDir.path}/99-disting-nt.rules');
+
+      const rulesContent = '''
+# udev rules for Disting NT firmware update
+# NXP ROM bootloader (SDP mode) - used during initial connection
+SUBSYSTEM=="usb", ATTR{idVendor}=="1fc9", ATTR{idProduct}=="0135", MODE="0666"
+# NXP flashloader (bootloader running) - used during firmware flash
+SUBSYSTEM=="usb", ATTR{idVendor}=="15a2", ATTR{idProduct}=="0073", MODE="0666"
+''';
+
+      await tempRulesFile.writeAsString(rulesContent);
+
+      // Use pkexec to install the rules with a shell script
+      final result = await Process.run('pkexec', [
+        'sh',
+        '-c',
+        'cp "${tempRulesFile.path}" /etc/udev/rules.d/99-disting-nt.rules && '
+            'udevadm control --reload-rules && '
+            'udevadm trigger',
+      ]);
+
+      // Clean up temp file
+      try {
+        await tempRulesFile.delete();
+      } catch (_) {}
+
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Get diagnostic information for error reporting
   Future<String> getDiagnostics() async {
     final currentState = state;
     final buffer = StringBuffer();
 
     // Platform info
-    buffer.writeln('Platform: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}');
+    buffer.writeln(
+      'Platform: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}',
+    );
 
     // Version info
     buffer.writeln('Current Firmware: $_initialCurrentVersion');
-    if (currentState is FirmwareUpdateStateError && currentState.targetVersion != null) {
+    if (currentState is FirmwareUpdateStateError &&
+        currentState.targetVersion != null) {
       buffer.writeln('Target Firmware: ${currentState.targetVersion}');
     } else if (_currentTargetVersion != null) {
       buffer.writeln('Target Firmware: $_currentTargetVersion');
@@ -424,7 +522,9 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     // Error info
     if (currentState is FirmwareUpdateStateError) {
       if (currentState.failedStage != null) {
-        buffer.writeln('Error Stage: ${currentState.failedStage!.machineValue}');
+        buffer.writeln(
+          'Error Stage: ${currentState.failedStage!.machineValue}',
+        );
       }
       buffer.writeln('Error Message: ${currentState.message}');
     }
@@ -444,8 +544,7 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     if (_currentFirmwarePath != null) {
       // Only delete if it's in the temp directory (not a user-selected local file)
       final file = File(_currentFirmwarePath!);
-      if (await file.exists() &&
-          _currentFirmwarePath!.contains('distingNT_')) {
+      if (await file.exists() && _currentFirmwarePath!.contains('distingNT_')) {
         try {
           await file.delete();
         } catch (_) {

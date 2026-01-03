@@ -21,10 +21,7 @@ const String _kLastFirmwareDirectoryKey = 'last_firmware_directory';
 class FirmwareUpdateScreen extends StatelessWidget {
   final DistingCubit distingCubit;
 
-  const FirmwareUpdateScreen({
-    super.key,
-    required this.distingCubit,
-  });
+  const FirmwareUpdateScreen({super.key, required this.distingCubit});
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +110,10 @@ class _FirmwareUpdateView extends StatelessWidget {
     );
   }
 
-  List<Widget>? _buildAppBarActions(BuildContext context, FirmwareUpdateState state) {
+  List<Widget>? _buildAppBarActions(
+    BuildContext context,
+    FirmwareUpdateState state,
+  ) {
     // Only show local file action on initial state
     if (state is FirmwareUpdateStateInitial) {
       return [
@@ -224,16 +224,15 @@ class _InitialStateView extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Available versions section header
-        Text(
-          'Available Firmware',
-          style: theme.textTheme.titleMedium,
-        ),
+        Text('Available Firmware', style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
 
         // Scrollable content
         Expanded(
           child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -446,15 +445,9 @@ class _DownloadingStateView extends StatelessWidget {
       children: [
         const Icon(Icons.download, size: 64),
         const SizedBox(height: 24),
-        Text(
-          'Downloading Firmware',
-          style: theme.textTheme.headlineSmall,
-        ),
+        Text('Downloading Firmware', style: theme.textTheme.headlineSmall),
         const SizedBox(height: 8),
-        Text(
-          'v${state.version.version}',
-          style: theme.textTheme.titleMedium,
-        ),
+        Text('v${state.version.version}', style: theme.textTheme.titleMedium),
         const SizedBox(height: 32),
         LinearProgressIndicator(value: state.progress),
         const SizedBox(height: 8),
@@ -484,11 +477,7 @@ class _BootloaderInstructionsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            Icons.info_outline,
-            size: 64,
-            color: theme.colorScheme.primary,
-          ),
+          Icon(Icons.info_outline, size: 64, color: theme.colorScheme.primary),
           const SizedBox(height: 24),
           Text(
             'Enter Bootloader Mode',
@@ -571,14 +560,8 @@ class _BootloaderInstructionsView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  Text(
-                    description,
-                    style: theme.textTheme.bodySmall,
-                  ),
+                  Text(title, style: theme.textTheme.titleMedium),
+                  Text(description, style: theme.textTheme.bodySmall),
                 ],
               ),
             ),
@@ -708,16 +691,9 @@ class _SuccessStateView extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.check_circle,
-          size: 96,
-          color: theme.colorScheme.primary,
-        ),
+        Icon(Icons.check_circle, size: 96, color: theme.colorScheme.primary),
         const SizedBox(height: 24),
-        Text(
-          'Update Complete!',
-          style: theme.textTheme.headlineMedium,
-        ),
+        Text('Update Complete!', style: theme.textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
           state.newVersion == 'local'
@@ -755,6 +731,7 @@ class _ErrorView extends StatelessWidget {
       onReturnToBootloader: () => cubit.returnToBootloaderInstructions(),
       onRetryFlash: () => cubit.retryFlash(),
       onTryAgain: () => cubit.cleanupAndReset(),
+      onInstallUdevRules: () => cubit.installUdevRules(),
       onGetDiagnostics: () => cubit.getDiagnostics(),
     );
   }
