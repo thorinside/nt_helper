@@ -115,12 +115,6 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
             .split('.')[0]; // Remove milliseconds and colons
         final file = File('${directory.path}/sysex_diagnostics_$timestamp.txt');
         await file.writeAsString(textReport);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Report saved to: ${file.path}')),
-          );
-        }
       }
     } catch (e) {
       if (mounted) {
@@ -136,10 +130,6 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
 
     final textReport = _currentReport!.generateTextReport();
     Clipboard.setData(ClipboardData(text: textReport));
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Report copied to clipboard')));
   }
 
   @override

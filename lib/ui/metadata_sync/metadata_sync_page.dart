@@ -954,72 +954,72 @@ class _PresetListView extends StatelessWidget {
         final bool canDelete = !isOperationInProgress;
 
         return ListTile(
-            key: ValueKey(preset.id),
-            selected: isCurrentlyLoadedOffline,
-            selectedTileColor: Theme.of(
-              context,
-            ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-            title: Text(preset.name.trim()),
-            subtitle: Text("Saved: $formattedDate"),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Template Toggle Button
-                IconButton(
-                  icon: Icon(
-                    preset.isTemplate ? Icons.star : Icons.star_outline,
-                    color: preset.isTemplate
-                        ? Theme.of(context).colorScheme.tertiary
-                        : Colors.grey,
-                  ),
-                  tooltip: preset.isTemplate
-                      ? 'Unmark as Template'
-                      : 'Mark as Template',
-                  onPressed: !isOperationInProgress
-                      ? () {
-                          context.read<MetadataSyncCubit>().togglePresetTemplate(
-                                preset.id,
-                                !preset.isTemplate,
-                              );
-                        }
-                      : null,
+          key: ValueKey(preset.id),
+          selected: isCurrentlyLoadedOffline,
+          selectedTileColor: Theme.of(
+            context,
+          ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+          title: Text(preset.name.trim()),
+          subtitle: Text("Saved: $formattedDate"),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Template Toggle Button
+              IconButton(
+                icon: Icon(
+                  preset.isTemplate ? Icons.star : Icons.star_outline,
+                  color: preset.isTemplate
+                      ? Theme.of(context).colorScheme.tertiary
+                      : Colors.grey,
                 ),
-                // Load Button (Calls different cubits based on mode)
-                IconButton(
-                  icon: Icon(
-                    isOffline ? Icons.edit_note : Icons.upload_file_outlined,
-                    color: canLoad
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey,
-                  ),
-                  tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
-                  onPressed: canLoad
-                      ? () =>
-                            _showLoadConfirmationDialog(
-                              context,
-                              preset,
-                              isOffline,
-                              distingCubit,
-                              metadataSyncCubit,
-                            ) // Pass both cubits
-                      : null,
+                tooltip: preset.isTemplate
+                    ? 'Unmark as Template'
+                    : 'Mark as Template',
+                onPressed: !isOperationInProgress
+                    ? () {
+                        context.read<MetadataSyncCubit>().togglePresetTemplate(
+                          preset.id,
+                          !preset.isTemplate,
+                        );
+                      }
+                    : null,
+              ),
+              // Load Button (Calls different cubits based on mode)
+              IconButton(
+                icon: Icon(
+                  isOffline ? Icons.edit_note : Icons.upload_file_outlined,
+                  color: canLoad
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey,
                 ),
-                // Delete Button (Calls MetadataSyncCubit)
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: canDelete
-                        ? Theme.of(context).colorScheme.error
-                        : Colors.grey,
-                  ),
-                  tooltip: 'Delete Saved Preset',
-                  onPressed: canDelete
-                      ? () => _showDeleteConfirmationDialog(context, preset)
-                      : null,
+                tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
+                onPressed: canLoad
+                    ? () =>
+                          _showLoadConfirmationDialog(
+                            context,
+                            preset,
+                            isOffline,
+                            distingCubit,
+                            metadataSyncCubit,
+                          ) // Pass both cubits
+                    : null,
+              ),
+              // Delete Button (Calls MetadataSyncCubit)
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: canDelete
+                      ? Theme.of(context).colorScheme.error
+                      : Colors.grey,
                 ),
-              ],
-            ),
-          );
+                tooltip: 'Delete Saved Preset',
+                onPressed: canDelete
+                    ? () => _showDeleteConfirmationDialog(context, preset)
+                    : null,
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -1249,75 +1249,75 @@ class _TemplateListView extends StatelessWidget {
             final bool canDelete = !isOperationInProgress;
 
             return ListTile(
-                key: ValueKey(preset.id),
-                selected: isCurrentlyLoadedOffline,
-                selectedTileColor: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                leading: Icon(
-                  Icons.star,
-                  color: Theme.of(context).colorScheme.tertiary,
-                ),
-                title: Text(preset.name.trim()),
-                subtitle: Text("Saved: $formattedDate"),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Inject Button
-                    IconButton(
-                      icon: Icon(
-                        Icons.add_circle_outline,
-                        color: canLoad
-                            ? Theme.of(context).colorScheme.secondary
-                            : Colors.grey,
-                      ),
-                      tooltip: isOffline
-                          ? 'Inject Template (Offline)'
-                          : 'Inject Template',
-                      onPressed: canLoad
-                          ? () async => await _showInjectDialog(
-                                context,
-                                template,
-                                distingCubit,
-                                metadataSyncCubit,
-                              )
-                          : null,
+              key: ValueKey(preset.id),
+              selected: isCurrentlyLoadedOffline,
+              selectedTileColor: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              leading: Icon(
+                Icons.star,
+                color: Theme.of(context).colorScheme.tertiary,
+              ),
+              title: Text(preset.name.trim()),
+              subtitle: Text("Saved: $formattedDate"),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Inject Button
+                  IconButton(
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      color: canLoad
+                          ? Theme.of(context).colorScheme.secondary
+                          : Colors.grey,
                     ),
-                    // Load Button
-                    IconButton(
-                      icon: Icon(
-                        isOffline ? Icons.edit_note : Icons.upload_file_outlined,
-                        color: canLoad
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
-                      ),
-                      tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
-                      onPressed: canLoad
-                          ? () => _showLoadConfirmationDialog(
-                                context,
-                                template,
-                                isOffline,
-                                distingCubit,
-                                metadataSyncCubit,
-                              )
-                          : null,
+                    tooltip: isOffline
+                        ? 'Inject Template (Offline)'
+                        : 'Inject Template',
+                    onPressed: canLoad
+                        ? () async => await _showInjectDialog(
+                            context,
+                            template,
+                            distingCubit,
+                            metadataSyncCubit,
+                          )
+                        : null,
+                  ),
+                  // Load Button
+                  IconButton(
+                    icon: Icon(
+                      isOffline ? Icons.edit_note : Icons.upload_file_outlined,
+                      color: canLoad
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey,
                     ),
-                    // Delete Button
-                    IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: canDelete
-                            ? Theme.of(context).colorScheme.error
-                            : Colors.grey,
-                      ),
-                      tooltip: 'Delete Template',
-                      onPressed: canDelete
-                          ? () => _showDeleteConfirmationDialog(context, preset)
-                          : null,
+                    tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
+                    onPressed: canLoad
+                        ? () => _showLoadConfirmationDialog(
+                            context,
+                            template,
+                            isOffline,
+                            distingCubit,
+                            metadataSyncCubit,
+                          )
+                        : null,
+                  ),
+                  // Delete Button
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: canDelete
+                          ? Theme.of(context).colorScheme.error
+                          : Colors.grey,
                     ),
-                  ],
-                ),
-              );
+                    tooltip: 'Delete Template',
+                    onPressed: canDelete
+                        ? () => _showDeleteConfirmationDialog(context, preset)
+                        : null,
+                  ),
+                ],
+              ),
+            );
           },
         );
       },
@@ -1490,24 +1490,11 @@ class _TemplateListView extends StatelessWidget {
       manager,
     );
 
-    // If injection succeeded, refresh the DistingCubit and show success snackbar
+    // If injection succeeded, refresh the DistingCubit
     if (result == true) {
       // Trigger refresh of the DistingCubit to show the newly added algorithms
       // Use the distingCubit parameter instead of reading from context
       await distingCubit.refresh();
-
-      if (!context.mounted) return;
-
-      final algorithmsAdded = template.slots.length;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Template '${template.preset.name}' injected ($algorithmsAdded algorithm${algorithmsAdded == 1 ? '' : 's'} added)",
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
-      );
     }
   }
 }
@@ -1773,15 +1760,6 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
         // Trigger a reload of the entire algorithm list in the parent cubit
         // This will update parameter counts and cause the widget to rebuild
         await metadataCubit.loadLocalData();
-
-        // Show success message
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text("${targetAlgoInfo.name} rescanned successfully"),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {

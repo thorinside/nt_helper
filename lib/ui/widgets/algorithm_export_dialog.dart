@@ -95,15 +95,6 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
 
       if (mounted) {
         Navigator.of(context).pop(true); // Return success
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Successfully exported algorithm details to $_selectedPath',
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {

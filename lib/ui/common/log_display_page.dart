@@ -38,9 +38,6 @@ class LogDisplayPage extends StatelessWidget {
             tooltip: 'Copy Logs',
             onPressed: () {
               Clipboard.setData(ClipboardData(text: logger.logs.join('\n')));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Logs copied to clipboard')),
-              );
             },
           ),
           IconButton(

@@ -120,9 +120,6 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
 
         await File(outputPath).writeAsBytes(packageBytes);
 
-        scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text('Package created successfully!')),
-        );
         navigator.pop();
       }
     } catch (e) {

@@ -73,8 +73,20 @@ void main() {
       guid: 'TestPlugin',
       name: 'Test Plugin',
       specifications: [
-        Specification(name: 'Spec 1', min: 0, max: 10, defaultValue: 5, type: 0),
-        Specification(name: 'Spec 2', min: -5, max: 5, defaultValue: 0, type: 0),
+        Specification(
+          name: 'Spec 1',
+          min: 0,
+          max: 10,
+          defaultValue: 5,
+          type: 0,
+        ),
+        Specification(
+          name: 'Spec 2',
+          min: -5,
+          max: 5,
+          defaultValue: 0,
+          type: 0,
+        ),
       ],
       isPlugin: true,
       isLoaded: true, // Plugin loaded with specifications
@@ -91,7 +103,9 @@ void main() {
   }
 
   group('AddAlgorithmScreen Plugin Loading', () {
-    testWidgets('displays Load Plugin button for unloaded plugin', (tester) async {
+    testWidgets('displays Load Plugin button for unloaded plugin', (
+      tester,
+    ) async {
       // Arrange
       when(() => mockCubit.state).thenReturn(
         DistingState.synchronized(
@@ -132,7 +146,9 @@ void main() {
       expect(button.onPressed, isNotNull);
     });
 
-    testWidgets('displays Add to Preset button for loaded plugin', (tester) async {
+    testWidgets('displays Add to Preset button for loaded plugin', (
+      tester,
+    ) async {
       // Arrange
       when(() => mockCubit.state).thenReturn(
         DistingState.synchronized(
@@ -173,7 +189,9 @@ void main() {
       expect(button.onPressed, isNotNull);
     });
 
-    testWidgets('displays Add to Preset button for factory algorithm', (tester) async {
+    testWidgets('displays Add to Preset button for factory algorithm', (
+      tester,
+    ) async {
       // Arrange
       when(() => mockCubit.state).thenReturn(
         DistingState.synchronized(
@@ -209,9 +227,11 @@ void main() {
     });
 
     group('Plugin Loading Workflow', () {
-      testWidgets('button changes to Add to Preset after successful plugin load', (tester) async {
+      testWidgets('button changes to Add to Preset after successful plugin load', (
+        tester,
+      ) async {
         // This is the key test for the bug fix
-        
+
         // Initial state: unloaded plugin
         when(() => mockCubit.state).thenReturn(
           DistingState.synchronized(
@@ -233,7 +253,9 @@ void main() {
         );
 
         // Mock successful plugin loading
-        when(() => mockCubit.loadPlugin('TestPlugin')).thenAnswer((_) async => mockLoadedPlugin);
+        when(
+          () => mockCubit.loadPlugin('TestPlugin'),
+        ).thenAnswer((_) async => mockLoadedPlugin);
 
         // Stream to simulate state updates (broadcast to allow multiple listeners)
         final stateController = StreamController<DistingState>.broadcast();
@@ -328,7 +350,9 @@ void main() {
         );
 
         // Mock failed plugin loading
-        when(() => mockCubit.loadPlugin('TestPlugin')).thenAnswer((_) async => null);
+        when(
+          () => mockCubit.loadPlugin('TestPlugin'),
+        ).thenAnswer((_) async => null);
 
         when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
@@ -378,7 +402,9 @@ void main() {
 
         // Mock delayed plugin loading
         final completer = Completer<AlgorithmInfo?>();
-        when(() => mockCubit.loadPlugin('TestPlugin')).thenAnswer((_) => completer.future);
+        when(
+          () => mockCubit.loadPlugin('TestPlugin'),
+        ).thenAnswer((_) => completer.future);
 
         when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
@@ -401,8 +427,8 @@ void main() {
         completer.complete(mockLoadedPlugin);
         await tester.pumpAndSettle();
 
-        // Assert: Success snackbar should now be visible
-        expect(find.text('Test Plugin loaded with 2 specifications'), findsOneWidget);
+        // Assert: Loading snackbar should be dismissed (no success snackbar shown)
+        expect(find.text('Loading plugin Test Plugin...'), findsNothing);
 
         // Verify loadPlugin was called
         verify(() => mockCubit.loadPlugin('TestPlugin')).called(1);
@@ -410,7 +436,9 @@ void main() {
     });
 
     group('Plugin Type Detection', () {
-      testWidgets('correctly identifies factory algorithms vs plugins', (tester) async {
+      testWidgets('correctly identifies factory algorithms vs plugins', (
+        tester,
+      ) async {
         when(() => mockCubit.state).thenReturn(
           DistingState.synchronized(
             disting: mockDistingMidi,
@@ -445,6 +473,5 @@ void main() {
         expect(find.text('Load Plugin'), findsOneWidget);
       });
     });
-
   });
 }

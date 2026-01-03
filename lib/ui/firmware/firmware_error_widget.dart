@@ -29,11 +29,7 @@ class FirmwareErrorWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: theme.colorScheme.error,
-          ),
+          Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
           const SizedBox(height: 24),
           Text(
             'Update Failed',
@@ -109,7 +105,11 @@ class FirmwareErrorWidget extends StatelessWidget {
   (String, IconData, VoidCallback) _getPrimaryAction() {
     switch (state.errorType) {
       case FirmwareErrorType.bootloaderConnection:
-        return ('Re-enter Bootloader Mode', Icons.restart_alt, onReturnToBootloader);
+        return (
+          'Re-enter Bootloader Mode',
+          Icons.restart_alt,
+          onReturnToBootloader,
+        );
       case FirmwareErrorType.flashWrite:
         return ('Retry Update', Icons.refresh, onRetryFlash);
       case FirmwareErrorType.download:
@@ -121,15 +121,6 @@ class FirmwareErrorWidget extends StatelessWidget {
   Future<void> _copyDiagnostics(BuildContext context) async {
     final diagnostics = await onGetDiagnostics();
     await Clipboard.setData(ClipboardData(text: diagnostics));
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Diagnostics copied to clipboard'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   Future<void> _openForum() async {
@@ -217,9 +208,7 @@ class _BootloaderHelpSection extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(text, style: theme.textTheme.bodyMedium),
-          ),
+          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );

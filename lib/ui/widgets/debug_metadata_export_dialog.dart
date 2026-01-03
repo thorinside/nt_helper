@@ -102,28 +102,6 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
 
       if (mounted) {
         Navigator.of(context).pop(true); // Return success
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Successfully exported FULL metadata to $_selectedPath'),
-                const SizedBox(height: 4),
-                const Text(
-                  'To use this for pre-population:\n'
-                  '1. Create assets/metadata/ directory\n'
-                  '2. Copy this file there as full_metadata.json\n'
-                  '3. Add to pubspec.yaml under assets',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 10),
-            action: SnackBarAction(label: 'Dismiss', onPressed: () {}),
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {

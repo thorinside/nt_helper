@@ -78,7 +78,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
   final Map<int, int>? es5ExpanderParameterNumbers;
   // Callback when ES-5 toggle is changed
   final void Function(int channel, bool enabled)? onEs5ToggleChanged;
-  
+
   // Callback to report the actual rendered size of the node
   final ValueChanged<Size>? onSizeResolved;
 
@@ -128,7 +128,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   // Track drag start and initial position for stable deltas
   Offset _dragStartGlobal = Offset.zero;
   Offset _initialPosition = Offset.zero;
-  
+
   final GlobalKey _containerKey = GlobalKey();
   Size? _lastSize;
 
@@ -137,23 +137,23 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     super.initState();
     _scheduleSizeReport();
   }
-  
+
   @override
   void didUpdateWidget(AlgorithmNodeWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     _scheduleSizeReport();
   }
-  
+
   void _scheduleSizeReport() {
     if (widget.onSizeResolved == null) return;
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final context = _containerKey.currentContext;
       if (context == null) return;
-      
+
       final renderBox = context.findRenderObject() as RenderBox?;
       if (renderBox == null || !renderBox.attached) return;
-      
+
       final size = renderBox.size;
       if (_lastSize != size) {
         _lastSize = size;
@@ -585,7 +585,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
 
       await cubit.onRemoveAlgorithm(algorithmIndex);
       widget.onDelete?.call();
-      _showFeedback('Algorithm deleted');
     } catch (e) {
       _showFeedback('Failed to delete algorithm: $e', isError: true);
     }

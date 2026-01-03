@@ -257,7 +257,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     if (_selectedCategories.isNotEmpty) {
       baseList = baseList.where((algoInfo) {
         // Normalize GUID to lowercase for consistent lookup
-        final metadata = _metadataService.getAlgorithmByGuid(algoInfo.guid.toLowerCase());
+        final metadata = _metadataService.getAlgorithmByGuid(
+          algoInfo.guid.toLowerCase(),
+        );
         // If no metadata, show algorithm (don't filter it out)
         if (metadata == null) return true;
         return metadata.categories.any(
@@ -348,15 +350,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
       if (loadedInfo != null && mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${loadedInfo.name} loaded with ${loadedInfo.numSpecifications} specifications',
-            ),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
 
         // The cubit has already updated the global state, no need for manual local updates
         // Just update the currently selected algorithm info if it matches
@@ -419,7 +412,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           if (updatedAlgo != null && _currentAlgoInfo != null) {
             _currentAlgoInfo = updatedAlgo;
             // Update specValues if the number of specifications changed
-            if (_currentAlgoInfo!.specifications.length != (specValues?.length ?? 0)) {
+            if (_currentAlgoInfo!.specifications.length !=
+                (specValues?.length ?? 0)) {
               specValues = _currentAlgoInfo!.specifications
                   .map((s) => s.defaultValue)
                   .toList();
@@ -551,77 +545,87 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                               children: [
                                 // --- Search Row ---
                                 TextField(
-                                controller: _searchController,
-                                decoration: InputDecoration(
-                                  labelText: 'Search Algorithms',
-                                  hintText: _showFavoritesOnly
-                                      ? 'Search within favorites...'
-                                      : 'Enter algorithm name...',
-                                  prefixIcon: const Icon(Icons.search),
-                                  suffixIcon: _searchController.text.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                          },
-                                        )
-                                      : null,
-                                  border: const OutlineInputBorder(),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              // --- Filter Controls Row ---
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      _showFavoritesOnly ? Icons.star : Icons.star_border,
-                                    ),
-                                    tooltip: 'Show Favorites Only',
-                                    color: _showFavoritesOnly
-                                        ? Theme.of(context).colorScheme.primary
+                                  controller: _searchController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Search Algorithms',
+                                    hintText: _showFavoritesOnly
+                                        ? 'Search within favorites...'
+                                        : 'Enter algorithm name...',
+                                    prefixIcon: const Icon(Icons.search),
+                                    suffixIcon:
+                                        _searchController.text.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.clear),
+                                            onPressed: () {
+                                              _searchController.clear();
+                                            },
+                                          )
                                         : null,
-                                    onPressed: _toggleShowFavoritesOnly,
-                                    style: const ButtonStyle(
-                                      visualDensity: VisualDensity.compact,
-                                    ),
+                                    border: const OutlineInputBorder(),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.filter_alt_off),
-                                    tooltip: 'Clear Filters',
-                                    style: ButtonStyle(
-                                      foregroundColor: WidgetStatePropertyAll(
-                                        Theme.of(context).colorScheme.secondary,
+                                ),
+                                const SizedBox(height: 12),
+                                // --- Filter Controls Row ---
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        _showFavoritesOnly
+                                            ? Icons.star
+                                            : Icons.star_border,
                                       ),
-                                      visualDensity: VisualDensity.compact,
+                                      tooltip: 'Show Favorites Only',
+                                      color: _showFavoritesOnly
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : null,
+                                      onPressed: _toggleShowFavoritesOnly,
+                                      style: const ButtonStyle(
+                                        visualDensity: VisualDensity.compact,
+                                      ),
                                     ),
-                                    onPressed: () {
-                                      FocusScope.of(context).unfocus();
-                                      setState(() {
-                                        _searchController.clear();
-                                        _showFavoritesOnly = false;
-                                        _selectedCategories.clear();
-                                        _selectedPluginType = _pluginTypeAll;
-                                        _saveShowFavoritesOnlyState();
-                                        _filterAlgorithms();
-                                      });
-                                    },
-                                  ),
-                                  _buildPluginTypeFilterButton(),
-                                  _buildCategoryFilterButton(),
-                                  _buildViewModeSelector(),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Showing ${_filteredAlgorithms.length} of ${_allAlgorithms.length} algorithms',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    IconButton(
+                                      icon: const Icon(Icons.filter_alt_off),
+                                      tooltip: 'Clear Filters',
+                                      style: ButtonStyle(
+                                        foregroundColor: WidgetStatePropertyAll(
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.secondary,
+                                        ),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      onPressed: () {
+                                        FocusScope.of(context).unfocus();
+                                        setState(() {
+                                          _searchController.clear();
+                                          _showFavoritesOnly = false;
+                                          _selectedCategories.clear();
+                                          _selectedPluginType = _pluginTypeAll;
+                                          _saveShowFavoritesOnlyState();
+                                          _filterAlgorithms();
+                                        });
+                                      },
                                     ),
-                              ),
+                                    _buildPluginTypeFilterButton(),
+                                    _buildCategoryFilterButton(),
+                                    _buildViewModeSelector(),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Showing ${_filteredAlgorithms.length} of ${_allAlgorithms.length} algorithms',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
                                 const Divider(),
                               ],
                             ),
@@ -652,7 +656,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   top: false,
                   child: Container(
                     color: Theme.of(context).scaffoldBackgroundColor,
-                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 8.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
@@ -662,7 +670,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                             _currentAlgoInfo!.numSpecifications > 0) ...[
                           const Divider(),
                           const SizedBox(height: 12),
-                          _buildSpecificationInputs(_currentAlgoInfo!, isOffline),
+                          _buildSpecificationInputs(
+                            _currentAlgoInfo!,
+                            isOffline,
+                          ),
                         ],
 
                         // --- Action Buttons (fixed at the bottom) ---
@@ -704,93 +715,95 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         visualDensity: VisualDensity.compact,
       ),
-        onPressed: () async {
-          final selected = await showDialog<String>(
-            context: context,
-            builder: (context) {
-              String tempSelected = _selectedPluginType;
-              return StatefulBuilder(
-                builder: (context, setStateDialog) => AlertDialog(
-                  title: const Text('Select Plugin Type'),
-                  content: RadioGroup<String>(
-                    groupValue: tempSelected,
-                    onChanged: (value) {
-                      setStateDialog(() {
-                        tempSelected = value!;
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          leading: Radio<String>(value: _pluginTypeAll),
-                          title: const Text('All Plugins'),
-                          onTap: () {
-                            setStateDialog(() {
-                              tempSelected = _pluginTypeAll;
-                            });
-                          },
+      onPressed: () async {
+        final selected = await showDialog<String>(
+          context: context,
+          builder: (context) {
+            String tempSelected = _selectedPluginType;
+            return StatefulBuilder(
+              builder: (context, setStateDialog) => AlertDialog(
+                title: const Text('Select Plugin Type'),
+                content: RadioGroup<String>(
+                  groupValue: tempSelected,
+                  onChanged: (value) {
+                    setStateDialog(() {
+                      tempSelected = value!;
+                    });
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: Radio<String>(value: _pluginTypeAll),
+                        title: const Text('All Plugins'),
+                        onTap: () {
+                          setStateDialog(() {
+                            tempSelected = _pluginTypeAll;
+                          });
+                        },
+                      ),
+                      ListTile(
+                        leading: Radio<String>(value: _pluginTypeFactory),
+                        title: const Text('Factory'),
+                        subtitle: const Text(
+                          'Algorithms with all lowercase GUIDs',
                         ),
-                        ListTile(
-                          leading: Radio<String>(value: _pluginTypeFactory),
-                          title: const Text('Factory'),
-                          subtitle: const Text(
-                            'Algorithms with all lowercase GUIDs',
-                          ),
-                          onTap: () {
-                            setStateDialog(() {
-                              tempSelected = _pluginTypeFactory;
-                            });
-                          },
+                        onTap: () {
+                          setStateDialog(() {
+                            tempSelected = _pluginTypeFactory;
+                          });
+                        },
+                      ),
+                      ListTile(
+                        leading: Radio<String>(value: _pluginTypeCommunity),
+                        title: const Text('Community'),
+                        subtitle: const Text(
+                          'Algorithms with uppercase characters in GUID',
                         ),
-                        ListTile(
-                          leading: Radio<String>(value: _pluginTypeCommunity),
-                          title: const Text('Community'),
-                          subtitle: const Text(
-                            'Algorithms with uppercase characters in GUID',
-                          ),
-                          onTap: () {
-                            setStateDialog(() {
-                              tempSelected = _pluginTypeCommunity;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
+                        onTap: () {
+                          setStateDialog(() {
+                            tempSelected = _pluginTypeCommunity;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () =>
-                          Navigator.pop(context, _selectedPluginType),
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context, tempSelected),
-                      child: const Text('Apply'),
-                    ),
-                  ],
                 ),
-              );
-            },
-          );
-          if (selected != null) {
-            setState(() {
-              _selectedPluginType = selected;
-              _savePluginTypeState();
-              _filterAlgorithms();
-            });
-          }
-        },
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.pop(context, _selectedPluginType),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, tempSelected),
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+        if (selected != null) {
+          setState(() {
+            _selectedPluginType = selected;
+            _savePluginTypeState();
+            _filterAlgorithms();
+          });
+        }
+      },
     );
   }
 
   // --- View Mode Selector ---
   Widget _buildViewModeSelector() {
-    final isMobile = defaultTargetPlatform == TargetPlatform.iOS ||
+    final isMobile =
+        defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.android;
 
     // On mobile, if column mode was previously selected, fall back to list
-    final effectiveMode = isMobile && _selectedViewMode == AlgorithmViewMode.column
+    final effectiveMode =
+        isMobile && _selectedViewMode == AlgorithmViewMode.column
         ? AlgorithmViewMode.list
         : _selectedViewMode;
 
@@ -826,19 +839,19 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         }
       },
       showSelectedIcon: false,
-      style: const ButtonStyle(
-        visualDensity: VisualDensity.compact,
-      ),
+      style: const ButtonStyle(visualDensity: VisualDensity.compact),
     );
   }
 
   // --- Algorithm View (Conditional Rendering) ---
   Widget _buildAlgorithmView() {
-    final isMobile = defaultTargetPlatform == TargetPlatform.iOS ||
+    final isMobile =
+        defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.android;
 
     // On mobile, column mode falls back to list
-    final effectiveMode = isMobile && _selectedViewMode == AlgorithmViewMode.column
+    final effectiveMode =
+        isMobile && _selectedViewMode == AlgorithmViewMode.column
         ? AlgorithmViewMode.list
         : _selectedViewMode;
 
@@ -918,14 +931,16 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     if (_selectedViewMode == AlgorithmViewMode.column) {
       // Grid view: calculate row index based on column count
       // Get actual width from MediaQuery
-      final screenWidth = MediaQuery.of(context).size.width - 32; // Account for padding
+      final screenWidth =
+          MediaQuery.of(context).size.width - 32; // Account for padding
       final columnCount = screenWidth < 600 ? 2 : 3;
       final rowIndex = index ~/ columnCount;
       // Item height in grid (aspect ratio 1.5 means height = width / 1.5)
       // With spacing of 8, estimate row height
       final itemWidth = (screenWidth - (columnCount - 1) * 8) / columnCount;
       final rowHeight = itemWidth / 1.5 + 8;
-      targetOffset = (rowIndex * rowHeight) - (viewportHeight / 2) + (rowHeight / 2);
+      targetOffset =
+          (rowIndex * rowHeight) - (viewportHeight / 2) + (rowHeight / 2);
     } else {
       // List views: simple index * height
       final double itemHeight = switch (_selectedViewMode) {
@@ -933,7 +948,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         AlgorithmViewMode.list => 120.0,
         AlgorithmViewMode.column => 150.0, // Won't reach here
       };
-      targetOffset = (index * itemHeight) - (viewportHeight / 2) + (itemHeight / 2);
+      targetOffset =
+          (index * itemHeight) - (viewportHeight / 2) + (itemHeight / 2);
     }
 
     final scrollTo = targetOffset.clamp(0.0, maxScroll);
@@ -969,8 +985,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       final viewportHeight = controller.position.viewportDimension;
       final maxScroll = controller.position.maxScrollExtent;
       final scrollTo =
-          (targetOffset - viewportHeight / 2 + estimatedItemHeight / 2)
-              .clamp(0.0, maxScroll);
+          (targetOffset - viewportHeight / 2 + estimatedItemHeight / 2).clamp(
+            0.0,
+            maxScroll,
+          );
       controller.animateTo(
         scrollTo,
         duration: const Duration(milliseconds: 200),
@@ -984,8 +1002,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       final targetOffset = rowIndex * (estimatedItemHeight + 8);
       final viewportHeight = controller.position.viewportDimension;
       final maxScroll = controller.position.maxScrollExtent;
-      final scrollTo = (targetOffset - viewportHeight / 2 + estimatedItemHeight / 2)
-          .clamp(0.0, maxScroll);
+      final scrollTo =
+          (targetOffset - viewportHeight / 2 + estimatedItemHeight / 2).clamp(
+            0.0,
+            maxScroll,
+          );
       controller.animateTo(
         scrollTo,
         duration: const Duration(milliseconds: 200),
@@ -1007,8 +1028,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           children: _filteredAlgorithms.map((algo) {
             final bool isSelected = selectedAlgorithmGuid == algo.guid;
             final bool isFavorite = _favoriteGuids.contains(algo.guid);
-            final bool isCommunityPlugin =
-                algo.guid != algo.guid.toLowerCase();
+            final bool isCommunityPlugin = algo.guid != algo.guid.toLowerCase();
             return GestureDetector(
               onLongPress: () => _toggleFavorite(algo.guid),
               child: ChoiceChip(
@@ -1077,8 +1097,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           final isSelected = algo.guid == selectedAlgorithmGuid;
           final isFavorite = _favoriteGuids.contains(algo.guid);
           final isCommunityPlugin = _isPlugin(algo.guid);
-          final metadata =
-              _metadataService.getAlgorithmByGuid(algo.guid.toLowerCase());
+          final metadata = _metadataService.getAlgorithmByGuid(
+            algo.guid.toLowerCase(),
+          );
 
           return Material(
             color: isSelected
@@ -1088,7 +1109,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               onTap: () => _selectAlgorithm(isSelected ? null : algo.guid),
               onLongPress: () => _toggleFavorite(algo.guid),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Stack(
                   children: [
                     // Main content
@@ -1135,7 +1159,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     );
   }
 
-  Widget _buildListSubtitle(AlgorithmMetadata? metadata, bool isCommunityPlugin) {
+  Widget _buildListSubtitle(
+    AlgorithmMetadata? metadata,
+    bool isCommunityPlugin,
+  ) {
     // For community plugins, show simplified metadata
     final categories = isCommunityPlugin
         ? ['Community Plugin']
@@ -1153,12 +1180,17 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             child: Wrap(
               spacing: 4,
               runSpacing: 2,
-              children: categories.take(3).map((cat) => Chip(
-                    label: Text(cat, style: const TextStyle(fontSize: 10)),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  )).toList(),
+              children: categories
+                  .take(3)
+                  .map(
+                    (cat) => Chip(
+                      label: Text(cat, style: const TextStyle(fontSize: 10)),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  )
+                  .toList(),
             ),
           ),
         if (description.isNotEmpty)
@@ -1169,8 +1201,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
       ],
@@ -1208,8 +1240,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final isSelected = algo.guid == selectedAlgorithmGuid;
     final isFavorite = _favoriteGuids.contains(algo.guid);
     final isCommunityPlugin = _isPlugin(algo.guid);
-    final metadata =
-        _metadataService.getAlgorithmByGuid(algo.guid.toLowerCase());
+    final metadata = _metadataService.getAlgorithmByGuid(
+      algo.guid.toLowerCase(),
+    );
     // For community plugins, show simplified metadata
     final categories = isCommunityPlugin
         ? ['Community Plugin']
@@ -1273,7 +1306,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       );
                       // Estimate line height (fontSize * height factor, default ~1.2)
                       final lineHeight = (style?.fontSize ?? 12) * 1.4;
-                      final maxLines = (constraints.maxHeight / lineHeight).floor().clamp(1, 100);
+                      final maxLines = (constraints.maxHeight / lineHeight)
+                          .floor()
+                          .clamp(1, 100);
                       return Text(
                         description,
                         maxLines: maxLines,
@@ -1295,12 +1330,16 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     return Wrap(
       spacing: 4,
       runSpacing: 4,
-      children: categories.map((cat) => Chip(
-            label: Text(cat, style: const TextStyle(fontSize: 10)),
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          )).toList(),
+      children: categories
+          .map(
+            (cat) => Chip(
+              label: Text(cat, style: const TextStyle(fontSize: 10)),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -1318,65 +1357,65 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         visualDensity: VisualDensity.compact,
       ),
       onPressed: () async {
-          final selected = await showDialog<Set<String>>(
-            context: context,
-            builder: (context) {
-              final tempSelected = Set<String>.from(_selectedCategories);
-              return StatefulBuilder(
-                builder: (context, setStateDialog) => AlertDialog(
-                  title: const Text('Select Categories'),
-                  content: SizedBox(
-                    width: 320,
-                    height: 300,
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: _allCategories.map((category) {
-                        return CheckboxListTile(
-                          value: tempSelected.contains(category),
-                          title: Text(category),
-                          onChanged: (checked) {
-                            setStateDialog(() {
-                              if (checked == true) {
-                                tempSelected.add(category);
-                              } else {
-                                tempSelected.remove(category);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
+        final selected = await showDialog<Set<String>>(
+          context: context,
+          builder: (context) {
+            final tempSelected = Set<String>.from(_selectedCategories);
+            return StatefulBuilder(
+              builder: (context, setStateDialog) => AlertDialog(
+                title: const Text('Select Categories'),
+                content: SizedBox(
+                  width: 320,
+                  height: 300,
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: _allCategories.map((category) {
+                      return CheckboxListTile(
+                        value: tempSelected.contains(category),
+                        title: Text(category),
+                        onChanged: (checked) {
+                          setStateDialog(() {
+                            if (checked == true) {
+                              tempSelected.add(category);
+                            } else {
+                              tempSelected.remove(category);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        setStateDialog(() {
-                          tempSelected.clear();
-                        });
-                      },
-                      child: const Text('Clear'),
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          Navigator.pop(context, _selectedCategories),
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context, tempSelected),
-                      child: const Text('Apply'),
-                    ),
-                  ],
                 ),
-              );
-            },
-          );
-          if (selected != null) {
-            setState(() {
-              _selectedCategories = selected;
-              _filterAlgorithms();
-            });
-          }
-        },
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      setStateDialog(() {
+                        tempSelected.clear();
+                      });
+                    },
+                    child: const Text('Clear'),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.pop(context, _selectedCategories),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, tempSelected),
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+        if (selected != null) {
+          setState(() {
+            _selectedCategories = selected;
+            _filterAlgorithms();
+          });
+        }
+      },
     );
   }
 

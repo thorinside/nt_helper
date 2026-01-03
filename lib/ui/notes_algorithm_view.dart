@@ -224,16 +224,6 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
         _isEditing = false;
         _isSaving = false;
       });
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Text saved successfully'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-        );
-      }
     } catch (e) {
       setState(() {
         _isSaving = false;
