@@ -35,6 +35,7 @@ class SettingsService {
   static const String _overlayPositionYKey = 'overlay_position_y';
   static const String _overlaySizeScaleKey = 'overlay_size_scale';
   static const String _showDebugPanelKey = 'show_debug_panel';
+  static const String _showContextualHelpKey = 'show_contextual_help';
 
   // Default values
   static const int defaultRequestTimeout = 1000;
@@ -53,6 +54,7 @@ class SettingsService {
       -1.0; // -1 means use default positioning
   static const double defaultOverlaySizeScale = 1.0;
   static const bool defaultShowDebugPanel = true;
+  static const bool defaultShowContextualHelp = true;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -167,6 +169,15 @@ class SettingsService {
     return await _prefs?.setBool(_showDebugPanelKey, value) ?? false;
   }
 
+  /// Check if contextual help hints should be shown
+  bool get showContextualHelp =>
+      _prefs?.getBool(_showContextualHelpKey) ?? defaultShowContextualHelp;
+
+  /// Set whether contextual help hints should be shown
+  Future<bool> setShowContextualHelp(bool value) async {
+    return await _prefs?.setBool(_showContextualHelpKey, value) ?? false;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
@@ -181,6 +192,7 @@ class SettingsService {
     await setOverlayPositionY(defaultOverlayPositionY);
     await setOverlaySizeScale(defaultOverlaySizeScale);
     await setShowDebugPanel(defaultShowDebugPanel);
+    await setShowContextualHelp(defaultShowContextualHelp);
   }
 }
 
@@ -201,6 +213,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _mcpEnabled;
   late bool _startPagesCollapsed;
   late bool _showDebugPanel;
+  late bool _showContextualHelp;
 
   @override
   void initState() {
@@ -218,6 +231,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _mcpEnabled = settings.mcpEnabled;
       _startPagesCollapsed = settings.startPagesCollapsed;
       _showDebugPanel = settings.showDebugPanel;
+      _showContextualHelp = settings.showContextualHelp;
     });
   }
 
@@ -235,6 +249,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setMcpEnabled(_mcpEnabled);
       await settings.setStartPagesCollapsed(_startPagesCollapsed);
       await settings.setShowDebugPanel(_showDebugPanel);
+      await settings.setShowContextualHelp(_showContextualHelp);
 
       if (mounted) {
         Navigator.of(
@@ -366,6 +381,24 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       onChanged: (value) {
                         setState(() {
                           _startPagesCollapsed = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    // Contextual help setting
+                    SwitchListTile(
+                      title: Text(
+                        'Show Contextual Help Hints',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                        'Display helpful hints when hovering over interactive elements',
+                      ),
+                      value: _showContextualHelp,
+                      onChanged: (value) {
+                        setState(() {
+                          _showContextualHelp = value;
                         });
                       },
                       contentPadding: EdgeInsets.zero,

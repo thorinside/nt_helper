@@ -11,13 +11,18 @@ class AlgorithmListView extends StatelessWidget {
   final List<Slot> slots;
   final int selectedIndex;
   final ValueChanged<int> onSelectionChanged;
+  final ValueChanged<String?>? onHelpTextChanged;
 
   const AlgorithmListView({
     super.key,
     required this.slots,
     required this.selectedIndex,
     required this.onSelectionChanged,
+    this.onHelpTextChanged,
   });
+
+  static const String algorithmNameHelpText =
+      'Double-click: Focus algorithm UI  •  Long-press: Rename algorithm';
 
   @override
   Widget build(BuildContext context) {
@@ -31,43 +36,47 @@ class AlgorithmListView extends StatelessWidget {
               final slot = slots[index];
               final displayName = slot.algorithm.name;
 
-              return GestureDetector(
-                onDoubleTap: () async {
-                  var cubit = context.read<DistingCubit>();
-                  cubit.disting()?.let((manager) {
-                    manager.requestSetFocus(index, 0);
-                    manager.requestSetDisplayMode(DisplayMode.algorithmUI);
-                  });
-                  if (SettingsService().hapticsEnabled) {
-                    Haptics.vibrate(HapticsType.medium);
-                  }
-                },
-                child: ListTile(
-                  title: Text(
-                    displayName,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                  selected: index == selectedIndex,
-                  selectedTileColor: Theme.of(
-                    context,
-                  ).colorScheme.secondaryContainer,
-                  selectedColor: Theme.of(
-                    context,
-                  ).colorScheme.onSecondaryContainer,
-                  onTap: () => onSelectionChanged(index),
-                  onLongPress: () async {
+              return MouseRegion(
+                onEnter: (_) => onHelpTextChanged?.call(algorithmNameHelpText),
+                onExit: (_) => onHelpTextChanged?.call(null),
+                child: GestureDetector(
+                  onDoubleTap: () async {
                     var cubit = context.read<DistingCubit>();
-                    final newName = await showDialog<String>(
-                      context: context,
-                      builder: (dialogCtx) =>
-                          RenameSlotDialog(initialName: displayName),
-                    );
-
-                    if (newName != null && newName != displayName) {
-                      cubit.renameSlot(index, newName);
+                    cubit.disting()?.let((manager) {
+                      manager.requestSetFocus(index, 0);
+                      manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+                    });
+                    if (SettingsService().hapticsEnabled) {
+                      Haptics.vibrate(HapticsType.medium);
                     }
                   },
+                  child: ListTile(
+                    title: Text(
+                      displayName,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    selected: index == selectedIndex,
+                    selectedTileColor: Theme.of(
+                      context,
+                    ).colorScheme.secondaryContainer,
+                    selectedColor: Theme.of(
+                      context,
+                    ).colorScheme.onSecondaryContainer,
+                    onTap: () => onSelectionChanged(index),
+                    onLongPress: () async {
+                      var cubit = context.read<DistingCubit>();
+                      final newName = await showDialog<String>(
+                        context: context,
+                        builder: (dialogCtx) =>
+                            RenameSlotDialog(initialName: displayName),
+                      );
+
+                      if (newName != null && newName != displayName) {
+                        cubit.renameSlot(index, newName);
+                      }
+                    },
+                  ),
                 ),
               );
             },

@@ -46,8 +46,13 @@ import 'package:nt_helper/ui/widgets/mcp_status_indicator.dart';
 import 'package:nt_helper/ui/widgets/debug_panel.dart';
 import 'package:nt_helper/services/debug_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
+import 'package:nt_helper/ui/widgets/contextual_help_bar.dart';
 
 enum EditMode { parameters, routing }
+
+/// Help text for algorithm name interactions
+const String _algorithmNameHelpText =
+    'Double-click: Focus algorithm UI  •  Long-press: Rename algorithm';
 
 class SynchronizedScreen extends StatefulWidget {
   final List<Slot> slots;
@@ -85,6 +90,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   late TabController _tabController;
   EditMode _currentMode = EditMode.parameters;
   bool _showDebugPanel = true;
+  bool _showContextualHelp = true;
+  String? _contextualHelpText;
 
   @override
   void initState() {
@@ -99,6 +106,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       DebugService().initialize();
       _showDebugPanel = SettingsService().showDebugPanel;
     }
+
+    // Initialize contextual help setting
+    _showContextualHelp = SettingsService().showContextualHelp;
 
     // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
     int newValidIndex = _selectedIndex;
@@ -178,6 +188,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 children: [_buildWideScreenBody(), _buildRoutingCanvas()],
               ),
             ),
+            if (_showContextualHelp)
+              ContextualHelpBar(helpText: _contextualHelpText),
             if (kDebugMode && _showDebugPanel)
               DebugPanel(
                 onDismiss: () {
@@ -206,6 +218,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 children: [_buildBody(), _buildRoutingCanvas()],
               ),
             ),
+            if (_showContextualHelp)
+              ContextualHelpBar(helpText: _contextualHelpText),
             if (kDebugMode && _showDebugPanel)
               DebugPanel(
                 onDismiss: () {
@@ -247,6 +261,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 _tabController.animateTo(index);
               });
             },
+            onHelpTextChanged: _showContextualHelp
+                ? (text) => setState(() => _contextualHelpText = text)
+                : null,
           ),
         ),
         // Right side content
@@ -341,7 +358,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             style: buttonStyle,
                           ),
                           Container(
-                            constraints: BoxConstraints(minWidth: isMobile ? 60 : 80),
+                            constraints: BoxConstraints(
+                              minWidth: isMobile ? 60 : 80,
+                            ),
                             child: DropdownButton<double>(
                               value: _findClosestZoomLevel(state.zoomLevel),
                               onChanged: (value) {
@@ -477,9 +496,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
                         // Share/Copy Nodes Image (tight bounds, 24px margin)
                         IconButton(
-                          icon: Icon(isMobile
-                              ? Icons.share
-                              : Icons.image_outlined),
+                          icon: Icon(
+                            isMobile ? Icons.share : Icons.image_outlined,
+                          ),
                           onPressed: () {
                             if (isMobile) {
                               _editorController.shareNodesImage();
@@ -675,7 +694,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 final updateAvailable = state is DistingStateSynchronized
                     ? state.availableFirmwareUpdate
                     : null;
-                final isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+                final isDesktop =
+                    Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
                 return Row(
                   mainAxisSize: MainAxisSize.min,
@@ -683,7 +703,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     // Firmware update indicator (desktop only)
                     if (updateAvailable != null && isDesktop)
                       Tooltip(
-                        message: 'Update available: v${updateAvailable.version}',
+                        message:
+                            'Update available: v${updateAvailable.version}',
                         child: IconButton(
                           icon: Icon(
                             Icons.arrow_circle_up,
@@ -832,10 +853,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           const SizedBox(height: 12),
           const Text(
             'Hardware Display Mode',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -1421,33 +1439,47 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 // Use slot.algorithm.name directly (includes custom name)
                 final displayName = slot.algorithm.name;
 
-                return GestureDetector(
-                  onDoubleTap: () async {
-                    var cubit = context.read<DistingCubit>();
-                    cubit.disting()?.let((manager) {
-                      manager.requestSetFocus(index, 0);
-                      manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+                return MouseRegion(
+                  onEnter: (_) {
+                    if (_showContextualHelp) {
+                      setState(() {
+                        _contextualHelpText = _algorithmNameHelpText;
+                      });
+                    }
+                  },
+                  onExit: (_) {
+                    setState(() {
+                      _contextualHelpText = null;
                     });
-                    if (SettingsService().hapticsEnabled) {
-                      Haptics.vibrate(HapticsType.medium);
-                    }
                   },
-                  onLongPress: () async {
-                    var cubit = context.read<DistingCubit>();
-                    // Use the current displayName for the dialog initial value
-                    final newName = await showDialog<String>(
-                      context: context,
-                      builder: (dialogCtx) =>
-                          RenameSlotDialog(initialName: displayName),
-                    );
+                  child: GestureDetector(
+                    onDoubleTap: () async {
+                      var cubit = context.read<DistingCubit>();
+                      cubit.disting()?.let((manager) {
+                        manager.requestSetFocus(index, 0);
+                        manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+                      });
+                      if (SettingsService().hapticsEnabled) {
+                        Haptics.vibrate(HapticsType.medium);
+                      }
+                    },
+                    onLongPress: () async {
+                      var cubit = context.read<DistingCubit>();
+                      // Use the current displayName for the dialog initial value
+                      final newName = await showDialog<String>(
+                        context: context,
+                        builder: (dialogCtx) =>
+                            RenameSlotDialog(initialName: displayName),
+                      );
 
-                    if (newName != null && newName != displayName) {
-                      // Use slot index directly (algorithmIndex on Algorithm is different)
-                      cubit.renameSlot(index, newName);
-                    }
-                  },
-                  // Display the correct name in the Tab
-                  child: Tab(text: displayName),
+                      if (newName != null && newName != displayName) {
+                        // Use slot index directly (algorithmIndex on Algorithm is different)
+                        cubit.renameSlot(index, newName);
+                      }
+                    },
+                    // Display the correct name in the Tab
+                    child: Tab(text: displayName),
+                  ),
                 );
               }),
             ),
