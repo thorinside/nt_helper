@@ -7,11 +7,15 @@ class DistingVersion extends StatelessWidget {
     required this.distingVersion,
     required this.requiredVersion,
     this.onTap,
+    this.onHelpTextChanged,
   });
 
   final String distingVersion;
   final String requiredVersion;
   final VoidCallback? onTap;
+  final ValueChanged<String?>? onHelpTextChanged;
+
+  static const String firmwareHelpText = 'Tap: Manage firmware updates';
 
   @override
   Widget build(BuildContext context) {
@@ -28,26 +32,34 @@ class DistingVersion extends StatelessWidget {
       ),
     );
 
-    final tooltip = Tooltip(
-      message: isNotSupported
-          ? "nt_helper requires at least $requiredVersion"
-          : onTap != null
-              ? "Tap to manage firmware"
-              : "",
-      child: text,
-    );
+    // Only show tooltip if contextual help is not available
+    final showTooltip = onHelpTextChanged == null;
+    final tooltipMessage = isNotSupported
+        ? "nt_helper requires at least $requiredVersion"
+        : onTap != null
+        ? "Tap to manage firmware"
+        : "";
+
+    Widget content = text;
+    if (showTooltip && tooltipMessage.isNotEmpty) {
+      content = Tooltip(message: tooltipMessage, child: text);
+    }
 
     if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: tooltip,
+      return MouseRegion(
+        onEnter: (_) => onHelpTextChanged?.call(firmwareHelpText),
+        onExit: (_) => onHelpTextChanged?.call(null),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: content,
+          ),
         ),
       );
     }
 
-    return tooltip;
+    return content;
   }
 }

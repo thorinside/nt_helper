@@ -745,6 +745,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               );
                             }
                           : null,
+                      onHelpTextChanged: _showContextualHelp && isDesktop
+                          ? (text) => setState(() => _contextualHelpText = text)
+                          : null,
                     ),
                   ],
                 );
