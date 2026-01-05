@@ -397,11 +397,11 @@ jobs:
           security find-identity -v -p codesigning "$KEYCHAIN_NAME" || true
 
       - name: Build macOS (unsigned)
-        run: |
-          flutter build macos -- \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+        env:
+          CODE_SIGN_IDENTITY: ""
+          CODE_SIGNING_REQUIRED: "NO"
+          CODE_SIGNING_ALLOWED: "NO"
+        run: flutter build macos
 
       - name: Codesign the macOS App
         run: |
