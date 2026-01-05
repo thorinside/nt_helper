@@ -396,23 +396,14 @@ jobs:
           echo "Identities in keychain:"
           security find-identity -v -p codesigning "$KEYCHAIN_NAME" || true
 
-      - name: Build macOS (unsigned)
-        run: |
-          flutter build macos -- \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+      - name: Build macOS
+        run: flutter build macos
 
       - name: Codesign the macOS App
         run: |
           codesign --deep --force --verbose --options runtime \
             --sign "Developer ID Application: Neal Sanche (KN424RZG26)" \
             --entitlements macos/Runner/Release.entitlements \
-            build/macos/Build/Products/Release/nt_helper.app
-
-      - name: Verify codesign
-        run: |
-          codesign --verify --deep --strict --verbose=4 \
             build/macos/Build/Products/Release/nt_helper.app
 
       - name: Zip the macOS App for Notarization
@@ -462,8 +453,16 @@ jobs:
     name: Build macOS App and Upload to TestFlight
     runs-on: macos-latest
     needs: [setup, create-release]
-    # DISABLED: Provisioning not complete - missing 3rd Party Mac Developer Installer cert
-    if: false
+    if: |
+      always() &&
+      needs.setup.result == 'success' &&
+      (needs.create-release.result == 'success' || needs.create-release.result == 'skipped') &&
+      (
+        github.event_name == 'push' ||
+        contains(github.event.inputs.platforms, 'macos_testflight') ||
+        github.event.inputs.platforms == 'all' ||
+        github.event.inputs.platforms == ''
+      )
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
