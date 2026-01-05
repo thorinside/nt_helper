@@ -532,9 +532,12 @@ jobs:
       - name: Build macOS
         run: flutter build macos
 
+      - name: Embed provisioning profile in app bundle
+        run: |
+          cp mac_appstore.provisionprofile build/macos/Build/Products/Release/nt_helper.app/Contents/embedded.provisionprofile
+
       - name: Codesign the macOS App for App Store
         run: |
-          # Sign with Apple Distribution certificate and App Store entitlements
           codesign --deep --force --verbose --options runtime \
             --sign "Apple Distribution: Neal Sanche (KN424RZG26)" \
             --entitlements macos/Runner/AppStore.entitlements \
