@@ -558,9 +558,12 @@ jobs:
 
       - name: Codesign nt-flash helper for sandbox
         run: |
+          # Sign without bundle identifier - plain executable tools don't need one
+          # Using -i "" removes any existing identifier
           codesign --force --verbose --options runtime \
             --sign "Apple Distribution: Neal Sanche (KN424RZG26)" \
             --entitlements macos/Runner/nt-flash.entitlements \
+            -i "" \
             build/macos/Build/Products/Release/nt_helper.app/Contents/MacOS/nt-flash
 
       - name: Codesign the macOS App for App Store
