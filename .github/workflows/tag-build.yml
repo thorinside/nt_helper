@@ -533,13 +533,15 @@ jobs:
         run: flutter build macos
 
       - name: Download and bundle nt-flash for sandboxed builds
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Get latest nt-flash release
-          NT_FLASH_VERSION=$(curl -s https://api.github.com/repos/thorinside/nt-flash/releases/latest | jq -r .tag_name)
+          # Get latest nt-flash release using gh CLI (authenticated)
+          NT_FLASH_VERSION=$(gh release view --repo thorinside/nt-flash --json tagName -q .tagName)
           echo "Bundling nt-flash $NT_FLASH_VERSION"
           
           # Download macOS release
-          curl -L "https://github.com/thorinside/nt-flash/releases/download/$NT_FLASH_VERSION/nt-flash-$NT_FLASH_VERSION-macos.zip" -o /tmp/nt-flash.zip
+          gh release download "$NT_FLASH_VERSION" --repo thorinside/nt-flash --pattern "*-macos.zip" --output /tmp/nt-flash.zip
           
           # Extract and place in app bundle's MacOS directory
           unzip -o /tmp/nt-flash.zip -d /tmp/nt-flash-extract
