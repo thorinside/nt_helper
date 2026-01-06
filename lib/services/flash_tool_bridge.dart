@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:nt_helper/models/flash_progress.dart';
 import 'package:nt_helper/models/flash_stage.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
+import 'package:nt_helper/utils/sandbox_utils.dart';
 
 /// Bridge to spawn and communicate with the nt-flash tool
 class FlashToolBridge {
@@ -14,7 +15,7 @@ class FlashToolBridge {
   File? _currentLogFile;
 
   FlashToolBridge({required FlashToolManager toolManager})
-      : _toolManager = toolManager;
+    : _toolManager = toolManager;
 
   /// Flash firmware to the device
   /// Returns a stream of progress updates
@@ -37,35 +38,56 @@ class FlashToolBridge {
       args = ['--machine', firmwarePath];
     }
 
-    _process = await Process.start(
-      executable,
-      args,
-    );
+    try {
+      _process = await Process.start(executable, args);
+    } on ProcessException catch (e) {
+      // Handle sandbox restrictions - "Operation not permitted" on macOS
+      if (Platform.isMacOS &&
+          (e.message.contains('Operation not permitted') || e.errorCode == 1)) {
+        final isSandboxed = SandboxUtils.isSandboxed;
+        final message = isSandboxed
+            ? 'Unable to execute flash tool in sandboxed environment. '
+                  'The bundled nt-flash binary may be missing or improperly signed.'
+            : 'Unable to execute flash tool. Permission denied.';
+        controller.add(
+          FlashProgress(
+            stage: FlashStage.complete,
+            percent: 0,
+            message: message,
+            isError: true,
+            isSandboxError: isSandboxed,
+          ),
+        );
+        controller.close();
+        return;
+      }
+      rethrow;
+    }
 
     // Handle stdout
-    _process!.stdout.transform(const SystemEncoding().decoder).listen(
-      (data) {
-        _logSink?.writeln(data);
-        for (final line in data.split('\n')) {
-          final trimmed = line.trim();
-          if (trimmed.isEmpty) continue;
-          final progress = _parseMachineOutput(trimmed);
-          if (progress != null) {
-            controller.add(progress);
-          }
-        }
-      },
-      onError: (error) {
-        _logSink?.writeln('STDOUT ERROR: $error');
-      },
-    );
+    _process!.stdout
+        .transform(const SystemEncoding().decoder)
+        .listen(
+          (data) {
+            _logSink?.writeln(data);
+            for (final line in data.split('\n')) {
+              final trimmed = line.trim();
+              if (trimmed.isEmpty) continue;
+              final progress = _parseMachineOutput(trimmed);
+              if (progress != null) {
+                controller.add(progress);
+              }
+            }
+          },
+          onError: (error) {
+            _logSink?.writeln('STDOUT ERROR: $error');
+          },
+        );
 
     // Handle stderr
-    _process!.stderr.transform(const SystemEncoding().decoder).listen(
-      (data) {
-        _logSink?.writeln('STDERR: $data');
-      },
-    );
+    _process!.stderr.transform(const SystemEncoding().decoder).listen((data) {
+      _logSink?.writeln('STDERR: $data');
+    });
 
     // Handle process exit
     _process!.exitCode.then((exitCode) {
@@ -74,12 +96,14 @@ class FlashToolBridge {
       _logSink = null;
 
       if (exitCode != 0 && !controller.isClosed) {
-        controller.add(FlashProgress(
-          stage: FlashStage.complete,
-          percent: 0,
-          message: 'Flash failed with exit code $exitCode',
-          isError: true,
-        ));
+        controller.add(
+          FlashProgress(
+            stage: FlashStage.complete,
+            percent: 0,
+            message: 'Flash failed with exit code $exitCode',
+            isError: true,
+          ),
+        );
       }
       controller.close();
       _process = null;
@@ -178,18 +202,15 @@ class FlashToolBridge {
           final stage = FlashStage.fromMachineValue(parts[1]);
           final percent = int.tryParse(parts[2]) ?? 0;
           if (stage != null) {
-            return FlashProgress(
-              stage: stage,
-              percent: percent,
-              message: '',
-            );
+            return FlashProgress(stage: stage, percent: percent, message: '');
           }
         }
         break;
 
       case 'ERROR':
-        final message =
-            parts.length > 1 ? parts.sublist(1).join(':') : 'Unknown error';
+        final message = parts.length > 1
+            ? parts.sublist(1).join(':')
+            : 'Unknown error';
         return FlashProgress(
           stage: FlashStage.complete,
           percent: 0,

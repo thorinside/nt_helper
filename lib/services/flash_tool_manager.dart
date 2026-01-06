@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:nt_helper/models/flash_progress.dart';
+import 'package:nt_helper/utils/sandbox_utils.dart';
 
 /// Manages the nt-flash tool binary - auto-downloading from GitHub releases
 class FlashToolManager {
@@ -14,10 +15,26 @@ class FlashToolManager {
       'https://api.github.com/repos/thorinside/nt-flash/releases/latest';
 
   FlashToolManager({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
-  /// Get the path to the nt-flash tool, downloading if not present
+  /// Get the path to the nt-flash tool
+  ///
+  /// - Sandboxed builds (TestFlight/App Store): Uses bundled binary in app bundle
+  /// - Non-sandboxed builds: Downloads to Application Support if needed
   Future<String> getToolPath() async {
+    // On macOS sandboxed builds, use the bundled binary
+    if (Platform.isMacOS && SandboxUtils.isSandboxed) {
+      final bundledPath = _getBundledToolPath();
+      if (await _isToolPresent(bundledPath)) {
+        return bundledPath;
+      }
+      // Bundled binary missing - this is a build configuration error
+      throw const FlashToolDownloadException(
+        'Bundled nt-flash binary not found. This is a build configuration error.',
+      );
+    }
+
+    // Non-sandboxed: download on demand
     final toolDir = await _getToolDirectory();
     final binaryName = _getBinaryName();
     final toolPath = path.join(toolDir.path, binaryName);
@@ -28,6 +45,16 @@ class FlashToolManager {
 
     await _downloadTool(toolDir.path, binaryName);
     return toolPath;
+  }
+
+  /// Get path to bundled nt-flash in app bundle (macOS only)
+  ///
+  /// The binary is placed in Contents/MacOS/ alongside the main executable
+  /// during the TestFlight build process.
+  String _getBundledToolPath() {
+    // Platform.resolvedExecutable is /path/to/App.app/Contents/MacOS/nt_helper
+    final exeDir = path.dirname(Platform.resolvedExecutable);
+    return path.join(exeDir, 'nt-flash');
   }
 
   /// Get the directory where the tool is stored
@@ -91,7 +118,8 @@ class FlashToolManager {
       );
     }
 
-    final releaseData = jsonDecode(releaseResponse.body) as Map<String, dynamic>;
+    final releaseData =
+        jsonDecode(releaseResponse.body) as Map<String, dynamic>;
     final assets = releaseData['assets'] as List<dynamic>?;
 
     if (assets == null || assets.isEmpty) {
@@ -199,10 +227,11 @@ class FlashToolManager {
   /// Remove macOS quarantine attribute (best effort - logs warning on failure)
   Future<void> _removeQuarantineAttribute(String toolPath) async {
     try {
-      final result = await Process.run(
-        'xattr',
-        ['-d', 'com.apple.quarantine', toolPath],
-      );
+      final result = await Process.run('xattr', [
+        '-d',
+        'com.apple.quarantine',
+        toolPath,
+      ]);
       if (result.exitCode != 0) {
         // Log warning but don't fail - the attribute might not exist
         // which is fine (exitCode 1 with "No such xattr")
@@ -234,9 +263,7 @@ class FlashToolManager {
   }
 
   /// Visible for testing - get binary name
-  static String getBinaryNameForTesting({
-    required bool isWindows,
-  }) {
+  static String getBinaryNameForTesting({required bool isWindows}) {
     return isWindows ? 'nt-flash.exe' : 'nt-flash';
   }
 }

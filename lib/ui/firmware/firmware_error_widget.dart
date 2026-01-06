@@ -66,6 +66,12 @@ class FirmwareErrorWidget extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
+          // Show sandbox restriction message for macOS
+          if (state.errorType == FirmwareErrorType.sandboxRestriction) ...[
+            const _SandboxInstructionsSection(),
+            const SizedBox(height: 16),
+          ],
+
           // Copy diagnostics button
           OutlinedButton.icon(
             onPressed: () => _copyDiagnostics(context),
@@ -126,9 +132,20 @@ class FirmwareErrorWidget extends StatelessWidget {
           return ('Install USB Rules', Icons.security, onInstallUdevRules!);
         }
         return ('Retry After Installing Rules', Icons.refresh, onRetryFlash);
+      case FirmwareErrorType.sandboxRestriction:
+        return ('Download Direct Version', Icons.download, _openGitHubReleases);
       case FirmwareErrorType.download:
       case FirmwareErrorType.general:
         return ('Try Again', Icons.refresh, onTryAgain);
+    }
+  }
+
+  void _openGitHubReleases() async {
+    final uri = Uri.parse(
+      'https://github.com/thorinside/nt_helper/releases/latest',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -264,6 +281,58 @@ class _UdevInstructionsSection extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'You will be prompted for your password to authorize the installation.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Information card explaining sandbox restrictions on macOS TestFlight/App Store
+class _SandboxInstructionsSection extends StatelessWidget {
+  const _SandboxInstructionsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.security, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'macOS Sandbox Restriction',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Firmware updates are not available in the TestFlight/App Store version '
+              'due to macOS sandbox restrictions.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'To update your Disting NT firmware, please download the direct version '
+              'from GitHub Releases. All other features work normally in this version.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Click "Download Direct Version" above to get the unrestricted version.',
               style: theme.textTheme.bodySmall?.copyWith(
                 fontStyle: FontStyle.italic,
               ),
