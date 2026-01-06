@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$FlashProgress {
 
- FlashStage get stage; int get percent; String get message; bool get isError;
+ FlashStage get stage; int get percent; String get message; bool get isError; bool get isSandboxError;
 /// Create a copy of FlashProgress
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $FlashProgressCopyWith<FlashProgress> get copyWith => _$FlashProgressCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FlashProgress&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.percent, percent) || other.percent == percent)&&(identical(other.message, message) || other.message == message)&&(identical(other.isError, isError) || other.isError == isError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FlashProgress&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.percent, percent) || other.percent == percent)&&(identical(other.message, message) || other.message == message)&&(identical(other.isError, isError) || other.isError == isError)&&(identical(other.isSandboxError, isSandboxError) || other.isSandboxError == isSandboxError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stage,percent,message,isError);
+int get hashCode => Object.hash(runtimeType,stage,percent,message,isError,isSandboxError);
 
 @override
 String toString() {
-  return 'FlashProgress(stage: $stage, percent: $percent, message: $message, isError: $isError)';
+  return 'FlashProgress(stage: $stage, percent: $percent, message: $message, isError: $isError, isSandboxError: $isSandboxError)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $FlashProgressCopyWith<$Res>  {
   factory $FlashProgressCopyWith(FlashProgress value, $Res Function(FlashProgress) _then) = _$FlashProgressCopyWithImpl;
 @useResult
 $Res call({
- FlashStage stage, int percent, String message, bool isError
+ FlashStage stage, int percent, String message, bool isError, bool isSandboxError
 });
 
 
@@ -65,12 +65,13 @@ class _$FlashProgressCopyWithImpl<$Res>
 
 /// Create a copy of FlashProgress
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? stage = null,Object? percent = null,Object? message = null,Object? isError = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? stage = null,Object? percent = null,Object? message = null,Object? isError = null,Object? isSandboxError = null,}) {
   return _then(_self.copyWith(
 stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as FlashStage,percent: null == percent ? _self.percent : percent // ignore: cast_nullable_to_non_nullable
 as int,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,isError: null == isError ? _self.isError : isError // ignore: cast_nullable_to_non_nullable
+as bool,isSandboxError: null == isSandboxError ? _self.isSandboxError : isSandboxError // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -153,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FlashStage stage,  int percent,  String message,  bool isError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FlashStage stage,  int percent,  String message,  bool isError,  bool isSandboxError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FlashProgress() when $default != null:
-return $default(_that.stage,_that.percent,_that.message,_that.isError);case _:
+return $default(_that.stage,_that.percent,_that.message,_that.isError,_that.isSandboxError);case _:
   return orElse();
 
 }
@@ -174,10 +175,10 @@ return $default(_that.stage,_that.percent,_that.message,_that.isError);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FlashStage stage,  int percent,  String message,  bool isError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FlashStage stage,  int percent,  String message,  bool isError,  bool isSandboxError)  $default,) {final _that = this;
 switch (_that) {
 case _FlashProgress():
-return $default(_that.stage,_that.percent,_that.message,_that.isError);}
+return $default(_that.stage,_that.percent,_that.message,_that.isError,_that.isSandboxError);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -191,10 +192,10 @@ return $default(_that.stage,_that.percent,_that.message,_that.isError);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FlashStage stage,  int percent,  String message,  bool isError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FlashStage stage,  int percent,  String message,  bool isError,  bool isSandboxError)?  $default,) {final _that = this;
 switch (_that) {
 case _FlashProgress() when $default != null:
-return $default(_that.stage,_that.percent,_that.message,_that.isError);case _:
+return $default(_that.stage,_that.percent,_that.message,_that.isError,_that.isSandboxError);case _:
   return null;
 
 }
@@ -206,13 +207,14 @@ return $default(_that.stage,_that.percent,_that.message,_that.isError);case _:
 @JsonSerializable()
 
 class _FlashProgress implements FlashProgress {
-  const _FlashProgress({required this.stage, required this.percent, required this.message, this.isError = false});
+  const _FlashProgress({required this.stage, required this.percent, required this.message, this.isError = false, this.isSandboxError = false});
   factory _FlashProgress.fromJson(Map<String, dynamic> json) => _$FlashProgressFromJson(json);
 
 @override final  FlashStage stage;
 @override final  int percent;
 @override final  String message;
 @override@JsonKey() final  bool isError;
+@override@JsonKey() final  bool isSandboxError;
 
 /// Create a copy of FlashProgress
 /// with the given fields replaced by the non-null parameter values.
@@ -227,16 +229,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FlashProgress&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.percent, percent) || other.percent == percent)&&(identical(other.message, message) || other.message == message)&&(identical(other.isError, isError) || other.isError == isError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FlashProgress&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.percent, percent) || other.percent == percent)&&(identical(other.message, message) || other.message == message)&&(identical(other.isError, isError) || other.isError == isError)&&(identical(other.isSandboxError, isSandboxError) || other.isSandboxError == isSandboxError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stage,percent,message,isError);
+int get hashCode => Object.hash(runtimeType,stage,percent,message,isError,isSandboxError);
 
 @override
 String toString() {
-  return 'FlashProgress(stage: $stage, percent: $percent, message: $message, isError: $isError)';
+  return 'FlashProgress(stage: $stage, percent: $percent, message: $message, isError: $isError, isSandboxError: $isSandboxError)';
 }
 
 
@@ -247,7 +249,7 @@ abstract mixin class _$FlashProgressCopyWith<$Res> implements $FlashProgressCopy
   factory _$FlashProgressCopyWith(_FlashProgress value, $Res Function(_FlashProgress) _then) = __$FlashProgressCopyWithImpl;
 @override @useResult
 $Res call({
- FlashStage stage, int percent, String message, bool isError
+ FlashStage stage, int percent, String message, bool isError, bool isSandboxError
 });
 
 
@@ -264,12 +266,13 @@ class __$FlashProgressCopyWithImpl<$Res>
 
 /// Create a copy of FlashProgress
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? stage = null,Object? percent = null,Object? message = null,Object? isError = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? stage = null,Object? percent = null,Object? message = null,Object? isError = null,Object? isSandboxError = null,}) {
   return _then(_FlashProgress(
 stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as FlashStage,percent: null == percent ? _self.percent : percent // ignore: cast_nullable_to_non_nullable
 as int,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,isError: null == isError ? _self.isError : isError // ignore: cast_nullable_to_non_nullable
+as bool,isSandboxError: null == isSandboxError ? _self.isSandboxError : isSandboxError // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

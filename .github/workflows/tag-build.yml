@@ -532,9 +532,36 @@ jobs:
       - name: Build macOS
         run: flutter build macos
 
+      - name: Download and bundle nt-flash for sandboxed builds
+        run: |
+          # Get latest nt-flash release
+          NT_FLASH_VERSION=$(curl -s https://api.github.com/repos/thorinside/nt-flash/releases/latest | jq -r .tag_name)
+          echo "Bundling nt-flash $NT_FLASH_VERSION"
+          
+          # Download macOS release
+          curl -L "https://github.com/thorinside/nt-flash/releases/download/$NT_FLASH_VERSION/nt-flash-$NT_FLASH_VERSION-macos.zip" -o /tmp/nt-flash.zip
+          
+          # Extract and place in app bundle's MacOS directory
+          unzip -o /tmp/nt-flash.zip -d /tmp/nt-flash-extract
+          NT_FLASH_BIN=$(find /tmp/nt-flash-extract -name "nt-flash" -type f | head -1)
+          
+          # Copy to app bundle
+          cp "$NT_FLASH_BIN" build/macos/Build/Products/Release/nt_helper.app/Contents/MacOS/nt-flash
+          chmod +x build/macos/Build/Products/Release/nt_helper.app/Contents/MacOS/nt-flash
+          
+          echo "nt-flash binary info:"
+          file build/macos/Build/Products/Release/nt_helper.app/Contents/MacOS/nt-flash
+
       - name: Embed provisioning profile in app bundle
         run: |
           cp mac_appstore.provisionprofile build/macos/Build/Products/Release/nt_helper.app/Contents/embedded.provisionprofile
+
+      - name: Codesign nt-flash helper for sandbox
+        run: |
+          codesign --force --verbose --options runtime \
+            --sign "Apple Distribution: Neal Sanche (KN424RZG26)" \
+            --entitlements macos/Runner/nt-flash.entitlements \
+            build/macos/Build/Products/Release/nt_helper.app/Contents/MacOS/nt-flash
 
       - name: Codesign the macOS App for App Store
         run: |

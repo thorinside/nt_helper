@@ -19,6 +19,10 @@ enum FirmwareErrorType {
   /// Linux udev rules missing - need to install for USB access
   udevMissing,
 
+  /// macOS sandbox restriction - can't execute flash tool
+  /// This occurs when the bundled binary is missing or improperly signed
+  sandboxRestriction,
+
   /// General/unknown error
   general,
 }

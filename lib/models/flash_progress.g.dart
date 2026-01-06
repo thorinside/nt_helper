@@ -12,6 +12,7 @@ _FlashProgress _$FlashProgressFromJson(Map<String, dynamic> json) =>
       percent: (json['percent'] as num).toInt(),
       message: json['message'] as String,
       isError: json['isError'] as bool? ?? false,
+      isSandboxError: json['isSandboxError'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$FlashProgressToJson(_FlashProgress instance) =>
@@ -20,6 +21,7 @@ Map<String, dynamic> _$FlashProgressToJson(_FlashProgress instance) =>
       'percent': instance.percent,
       'message': instance.message,
       'isError': instance.isError,
+      'isSandboxError': instance.isSandboxError,
     };
 
 const _$FlashStageEnumMap = {

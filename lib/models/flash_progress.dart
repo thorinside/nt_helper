@@ -11,6 +11,7 @@ sealed class FlashProgress with _$FlashProgress {
     required int percent,
     required String message,
     @Default(false) bool isError,
+    @Default(false) bool isSandboxError,
   }) = _FlashProgress;
 
   factory FlashProgress.fromJson(Map<String, dynamic> json) =>

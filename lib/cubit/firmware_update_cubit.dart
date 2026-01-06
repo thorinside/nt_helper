@@ -263,7 +263,9 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
             emit(
               FirmwareUpdateState.error(
                 message: progress.message,
-                errorType: _getErrorTypeForStage(currentStage),
+                errorType: progress.isSandboxError
+                    ? FirmwareErrorType.sandboxRestriction
+                    : _getErrorTypeForStage(currentStage),
                 failedStage: currentStage,
                 firmwarePath: currentState.firmwarePath,
                 targetVersion: currentState.targetVersion,
