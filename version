@@ -8,8 +8,8 @@ current_version=${version_line#version: }
 IFS='.' read -r major minor patch_plus <<< "${current_version}"
 IFS='+' read -r patch build <<< "${patch_plus}"
 
-# Determine which part to roll (minor is default)
-roll_type=${1:-minor}
+# Determine which part to roll (patch is default)
+roll_type=${1:-patch}
 
 case "$roll_type" in
   major)
