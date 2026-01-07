@@ -273,6 +273,7 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
             );
           } else if (progress.stage == FlashStage.complete &&
               progress.percent == 100) {
+            _cleanupTempFiles();
             emit(
               FirmwareUpdateState.success(
                 newVersion: currentState.targetVersion,
