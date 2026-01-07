@@ -575,29 +575,17 @@ jobs:
           # Embed provisioning profile
           cp nt_flash.provisionprofile "$HELPER_DIR/embedded.provisionprofile"
           
-          # Create minimal Info.plist for the helper
-          cat > "$HELPER_DIR/Info.plist" << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleIdentifier</key>
-              <string>dev.nosuch.ntHelper.nt-flash</string>
-              <key>CFBundleName</key>
-              <string>nt-flash</string>
-              <key>CFBundleExecutable</key>
-              <string>nt-flash</string>
-              <key>CFBundleVersion</key>
-              <string>1</string>
-              <key>CFBundleShortVersionString</key>
-              <string>1.0</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>LSMinimumSystemVersion</key>
-              <string>10.15</string>
-          </dict>
-          </plist>
-          EOF
+          # Create minimal Info.plist for the helper using plutil (avoids heredoc whitespace issues)
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string dev.nosuch.ntHelper.nt-flash" "$HELPER_DIR/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleName string nt-flash" "$HELPER_DIR/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string nt-flash" "$HELPER_DIR/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string 1" "$HELPER_DIR/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0" "$HELPER_DIR/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string APPL" "$HELPER_DIR/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :LSMinimumSystemVersion string 10.15" "$HELPER_DIR/Info.plist"
+          
+          echo "Generated Info.plist:"
+          cat "$HELPER_DIR/Info.plist"
           
           echo "Helper bundle structure:"
           find build/macos/Build/Products/Release/nt_helper.app/Contents/Helpers -type f
