@@ -604,7 +604,7 @@ jobs:
 
       - name: Codesign nt-flash helper bundle
         run: |
-          # Sign the helper bundle with its own identifier and entitlements
+          # Sign the helper bundle FIRST with its own identifier and entitlements
           codesign --force --verbose --options runtime \
             --sign "Apple Distribution: Neal Sanche (KN424RZG26)" \
             --entitlements macos/Runner/nt-flash.entitlements \
@@ -617,10 +617,23 @@ jobs:
 
       - name: Codesign the macOS App for App Store
         run: |
-          codesign --deep --force --verbose --options runtime \
+          # Sign WITHOUT --deep to preserve the helper's signature
+          # Sign frameworks and other nested code first
+          find build/macos/Build/Products/Release/nt_helper.app/Contents/Frameworks -type d -name "*.framework" -exec \
+            codesign --force --verbose --options runtime \
+              --sign "Apple Distribution: Neal Sanche (KN424RZG26)" {} \;
+          
+          # Sign the main app (not deep - preserves helper signature)
+          codesign --force --verbose --options runtime \
             --sign "Apple Distribution: Neal Sanche (KN424RZG26)" \
             --entitlements macos/Runner/AppStore.entitlements \
             build/macos/Build/Products/Release/nt_helper.app
+          
+          # Verify final signatures
+          echo "Main app signature:"
+          codesign -d -vvv build/macos/Build/Products/Release/nt_helper.app 2>&1 | grep -E "Identifier|TeamIdentifier"
+          echo "Helper signature (should be preserved):"
+          codesign -d -vvv "build/macos/Build/Products/Release/nt_helper.app/Contents/Helpers/nt-flash.app" 2>&1 | grep -E "Identifier|TeamIdentifier"
 
       - name: Create installer package (.pkg)
         run: |
