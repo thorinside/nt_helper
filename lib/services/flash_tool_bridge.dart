@@ -38,8 +38,19 @@ class FlashToolBridge {
       args = ['--machine', firmwarePath];
     }
 
+    // Set TMPDIR to sandbox-accessible temp directory on macOS
+    Map<String, String>? environment;
+    if (Platform.isMacOS && SandboxUtils.isSandboxed) {
+      final tempDir = await getTemporaryDirectory();
+      environment = {...Platform.environment, 'TMPDIR': tempDir.path};
+    }
+
     try {
-      _process = await Process.start(executable, args);
+      _process = await Process.start(
+        executable,
+        args,
+        environment: environment,
+      );
     } on ProcessException catch (e) {
       // Handle sandbox restrictions - "Operation not permitted" on macOS
       if (Platform.isMacOS &&
