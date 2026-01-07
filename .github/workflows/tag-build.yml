@@ -487,6 +487,9 @@ jobs:
       - name: Decode macOS provisioning profile from Base64
         run: echo "${{ secrets.MAC_APP_STORE_PROVISIONPROFILE }}" | base64 --decode > mac_appstore.provisionprofile
 
+      - name: Decode nt-flash provisioning profile from Base64
+        run: echo "${{ secrets.NT_FLASH_PROVISIONPROFILE }}" | base64 --decode > nt_flash.provisionprofile
+
       - name: Create & unlock keychain
         run: |
           KEYCHAIN_NAME="build.keychain"
@@ -522,10 +525,11 @@ jobs:
           echo "Identities in keychain:"
           security find-identity -v -p codesigning "$KEYCHAIN_NAME" || true
 
-      - name: Install provisioning profile
+      - name: Install provisioning profiles
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp mac_appstore.provisionprofile ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp nt_flash.provisionprofile ~/Library/MobileDevice/Provisioning\ Profiles/
           echo "Provisioning profiles in that folder:"
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
@@ -558,20 +562,58 @@ jobs:
         run: |
           cp mac_appstore.provisionprofile build/macos/Build/Products/Release/nt_helper.app/Contents/embedded.provisionprofile
 
-      - name: Codesign nt-flash helper for sandbox
+      - name: Prepare nt-flash as embedded helper
         run: |
-          # For TestFlight, helper tools must be signed without an identifier
-          # to avoid "missing provisioning profile" errors.
-          # Using --identifier="" explicitly removes the identifier.
-          # Note: Not using entitlements file - the tool inherits sandbox from parent.
+          # Create a proper bundle structure for nt-flash helper
+          # TestFlight requires helpers to have embedded provisioning profiles
+          HELPER_DIR="build/macos/Build/Products/Release/nt_helper.app/Contents/Helpers/nt-flash.app/Contents"
+          mkdir -p "$HELPER_DIR/MacOS"
+          
+          # Move binary into helper bundle
+          mv build/macos/Build/Products/Release/nt_helper.app/Contents/MacOS/nt-flash "$HELPER_DIR/MacOS/nt-flash"
+          
+          # Embed provisioning profile
+          cp nt_flash.provisionprofile "$HELPER_DIR/embedded.provisionprofile"
+          
+          # Create minimal Info.plist for the helper
+          cat > "$HELPER_DIR/Info.plist" << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleIdentifier</key>
+              <string>dev.nosuch.ntHelper.nt-flash</string>
+              <key>CFBundleName</key>
+              <string>nt-flash</string>
+              <key>CFBundleExecutable</key>
+              <string>nt-flash</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>10.15</string>
+          </dict>
+          </plist>
+          EOF
+          
+          echo "Helper bundle structure:"
+          find build/macos/Build/Products/Release/nt_helper.app/Contents/Helpers -type f
+
+      - name: Codesign nt-flash helper bundle
+        run: |
+          # Sign the helper bundle with its own identifier and entitlements
           codesign --force --verbose --options runtime \
             --sign "Apple Distribution: Neal Sanche (KN424RZG26)" \
-            --identifier "" \
-            build/macos/Build/Products/Release/nt_helper.app/Contents/MacOS/nt-flash
+            --entitlements macos/Runner/nt-flash.entitlements \
+            --identifier "dev.nosuch.ntHelper.nt-flash" \
+            "build/macos/Build/Products/Release/nt_helper.app/Contents/Helpers/nt-flash.app"
           
-          # Verify the signature has no identifier
-          echo "Verifying signature:"
-          codesign -d -vvv build/macos/Build/Products/Release/nt_helper.app/Contents/MacOS/nt-flash 2>&1 | grep -E "Identifier|TeamIdentifier"
+          # Verify the signature
+          echo "Verifying helper signature:"
+          codesign -d -vvv "build/macos/Build/Products/Release/nt_helper.app/Contents/Helpers/nt-flash.app" 2>&1 | grep -E "Identifier|TeamIdentifier|Authority"
 
       - name: Codesign the macOS App for App Store
         run: |

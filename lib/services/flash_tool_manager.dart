@@ -49,12 +49,20 @@ class FlashToolManager {
 
   /// Get path to bundled nt-flash in app bundle (macOS only)
   ///
-  /// The binary is placed in Contents/MacOS/ alongside the main executable
-  /// during the TestFlight build process.
+  /// The binary is placed in Contents/Helpers/nt-flash.app/Contents/MacOS/nt-flash
+  /// as a proper helper bundle during the TestFlight build process.
   String _getBundledToolPath() {
     // Platform.resolvedExecutable is /path/to/App.app/Contents/MacOS/nt_helper
     final exeDir = path.dirname(Platform.resolvedExecutable);
-    return path.join(exeDir, 'nt-flash');
+    final contentsDir = path.dirname(exeDir);
+    return path.join(
+      contentsDir,
+      'Helpers',
+      'nt-flash.app',
+      'Contents',
+      'MacOS',
+      'nt-flash',
+    );
   }
 
   /// Get the directory where the tool is stored
