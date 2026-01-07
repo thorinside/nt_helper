@@ -1321,6 +1321,28 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               children: [Text('Offline Data'), Icon(Icons.sync_alt_rounded)],
             ),
           ),
+          // Firmware: Desktop only, disabled when loading
+          if (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
+            PopupMenuItem(
+              value: 'firmware',
+              enabled: !widget.loading,
+              onTap: widget.loading
+                  ? null
+                  : () {
+                      final distingCubit = popupCtx.read<DistingCubit>();
+                      Navigator.push(
+                        popupCtx,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              FirmwareUpdateScreen(distingCubit: distingCubit),
+                        ),
+                      );
+                    },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text('Firmware'), Icon(Icons.system_update)],
+              ),
+            ),
           // About: Always enabled (Fix context usage for Theme)
           PopupMenuItem(
             value: 'about',

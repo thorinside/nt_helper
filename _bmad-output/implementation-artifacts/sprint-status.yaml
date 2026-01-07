@@ -167,9 +167,10 @@ development_status:
   13-3-display-sample-installation-summary: done
   epic-13-retrospective: optional
 
-  epic-14: done
+  epic-14: in-progress
   e14-1-flash-tool-infrastructure: done
   e14-2-firmware-version-check-and-download: done
   e14-3-firmware-update-wizard-with-progress-visualization: done
   e14-4-error-handling-and-platform-setup: done
+  e14-5-add-firmware-menu-item: review
   epic-14-retrospective: optional
