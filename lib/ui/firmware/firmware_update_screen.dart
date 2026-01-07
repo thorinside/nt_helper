@@ -120,7 +120,7 @@ class _FirmwareUpdateView extends StatelessWidget {
         TextButton.icon(
           onPressed: () => _selectLocalFile(context),
           icon: const Icon(Icons.folder_open),
-          label: const Text('Local file'),
+          label: const Text('Local Zip File'),
         ),
         const SizedBox(width: 8),
       ];
