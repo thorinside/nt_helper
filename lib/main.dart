@@ -23,6 +23,9 @@ const MethodChannel _zoomHotkeysChannel = MethodChannel(
   'com.nt_helper.app/zoom_hotkeys',
 );
 
+// Saved window position for restoration after show (needed for macOS)
+Offset? _savedWindowPosition;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -41,32 +44,29 @@ void main() async {
         x != null && y != null && width != null && height != null;
 
     Size initialSize;
-    Offset? initialPosition;
 
     if (hasSavedBounds && width > 0 && height > 0) {
       initialSize = Size(width, height);
-      initialPosition = Offset(x, y);
+      _savedWindowPosition = Offset(x, y);
     } else {
       initialSize = const Size(720, 1080);
-      initialPosition = null; // Will center
+      _savedWindowPosition = null; // Will center
     }
 
     // Configure window options but DON'T show yet - wait for first frame
     WindowOptions windowOptions = WindowOptions(
       size: initialSize,
       minimumSize: const Size(640, 720),
-      center: initialPosition == null,
+      center: _savedWindowPosition == null,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
     );
 
     // Just set up the window options, don't show
+    // Position will be set after show() for cross-platform compatibility
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
-      if (initialPosition != null) {
-        await windowManager.setPosition(initialPosition);
-      }
-      // Don't show here - we'll show after first frame renders
+      // Don't show or set position here - we'll do it after first frame renders
     });
   }
 
@@ -92,6 +92,10 @@ void main() async {
   if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await windowManager.show();
+      // Set position after show for cross-platform compatibility (especially macOS)
+      if (_savedWindowPosition != null) {
+        await windowManager.setPosition(_savedWindowPosition!);
+      }
       await windowManager.focus();
     });
   }
