@@ -707,12 +707,13 @@ packages:
     source: hosted
     version: "1.17.0"
   midi:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: midi
-      sha256: "737c86a4ffbbe06352a8ec90bf5153774202f4b38dfb8e45af255cee18e2b9de"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: HEAD
+      resolved-ref: "54ef659ec81fce93d4d9e1a2adedffa90c74d633"
+      url: "https://github.com/thorinside/dart_midi.git"
+    source: git
     version: "0.1.0"
   mime:
     dependency: transitive
