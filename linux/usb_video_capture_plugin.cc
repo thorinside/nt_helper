@@ -31,7 +31,8 @@ struct _UsbVideoCapturePlugin {
   GObject parent_instance;
 
   FlEventChannel* event_channel;
-  std::atomic<bool> stream_active;  // Track if stream is active
+  FlEventChannel* debug_channel;
+  std::atomic<bool> stream_active;
 
   int fd;
   struct Buffer* buffers;
@@ -39,7 +40,6 @@ struct _UsbVideoCapturePlugin {
   std::thread* capture_thread;
   std::atomic<bool> capturing;
 
-  // Thread-safe frame queue for dispatching to main thread
   std::mutex* frame_queue_mutex;
   std::queue<std::vector<uint8_t>>* pending_frames;
   guint idle_source_id;
@@ -545,13 +545,12 @@ static void usb_video_capture_plugin_init(UsbVideoCapturePlugin* self) {
   self->capture_thread = nullptr;
   self->capturing = false;
   self->event_channel = nullptr;
-  self->stream_active = false;  // Initialize stream state
+  self->debug_channel = nullptr;
+  self->stream_active = false;
 
-  // Initialize thread-safe frame queue
   self->frame_queue_mutex = new std::mutex();
   self->pending_frames = new std::queue<std::vector<uint8_t>>();
 
-  // Start idle handler to process frames on main thread (runs at ~60Hz)
   self->idle_source_id = g_timeout_add(16, send_pending_frames, self);
 }
 
@@ -584,6 +583,11 @@ extern "C" void usb_video_capture_plugin_register_with_registrar(FlPluginRegistr
                                        event_channel_cancel,
                                        plugin,
                                        nullptr);
+
+  plugin->debug_channel = fl_event_channel_new(
+      fl_plugin_registrar_get_messenger(registrar),
+      "com.example.nt_helper/usb_video_debug",
+      FL_METHOD_CODEC(codec));
 
   g_object_unref(plugin);
 }

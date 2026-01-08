@@ -120,6 +120,9 @@ dependency_overrides:
     git: https://github.com/thorinside/flutter_midi_command_linux.git
   flutter_midi_command_windows:
     git: https://github.com/thorinside/flutter_midi_command_windows.git
+  # Use forked dart_midi with fix for Linux shutdown hang (closes ALSA port before killing isolate)
+  midi:
+    git: https://github.com/thorinside/dart_midi.git
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
