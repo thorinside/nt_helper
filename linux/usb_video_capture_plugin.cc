@@ -12,6 +12,8 @@
 #include <atomic>
 #include <vector>
 #include <string>
+#include <mutex>
+#include <queue>
 
 #define USB_VIDEO_CAPTURE_PLUGIN(obj) \
   (G_TYPE_CHECK_INSTANCE_CAST((obj), usb_video_capture_plugin_get_type(), \
@@ -27,15 +29,20 @@ typedef struct _UsbVideoCapturePluginClass UsbVideoCapturePluginClass;
 
 struct _UsbVideoCapturePlugin {
   GObject parent_instance;
-  
+
   FlEventChannel* event_channel;
   std::atomic<bool> stream_active;  // Track if stream is active
-  
+
   int fd;
   struct Buffer* buffers;
   unsigned int n_buffers;
   std::thread* capture_thread;
   std::atomic<bool> capturing;
+
+  // Thread-safe frame queue for dispatching to main thread
+  std::mutex* frame_queue_mutex;
+  std::queue<std::vector<uint8_t>>* pending_frames;
+  guint idle_source_id;
 };
 
 struct _UsbVideoCapturePluginClass {
@@ -46,6 +53,42 @@ G_DEFINE_TYPE(UsbVideoCapturePlugin, usb_video_capture_plugin, G_TYPE_OBJECT)
 
 // Forward declaration
 static void stop_capture(UsbVideoCapturePlugin* self);
+
+// Callback to send frames from the main GTK thread
+static gboolean send_pending_frames(gpointer user_data) {
+  UsbVideoCapturePlugin* self = USB_VIDEO_CAPTURE_PLUGIN(user_data);
+
+  if (!self->event_channel || !self->stream_active) {
+    return G_SOURCE_CONTINUE;  // Keep the idle source active
+  }
+
+  std::vector<uint8_t> frame;
+  {
+    std::lock_guard<std::mutex> lock(*self->frame_queue_mutex);
+    if (self->pending_frames->empty()) {
+      return G_SOURCE_CONTINUE;
+    }
+    frame = std::move(self->pending_frames->front());
+    self->pending_frames->pop();
+    // Clear any backlog to prevent memory buildup - keep only latest frame
+    while (!self->pending_frames->empty()) {
+      self->pending_frames->pop();
+    }
+  }
+
+  if (!frame.empty()) {
+    g_autoptr(FlValue) frame_data = fl_value_new_uint8_list(frame.data(), frame.size());
+    GError* error = nullptr;
+    if (!fl_event_channel_send(self->event_channel, frame_data, nullptr, &error)) {
+      if (error) {
+        g_warning("[USB Video] Failed to send frame: %s", error->message);
+        g_error_free(error);
+      }
+    }
+  }
+
+  return G_SOURCE_CONTINUE;  // Keep the idle source active
+}
 
 static FlMethodErrorResponse* event_channel_listen(FlEventChannel* channel,
                                                    FlValue* args,
@@ -204,25 +247,21 @@ static void capture_frames(UsbVideoCapturePlugin* self) {
       rgb_data[j + 5] = std::min(255, std::max(0, (298 * c + 516 * d + 128) >> 8));
     }
     
-    // Encode as BMP and send to Flutter
+    // Encode as BMP and queue for sending on main thread
     if (self->event_channel && self->stream_active) {
       frame_count++;
-      
+
       // Encode RGB to BMP
       std::vector<uint8_t> bmp_data = encode_bmp(rgb_data.data(), 256, 64);
-      
+
       if (frame_count % 30 == 1) {  // Log every 30th frame to avoid spam
-        g_print("[USB Video] Sending frame %d, BMP size=%zu bytes\n", frame_count, bmp_data.size());
+        g_print("[USB Video] Queueing frame %d, BMP size=%zu bytes\n", frame_count, bmp_data.size());
       }
-      
-      g_autoptr(FlValue) frame_data = fl_value_new_uint8_list(bmp_data.data(), bmp_data.size());
-      // Send via event channel
-      GError* error = nullptr;
-      if (!fl_event_channel_send(self->event_channel, frame_data, nullptr, &error)) {
-        if (error) {
-          g_warning("[USB Video] Failed to send frame: %s", error->message);
-          g_error_free(error);
-        }
+
+      // Queue frame for main thread to send (thread-safe)
+      {
+        std::lock_guard<std::mutex> lock(*self->frame_queue_mutex);
+        self->pending_frames->push(std::move(bmp_data));
       }
     } else {
       if (frame_count % 30 == 0) {  // Log periodically
@@ -473,7 +512,25 @@ static void usb_video_capture_plugin_handle_method_call(
 
 static void usb_video_capture_plugin_dispose(GObject* object) {
   UsbVideoCapturePlugin* self = USB_VIDEO_CAPTURE_PLUGIN(object);
+
+  // Remove idle handler
+  if (self->idle_source_id != 0) {
+    g_source_remove(self->idle_source_id);
+    self->idle_source_id = 0;
+  }
+
   stop_capture(self);
+
+  // Clean up frame queue
+  if (self->pending_frames) {
+    delete self->pending_frames;
+    self->pending_frames = nullptr;
+  }
+  if (self->frame_queue_mutex) {
+    delete self->frame_queue_mutex;
+    self->frame_queue_mutex = nullptr;
+  }
+
   G_OBJECT_CLASS(usb_video_capture_plugin_parent_class)->dispose(object);
 }
 
@@ -489,6 +546,13 @@ static void usb_video_capture_plugin_init(UsbVideoCapturePlugin* self) {
   self->capturing = false;
   self->event_channel = nullptr;
   self->stream_active = false;  // Initialize stream state
+
+  // Initialize thread-safe frame queue
+  self->frame_queue_mutex = new std::mutex();
+  self->pending_frames = new std::queue<std::vector<uint8_t>>();
+
+  // Start idle handler to process frames on main thread (runs at ~60Hz)
+  self->idle_source_id = g_timeout_add(16, send_pending_frames, self);
 }
 
 static void method_call_cb(FlMethodChannel* channel, FlMethodCall* method_call,
