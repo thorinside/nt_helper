@@ -124,6 +124,12 @@ static FlMethodErrorResponse* event_channel_cancel(FlEventChannel* channel,
 static void stop_capture(UsbVideoCapturePlugin* self) {
   if (self->capturing) {
     self->capturing = false;
+    
+    if (self->fd >= 0) {
+      enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      ioctl(self->fd, VIDIOC_STREAMOFF, &type);
+    }
+    
     if (self->capture_thread) {
       self->capture_thread->join();
       delete self->capture_thread;
@@ -132,11 +138,6 @@ static void stop_capture(UsbVideoCapturePlugin* self) {
   }
   
   if (self->fd >= 0) {
-    // Stop streaming
-    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    ioctl(self->fd, VIDIOC_STREAMOFF, &type);
-    
-    // Unmap buffers
     if (self->buffers) {
       for (unsigned int i = 0; i < self->n_buffers; ++i) {
         munmap(self->buffers[i].start, self->buffers[i].length);
