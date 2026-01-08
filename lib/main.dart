@@ -23,8 +23,8 @@ const MethodChannel _zoomHotkeysChannel = MethodChannel(
   'com.nt_helper.app/zoom_hotkeys',
 );
 
-// Saved window position for restoration after show (needed for macOS)
-Offset? _savedWindowPosition;
+// Saved window bounds for restoration after show (needed for macOS)
+Rect? _savedWindowBounds;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,26 +47,26 @@ void main() async {
 
     if (hasSavedBounds && width > 0 && height > 0) {
       initialSize = Size(width, height);
-      _savedWindowPosition = Offset(x, y);
+      _savedWindowBounds = Rect.fromLTWH(x, y, width, height);
     } else {
       initialSize = const Size(720, 1080);
-      _savedWindowPosition = null; // Will center
+      _savedWindowBounds = null; // Will center
     }
 
     // Configure window options but DON'T show yet - wait for first frame
     WindowOptions windowOptions = WindowOptions(
       size: initialSize,
       minimumSize: const Size(640, 720),
-      center: _savedWindowPosition == null,
+      center: _savedWindowBounds == null,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
     );
 
     // Just set up the window options, don't show
-    // Position will be set after show() for cross-platform compatibility
+    // Bounds will be set after show() for cross-platform compatibility (especially macOS)
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
-      // Don't show or set position here - we'll do it after first frame renders
+      // Don't show or set bounds here - we'll do it after first frame renders
     });
   }
 
@@ -92,9 +92,9 @@ void main() async {
   if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await windowManager.show();
-      // Set position after show for cross-platform compatibility (especially macOS)
-      if (_savedWindowPosition != null) {
-        await windowManager.setPosition(_savedWindowPosition!);
+      // Set bounds (position + size) after show for cross-platform compatibility (especially macOS)
+      if (_savedWindowBounds != null) {
+        await windowManager.setBounds(_savedWindowBounds!);
       }
       await windowManager.focus();
     });
