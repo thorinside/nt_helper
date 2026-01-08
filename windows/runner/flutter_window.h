@@ -45,9 +45,9 @@ private:
     // Helper to get path for settings file
     std::wstring GetSavePath();
 
-    // Methods for saving and loading window placement
+    // Methods for saving and restoring window placement
     void SaveWindowPlacement();
-    bool LoadWindowPlacement(Point &origin, Size &size);
+    bool RestoreWindowPlacement();
 };
 
 #endif // RUNNER_FLUTTER_WINDOW_H_
