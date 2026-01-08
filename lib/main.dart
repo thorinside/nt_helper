@@ -23,50 +23,89 @@ const MethodChannel _zoomHotkeysChannel = MethodChannel(
   'com.nt_helper.app/zoom_hotkeys',
 );
 
-// Saved window bounds for restoration after show (needed for macOS)
-Rect? _savedWindowBounds;
+/// Manages window bounds persistence - saves on every move/resize
+class _WindowBoundsManager with WindowListener {
+  static const _keyX = 'window_x';
+  static const _keyY = 'window_y';
+  static const _keyWidth = 'window_width';
+  static const _keyHeight = 'window_height';
+
+  SharedPreferences? _prefs;
+
+  Future<void> init(SharedPreferences prefs) async {
+    _prefs = prefs;
+    windowManager.addListener(this);
+  }
+
+  /// Load saved bounds, returns null if none saved
+  static Future<Rect?> loadBounds(SharedPreferences prefs) async {
+    final x = prefs.getDouble(_keyX);
+    final y = prefs.getDouble(_keyY);
+    final width = prefs.getDouble(_keyWidth);
+    final height = prefs.getDouble(_keyHeight);
+
+    if (x != null && y != null && width != null && height != null) {
+      if (width > 0 && height > 0) {
+        return Rect.fromLTWH(x, y, width, height);
+      }
+    }
+    return null;
+  }
+
+  Future<void> _saveBounds() async {
+    if (_prefs == null) return;
+    final bounds = await windowManager.getBounds();
+    await Future.wait([
+      _prefs!.setDouble(_keyX, bounds.left),
+      _prefs!.setDouble(_keyY, bounds.top),
+      _prefs!.setDouble(_keyWidth, bounds.width),
+      _prefs!.setDouble(_keyHeight, bounds.height),
+    ]);
+  }
+
+  @override
+  void onWindowMoved() => _saveBounds();
+
+  @override
+  void onWindowResized() => _saveBounds();
+}
+
+final _windowBoundsManager = _WindowBoundsManager();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize window_manager on desktop platforms
+  Rect? savedBounds;
   if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
     await windowManager.ensureInitialized();
 
     // Load saved window position/size
     final prefs = await SharedPreferences.getInstance();
-    double? x = prefs.getDouble('window_x');
-    double? y = prefs.getDouble('window_y');
-    double? width = prefs.getDouble('window_width');
-    double? height = prefs.getDouble('window_height');
+    savedBounds = await _WindowBoundsManager.loadBounds(prefs);
 
-    bool hasSavedBounds =
-        x != null && y != null && width != null && height != null;
+    // Initialize bounds manager to save on move/resize
+    await _windowBoundsManager.init(prefs);
 
-    Size initialSize;
-
-    if (hasSavedBounds && width > 0 && height > 0) {
-      initialSize = Size(width, height);
-      _savedWindowBounds = Rect.fromLTWH(x, y, width, height);
-    } else {
-      initialSize = const Size(720, 1080);
-      _savedWindowBounds = null; // Will center
-    }
+    final initialSize = savedBounds?.size ?? const Size(720, 1080);
 
     // Configure window options but DON'T show yet - wait for first frame
     WindowOptions windowOptions = WindowOptions(
       size: initialSize,
       minimumSize: const Size(640, 720),
-      center: _savedWindowBounds == null,
+      center: savedBounds == null,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
     );
 
-    // Just set up the window options, don't show
-    // Bounds will be set after show() for cross-platform compatibility (especially macOS)
+    // Set up the window but don't show yet
+    // We'll set bounds and show after first frame renders to avoid white flash
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
-      // Don't show or set bounds here - we'll do it after first frame renders
+      // Set position immediately in this callback (before show)
+      if (savedBounds != null) {
+        await windowManager.setBounds(savedBounds);
+      }
     });
   }
 
@@ -92,10 +131,6 @@ void main() async {
   if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await windowManager.show();
-      // Set bounds (position + size) after show for cross-platform compatibility (especially macOS)
-      if (_savedWindowBounds != null) {
-        await windowManager.setBounds(_savedWindowBounds!);
-      }
       await windowManager.focus();
     });
   }
@@ -103,24 +138,7 @@ void main() async {
   // Set up the method call handler for _windowEventsChannel
   _windowEventsChannel.setMethodCallHandler((call) async {
     if (call.method == 'windowWillClose') {
-      bool prefsSavedSuccessfully = false;
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final bounds = await windowManager.getBounds();
-
-        final List<Future<bool>> saveFutures = [
-          prefs.setDouble('window_x', bounds.left),
-          prefs.setDouble('window_y', bounds.top),
-          prefs.setDouble('window_width', bounds.width),
-          prefs.setDouble('window_height', bounds.height),
-        ];
-
-        final List<bool> results = await Future.wait(saveFutures);
-        prefsSavedSuccessfully = results.every((result) => result);
-      } catch (e) {
-        prefsSavedSuccessfully = false;
-      }
-
+      // Bounds are already saved by _WindowBoundsManager on move/resize
       try {
         await database.close();
       } catch (e) {
@@ -133,7 +151,7 @@ void main() async {
         // Intentionally empty
       }
 
-      return prefsSavedSuccessfully;
+      return true; // Signal Swift to proceed with close
     }
     return null;
   });
