@@ -58,8 +58,8 @@ static void stop_capture(UsbVideoCapturePlugin* self);
 static gboolean send_pending_frames(gpointer user_data) {
   UsbVideoCapturePlugin* self = USB_VIDEO_CAPTURE_PLUGIN(user_data);
 
-  if (!self->event_channel || !self->stream_active) {
-    return G_SOURCE_CONTINUE;  // Keep the idle source active
+  if (!self->event_channel || !self->stream_active || self->idle_source_id == 0) {
+    return G_SOURCE_CONTINUE;
   }
 
   std::vector<uint8_t> frame;
@@ -104,7 +104,19 @@ static FlMethodErrorResponse* event_channel_cancel(FlEventChannel* channel,
                                                    gpointer user_data) {
   UsbVideoCapturePlugin* self = USB_VIDEO_CAPTURE_PLUGIN(user_data);
   g_print("[USB Video] Event channel cancel called\n");
-  self->stream_active = false;  // Mark stream as inactive
+  
+  // CRITICAL: Mark stream inactive FIRST to prevent any pending callbacks
+  self->stream_active = false;
+  
+  // CRITICAL: Remove the idle source IMMEDIATELY to prevent callbacks
+  // from trying to send to a dead Dart isolate during shutdown.
+  // This prevents the GetFfiCallbackMetadata crash.
+  if (self->idle_source_id != 0) {
+    g_source_remove(self->idle_source_id);
+    self->idle_source_id = 0;
+    g_print("[USB Video] Idle source removed during channel cancel\n");
+  }
+  
   stop_capture(self);
   return nullptr;
 }

@@ -173,22 +173,19 @@ class DistingCubit extends _DistingCubitBase
   int? _lastOnlineSysExId;
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
     disting()?.dispose();
-    _offlineManager?.dispose(); // Dispose offline manager too
-    _parameterQueue?.dispose(); // Dispose parameter queue
-    _midiCommand.teardown(); // Disconnect MIDI devices and clean up isolate
+    _offlineManager?.dispose();
+    _parameterQueue?.dispose();
+    _midiCommand.teardown();
     _midiCommand.dispose();
 
-    // Cancel timers
     _parameterRefreshDelegate.dispose();
 
-    // Cancel MIDI setup listener
     _midiSetupSubscription?.cancel();
 
-    _monitoringDelegate.dispose();
+    await _monitoringDelegate.dispose();
 
-    // Dispose firmware version service
     _firmwareVersionService.dispose();
 
     return super.close();

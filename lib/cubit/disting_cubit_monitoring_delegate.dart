@@ -23,12 +23,12 @@ class _MonitoringDelegate {
   VideoStreamState? get currentVideoState => _videoManager?.currentState;
   UsbVideoManager? get videoManager => _videoManager;
 
-  void dispose() {
+  Future<void> dispose() async {
     _cpuUsageTimer?.cancel();
     _cpuUsageController.close();
 
     _videoStateSubscription?.cancel();
-    _videoManager?.dispose();
+    await _videoManager?.dispose();
   }
 
   /// Gets the current CPU usage information from the Disting device.
@@ -139,4 +139,3 @@ class _MonitoringDelegate {
     }
   }
 }
-
