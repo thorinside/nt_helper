@@ -29,6 +29,7 @@ class BitPatternEditor extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 1.0),
             child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: isValid
                   ? () {
                       // Toggle this bit
@@ -41,14 +42,14 @@ class BitPatternEditor extends StatelessWidget {
                   color: !isValid
                       ? Colors.grey.shade400.withValues(alpha: 0.4) // Disabled
                       : isSet
-                          ? color // Filled
-                          : null, // Empty
+                      ? color // Filled
+                      : null, // Empty
                   border: Border.all(
                     color: !isValid
                         ? Colors.grey.shade500
                         : isSet
-                            ? color
-                            : Colors.grey.shade400,
+                        ? color
+                        : Colors.grey.shade400,
                     width: 0.5,
                   ),
                 ),
