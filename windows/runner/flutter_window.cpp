@@ -276,18 +276,8 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
 
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
-  flutter_controller_->engine()->SetNextFrameCallback([&]()
-                                                      {
-    OutputDebugStringW(L"SetNextFrameCallback: Calling this->Show().\n");
-    RECT client_rect_before_show;
-    if (GetHandle()) { // Ensure handle is valid before calling GetClientRect
-        GetClientRect(GetHandle(), &client_rect_before_show);
-        std::wstring log_msg_show = L"Client RECT before ShowWindow: " +
-            std::to_wstring(client_rect_before_show.right - client_rect_before_show.left) + L"x" +
-            std::to_wstring(client_rect_before_show.bottom - client_rect_before_show.top) + L"\n";
-        OutputDebugStringW(log_msg_show.c_str());
-    }
-    this->Show(); });
+  // Note: Window showing is handled by window_manager plugin in Dart code.
+  // Do NOT call this->Show() here - it would show the window before Flutter renders.
   flutter_controller_->ForceRedraw();
 
   return true;

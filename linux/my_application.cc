@@ -6,7 +6,6 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
-#include <bitsdojo_window_linux/bitsdojo_window_plugin.h>
 
 // Declare the USB video capture plugin registration function
 extern "C" {
@@ -53,9 +52,9 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "nt_helper");
   }
 
-  auto bdw = bitsdojo_window_from(window);
-  bdw->setCustomFrame(false);
-  gtk_widget_show(GTK_WIDGET(window));
+  // Use gtk_widget_realize instead of gtk_widget_show to hide window on startup.
+  // window_manager will show the window when Flutter is ready.
+  gtk_widget_realize(GTK_WIDGET(window));
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);

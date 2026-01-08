@@ -1,7 +1,6 @@
 import 'dart:io';
-import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Added for MethodChannel
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/db/database.dart';
@@ -13,6 +12,7 @@ import 'package:nt_helper/services/zoom_hotkey_service.dart';
 import 'package:nt_helper/util/in_app_logger.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 
 // Define the static MethodChannel
 const MethodChannel _windowEventsChannel = MethodChannel(
@@ -25,6 +25,50 @@ const MethodChannel _zoomHotkeysChannel = MethodChannel(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize window_manager on desktop platforms (must be before runApp for hide on startup)
+  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+    await windowManager.ensureInitialized();
+
+    // Load saved window position/size
+    final prefs = await SharedPreferences.getInstance();
+    double? x = prefs.getDouble('window_x');
+    double? y = prefs.getDouble('window_y');
+    double? width = prefs.getDouble('window_width');
+    double? height = prefs.getDouble('window_height');
+
+    bool hasSavedBounds =
+        x != null && y != null && width != null && height != null;
+
+    Size initialSize;
+    Offset? initialPosition;
+
+    if (hasSavedBounds && width! > 0 && height! > 0) {
+      initialSize = Size(width, height);
+      initialPosition = Offset(x!, y!);
+    } else {
+      initialSize = const Size(720, 1080);
+      initialPosition = null; // Will center
+    }
+
+    WindowOptions windowOptions = WindowOptions(
+      size: initialSize,
+      minimumSize: const Size(640, 720),
+      center: initialPosition == null,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal,
+    );
+
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      if (initialPosition != null) {
+        await windowManager.setPosition(initialPosition);
+      }
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
+
   final database = AppDatabase();
   await SettingsService().init();
   await NodePositionsPersistenceService().init();
@@ -49,13 +93,13 @@ void main() async {
       bool prefsSavedSuccessfully = false;
       try {
         final prefs = await SharedPreferences.getInstance();
-        final windowRect = appWindow.rect;
+        final bounds = await windowManager.getBounds();
 
         final List<Future<bool>> saveFutures = [
-          prefs.setDouble('window_x', windowRect.left),
-          prefs.setDouble('window_y', windowRect.top),
-          prefs.setDouble('window_width', windowRect.width),
-          prefs.setDouble('window_height', windowRect.height),
+          prefs.setDouble('window_x', bounds.left),
+          prefs.setDouble('window_y', bounds.top),
+          prefs.setDouble('window_width', bounds.width),
+          prefs.setDouble('window_height', bounds.height),
         ];
 
         final List<bool> results = await Future.wait(saveFutures);
@@ -65,10 +109,9 @@ void main() async {
       }
 
       try {
-        await database.close(); // Close the database
+        await database.close();
       } catch (e) {
-        // Optionally, decide if this error should affect prefsSavedSuccessfully
-        // For now, we let it proceed and return based on prefs saving.
+        // Intentionally empty
       }
 
       try {
@@ -77,9 +120,9 @@ void main() async {
         // Intentionally empty
       }
 
-      return prefsSavedSuccessfully; // Signal success/failure of prefs saving
+      return prefsSavedSuccessfully;
     }
-    return null; // For unhandled methods
+    return null;
   });
 
   _zoomHotkeysChannel.setMethodCallHandler((call) async {
@@ -96,49 +139,4 @@ void main() async {
     }
     return null;
   });
-
-  // Only initialize window management on desktop platforms
-  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-    doWhenWindowReady(() async {
-      // SettingsService().init() is already called above, so SharedPreferences should be initialized.
-      final prefs = await SharedPreferences.getInstance();
-      double? x, y, width, height;
-      try {
-        x = prefs.getDouble('window_x');
-        y = prefs.getDouble('window_y');
-        width = prefs.getDouble('window_width');
-        height = prefs.getDouble('window_height');
-      } catch (e) {
-        // Handle error loading window state
-        // Consider logging this to a file or analytics in a real app
-      }
-
-      appWindow.minSize = Size(640, 720);
-
-      bool hasSavedPositionAndSize =
-          x != null && y != null && width != null && height != null;
-
-      if (hasSavedPositionAndSize) {
-        // Ensure width and height are positive, otherwise bitsdojo might ignore the rect.
-        if (width <= 0 || height <= 0) {
-          const initialSize = Size(720, 1080);
-          appWindow.size = initialSize;
-          appWindow.alignment = Alignment.center;
-        } else {
-          // Create Size and Offset objects
-          Size savedSize = Size(width, height);
-          Offset savedPosition = Offset(x, y);
-
-          appWindow.size = savedSize;
-          appWindow.position = savedPosition;
-        }
-      } else {
-        const initialSize = Size(720, 1080);
-        appWindow.size = initialSize;
-        appWindow.alignment = Alignment.center;
-      }
-
-      appWindow.show();
-    });
-  }
 }
