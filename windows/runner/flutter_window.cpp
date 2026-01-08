@@ -201,6 +201,10 @@ bool FlutterWindow::RestoreWindowPlacement()
   // Ensure the length field is correct (in case of version mismatch)
   wp.length = sizeof(wp);
 
+  // Force window to stay hidden - window_manager will show it from Dart when Flutter is ready
+  // This prevents the white flash before Flutter content renders
+  wp.showCmd = SW_HIDE;
+
   // Use SetWindowPlacement to restore - this handles coordinate systems correctly
   if (SetWindowPlacement(handle, &wp))
   {

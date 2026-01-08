@@ -26,7 +26,7 @@ const MethodChannel _zoomHotkeysChannel = MethodChannel(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize window_manager on desktop platforms (must be before runApp for hide on startup)
+  // Initialize window_manager on desktop platforms
   if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
     await windowManager.ensureInitialized();
 
@@ -43,14 +43,15 @@ void main() async {
     Size initialSize;
     Offset? initialPosition;
 
-    if (hasSavedBounds && width! > 0 && height! > 0) {
+    if (hasSavedBounds && width > 0 && height > 0) {
       initialSize = Size(width, height);
-      initialPosition = Offset(x!, y!);
+      initialPosition = Offset(x, y);
     } else {
       initialSize = const Size(720, 1080);
       initialPosition = null; // Will center
     }
 
+    // Configure window options but DON'T show yet - wait for first frame
     WindowOptions windowOptions = WindowOptions(
       size: initialSize,
       minimumSize: const Size(640, 720),
@@ -60,12 +61,12 @@ void main() async {
       titleBarStyle: TitleBarStyle.normal,
     );
 
+    // Just set up the window options, don't show
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       if (initialPosition != null) {
         await windowManager.setPosition(initialPosition);
       }
-      await windowManager.show();
-      await windowManager.focus();
+      // Don't show here - we'll show after first frame renders
     });
   }
 
@@ -86,6 +87,14 @@ void main() async {
       child: DistingApp(),
     ),
   );
+
+  // Show window after first frame renders to avoid white flash
+  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   // Set up the method call handler for _windowEventsChannel
   _windowEventsChannel.setMethodCallHandler((call) async {
