@@ -64,9 +64,7 @@ abstract class _DistingCubitBase extends Cubit<DistingState> {
     int numAlgorithmsInPreset,
     IDistingMidiManager disting,
   );
-  Future<void> _refreshStateFromManager({
-    Duration delay,
-  });
+  Future<void> _refreshStateFromManager({Duration delay});
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex);
   List<Slot> updateSlot(
     int algorithmIndex,
@@ -76,7 +74,10 @@ abstract class _DistingCubitBase extends Cubit<DistingState> {
 }
 
 class DistingCubit extends _DistingCubitBase
-    with _DistingCubitPresetOps, _DistingCubitSlotOps, _DistingCubitAlgorithmOps {
+    with
+        _DistingCubitPresetOps,
+        _DistingCubitSlotOps,
+        _DistingCubitAlgorithmOps {
   final AppDatabase database; // Renamed from _database to make it public
   late final MetadataDao _metadataDao; // Added
   final Future<SharedPreferences> _prefs;
@@ -87,10 +88,14 @@ class DistingCubit extends _DistingCubitBase
   late final _ParameterFetchDelegate _parameterFetchDelegate =
       _ParameterFetchDelegate(this);
   late final _PluginDelegate _pluginDelegate = _PluginDelegate(this);
-  late final _ConnectionDelegate _connectionDelegate = _ConnectionDelegate(this);
+  late final _ConnectionDelegate _connectionDelegate = _ConnectionDelegate(
+    this,
+  );
   late final _ParameterRefreshDelegate _parameterRefreshDelegate =
       _ParameterRefreshDelegate(this);
-  late final _MonitoringDelegate _monitoringDelegate = _MonitoringDelegate(this);
+  late final _MonitoringDelegate _monitoringDelegate = _MonitoringDelegate(
+    this,
+  );
   late final _SlotStateDelegate _slotStateDelegate = _SlotStateDelegate(this);
   late final _AlgorithmLibraryDelegate _algorithmLibraryDelegate =
       _AlgorithmLibraryDelegate(this);
@@ -112,7 +117,8 @@ class DistingCubit extends _DistingCubitBase
   late final _RefreshDelegate _refreshDelegate = _RefreshDelegate(this);
 
   /// Service for checking firmware updates
-  final FirmwareVersionService _firmwareVersionService = FirmwareVersionService();
+  final FirmwareVersionService _firmwareVersionService =
+      FirmwareVersionService();
 
   // Modified constructor
   DistingCubit(this.database)
@@ -171,6 +177,7 @@ class DistingCubit extends _DistingCubitBase
     disting()?.dispose();
     _offlineManager?.dispose(); // Dispose offline manager too
     _parameterQueue?.dispose(); // Dispose parameter queue
+    _midiCommand.teardown(); // Disconnect MIDI devices and clean up isolate
     _midiCommand.dispose();
 
     // Cancel timers
@@ -239,7 +246,11 @@ class DistingCubit extends _DistingCubitBase
     MidiDevice outputDevice,
     int sysExId,
   ) async {
-    return _connectionDelegate.connectToDevices(inputDevice, outputDevice, sysExId);
+    return _connectionDelegate.connectToDevices(
+      inputDevice,
+      outputDevice,
+      sysExId,
+    );
   }
 
   // --- Offline Mode Handling ---
@@ -283,7 +294,8 @@ class DistingCubit extends _DistingCubitBase
       _parameterQueue?.dispose();
       _parameterQueue = ParameterUpdateQueue(
         midiManager: manager,
-        onParameterStringUpdated: _parameterStringDelegate.onParameterStringUpdated,
+        onParameterStringUpdated:
+            _parameterStringDelegate.onParameterStringUpdated,
       );
     }
   }
@@ -446,12 +458,11 @@ class DistingCubit extends _DistingCubitBase
     DistingStateSynchronized state,
     int algorithmIndex,
     int parameterNumber,
-  ) =>
-      _stateHelpersDelegate.isProgramParameter(
-        state,
-        algorithmIndex,
-        parameterNumber,
-      );
+  ) => _stateHelpersDelegate.isProgramParameter(
+    state,
+    algorithmIndex,
+    parameterNumber,
+  );
 
   @override
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex) {
@@ -626,7 +637,8 @@ class DistingCubit extends _DistingCubitBase
   }
 
   /// Gets the current video stream state
-  VideoStreamState? get currentVideoState => _monitoringDelegate.currentVideoState;
+  VideoStreamState? get currentVideoState =>
+      _monitoringDelegate.currentVideoState;
 
   /// Gets the video manager for direct stream access
   UsbVideoManager? get videoManager => _monitoringDelegate.videoManager;
