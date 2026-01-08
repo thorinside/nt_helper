@@ -81,10 +81,7 @@ class _DistingAppState extends State<DistingApp> {
         seedColor: Colors.tealAccent.shade100,
         dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
         brightness: Brightness.dark,
-      ).copyWith(
-        surfaceTint: Colors.transparent,
-        tertiary: Colors.orange,
-      ),
+      ).copyWith(surfaceTint: Colors.transparent, tertiary: Colors.orange),
     );
 
     return MaterialApp(
@@ -136,7 +133,8 @@ class _DistingPageState extends State<DistingPage> {
           final distingCubit = context.read<DistingCubit>();
           McpServerService.initialize(distingCubit: distingCubit);
           final settings = SettingsService();
-          if ((Platform.isMacOS || Platform.isWindows) && settings.mcpEnabled) {
+          if ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) &&
+              settings.mcpEnabled) {
             if (!McpServerService.instance.isRunning) {
               await McpServerService.instance.start().catchError((e) {});
             } else {}
@@ -163,25 +161,25 @@ class _DistingPageState extends State<DistingPage> {
       final bool isServerStillRunningBeforeAction = mcpInstance
           .isRunning; // Check state *before* explicitly starting/stopping
 
-      if (Platform.isMacOS || Platform.isWindows) {
+      if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
         if (isMcpEnabledAfterDialog) {
           if (!isServerStillRunningBeforeAction) {
             await mcpInstance.start().catchError((e) {});
-          } else {}
+          }
         } else {
           // MCP Setting is OFF
           if (isServerStillRunningBeforeAction) {
             await mcpInstance.stop().catchError((e) {});
-          } else {}
+          }
         }
-      } else {}
+      }
     } else {}
   }
 
   @override
   void dispose() {
     // Stop the MCP server when the widget is disposed
-    if ((Platform.isMacOS || Platform.isWindows) &&
+    if ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) &&
         McpServerService.instance.isRunning) {
       McpServerService.instance.stop().catchError((e) {});
     }

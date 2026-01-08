@@ -435,14 +435,16 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     ),
 
                     // MCP enabled setting (desktop only)
-                    if (Platform.isMacOS || Platform.isWindows)
+                    if (Platform.isMacOS ||
+                        Platform.isWindows ||
+                        Platform.isLinux)
                       SwitchListTile(
                         title: Text(
                           'Enable MCP Service',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         subtitle: const Text(
-                          'Enable the MCP server for desktop integrations (Windows/MacOS only)',
+                          'Enable the MCP server for desktop integrations',
                         ),
                         value: _mcpEnabled,
                         onChanged: (value) {

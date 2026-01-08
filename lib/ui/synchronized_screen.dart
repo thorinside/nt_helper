@@ -667,7 +667,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           const Spacer(),
 
           // MCP server status indicator (desktop only)
-          if (Platform.isMacOS || Platform.isWindows)
+          if (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
             ChangeNotifierProvider.value(
               value: McpServerService.instance,
               child: Consumer<McpServerService>(
@@ -1281,7 +1281,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       final bool isServerStillRunningBeforeAction =
                           mcpInstance.isRunning;
 
-                      if (Platform.isMacOS || Platform.isWindows) {
+                      if (Platform.isMacOS ||
+                          Platform.isWindows ||
+                          Platform.isLinux) {
                         if (isMcpEnabledAfterDialog) {
                           if (!isServerStillRunningBeforeAction) {
                             await mcpInstance.start().catchError((e) {});

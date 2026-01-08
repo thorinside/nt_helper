@@ -31,11 +31,11 @@ class McpStatusIndicator extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         // Check if on supported platform first
-        if (!(Platform.isMacOS || Platform.isWindows)) {
+        if (!(Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                "MCP Service can only be toggled on macOS or Windows.",
+                "MCP Service can only be toggled on desktop platforms.",
               ),
             ),
           );
