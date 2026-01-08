@@ -48,7 +48,7 @@ dependencies:
   retry: ^3.1.2
   async: ^2.13.0
   haptic_feedback: ^0.6.4+2
-  bitsdojo_window: 0.1.6
+  # bitsdojo_window: 0.1.6  # Disabled - suspected Windows MIDI conflicts
   camera: ^0.11.3
   dart_mcp: ^0.4.0
   mcp_dart: ^1.0.2
@@ -85,7 +85,7 @@ dependencies:
   pub_semver: ^2.2.0
   url_launcher: ^6.3.2
   share_plus: ^12.0.1
-  universal_ble: ^0.9.11
+  universal_ble: ^0.21.1
   vector_math: ^2.2.0
   webview_flutter: ^4.13.0
   uvccamera:
@@ -118,6 +118,8 @@ dev_dependencies:
 dependency_overrides:
   flutter_midi_command_linux:
     git: https://github.com/thorinside/flutter_midi_command_linux.git
+  flutter_midi_command_windows:
+    git: https://github.com/thorinside/flutter_midi_command_windows.git
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

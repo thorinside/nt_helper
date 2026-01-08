@@ -10,6 +10,9 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <mutex>
+#include <queue>
+#include <map>
 #include <windows.h>
 #include <mfapi.h>
 #include <mfidl.h>
@@ -45,6 +48,9 @@ class UsbVideoCapturePlugin : public flutter::Plugin {
   void CaptureThread();
   std::vector<uint8_t> EncodeBMP(const uint8_t* rgb_data, int width, int height);
 
+  void ProcessPendingFrames();
+  static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
   flutter::PluginRegistrarWindows* registrar_;
   std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> event_channel_;
   std::unique_ptr<flutter::EventSink<flutter::EncodableValue>> event_sink_;
@@ -54,6 +60,13 @@ class UsbVideoCapturePlugin : public flutter::Plugin {
   std::atomic<bool> capturing_{false};
   std::atomic<bool> stream_active_{false};
   bool mf_initialized_ = false;
+
+  // Thread-safe frame queue for posting to platform thread
+  std::mutex frame_queue_mutex_;
+  std::queue<std::vector<uint8_t>> pending_frames_;
+  HWND message_window_ = nullptr;
+  int window_proc_id_ = 0;
+  static const UINT WM_SEND_FRAME = WM_USER + 1;
 };
 
 // static
@@ -99,6 +112,38 @@ void UsbVideoCapturePlugin::RegisterWithRegistrar(
   registrar->AddPlugin(std::move(plugin));
 }
 
+// Static map to look up plugin instances from window handles
+static std::map<HWND, UsbVideoCapturePlugin*> g_plugin_instances;
+
+LRESULT CALLBACK UsbVideoCapturePlugin::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+  if (message == WM_SEND_FRAME) {
+    auto it = g_plugin_instances.find(hwnd);
+    if (it != g_plugin_instances.end()) {
+      it->second->ProcessPendingFrames();
+    }
+    return 0;
+  }
+  return DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+void UsbVideoCapturePlugin::ProcessPendingFrames() {
+  std::vector<uint8_t> frame;
+  {
+    std::lock_guard<std::mutex> lock(frame_queue_mutex_);
+    if (pending_frames_.empty()) return;
+    frame = std::move(pending_frames_.front());
+    pending_frames_.pop();
+    // Clear any backlog to prevent memory buildup - keep only latest frame
+    while (!pending_frames_.empty()) {
+      pending_frames_.pop();
+    }
+  }
+
+  if (event_sink_ && stream_active_ && !frame.empty()) {
+    event_sink_->Success(flutter::EncodableValue(frame));
+  }
+}
+
 UsbVideoCapturePlugin::UsbVideoCapturePlugin(flutter::PluginRegistrarWindows *registrar)
     : registrar_(registrar) {
   // Initialize Media Foundation
@@ -115,10 +160,36 @@ UsbVideoCapturePlugin::UsbVideoCapturePlugin(flutter::PluginRegistrarWindows *re
   } else {
     OutputDebugStringA("[USB_VIDEO_CPP] CoInitializeEx failed\n");
   }
+
+  // Create a message-only window for thread communication
+  WNDCLASSA wc = {};
+  wc.lpfnWndProc = WndProc;
+  wc.hInstance = GetModuleHandle(nullptr);
+  wc.lpszClassName = "UsbVideoCapturePluginMessageWindow";
+  RegisterClassA(&wc);
+
+  message_window_ = CreateWindowA(
+      "UsbVideoCapturePluginMessageWindow",
+      nullptr,
+      0, 0, 0, 0, 0,
+      HWND_MESSAGE,  // Message-only window
+      nullptr,
+      GetModuleHandle(nullptr),
+      nullptr);
+
+  if (message_window_) {
+    g_plugin_instances[message_window_] = this;
+    OutputDebugStringA("[USB_VIDEO_CPP] Message window created for thread-safe frame delivery\n");
+  }
 }
 
 UsbVideoCapturePlugin::~UsbVideoCapturePlugin() {
   StopVideoCapture();
+  if (message_window_) {
+    g_plugin_instances.erase(message_window_);
+    DestroyWindow(message_window_);
+    message_window_ = nullptr;
+  }
   if (mf_initialized_) {
     MFShutdown();
     CoUninitialize();
@@ -492,17 +563,27 @@ void UsbVideoCapturePlugin::CaptureThread() {
 
       buffer->Unlock();
 
-      // Send to Flutter - just send the raw BMP data like Linux does
-      if (event_sink_ && stream_active_ && !bmp.empty()) {
-        event_sink_->Success(flutter::EncodableValue(bmp));
-        OutputDebugStringA("[USB_VIDEO_CPP] Sent real video frame to Flutter\n");
+      // Queue frame for platform thread delivery (thread-safe)
+      if (stream_active_ && !bmp.empty() && message_window_) {
+        {
+          std::lock_guard<std::mutex> lock(frame_queue_mutex_);
+          pending_frames_.push(std::move(bmp));
+        }
+        PostMessage(message_window_, WM_SEND_FRAME, 0, 0);
+        OutputDebugStringA("[USB_VIDEO_CPP] Queued real video frame for Flutter\n");
       }
     } else {
       // Fall back to test frames if no source reader
       std::vector<uint8_t> test_rgb(256 * 64 * 3, 64);  // Dark gray
       std::vector<uint8_t> test_bmp = EncodeBMP(test_rgb.data(), 256, 64);
-      event_sink_->Success(flutter::EncodableValue(test_bmp));
-      OutputDebugStringA("[USB_VIDEO_CPP] Sent fallback test frame\n");
+      if (stream_active_ && message_window_) {
+        {
+          std::lock_guard<std::mutex> lock(frame_queue_mutex_);
+          pending_frames_.push(std::move(test_bmp));
+        }
+        PostMessage(message_window_, WM_SEND_FRAME, 0, 0);
+        OutputDebugStringA("[USB_VIDEO_CPP] Queued fallback test frame\n");
+      }
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(33)); // ~30 FPS

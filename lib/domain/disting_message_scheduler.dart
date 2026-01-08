@@ -11,8 +11,8 @@
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 
 // Domain classes
@@ -138,6 +138,13 @@ class DistingMessageScheduler {
   int _consecutiveTimeouts = 0;
   static const int _maxConsecutiveTimeoutsBeforeRecovery = 3;
 
+  // Track if device connection is suspected broken (to skip risky disconnect)
+  bool _deviceConnectionSuspectedBroken = false;
+
+  // SysEx buffering for handling split messages (common on Windows)
+  final List<int> _sysExBuffer = [];
+  bool _isBufferingSysEx = false;
+
   // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
@@ -189,44 +196,107 @@ class DistingMessageScheduler {
     }
   }
 
+  /// Resets internal MIDI state without full disconnect/reconnect.
+  /// Clears buffers, resets counters, and re-subscribes to the stream.
+  /// Does NOT affect the current request - caller is responsible for that.
+  void _resetInternalState() {
+    // Clear any partial SysEx data
+    _sysExBuffer.clear();
+    _isBufferingSysEx = false;
+
+    // Reset consecutive timeout counter
+    _consecutiveTimeouts = 0;
+
+    // Re-establish subscription
+    _subscription?.cancel();
+    _subscriptionActive = false;
+
+    _subscription = _midi.onMidiDataReceived?.listen(
+      _handleIncomingPacket,
+      onError: _handleSubscriptionError,
+      onDone: _handleSubscriptionDone,
+      cancelOnError: false,
+    );
+
+    if (_subscription != null) {
+      _subscriptionActive = true;
+      _lastSubscriptionError = null;
+      _totalPacketsReceived = 0;
+      _sysexPacketsReceived = 0;
+      _nonSysexPacketsReceived = 0;
+      _packetsFromWrongDevice = 0;
+    }
+  }
+
   /// Forces a full MIDI device disconnect/reconnect cycle.
   /// This is used to recover from corrupted MIDI state caused by rogue
   /// non-SysEx bytes that break CoreMIDI/flutter_midi_command.
   Future<void> forceDeviceReconnect() async {
-    // Cancel current subscription
+    // Cancel current subscription first (safe operation)
     _subscription?.cancel();
     _subscriptionActive = false;
 
-    // Disconnect the device
-    try {
-      _midi.disconnectDevice(_inputDevice);
+    // On Windows (and some other platforms), input and output are separate devices
+    // and both need to be disconnected/reconnected.
+    //
+    // IMPORTANT: If we suspect the device connection is broken (e.g., device was
+    // unplugged), we skip the disconnect call entirely. Calling disconnectDevice
+    // on an invalid handle can crash the native MIDI library on Windows.
 
-      // Brief delay to let the system settle
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Reconnect the device
-      _midi.connectToDevice(_inputDevice);
-
-      // Re-establish subscription
-      await Future.delayed(const Duration(milliseconds: 200));
-      _subscription = _midi.onMidiDataReceived?.listen(
-        _handleIncomingPacket,
-        onError: _handleSubscriptionError,
-        onDone: _handleSubscriptionDone,
-        cancelOnError: false,
-      );
-
-      if (_subscription != null) {
-        _subscriptionActive = true;
-        _lastSubscriptionError = null;
-        // Reset diagnostic counters
-        _totalPacketsReceived = 0;
-        _sysexPacketsReceived = 0;
-        _nonSysexPacketsReceived = 0;
-        _packetsFromWrongDevice = 0;
+    if (!_deviceConnectionSuspectedBroken) {
+      // Try to disconnect, but wrap in defensive try-catch.
+      // On Windows, disconnecting an already-invalid handle can crash.
+      try {
+        _midi.disconnectDevice(_inputDevice);
+      } catch (e) {
+        // Disconnect failed - device likely already disconnected
+        _deviceConnectionSuspectedBroken = true;
       }
+
+      if (_outputDevice.id != _inputDevice.id) {
+        try {
+          _midi.disconnectDevice(_outputDevice);
+        } catch (e) {
+          // Disconnect failed - device likely already disconnected
+          _deviceConnectionSuspectedBroken = true;
+        }
+      }
+    }
+
+    // Brief delay to let the system settle
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Try to reconnect the devices
+    try {
+      _midi.connectToDevice(_inputDevice);
+      if (_outputDevice.id != _inputDevice.id) {
+        _midi.connectToDevice(_outputDevice);
+      }
+      // If reconnect succeeded, clear the broken flag
+      _deviceConnectionSuspectedBroken = false;
     } catch (e) {
-      // Recovery failed - will be retried on next timeout
+      // Reconnect failed - device may not be available
+      _deviceConnectionSuspectedBroken = true;
+      return; // Don't try to set up subscription if reconnect failed
+    }
+
+    // Re-establish subscription
+    await Future.delayed(const Duration(milliseconds: 200));
+    _subscription = _midi.onMidiDataReceived?.listen(
+      _handleIncomingPacket,
+      onError: _handleSubscriptionError,
+      onDone: _handleSubscriptionDone,
+      cancelOnError: false,
+    );
+
+    if (_subscription != null) {
+      _subscriptionActive = true;
+      _lastSubscriptionError = null;
+      // Reset diagnostic counters
+      _totalPacketsReceived = 0;
+      _sysexPacketsReceived = 0;
+      _nonSysexPacketsReceived = 0;
+      _packetsFromWrongDevice = 0;
     }
   }
 
@@ -305,7 +375,6 @@ class DistingMessageScheduler {
 
     _currentRequest = _queue.removeFirst();
     _state = _SchedulerState.sending;
-
     _sendCurrentRequest();
   }
 
@@ -318,6 +387,17 @@ class DistingMessageScheduler {
       _finishCurrentRequest();
       return;
     }
+
+    // If device is suspected broken, fail immediately instead of trying to send.
+    // This prevents flooding the native layer with failed send attempts.
+    if (_deviceConnectionSuspectedBroken) {
+      _handleSendFailure(
+        request,
+        StateError('Device connection is broken - cannot send'),
+      );
+      return;
+    }
+
     request.attemptCount++;
 
     // Send the message
@@ -342,6 +422,12 @@ class DistingMessageScheduler {
   void _onTimeout() {
     final request = _currentRequest;
 
+    // Clear any partial SysEx buffer on timeout to prevent stale data
+    if (_isBufferingSysEx) {
+      _sysExBuffer.clear();
+      _isBufferingSysEx = false;
+    }
+
     // Guard against race conditions where response arrived just before timeout
     if (request == null || request.completer.isCompleted) {
       _consecutiveTimeouts = 0;
@@ -353,10 +439,10 @@ class DistingMessageScheduler {
       // Out of retries
       _consecutiveTimeouts++;
 
-      // Check if we need to attempt stream recovery
+      // Auto-recovery: after consecutive timeouts, reset MIDI state (buffers, subscription)
+      // This is lighter than full disconnect/reconnect and handles most buffer corruption.
       if (_consecutiveTimeouts >= _maxConsecutiveTimeoutsBeforeRecovery) {
-        forceDeviceReconnect();
-        _consecutiveTimeouts = 0;
+        _resetInternalState();
       }
 
       if (request.expectation == ResponseExpectation.required) {
@@ -409,6 +495,9 @@ class DistingMessageScheduler {
     _currentRequest = null;
     _state = _SchedulerState.idle;
     _retryTimer?.cancel();
+    // Clear SysEx buffer to avoid stale data affecting next request
+    _sysExBuffer.clear();
+    _isBufferingSysEx = false;
     _retryTimer = null;
 
     // Schedule next request after message interval
@@ -463,6 +552,35 @@ class DistingMessageScheduler {
   }
 
   void _handleIncoming(Uint8List raw) {
+    // Handle SysEx buffering for split messages (common on Windows with large SysEx)
+    final hasF0 = raw.contains(0xF0);
+    final hasF7 = raw.contains(0xF7);
+
+    // If we're currently buffering a SysEx message
+    if (_isBufferingSysEx) {
+      _sysExBuffer.addAll(raw);
+
+      if (hasF7) {
+        // Complete message received
+        _isBufferingSysEx = false;
+        final completeMessage = Uint8List.fromList(_sysExBuffer);
+        _sysExBuffer.clear();
+        _processCompleteSysEx(completeMessage);
+        return;
+      }
+      // Still waiting for F7
+      return;
+    }
+
+    // Check if this starts a new SysEx that might be split
+    if (hasF0 && !hasF7) {
+      // Start of a split SysEx message
+      _isBufferingSysEx = true;
+      _sysExBuffer.clear();
+      _sysExBuffer.addAll(raw);
+      return;
+    }
+
     // Extract SysEx messages from packet, filtering out any rogue MIDI bytes.
     // Some plugins/algorithms send Program Change or Pitchwheel messages that
     // may be combined with SysEx responses by the MIDI library.
@@ -470,9 +588,6 @@ class DistingMessageScheduler {
     if (sysexMessages.isEmpty) {
       _nonSysexPacketsReceived++;
 
-      // CRITICAL: If we receive non-SysEx bytes while waiting for a response,
-      // this is a strong signal that the MIDI stream is corrupted.
-      // Some plugins send rogue MIDI messages that corrupt CoreMIDI/flutter_midi_command state.
       if (_state == _SchedulerState.waitingForResponse) {
         _scheduleStreamRecovery();
       }
@@ -481,6 +596,16 @@ class DistingMessageScheduler {
 
     _sysexPacketsReceived++;
     _cancelStreamRecovery();
+    _processCompleteSysEx(raw);
+  }
+
+  void _processCompleteSysEx(Uint8List raw) {
+    final sysexMessages = _extractSysExMessages(raw);
+    if (sysexMessages.isEmpty) {
+      return;
+    }
+
+    _sysexPacketsReceived++;
 
     for (final sysex in sysexMessages) {
       if (_tryHandleSysEx(sysex)) {
@@ -490,15 +615,8 @@ class DistingMessageScheduler {
   }
 
   void _scheduleStreamRecovery() {
-    // Only schedule if not already scheduled
-    if (_streamRecoveryTimer?.isActive ?? false) {
-      return;
-    }
-
-    // Wait a bit to see if more rogue bytes come, then attempt recovery
-    _streamRecoveryTimer = Timer(const Duration(milliseconds: 500), () {
-      forceDeviceReconnect();
-    });
+    // Disabled: Auto-recovery was causing MIDI state corruption.
+    // Non-SysEx bytes shouldn't break things.
   }
 
   void _cancelStreamRecovery() {
