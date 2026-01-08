@@ -46,12 +46,29 @@ void main() async {
   // Set up the method call handler for _windowEventsChannel
   _windowEventsChannel.setMethodCallHandler((call) async {
     if (call.method == 'windowWillClose') {
-      // Window position is saved natively in WM_CLOSE handler
-      // Clean up database and routing before closing
+      bool prefsSavedSuccessfully = false;
       try {
-        await database.close();
+        final prefs = await SharedPreferences.getInstance();
+        final windowRect = appWindow.rect;
+
+        final List<Future<bool>> saveFutures = [
+          prefs.setDouble('window_x', windowRect.left),
+          prefs.setDouble('window_y', windowRect.top),
+          prefs.setDouble('window_width', windowRect.width),
+          prefs.setDouble('window_height', windowRect.height),
+        ];
+
+        final List<bool> results = await Future.wait(saveFutures);
+        prefsSavedSuccessfully = results.every((result) => result);
       } catch (e) {
-        // Intentionally empty
+        prefsSavedSuccessfully = false;
+      }
+
+      try {
+        await database.close(); // Close the database
+      } catch (e) {
+        // Optionally, decide if this error should affect prefsSavedSuccessfully
+        // For now, we let it proceed and return based on prefs saving.
       }
 
       try {
@@ -60,7 +77,7 @@ void main() async {
         // Intentionally empty
       }
 
-      return true;
+      return prefsSavedSuccessfully; // Signal success/failure of prefs saving
     }
     return null; // For unhandled methods
   });
@@ -80,14 +97,48 @@ void main() async {
     return null;
   });
 
-  // Initialize bitsdojo_window on desktop platforms
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    doWhenWindowReady(() {
-      final win = appWindow;
-      // Window position/size is handled natively on Windows
-      // Just set minimum size and show the window
-      win.minSize = const Size(800, 600);
-      win.show();
+  // Only initialize window management on desktop platforms
+  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+    doWhenWindowReady(() async {
+      // SettingsService().init() is already called above, so SharedPreferences should be initialized.
+      final prefs = await SharedPreferences.getInstance();
+      double? x, y, width, height;
+      try {
+        x = prefs.getDouble('window_x');
+        y = prefs.getDouble('window_y');
+        width = prefs.getDouble('window_width');
+        height = prefs.getDouble('window_height');
+      } catch (e) {
+        // Handle error loading window state
+        // Consider logging this to a file or analytics in a real app
+      }
+
+      appWindow.minSize = Size(640, 720);
+
+      bool hasSavedPositionAndSize =
+          x != null && y != null && width != null && height != null;
+
+      if (hasSavedPositionAndSize) {
+        // Ensure width and height are positive, otherwise bitsdojo might ignore the rect.
+        if (width <= 0 || height <= 0) {
+          const initialSize = Size(720, 1080);
+          appWindow.size = initialSize;
+          appWindow.alignment = Alignment.center;
+        } else {
+          // Create Size and Offset objects
+          Size savedSize = Size(width, height);
+          Offset savedPosition = Offset(x, y);
+
+          appWindow.size = savedSize;
+          appWindow.position = savedPosition;
+        }
+      } else {
+        const initialSize = Size(720, 1080);
+        appWindow.size = initialSize;
+        appWindow.alignment = Alignment.center;
+      }
+
+      appWindow.show();
     });
   }
 }
