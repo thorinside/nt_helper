@@ -1,6 +1,4 @@
 PODS:
-  - bitsdojo_window_macos (0.0.1):
-    - FlutterMacOS
   - desktop_drop (0.0.1):
     - FlutterMacOS
   - file_picker (0.0.1):
@@ -14,6 +12,8 @@ PODS:
     - FlutterMacOS
   - path_provider_foundation (0.0.1):
     - Flutter
+    - FlutterMacOS
+  - screen_retriever_macos (0.0.1):
     - FlutterMacOS
   - share_plus (0.0.1):
     - FlutterMacOS
@@ -53,9 +53,10 @@ PODS:
   - webview_flutter_wkwebview (0.0.1):
     - Flutter
     - FlutterMacOS
+  - window_manager (0.5.0):
+    - FlutterMacOS
 
 DEPENDENCIES:
-  - bitsdojo_window_macos (from `Flutter/ephemeral/.symlinks/plugins/bitsdojo_window_macos/macos`)
   - desktop_drop (from `Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos`)
   - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - flutter_midi_command (from `Flutter/ephemeral/.symlinks/plugins/flutter_midi_command/macos`)
@@ -63,20 +64,20 @@ DEPENDENCIES:
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - pasteboard (from `Flutter/ephemeral/.symlinks/plugins/pasteboard/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
+  - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
   - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/darwin`)
   - universal_ble (from `Flutter/ephemeral/.symlinks/plugins/universal_ble/darwin`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
   - webview_flutter_wkwebview (from `Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin`)
+  - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
 
 SPEC REPOS:
   trunk:
     - sqlite3
 
 EXTERNAL SOURCES:
-  bitsdojo_window_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/bitsdojo_window_macos/macos
   desktop_drop:
     :path: Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos
   file_picker:
@@ -91,6 +92,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/pasteboard/macos
   path_provider_foundation:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
+  screen_retriever_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos
   share_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/share_plus/macos
   shared_preferences_foundation:
@@ -103,9 +106,10 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
   webview_flutter_wkwebview:
     :path: Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin
+  window_manager:
+    :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
-  bitsdojo_window_macos: 7959fb0ca65a3ccda30095c181ecb856fae48ea9
   desktop_drop: 10a3e6a7fa9dbe350541f2574092fecfa345a07b
   file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
   flutter_midi_command: c7517347a1acc8e4c7d4e9fa9809b3e87bbfd2b8
@@ -113,6 +117,7 @@ SPEC CHECKSUMS:
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   pasteboard: 278d8100149f940fb795d6b3a74f0720c890ecb7
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
+  screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
   share_plus: 510bf0af1a42cd602274b4629920c9649c52f4cc
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   sqlite3: 8d708bc63e9f4ce48f0ad9d6269e478c5ced1d9b
@@ -120,6 +125,7 @@ SPEC CHECKSUMS:
   universal_ble: ff19787898040d721109c6324472e5dd4bc86adc
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
+  window_manager: b729e31d38fb04905235df9ea896128991cad99e
 
 PODFILE CHECKSUM: 9ebaf0ce3d369aaa26a9ea0e159195ed94724cf3
 

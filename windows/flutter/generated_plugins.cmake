@@ -3,14 +3,16 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  bitsdojo_window_windows
   desktop_drop
+  device_manager
   pasteboard
   permission_handler_windows
+  screen_retriever_windows
   share_plus
   sqlite3_flutter_libs
   universal_ble
   url_launcher_windows
+  window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
