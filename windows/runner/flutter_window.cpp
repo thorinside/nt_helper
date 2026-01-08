@@ -313,7 +313,8 @@ bool FlutterWindow::OnCreate()
 
 void FlutterWindow::OnDestroy()
 {
-  SaveWindowPlacement(); // Save window state before destruction.
+  // Note: Window placement is saved in WM_CLOSE handler, not here.
+  // By the time OnDestroy is called, the window handle is already null.
   if (flutter_controller_)
   {
     flutter_controller_ = nullptr;
@@ -341,6 +342,10 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   // Handle WM_CLOSE specifically to notify Dart and wait for confirmation.
   if (message == WM_CLOSE)
   {
+    // Save window placement NOW, while handle is still valid.
+    // OnDestroy is too late - the handle gets nullified before it's called.
+    SaveWindowPlacement();
+
     if (window_events_channel_)
     {
       HWND main_hwnd = GetHandle();
