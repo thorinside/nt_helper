@@ -55,20 +55,11 @@ abstract class Es5DirectOutputAlgorithmRouting
         // ES-5 MODE: Ignore Output parameter completely
         final configuredEs5OutputValue =
             getChannelParameter(channel, es5OutputParamName) ?? channel;
-        final es5OutputLabel = configuredEs5OutputValue <= 0
-            ? 'None'
-            : configuredEs5OutputValue.toString();
 
         ports.add(
-          Port(
-            id: '${algorithmUuid}_channel_${channel}_es5_output',
-            name: 'Ch$channel → ES-5 $es5OutputLabel',
-            type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
-            direction: PortDirection.output,
-            description: 'Direct to ES-5 Output $es5OutputLabel',
-            busParam: es5DirectBusParam, // Special marker
-            channelNumber:
-                configuredEs5OutputValue > 0 ? configuredEs5OutputValue : null,
+          buildEs5DirectOutputPort(
+            channel: channel,
+            es5OutputValue: configuredEs5OutputValue,
           ),
         );
       } else {
@@ -84,25 +75,13 @@ abstract class Es5DirectOutputAlgorithmRouting
               ? outputBusResult.paramName!
               : 'Channel $channel';
 
-          final modeResult = getOutputModeFromMap(
-            outputBusResult.parameterNumber,
-          );
-          final outputMode = modeResult != null
-              ? (modeResult.value == 1 ? OutputMode.replace : OutputMode.add)
-              : null;
-
           ports.add(
-            Port(
-              id: '${algorithmUuid}_channel_${channel}_output',
-              name: portName,
-              type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
-              direction: PortDirection.output,
-              description: 'Gate output for channel $channel',
-              busValue: outputBusResult.busValue > 0 ? outputBusResult.busValue : null,
-              channelNumber: channel,
+            buildNormalOutputPort(
+              channel: channel,
+              busValue: outputBusResult.busValue,
               parameterNumber: outputBusResult.parameterNumber,
-              outputMode: outputMode,
-              modeParameterNumber: modeResult?.parameterNumber,
+              portName: portName,
+              description: 'Gate output for channel $channel',
             ),
           );
         } else {}
@@ -190,6 +169,53 @@ abstract class Es5DirectOutputAlgorithmRouting
     }
 
     return null;
+  }
+
+  @protected
+  Port buildEs5DirectOutputPort({
+    required int channel,
+    required int es5OutputValue,
+  }) {
+    final es5OutputLabel = es5OutputValue <= 0
+        ? 'None'
+        : es5OutputValue.toString();
+
+    return Port(
+      id: '${algorithmUuid}_channel_${channel}_es5_output',
+      name: 'Ch$channel → ES-5 $es5OutputLabel',
+      type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
+      direction: PortDirection.output,
+      description: 'Direct to ES-5 Output $es5OutputLabel',
+      busParam: es5DirectBusParam, // Special marker
+      channelNumber: es5OutputValue > 0 ? es5OutputValue : null,
+    );
+  }
+
+  @protected
+  Port buildNormalOutputPort({
+    required int channel,
+    required int busValue,
+    required int parameterNumber,
+    required String portName,
+    required String description,
+  }) {
+    final modeResult = getOutputModeFromMap(parameterNumber);
+    final outputMode = modeResult != null
+        ? (modeResult.value == 1 ? OutputMode.replace : OutputMode.add)
+        : null;
+
+    return Port(
+      id: '${algorithmUuid}_channel_${channel}_output',
+      name: portName,
+      type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
+      direction: PortDirection.output,
+      description: description,
+      busValue: busValue > 0 ? busValue : null,
+      channelNumber: channel,
+      parameterNumber: parameterNumber,
+      outputMode: outputMode,
+      modeParameterNumber: modeResult?.parameterNumber,
+    );
   }
 
   /// Gets a parameter's value and number by name for a specific channel.

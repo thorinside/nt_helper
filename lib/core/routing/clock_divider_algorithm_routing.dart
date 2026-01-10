@@ -86,15 +86,9 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
             channel;
 
         ports.add(
-          Port(
-            id: '${algorithmUuid}_channel_${channel}_es5_output',
-            name: 'Ch$channel → ES-5 $es5OutputValue',
-            type: PortType.cv, // Clock divider outputs are CV (Story 7.5)
-            direction: PortDirection.output,
-            description: 'Direct to ES-5 Output $es5OutputValue',
-            busParam: Es5DirectOutputAlgorithmRouting
-                .es5DirectBusParam, // Special marker
-            channelNumber: es5OutputValue, // ES-5 port number
+          buildEs5DirectOutputPort(
+            channel: channel,
+            es5OutputValue: es5OutputValue,
           ),
         );
       } else {
@@ -106,25 +100,13 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
         );
 
         if (outputParam != null && outputParam.value > 0) {
-          final modeResult = getOutputModeFromMap(
-            outputParam.parameterNumber,
-          );
-          final OutputMode? outputMode = modeResult != null
-              ? (modeResult.value == 1 ? OutputMode.replace : OutputMode.add)
-              : null;
-
           ports.add(
-            Port(
-              id: '${algorithmUuid}_channel_${channel}_output',
-              name: 'Channel $channel',
-              type: PortType.cv, // Clock divider outputs are CV (Story 7.5)
-              direction: PortDirection.output,
-              description: 'Gate output for channel $channel',
+            buildNormalOutputPort(
+              channel: channel,
               busValue: outputParam.value,
-              channelNumber: channel,
               parameterNumber: outputParam.parameterNumber,
-              outputMode: outputMode,
-              modeParameterNumber: modeResult?.parameterNumber,
+              portName: 'Channel $channel',
+              description: 'Gate output for channel $channel',
             ),
           );
         } else {}
