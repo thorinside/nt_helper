@@ -257,19 +257,10 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           final name = item['name']?.toString() ?? 'Output';
           final typeStr = item['type']?.toString().toLowerCase();
           final type = _parsePortType(typeStr) ?? PortType.audio;
-          // Determine output mode if available
-          OutputMode? outputMode;
-          if (item['outputMode'] != null) {
-            final modeStr = item['outputMode'].toString().toLowerCase();
-            if (modeStr == 'replace') {
-              outputMode = OutputMode.replace;
-            } else if (modeStr == 'add') {
-              outputMode = OutputMode.add;
-            }
-          }
+          final outputMode = parseOutputMode(item['outputMode']);
 
           // Get mode parameter number from the item metadata (already stored during createFromSlot)
-          int? modeParameterNumber = item['modeParameterNumber'] as int?;
+          int? modeParameterNumber = coerceInt(item['modeParameterNumber']);
 
           ports.add(
             Port(
@@ -280,25 +271,15 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               description: item['description']?.toString(),
               outputMode: outputMode,
               // Direct properties
-              busValue: item['busValue'] is int
-                  ? item['busValue'] as int?
-                  : int.tryParse(item['busValue']?.toString() ?? ''),
+              busValue: coerceInt(item['busValue']),
               busParam: item['busParam']?.toString(),
-              parameterNumber: item['parameterNumber'] is int
-                  ? item['parameterNumber'] as int?
-                  : int.tryParse(item['parameterNumber']?.toString() ?? ''),
+              parameterNumber: coerceInt(item['parameterNumber']),
               modeParameterNumber: modeParameterNumber,
-              channelNumber: item['channel'] is int
-                  ? item['channel'] as int?
-                  : (item['channel'] is String
-                        ? null
-                        : int.tryParse(item['channel']?.toString() ?? '')),
+              channelNumber: coerceInt(item['channel']),
               isStereoChannel: item['channel'] != null,
               stereoSide: item['channel']?.toString(),
               isPolyVoice: item['voiceNumber'] != null,
-              voiceNumber: item['voiceNumber'] is int
-                  ? item['voiceNumber'] as int?
-                  : int.tryParse(item['voiceNumber']?.toString() ?? ''),
+              voiceNumber: coerceInt(item['voiceNumber']),
             ),
           );
         }

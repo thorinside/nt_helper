@@ -75,15 +75,7 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
           final name = item['name']?.toString() ?? 'Output';
           final type = PortType.audio; // Always audio for USB
 
-          OutputMode? outputMode;
-          if (item['outputMode'] != null) {
-            final modeStr = item['outputMode'].toString().toLowerCase();
-            if (modeStr == 'replace') {
-              outputMode = OutputMode.replace;
-            } else if (modeStr == 'add') {
-              outputMode = OutputMode.add;
-            }
-          }
+          final outputMode = parseOutputMode(item['outputMode']);
 
           ports.add(
             Port(
@@ -95,11 +87,11 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
                   item['description']?.toString() ??
                   'USB audio channel from host',
               outputMode: outputMode,
-              busValue: item['busValue'] as int?,
+              busValue: coerceInt(item['busValue']),
               busParam: item['busParam']?.toString(),
-              parameterNumber: item['parameterNumber'] as int?,
-              modeParameterNumber: item['modeParameterNumber'] as int?,
-              channelNumber: item['channelNumber'] as int?,
+              parameterNumber: coerceInt(item['parameterNumber']),
+              modeParameterNumber: coerceInt(item['modeParameterNumber']),
+              channelNumber: coerceInt(item['channelNumber']),
             ),
           );
         }

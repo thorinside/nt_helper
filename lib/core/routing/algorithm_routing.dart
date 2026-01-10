@@ -156,6 +156,38 @@ abstract class AlgorithmRouting {
   /// - [newState]: The new routing state to apply
   void updateState(RoutingState newState);
 
+  @protected
+  int? coerceInt(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString());
+  }
+
+  @protected
+  OutputMode? parseOutputMode(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is OutputMode) {
+      return value;
+    }
+    final modeStr = value.toString().toLowerCase();
+    if (modeStr == 'replace') {
+      return OutputMode.replace;
+    }
+    if (modeStr == 'add') {
+      return OutputMode.add;
+    }
+    return null;
+  }
+
   /// Adds a connection between two ports if the connection is valid.
   ///
   /// This method validates the connection using [validateConnection] and

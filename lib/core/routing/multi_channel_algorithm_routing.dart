@@ -262,19 +262,10 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           final name = item['name']?.toString() ?? 'Output';
           final typeStr = item['type']?.toString().toLowerCase();
           final type = _parsePortType(typeStr) ?? PortType.audio;
-          // Determine output mode if available
-          OutputMode? outputMode;
-          if (item['outputMode'] != null) {
-            final modeStr = item['outputMode'].toString().toLowerCase();
-            if (modeStr == 'replace') {
-              outputMode = OutputMode.replace;
-            } else if (modeStr == 'add') {
-              outputMode = OutputMode.add;
-            }
-          }
+          final outputMode = parseOutputMode(item['outputMode']);
 
           // Get mode parameter number from the item metadata (already stored during createFromSlot)
-          int? modeParameterNumber = item['modeParameterNumber'] as int?;
+          int? modeParameterNumber = coerceInt(item['modeParameterNumber']);
 
           // Fallback to looking it up from base class if not in metadata
           if (modeParameterNumber == null) {
@@ -295,13 +286,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               description: item['description']?.toString(),
               outputMode: outputMode,
               // Direct properties
-              busValue: item['busValue'] as int?,
+              busValue: coerceInt(item['busValue']),
               busParam: item['busParam']?.toString(),
-              parameterNumber: item['parameterNumber'] as int?,
+              parameterNumber: coerceInt(item['parameterNumber']),
               modeParameterNumber: modeParameterNumber,
-              channelNumber: item['channel'] is int
-                  ? item['channel'] as int
-                  : null,
+              channelNumber: coerceInt(item['channel']),
               isStereoChannel: item['channel'] != null,
               stereoSide: item['channel']?.toString(),
             ),
