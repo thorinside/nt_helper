@@ -7,21 +7,38 @@ import 'package:nt_helper/cubit/routing_editor_state.dart';
 class NodePosition {
   final double x;
   final double y;
+  final double width;
+  final double height;
 
-  const NodePosition({required this.x, required this.y});
+  const NodePosition({
+    required this.x,
+    required this.y,
+    this.width = 200.0,
+    this.height = 100.0,
+  });
 
   @override
   bool operator ==(Object other) =>
-      other is NodePosition && other.x == x && other.y == y;
+      other is NodePosition &&
+      other.x == x &&
+      other.y == y &&
+      other.width == width &&
+      other.height == height;
 
   @override
-  int get hashCode => Object.hash(x, y);
+  int get hashCode => Object.hash(x, y, width, height);
 
   @override
-  String toString() => 'NodePosition(x: $x, y: $y)';
+  String toString() =>
+      'NodePosition(x: $x, y: $y, width: $width, height: $height)';
 
-  NodePosition copyWith({double? x, double? y}) {
-    return NodePosition(x: x ?? this.x, y: y ?? this.y);
+  NodePosition copyWith({double? x, double? y, double? width, double? height}) {
+    return NodePosition(
+      x: x ?? this.x,
+      y: y ?? this.y,
+      width: width ?? this.width,
+      height: height ?? this.height,
+    );
   }
 }
 

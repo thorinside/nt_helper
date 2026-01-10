@@ -6,7 +6,6 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/widgets/mapping_editor_bottom_sheet.dart';
 
-import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 // No direct dependency on RoutingEditorWidget static members
 
@@ -82,6 +81,9 @@ class AlgorithmNodeWidget extends StatefulWidget {
   // Callback to report the actual rendered size of the node
   final ValueChanged<Size>? onSizeResolved;
 
+  // Whether this node should be dimmed (not in focus during focus mode)
+  final bool isDimmed;
+
   const AlgorithmNodeWidget({
     super.key,
     required this.algorithmName,
@@ -117,6 +119,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.es5ExpanderParameterNumbers,
     this.onEs5ToggleChanged,
     this.onSizeResolved,
+    this.isDimmed = false,
   });
 
   @override
@@ -166,7 +169,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return GestureDetector(
+    Widget content = GestureDetector(
       onTap: () {
         widget.onTap?.call();
       },
@@ -183,11 +186,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: widget.isSelected
-                ? AccessibilityColors.ensureContrast(
-                    theme.colorScheme.primary,
-                    theme.colorScheme.surface,
-                    minRatio: AccessibilityColors.wcagAANormal,
-                  )
+                ? theme.colorScheme.tertiary
                 : theme.colorScheme.outline.withAlpha(179),
             width: widget.isSelected ? 3 : 1, // Thicker border when selected
           ),
@@ -208,6 +207,16 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         ),
       ),
     );
+
+    // Apply dimming for focus mode
+    if (widget.isDimmed) {
+      content = Opacity(
+        opacity: 0.3,
+        child: content,
+      );
+    }
+
+    return content;
   }
 
   Widget _buildTitleBar(ThemeData theme) {

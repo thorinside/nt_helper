@@ -2302,12 +2302,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   }
 
   /// Apply the layout algorithm to optimize node positions
+  /// If nodes are focused, applies cascade layout to just those nodes
   Future<void> applyLayoutAlgorithm() async {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) {
       return;
     }
 
+    // If nodes are focused, apply cascade layout to just those nodes
+    if (currentState.focusedAlgorithmIds.isNotEmpty) {
+      await _applyCascadeLayout(currentState);
+      return;
+    }
+
+    // Full layout algorithm for all nodes
     _layoutAlgorithm ??= NodeLayoutAlgorithm();
 
     try {
@@ -2360,6 +2368,87 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         ),
       );
     }
+  }
+
+  /// Apply cascade layout to focused nodes only
+  /// Arranges nodes in a diagonal stair-step pattern (down-right), sorted by slot
+  Future<void> _applyCascadeLayout(RoutingEditorStateLoaded currentState) async {
+    final focusedIds = currentState.focusedAlgorithmIds;
+
+    // Find centroid of focused nodes using node centers (not left edges)
+    // This ensures applying cascade multiple times doesn't drift
+    final focusedPositions = currentState.nodePositions.entries
+        .where((e) => focusedIds.contains(e.key))
+        .toList();
+
+    if (focusedPositions.isEmpty) return;
+
+    double sumX = 0, sumY = 0;
+    for (final pos in focusedPositions) {
+      // Use center of node for centroid calculation
+      sumX += pos.value.x + pos.value.width / 2;
+      sumY += pos.value.y + pos.value.height / 2;
+    }
+    final centroidX = sumX / focusedPositions.length;
+    final centroidY = sumY / focusedPositions.length;
+
+    // Sort focused algorithms by slot number (lower slots first)
+    final sortedFocused = currentState.algorithms
+        .where((a) => focusedIds.contains(a.id))
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    // Gap between right edge of one node and left edge of next (2 grid squares)
+    const horizontalGap = 100.0;
+    const verticalOffset = 100.0;
+
+    final updatedPositions = Map<String, NodePosition>.from(
+      currentState.nodePositions,
+    );
+
+    // First pass: position nodes starting at x=0, y=0 to build cascade shape
+    final tempPositions = <String, (double x, double y, double w, double h)>{};
+    double currentX = 0;
+    for (int i = 0; i < sortedFocused.length; i++) {
+      final algoId = sortedFocused[i].id;
+      final existingPos = currentState.nodePositions[algoId];
+      final nodeWidth = existingPos?.width ?? 200.0;
+      final nodeHeight = existingPos?.height ?? 100.0;
+
+      tempPositions[algoId] = (currentX, i * verticalOffset, nodeWidth, nodeHeight);
+      currentX += nodeWidth + horizontalGap;
+    }
+
+    // Calculate the average center of the cascade at origin
+    double sumCascadeCenterX = 0, sumCascadeCenterY = 0;
+    for (final entry in tempPositions.entries) {
+      final (x, y, w, h) = entry.value;
+      sumCascadeCenterX += x + w / 2;
+      sumCascadeCenterY += y + h / 2;
+    }
+    final cascadeCenterX = sumCascadeCenterX / tempPositions.length;
+    final cascadeCenterY = sumCascadeCenterY / tempPositions.length;
+
+    // Calculate offset to move cascade center to original centroid
+    final offsetX = centroidX - cascadeCenterX;
+    final offsetY = centroidY - cascadeCenterY;
+
+    // Apply offset to all node positions
+    for (final entry in tempPositions.entries) {
+      final (x, y, w, h) = entry.value;
+      updatedPositions[entry.key] = NodePosition(
+        x: x + offsetX,
+        y: y + offsetY,
+        width: w,
+        height: h,
+      );
+    }
+
+    emit(currentState.copyWith(
+      nodePositions: updatedPositions,
+      cascadeScrollTarget: Offset(centroidX, centroidY),
+    ));
+    await saveNodePositions();
   }
 
   /// Save node positions to SharedPreferences for the current preset
@@ -2444,6 +2533,49 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     await saveNodePositions();
   }
 
+  /// Update multiple node positions at once (for multi-drag)
+  Future<void> updateMultipleNodePositions(Map<String, Offset> updates) async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    final updatedPositions = Map<String, NodePosition>.from(
+      currentState.nodePositions,
+    );
+    for (final entry in updates.entries) {
+      updatedPositions[entry.key] = NodePosition(
+        x: entry.value.dx,
+        y: entry.value.dy,
+      );
+    }
+
+    emit(currentState.copyWith(nodePositions: updatedPositions));
+
+    // Save positions after update
+    await saveNodePositions();
+  }
+
+  /// Update a node's size (called when widget reports its actual rendered size)
+  void updateNodeSize(String nodeId, double width, double height) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    final existingPos = currentState.nodePositions[nodeId];
+    if (existingPos == null) return;
+
+    // Only update if size actually changed
+    if (existingPos.width == width && existingPos.height == height) return;
+
+    final updatedPositions = Map<String, NodePosition>.from(
+      currentState.nodePositions,
+    );
+    updatedPositions[nodeId] = existingPos.copyWith(
+      width: width,
+      height: height,
+    );
+
+    emit(currentState.copyWith(nodePositions: updatedPositions));
+  }
+
   /// Update zoom level with bounds checking
   void setZoomLevel(double zoomLevel) {
     final currentState = state;
@@ -2507,6 +2639,50 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return (currentState.zoomLevel * 100).round();
     }
     return 100;
+  }
+
+  // Focus Mode Methods
+
+  /// Toggle focus on an algorithm (add/remove from focused set)
+  void toggleAlgorithmFocus(String algorithmId) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    final updatedFocused = Set<String>.from(currentState.focusedAlgorithmIds);
+    if (updatedFocused.contains(algorithmId)) {
+      updatedFocused.remove(algorithmId);
+    } else {
+      updatedFocused.add(algorithmId);
+    }
+
+    emit(currentState.copyWith(focusedAlgorithmIds: updatedFocused));
+  }
+
+  /// Clear all focused algorithms (exit focus mode)
+  void clearFocus() {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    if (currentState.focusedAlgorithmIds.isNotEmpty) {
+      emit(currentState.copyWith(focusedAlgorithmIds: const {}));
+    }
+  }
+
+  /// Check if focus mode is active (any algorithms focused)
+  bool get isFocusModeActive {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return false;
+    return currentState.focusedAlgorithmIds.isNotEmpty;
+  }
+
+  /// Clear the cascade scroll target (called after scrolling is complete)
+  void clearCascadeScrollTarget() {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    if (currentState.cascadeScrollTarget != null) {
+      emit(currentState.copyWith(cascadeScrollTarget: null));
+    }
   }
 
   @override

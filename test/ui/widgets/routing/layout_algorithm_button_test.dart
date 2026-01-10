@@ -234,6 +234,8 @@ class _TestLayoutButtonWidget extends StatelessWidget {
                 lastPersistTime,
                 lastError,
                 subState,
+                focusedAlgorithmIds,
+                cascadeScrollTarget,
               ) {
                 // Show loading during layout calculation
                 if (subState == SubState.syncing) {
@@ -275,32 +277,11 @@ class _TestButtonsRowWidget extends StatelessWidget {
             // Refresh button (existing)
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: state.maybeWhen(
-                loaded:
-                    (
-                      _,
-                      __,
-                      ___,
-                      ____,
-                      _____,
-                      ______,
-                      _______,
-                      ________,
-                      _________,
-                      __________,
-                      ___________,
-                      ____________,
-                      _____________,
-                      ______________,
-                      _______________,
-                      ________________,
-                    ) {
-                      return () {
-                        // Refresh routing logic would go here
-                      };
-                    },
-                orElse: () => null,
-              ),
+              onPressed: state is RoutingEditorStateLoaded
+                  ? () {
+                      // Refresh routing logic would go here
+                    }
+                  : null,
               tooltip: 'Refresh Routing',
             ),
             // Layout algorithm button (new)
@@ -323,6 +304,8 @@ class _TestButtonsRowWidget extends StatelessWidget {
                     lastPersistTime,
                     lastError,
                     subState,
+                    focusedAlgorithmIds,
+                    cascadeScrollTarget,
                   ) {
                     // Show loading during layout calculation
                     if (subState == SubState.syncing) {
@@ -356,5 +339,3 @@ class _TestButtonsRowWidget extends StatelessWidget {
     );
   }
 }
-
-// ignore_for_file: unnecessary_underscores

@@ -25,6 +25,7 @@ class ConnectionData {
   final Function(bool isHovering)?
   onLabelHover; // Callback for label hover events
   final VoidCallback? onLabelTap; // Callback for label tap events
+  final bool isDimmed; // True when connection should be dimmed in focus mode
 
   const ConnectionData({
     required this.connection,
@@ -43,6 +44,7 @@ class ConnectionData {
     this.destinationNodeBounds,
     this.sourceOccluderBounds = const [],
     this.destinationOccluderBounds = const [],
+    this.isDimmed = false,
   });
 
   final Rect? sourceNodeBounds;
@@ -439,6 +441,15 @@ class ConnectionPainter extends CustomPainter {
       if (conn.outputMode == OutputMode.replace) {
         finalColor = Colors.blue.withValues(alpha: finalColor.a);
       }
+    }
+
+    // Apply focus mode dimming (unless highlighted)
+    if (conn.isDimmed && !conn.isHighlighted) {
+      finalColor = finalColor.withValues(alpha: 0.15);
+      paint
+        ..strokeWidth = style.strokeWidth * 0.7
+        ..color = finalColor;
+      return;
     }
 
     paint

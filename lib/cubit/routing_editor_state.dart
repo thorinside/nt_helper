@@ -88,5 +88,7 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     DateTime? lastPersistTime, // Last persistence save timestamp
     String? lastError, // Last error message
     @Default(SubState.idle) SubState subState, // Current sub-state
+    @Default({}) Set<String> focusedAlgorithmIds, // IDs of algorithms in focus mode
+    Offset? cascadeScrollTarget, // Target position to scroll to after cascade layout
   }) = RoutingEditorStateLoaded;
 }

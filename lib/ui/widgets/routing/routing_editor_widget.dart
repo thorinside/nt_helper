@@ -124,7 +124,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   final Map<String, Offset> _portPositions = {};
   List<Connection> _latestConnections = const [];
   final Map<String, Port> _portById = {};
+  Set<String> _focusedAlgorithmIds = const {};
   StreamSubscription<ZoomHotkeyAction>? _zoomHotkeySubscription;
+
+  // Multi-drag state: when dragging a selected node, all selected nodes move together
+  Map<String, Offset> _multiDragStartPositions = {};
+  String? _multiDragPrimaryNodeId;
 
   // Ephemeral fading overlays for labels of connections deleted instantly (click delete).
   final List<_FadingDeletedConnectionLabel> _fadingDeletedConnectionLabels = [];
@@ -448,6 +453,34 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       _verticalScrollController.animateTo(
         targetVY,
         duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  /// Scroll the canvas to center on a specific position
+  void _scrollToPosition(Offset position) {
+    // Calculate target scroll positions to center the given position
+    final targetHX = (position.dx - widget.canvasSize.width / 2).clamp(
+      0.0,
+      _canvasWidth - widget.canvasSize.width,
+    );
+    final targetVY = (position.dy - widget.canvasSize.height / 2).clamp(
+      0.0,
+      _canvasHeight - widget.canvasSize.height,
+    );
+
+    if (_horizontalScrollController.hasClients) {
+      _horizontalScrollController.animateTo(
+        targetHX,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+    if (_verticalScrollController.hasClients) {
+      _verticalScrollController.animateTo(
+        targetVY,
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     }
@@ -873,7 +906,29 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
+    return BlocConsumer<RoutingEditorCubit, RoutingEditorState>(
+      listenWhen: (previous, current) {
+        // Listen for cascade scroll target changes
+        if (previous is RoutingEditorStateLoaded &&
+            current is RoutingEditorStateLoaded) {
+          return previous.cascadeScrollTarget != current.cascadeScrollTarget &&
+              current.cascadeScrollTarget != null;
+        }
+        return false;
+      },
+      listener: (context, state) {
+        // Scroll to cascade target when it changes
+        if (state is RoutingEditorStateLoaded &&
+            state.cascadeScrollTarget != null) {
+          _scrollToPosition(state.cascadeScrollTarget!);
+          // Clear the scroll target after scrolling
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              context.read<RoutingEditorCubit>().clearCascadeScrollTarget();
+            }
+          });
+        }
+      },
       buildWhen: (previous, current) {
         final shouldRebuild =
             previous.runtimeType != current.runtimeType ||
@@ -1091,6 +1146,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         _clearSelectedConnection();
         return KeyEventResult.handled;
       }
+      // Clear focus mode selection with Escape
+      if (_focusedAlgorithmIds.isNotEmpty) {
+        context.read<RoutingEditorCubit>().clearFocus();
+        return KeyEventResult.handled;
+      }
     }
 
     if (event is KeyDownEvent &&
@@ -1226,6 +1286,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             lastPersistTime,
             lastError,
             subState,
+            focusedAlgorithmIds,
+            cascadeScrollTarget,
           ) => _buildLoadedCanvas(
             context,
             physicalInputs,
@@ -1280,6 +1342,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   ) {
     _latestConnections = connections;
     final routingCubit = context.read<RoutingEditorCubit>();
+
+    // Get focused algorithm IDs for focus mode dimming
+    final routingState = routingCubit.state;
+    _focusedAlgorithmIds = routingState is RoutingEditorStateLoaded
+        ? routingState.focusedAlgorithmIds
+        : const {};
 
     // Rebuild port lookup map for this frame.
     _portById
@@ -1787,7 +1855,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           _nodePositions[nodeId] = defaultPosition;
         }
       }
-      final isSelected = _selectedNodes.contains(nodeId);
+      final isSelected = _focusedAlgorithmIds.contains(nodeId);
 
       // Extract ES-5 toggle data if this is a Clock or Euclidean algorithm
       final es5Data = _extractEs5ToggleData(algorithm);
@@ -1802,6 +1870,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             slotNumber: algorithm.index + 1, // 1-indexed for display
             position: position,
             isSelected: isSelected,
+            isDimmed: _focusedAlgorithmIds.isNotEmpty && !isSelected,
             inputLabels: algorithm.inputPorts.map((p) => p.name).toList(),
             outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
             inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
@@ -1820,6 +1889,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                   _isPanning = false;
                 });
               }
+              // Multi-drag: if dragging a selected node with multiple selections,
+              // capture all selected node positions
+              if (_focusedAlgorithmIds.length > 1 &&
+                  _focusedAlgorithmIds.contains(nodeId)) {
+                _multiDragPrimaryNodeId = nodeId;
+                _multiDragStartPositions = {
+                  for (final id in _focusedAlgorithmIds)
+                    if (_nodePositions.containsKey(id)) id: _nodePositions[id]!,
+                };
+              }
             },
             onPositionChanged: (newPosition) {
               // When a node is being dragged, flag it so canvas doesn't pan
@@ -1829,15 +1908,39 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                   _isPanning = false;
                 });
               }
-              setState(() {
-                _nodePositions[nodeId] = newPosition;
-              });
-              // Save position to preferences
-              context.read<RoutingEditorCubit>().updateNodePosition(
-                nodeId,
-                newPosition.dx,
-                newPosition.dy,
-              );
+
+              // Multi-drag: move all selected nodes together
+              if (_multiDragStartPositions.isNotEmpty &&
+                  _multiDragPrimaryNodeId == nodeId) {
+                final originalPos = _multiDragStartPositions[nodeId];
+                if (originalPos != null) {
+                  final delta = newPosition - originalPos;
+                  setState(() {
+                    for (final entry in _multiDragStartPositions.entries) {
+                      _nodePositions[entry.key] = entry.value + delta;
+                    }
+                  });
+                  // Batch update to cubit
+                  final updates = <String, Offset>{};
+                  for (final entry in _multiDragStartPositions.entries) {
+                    final pos = _nodePositions[entry.key];
+                    if (pos != null) updates[entry.key] = pos;
+                  }
+                  context
+                      .read<RoutingEditorCubit>()
+                      .updateMultipleNodePositions(updates);
+                }
+              } else {
+                // Single node drag (existing behavior)
+                setState(() {
+                  _nodePositions[nodeId] = newPosition;
+                });
+                context.read<RoutingEditorCubit>().updateNodePosition(
+                  nodeId,
+                  newPosition.dx,
+                  newPosition.dy,
+                );
+              }
             },
             onDragEnd: () {
               if (_isDraggingNode) {
@@ -1845,6 +1948,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                   _isDraggingNode = false;
                 });
               }
+              // Clear multi-drag state
+              _multiDragStartPositions.clear();
+              _multiDragPrimaryNodeId = null;
             },
             onMoveUp: algorithm.index > 0
                 ? () => _handleAlgorithmMoveUp(algorithm.index)
@@ -1879,7 +1985,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                     _handleEs5ToggleChange(algorithm.index, channel, enabled)
                 : null,
             onSizeResolved: (size) => _handleNodeSizeResolved(nodeId, size),
-            // onTap: () => _handleNodeTap(nodeId), // Disable selection for now
+            onTap: () => _handleNodeTap(nodeId),
           ),
         ),
       ];
@@ -2305,6 +2411,19 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       final sourceNodeId = portToNodeIdMap[connection.sourcePortId];
       final destinationNodeId = portToNodeIdMap[connection.destinationPortId];
 
+      // Compute isDimmed for focus mode
+      // A connection is dimmed if focus mode is active and neither endpoint belongs to a focused algorithm
+      bool isDimmed = false;
+      if (_focusedAlgorithmIds.isNotEmpty) {
+        final sourceIsFocused = _focusedAlgorithmIds.any(
+          (algoId) => connection.sourcePortId.startsWith(algoId),
+        );
+        final destIsFocused = _focusedAlgorithmIds.any(
+          (algoId) => connection.destinationPortId.startsWith(algoId),
+        );
+        isDimmed = !sourceIsFocused && !destIsFocused;
+      }
+
       connectionDataList.add(
         painter.ConnectionData(
           connection: connection,
@@ -2327,6 +2446,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           destinationNodeBounds: nodeBoundsMap[destinationNodeId],
           sourceOccluderBounds: buildOccluderBoundsForNode(sourceNodeId),
           destinationOccluderBounds: buildOccluderBoundsForNode(destinationNodeId),
+          isDimmed: isDimmed,
         ),
       );
     }
@@ -2529,11 +2649,22 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     return bounds;
   }
 
+  /// Handle tap on algorithm node to toggle focus mode selection
+  void _handleNodeTap(String nodeId) {
+    context.read<RoutingEditorCubit>().toggleAlgorithmFocus(nodeId);
+  }
+
   void _handleNodeSizeResolved(String nodeId, Size size) {
     if (_nodeSizes[nodeId] != size) {
       setState(() {
         _nodeSizes[nodeId] = size;
       });
+      // Update cubit with actual size for layout calculations
+      context.read<RoutingEditorCubit>().updateNodeSize(
+        nodeId,
+        size.width,
+        size.height,
+      );
     }
   }
 
@@ -2583,6 +2714,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     _clearSelectedConnection();
     _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
     _clearConnectionHighlightState(source: _ConnectionHighlightSource.deleteConfirm);
+
+    // Clear focus mode selection when tapping empty canvas
+    context.read<RoutingEditorCubit>().clearFocus();
   }
 
   void _requestCanvasFocus() {

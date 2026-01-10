@@ -426,6 +426,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                   lastPersistTime,
                                   lastError,
                                   subState,
+                                  focusedAlgorithmIds,
+                                  cascadeScrollTarget,
                                 ) => () {
                                   context
                                       .read<RoutingEditorCubit>()
@@ -455,6 +457,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 lastPersistTime,
                                 lastError,
                                 subState,
+                                focusedAlgorithmIds,
+                                cascadeScrollTarget,
                               ) {
                                 // Show loading during layout calculation
                                 if (subState == SubState.syncing) {
