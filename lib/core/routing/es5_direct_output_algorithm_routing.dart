@@ -460,4 +460,26 @@ abstract class Es5DirectOutputAlgorithmRouting
 
     return (channelCount: channelCount, inputPorts: inputPorts, config: config);
   }
+
+  @protected
+  static T createFromSlotWithConfig<T extends Es5DirectOutputAlgorithmRouting>(
+    Slot slot, {
+    required Map<String, int> ioParameters,
+    Map<String, int>? modeParameters,
+    Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
+    String? algorithmUuid,
+    required String debugName,
+    required T Function(Slot slot, MultiChannelAlgorithmConfig config) builder,
+  }) {
+    final configData = createConfigFromSlot(
+      slot,
+      ioParameters: ioParameters,
+      modeParameters: modeParameters,
+      modeParametersWithNumbers: modeParametersWithNumbers,
+      algorithmUuid: algorithmUuid,
+      debugName: debugName,
+    );
+
+    return builder(slot, configData.config);
+  }
 }

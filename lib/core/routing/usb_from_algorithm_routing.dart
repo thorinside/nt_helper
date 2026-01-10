@@ -1,9 +1,7 @@
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'algorithm_routing.dart';
-import 'models/routing_state.dart';
 import 'models/port.dart';
-import 'models/connection.dart';
 
 /// Routing implementation for USB Audio (From Host) algorithm.
 ///
@@ -17,18 +15,9 @@ import 'models/connection.dart';
 /// - Has 8 fixed output ports representing USB channels 1-8
 /// - Supports extended bus values 0-30 (including ES-5 L/R at 29-30)
 /// - Extracts mode information for each channel
-class UsbFromAlgorithmRouting extends AlgorithmRouting {
+class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
   /// Algorithm-specific properties, including pre-parsed ports
   final Map<String, dynamic> properties;
-
-  /// Current routing state
-  RoutingState _state;
-
-  /// Cached input ports (always empty for USB Audio)
-  List<Port>? _cachedInputPorts;
-
-  /// Cached output ports
-  List<Port>? _cachedOutputPorts;
 
   /// Creates a new UsbFromAlgorithmRouting instance.
   ///
@@ -41,21 +30,8 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     required this.properties,
     required String algorithmUuid,
     super.validator,
-    RoutingState? initialState,
-  }) : _state = initialState ?? const RoutingState(),
-       super(algorithmUuid: algorithmUuid);
-
-  @override
-  RoutingState get state => _state;
-
-  @override
-  List<Port> get inputPorts => _cachedInputPorts ??= generateInputPorts();
-
-  @override
-  List<Port> get outputPorts => _cachedOutputPorts ??= generateOutputPorts();
-
-  @override
-  List<Connection> get connections => _state.connections;
+    super.initialState,
+  }) : super(algorithmUuid: algorithmUuid);
 
   @override
   List<Port> generateInputPorts() {
@@ -71,52 +47,22 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     if (declaredOutputs is List) {
       for (final item in declaredOutputs) {
         if (item is Map) {
-          final id = item['id']?.toString() ?? 'out_${ports.length + 1}';
-          final name = item['name']?.toString() ?? 'Output';
-          final type = PortType.audio; // Always audio for USB
+          final port = buildPortFromDeclaration(
+            item,
+            direction: PortDirection.output,
+            defaultId: 'out_${ports.length + 1}',
+            defaultName: 'Output',
+            defaultType: PortType.audio,
+            defaultDescription: 'USB audio channel from host',
+            includeOutputMode: true,
+          ).copyWith(channelNumber: coerceInt(item['channelNumber']));
 
-          final outputMode = parseOutputMode(item['outputMode']);
-
-          ports.add(
-            Port(
-              id: id,
-              name: name,
-              type: type,
-              direction: PortDirection.output,
-              description:
-                  item['description']?.toString() ??
-                  'USB audio channel from host',
-              outputMode: outputMode,
-              busValue: coerceInt(item['busValue']),
-              busParam: item['busParam']?.toString(),
-              parameterNumber: coerceInt(item['parameterNumber']),
-              modeParameterNumber: coerceInt(item['modeParameterNumber']),
-              channelNumber: coerceInt(item['channelNumber']),
-            ),
-          );
+          ports.add(port);
         }
       }
     }
 
     return ports;
-  }
-
-  @override
-  void updateState(RoutingState newState) {
-    _state = newState;
-
-    // Clear port caches if ports have changed
-    if (_state.inputPorts.isNotEmpty || _state.outputPorts.isNotEmpty) {
-      _cachedInputPorts = null;
-      _cachedOutputPorts = null;
-    }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _cachedInputPorts = null;
-    _cachedOutputPorts = null;
   }
 
   /// Determines if this routing implementation can handle the given slot.
@@ -144,30 +90,7 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
       for (final v in slot.values) v.parameterNumber: v.value,
     };
 
-    // Collect candidate 'to' params: enum-style bus params with names hinting at routing
-    List<ParameterInfo> toParams = [
-      for (final p in slot.parameters)
-        if (p.unit == 1 &&
-            (p.min == 0 || p.min == 1) &&
-            (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31) &&
-            p.name.toLowerCase().contains('to'))
-          p,
-    ];
-
-    // Fallback: take any bus-like enum params if we didn't find 8
-    if (toParams.length != 8) {
-      toParams = [
-        for (final p in slot.parameters)
-          if (p.unit == 1 &&
-              (p.min == 0 || p.min == 1) &&
-              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31))
-            p,
-      ];
-    }
-
-    // Sort stably by parameter number and keep the first 8
-    toParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
-    if (toParams.length > 8) toParams = toParams.sublist(0, 8);
+    var toParams = _findUsbToParams(slot);
 
     // Build output map using actual parameter names
     for (final p in toParams) {
@@ -220,49 +143,8 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     };
 
     // Collect candidate 'to' and 'mode' parameters robustly
-    List<ParameterInfo> toParams = [];
-    List<ParameterInfo> modeParams = [];
-
-    for (final p in slot.parameters) {
-      // Identify USB routing 'to' parameters:
-      final isBusParam =
-          p.unit == 1 &&
-          (p.min == 0 || p.min == 1) &&
-          (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31);
-      final nameLower = p.name.toLowerCase();
-      final looksLikeTo = nameLower.contains('to');
-
-      if (isBusParam && looksLikeTo) {
-        toParams.add(p);
-        continue;
-      }
-
-      // Identify per-channel mode parameters (Add/Replace)
-      if (p.unit == 1 && nameLower.contains('mode')) {
-        modeParams.add(p);
-        continue;
-      }
-    }
-
-    // Fallback: some firmwares name all channels as just 'to' or 'mode'.
-    // If we didn't find exactly 8 'to' params by name, widen to any bus params.
-    if (toParams.length != 8) {
-      toParams = [
-        for (final p in slot.parameters)
-          if (p.unit == 1 &&
-              (p.min == 0 || p.min == 1) &&
-              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31))
-            p,
-      ];
-    }
-
-    // Sort by parameter number to keep channel order stable
-    toParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
-    modeParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
-
-    // Keep only first 8 of each list (USB has 8 channels)
-    if (toParams.length > 8) toParams = toParams.sublist(0, 8);
-    if (modeParams.length > 8) modeParams = modeParams.sublist(0, 8);
+    var toParams = _findUsbToParams(slot);
+    var modeParams = _findUsbModeParams(slot);
 
     // If we still have fewer than 8 'to' params, try name-based lookup as a last resort
     if (toParams.length < 8) {
@@ -336,5 +218,53 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
       properties: properties,
       algorithmUuid: algUuid,
     );
+  }
+
+  static List<ParameterInfo> _findUsbToParams(Slot slot) {
+    // Collect candidate 'to' params: enum-style bus params with names hinting at routing
+    var toParams = [
+      for (final p in slot.parameters)
+        if (p.unit == 1 &&
+            (p.min == 0 || p.min == 1) &&
+            (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31) &&
+            p.name.toLowerCase().contains('to'))
+          p,
+    ];
+
+    // Fallback: take any bus-like enum params if we didn't find 8
+    if (toParams.length != 8) {
+      toParams = [
+        for (final p in slot.parameters)
+          if (p.unit == 1 &&
+              (p.min == 0 || p.min == 1) &&
+              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31))
+            p,
+      ];
+    }
+
+    // Sort stably by parameter number and keep the first 8
+    toParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
+    if (toParams.length > 8) {
+      toParams = toParams.sublist(0, 8);
+    }
+
+    return toParams;
+  }
+
+  static List<ParameterInfo> _findUsbModeParams(Slot slot) {
+    var modeParams = [
+      for (final p in slot.parameters)
+        if (p.unit == 1 && p.name.toLowerCase().contains('mode')) p,
+    ];
+
+    // Sort by parameter number to keep channel order stable
+    modeParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
+
+    // Keep only first 8 (USB has 8 channels)
+    if (modeParams.length > 8) {
+      modeParams = modeParams.sublist(0, 8);
+    }
+
+    return modeParams;
   }
 }

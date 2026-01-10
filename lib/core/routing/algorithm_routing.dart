@@ -188,6 +188,65 @@ abstract class AlgorithmRouting {
     return null;
   }
 
+  @protected
+  PortType? parsePortType(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is PortType) {
+      return value;
+    }
+
+    final typeStr = value.toString().toLowerCase();
+    switch (typeStr) {
+      case 'audio':
+        return PortType.audio;
+      case 'cv':
+        return PortType.cv;
+      case 'gate':
+      case 'clock':
+        return PortType.cv;
+    }
+    return null;
+  }
+
+  @protected
+  Port buildPortFromDeclaration(
+    Map item, {
+    required PortDirection direction,
+    required String defaultId,
+    required String defaultName,
+    required PortType defaultType,
+    String? defaultDescription,
+    bool includeOutputMode = false,
+  }) {
+    final id = item['id']?.toString() ?? defaultId;
+    final name = item['name']?.toString() ?? defaultName;
+    final type = parsePortType(item['type']) ?? defaultType;
+    final description = item['description']?.toString() ?? defaultDescription;
+
+    final busValue = coerceInt(item['busValue']);
+    final busParam = item['busParam']?.toString();
+    final parameterNumber = coerceInt(item['parameterNumber']);
+
+    final outputMode = includeOutputMode ? parseOutputMode(item['outputMode']) : null;
+    final modeParameterNumber =
+        includeOutputMode ? coerceInt(item['modeParameterNumber']) : null;
+
+    return Port(
+      id: id,
+      name: name,
+      type: type,
+      direction: direction,
+      description: description,
+      busValue: busValue,
+      busParam: busParam,
+      parameterNumber: parameterNumber,
+      outputMode: outputMode,
+      modeParameterNumber: modeParameterNumber,
+    );
+  }
+
   /// Adds a connection between two ports if the connection is valid.
   ///
   /// This method validates the connection using [validateConnection] and
@@ -611,6 +670,27 @@ abstract class AlgorithmRouting {
     return valueByParam[param.parameterNumber] ?? param.defaultValue;
   }
 
+  /// Helper method to get parameter value from a slot by parameter number.
+  ///
+  /// Returns the parameter value or [defaultValue] if not set.
+  @protected
+  static int getParameterValueByNumber(
+    Slot slot,
+    int parameterNumber, {
+    required int defaultValue,
+  }) {
+    return slot.values
+        .firstWhere(
+          (v) => v.parameterNumber == parameterNumber,
+          orElse: () => ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: parameterNumber,
+            value: defaultValue,
+          ),
+        )
+        .value;
+  }
+
   /// Helper method to check if a parameter exists in a slot.
   ///
   /// Parameters:
@@ -621,5 +701,53 @@ abstract class AlgorithmRouting {
   @protected
   static bool hasParameter(Slot slot, String parameterName) {
     return slot.parameters.any((p) => p.name == parameterName);
+  }
+}
+
+/// Common base for routing implementations that cache generated ports.
+abstract class CachedAlgorithmRouting extends AlgorithmRouting {
+  RoutingState _state;
+
+  List<Port>? _cachedInputPorts;
+  List<Port>? _cachedOutputPorts;
+
+  CachedAlgorithmRouting({
+    super.validator,
+    super.algorithmUuid,
+    RoutingState? initialState,
+  }) : _state = initialState ?? const RoutingState();
+
+  @override
+  RoutingState get state => _state;
+
+  @override
+  List<Port> get inputPorts => _cachedInputPorts ??= generateInputPorts();
+
+  @override
+  List<Port> get outputPorts => _cachedOutputPorts ??= generateOutputPorts();
+
+  @override
+  List<Connection> get connections => _state.connections;
+
+  @protected
+  void clearPortCaches() {
+    _cachedInputPorts = null;
+    _cachedOutputPorts = null;
+  }
+
+  @override
+  void updateState(RoutingState newState) {
+    _state = newState;
+
+    // Clear port caches if ports have changed
+    if (_state.inputPorts.isNotEmpty || _state.outputPorts.isNotEmpty) {
+      clearPortCaches();
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    clearPortCaches();
   }
 }

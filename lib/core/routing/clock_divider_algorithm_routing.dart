@@ -39,16 +39,16 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
     Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
   }) {
-    final configData = Es5DirectOutputAlgorithmRouting.createConfigFromSlot(
+    return Es5DirectOutputAlgorithmRouting.createFromSlotWithConfig(
       slot,
       ioParameters: ioParameters,
       modeParameters: modeParameters,
       modeParametersWithNumbers: modeParametersWithNumbers,
       algorithmUuid: algorithmUuid,
       debugName: 'ClockDividerAlgorithmRouting',
+      builder: (slot, config) =>
+          ClockDividerAlgorithmRouting(slot: slot, config: config),
     );
-
-    return ClockDividerAlgorithmRouting(slot: slot, config: configData.config);
   }
 
   /// Generates output ports based on ES-5 configuration for each channel.

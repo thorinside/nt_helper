@@ -2,9 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'algorithm_routing.dart';
-import 'models/routing_state.dart';
 import 'models/port.dart';
-import 'models/connection.dart';
 
 /// Configuration data for multi-channel algorithm routing.
 ///
@@ -99,18 +97,9 @@ class MultiChannelAlgorithmConfig {
 /// final widthConfig = MultiChannelAlgorithmConfig.widthBased(width: 4);
 /// final widthRouting = MultiChannelAlgorithmRouting(config: widthConfig);
 /// ```
-class MultiChannelAlgorithmRouting extends AlgorithmRouting {
+class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
   /// Configuration for this multi-channel routing instance
   final MultiChannelAlgorithmConfig config;
-
-  /// Current routing state
-  RoutingState _state;
-
-  /// Cached input ports to avoid regeneration
-  List<Port>? _cachedInputPorts;
-
-  /// Cached output ports to avoid regeneration
-  List<Port>? _cachedOutputPorts;
 
   /// Creates a new MultiChannelAlgorithmRouting instance.
   ///
@@ -121,23 +110,8 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   MultiChannelAlgorithmRouting({
     required this.config,
     super.validator,
-    RoutingState? initialState,
-  }) : _state = initialState ?? const RoutingState(),
-       super(
-         algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?,
-       );
-
-  @override
-  RoutingState get state => _state;
-
-  @override
-  List<Port> get inputPorts => _cachedInputPorts ??= generateInputPorts();
-
-  @override
-  List<Port> get outputPorts => _cachedOutputPorts ??= generateOutputPorts();
-
-  @override
-  List<Connection> get connections => _state.connections;
+    super.initialState,
+  }) : super(algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?);
 
   @override
   List<Port> generateInputPorts() {
@@ -154,27 +128,19 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       // Process declared inputs
       for (final item in declaredInputs) {
         if (item is Map) {
-          final id = item['id']?.toString() ?? 'in_${ports.length + 1}';
-          final name = item['name']?.toString() ?? 'Input';
-          final typeStr = item['type']?.toString().toLowerCase();
-          final type = _parsePortType(typeStr) ?? PortType.audio;
-          ports.add(
-            Port(
-              id: id,
-              name: name,
-              type: type,
-              direction: PortDirection.input,
-              description: item['description']?.toString(),
-              // Direct properties
-              busValue: item['busValue'] as int?,
-              busParam: item['busParam']?.toString(),
-              parameterNumber: item['parameterNumber'] as int?,
-              channelNumber: item['channelNumber'] is int
-                  ? item['channelNumber'] as int
-                  : null,
-              isMultiChannel: item['channelNumber'] != null,
-            ),
+          final hasChannelNumber = item['channelNumber'] != null;
+          final port = buildPortFromDeclaration(
+            item,
+            direction: PortDirection.input,
+            defaultId: 'in_${ports.length + 1}',
+            defaultName: 'Input',
+            defaultType: PortType.audio,
+          ).copyWith(
+            channelNumber: coerceInt(item['channelNumber']),
+            isMultiChannel: hasChannelNumber,
           );
+
+          ports.add(port);
         }
       }
       return ports;
@@ -258,14 +224,8 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       // Process declared outputs
       for (final item in declared) {
         if (item is Map) {
-          final id = item['id']?.toString() ?? 'out_${ports.length + 1}';
-          final name = item['name']?.toString() ?? 'Output';
-          final typeStr = item['type']?.toString().toLowerCase();
-          final type = _parsePortType(typeStr) ?? PortType.audio;
-          final outputMode = parseOutputMode(item['outputMode']);
-
           // Get mode parameter number from the item metadata (already stored during createFromSlot)
-          int? modeParameterNumber = coerceInt(item['modeParameterNumber']);
+          var modeParameterNumber = coerceInt(item['modeParameterNumber']);
 
           // Fallback to looking it up from base class if not in metadata
           if (modeParameterNumber == null) {
@@ -275,26 +235,21 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             }
           }
 
-          if (modeParameterNumber != null) {}
-
-          ports.add(
-            Port(
-              id: id,
-              name: name,
-              type: type,
-              direction: PortDirection.output,
-              description: item['description']?.toString(),
-              outputMode: outputMode,
-              // Direct properties
-              busValue: coerceInt(item['busValue']),
-              busParam: item['busParam']?.toString(),
-              parameterNumber: coerceInt(item['parameterNumber']),
-              modeParameterNumber: modeParameterNumber,
-              channelNumber: coerceInt(item['channel']),
-              isStereoChannel: item['channel'] != null,
-              stereoSide: item['channel']?.toString(),
-            ),
+          final port = buildPortFromDeclaration(
+            item,
+            direction: PortDirection.output,
+            defaultId: 'out_${ports.length + 1}',
+            defaultName: 'Output',
+            defaultType: PortType.audio,
+            includeOutputMode: true,
+          ).copyWith(
+            modeParameterNumber: modeParameterNumber,
+            channelNumber: coerceInt(item['channel']),
+            isStereoChannel: item['channel'] != null,
+            stereoSide: item['channel']?.toString(),
           );
+
+          ports.add(port);
         }
       }
       return ports;
@@ -414,22 +369,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     return ports;
   }
 
-  PortType? _parsePortType(String? name) {
-    switch (name) {
-      case 'audio':
-        return PortType.audio;
-      case 'cv':
-        return PortType.cv;
-      // Note: gate and clock types were removed in Story 7.5
-      // They were artificial types not present in hardware
-      // All gate/clock ports are now CV type (isAudio=false)
-      case 'gate':
-      case 'clock':
-        return PortType.cv;
-    }
-    return null;
-  }
-
   @override
   bool validateConnection(Port source, Port destination) {
     // First, use the base validation
@@ -453,17 +392,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     }
 
     return true;
-  }
-
-  @override
-  void updateState(RoutingState newState) {
-    _state = newState;
-
-    // Clear port caches if ports have changed
-    if (_state.inputPorts.isNotEmpty || _state.outputPorts.isNotEmpty) {
-      _cachedInputPorts = null;
-      _cachedOutputPorts = null;
-    }
   }
 
   /// Validates multi-channel specific connections
@@ -555,8 +483,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   void updateChannelCount(int newChannelCount) {
     if (newChannelCount != config.channelCount && newChannelCount > 0) {
       // Clear cached ports to force regeneration
-      _cachedInputPorts = null;
-      _cachedOutputPorts = null;
+      clearPortCaches();
     }
   }
 
@@ -576,13 +503,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   /// Checks if the configuration supports the given channel count
   bool supportsChannelCount(int channelCount) {
     return channelCount > 0 && channelCount <= config.channelCount;
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _cachedInputPorts = null;
-    _cachedOutputPorts = null;
   }
 
   /// Determines if this routing implementation can handle the given slot.
@@ -683,29 +603,19 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         if (lowerName.contains('width')) {
           // Get the actual width value from parameter values
           // Width is an enum: 0 = Mono, 1 = Stereo
-          final widthValue = slot.values
-              .firstWhere(
-                (v) => v.parameterNumber == param.parameterNumber,
-                orElse: () => ParameterValue(
-                  algorithmIndex: 0,
-                  parameterNumber: param.parameterNumber,
-                  value: param.defaultValue,
-                ),
-              )
-              .value;
+          final widthValue = AlgorithmRouting.getParameterValueByNumber(
+            slot,
+            param.parameterNumber,
+            defaultValue: param.defaultValue,
+          );
           sendGroups[sendPage]!['width'] = widthValue;
         } else if (lowerName.contains('output mode')) {
           // Get the actual mode value
-          final modeValue = slot.values
-              .firstWhere(
-                (v) => v.parameterNumber == param.parameterNumber,
-                orElse: () => ParameterValue(
-                  algorithmIndex: 0,
-                  parameterNumber: param.parameterNumber,
-                  value: param.defaultValue,
-                ),
-              )
-              .value;
+          final modeValue = AlgorithmRouting.getParameterValueByNumber(
+            slot,
+            param.parameterNumber,
+            defaultValue: param.defaultValue,
+          );
           sendGroups[sendPage]!['outputMode'] = modeValue;
           sendGroups[sendPage]!['modeParameterNumber'] = param.parameterNumber;
         }
@@ -805,16 +715,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             modeParameterNumber = sourceParam;
 
             // Get the current value of the mode parameter (0 = Add, 1 = Replace)
-            final modeValue = slot.values
-                .firstWhere(
-                  (v) => v.parameterNumber == sourceParam,
-                  orElse: () => ParameterValue(
-                    algorithmIndex: 0,
-                    parameterNumber: sourceParam,
-                    value: 0, // Default to Add mode
-                  ),
-                )
-                .value;
+            final modeValue = AlgorithmRouting.getParameterValueByNumber(
+              slot,
+              sourceParam,
+              defaultValue: 0,
+            );
 
             outputMode = (modeValue == 1) ? 'replace' : 'add';
             break; // Found the mode parameter for this output

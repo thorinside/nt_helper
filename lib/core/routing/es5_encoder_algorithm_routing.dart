@@ -39,6 +39,19 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
     super.validator,
   });
 
+  int _getValue(int parameterNumber, {required int defaultValue}) {
+    return slot.values
+        .firstWhere(
+          (v) => v.parameterNumber == parameterNumber,
+          orElse: () => ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: parameterNumber,
+            value: defaultValue,
+          ),
+        )
+        .value;
+  }
+
   /// Generates input ports only for enabled channels.
   ///
   /// This method examines each channel page in the slot and creates
@@ -76,53 +89,19 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
       final outputParamNum = page.parameters[3];
 
       // Get the Enable parameter value
-      final enableValue = slot.values
-          .firstWhere(
-            (v) => v.parameterNumber == enableParamNum,
-            orElse: () => ParameterValue(
-              algorithmIndex: 0,
-              parameterNumber: enableParamNum,
-              value: 0,
-            ),
-          )
-          .value;
+      final enableValue = _getValue(enableParamNum, defaultValue: 0);
 
       // Only create port if channel is enabled
       if (enableValue == 1) {
         // Get the Input bus value
-        final inputBusValue = slot.values
-            .firstWhere(
-              (v) => v.parameterNumber == inputParamNum,
-              orElse: () => ParameterValue(
-                algorithmIndex: 0,
-                parameterNumber: inputParamNum,
-                value: 0,
-              ),
-            )
-            .value;
+        final inputBusValue = _getValue(inputParamNum, defaultValue: 0);
 
         // Get Expander and Output values for metadata
-        final expanderValue = slot.values
-            .firstWhere(
-              (v) => v.parameterNumber == expanderParamNum,
-              orElse: () => ParameterValue(
-                algorithmIndex: 0,
-                parameterNumber: expanderParamNum,
-                value: 1,
-              ),
-            )
-            .value;
-
-        final outputValue = slot.values
-            .firstWhere(
-              (v) => v.parameterNumber == outputParamNum,
-              orElse: () => ParameterValue(
-                algorithmIndex: 0,
-                parameterNumber: outputParamNum,
-                value: channelNumber,
-              ),
-            )
-            .value;
+        final expanderValue = _getValue(expanderParamNum, defaultValue: 1);
+        final outputValue = _getValue(
+          outputParamNum,
+          defaultValue: channelNumber,
+        );
 
         // Create the input port for this enabled channel
         final port = Port(
@@ -184,16 +163,7 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
 
         // Read the Output parameter value (1-8) - defaults to channel number
         final outputValue = outputParamNum >= 0
-            ? slot.values
-                  .firstWhere(
-                    (v) => v.parameterNumber == outputParamNum,
-                    orElse: () => ParameterValue(
-                      algorithmIndex: 0,
-                      parameterNumber: outputParamNum,
-                      value: channelNumber,
-                    ),
-                  )
-                  .value
+            ? _getValue(outputParamNum, defaultValue: channelNumber)
             : channelNumber;
 
         final outputLabel = outputValue <= 0 ? 'None' : outputValue.toString();

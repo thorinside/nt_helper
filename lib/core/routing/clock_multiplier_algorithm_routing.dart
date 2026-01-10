@@ -35,18 +35,15 @@ class ClockMultiplierAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
     Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
   }) {
-    final configData = Es5DirectOutputAlgorithmRouting.createConfigFromSlot(
+    return Es5DirectOutputAlgorithmRouting.createFromSlotWithConfig(
       slot,
       ioParameters: ioParameters,
       modeParameters: modeParameters,
       modeParametersWithNumbers: modeParametersWithNumbers,
       algorithmUuid: algorithmUuid,
       debugName: 'ClockMultiplierAlgorithmRouting',
-    );
-
-    return ClockMultiplierAlgorithmRouting(
-      slot: slot,
-      config: configData.config,
+      builder: (slot, config) =>
+          ClockMultiplierAlgorithmRouting(slot: slot, config: config),
     );
   }
 }

@@ -35,15 +35,15 @@ class EuclideanAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
     Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
   }) {
-    final configData = Es5DirectOutputAlgorithmRouting.createConfigFromSlot(
+    return Es5DirectOutputAlgorithmRouting.createFromSlotWithConfig(
       slot,
       ioParameters: ioParameters,
       modeParameters: modeParameters,
       modeParametersWithNumbers: modeParametersWithNumbers,
       algorithmUuid: algorithmUuid,
       debugName: 'EuclideanAlgorithmRouting',
+      builder: (slot, config) =>
+          EuclideanAlgorithmRouting(slot: slot, config: config),
     );
-
-    return EuclideanAlgorithmRouting(slot: slot, config: configData.config);
   }
 }

@@ -2,9 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'algorithm_routing.dart';
-import 'models/routing_state.dart';
 import 'models/port.dart';
-import 'models/connection.dart';
 
 /// Configuration data for polyphonic algorithm routing.
 ///
@@ -76,18 +74,9 @@ class PolyAlgorithmConfig {
 /// final polyRouting = PolyAlgorithmRouting(config: config);
 /// final inputPorts = polyRouting.generateInputPorts();
 /// ```
-class PolyAlgorithmRouting extends AlgorithmRouting {
+class PolyAlgorithmRouting extends CachedAlgorithmRouting {
   /// Configuration for this polyphonic routing instance
   final PolyAlgorithmConfig config;
-
-  /// Current routing state
-  RoutingState _state;
-
-  /// Cached input ports to avoid regeneration
-  List<Port>? _cachedInputPorts;
-
-  /// Cached output ports to avoid regeneration
-  List<Port>? _cachedOutputPorts;
 
   /// Creates a new PolyAlgorithmRouting instance.
   ///
@@ -98,23 +87,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
   PolyAlgorithmRouting({
     required this.config,
     super.validator,
-    RoutingState? initialState,
-  }) : _state = initialState ?? const RoutingState(),
-       super(
-         algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?,
-       );
-
-  @override
-  RoutingState get state => _state;
-
-  @override
-  List<Port> get inputPorts => _cachedInputPorts ??= generateInputPorts();
-
-  @override
-  List<Port> get outputPorts => _cachedOutputPorts ??= generateOutputPorts();
-
-  @override
-  List<Connection> get connections => _state.connections;
+    super.initialState,
+  }) : super(algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?);
 
   @override
   List<Port> generateInputPorts() {
@@ -215,28 +189,15 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     if (extras is List) {
       for (final item in extras) {
         if (item is Map) {
-          final id = item['id']?.toString() ?? 'extra_${ports.length + 1}';
-          final name = item['name']?.toString() ?? 'Extra Input';
-          final typeStr = item['type']?.toString().toLowerCase();
-          final type = _parsePortType(typeStr) ?? PortType.cv;
-          ports.add(
-            Port(
-              id: id,
-              name: name,
-              type: type,
-              direction: PortDirection.input,
-              description: item['description']?.toString(),
-              // Direct properties
-              busValue: item['busValue'] is int
-                  ? item['busValue'] as int?
-                  : int.tryParse(item['busValue']?.toString() ?? ''),
-              busParam: item['busParam']?.toString(),
-              parameterNumber: item['parameterNumber'] is int
-                  ? item['parameterNumber'] as int?
-                  : int.tryParse(item['parameterNumber']?.toString() ?? ''),
-              isVirtualCV: item['isVirtualCV'] == true,
-            ),
-          );
+          final port = buildPortFromDeclaration(
+            item,
+            direction: PortDirection.input,
+            defaultId: 'extra_${ports.length + 1}',
+            defaultName: 'Extra Input',
+            defaultType: PortType.cv,
+          ).copyWith(isVirtualCV: item['isVirtualCV'] == true);
+
+          ports.add(port);
         }
       }
     }
@@ -253,35 +214,22 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     if (outputs is List && outputs.isNotEmpty) {
       for (final item in outputs) {
         if (item is Map) {
-          final id = item['id']?.toString() ?? 'out_${ports.length + 1}';
-          final name = item['name']?.toString() ?? 'Output';
-          final typeStr = item['type']?.toString().toLowerCase();
-          final type = _parsePortType(typeStr) ?? PortType.audio;
-          final outputMode = parseOutputMode(item['outputMode']);
-
-          // Get mode parameter number from the item metadata (already stored during createFromSlot)
-          int? modeParameterNumber = coerceInt(item['modeParameterNumber']);
-
-          ports.add(
-            Port(
-              id: id,
-              name: name,
-              type: type,
-              direction: PortDirection.output,
-              description: item['description']?.toString(),
-              outputMode: outputMode,
-              // Direct properties
-              busValue: coerceInt(item['busValue']),
-              busParam: item['busParam']?.toString(),
-              parameterNumber: coerceInt(item['parameterNumber']),
-              modeParameterNumber: modeParameterNumber,
-              channelNumber: coerceInt(item['channel']),
-              isStereoChannel: item['channel'] != null,
-              stereoSide: item['channel']?.toString(),
-              isPolyVoice: item['voiceNumber'] != null,
-              voiceNumber: coerceInt(item['voiceNumber']),
-            ),
+          final port = buildPortFromDeclaration(
+            item,
+            direction: PortDirection.output,
+            defaultId: 'out_${ports.length + 1}',
+            defaultName: 'Output',
+            defaultType: PortType.audio,
+            includeOutputMode: true,
+          ).copyWith(
+            channelNumber: coerceInt(item['channel']),
+            isStereoChannel: item['channel'] != null,
+            stereoSide: item['channel']?.toString(),
+            isPolyVoice: item['voiceNumber'] != null,
+            voiceNumber: coerceInt(item['voiceNumber']),
           );
+
+          ports.add(port);
         }
       }
       return ports;
@@ -289,22 +237,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
 
     // No declared outputs; return empty and let higher layers decide or provide outputs via properties
     return ports;
-  }
-
-  PortType? _parsePortType(String? name) {
-    switch (name) {
-      case 'audio':
-        return PortType.audio;
-      case 'cv':
-        return PortType.cv;
-      // Note: gate and clock types were removed in Story 7.5
-      // They were artificial types not present in hardware
-      // All gate/clock ports are now CV type (isAudio=false)
-      case 'gate':
-      case 'clock':
-        return PortType.cv;
-    }
-    return null;
   }
 
   @override
@@ -334,17 +266,6 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     }
 
     return true;
-  }
-
-  @override
-  void updateState(RoutingState newState) {
-    _state = newState;
-
-    // Clear port caches if ports have changed
-    if (_state.inputPorts.isNotEmpty || _state.outputPorts.isNotEmpty) {
-      _cachedInputPorts = null;
-      _cachedOutputPorts = null;
-    }
   }
 
   /// Validates virtual CV connections
@@ -385,16 +306,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       // Clear cached ports to force regeneration
       // Note: Config is immutable, so this only clears caches for when
       // a new instance would be created with different config
-      _cachedInputPorts = null;
-      _cachedOutputPorts = null;
+      clearPortCaches();
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _cachedInputPorts = null;
-    _cachedOutputPorts = null;
   }
 
   /// Determines if this routing implementation can handle the given slot.
@@ -532,16 +445,11 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             modeParameterNumber = sourceParam;
 
             // Get the current value of the mode parameter (0 = Add, 1 = Replace)
-            final modeValue = slot.values
-                .firstWhere(
-                  (v) => v.parameterNumber == sourceParam,
-                  orElse: () => ParameterValue(
-                    algorithmIndex: 0,
-                    parameterNumber: sourceParam,
-                    value: 0, // Default to Add mode
-                  ),
-                )
-                .value;
+            final modeValue = AlgorithmRouting.getParameterValueByNumber(
+              slot,
+              sourceParam,
+              defaultValue: 0,
+            );
 
             outputMode = (modeValue == 1) ? 'replace' : 'add';
             break; // Found the mode parameter for this output
