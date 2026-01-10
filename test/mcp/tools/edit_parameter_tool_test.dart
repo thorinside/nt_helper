@@ -11,6 +11,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
+import '../../test_helpers/mock_midi_command.dart';
+
 void main() {
   group('DistingTools - editParameter', () {
     late DistingTools tools;
@@ -49,7 +51,7 @@ void main() {
     });
 
     setUp(() {
-      distingCubit = DistingCubit(database);
+      distingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
       controller = DistingControllerImpl(distingCubit);
       tools = DistingTools(controller, distingCubit);
     });
@@ -143,7 +145,7 @@ void main() {
 
       test('should return error when not in synchronized state', () async {
         // Create a new cubit without syncing
-        final offlineDistingCubit = DistingCubit(database);
+        final offlineDistingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
         final offlineController = DistingControllerImpl(offlineDistingCubit);
         final offlineTools = DistingTools(offlineController, offlineDistingCubit);
 

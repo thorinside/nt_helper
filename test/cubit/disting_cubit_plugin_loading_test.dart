@@ -8,6 +8,8 @@ import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../test_helpers/mock_midi_command.dart';
+
 class MockAppDatabase extends Mock implements AppDatabase {}
 
 class MockMetadataDao extends Mock implements MetadataDao {}
@@ -19,6 +21,7 @@ void main() {
   late MockAppDatabase mockDatabase;
   late MockMetadataDao mockMetadataDao;
   late MockDistingMidiManager mockDisting;
+  late MockMidiCommand mockMidiCommand;
 
   late AlgorithmInfo unloadedPlugin;
   late AlgorithmInfo loadedPlugin;
@@ -34,12 +37,13 @@ void main() {
     mockDatabase = MockAppDatabase();
     mockMetadataDao = MockMetadataDao();
     mockDisting = MockDistingMidiManager();
+    mockMidiCommand = MockMidiCommand();
 
     // Setup database mock
     when(() => mockDatabase.metadataDao).thenReturn(mockMetadataDao);
     when(() => mockMetadataDao.hasCachedAlgorithms()).thenAnswer((_) async => false);
 
-    cubit = DistingCubit(mockDatabase);
+    cubit = DistingCubit(mockDatabase, midiCommand: mockMidiCommand);
 
     // Create test algorithm data
     unloadedPlugin = AlgorithmInfo(

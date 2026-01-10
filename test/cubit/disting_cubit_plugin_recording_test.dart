@@ -10,12 +10,15 @@ import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../test_helpers/mock_midi_command.dart';
+
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
 void main() {
   late DistingCubit cubit;
   late AppDatabase database;
   late MockDistingMidiManager mockDisting;
+  late MockMidiCommand mockMidiCommand;
 
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,8 +31,9 @@ void main() {
     // Use real in-memory database so we can verify recording
     database = AppDatabase.forTesting(NativeDatabase.memory());
     mockDisting = MockDistingMidiManager();
+    mockMidiCommand = MockMidiCommand();
 
-    cubit = DistingCubit(database);
+    cubit = DistingCubit(database, midiCommand: mockMidiCommand);
 
     // Setup common mocks for file upload
     when(() => mockDisting.requestWake()).thenAnswer((_) async {});

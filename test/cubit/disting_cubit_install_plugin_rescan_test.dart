@@ -11,6 +11,8 @@ import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../test_helpers/mock_midi_command.dart';
+
 class MockAppDatabase extends Mock implements AppDatabase {}
 
 class MockMetadataDao extends Mock implements MetadataDao {}
@@ -26,6 +28,7 @@ void main() {
   late MockMetadataDao mockMetadataDao;
   late MockPluginInstallationsDao mockPluginInstallationsDao;
   late MockDistingMidiManager mockDisting;
+  late MockMidiCommand mockMidiCommand;
 
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +42,7 @@ void main() {
     mockMetadataDao = MockMetadataDao();
     mockPluginInstallationsDao = MockPluginInstallationsDao();
     mockDisting = MockDistingMidiManager();
+    mockMidiCommand = MockMidiCommand();
 
     when(() => mockDatabase.metadataDao).thenReturn(mockMetadataDao);
     when(() => mockDatabase.pluginInstallationsDao)
@@ -56,7 +60,7 @@ void main() {
       ),
     ).thenAnswer((_) async => 1);
 
-    cubit = DistingCubit(mockDatabase);
+    cubit = DistingCubit(mockDatabase, midiCommand: mockMidiCommand);
 
     // Setup common mocks for file upload
     when(() => mockDisting.requestWake()).thenAnswer((_) async {});

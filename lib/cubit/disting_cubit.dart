@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:async/async.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart'; // Added
@@ -121,11 +122,14 @@ class DistingCubit extends _DistingCubitBase
       FirmwareVersionService();
 
   // Modified constructor
-  DistingCubit(this.database)
+  DistingCubit(this.database, {MidiCommand? midiCommand})
     : _prefs = SharedPreferences.getInstance(),
       super(const DistingState.initial()) {
     _metadataDao =
         database.metadataDao; // Initialize DAO using public database field
+    if (midiCommand != null) {
+      _midiCommand = midiCommand;
+    }
   }
 
   MidiCommand _midiCommand = MidiCommand();
@@ -177,7 +181,11 @@ class DistingCubit extends _DistingCubitBase
     disting()?.dispose();
     _offlineManager?.dispose();
     _parameterQueue?.dispose();
-    _midiCommand.teardown();
+    try {
+      _midiCommand.teardown();
+    } on MissingPluginException {
+      // teardown() uses platform channels not available in tests
+    }
     _midiCommand.dispose();
 
     _parameterRefreshDelegate.dispose();

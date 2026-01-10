@@ -10,6 +10,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
+import '../test_helpers/mock_midi_command.dart';
+
 void main() {
   group('MCPAlgorithmTools - searchAlgorithms', () {
     late MCPAlgorithmTools tools;
@@ -47,7 +49,7 @@ void main() {
     });
 
     setUp(() {
-      distingCubit = DistingCubit(database);
+      distingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
       tools = MCPAlgorithmTools(distingCubit);
     });
 

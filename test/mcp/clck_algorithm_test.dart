@@ -11,6 +11,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
+import '../test_helpers/mock_midi_command.dart';
+
 void main() {
   group('CLCK Algorithm Specific Tests', () {
     setUpAll(() {
@@ -100,7 +102,7 @@ void main() {
 
         await AlgorithmMetadataService().initialize(database);
 
-        final cubit = DistingCubit(database);
+        final cubit = DistingCubit(database, midiCommand: MockMidiCommand());
         final tools = MCPAlgorithmTools(cubit);
 
         // Test with timeout to catch any hanging

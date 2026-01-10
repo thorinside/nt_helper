@@ -11,6 +11,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
+import '../../test_helpers/mock_midi_command.dart';
+
 void main() {
   group('DistingTools - editPreset', () {
     late DistingTools tools;
@@ -49,7 +51,7 @@ void main() {
     });
 
     setUp(() {
-      distingCubit = DistingCubit(database);
+      distingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
       controller = DistingControllerImpl(distingCubit);
       tools = DistingTools(controller, distingCubit);
     });
