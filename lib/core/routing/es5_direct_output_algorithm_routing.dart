@@ -94,7 +94,7 @@ abstract class Es5DirectOutputAlgorithmRouting
   /// Helper to get output bus value along with parameter name and number.
   ///
   /// Returns a record with the bus value, parameter name, and parameter number.
-  ({int busValue, String? paramName, int? parameterNumber})?
+  ({int busValue, String? paramName, int parameterNumber})?
   _getOutputBusWithName(int channel) {
     // Try 'Output' first
     final outputParam = getParameterValueAndNumber(channel, outputParamName);
