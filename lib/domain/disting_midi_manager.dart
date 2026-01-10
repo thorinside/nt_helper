@@ -422,9 +422,7 @@ class DistingMidiManager implements IDistingMidiManager {
     return await _scheduler.sendRequest<OutputModeUsage>(
       packet,
       key,
-      responseExpectation: ResponseExpectation.optional,
-      maxRetries: 2,
-      timeout: const Duration(milliseconds: 100),
+      responseExpectation: ResponseExpectation.required,
     );
   }
 

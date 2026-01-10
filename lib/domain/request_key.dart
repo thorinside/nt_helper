@@ -47,6 +47,15 @@ class RequestKey {
           parameterNumber = decode16(msg.payload, 1);
         }
         break;
+      case DistingNTRespMessageType.respOutputModeUsage:
+        if (msg.payload.isNotEmpty) {
+          algorithmIndex = msg.payload[0];
+        }
+        if (msg.payload.length >= 4) {
+          // Output mode usage uses unsigned parameter numbers
+          parameterNumber = decode16Unsigned(msg.payload, 1);
+        }
+        break;
 
       // Other messages don't have these indices.
       case DistingNTRespMessageType.respAlgorithmInfo:

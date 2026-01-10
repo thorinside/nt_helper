@@ -16,6 +16,15 @@ class _SlotStateDelegate {
     return _outputModeUsageMap[slotIndex] ?? const {};
   }
 
+  void setOutputModeUsageMapForSlot(
+    int slotIndex,
+    Map<int, List<int>> outputModeMap,
+  ) {
+    _outputModeUsageMap[slotIndex] = outputModeMap;
+    _queriedOutputModeParameters[slotIndex] =
+        outputModeMap.keys.toSet();
+  }
+
   Future<void> ensureOutputModeUsageFromDb({
     required int slotIndex,
     required String algorithmGuid,
@@ -62,14 +71,17 @@ class _SlotStateDelegate {
     _cubit._emitState(currentState.copyWith(slots: updatedSlots));
 
     // Automatically query output mode usage if parameter has isOutputMode flag
-    if (info.isOutputMode) {
-      await _queryOutputModeUsage(slotIndex, paramIndex);
+    if (info.isOutputMode && info.parameterNumber >= 0) {
+      await _queryOutputModeUsage(slotIndex, info.parameterNumber);
     }
   }
 
   /// Query output mode usage for a parameter with isOutputMode flag.
   /// Uses debounce logic to avoid duplicate queries during sync operations.
-  Future<void> _queryOutputModeUsage(int slotIndex, int paramIndex) async {
+  Future<void> _queryOutputModeUsage(
+    int slotIndex,
+    int parameterNumber,
+  ) async {
     final currentState = _cubit.state;
     if (currentState is! DistingStateSynchronized) {
       return;
@@ -77,7 +89,7 @@ class _SlotStateDelegate {
 
     // Check if we've already queried this parameter
     final queriedParams = _queriedOutputModeParameters[slotIndex] ?? {};
-    if (queriedParams.contains(paramIndex)) {
+    if (queriedParams.contains(parameterNumber)) {
       return; // Already queried, skip
     }
 
@@ -85,17 +97,18 @@ class _SlotStateDelegate {
       final disting = currentState.disting;
       final outputModeUsage = await disting.requestOutputModeUsage(
         slotIndex,
-        paramIndex,
+        parameterNumber,
       );
 
       if (outputModeUsage != null) {
         // Store the output mode usage data
         final slotMap = _outputModeUsageMap[slotIndex] ?? {};
-        slotMap[paramIndex] = outputModeUsage.affectedParameterNumbers;
+        slotMap[outputModeUsage.parameterNumber] =
+            outputModeUsage.affectedParameterNumbers;
         _outputModeUsageMap[slotIndex] = slotMap;
 
         // Mark as queried
-        queriedParams.add(paramIndex);
+        queriedParams.add(parameterNumber);
         _queriedOutputModeParameters[slotIndex] = queriedParams;
 
         // Update the slot with the new outputModeMap and emit state change
@@ -119,8 +132,8 @@ class _SlotStateDelegate {
 
   /// Get output mode usage data for a parameter.
   /// Returns list of affected parameter numbers, or null if not available.
-  List<int>? getOutputModeUsage(int slotIndex, int paramIndex) {
-    return _outputModeUsageMap[slotIndex]?[paramIndex];
+  List<int>? getOutputModeUsage(int slotIndex, int parameterNumber) {
+    return _outputModeUsageMap[slotIndex]?[parameterNumber];
   }
 
   /// Get all output mode usage data for a slot.
@@ -229,4 +242,3 @@ class _SlotStateDelegate {
     _cubit._emitState(currentState.copyWith(slots: updatedSlots));
   }
 }
-

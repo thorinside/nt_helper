@@ -84,6 +84,13 @@ abstract class Es5DirectOutputAlgorithmRouting
               ? outputBusResult.paramName!
               : 'Channel $channel';
 
+          final modeResult = getOutputModeFromMap(
+            outputBusResult.parameterNumber,
+          );
+          final outputMode = modeResult != null
+              ? (modeResult.value == 1 ? OutputMode.replace : OutputMode.add)
+              : null;
+
           ports.add(
             Port(
               id: '${algorithmUuid}_channel_${channel}_output',
@@ -94,6 +101,8 @@ abstract class Es5DirectOutputAlgorithmRouting
               busValue: outputBusResult.busValue > 0 ? outputBusResult.busValue : null,
               channelNumber: channel,
               parameterNumber: outputBusResult.parameterNumber,
+              outputMode: outputMode,
+              modeParameterNumber: modeResult?.parameterNumber,
             ),
           );
         } else {}
@@ -146,6 +155,37 @@ abstract class Es5DirectOutputAlgorithmRouting
           paramName: param.name,
           parameterNumber: param.parameterNumber,
         );
+      }
+    }
+
+    return null;
+  }
+
+  @protected
+  ({int parameterNumber, int value})? getOutputModeFromMap(
+    int? outputParamNumber,
+  ) {
+    if (outputParamNumber == null) {
+      return null;
+    }
+
+    for (final entry in slot.outputModeMap.entries) {
+      final modeParamNumber = entry.key;
+      final affectedOutputParams = entry.value;
+
+      if (affectedOutputParams.contains(outputParamNumber)) {
+        final modeValue = slot.values
+            .firstWhere(
+              (v) => v.parameterNumber == modeParamNumber,
+              orElse: () => ParameterValue(
+                algorithmIndex: 0,
+                parameterNumber: modeParamNumber,
+                value: 0,
+              ),
+            )
+            .value;
+
+        return (parameterNumber: modeParamNumber, value: modeValue);
       }
     }
 

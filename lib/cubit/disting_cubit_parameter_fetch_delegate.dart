@@ -244,7 +244,7 @@ class _ParameterFetchDelegate {
       ParameterInfo.filler(),
     );
     await _forEachLimited(
-      Iterable<int>.generate(numParams).where((i) => visible.contains(i)),
+      Iterable<int>.generate(numParams),
       (param) async {
         try {
           final info = await disting.requestParameterInfo(
@@ -413,15 +413,80 @@ class _ParameterFetchDelegate {
    * 5. Assemble the Slot                                               *
    * ------------------------------------------------------------------ */
 
-    // Pre-populate output mode usage from database if not already populated
-    // This ensures mode parameters are available even if isOutputMode flag isn't set
-    final algorithmGuid = guid?.guid;
-    if (algorithmGuid != null) {
-      await _cubit._slotStateDelegate.ensureOutputModeUsageFromDb(
-        slotIndex: algorithmIndex,
-        algorithmGuid: algorithmGuid,
+    final outputModeParamNumbers = <int>{};
+    for (final param in parameters) {
+      if (param.isOutputMode && param.parameterNumber >= 0) {
+        outputModeParamNumbers.add(param.parameterNumber);
+      }
+    }
+
+    final hasAddReplaceEnum = enums.any(
+      (paramEnums) =>
+          paramEnums.values.contains('Add') &&
+          paramEnums.values.contains('Replace'),
+    );
+
+    if (outputModeParamNumbers.isEmpty && hasAddReplaceEnum) {
+      throw StateError(
+        'Output mode parameters missing ioFlags; fallback is not permitted.',
       );
     }
+
+
+    final outputModeMap = <int, List<int>>{};
+    if (outputModeParamNumbers.isNotEmpty) {
+      await _forEachLimited(
+        outputModeParamNumbers,
+        (paramNumber) async {
+          try {
+            final outputModeUsage = await disting.requestOutputModeUsage(
+              algorithmIndex,
+              paramNumber,
+            );
+            if (outputModeUsage != null) {
+              outputModeMap[outputModeUsage.parameterNumber] =
+                  outputModeUsage.affectedParameterNumbers;
+            }
+          } catch (e) {
+            // Output mode usage is optional; ignore failures.
+          }
+        },
+      );
+    }
+
+    if (outputModeMap.isNotEmpty) {
+      _cubit._slotStateDelegate.setOutputModeUsageMapForSlot(
+        algorithmIndex,
+        outputModeMap,
+      );
+    }
+
+    if (outputModeMap.isNotEmpty) {
+      await _forEachLimited(
+        outputModeMap.keys,
+        (paramNumber) async {
+          if (paramNumber < 0 || paramNumber >= allValues.length) {
+            return;
+          }
+          try {
+            final value = await disting.requestParameterValue(
+              algorithmIndex,
+              paramNumber,
+            );
+            if (value != null) {
+              allValues[paramNumber] = value;
+            }
+          } catch (e) {
+            // Output mode values are optional; ignore failures.
+          }
+        },
+      );
+    }
+
+    final resolvedOutputModeMap =
+        outputModeMap.isNotEmpty
+            ? outputModeMap
+            : _cubit._slotStateDelegate.outputModeMapForSlot(algorithmIndex);
 
     return Slot(
       algorithm:
@@ -438,9 +503,7 @@ class _ParameterFetchDelegate {
       mappings: mappings,
       valueStrings: valueStrings,
       routing: RoutingInfo.filler(), // unchanged – still skipped
-      outputModeMap: _cubit._slotStateDelegate.outputModeMapForSlot(
-        algorithmIndex,
-      ),
+      outputModeMap: resolvedOutputModeMap,
     );
   }
 

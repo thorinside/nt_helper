@@ -106,6 +106,13 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
         );
 
         if (outputParam != null && outputParam.value > 0) {
+          final modeResult = getOutputModeFromMap(
+            outputParam.parameterNumber,
+          );
+          final OutputMode? outputMode = modeResult != null
+              ? (modeResult.value == 1 ? OutputMode.replace : OutputMode.add)
+              : null;
+
           ports.add(
             Port(
               id: '${algorithmUuid}_channel_${channel}_output',
@@ -116,6 +123,8 @@ class ClockDividerAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
               busValue: outputParam.value,
               channelNumber: channel,
               parameterNumber: outputParam.parameterNumber,
+              outputMode: outputMode,
+              modeParameterNumber: modeResult?.parameterNumber,
             ),
           );
         } else {}

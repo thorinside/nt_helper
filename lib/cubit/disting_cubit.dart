@@ -547,8 +547,8 @@ class DistingCubit extends _DistingCubitBase
 
   /// Get output mode usage data for a parameter.
   /// Returns list of affected parameter numbers, or null if not available.
-  List<int>? getOutputModeUsage(int slotIndex, int paramIndex) {
-    return _slotStateDelegate.getOutputModeUsage(slotIndex, paramIndex);
+  List<int>? getOutputModeUsage(int slotIndex, int parameterNumber) {
+    return _slotStateDelegate.getOutputModeUsage(slotIndex, parameterNumber);
   }
 
   /// Get all output mode usage data for a slot.
