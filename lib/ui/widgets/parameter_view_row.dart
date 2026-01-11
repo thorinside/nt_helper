@@ -31,6 +31,7 @@ class ParameterViewRow extends StatefulWidget {
   final PackedMappingData? mappingData;
   final Slot slot;
   final bool isDisabled;
+  final int parameterUnit; // Integer unit type for registry-based detection
 
   const ParameterViewRow({
     super.key,
@@ -49,6 +50,7 @@ class ParameterViewRow extends StatefulWidget {
     required this.initialValue,
     required this.slot,
     this.isDisabled = false,
+    this.parameterUnit = 0,
   });
 
   @override
@@ -129,8 +131,12 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     // Check if we are on a wide screen or a smaller screen
     bool widescreen = MediaQuery.of(context).size.width > 600;
 
-    // Determine if the unit is BPM
-    final bool isBpmUnit = widget.unit?.toUpperCase().contains('BPM') ?? false;
+    // Determine if the unit is BPM using registry-based detection
+    // Modern firmware uses unit number, legacy uses unit string
+    final bool isBpmUnit = ParameterEditorRegistry.isBpmUnit(
+      widget.parameterUnit,
+      unitString: widget.unit,
+    );
 
     // Check if this parameter should use a specialized file editor
     final Widget? fileEditor =

@@ -61,7 +61,7 @@ class _ParameterStringDelegate {
     final currentSlot = currentState.slots[algorithmIndex];
 
     try {
-      // Only update parameter strings for string-type parameters (units 13, 14, 17)
+      // Only update parameter strings for string-type parameters
       var updatedValueStrings = List<ParameterValueString>.from(
         currentSlot.valueStrings,
       );
@@ -72,7 +72,7 @@ class _ParameterStringDelegate {
         parameterNumber++
       ) {
         final parameter = currentSlot.parameters[parameterNumber];
-        if ([13, 14, 17].contains(parameter.unit)) {
+        if (ParameterEditorRegistry.isStringTypeUnit(parameter.unit)) {
           final newValueString = await disting.requestParameterValueString(
             algorithmIndex,
             parameterNumber,

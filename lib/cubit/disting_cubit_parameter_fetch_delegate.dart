@@ -276,7 +276,8 @@ class _ParameterFetchDelegate {
 
     /* Pre-calculate which params are enumerated / mappable / string */
     bool isEnum(int i) => parameters[i].unit == 1;
-    bool isString(int i) => const {13, 14, 17}.contains(parameters[i].unit);
+    bool isString(int i) =>
+        ParameterEditorRegistry.isStringTypeUnit(parameters[i].unit);
     bool isMappable(int i) => parameters[i].unit != -1;
 
     /* ------------------------------------------------------------------ *
@@ -374,7 +375,7 @@ class _ParameterFetchDelegate {
         },
       ),
       // Value strings - fire-and-forget, no retries
-      // Only unit 17 (file paths) actually responds; unit 13/14 (bus selectors) don't.
+      // String-type parameters may not respond (depends on unit type and firmware).
       // We accept null gracefully rather than retrying, matching reference implementation.
       _forEachLimited(
         Iterable<int>.generate(
@@ -388,7 +389,7 @@ class _ParameterFetchDelegate {
             );
             valueStrings[param] =
                 valueStringResult ?? ParameterValueString.filler();
-            // No retry - unit 13/14 params don't respond, only unit 17 does
+            // No retry - some string-type params don't respond
           } catch (e) {
             valueStrings[param] = ParameterValueString.filler();
             // No retry on exception either

@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 import 'package:nt_helper/ui/widgets/parameter_view_row.dart';
 
 void main() {
   group('ParameterEditorView', () {
+    setUp(() {
+      // Set to modern firmware scheme for these tests
+      ParameterEditorRegistry.setFirmwareVersion(FirmwareVersion('1.13.0'));
+    });
     // Helper to create a minimal Slot for testing
     Slot createTestSlot({
       required int algorithmIndex,
@@ -73,11 +79,11 @@ void main() {
     }
 
     testWidgets(
-      'ES-5 Expander (unit 14) shows "Off" for value 0 with valueString',
+      'ES-5 Expander (unit 16) shows "Off" for value 0 with valueString',
       (tester) async {
         final slot = createTestSlot(
           algorithmIndex: 0,
-          unit: 14,
+          unit: ParameterUnits.modernHasStrings, // Unit 16 in modern firmware
           currentValue: 0,
           valueString: 'Off',
           enumValues: [], // Empty enum strings (sparse array)
@@ -111,11 +117,11 @@ void main() {
     );
 
     testWidgets(
-      'ES-5 Expander (unit 14) shows raw integer for value 1 with stale valueString',
+      'ES-5 Expander (unit 16) shows raw integer for value 1 with stale valueString',
       (tester) async {
         final slot = createTestSlot(
           algorithmIndex: 0,
-          unit: 14,
+          unit: ParameterUnits.modernHasStrings, // Unit 16 in modern firmware
           currentValue: 1,
           valueString: 'Off', // Stale valueString from previous value 0
           enumValues: [], // Empty enum strings
@@ -148,12 +154,12 @@ void main() {
       },
     );
 
-    testWidgets('ES-5 Expander (unit 14) shows raw integer for value 6', (
+    testWidgets('ES-5 Expander (unit 16) shows raw integer for value 6', (
       tester,
     ) async {
       final slot = createTestSlot(
         algorithmIndex: 0,
-        unit: 14,
+        unit: ParameterUnits.modernHasStrings, // Unit 16 in modern firmware
         currentValue: 6,
         valueString: 'Off', // Stale valueString
         enumValues: [],

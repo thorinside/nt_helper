@@ -188,6 +188,8 @@ class _ConnectionDelegate {
       final distingVersion = await distingManager.requestVersionString() ?? "";
       final firmwareVersion = FirmwareVersion(distingVersion);
       _cubit._lastKnownFirmwareVersion = firmwareVersion;
+      // Set the parameter unit scheme based on firmware version
+      ParameterEditorRegistry.setFirmwareVersion(firmwareVersion);
       final presetName = await distingManager.requestPresetName() ?? "Default";
       var unitStrings = await distingManager.requestUnitStrings() ?? [];
       List<Slot> slots = await _cubit.fetchSlots(numInPreset, distingManager);

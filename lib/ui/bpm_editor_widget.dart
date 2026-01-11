@@ -81,19 +81,25 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     }
   }
 
-  // Display as whole numbers while accounting for powerOfTen internally
+  // Display scaled value accounting for powerOfTen
+  // powerOfTen is negative (e.g., -2 means divide raw by 100)
   String _formatBpmForDisplay(int rawBpm) {
-    int displayValue = (rawBpm / pow(10, widget.powerOfTen)).round();
-    return displayValue.toString();
+    final displayValue = rawBpm * pow(10, widget.powerOfTen);
+    // For negative powerOfTen, show decimal places; for zero/positive, show integer
+    if (widget.powerOfTen < 0) {
+      return displayValue.toStringAsFixed(widget.powerOfTen.abs());
+    }
+    return displayValue.round().toString();
   }
 
   void _validateAndSubmit() {
     final textValue = _textController.text;
-    int? parsedValue = int.tryParse(textValue);
+    double? parsedValue = double.tryParse(textValue);
 
     if (parsedValue != null) {
-      // Convert to the raw internal value
-      int newRawBpm = (parsedValue * pow(10, widget.powerOfTen)).round();
+      // Convert display value back to raw internal value
+      // Divide by 10^powerOfTen (equivalent to multiply by 10^(-powerOfTen))
+      int newRawBpm = (parsedValue / pow(10, widget.powerOfTen)).round();
 
       newRawBpm = newRawBpm.clamp(widget.min, widget.max);
 
@@ -111,13 +117,14 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     }
   }
 
-  // Step by powerOfTen units for each increment/decrement
+  // Step by one display unit for each increment/decrement
   void _performSingleStep(bool increment, {bool isUndo = false}) {
     // If it's an undo, we reverse the original direction
     bool actualIncrement = isUndo ? !_initialStepWasIncrement : increment;
 
-    // Step by 10^powerOfTen to represent one whole unit change in display
-    int stepSize = pow(10, widget.powerOfTen).round();
+    // Step by 10^(-powerOfTen) to change display value by 1
+    // e.g., powerOfTen=-2 means step by 100 raw units to change display by 1
+    int stepSize = pow(10, -widget.powerOfTen).round();
 
     if (actualIncrement) {
       if (_currentBpm < widget.max) {
@@ -194,12 +201,12 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
       }
     }
 
-    // Step by 10^powerOfTen * accelerationMultiplier
-    int stepSize = (pow(10, widget.powerOfTen) * _accelerationMultiplier)
+    // Step by 10^(-powerOfTen) * accelerationMultiplier
+    int stepSize = (pow(10, -widget.powerOfTen) * _accelerationMultiplier)
         .round();
 
-    // Ensure minimum step size is at least one unit
-    stepSize = max(stepSize, pow(10, widget.powerOfTen).round());
+    // Ensure minimum step size is at least one display unit
+    stepSize = max(stepSize, pow(10, -widget.powerOfTen).round());
 
     setState(() {
       if (increment) {
@@ -281,10 +288,11 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
                 ),
                 onSubmitted: (_) => _validateAndSubmit(),
                 inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
+                  // Allow digits and decimal point for scaled BPM values
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
                   LengthLimitingTextInputFormatter(
-                    3,
-                  ), // Limit to 3 digits (up to 999 BPM)
+                    7,
+                  ), // Allow up to "999.99" or similar
                 ],
               ),
               // Position "BPM" as a separate widget to prevent it from affecting text alignment

@@ -372,7 +372,7 @@ class DistingMidiManager implements IDistingMidiManager {
       parameterNumber: parameterNumber,
     );
 
-    // Fire-and-forget: only unit 17 (file paths) responds, unit 13/14 don't.
+    // Fire-and-forget: not all string-type parameters respond.
     // No retries - accept null gracefully for non-responding params.
     // Short timeout since real responses arrive in ~1-2ms.
     return await _scheduler.sendRequest<ParameterValueString>(

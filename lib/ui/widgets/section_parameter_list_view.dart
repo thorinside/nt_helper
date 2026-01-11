@@ -6,6 +6,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
+import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 
@@ -147,11 +148,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
 
     final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
     final safeValueString = valueString ?? ParameterValueString.filler();
-    // For string-type parameters (units 13, 14, 17), don't fetch unit
+    // For string-type parameters, don't fetch unit - they use value strings
+    // The registry handles firmware version differences automatically
     final shouldShowUnit =
-        parameterInfo.unit != 13 &&
-        parameterInfo.unit != 14 &&
-        parameterInfo.unit != 17;
+        !ParameterEditorRegistry.isStringTypeUnit(parameterInfo.unit);
     final unit = shouldShowUnit
         ? parameterInfo.getUnitString(widget.units)
         : null;
@@ -506,11 +506,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                     final safeValueString =
                         valueString ?? ParameterValueString.filler();
 
-                    // For string-type parameters (units 13, 14, 17), don't fetch unit
-                    final shouldShowUnit =
-                        parameterInfo.unit != 13 &&
-                        parameterInfo.unit != 14 &&
-                        parameterInfo.unit != 17;
+                    // For string-type parameters, don't show unit
+                    final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
+                      parameterInfo.unit,
+                    );
                     final unit = shouldShowUnit
                         ? parameterInfo.getUnitString(widget.units)
                         : null;

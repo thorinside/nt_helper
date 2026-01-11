@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart' show Slot;
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show ParameterInfo;
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/widgets/file_parameter_editor.dart';
 
 /// Modes for different types of file/string parameter selection
@@ -19,6 +20,71 @@ enum FileSelectionMode {
 
   /// Free text input (e.g., mixer channel names)
   textInput,
+}
+
+/// Parameter unit scheme based on firmware version
+/// The unit numbers changed in firmware 1.13.0
+enum ParameterUnitScheme {
+  /// Legacy firmware (≤1.12): 13=file paths, 14=file/folder, 17=text input
+  legacy,
+
+  /// Modern firmware (≥1.13): 16=hasStrings, 17=confirm, 18=text input
+  /// Based on kNT_parameterUnit enum from firmware
+  modern,
+}
+
+/// Unit constants for each firmware scheme
+class ParameterUnits {
+  // Legacy firmware (≤1.12)
+  static const int legacyFilePath = 13;
+  static const int legacyFileFolder = 14;
+  static const int legacyTextInput = 17;
+
+  // Modern firmware (≥1.13) - matches kNT_parameterUnit enum
+  static const int modernVolts = 13;
+  static const int modernBPM = 14;
+  static const int modernDegrees = 15;
+  static const int modernHasStrings = 16; // File/folder with strings
+  static const int modernConfirm = 17; // Program files (needs confirmation)
+  static const int modernTextInput = 18; // Assumed for text input
+
+  /// Get the unit scheme for a given firmware version
+  static ParameterUnitScheme schemeFor(FirmwareVersion? version) {
+    if (version == null) return ParameterUnitScheme.modern;
+    // 1.13.0 and above use modern scheme
+    if (version.major > 1 || (version.major == 1 && version.minor >= 13)) {
+      return ParameterUnitScheme.modern;
+    }
+    return ParameterUnitScheme.legacy;
+  }
+
+  /// Check if a unit is a string-type unit that should hide the unit display
+  static bool isStringTypeUnit(int unit, ParameterUnitScheme scheme) {
+    switch (scheme) {
+      case ParameterUnitScheme.legacy:
+        return unit == legacyFilePath ||
+            unit == legacyFileFolder ||
+            unit == legacyTextInput;
+      case ParameterUnitScheme.modern:
+        return unit == modernHasStrings ||
+            unit == modernConfirm ||
+            unit == modernTextInput;
+    }
+  }
+
+  /// Check if a unit is a BPM unit that should use the BPM editor
+  /// Modern firmware (≥1.13): unit 14 = kNT_unitBPM
+  /// Legacy firmware (≤1.12): detected via unit string containing "BPM"
+  static bool isBpmUnit(int unit, String? unitString, ParameterUnitScheme scheme) {
+    switch (scheme) {
+      case ParameterUnitScheme.legacy:
+        // Legacy firmware: check the unit string
+        return unitString?.toUpperCase().contains('BPM') ?? false;
+      case ParameterUnitScheme.modern:
+        // Modern firmware: unit 14 = BPM
+        return unit == modernBPM;
+    }
+  }
 }
 
 /// Rule definition for parameter editor selection
@@ -96,74 +162,80 @@ class ParameterEditorRule {
 
 /// Registry for finding appropriate parameter editors based on algorithm and parameter context
 class ParameterEditorRegistry {
-  static final List<ParameterEditorRule> _rules = [
+  /// Current unit scheme (set when connecting to device)
+  static ParameterUnitScheme _currentScheme = ParameterUnitScheme.modern;
+
+  /// Set the unit scheme based on firmware version
+  static void setFirmwareVersion(FirmwareVersion? version) {
+    _currentScheme = ParameterUnits.schemeFor(version);
+  }
+
+  /// Get current scheme (for testing)
+  static ParameterUnitScheme get currentScheme => _currentScheme;
+
+  /// Rules for legacy firmware (≤1.12)
+  static final List<ParameterEditorRule> _legacyRules = [
     // Sample player - Folder selection
     ParameterEditorRule(
       algorithmGuid: 'samp',
       parameterNamePattern: r'.*:Folder',
-      unit: 14,
+      unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/samples',
       mode: FileSelectionMode.folderOnly,
       description: 'Sample player folder selection',
     ),
-
-    // Sample player - Sample file selection
     ParameterEditorRule(
       algorithmGuid: 'samp',
       parameterNamePattern: r'.*:Sample',
-      unit: 14,
-      baseDirectory: '/samples', // Will be dynamically resolved with folder
+      unit: ParameterUnits.legacyFileFolder,
+      baseDirectory: '/samples',
       mode: FileSelectionMode.fileOnly,
       allowedExtensions: ['.wav', '.aif', '.aiff'],
       description: 'Sample player file selection',
     ),
 
-    // Generic sample players - Folder selection
+    // Generic folder/sample
     ParameterEditorRule(
       parameterNamePattern: r'Folder',
-      unit: 14,
+      unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/samples',
       mode: FileSelectionMode.folderOnly,
-      description: 'Generic sample player folder selection',
+      description: 'Generic folder selection',
     ),
-
-    // Generic sample players - Sample file selection
     ParameterEditorRule(
       parameterNamePattern: r'Sample',
-      unit: 14,
-      baseDirectory: '/samples', // Will be dynamically resolved with folder
+      unit: ParameterUnits.legacyFileFolder,
+      baseDirectory: '/samples',
       mode: FileSelectionMode.fileOnly,
       allowedExtensions: ['.wav', '.aif', '.aiff'],
-      description: 'Generic sample player file selection',
+      description: 'Generic sample selection',
     ),
 
-    // Convolver - Folder selection
+    // Convolver
     ParameterEditorRule(
       algorithmGuid: 'conv',
       parameterNamePattern: r'Folder',
-      unit: 13,
+      unit: ParameterUnits.legacyFilePath,
       baseDirectory: '/samples',
       mode: FileSelectionMode.folderOnly,
       defaultFolder: 'impulses',
       description: 'Convolver impulse folder selection',
     ),
-
-    // Convolver - Sample file selection
     ParameterEditorRule(
       algorithmGuid: 'conv',
       parameterNamePattern: r'Sample',
-      unit: 13,
-      baseDirectory: '/samples', // Will be dynamically resolved with folder
+      unit: ParameterUnits.legacyFilePath,
+      baseDirectory: '/samples',
       mode: FileSelectionMode.fileOnly,
       allowedExtensions: ['.wav', '.aif', '.aiff'],
       description: 'Convolver impulse file selection',
     ),
 
-    // Lua Script - Program selection
+    // Lua Script
     ParameterEditorRule(
       algorithmGuid: 'lua ',
       parameterNamePattern: r'Program',
-      unit: 13,
+      unit: ParameterUnits.legacyFilePath,
       baseDirectory: '/programs/lua',
       mode: FileSelectionMode.directFile,
       excludeDirs: ['libs'],
@@ -171,11 +243,11 @@ class ParameterEditorRegistry {
       description: 'Lua script program selection',
     ),
 
-    // Three Pot - Program selection
+    // Three Pot
     ParameterEditorRule(
       algorithmGuid: 'spin',
       parameterNamePattern: r'Program',
-      unit: 13,
+      unit: ParameterUnits.legacyFilePath,
       baseDirectory: '/programs/three_pot',
       mode: FileSelectionMode.directFile,
       allowedExtensions: ['.3pot'],
@@ -183,81 +255,73 @@ class ParameterEditorRegistry {
       description: 'Three Pot program selection',
     ),
 
-    // VCO Wavetable - Wavetable folder selection (unit 13)
+    // Wavetable
     ParameterEditorRule(
       algorithmGuid: 'vcot',
       parameterNamePattern: r'.*[Ww]avetable.*',
-      unit: 13,
+      unit: ParameterUnits.legacyFilePath,
       baseDirectory: '/wavetables',
       mode: FileSelectionMode.folderOnly,
-      description: 'VCO Wavetable folder selection (unit 13)',
+      description: 'VCO Wavetable folder selection',
     ),
-
-    // Generic wavetable oscillator - Wavetable folder selection (unit 13)
     ParameterEditorRule(
       parameterNamePattern: r'.*[Ww]avetable.*',
-      unit: 13,
+      unit: ParameterUnits.legacyFilePath,
       baseDirectory: '/wavetables',
       mode: FileSelectionMode.folderOnly,
-      description: 'Wavetable folder selection (unit 13)',
+      description: 'Wavetable folder selection',
     ),
-
-    // Wavetable oscillator - Wavetable folder selection (unit 14)
     ParameterEditorRule(
       parameterNamePattern: r'.*[Ww]avetable.*',
-      unit: 14,
+      unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/wavetables',
       mode: FileSelectionMode.folderOnly,
-      description: 'Wavetable folder selection (unit 14)',
+      description: 'Wavetable folder selection',
     ),
 
-    // Multisample - Folder selection
+    // Multisample
     ParameterEditorRule(
       parameterNamePattern: r'.*[Mm]ultisample.*',
-      unit: 14,
+      unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/multisamples',
       mode: FileSelectionMode.folderOnly,
       description: 'Multisample folder selection',
     ),
 
-    // Tuner - Scala scale files
+    // Tuner files
     ParameterEditorRule(
       algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.scl',
-      unit: 14,
+      unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/scala',
       mode: FileSelectionMode.directFile,
       allowedExtensions: ['.scl'],
       description: 'Scala scale file selection',
     ),
-
-    // Tuner - Scala keyboard mapping files
     ParameterEditorRule(
       algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.kbm',
-      unit: 14,
+      unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/scala',
       mode: FileSelectionMode.directFile,
       allowedExtensions: ['.kbm'],
       description: 'Scala keyboard mapping file selection',
     ),
-
-    // Tuner - MTS tuning files
     ParameterEditorRule(
       algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.syx',
-      unit: 14,
+      unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/mts',
       mode: FileSelectionMode.directFile,
       allowedExtensions: ['.syx'],
       description: 'MTS tuning file selection',
     ),
 
-    // Poly FM - Bank selection (.syx files)
+    // Poly FM
     ParameterEditorRule(
       algorithmGuid: 'pyfm',
       parameterNamePattern: r'Bank',
-      unit: 14,
+      unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/FMSYX',
       mode: FileSelectionMode.directFile,
       allowedExtensions: ['.syx'],
@@ -265,42 +329,230 @@ class ParameterEditorRegistry {
       description: 'Poly FM bank selection',
     ),
 
-    // MIDI Player - Folder selection
+    // MIDI Player
     ParameterEditorRule(
       algorithmGuid: 'midp',
       parameterNamePattern: r'Folder',
-      unit: 13,
+      unit: ParameterUnits.legacyFilePath,
       baseDirectory: '/MIDI',
       mode: FileSelectionMode.folderOnly,
       description: 'MIDI Player folder selection',
     ),
-
-    // MIDI Player - File selection
     ParameterEditorRule(
       algorithmGuid: 'midp',
       parameterNamePattern: r'File',
-      unit: 13,
+      unit: ParameterUnits.legacyFilePath,
       baseDirectory: '/MIDI',
       mode: FileSelectionMode.fileOnly,
       allowedExtensions: ['.mid', '.midi'],
       description: 'MIDI Player file selection',
     ),
 
-    // Generic mixer names and other editable text parameters
+    // Text input
     ParameterEditorRule(
       parameterNamePattern: r'.*[Nn]ame.*',
-      unit: 17,
+      unit: ParameterUnits.legacyTextInput,
       mode: FileSelectionMode.textInput,
-      description: 'Editable text parameter (names, labels)',
+      description: 'Editable text parameter',
     ),
-
-    // Fallback for any unit 17 parameter
     ParameterEditorRule(
-      unit: 17,
+      unit: ParameterUnits.legacyTextInput,
       mode: FileSelectionMode.textInput,
       description: 'Generic text input parameter',
     ),
   ];
+
+  /// Rules for modern firmware (≥1.13)
+  static final List<ParameterEditorRule> _modernRules = [
+    // Sample player - Folder selection
+    ParameterEditorRule(
+      algorithmGuid: 'samp',
+      parameterNamePattern: r'.*:Folder',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.folderOnly,
+      description: 'Sample player folder selection',
+    ),
+    ParameterEditorRule(
+      algorithmGuid: 'samp',
+      parameterNamePattern: r'.*:Sample',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.fileOnly,
+      allowedExtensions: ['.wav', '.aif', '.aiff'],
+      description: 'Sample player file selection',
+    ),
+
+    // Generic folder/sample
+    ParameterEditorRule(
+      parameterNamePattern: r'Folder',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.folderOnly,
+      description: 'Generic folder selection',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'Sample',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.fileOnly,
+      allowedExtensions: ['.wav', '.aif', '.aiff'],
+      description: 'Generic sample selection',
+    ),
+
+    // Convolver
+    ParameterEditorRule(
+      algorithmGuid: 'conv',
+      parameterNamePattern: r'Folder',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.folderOnly,
+      defaultFolder: 'impulses',
+      description: 'Convolver impulse folder selection',
+    ),
+    ParameterEditorRule(
+      algorithmGuid: 'conv',
+      parameterNamePattern: r'Sample',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/samples',
+      mode: FileSelectionMode.fileOnly,
+      allowedExtensions: ['.wav', '.aif', '.aiff'],
+      description: 'Convolver impulse file selection',
+    ),
+
+    // Lua Script
+    ParameterEditorRule(
+      algorithmGuid: 'lua ',
+      parameterNamePattern: r'Program',
+      unit: ParameterUnits.modernConfirm,
+      baseDirectory: '/programs/lua',
+      mode: FileSelectionMode.directFile,
+      excludeDirs: ['libs'],
+      allowedExtensions: ['.lua'],
+      description: 'Lua script program selection',
+    ),
+
+    // Three Pot
+    ParameterEditorRule(
+      algorithmGuid: 'spin',
+      parameterNamePattern: r'Program',
+      unit: ParameterUnits.modernConfirm,
+      baseDirectory: '/programs/three_pot',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.3pot'],
+      recursive: true,
+      description: 'Three Pot program selection',
+    ),
+
+    // Wavetable
+    ParameterEditorRule(
+      algorithmGuid: 'vcot',
+      parameterNamePattern: r'.*[Ww]avetable.*',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/wavetables',
+      mode: FileSelectionMode.folderOnly,
+      description: 'VCO Wavetable folder selection',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'.*[Ww]avetable.*',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/wavetables',
+      mode: FileSelectionMode.folderOnly,
+      description: 'Wavetable folder selection',
+    ),
+
+    // Multisample
+    ParameterEditorRule(
+      parameterNamePattern: r'.*[Mm]ultisample.*',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/multisamples',
+      mode: FileSelectionMode.folderOnly,
+      description: 'Multisample folder selection',
+    ),
+
+    // Tuner files
+    ParameterEditorRule(
+      algorithmGuid: 'tunf',
+      parameterNamePattern: r'.*\.scl',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.scl'],
+      description: 'Scala scale file selection',
+    ),
+    ParameterEditorRule(
+      algorithmGuid: 'tunf',
+      parameterNamePattern: r'.*\.kbm',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.kbm'],
+      description: 'Scala keyboard mapping file selection',
+    ),
+    ParameterEditorRule(
+      algorithmGuid: 'tunf',
+      parameterNamePattern: r'.*\.syx',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/mts',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.syx'],
+      description: 'MTS tuning file selection',
+    ),
+
+    // Poly FM
+    ParameterEditorRule(
+      algorithmGuid: 'pyfm',
+      parameterNamePattern: r'Bank',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/FMSYX',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.syx'],
+      recursive: false,
+      description: 'Poly FM bank selection',
+    ),
+
+    // MIDI Player
+    ParameterEditorRule(
+      algorithmGuid: 'midp',
+      parameterNamePattern: r'Folder',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/MIDI',
+      mode: FileSelectionMode.folderOnly,
+      description: 'MIDI Player folder selection',
+    ),
+    ParameterEditorRule(
+      algorithmGuid: 'midp',
+      parameterNamePattern: r'File',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/MIDI',
+      mode: FileSelectionMode.fileOnly,
+      allowedExtensions: ['.mid', '.midi'],
+      description: 'MIDI Player file selection',
+    ),
+
+    // Text input
+    ParameterEditorRule(
+      parameterNamePattern: r'.*[Nn]ame.*',
+      unit: ParameterUnits.modernTextInput,
+      mode: FileSelectionMode.textInput,
+      description: 'Editable text parameter',
+    ),
+    ParameterEditorRule(
+      unit: ParameterUnits.modernTextInput,
+      mode: FileSelectionMode.textInput,
+      description: 'Generic text input parameter',
+    ),
+  ];
+
+  /// Get rules for the current scheme
+  static List<ParameterEditorRule> get _rules {
+    switch (_currentScheme) {
+      case ParameterUnitScheme.legacy:
+        return _legacyRules;
+      case ParameterUnitScheme.modern:
+        return _modernRules;
+    }
+  }
 
   /// Find appropriate parameter editor for the given context
   /// Returns null if no special editor is needed (falls back to default slider/+- editor)
@@ -337,16 +589,26 @@ class ParameterEditorRegistry {
     return null; // No special editor needed
   }
 
-  /// Get all registered rules (for debugging/testing)
+  /// Check if a unit is a string-type unit that should hide the unit display
+  static bool isStringTypeUnit(int unit) {
+    return ParameterUnits.isStringTypeUnit(unit, _currentScheme);
+  }
+
+  /// Check if a unit is a BPM unit that should use the BPM editor
+  /// For modern firmware, only unit number is needed.
+  /// For legacy firmware, the unit string is checked for "BPM".
+  static bool isBpmUnit(int unit, {String? unitString}) {
+    return ParameterUnits.isBpmUnit(unit, unitString, _currentScheme);
+  }
+
+  /// Get all registered rules for current scheme (for debugging/testing)
   static List<ParameterEditorRule> get rules => List.unmodifiable(_rules);
 
-  /// Add a custom rule (for extensions or testing)
-  static void addRule(ParameterEditorRule rule) {
-    _rules.add(rule);
-  }
+  /// Get legacy rules (for testing)
+  static List<ParameterEditorRule> get legacyRules =>
+      List.unmodifiable(_legacyRules);
 
-  /// Clear all rules (for testing)
-  static void clearRules() {
-    _rules.clear();
-  }
+  /// Get modern rules (for testing)
+  static List<ParameterEditorRule> get modernRules =>
+      List.unmodifiable(_modernRules);
 }

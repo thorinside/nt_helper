@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 import 'package:nt_helper/util/parameter_page_assigner.dart';
 
@@ -284,11 +285,10 @@ class _ParameterPageContent extends StatelessWidget {
             final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
             final safeValueString = valueString ?? ParameterValueString.filler();
 
-            // For string-type parameters (units 13, 14, 17), don't fetch unit
+            // For string-type parameters, don't fetch unit - they use value strings
+            // The registry handles firmware version differences automatically
             final shouldShowUnit =
-                parameter.unit != 13 &&
-                parameter.unit != 14 &&
-                parameter.unit != 17;
+                !ParameterEditorRegistry.isStringTypeUnit(parameter.unit);
             final unit = shouldShowUnit ? parameter.getUnitString(unitStrings) : null;
 
             // Use the familiar ParameterEditorView widget

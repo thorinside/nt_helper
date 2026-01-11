@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/widgets/parameter_view_row.dart';
 
 class ParameterEditorView extends StatelessWidget {
@@ -25,12 +26,10 @@ class ParameterEditorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // For string-type parameters (units 13, 14, 17), don't pass unit
-    // These parameters rely entirely on value strings or raw values
+    // For string-type parameters, don't pass unit - they use value strings
+    // The registry handles firmware version differences automatically
     final shouldShowUnit =
-        parameterInfo.unit != 13 &&
-        parameterInfo.unit != 14 &&
-        parameterInfo.unit != 17;
+        !ParameterEditorRegistry.isStringTypeUnit(parameterInfo.unit);
 
     // Check if we have a complete set of enum strings (all non-empty)
     // Partial enums (e.g., ["Off", "", "", ...]) should not be treated as dropdowns
@@ -47,13 +46,13 @@ class ParameterEditorView extends StatelessWidget {
         enumStrings.values[value.value].isNotEmpty;
 
     // Determine the display string to use
-    // For partial enums (like unit 14), prefer enum string over valueString,
+    // For partial enums (like unit 16 file/folder), prefer enum string over valueString,
     // but only if the enum string is non-empty
-    // For unit 14: only use valueString if value is 0 (the only value with a valid string "Off")
+    // For unit 16: only use valueString if value is 0 (the only value with a valid string "Off")
     // Otherwise show raw integer for values 1-6
     final effectiveDisplayString = currentValueHasEnumString
         ? enumStrings.values[value.value]
-        : (parameterInfo.unit == 14
+        : (parameterInfo.unit == 16
               ? (value.value == 0 && valueString.value.isNotEmpty
                     ? valueString.value
                     : null)
@@ -79,6 +78,7 @@ class ParameterEditorView extends StatelessWidget {
           ? value.value
           : parameterInfo.defaultValue,
       unit: shouldShowUnit ? unit : null,
+      parameterUnit: parameterInfo.unit,
       mappingData: mapping?.packedMappingData,
       slot: slot,
       isDisabled: value.isDisabled,

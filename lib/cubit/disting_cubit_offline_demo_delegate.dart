@@ -15,6 +15,8 @@ class _OfflineDemoDelegate {
         await mockManager.requestVersionString() ?? "Demo Error";
     final firmwareVersion = FirmwareVersion(distingVersion);
     _cubit._lastKnownFirmwareVersion = firmwareVersion;
+    // Set the parameter unit scheme based on firmware version
+    ParameterEditorRegistry.setFirmwareVersion(firmwareVersion);
     final presetName =
         await mockManager.requestPresetName() ?? "Demo Preset Error";
     final algorithms = await _cubit._fetchMockAlgorithms(mockManager);

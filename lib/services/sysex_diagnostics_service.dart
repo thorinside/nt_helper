@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/ui/parameter_editor_registry.dart';
 
 class DeviceContext {
   final int totalAlgorithms;
@@ -132,7 +133,7 @@ class SysExDiagnosticsService {
     }
   }
 
-  /// Find a parameter with supported units (13, 14, 17) for string testing
+  /// Find a parameter with string-type units for string testing
   Future<int?> _findParameterWithStringSupport(
     int slotIndex,
     int maxParams,
@@ -143,7 +144,8 @@ class SysExDiagnosticsService {
           slotIndex,
           paramIndex,
         );
-        if (paramInfo != null && [13, 14, 17].contains(paramInfo.unit)) {
+        if (paramInfo != null &&
+            ParameterEditorRegistry.isStringTypeUnit(paramInfo.unit)) {
           return paramIndex;
         }
       } catch (e) {
@@ -337,7 +339,7 @@ class SysExDiagnosticsService {
           ),
         ]);
 
-        // Only test parameter value strings for parameters that support them (units 13, 14, 17)
+        // Only test parameter value strings for parameters that support them (string-type units)
         final stringParamIndex = await _findParameterWithStringSupport(
           0,
           context.firstAlgorithmParams!,

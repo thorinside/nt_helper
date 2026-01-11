@@ -27,7 +27,9 @@ class _ParameterValueDelegate {
           final currentSlot = syncstate.slots[algorithmIndex];
           final needsStringUpdate =
               parameterNumber < currentSlot.parameters.length &&
-              [13, 14, 17].contains(currentSlot.parameters[parameterNumber].unit);
+              ParameterEditorRegistry.isStringTypeUnit(
+                currentSlot.parameters[parameterNumber].unit,
+              );
 
           _cubit._parameterQueue?.updateParameter(
             algorithmIndex: algorithmIndex,
