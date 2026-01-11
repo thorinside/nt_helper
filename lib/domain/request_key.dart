@@ -7,14 +7,16 @@ class RequestKey {
   final int sysExId;
   final DistingNTRespMessageType?
   messageType; // Optional in the case of messages that don't return a value
-  final int? algorithmIndex; // Optional
+  final int? algorithmIndex; // Optional - slot index (0-7)
   final int? parameterNumber; // Optional
+  final int? libraryIndex; // Optional - algorithm library index (0-N)
 
   RequestKey({
     required this.sysExId,
     this.messageType,
     this.algorithmIndex,
     this.parameterNumber,
+    this.libraryIndex,
   });
 
   factory RequestKey.fromDistingNTParsedMessage(DistingNTParsedMessage msg) {
@@ -106,13 +108,14 @@ class RequestKey {
           sysExId == other.sysExId &&
           messageType == other.messageType &&
           algorithmIndex == other.algorithmIndex &&
-          parameterNumber == other.parameterNumber;
+          parameterNumber == other.parameterNumber &&
+          libraryIndex == other.libraryIndex;
 
   @override
   int get hashCode =>
-      Object.hash(sysExId, messageType, algorithmIndex, parameterNumber);
+      Object.hash(sysExId, messageType, algorithmIndex, parameterNumber, libraryIndex);
 
   @override
   String toString() =>
-      "RequestKey(sysExId: $sysExId, algorithmIndex: $algorithmIndex, propertyIndex: $parameterNumber, messageType: $messageType)";
+      "RequestKey(sysExId: $sysExId, algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, libraryIndex: $libraryIndex, messageType: $messageType)";
 }

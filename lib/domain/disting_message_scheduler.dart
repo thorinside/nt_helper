@@ -275,7 +275,7 @@ class DistingMessageScheduler {
   void _recordRtt(
     Duration rtt,
     DistingNTRespMessageType messageType, {
-    int? algorithmIndex,
+    int? libraryIndex,
   }) {
     // Update overall stats
     _totalRequestsCompleted++;
@@ -288,14 +288,14 @@ class DistingMessageScheduler {
     _rttByMessageType.putIfAbsent(messageType, () => _RttStats());
     _rttByMessageType[messageType]!.record(rtt);
 
-    // Track slow Algorithm Info requests by algorithm index
+    // Track slow Algorithm Info requests by library index
     if (messageType == DistingNTRespMessageType.respAlgorithmInfo &&
-        algorithmIndex != null &&
+        libraryIndex != null &&
         rtt > _slowThreshold) {
-      // Keep the slowest time for each algorithm index
-      final existing = _slowAlgorithmInfoByIndex[algorithmIndex];
+      // Keep the slowest time for each library index
+      final existing = _slowAlgorithmInfoByIndex[libraryIndex];
       if (existing == null || rtt > existing) {
-        _slowAlgorithmInfoByIndex[algorithmIndex] = rtt;
+        _slowAlgorithmInfoByIndex[libraryIndex] = rtt;
       }
     }
   }
@@ -794,7 +794,7 @@ class DistingMessageScheduler {
       _recordRtt(
         rtt,
         parsed.messageType,
-        algorithmIndex: request.key.algorithmIndex,
+        libraryIndex: request.key.libraryIndex,
       );
 
       // Parse and complete the response

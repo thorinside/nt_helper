@@ -186,6 +186,7 @@ class DistingMidiManager implements IDistingMidiManager {
     final key = RequestKey(
       sysExId: sysExId,
       messageType: DistingNTRespMessageType.respAlgorithmInfo,
+      libraryIndex: algorithmIndex,
     );
     return await _scheduler.sendRequest<AlgorithmInfo>(
       packet,

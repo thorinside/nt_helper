@@ -153,6 +153,22 @@ class _AlgorithmLibraryDelegate {
     IDistingMidiManager manager,
     int numAlgorithms,
   ) async {
+    // Try cache first
+    final cacheFreshnessDays = SettingsService().algorithmCacheDays;
+    final cachedAlgorithms = await _cubit._metadataDao.getAlgorithmInfoCache(
+      numAlgorithms,
+      cacheFreshnessDays: cacheFreshnessDays,
+    );
+    if (cachedAlgorithms != null && cachedAlgorithms.length == numAlgorithms) {
+      // Cache hit - update state with cached data
+      final currentState = _cubit.state;
+      if (currentState is DistingStateSynchronized && !currentState.offline) {
+        _cubit._emitState(currentState.copyWith(algorithms: cachedAlgorithms));
+      }
+      return;
+    }
+
+    // Cache miss - fetch from device
     final List<AlgorithmInfo> factoryResults = [];
     final List<AlgorithmInfo> communityResults = [];
 
