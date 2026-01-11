@@ -167,19 +167,25 @@ class _ConnectionDelegate {
     try {
       // --- Fetch ALL data from device REGARDLESS ---
 
-      // Start background algorithm loading (slots will have their own algorithm info)
+      // Load algorithm library (try cache first for fast startup)
       List<AlgorithmInfo> algorithms = [];
       int numInPreset = 0;
+      int numAlgorithms = 0;
       try {
-        final numAlgorithms = await distingManager.requestNumberOfAlgorithms() ?? 0;
+        numAlgorithms = await distingManager.requestNumberOfAlgorithms() ?? 0;
         numInPreset = await distingManager.requestNumAlgorithmsInPreset() ?? 0;
 
-        // Start background loading for ALL algorithms (slots contain their own algorithm info for UI)
+        // Try to load cached algorithms synchronously for fast startup
         if (numAlgorithms > 0) {
-          _cubit._algorithmLibraryDelegate.loadAllAlgorithmsInBackground(
-            distingManager,
+          final cacheFreshnessDays = SettingsService().algorithmCacheDays;
+          final cachedAlgorithms = await _cubit._metadataDao.getAlgorithmInfoCache(
             numAlgorithms,
+            cacheFreshnessDays: cacheFreshnessDays,
           );
+          if (cachedAlgorithms != null && cachedAlgorithms.length == numAlgorithms) {
+            // Cache hit - use cached data immediately
+            algorithms = cachedAlgorithms;
+          }
         }
       } catch (e, stackTrace) {
         debugPrintStack(stackTrace: stackTrace);
@@ -210,6 +216,15 @@ class _ConnectionDelegate {
           offline: false,
         ),
       );
+
+      // If cache miss, start background loading for algorithms
+      // (now that we're in synchronized state, background loading can update state)
+      if (algorithms.isEmpty && numAlgorithms > 0) {
+        _cubit._algorithmLibraryDelegate.loadAllAlgorithmsInBackground(
+          distingManager,
+          numAlgorithms,
+        );
+      }
 
       // Start background retry processing for any failed parameter requests
       if (_cubit._parameterFetchDelegate.hasQueuedRetries) {
