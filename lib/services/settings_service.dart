@@ -24,6 +24,9 @@ class SettingsService {
   // SharedPreferences instance
   SharedPreferences? _prefs;
 
+  /// Notifier for CPU monitor enabled state changes
+  final cpuMonitorEnabledNotifier = ValueNotifier<bool>(defaultCpuMonitorEnabled);
+
   // Keys for storing settings
   static const String _requestTimeoutKey = 'request_timeout_ms';
   static const String _interMessageDelayKey = 'inter_message_delay_ms';
@@ -40,6 +43,7 @@ class SettingsService {
   static const String _showDebugPanelKey = 'show_debug_panel';
   static const String _showContextualHelpKey = 'show_contextual_help';
   static const String _algorithmCacheDaysKey = 'algorithm_cache_days';
+  static const String _cpuMonitorEnabledKey = 'cpu_monitor_enabled';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -60,10 +64,13 @@ class SettingsService {
   static const bool defaultShowDebugPanel = true;
   static const bool defaultShowContextualHelp = true;
   static const int defaultAlgorithmCacheDays = 2;
+  static const bool defaultCpuMonitorEnabled = true;
 
   /// Initialize the settings service
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    // Initialize notifier with stored value
+    cpuMonitorEnabledNotifier.value = cpuMonitorEnabled;
   }
 
   /// Get the request timeout in milliseconds
@@ -192,6 +199,19 @@ class SettingsService {
     return await _prefs?.setInt(_algorithmCacheDaysKey, value) ?? false;
   }
 
+  /// Check if CPU monitor is enabled
+  bool get cpuMonitorEnabled =>
+      _prefs?.getBool(_cpuMonitorEnabledKey) ?? defaultCpuMonitorEnabled;
+
+  /// Set whether CPU monitor is enabled
+  Future<bool> setCpuMonitorEnabled(bool value) async {
+    final result = await _prefs?.setBool(_cpuMonitorEnabledKey, value) ?? false;
+    if (result) {
+      cpuMonitorEnabledNotifier.value = value;
+    }
+    return result;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
@@ -208,6 +228,7 @@ class SettingsService {
     await setShowDebugPanel(defaultShowDebugPanel);
     await setShowContextualHelp(defaultShowContextualHelp);
     await setAlgorithmCacheDays(defaultAlgorithmCacheDays);
+    await setCpuMonitorEnabled(defaultCpuMonitorEnabled);
   }
 }
 
@@ -233,6 +254,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _startPagesCollapsed;
   late bool _showDebugPanel;
   late bool _showContextualHelp;
+  late bool _cpuMonitorEnabled;
 
   @override
   void initState() {
@@ -252,6 +274,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _startPagesCollapsed = settings.startPagesCollapsed;
       _showDebugPanel = settings.showDebugPanel;
       _showContextualHelp = settings.showContextualHelp;
+      _cpuMonitorEnabled = settings.cpuMonitorEnabled;
     });
   }
 
@@ -273,6 +296,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setStartPagesCollapsed(_startPagesCollapsed);
       await settings.setShowDebugPanel(_showDebugPanel);
       await settings.setShowContextualHelp(_showContextualHelp);
+      await settings.setCpuMonitorEnabled(_cpuMonitorEnabled);
 
       if (mounted) {
         Navigator.of(
@@ -445,6 +469,24 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       onChanged: (value) {
                         setState(() {
                           _hapticsEnabled = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    // CPU monitor enabled setting
+                    SwitchListTile(
+                      title: Text(
+                        'Enable CPU Monitor',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                        'Show CPU usage in toolbar (disabling reduces MIDI traffic)',
+                      ),
+                      value: _cpuMonitorEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _cpuMonitorEnabled = value;
                         });
                       },
                       contentPadding: EdgeInsets.zero,

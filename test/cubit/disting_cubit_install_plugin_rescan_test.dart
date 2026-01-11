@@ -49,6 +49,8 @@ void main() {
         .thenReturn(mockPluginInstallationsDao);
     when(() => mockMetadataDao.hasCachedAlgorithms())
         .thenAnswer((_) async => false);
+    when(() => mockMetadataDao.invalidateAlgorithmInfoCache())
+        .thenAnswer((_) async {});
     when(
       () => mockPluginInstallationsDao.recordPluginByPath(
         installationPath: any(named: 'installationPath'),

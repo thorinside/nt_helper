@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/services/settings_service.dart';
 
 /// A compact CPU monitor widget that displays CPU usage information.
 /// Shows the two main CPU usage numbers with a tooltip containing slot breakdown.
@@ -36,42 +37,55 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DistingCubit, DistingState>(
-      builder: (context, state) {
-        // Only show CPU monitor when connected to a physical device
-        final shouldShow =
-            state is DistingStateSynchronized && !state.offline && !state.demo;
-
-        if (!shouldShow) {
-          // Pause monitoring when not showing
+    // Listen to CPU monitor setting changes
+    return ValueListenableBuilder<bool>(
+      valueListenable: SettingsService().cpuMonitorEnabledNotifier,
+      builder: (context, cpuMonitorEnabled, _) {
+        // Check if CPU monitor is disabled in settings
+        if (!cpuMonitorEnabled) {
           _updateVisibility(false);
           return const SizedBox.shrink();
         }
 
-        // Resume monitoring when visible
-        _updateVisibility(true);
+        return BlocBuilder<DistingCubit, DistingState>(
+          builder: (context, state) {
+            // Only show CPU monitor when connected to a physical device
+            final shouldShow = state is DistingStateSynchronized &&
+                !state.offline &&
+                !state.demo;
 
-        return StreamBuilder<CpuUsage>(
-          stream: _distingCubit.cpuUsageStream,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              // Show placeholder while loading
-              return _buildCpuDisplay(
-                context: context,
-                cpu1: null,
-                cpu2: null,
-                slotUsages: [],
-                isLoading: true,
-              );
+            if (!shouldShow) {
+              // Pause monitoring when not showing
+              _updateVisibility(false);
+              return const SizedBox.shrink();
             }
 
-            final cpuUsage = snapshot.data!;
-            return _buildCpuDisplay(
-              context: context,
-              cpu1: cpuUsage.cpu1,
-              cpu2: cpuUsage.cpu2,
-              slotUsages: cpuUsage.slotUsages,
-              isLoading: false,
+            // Resume monitoring when visible
+            _updateVisibility(true);
+
+            return StreamBuilder<CpuUsage>(
+              stream: _distingCubit.cpuUsageStream,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  // Show placeholder while loading
+                  return _buildCpuDisplay(
+                    context: context,
+                    cpu1: null,
+                    cpu2: null,
+                    slotUsages: [],
+                    isLoading: true,
+                  );
+                }
+
+                final cpuUsage = snapshot.data!;
+                return _buildCpuDisplay(
+                  context: context,
+                  cpu1: cpuUsage.cpu1,
+                  cpu2: cpuUsage.cpu2,
+                  slotUsages: cpuUsage.slotUsages,
+                  isLoading: false,
+                );
+              },
             );
           },
         );
