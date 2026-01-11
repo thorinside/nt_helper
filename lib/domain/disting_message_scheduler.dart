@@ -16,6 +16,7 @@ import 'dart:typed_data';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 
 // Domain classes
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/domain/sysex/response_factory.dart';
 import 'package:nt_helper/domain/sysex/sysex_parser.dart';
@@ -62,6 +63,9 @@ class _ScheduledRequest {
   int attemptCount = 0;
   Timer? timeoutTimer;
 
+  /// Stopwatch to measure round-trip time from send to response
+  final Stopwatch stopwatch = Stopwatch();
+
   void startTimeout(void Function() onTimeout) {
     timeoutTimer?.cancel();
     if (expectation != ResponseExpectation.none) {
@@ -70,6 +74,45 @@ class _ScheduledRequest {
   }
 
   void dispose() => timeoutTimer?.cancel();
+}
+
+// -----------------------------------------------------------------------------
+// RTT Statistics per message type
+// -----------------------------------------------------------------------------
+
+class _RttStats {
+  int count = 0;
+  int timeouts = 0;
+  Duration total = Duration.zero;
+  Duration min = const Duration(days: 1);
+  Duration max = Duration.zero;
+  Duration? last;
+
+  void record(Duration rtt) {
+    count++;
+    total += rtt;
+    last = rtt;
+    if (rtt < min) min = rtt;
+    if (rtt > max) max = rtt;
+  }
+
+  void recordTimeout() {
+    timeouts++;
+  }
+
+  double get avgMs => count > 0 ? total.inMicroseconds / count / 1000 : 0;
+  double get minMs => count > 0 ? min.inMicroseconds / 1000 : 0;
+  double get maxMs => count > 0 ? max.inMicroseconds / 1000 : 0;
+  double get lastMs => last != null ? last!.inMicroseconds / 1000 : 0;
+
+  Map<String, dynamic> toJson() => {
+        'count': count,
+        'timeouts': timeouts,
+        'avgMs': avgMs.toStringAsFixed(2),
+        'minMs': minMs.toStringAsFixed(2),
+        'maxMs': maxMs.toStringAsFixed(2),
+        'lastMs': lastMs.toStringAsFixed(2),
+      };
 }
 
 // -----------------------------------------------------------------------------
@@ -134,6 +177,21 @@ class DistingMessageScheduler {
   bool _subscriptionActive = true;
   String? _lastSubscriptionError;
 
+  // RTT (Round-Trip Time) tracking - overall stats
+  int _totalRequestsCompleted = 0;
+  int _totalRequestsTimedOut = 0;
+  Duration _totalRtt = Duration.zero;
+  Duration _minRtt = const Duration(days: 1); // Start high
+  Duration _maxRtt = Duration.zero;
+  Duration? _lastRtt;
+
+  // RTT tracking per message type
+  final Map<DistingNTRespMessageType, _RttStats> _rttByMessageType = {};
+
+  // Track slow Algorithm Info requests by algorithm index (for debugging)
+  static const Duration _slowThreshold = Duration(milliseconds: 50);
+  final Map<int, Duration> _slowAlgorithmInfoByIndex = {};
+
   // Consecutive timeout tracking for stream health detection
   int _consecutiveTimeouts = 0;
   static const int _maxConsecutiveTimeoutsBeforeRecovery = 3;
@@ -163,6 +221,10 @@ class DistingMessageScheduler {
         ? now.difference(_lastPacketTime!).inMilliseconds
         : -1;
 
+    final avgRttMs = _totalRequestsCompleted > 0
+        ? (_totalRtt.inMicroseconds / _totalRequestsCompleted / 1000).toStringAsFixed(2)
+        : 'N/A';
+
     return {
       'subscriptionActive': _subscriptionActive,
       'lastSubscriptionError': _lastSubscriptionError,
@@ -175,7 +237,77 @@ class DistingMessageScheduler {
       'queueLength': _queue.length,
       'hasCurrentRequest': _currentRequest != null,
       'currentRequestCompleted': _currentRequest?.completer.isCompleted ?? false,
+      // RTT statistics
+      'rttRequestsCompleted': _totalRequestsCompleted,
+      'rttRequestsTimedOut': _totalRequestsTimedOut,
+      'rttLastMs': _lastRtt?.inMicroseconds != null
+          ? (_lastRtt!.inMicroseconds / 1000).toStringAsFixed(2)
+          : 'N/A',
+      'rttAvgMs': avgRttMs,
+      'rttMinMs': _totalRequestsCompleted > 0
+          ? (_minRtt.inMicroseconds / 1000).toStringAsFixed(2)
+          : 'N/A',
+      'rttMaxMs': _totalRequestsCompleted > 0
+          ? (_maxRtt.inMicroseconds / 1000).toStringAsFixed(2)
+          : 'N/A',
     };
+  }
+
+  /// Returns RTT statistics broken down by message type.
+  Map<String, Map<String, dynamic>> getRttStatsByMessageType() {
+    final result = <String, Map<String, dynamic>>{};
+    for (final entry in _rttByMessageType.entries) {
+      result[entry.key.name] = entry.value.toJson();
+    }
+    return result;
+  }
+
+  /// Returns slow Algorithm Info requests by algorithm index.
+  /// Only includes requests that exceeded the slow threshold (50ms).
+  /// Returns map of algorithmIndex -> duration in milliseconds.
+  Map<int, double> getSlowAlgorithmInfo() {
+    return _slowAlgorithmInfoByIndex.map(
+      (index, duration) => MapEntry(index, duration.inMicroseconds / 1000),
+    );
+  }
+
+  /// Records an RTT measurement for both overall and per-message-type stats.
+  void _recordRtt(
+    Duration rtt,
+    DistingNTRespMessageType messageType, {
+    int? algorithmIndex,
+  }) {
+    // Update overall stats
+    _totalRequestsCompleted++;
+    _totalRtt += rtt;
+    _lastRtt = rtt;
+    if (rtt < _minRtt) _minRtt = rtt;
+    if (rtt > _maxRtt) _maxRtt = rtt;
+
+    // Update per-message-type stats
+    _rttByMessageType.putIfAbsent(messageType, () => _RttStats());
+    _rttByMessageType[messageType]!.record(rtt);
+
+    // Track slow Algorithm Info requests by algorithm index
+    if (messageType == DistingNTRespMessageType.respAlgorithmInfo &&
+        algorithmIndex != null &&
+        rtt > _slowThreshold) {
+      // Keep the slowest time for each algorithm index
+      final existing = _slowAlgorithmInfoByIndex[algorithmIndex];
+      if (existing == null || rtt > existing) {
+        _slowAlgorithmInfoByIndex[algorithmIndex] = rtt;
+      }
+    }
+  }
+
+  /// Records a timeout for stats tracking.
+  void _recordTimeout(DistingNTRespMessageType? messageType) {
+    _totalRequestsTimedOut++;
+    // Track timeout per message type if known
+    if (messageType != null) {
+      _rttByMessageType.putIfAbsent(messageType, () => _RttStats());
+      _rttByMessageType[messageType]!.recordTimeout();
+    }
   }
 
   /// Attempts to re-establish the MIDI subscription if it's dead.
@@ -400,10 +532,15 @@ class DistingMessageScheduler {
 
     request.attemptCount++;
 
+    // Start/restart stopwatch for RTT measurement
+    request.stopwatch.reset();
+    request.stopwatch.start();
+
     // Send the message
     try {
       _midi.sendData(request.packet, deviceId: _outputDevice.id);
     } catch (e) {
+      request.stopwatch.stop();
       _handleSendFailure(request, e);
       return;
     }
@@ -436,7 +573,9 @@ class DistingMessageScheduler {
     }
 
     if (request.attemptCount >= request.maxRetries) {
-      // Out of retries
+      // Out of retries - record timeout for stats
+      request.stopwatch.stop();
+      _recordTimeout(request.key.messageType);
       _consecutiveTimeouts++;
 
       // Auto-recovery: after consecutive timeouts, reset MIDI state (buffers, subscription)
@@ -648,6 +787,15 @@ class DistingMessageScheduler {
 
       // Successfully matched a response - reset consecutive timeout counter
       _consecutiveTimeouts = 0;
+
+      // Record RTT measurement
+      request.stopwatch.stop();
+      final rtt = request.stopwatch.elapsed;
+      _recordRtt(
+        rtt,
+        parsed.messageType,
+        algorithmIndex: request.key.algorithmIndex,
+      );
 
       // Parse and complete the response
       final response = ResponseFactory.fromMessageType(

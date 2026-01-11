@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/ui/widgets/rtt_stats_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
@@ -36,10 +39,11 @@ class SettingsService {
   static const String _overlaySizeScaleKey = 'overlay_size_scale';
   static const String _showDebugPanelKey = 'show_debug_panel';
   static const String _showContextualHelpKey = 'show_contextual_help';
+  static const String _algorithmCacheDaysKey = 'algorithm_cache_days';
 
   // Default values
-  static const int defaultRequestTimeout = 1000;
-  static const int defaultInterMessageDelay = 50;
+  static const int defaultRequestTimeout = 200;
+  static const int defaultInterMessageDelay = 0;
   static const bool defaultHapticsEnabled = true;
   static const bool defaultMcpEnabled = false;
   static const bool defaultStartPagesCollapsed = false;
@@ -55,6 +59,7 @@ class SettingsService {
   static const double defaultOverlaySizeScale = 1.0;
   static const bool defaultShowDebugPanel = true;
   static const bool defaultShowContextualHelp = true;
+  static const int defaultAlgorithmCacheDays = 2;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -178,6 +183,15 @@ class SettingsService {
     return await _prefs?.setBool(_showContextualHelpKey, value) ?? false;
   }
 
+  /// Get the algorithm cache freshness duration in days
+  int get algorithmCacheDays =>
+      _prefs?.getInt(_algorithmCacheDaysKey) ?? defaultAlgorithmCacheDays;
+
+  /// Set the algorithm cache freshness duration in days
+  Future<bool> setAlgorithmCacheDays(int value) async {
+    return await _prefs?.setInt(_algorithmCacheDaysKey, value) ?? false;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
@@ -193,12 +207,16 @@ class SettingsService {
     await setOverlaySizeScale(defaultOverlaySizeScale);
     await setShowDebugPanel(defaultShowDebugPanel);
     await setShowContextualHelp(defaultShowContextualHelp);
+    await setAlgorithmCacheDays(defaultAlgorithmCacheDays);
   }
 }
 
 /// A dialog to edit application settings
 class SettingsDialog extends StatefulWidget {
-  const SettingsDialog({super.key});
+  final IDistingMidiManager? midiManager;
+  final List<AlgorithmInfo>? algorithms;
+
+  const SettingsDialog({super.key, this.midiManager, this.algorithms});
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
@@ -209,6 +227,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   final _requestTimeoutController = TextEditingController();
   final _interMessageDelayController = TextEditingController();
   final _galleryUrlController = TextEditingController();
+  final _algorithmCacheDaysController = TextEditingController();
   late bool _hapticsEnabled;
   late bool _mcpEnabled;
   late bool _startPagesCollapsed;
@@ -226,6 +245,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _requestTimeoutController.text = settings.requestTimeout.toString();
     _interMessageDelayController.text = settings.interMessageDelay.toString();
     _galleryUrlController.text = settings.galleryUrl;
+    _algorithmCacheDaysController.text = settings.algorithmCacheDays.toString();
     setState(() {
       _hapticsEnabled = settings.hapticsEnabled;
       _mcpEnabled = settings.mcpEnabled;
@@ -245,6 +265,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
         int.parse(_interMessageDelayController.text),
       );
       await settings.setGalleryUrl(_galleryUrlController.text.trim());
+      await settings.setAlgorithmCacheDays(
+        int.parse(_algorithmCacheDaysController.text),
+      );
       await settings.setHapticsEnabled(_hapticsEnabled);
       await settings.setMcpEnabled(_mcpEnabled);
       await settings.setStartPagesCollapsed(_startPagesCollapsed);
@@ -264,6 +287,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _requestTimeoutController.dispose();
     _interMessageDelayController.dispose();
     _galleryUrlController.dispose();
+    _algorithmCacheDaysController.dispose();
     super.dispose();
   }
 
@@ -347,6 +371,64 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         },
                       ),
                     ),
+
+                    const SizedBox(height: 24),
+
+                    // Algorithm cache duration setting
+                    _SettingSection(
+                      title: 'Algorithm Cache Duration',
+                      subtitle: 'How long to cache algorithm info before refreshing',
+                      child: TextFormField(
+                        controller: _algorithmCacheDaysController,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          suffixText: 'days',
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a value';
+                          }
+                          final number = int.tryParse(value);
+                          if (number == null) {
+                            return 'Please enter a valid number';
+                          }
+                          if (number < 0) {
+                            return 'Value must be 0 or greater';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+
+                    // RTT Statistics button
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: widget.midiManager != null
+                          ? () {
+                              context.showRttStatsDialog(
+                                widget.midiManager,
+                                algorithms: widget.algorithms,
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.speed),
+                      label: const Text('View RTT Statistics'),
+                    ),
+                    if (widget.midiManager == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Connect to device to view RTT stats',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ),
 
                     const SizedBox(height: 24),
 
@@ -544,10 +626,16 @@ class _SettingSection extends StatelessWidget {
 
 /// Extension method to easily show the settings dialog
 extension SettingsDialogExtension on BuildContext {
-  Future<bool?> showSettingsDialog() {
+  Future<bool?> showSettingsDialog({
+    IDistingMidiManager? midiManager,
+    List<AlgorithmInfo>? algorithms,
+  }) {
     return showDialog<bool>(
       context: this,
-      builder: (context) => const SettingsDialog(),
+      builder: (context) => SettingsDialog(
+        midiManager: midiManager,
+        algorithms: algorithms,
+      ),
     );
   }
 }

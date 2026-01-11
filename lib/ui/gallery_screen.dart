@@ -9,6 +9,7 @@ import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:nt_helper/ui/widgets/plugin_selection_dialog.dart';
 import 'package:nt_helper/ui/widgets/linkified_text.dart';
@@ -373,7 +374,20 @@ class _GalleryViewState extends State<_GalleryView>
         ),
         IconButton(
           icon: const Icon(Icons.settings),
-          onPressed: () => context.showSettingsDialog(),
+          onPressed: () {
+            // Get the midi manager and algorithms for RTT stats if connected
+            IDistingMidiManager? midiManager;
+            List<AlgorithmInfo>? algorithms;
+            final state = widget.distingCubit.state;
+            if (state is DistingStateSynchronized && !state.offline) {
+              midiManager = widget.distingCubit.requireDisting();
+              algorithms = state.algorithms;
+            }
+            context.showSettingsDialog(
+              midiManager: midiManager,
+              algorithms: algorithms,
+            );
+          },
           tooltip: 'Settings',
         ),
       ],

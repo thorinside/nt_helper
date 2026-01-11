@@ -1344,6 +1344,16 @@ class MockDistingMidiManager implements IDistingMidiManager {
       );
     }
   }
+
+  // Diagnostics not available in mock mode
+  @override
+  Map<String, dynamic>? getSchedulerDiagnostics() => null;
+
+  @override
+  Map<String, Map<String, dynamic>>? getRttStatsByMessageType() => null;
+
+  @override
+  Map<int, double>? getSlowAlgorithmInfo() => null;
 }
 
 // --- Private State Class ---

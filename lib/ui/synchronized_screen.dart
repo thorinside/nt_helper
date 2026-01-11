@@ -1273,8 +1273,21 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             onTap: widget.loading
                 ? null
                 : () async {
+                    // Get the midi manager and algorithms for RTT stats
+                    final cubit = popupCtx.read<DistingCubit>();
+                    final state = cubit.state;
+                    final midiManager = state is DistingStateSynchronized &&
+                            !state.offline
+                        ? cubit.requireDisting()
+                        : null;
+                    final algorithms = state is DistingStateSynchronized
+                        ? state.algorithms
+                        : null;
                     // Original call to show the dialog
-                    final result = await popupCtx.showSettingsDialog();
+                    final result = await popupCtx.showSettingsDialog(
+                      midiManager: midiManager,
+                      algorithms: algorithms,
+                    );
 
                     // Logic copied and adapted from _DistingPageState._handleSettingsDialog
                     if (result == true && popupCtx.mounted) {

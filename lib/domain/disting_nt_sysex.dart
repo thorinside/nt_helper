@@ -45,6 +45,22 @@ class Specification {
     required this.type,
   });
 
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'min': min,
+        'max': max,
+        'defaultValue': defaultValue,
+        'type': type,
+      };
+
+  factory Specification.fromJson(Map<String, dynamic> json) => Specification(
+        name: json['name'] as String,
+        min: json['min'] as int,
+        max: json['max'] as int,
+        defaultValue: json['defaultValue'] as int,
+        type: json['type'] as int,
+      );
+
   @override
   String toString() {
     return "Specification: min=$min, max=$max, defaultValue=$defaultValue, type=$type";
@@ -326,6 +342,28 @@ class AlgorithmInfo {
   int get numSpecifications {
     return specifications.length;
   }
+
+  Map<String, dynamic> toJson() => {
+        'algorithmIndex': algorithmIndex,
+        'name': name,
+        'guid': guid,
+        'specifications': specifications.map((s) => s.toJson()).toList(),
+        'isPlugin': isPlugin,
+        'isLoaded': isLoaded,
+        'filename': filename,
+      };
+
+  factory AlgorithmInfo.fromJson(Map<String, dynamic> json) => AlgorithmInfo(
+        algorithmIndex: json['algorithmIndex'] as int,
+        name: json['name'] as String,
+        guid: json['guid'] as String,
+        specifications: (json['specifications'] as List)
+            .map((s) => Specification.fromJson(s as Map<String, dynamic>))
+            .toList(),
+        isPlugin: json['isPlugin'] as bool? ?? false,
+        isLoaded: json['isLoaded'] as bool? ?? true,
+        filename: json['filename'] as String?,
+      );
 
   @override
   String toString() {

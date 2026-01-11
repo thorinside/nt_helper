@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
@@ -153,7 +155,24 @@ class _DistingPageState extends State<DistingPage> {
     settings.mcpEnabled;
     mcpInstance.isRunning;
 
-    final result = await context.showSettingsDialog();
+    // Get the midi manager and algorithms for RTT stats if connected
+    IDistingMidiManager? midiManager;
+    List<AlgorithmInfo>? algorithms;
+    try {
+      final cubit = context.read<DistingCubit>();
+      final state = cubit.state;
+      if (state is DistingStateSynchronized && !state.offline) {
+        midiManager = cubit.requireDisting();
+        algorithms = state.algorithms;
+      }
+    } catch (_) {
+      // Cubit not available
+    }
+
+    final result = await context.showSettingsDialog(
+      midiManager: midiManager,
+      algorithms: algorithms,
+    );
 
     if (result == true) {
       // Settings were saved

@@ -12,22 +12,43 @@ class _AlgorithmLibraryDelegate {
   }
 
   // Helper to fetch algorithm info with prioritization (factory first, then community)
+  // Uses cache if available and valid (same numAlgorithms, cache fresh per settings)
   Future<List<AlgorithmInfo>> fetchAlgorithmsWithPriority(
     IDistingMidiManager manager, {
     bool enableBackgroundCommunityLoading = false,
   }) async {
     final numAlgorithms = await manager.requestNumberOfAlgorithms() ?? 0;
 
+    // Try cache first - only if numAlgorithms matches and cache is fresh
+    final cacheFreshnessDays = SettingsService().algorithmCacheDays;
+    final cachedAlgorithms = await _cubit._metadataDao.getAlgorithmInfoCache(
+      numAlgorithms,
+      cacheFreshnessDays: cacheFreshnessDays,
+    );
+    if (cachedAlgorithms != null && cachedAlgorithms.length == numAlgorithms) {
+      // Cache hit - use cached data
+      return cachedAlgorithms;
+    }
+
+    // Cache miss - fetch from device
+    List<AlgorithmInfo> algorithms;
     if (enableBackgroundCommunityLoading) {
       // Optimized approach: only fetch factory algorithms synchronously
-      return _fetchFactoryAlgorithmsAndStartBackgroundLoading(
+      algorithms = await _fetchFactoryAlgorithmsAndStartBackgroundLoading(
         manager,
         numAlgorithms,
       );
     } else {
       // Original approach: fetch all algorithms synchronously with prioritization
-      return _fetchAllAlgorithmsSynchronously(manager, numAlgorithms);
+      algorithms = await _fetchAllAlgorithmsSynchronously(manager, numAlgorithms);
     }
+
+    // Save to cache if we got a complete set
+    if (algorithms.length == numAlgorithms) {
+      await _cubit._metadataDao.saveAlgorithmInfoCache(algorithms, numAlgorithms);
+    }
+
+    return algorithms;
   }
 
   // Optimized method: fetch factory algorithms quickly, queue slow ones for background
@@ -177,7 +198,11 @@ class _AlgorithmLibraryDelegate {
       }
     }
 
-    factoryResults.length + communityResults.length;
+    // Save complete algorithm list to cache
+    final allResults = [...factoryResults, ...communityResults];
+    if (allResults.length == numAlgorithms) {
+      await _cubit._metadataDao.saveAlgorithmInfoCache(allResults, numAlgorithms);
+    }
   }
 
   // Background loading of community plugins with single retry and state merging
@@ -267,6 +292,8 @@ class _AlgorithmLibraryDelegate {
   Future<void> rescanPlugins() async {
     final disting = _cubit.requireDisting();
     await disting.requestRescanPlugins();
+    // Invalidate cache since plugins may have changed
+    await _cubit._metadataDao.invalidateAlgorithmInfoCache();
     refreshAlgorithmsInBackground();
   }
 }

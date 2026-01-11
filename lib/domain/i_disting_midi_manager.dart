@@ -127,4 +127,14 @@ abstract class IDistingMidiManager {
     String backupDirectory, {
     void Function(double progress, String currentFile)? onProgress,
   });
+
+  // Diagnostics (optional - returns null for offline/mock managers)
+  /// Returns overall scheduler diagnostics including RTT stats.
+  Map<String, dynamic>? getSchedulerDiagnostics() => null;
+
+  /// Returns RTT statistics broken down by message type.
+  Map<String, Map<String, dynamic>>? getRttStatsByMessageType() => null;
+
+  /// Returns slow Algorithm Info requests by algorithm index (>50ms).
+  Map<int, double>? getSlowAlgorithmInfo() => null;
 }

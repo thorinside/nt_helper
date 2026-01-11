@@ -371,12 +371,15 @@ class DistingMidiManager implements IDistingMidiManager {
       parameterNumber: parameterNumber,
     );
 
+    // Fire-and-forget: only unit 17 (file paths) responds, unit 13/14 don't.
+    // No retries - accept null gracefully for non-responding params.
+    // Short timeout since real responses arrive in ~1-2ms.
     return await _scheduler.sendRequest<ParameterValueString>(
       packet,
       key,
       responseExpectation: ResponseExpectation.optional,
-      timeout: const Duration(milliseconds: 100),
-      maxRetries: 1,
+      timeout: const Duration(milliseconds: 20),
+      maxRetries: 0,
     );
   }
 
@@ -810,9 +813,9 @@ class DistingMidiManager implements IDistingMidiManager {
       algorithmIndex: algorithmIndex,
     );
     return _scheduler.sendRequest<RoutingInfo>(
-      maxRetries: 10,
-      timeout: Duration(milliseconds: 2500),
-      retryDelay: Duration(milliseconds: 250),
+      maxRetries: 5,
+      timeout: Duration(milliseconds: 500),
+      retryDelay: Duration(milliseconds: 50),
       packet,
       key,
       responseExpectation: ResponseExpectation.optional,
@@ -911,8 +914,8 @@ class DistingMidiManager implements IDistingMidiManager {
     );
     return _scheduler.sendRequest<ParameterPages>(
       maxRetries: 5,
-      timeout: Duration(milliseconds: 30000),
-      retryDelay: Duration(milliseconds: 250),
+      timeout: Duration(milliseconds: 500),
+      retryDelay: Duration(milliseconds: 50),
       packet,
       key,
       responseExpectation: ResponseExpectation.required,
@@ -1329,5 +1332,24 @@ class DistingMidiManager implements IDistingMidiManager {
     }
 
     onProgress?.call(1.0, 'Backup completed - $processedFiles files backed up');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Diagnostics
+  // ---------------------------------------------------------------------------
+
+  @override
+  Map<String, dynamic>? getSchedulerDiagnostics() {
+    return _scheduler.getDiagnostics();
+  }
+
+  @override
+  Map<String, Map<String, dynamic>>? getRttStatsByMessageType() {
+    return _scheduler.getRttStatsByMessageType();
+  }
+
+  @override
+  Map<int, double>? getSlowAlgorithmInfo() {
+    return _scheduler.getSlowAlgorithmInfo();
   }
 }

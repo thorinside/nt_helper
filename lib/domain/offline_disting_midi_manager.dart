@@ -993,4 +993,14 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     String backupDirectory, {
     void Function(double progress, String currentFile)? onProgress,
   }) => throw UnsupportedError('Backup not available in offline mode');
+
+  // Diagnostics not available in offline mode
+  @override
+  Map<String, dynamic>? getSchedulerDiagnostics() => null;
+
+  @override
+  Map<String, Map<String, dynamic>>? getRttStatsByMessageType() => null;
+
+  @override
+  Map<int, double>? getSlowAlgorithmInfo() => null;
 }

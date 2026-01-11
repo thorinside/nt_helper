@@ -270,12 +270,15 @@ class _PluginDelegate {
 
     // For C++ plugins (.o files), complete the workflow:
     // - Always rescan plugins to make the new one available
+    // - Invalidate algorithm info cache since plugin list changed
     // - If we did the preset dance (plugin was in use), reload the original preset
     if (extension == 'o') {
       try {
         // Brief delay to allow hardware to finish file operations
         await Future.delayed(const Duration(milliseconds: 200));
         await disting.requestRescanPlugins();
+        // Invalidate algorithm info cache since plugins changed
+        await _cubit._metadataDao.invalidateAlgorithmInfoCache();
 
         // Only reload preset if we did the preset dance (plugin was in use)
         if (savedPresetName != null) {

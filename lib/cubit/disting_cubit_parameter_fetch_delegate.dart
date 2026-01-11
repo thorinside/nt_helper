@@ -373,7 +373,9 @@ class _ParameterFetchDelegate {
           }
         },
       ),
-      // Value strings
+      // Value strings - fire-and-forget, no retries
+      // Only unit 17 (file paths) actually responds; unit 13/14 (bus selectors) don't.
+      // We accept null gracefully rather than retrying, matching reference implementation.
       _forEachLimited(
         Iterable<int>.generate(
           numParams,
@@ -386,24 +388,10 @@ class _ParameterFetchDelegate {
             );
             valueStrings[param] =
                 valueStringResult ?? ParameterValueString.filler();
-            if (valueStringResult == null) {
-              _queueParameterRetry(
-                _ParameterRetryRequest(
-                  slotIndex: algorithmIndex,
-                  paramIndex: param,
-                  type: _ParameterRetryType.valueStrings,
-                ),
-              );
-            }
+            // No retry - unit 13/14 params don't respond, only unit 17 does
           } catch (e) {
             valueStrings[param] = ParameterValueString.filler();
-            _queueParameterRetry(
-              _ParameterRetryRequest(
-                slotIndex: algorithmIndex,
-                paramIndex: param,
-                type: _ParameterRetryType.valueStrings,
-              ),
-            );
+            // No retry on exception either
           }
         },
       ),
