@@ -35,6 +35,9 @@ enum ParameterUnitScheme {
 
 /// Unit constants for each firmware scheme
 class ParameterUnits {
+  // Common across all firmware versions
+  static const int enum_ = 1; // kNT_unitEnum - enumStrings must also be provided
+
   // Legacy firmware (≤1.12)
   static const int legacyFilePath = 13;
   static const int legacyFileFolder = 14;
@@ -444,21 +447,39 @@ class ParameterEditorRegistry {
       description: 'Three Pot program selection',
     ),
 
-    // Wavetable
+    // Wavetable - unit 16 (kNT_unitHasStrings)
     ParameterEditorRule(
       algorithmGuid: 'vcot',
       parameterNamePattern: r'.*[Ww]avetable.*',
       unit: ParameterUnits.modernHasStrings,
       baseDirectory: '/wavetables',
       mode: FileSelectionMode.folderOnly,
-      description: 'VCO Wavetable folder selection',
+      description: 'VCO Wavetable folder selection (hasStrings)',
     ),
     ParameterEditorRule(
       parameterNamePattern: r'.*[Ww]avetable.*',
       unit: ParameterUnits.modernHasStrings,
       baseDirectory: '/wavetables',
       mode: FileSelectionMode.folderOnly,
-      description: 'Wavetable folder selection',
+      description: 'Wavetable folder selection (hasStrings)',
+    ),
+
+    // Wavetable - unit 1 (kNT_unitEnum)
+    // Some algorithms (e.g., Dream Machine) use enum unit for wavetables
+    ParameterEditorRule(
+      algorithmGuid: 'vcot',
+      parameterNamePattern: r'.*[Ww]avetable.*',
+      unit: ParameterUnits.enum_,
+      baseDirectory: '/wavetables',
+      mode: FileSelectionMode.folderOnly,
+      description: 'VCO Wavetable folder selection (enum)',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'.*[Ww]avetable.*',
+      unit: ParameterUnits.enum_,
+      baseDirectory: '/wavetables',
+      mode: FileSelectionMode.folderOnly,
+      description: 'Wavetable folder selection (enum)',
     ),
 
     // Multisample
