@@ -120,8 +120,10 @@ public class UsbVideoCapturePlugin: NSObject, FlutterPlugin, FlutterStreamHandle
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Stop any existing session
-            self.stopVideoStream()
+            // Stop any existing session (must be synchronous on sessionQueue to
+            // avoid racing with the new session we are about to create).
+            self.stopVideoStreamLocked()
+            self.nextFrameTime = 0
             
             // Create new capture session
             self.captureSession = AVCaptureSession()
@@ -210,8 +212,8 @@ public class UsbVideoCapturePlugin: NSObject, FlutterPlugin, FlutterStreamHandle
                 print("[UsbVideoCapturePlugin] Event sink available: \(self.eventSink != nil)")
                 
                 // Add a small delay before starting - some UVC cameras need this
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    // Start capture
+                self.sessionQueue.asyncAfter(deadline: .now() + 0.1) {
+                    guard self.captureSession === captureSession else { return }
                     captureSession.startRunning()
                     print("[UsbVideoCapturePlugin] Session started running, isRunning: \(captureSession.isRunning)")
                 }
@@ -298,10 +300,15 @@ public class UsbVideoCapturePlugin: NSObject, FlutterPlugin, FlutterStreamHandle
     
     private func stopVideoStream() {
         sessionQueue.async { [weak self] in
-            self?.captureSession?.stopRunning()
-            self?.captureSession = nil
-            self?.videoOutput = nil
+            self?.stopVideoStreamLocked()
         }
+    }
+
+    private func stopVideoStreamLocked() {
+        captureSession?.stopRunning()
+        captureSession = nil
+        videoOutput = nil
+        nextFrameTime = 0
     }
     
     // MARK: - FlutterStreamHandler
@@ -333,6 +340,13 @@ extension UsbVideoCapturePlugin: AVCaptureVideoDataOutputSampleBufferDelegate {
     public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         // Throttle frame rate to TARGET_FPS
         let currentTime = CACurrentMediaTime()
+
+        // Drop a short warm-up window after (re)start to avoid occasional
+        // unstable first frames from some UVC devices.
+        if nextFrameTime == 0 {
+            nextFrameTime = currentTime + 0.1
+            return
+        }
 
         // Check if enough time has passed since we last sent a frame
         guard currentTime >= nextFrameTime else {

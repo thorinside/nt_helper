@@ -113,6 +113,10 @@ class UsbVideoManager {
       // Stop any recovery timer since we're now connected
       _stopRecoveryTimer();
 
+      // Treat the stream as "alive" from now so a missing first-frame is
+      // detected as a stall by the watchdog.
+      _lastFrameReceivedTime = DateTime.now();
+
       // Start stall watchdog to detect if frames stop coming
       _startStallWatchdog();
 
