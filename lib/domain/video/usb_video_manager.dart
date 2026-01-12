@@ -174,16 +174,9 @@ class UsbVideoManager {
     if (distingNT != null) {
       await connectToDevice(distingNT.deviceId);
     } else {
-      // Try to find any USB camera as fallback
-      final devices = await listUsbCameras();
-
-      if (devices.isNotEmpty) {
-        await connectToDevice(devices.first.deviceId);
-      } else {
-        _updateState(
-          const VideoStreamState.error('No USB video devices found'),
-        );
-      }
+      _updateState(
+        const VideoStreamState.error('Disting NT video not found'),
+      );
     }
   }
 
@@ -214,11 +207,11 @@ class UsbVideoManager {
         ),
       );
 
-      // Try to reconnect to the last known device first
+      // Try to reconnect to the last known device if it's still a Disting NT
       if (_lastConnectedDeviceId != null) {
         final devices = await listUsbCameras();
         final targetDevice = devices
-            .where((d) => d.deviceId == _lastConnectedDeviceId)
+            .where((d) => d.deviceId == _lastConnectedDeviceId && d.isDistingNT)
             .firstOrNull;
 
         if (targetDevice != null) {
@@ -227,7 +220,7 @@ class UsbVideoManager {
         }
       }
 
-      // Fallback: try to find any Disting NT or USB camera
+      // Fallback: try to find any Disting NT
       await autoConnect();
 
       // If still in error state after autoConnect, schedule another attempt
