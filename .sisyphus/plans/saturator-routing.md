@@ -547,12 +547,12 @@ TODO 13 (final verification)
 - `test/core/routing/clock_euclidean_es5_test.dart:217-251` - Combined routing + connection test
 
 **Acceptance Criteria**:
-- [ ] Integration test file created: `test/core/routing/saturator_routing_integration_test.dart`
-- [ ] Tests verify `AlgorithmRouting.fromSlot()` returns `SaturatorAlgorithmRouting` for satu guid
-- [ ] Tests verify connection discovery works with Saturator
-- [ ] Tests cover mono (width=1), width>1, and multi-channel scenarios
-- [ ] Tests verify physical output as input source with Saturator
-- [ ] `flutter test test/core/routing/saturator_routing_integration_test.dart` → PASS
+- [x] Integration test file created: `test/core/routing/saturator_routing_integration_test.dart`
+- [x] Tests verify `AlgorithmRouting.fromSlot()` returns `SaturatorAlgorithmRouting` for satu guid
+- [x] Tests verify connection discovery works with Saturator
+- [x] Tests cover mono (width=1), width>1, and multi-channel scenarios
+- [x] Tests verify physical output as input source with Saturator
+- [x] `flutter test test/core/routing/saturator_routing_integration_test.dart` → PASS
 
 **Commit**: YES
 - Message: `test(routing): add Saturator routing integration tests`
