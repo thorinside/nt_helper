@@ -1,7 +1,14 @@
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'models/port.dart';
 import 'multi_channel_algorithm_routing.dart';
 
 /// Routing implementation for Saturator algorithm.
+///
+/// Saturator uses in-place processing where each input bus is also an output bus.
+/// For each channel's Input parameter, we create:
+/// - An input port on the specified bus
+/// - A virtual output port on the same bus with OutputMode.replace
 class SaturatorAlgorithmRouting extends MultiChannelAlgorithmRouting {
   /// The slot containing all algorithm data
   final Slot slot;
@@ -15,4 +22,95 @@ class SaturatorAlgorithmRouting extends MultiChannelAlgorithmRouting {
     required super.config,
     super.validator,
   });
+
+  /// Creates a SaturatorAlgorithmRouting instance from a slot.
+  static SaturatorAlgorithmRouting createFromSlot(
+    Slot slot, {
+    required Map<String, int> ioParameters,
+    Map<String, int>? modeParameters,
+    Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
+    String? algorithmUuid,
+  }) {
+    // Count channels by finding highest channel prefix in parameter names
+    int channelCount = 0;
+    for (final param in slot.parameters) {
+      final match = RegExp(r'^(\d+):').firstMatch(param.name);
+      if (match != null) {
+        final channelNum = int.parse(match.group(1)!);
+        if (channelNum > channelCount) {
+          channelCount = channelNum;
+        }
+      }
+    }
+
+    // Build input and output port lists
+    final inputPorts = <Map<String, Object?>>[];
+    final outputPorts = <Map<String, Object?>>[];
+
+    // Process each channel
+    for (int channel = 1; channel <= channelCount; channel++) {
+      // Find Input parameter for this channel
+      final inputParam = slot.parameters.firstWhere(
+        (p) => p.name == '$channel:Input',
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      if (inputParam.parameterNumber < 0) {
+        continue; // Skip if parameter not found
+      }
+
+      // Get the input bus value
+      final inputBusValue = slot.values
+          .firstWhere(
+            (v) => v.parameterNumber == inputParam.parameterNumber,
+            orElse: () => ParameterValue(
+              algorithmIndex: 0,
+              parameterNumber: inputParam.parameterNumber,
+              value: inputParam.defaultValue,
+            ),
+          )
+          .value;
+
+      // Create input port
+      inputPorts.add({
+        'id': '${algorithmUuid ?? 'satu'}_channel_${channel}_input',
+        'name': '$channel:Input',
+        'type': 'audio',
+        'busParam': '$channel:Input',
+        'busValue': inputBusValue,
+        'parameterNumber': inputParam.parameterNumber,
+      });
+
+      // Create matching output port with same bus, replace mode
+      outputPorts.add({
+        'id': '${algorithmUuid ?? 'satu'}_channel_${channel}_output',
+        'name': '$channel:Output',
+        'type': 'audio',
+        'busParam': null, // Virtual output, no parameter
+        'busValue': inputBusValue,
+        'parameterNumber': -channel, // Negative to indicate virtual
+        'outputMode': 'replace',
+      });
+    }
+
+    // Create configuration
+    final config = MultiChannelAlgorithmConfig(
+      channelCount: channelCount > 0 ? channelCount : 1,
+      supportsStereoChannels: false,
+      allowsIndependentChannels: true,
+      supportedPortTypes: [PortType.audio],
+      portNamePrefix: 'Channel',
+      createMasterMix: false,
+      algorithmProperties: {
+        'algorithmGuid': slot.algorithm.guid,
+        'algorithmName': slot.algorithm.name,
+        'algorithmUuid': algorithmUuid,
+        'channelCount': channelCount,
+        'inputs': inputPorts,
+        'outputs': outputPorts,
+      },
+    );
+
+    return SaturatorAlgorithmRouting(slot: slot, config: config);
+  }
 }
