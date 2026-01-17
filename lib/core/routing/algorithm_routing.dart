@@ -13,6 +13,7 @@ import 'clock_algorithm_routing.dart';
 import 'clock_multiplier_algorithm_routing.dart';
 import 'clock_divider_algorithm_routing.dart';
 import 'euclidean_algorithm_routing.dart';
+import 'saturator_algorithm_routing.dart';
 
 /// Abstract base class for algorithm routing implementations.
 ///
@@ -229,9 +230,12 @@ abstract class AlgorithmRouting {
     final busParam = item['busParam']?.toString();
     final parameterNumber = coerceInt(item['parameterNumber']);
 
-    final outputMode = includeOutputMode ? parseOutputMode(item['outputMode']) : null;
-    final modeParameterNumber =
-        includeOutputMode ? coerceInt(item['modeParameterNumber']) : null;
+    final outputMode = includeOutputMode
+        ? parseOutputMode(item['outputMode'])
+        : null;
+    final modeParameterNumber = includeOutputMode
+        ? coerceInt(item['modeParameterNumber'])
+        : null;
 
     return Port(
       id: id,
@@ -413,6 +417,15 @@ abstract class AlgorithmRouting {
     } else if (ClockDividerAlgorithmRouting.canHandle(slot)) {
       // Clock Divider algorithm with ES-5 direct output support
       instance = ClockDividerAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: ioParameters,
+        modeParameters: modeParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
+        algorithmUuid: algorithmUuid,
+      );
+    } else if (SaturatorAlgorithmRouting.canHandle(slot)) {
+      // Saturator algorithm with in-place processing (input bus = output bus)
+      instance = SaturatorAlgorithmRouting.createFromSlot(
         slot,
         ioParameters: ioParameters,
         modeParameters: modeParameters,

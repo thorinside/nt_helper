@@ -434,11 +434,11 @@ TODO 13 (final verification)
 - `lib/core/routing/algorithm_routing.dart:422-429` - PolyAlgorithmRouting check (insert before this)
 
 **Acceptance Criteria**:
-- [ ] Import added: `import 'saturator_algorithm_routing.dart';`
-- [ ] `SaturatorAlgorithmRouting.canHandle(slot)` check added before PolyAlgorithmRouting
-- [ ] `SaturatorAlgorithmRouting.createFromSlot()` called when canHandle returns true
-- [ ] `flutter analyze` → 0 issues
-- [ ] `flutter test` → All tests pass
+- [x] Import added: `import 'saturator_algorithm_routing.dart';`
+- [x] `SaturatorAlgorithmRouting.canHandle(slot)` check added before PolyAlgorithmRouting
+- [x] `SaturatorAlgorithmRouting.createFromSlot()` called when canHandle returns true
+- [x] `flutter analyze` → 0 issues
+- [x] `flutter test` → All tests pass
 
 **Commit**: YES
 - Message: `feat(routing): register SaturatorAlgorithmRouting in factory`
