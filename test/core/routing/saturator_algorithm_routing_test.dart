@@ -78,6 +78,104 @@ void main() {
       expect(outputPort.outputMode, equals(OutputMode.replace));
     });
   });
+
+  group('SaturatorAlgorithmRouting Port Generation (Width)', () {
+    test('generates 3 input and 3 output ports for width=3', () {
+      final slot = _createSaturatorSlot(
+        channelConfigs: [(channel: 1, input: 5, width: 3)],
+      );
+
+      final routing = SaturatorAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: {},
+        algorithmUuid: 'satu_test',
+      );
+
+      // Should have 3 input ports
+      expect(routing.inputPorts.length, equals(3));
+
+      // Verify input port names and bus values
+      expect(routing.inputPorts[0].name, equals('1:Input 1'));
+      expect(routing.inputPorts[0].busValue, equals(5));
+
+      expect(routing.inputPorts[1].name, equals('1:Input 2'));
+      expect(routing.inputPorts[1].busValue, equals(6));
+
+      expect(routing.inputPorts[2].name, equals('1:Input 3'));
+      expect(routing.inputPorts[2].busValue, equals(7));
+
+      // Should have 3 output ports
+      expect(routing.outputPorts.length, equals(3));
+
+      // Verify output port names and bus values
+      expect(routing.outputPorts[0].name, equals('1:Output 1'));
+      expect(routing.outputPorts[0].busValue, equals(5));
+      expect(routing.outputPorts[0].outputMode, equals(OutputMode.replace));
+
+      expect(routing.outputPorts[1].name, equals('1:Output 2'));
+      expect(routing.outputPorts[1].busValue, equals(6));
+      expect(routing.outputPorts[1].outputMode, equals(OutputMode.replace));
+
+      expect(routing.outputPorts[2].name, equals('1:Output 3'));
+      expect(routing.outputPorts[2].busValue, equals(7));
+      expect(routing.outputPorts[2].outputMode, equals(OutputMode.replace));
+    });
+
+    test('width=1 produces single port without numeric suffix', () {
+      final slot = _createSaturatorSlot(
+        channelConfigs: [(channel: 1, input: 8, width: 1)],
+      );
+
+      final routing = SaturatorAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: {},
+        algorithmUuid: 'satu_test',
+      );
+
+      // Should have 1 input and 1 output
+      expect(routing.inputPorts.length, equals(1));
+      expect(routing.outputPorts.length, equals(1));
+
+      // Names should NOT have numeric suffix
+      expect(routing.inputPorts[0].name, equals('1:Input'));
+      expect(routing.outputPorts[0].name, equals('1:Output'));
+    });
+
+    test('consecutive bus values for width > 1', () {
+      final slot = _createSaturatorSlot(
+        channelConfigs: [(channel: 1, input: 10, width: 4)],
+      );
+
+      final routing = SaturatorAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: {},
+        algorithmUuid: 'satu_test',
+      );
+
+      // Verify consecutive bus values: 10, 11, 12, 13
+      for (int i = 0; i < 4; i++) {
+        expect(routing.inputPorts[i].busValue, equals(10 + i));
+        expect(routing.outputPorts[i].busValue, equals(10 + i));
+      }
+    });
+
+    test('all output ports have replace mode for width > 1', () {
+      final slot = _createSaturatorSlot(
+        channelConfigs: [(channel: 1, input: 5, width: 5)],
+      );
+
+      final routing = SaturatorAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: {},
+        algorithmUuid: 'satu_test',
+      );
+
+      // All 5 outputs should have replace mode
+      for (final outputPort in routing.outputPorts) {
+        expect(outputPort.outputMode, equals(OutputMode.replace));
+      }
+    });
+  });
 }
 
 Slot _createSaturatorSlot({

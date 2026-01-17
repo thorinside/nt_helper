@@ -71,26 +71,72 @@ class SaturatorAlgorithmRouting extends MultiChannelAlgorithmRouting {
           )
           .value;
 
-      // Create input port
-      inputPorts.add({
-        'id': '${algorithmUuid ?? 'satu'}_channel_${channel}_input',
-        'name': '$channel:Input',
-        'type': 'audio',
-        'busParam': '$channel:Input',
-        'busValue': inputBusValue,
-        'parameterNumber': inputParam.parameterNumber,
-      });
+      // Find Width parameter for this channel
+      final widthParam = slot.parameters.firstWhere(
+        (p) => p.name == '$channel:Width',
+        orElse: () => ParameterInfo.filler(),
+      );
 
-      // Create matching output port with same bus, replace mode
-      outputPorts.add({
-        'id': '${algorithmUuid ?? 'satu'}_channel_${channel}_output',
-        'name': '$channel:Output',
-        'type': 'audio',
-        'busParam': null, // Virtual output, no parameter
-        'busValue': inputBusValue,
-        'parameterNumber': -channel, // Negative to indicate virtual
-        'outputMode': 'replace',
-      });
+      // Get width value (default to 1 if not found)
+      final width = widthParam.parameterNumber >= 0
+          ? slot.values
+                .firstWhere(
+                  (v) => v.parameterNumber == widthParam.parameterNumber,
+                  orElse: () => ParameterValue(
+                    algorithmIndex: 0,
+                    parameterNumber: widthParam.parameterNumber,
+                    value: widthParam.defaultValue,
+                  ),
+                )
+                .value
+          : 1;
+
+      // Generate ports based on width
+      if (width == 1) {
+        // Single port without numeric suffix
+        inputPorts.add({
+          'id': '${algorithmUuid ?? 'satu'}_channel_${channel}_input',
+          'name': '$channel:Input',
+          'type': 'audio',
+          'busParam': '$channel:Input',
+          'busValue': inputBusValue,
+          'parameterNumber': inputParam.parameterNumber,
+        });
+
+        outputPorts.add({
+          'id': '${algorithmUuid ?? 'satu'}_channel_${channel}_output',
+          'name': '$channel:Output',
+          'type': 'audio',
+          'busParam': null,
+          'busValue': inputBusValue,
+          'parameterNumber': -channel,
+          'outputMode': 'replace',
+        });
+      } else {
+        // Multiple numbered ports for width > 1
+        for (int w = 1; w <= width; w++) {
+          final busValue = inputBusValue + (w - 1);
+
+          inputPorts.add({
+            'id': '${algorithmUuid ?? 'satu'}_channel_${channel}_input_$w',
+            'name': '$channel:Input $w',
+            'type': 'audio',
+            'busParam': '$channel:Input',
+            'busValue': busValue,
+            'parameterNumber': inputParam.parameterNumber,
+          });
+
+          outputPorts.add({
+            'id': '${algorithmUuid ?? 'satu'}_channel_${channel}_output_$w',
+            'name': '$channel:Output $w',
+            'type': 'audio',
+            'busParam': null,
+            'busValue': busValue,
+            'parameterNumber': -(channel * 100 + w), // Unique negative number
+            'outputMode': 'replace',
+          });
+        }
+      }
     }
 
     // Create configuration
