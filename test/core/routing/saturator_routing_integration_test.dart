@@ -127,7 +127,6 @@ void main() {
           ], // Bus 15 = physical output O3
         );
 
-        final ioParameters = AlgorithmRouting.extractIOParameters(slot);
         final routing = AlgorithmRouting.fromSlot(
           slot,
           algorithmUuid: 'satu_phys_out',
