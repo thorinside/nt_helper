@@ -124,6 +124,16 @@ class ConnectionDiscoveryService {
         }
       }
 
+      // Physical output buses (13-20) as input sources: algorithm inputs reading from hardware outputs
+      if (isHardwareOutput && inputs.isNotEmpty) {
+        for (final input in inputs) {
+          connections.addAll(
+            _createPhysicalOutputAsInputConnections(busNumber, [input]),
+          );
+          matchedPorts.add(input.portId);
+        }
+      }
+
       // Hardware output (buses 13-20, ES-5): only from final contributors at end of frame
       if (isHardwareOutput && outputs.isNotEmpty) {
         final finalPortIds = resolver.finalContributors(busNumber);
@@ -203,6 +213,38 @@ class ConnectionDiscoveryService {
   ) {
     final connections = <Connection>[];
     final hwPortId = 'hw_in_$busNumber';
+
+    for (final input in inputs) {
+      connections.add(
+        Connection(
+          id: 'conn_${hwPortId}_to_${input.portId}',
+          sourcePortId: hwPortId,
+          destinationPortId: input.portId,
+          connectionType: ConnectionType.hardwareInput,
+          busNumber: busNumber,
+          algorithmId: input.algorithmId,
+          algorithmIndex: input.algorithmIndex,
+          parameterNumber: input.parameterNumber,
+          signalType: _toSignalType(input.portType),
+        ),
+      );
+    }
+
+    return connections;
+  }
+
+  /// Creates connections for algorithm inputs reading from physical output buses (13-20)
+  ///
+  /// This allows algorithms to use physical output buses as input sources.
+  /// For example, an algorithm with input on bus 15 (physical output O3) will
+  /// create a connection from hw_out_3 to the algorithm input.
+  static List<Connection> _createPhysicalOutputAsInputConnections(
+    int busNumber,
+    List<_PortAssignment> inputs,
+  ) {
+    final connections = <Connection>[];
+    // Bus 13 -> hw_out_1, Bus 14 -> hw_out_2, ..., Bus 20 -> hw_out_8
+    final hwPortId = 'hw_out_${busNumber - 12}';
 
     for (final input in inputs) {
       connections.add(

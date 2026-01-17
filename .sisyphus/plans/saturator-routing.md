@@ -475,13 +475,13 @@ TODO 13 (final verification)
 - `lib/core/routing/models/connection.dart:ConnectionType.hardwareInput` - Connection type to use
 
 **Acceptance Criteria**:
-- [ ] Test file created: `test/core/routing/physical_output_as_input_test.dart`
-- [ ] Test for algorithm input reading from physical output bus (13-20)
-- [ ] Test verifies connection created with `sourcePortId: 'hw_out_3'` for bus 15
-- [ ] Test verifies `connectionType: ConnectionType.hardwareInput`
-- [ ] Test for buses 1-12 still works (regression)
-- [ ] Test for aux bus (21+) does not create hardware connection
-- [ ] `flutter test test/core/routing/physical_output_as_input_test.dart` → FAIL
+- [x] Test file created: `test/core/routing/physical_output_as_input_test.dart`
+- [x] Test for algorithm input reading from physical output bus (13-20)
+- [x] Test verifies connection created with `sourcePortId: 'hw_out_3'` for bus 15
+- [x] Test verifies `connectionType: ConnectionType.hardwareInput`
+- [x] Test for buses 1-12 still works (regression)
+- [x] Test for aux bus (21+) does not create hardware connection
+- [x] `flutter test test/core/routing/physical_output_as_input_test.dart` → FAIL
 
 **Commit**: NO (groups with TODO 11)
 
@@ -510,12 +510,12 @@ TODO 13 (final verification)
 - `lib/core/routing/bus_spec.dart:28` - `isPhysicalOutput(n)` returns true for 13-20
 
 **Acceptance Criteria**:
-- [ ] Physical output buses (13-20) create hardware input connections for algorithm inputs
-- [ ] Connection source is `hw_out_{busNumber - 12}` (e.g., bus 15 → `hw_out_3`)
-- [ ] Connection type is `ConnectionType.hardwareInput`
-- [ ] Aux buses (21-28) and ES-5 buses (29-30) unchanged
-- [ ] `flutter test test/core/routing/physical_output_as_input_test.dart` → PASS
-- [ ] `flutter test` → All tests pass (no regressions)
+- [x] Physical output buses (13-20) create hardware input connections for algorithm inputs
+- [x] Connection source is `hw_out_{busNumber - 12}` (e.g., bus 15 → `hw_out_3`)
+- [x] Connection type is `ConnectionType.hardwareInput`
+- [x] Aux buses (21-28) and ES-5 buses (29-30) unchanged
+- [x] `flutter test test/core/routing/physical_output_as_input_test.dart` → PASS
+- [x] `flutter test` → All tests pass (no regressions)
 
 **Commit**: YES
 - Message: `feat(routing): support physical output buses as input sources`
