@@ -176,6 +176,110 @@ void main() {
       }
     });
   });
+
+  group('SaturatorAlgorithmRouting Port Generation (Multi-Channel)', () {
+    test('generates ports for 2 channels with different widths', () {
+      final slot = _createSaturatorSlot(
+        channelConfigs: [
+          (channel: 1, input: 5, width: 2),
+          (channel: 2, input: 10, width: 1),
+        ],
+      );
+
+      final routing = SaturatorAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: {},
+        algorithmUuid: 'satu_test',
+      );
+
+      // Channel 1: width=2 → 2 input + 2 output ports
+      // Channel 2: width=1 → 1 input + 1 output port
+      // Total: 3 inputs, 3 outputs
+      expect(routing.inputPorts.length, equals(3));
+      expect(routing.outputPorts.length, equals(3));
+
+      // Verify channel 1 ports (width=2, buses 5-6)
+      expect(routing.inputPorts[0].name, equals('1:Input 1'));
+      expect(routing.inputPorts[0].busValue, equals(5));
+
+      expect(routing.inputPorts[1].name, equals('1:Input 2'));
+      expect(routing.inputPorts[1].busValue, equals(6));
+
+      expect(routing.outputPorts[0].name, equals('1:Output 1'));
+      expect(routing.outputPorts[0].busValue, equals(5));
+
+      expect(routing.outputPorts[1].name, equals('1:Output 2'));
+      expect(routing.outputPorts[1].busValue, equals(6));
+
+      // Verify channel 2 ports (width=1, bus 10)
+      expect(routing.inputPorts[2].name, equals('2:Input'));
+      expect(routing.inputPorts[2].busValue, equals(10));
+
+      expect(routing.outputPorts[2].name, equals('2:Output'));
+      expect(routing.outputPorts[2].busValue, equals(10));
+    });
+
+    test('handles 3 channels with varying widths', () {
+      final slot = _createSaturatorSlot(
+        channelConfigs: [
+          (channel: 1, input: 1, width: 1),
+          (channel: 2, input: 5, width: 3),
+          (channel: 3, input: 15, width: 2),
+        ],
+      );
+
+      final routing = SaturatorAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: {},
+        algorithmUuid: 'satu_test',
+      );
+
+      // Total: 1 + 3 + 2 = 6 inputs and 6 outputs
+      expect(routing.inputPorts.length, equals(6));
+      expect(routing.outputPorts.length, equals(6));
+
+      // Verify channel prefixes are correct
+      expect(routing.inputPorts[0].name, equals('1:Input'));
+      expect(routing.inputPorts[1].name, equals('2:Input 1'));
+      expect(routing.inputPorts[2].name, equals('2:Input 2'));
+      expect(routing.inputPorts[3].name, equals('2:Input 3'));
+      expect(routing.inputPorts[4].name, equals('3:Input 1'));
+      expect(routing.inputPorts[5].name, equals('3:Input 2'));
+    });
+
+    test('each channel processes independently with its own width', () {
+      final slot = _createSaturatorSlot(
+        channelConfigs: [
+          (channel: 1, input: 3, width: 4),
+          (channel: 2, input: 20, width: 2),
+        ],
+      );
+
+      final routing = SaturatorAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: {},
+        algorithmUuid: 'satu_test',
+      );
+
+      // Channel 1: buses 3, 4, 5, 6
+      expect(routing.inputPorts[0].busValue, equals(3));
+      expect(routing.inputPorts[1].busValue, equals(4));
+      expect(routing.inputPorts[2].busValue, equals(5));
+      expect(routing.inputPorts[3].busValue, equals(6));
+
+      // Channel 2: buses 20, 21
+      expect(routing.inputPorts[4].busValue, equals(20));
+      expect(routing.inputPorts[5].busValue, equals(21));
+
+      // Verify outputs match inputs
+      for (int i = 0; i < routing.inputPorts.length; i++) {
+        expect(
+          routing.outputPorts[i].busValue,
+          equals(routing.inputPorts[i].busValue),
+        );
+      }
+    });
+  });
 }
 
 Slot _createSaturatorSlot({
