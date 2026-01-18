@@ -255,11 +255,21 @@ std::vector<flutter::EncodableMap> UsbVideoCapturePlugin::EnumerateVideoCaptureD
           std::string link(linkSize - 1, 0);
           WideCharToMultiByte(CP_UTF8, 0, symbolicLink, -1, &link[0], linkSize, nullptr, nullptr);
 
+          // Check if device name contains "disting" (case-insensitive)
+          std::string nameLower = name;
+          for (auto& c : nameLower) c = static_cast<char>(tolower(c));
+          bool isDistingNT = (nameLower.find("disting") != std::string::npos) ||
+                             (nameLower.find("nt") != std::string::npos);
+          
+          char detectMsg[512];
+          sprintf_s(detectMsg, "[USB_VIDEO_CPP] Device: %s, isDistingNT: %s\n", name.c_str(), isDistingNT ? "true" : "false");
+          OutputDebugStringA(detectMsg);
+
           device[flutter::EncodableValue("productName")] = flutter::EncodableValue(name);
           device[flutter::EncodableValue("deviceId")] = flutter::EncodableValue(link);
           device[flutter::EncodableValue("vendorId")] = flutter::EncodableValue(0);
           device[flutter::EncodableValue("productId")] = flutter::EncodableValue(0);
-          device[flutter::EncodableValue("isDistingNT")] = flutter::EncodableValue(false);
+          device[flutter::EncodableValue("isDistingNT")] = flutter::EncodableValue(isDistingNT);
 
           devices.push_back(device);
 
