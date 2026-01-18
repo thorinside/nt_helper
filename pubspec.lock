@@ -721,7 +721,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "54ef659ec81fce93d4d9e1a2adedffa90c74d633"
+      resolved-ref: "7d5e8305237198b7d257c757975828737c76a7b5"
       url: "https://github.com/thorinside/dart_midi.git"
     source: git
     version: "0.1.0"

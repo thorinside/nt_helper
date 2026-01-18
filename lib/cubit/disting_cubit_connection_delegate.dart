@@ -130,17 +130,38 @@ class _ConnectionDelegate {
   }
 
   void disconnect() {
+    MidiDevice? inputDevice;
+    MidiDevice? outputDevice;
+    IDistingMidiManager? manager;
+
     switch (_cubit.state) {
       case DistingStateInitial():
       case DistingStateSelectDevice():
         break;
       case DistingStateConnected connectedState:
-        connectedState.disting.dispose();
+        inputDevice = connectedState.inputDevice;
+        outputDevice = connectedState.outputDevice;
+        manager = connectedState.disting;
         break;
       case DistingStateSynchronized syncstate:
-        syncstate.disting.dispose();
+        inputDevice = syncstate.inputDevice;
+        outputDevice = syncstate.outputDevice;
+        manager = syncstate.disting;
         break;
     }
+
+    // Disconnect MIDI devices FIRST (closes ALSA ports and stops isolate)
+    // Must happen before manager.dispose() to avoid read/write on closed ports
+    if (inputDevice != null) {
+      _cubit._midiCommand.disconnectDevice(inputDevice);
+    }
+    if (outputDevice != null && outputDevice.id != inputDevice?.id) {
+      _cubit._midiCommand.disconnectDevice(outputDevice);
+    }
+
+    // Now dispose the manager (safe since devices are already disconnected)
+    manager?.dispose();
+
     _cubit._midiCommand.dispose();
     _cubit._midiCommand = MidiCommand();
   }

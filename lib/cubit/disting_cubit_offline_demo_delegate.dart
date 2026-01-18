@@ -123,6 +123,8 @@ class _OfflineDemoDelegate {
   Future<void> goOnline() async {
     final currentState = _cubit.state;
     if (!(currentState is DistingStateSynchronized && currentState.offline)) {
+      // Disconnect existing MIDI connection before loading devices
+      _cubit.disconnect();
       await _cubit.loadDevices();
       return;
     }

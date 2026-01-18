@@ -248,24 +248,27 @@ class _DistingPageState extends State<DistingPage> {
               );
             } else if (state is DistingStateConnected) {
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Synchronizing...",
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                    OutlinedButton(
-                      onPressed: () {
-                        context.read<DistingCubit>().cancelSync();
-                      },
-                      child: Text("Cancel"),
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Synchronizing...",
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                      OutlinedButton(
+                        onPressed: () {
+                          context.read<DistingCubit>().cancelSync();
+                        },
+                        child: Text("Cancel"),
+                      ),
+                    ],
+                  ),
                 ),
               );
             } else if (state is DistingStateSynchronized) {
