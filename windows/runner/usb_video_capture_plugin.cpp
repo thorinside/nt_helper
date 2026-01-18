@@ -3,7 +3,9 @@
 #include <flutter/standard_method_codec.h>
 #include <flutter/event_channel.h>
 #include <flutter/event_stream_handler_functions.h>
+#include <algorithm>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <vector>
 #include <string>
@@ -12,7 +14,6 @@
 #include <chrono>
 #include <mutex>
 #include <queue>
-#include <map>
 #include <windows.h>
 #include <mfapi.h>
 #include <mfidl.h>
@@ -29,6 +30,9 @@
 
 namespace {
 
+// Timer ID for frame polling - must be unique within the window
+static const UINT_PTR FRAME_TIMER_ID = 12345;
+
 class UsbVideoCapturePlugin : public flutter::Plugin {
  public:
   static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
@@ -36,6 +40,9 @@ class UsbVideoCapturePlugin : public flutter::Plugin {
   UsbVideoCapturePlugin(flutter::PluginRegistrarWindows *registrar);
 
   virtual ~UsbVideoCapturePlugin();
+
+  // Public so static callback can access
+  void ProcessPendingFrames();
 
  private:
   void HandleMethodCall(
@@ -48,11 +55,9 @@ class UsbVideoCapturePlugin : public flutter::Plugin {
   void CaptureThread();
   std::vector<uint8_t> EncodeBMP(const uint8_t* rgb_data, int width, int height);
 
-  void ProcessPendingFrames();
-  static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
-
   flutter::PluginRegistrarWindows* registrar_;
   std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> event_channel_;
+  std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> debug_channel_;
   std::unique_ptr<flutter::EventSink<flutter::EncodableValue>> event_sink_;
 
   CComPtr<IMFSourceReader> source_reader_;
@@ -64,10 +69,25 @@ class UsbVideoCapturePlugin : public flutter::Plugin {
   // Thread-safe frame queue for posting to platform thread
   std::mutex frame_queue_mutex_;
   std::queue<std::vector<uint8_t>> pending_frames_;
-  HWND message_window_ = nullptr;
-  int window_proc_id_ = 0;
-  static const UINT WM_SEND_FRAME = WM_USER + 1;
+
+  // Timer-based polling (replaces broken message-only window approach)
+  UINT_PTR timer_id_ = 0;
+  static const UINT FRAME_TIMER_INTERVAL_MS = 16;  // ~60 Hz polling
+
+  // Static callback for timer - must use static to work with SetTimer TIMERPROC
+  static void CALLBACK TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
+  static UsbVideoCapturePlugin* s_instance_;  // For timer callback access
 };
+
+// Static instance pointer for timer callback access
+UsbVideoCapturePlugin* UsbVideoCapturePlugin::s_instance_ = nullptr;
+
+// Static timer callback - called directly by Windows, not through message loop
+void CALLBACK UsbVideoCapturePlugin::TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
+  if (idEvent == FRAME_TIMER_ID && s_instance_ != nullptr) {
+    s_instance_->ProcessPendingFrames();
+  }
+}
 
 // static
 void UsbVideoCapturePlugin::RegisterWithRegistrar(
@@ -104,26 +124,31 @@ void UsbVideoCapturePlugin::RegisterWithRegistrar(
 
   plugin->event_channel_->SetStreamHandler(std::move(event_handler));
 
+  // Set up debug event channel (stub - just needs to be registered to prevent MissingPluginException)
+  plugin->debug_channel_ = std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
+      registrar->messenger(), "com.example.nt_helper/usb_video_debug",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  auto debug_handler = std::make_unique<flutter::StreamHandlerFunctions<flutter::EncodableValue>>(
+      [](const flutter::EncodableValue* arguments,
+         std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>&& events)
+         -> std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> {
+        // Accept the stream but don't store the sink - we don't send debug messages on Windows
+        return nullptr;
+      },
+      [](const flutter::EncodableValue* arguments)
+         -> std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> {
+        return nullptr;
+      });
+
+  plugin->debug_channel_->SetStreamHandler(std::move(debug_handler));
+
   channel->SetMethodCallHandler(
       [plugin_ptr](const auto &call, auto result) {
         plugin_ptr->HandleMethodCall(call, std::move(result));
       });
 
   registrar->AddPlugin(std::move(plugin));
-}
-
-// Static map to look up plugin instances from window handles
-static std::map<HWND, UsbVideoCapturePlugin*> g_plugin_instances;
-
-LRESULT CALLBACK UsbVideoCapturePlugin::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
-  if (message == WM_SEND_FRAME) {
-    auto it = g_plugin_instances.find(hwnd);
-    if (it != g_plugin_instances.end()) {
-      it->second->ProcessPendingFrames();
-    }
-    return 0;
-  }
-  return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
 void UsbVideoCapturePlugin::ProcessPendingFrames() {
@@ -146,6 +171,9 @@ void UsbVideoCapturePlugin::ProcessPendingFrames() {
 
 UsbVideoCapturePlugin::UsbVideoCapturePlugin(flutter::PluginRegistrarWindows *registrar)
     : registrar_(registrar) {
+  // Set static instance for timer callback access
+  s_instance_ = this;
+
   // Initialize Media Foundation
   OutputDebugStringA("[USB_VIDEO_CPP] Initializing Media Foundation...\n");
   HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -161,34 +189,14 @@ UsbVideoCapturePlugin::UsbVideoCapturePlugin(flutter::PluginRegistrarWindows *re
     OutputDebugStringA("[USB_VIDEO_CPP] CoInitializeEx failed\n");
   }
 
-  // Create a message-only window for thread communication
-  WNDCLASSA wc = {};
-  wc.lpfnWndProc = WndProc;
-  wc.hInstance = GetModuleHandle(nullptr);
-  wc.lpszClassName = "UsbVideoCapturePluginMessageWindow";
-  RegisterClassA(&wc);
-
-  message_window_ = CreateWindowA(
-      "UsbVideoCapturePluginMessageWindow",
-      nullptr,
-      0, 0, 0, 0, 0,
-      HWND_MESSAGE,  // Message-only window
-      nullptr,
-      GetModuleHandle(nullptr),
-      nullptr);
-
-  if (message_window_) {
-    g_plugin_instances[message_window_] = this;
-    OutputDebugStringA("[USB_VIDEO_CPP] Message window created for thread-safe frame delivery\n");
-  }
+  OutputDebugStringA("[USB_VIDEO_CPP] Plugin initialized with TIMERPROC callback for frame delivery\n");
 }
 
 UsbVideoCapturePlugin::~UsbVideoCapturePlugin() {
   StopVideoCapture();
-  if (message_window_) {
-    g_plugin_instances.erase(message_window_);
-    DestroyWindow(message_window_);
-    message_window_ = nullptr;
+  // Clear static instance pointer
+  if (s_instance_ == this) {
+    s_instance_ = nullptr;
   }
   if (mf_initialized_) {
     MFShutdown();
@@ -260,7 +268,7 @@ std::vector<flutter::EncodableMap> UsbVideoCapturePlugin::EnumerateVideoCaptureD
           for (auto& c : nameLower) c = static_cast<char>(tolower(c));
           bool isDistingNT = (nameLower.find("disting") != std::string::npos) ||
                              (nameLower.find("nt") != std::string::npos);
-          
+
           char detectMsg[512];
           sprintf_s(detectMsg, "[USB_VIDEO_CPP] Device: %s, isDistingNT: %s\n", name.c_str(), isDistingNT ? "true" : "false");
           OutputDebugStringA(detectMsg);
@@ -408,6 +416,20 @@ bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
   capturing_ = true;
   capture_thread_ = new std::thread(&UsbVideoCapturePlugin::CaptureThread, this);
 
+  // Start timer to poll for frames from the capture thread
+  // Using TIMERPROC callback instead of WM_TIMER messages - more reliable for plugins
+  HWND flutter_window = registrar_->GetView()->GetNativeWindow();
+  if (flutter_window) {
+    // Pass TimerCallback as TIMERPROC - Windows calls it directly, bypassing message queue
+    timer_id_ = SetTimer(flutter_window, FRAME_TIMER_ID, FRAME_TIMER_INTERVAL_MS, TimerCallback);
+    char timerMsg[256];
+    sprintf_s(timerMsg, "[USB_VIDEO_CPP] Started frame polling timer (id=%llu, interval=%dms)\n",
+              (unsigned long long)timer_id_, FRAME_TIMER_INTERVAL_MS);
+    OutputDebugStringA(timerMsg);
+  } else {
+    OutputDebugStringA("[USB_VIDEO_CPP] Warning: Could not get Flutter window handle for timer\n");
+  }
+
   // Send a test frame immediately to verify the connection works
   if (event_sink_ && stream_active_) {
     std::vector<uint8_t> test_rgb(256 * 64 * 3);
@@ -425,6 +447,16 @@ bool UsbVideoCapturePlugin::StartVideoCapture(const std::string& deviceId) {
 }
 
 void UsbVideoCapturePlugin::StopVideoCapture() {
+  // Stop the timer first
+  if (timer_id_ != 0) {
+    HWND flutter_window = registrar_->GetView()->GetNativeWindow();
+    if (flutter_window) {
+      KillTimer(flutter_window, timer_id_);
+    }
+    timer_id_ = 0;
+    OutputDebugStringA("[USB_VIDEO_CPP] Stopped frame polling timer\n");
+  }
+
   if (capturing_) {
     capturing_ = false;
     if (capture_thread_) {
@@ -573,26 +605,18 @@ void UsbVideoCapturePlugin::CaptureThread() {
 
       buffer->Unlock();
 
-      // Queue frame for platform thread delivery (thread-safe)
-      if (stream_active_ && !bmp.empty() && message_window_) {
-        {
-          std::lock_guard<std::mutex> lock(frame_queue_mutex_);
-          pending_frames_.push(std::move(bmp));
-        }
-        PostMessage(message_window_, WM_SEND_FRAME, 0, 0);
-        OutputDebugStringA("[USB_VIDEO_CPP] Queued real video frame for Flutter\n");
+      // Queue frame for platform thread delivery (timer will pick it up)
+      if (stream_active_ && !bmp.empty()) {
+        std::lock_guard<std::mutex> lock(frame_queue_mutex_);
+        pending_frames_.push(std::move(bmp));
       }
     } else {
       // Fall back to test frames if no source reader
       std::vector<uint8_t> test_rgb(256 * 64 * 3, 64);  // Dark gray
       std::vector<uint8_t> test_bmp = EncodeBMP(test_rgb.data(), 256, 64);
-      if (stream_active_ && message_window_) {
-        {
-          std::lock_guard<std::mutex> lock(frame_queue_mutex_);
-          pending_frames_.push(std::move(test_bmp));
-        }
-        PostMessage(message_window_, WM_SEND_FRAME, 0, 0);
-        OutputDebugStringA("[USB_VIDEO_CPP] Queued fallback test frame\n");
+      if (stream_active_) {
+        std::lock_guard<std::mutex> lock(frame_queue_mutex_);
+        pending_frames_.push(std::move(test_bmp));
       }
     }
 
