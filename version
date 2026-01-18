@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 
 # Get the version line from pubspec.yaml
 version_line=$(grep -E "^version:" pubspec.yaml)
@@ -36,8 +36,12 @@ build=$((build + 1))
 # New version string
 new_version="${major}.${minor}.${patch}+${build}"
 
-# Update pubspec.yaml
-sed -i "" "s/^version: .*/version: ${new_version}/" pubspec.yaml
+# Update pubspec.yaml (compatible with both Linux and macOS)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i "" "s/^version: .*/version: ${new_version}/" pubspec.yaml
+else
+  sed -i "s/^version: .*/version: ${new_version}/" pubspec.yaml
+fi
 
 # Commit changes
 git add pubspec.yaml
@@ -46,4 +50,3 @@ git tag "v${major}.${minor}.${patch}"
 
 # Output the new version
 echo "Version bumped to ${new_version}"
-
