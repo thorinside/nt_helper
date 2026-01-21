@@ -1,9 +1,10 @@
 import 'dart:math';
 
 String cleanTitle(String name) {
-  // If name starts with a number followed by a colon, strip that off
-  final RegExp regex = RegExp(r'^\d+:\s*');
-  return name.replaceAll(regex, '');
+  // Return the full parameter name as-is.
+  // The parameterUiPrefix API allows arbitrary prefixes (not just "N:"),
+  // so the entire name is significant and should be displayed.
+  return name;
 }
 
 String formatWithUnit(
