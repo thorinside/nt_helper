@@ -55,67 +55,45 @@ class ElfGuidExtractor {
     return chars;
   }
 
-  /// Extract plugin GUID from ELF bytes
-  static Future<PluginGuid> extractGuidFromBytes(
-    Uint8List bytes,
-    String fileName,
-  ) async {
+  /// Check if a symbol name represents a Factory symbol.
+  /// Handles multiple naming patterns:
+  /// - "_ZL7factory" - static factory variable (mangled)
+  /// - "factory" - unmangled factory variable
+  /// - "_ZN*FactoryE" - C++ namespaced Factory (e.g., "_ZN9DirSeqAlg7FactoryE")
+  static bool _isFactorySymbol(String name) {
+    if (name == '_ZL7factory' || name == 'factory') {
+      return true;
+    }
+    // Match C++ namespaced Factory symbols like "_ZN9DirSeqAlg7FactoryE"
+    // Pattern: _ZN followed by length-prefixed names, ending with "FactoryE"
+    if (name.startsWith('_ZN') && name.endsWith('FactoryE')) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Extract a GUID from a factory symbol in an ELF file.
+  /// Returns null if the GUID cannot be extracted from this symbol.
+  static PluginGuid? _extractGuidFromSymbol(
+    ElfReader reader,
+    ElfSymbol symbol,
+    String symbolName,
+  ) {
     try {
-      // Parse the ELF file from bytes
-      final reader = ElfReader.fromBytes(bytes);
-
-      // Find the factory symbol
-      // Look for either "_ZL7factory" (mangled) or "factory" (unmangled)
-      ElfSymbol? factorySymbol;
-
-      // Check symbol table section
-      if (reader.symbolTableSection != null) {
-        final symbolTable = reader.symbolTableSection!;
-        final stringTable = reader.stringTable;
-
-        for (final symbol in symbolTable.symbols) {
-          final name = stringTable?.at(symbol.nindex) ?? '';
-          if (name == '_ZL7factory' || name == 'factory') {
-            factorySymbol = symbol;
-            break;
-          }
-        }
-      }
-
-      // If not found in symbol table, check dynamic symbol table
-      if (factorySymbol == null && reader.dynamicSymbolTableSection != null) {
-        final dynamicSymbolTable = reader.dynamicSymbolTableSection!;
-        final dynamicStringTable = reader.dynamicStringTable;
-
-        for (final symbol in dynamicSymbolTable.symbols) {
-          final name = dynamicStringTable?.at(symbol.nindex) ?? '';
-          if (name == '_ZL7factory' || name == 'factory') {
-            factorySymbol = symbol;
-            break;
-          }
-        }
-      }
-
-      if (factorySymbol == null) {
-        throw GuidExtractionException('Factory symbol not found in $fileName');
-      }
-
       // Get the section containing the factory symbol
-      final sectionIndex = factorySymbol.shndx;
+      final sectionIndex = symbol.shndx;
       if (sectionIndex >= reader.sections.length) {
-        throw GuidExtractionException(
-          'Invalid section index for factory symbol',
-        );
+        return null;
       }
 
       final section = reader.sections[sectionIndex];
 
       // Calculate offset within section
-      final symbolAddress = factorySymbol.value;
+      final symbolAddress = symbol.value;
       final sectionAddress = section.header.addr;
 
       if (symbolAddress < sectionAddress) {
-        throw GuidExtractionException('Invalid factory symbol address');
+        return null;
       }
 
       final offset = (symbolAddress - sectionAddress).toInt();
@@ -125,7 +103,7 @@ class ElfGuidExtractor {
 
       // Ensure we have enough data for the GUID (first 4 bytes of the factory struct)
       if (offset + 4 > sectionData.length) {
-        throw GuidExtractionException('Not enough data for GUID extraction');
+        return null;
       }
 
       // Extract the GUID as a 32-bit little-endian integer
@@ -138,24 +116,86 @@ class ElfGuidExtractor {
       // Convert to string representation
       final guidString = _guidFromU32(rawGuid);
 
-      // Validate that we got a reasonable GUID (4 ASCII characters)
-      if (guidString.length != 4) {
-        throw GuidExtractionException(
-          'GUID must be exactly 4 characters, got: $guidString',
-        );
+      // Validate that we got a reasonable GUID (4 printable ASCII characters)
+      if (guidString.length != 4 || guidString.contains('?')) {
+        return null;
       }
 
       return PluginGuid(guid: guidString, rawValue: rawGuid);
     } catch (e) {
+      return null;
+    }
+  }
+
+  /// Extract ALL plugin GUIDs from ELF bytes.
+  /// A single .o file can contain multiple algorithms, each with its own Factory.
+  static Future<List<PluginGuid>> extractAllGuidsFromBytes(
+    Uint8List bytes,
+    String fileName,
+  ) async {
+    try {
+      // Parse the ELF file from bytes
+      final reader = ElfReader.fromBytes(bytes);
+      final guids = <PluginGuid>[];
+
+      // Collect all factory symbols from the symbol table
+      if (reader.symbolTableSection != null) {
+        final symbolTable = reader.symbolTableSection!;
+        final stringTable = reader.stringTable;
+
+        for (final symbol in symbolTable.symbols) {
+          final name = stringTable?.at(symbol.nindex) ?? '';
+          if (_isFactorySymbol(name)) {
+            final guid = _extractGuidFromSymbol(reader, symbol, name);
+            if (guid != null) {
+              guids.add(guid);
+            }
+          }
+        }
+      }
+
+      // Also check dynamic symbol table
+      if (reader.dynamicSymbolTableSection != null) {
+        final dynamicSymbolTable = reader.dynamicSymbolTableSection!;
+        final dynamicStringTable = reader.dynamicStringTable;
+
+        for (final symbol in dynamicSymbolTable.symbols) {
+          final name = dynamicStringTable?.at(symbol.nindex) ?? '';
+          if (_isFactorySymbol(name)) {
+            final guid = _extractGuidFromSymbol(reader, symbol, name);
+            // Avoid duplicates
+            if (guid != null && !guids.any((g) => g.guid == guid.guid)) {
+              guids.add(guid);
+            }
+          }
+        }
+      }
+
+      if (guids.isEmpty) {
+        throw GuidExtractionException('No Factory symbols found in $fileName');
+      }
+
+      return guids;
+    } catch (e) {
       if (e is GuidExtractionException) rethrow;
       throw GuidExtractionException(
-        'Failed to extract GUID from $fileName: $e',
+        'Failed to extract GUIDs from $fileName: $e',
       );
     }
   }
 
+  /// Extract plugin GUID from ELF bytes (returns first GUID for backwards compatibility)
+  static Future<PluginGuid> extractGuidFromBytes(
+    Uint8List bytes,
+    String fileName,
+  ) async {
+    final guids = await extractAllGuidsFromBytes(bytes, fileName);
+    return guids.first;
+  }
+
   /// Scan a directory for .o files and extract GUIDs using PresetFileSystem
   /// Returns a Map of GUID -> relative file path
+  /// Note: A single .o file can contain multiple algorithms (GUIDs)
   static Future<Map<String, String>> scanPluginDirectory(
     PresetFileSystem fileSystem,
     String directoryPath,
@@ -182,9 +222,14 @@ class ElfGuidExtractor {
             continue;
           }
 
-          // Extract GUID from the file bytes
-          final pluginGuid = await extractGuidFromBytes(fileBytes, filePath);
-          result[pluginGuid.guid] = filePath;
+          // Extract ALL GUIDs from the file (multi-algorithm plugins)
+          final pluginGuids = await extractAllGuidsFromBytes(
+            fileBytes,
+            filePath,
+          );
+          for (final guid in pluginGuids) {
+            result[guid.guid] = filePath;
+          }
         } catch (e) {
           // Continue processing other files
         }
