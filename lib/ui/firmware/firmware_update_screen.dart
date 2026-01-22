@@ -372,13 +372,14 @@ class _InitialStateView extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (isLatest)
-                Text(
-                  'Latest',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
+              SizedBox(
+                height: 14,
+                child: isLatest
+                    ? Text('Latest',
+                        style: theme.textTheme.labelSmall
+                            ?.copyWith(color: theme.colorScheme.primary))
+                    : null,
+              ),
             ],
           ),
         ),
@@ -598,14 +599,14 @@ class _FlashingStateView extends StatelessWidget {
           _getStageLabel(state.progress.stage.name),
           style: theme.textTheme.titleMedium,
         ),
-        if (state.progress.message.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(
-            state.progress.message,
-            style: theme.textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 16,
+          child: state.progress.message.isNotEmpty
+              ? Text(state.progress.message,
+                  style: theme.textTheme.bodySmall, textAlign: TextAlign.center)
+              : null,
+        ),
         const SizedBox(height: 24),
 
         // Progress bar
