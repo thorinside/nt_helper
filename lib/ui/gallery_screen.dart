@@ -1194,7 +1194,7 @@ class _GalleryViewState extends State<_GalleryView>
             // Tap action: same as card button action
             if (isInQueue) {
               parentContext.read<GalleryCubit>().removeFromQueue(plugin.id);
-            } else if (!isInstalled || hasUpdate) {
+            } else {
               parentContext.read<GalleryCubit>().addToQueue(plugin);
             }
           },
@@ -1227,11 +1227,12 @@ class _GalleryViewState extends State<_GalleryView>
         color: Colors.orange,
       );
     } else if (isInstalled && !plugin.isCollection) {
-      // Single plugin is installed - show checkmark (no action)
+      // Single plugin is installed - show reinstall option
       return IconButton(
-        icon: const Icon(Icons.check_circle),
-        onPressed: null,
-        tooltip: 'Installed',
+        icon: const Icon(Icons.refresh),
+        onPressed: () async =>
+            await parentContext.read<GalleryCubit>().addToQueue(plugin),
+        tooltip: 'Reinstall',
         color: Theme.of(context).colorScheme.primary,
       );
     } else {
@@ -1511,11 +1512,13 @@ class _GalleryViewState extends State<_GalleryView>
                           ),
                         );
                       } else if (isInstalled && !plugin.isCollection) {
-                        // Single plugin is installed - show installed indicator
+                        // Single plugin is installed - show reinstall option
                         return ElevatedButton.icon(
-                          onPressed: null,
-                          icon: const Icon(Icons.check_circle),
-                          label: const Text('Installed'),
+                          onPressed: () async => await parentContext
+                              .read<GalleryCubit>()
+                              .addToQueue(plugin),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Reinstall'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                                 Theme.of(context).colorScheme.primaryContainer,
