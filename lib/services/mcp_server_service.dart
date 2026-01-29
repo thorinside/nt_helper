@@ -90,8 +90,15 @@ class McpServerService extends ChangeNotifier {
   final Map<String, StreamableHTTPServerTransport> _transports = {};
   HttpServer? _httpServer;
   StreamSubscription<HttpRequest>? _httpSubscription;
+  String? _lastError;
 
   bool get isRunning => _httpServer != null;
+
+  /// Returns the last error that occurred when trying to start the server
+  String? get lastError => _lastError;
+
+  /// Returns true if MCP is enabled but failed to start
+  bool get hasError => _lastError != null;
 
   /// Get basic connection diagnostics
   Map<String, dynamic> get connectionDiagnostics {
@@ -104,10 +111,15 @@ class McpServerService extends ChangeNotifier {
     };
   }
 
-  Future<void> start({int port = 3000, InternetAddress? bindAddress}) async {
+  Future<void> start({int port = 3847, InternetAddress? bindAddress}) async {
     if (isRunning) {
+      _lastError = null;
+      notifyListeners();
       return;
     }
+
+    // Clear any previous error
+    _lastError = null;
 
     try {
       final address = bindAddress ?? InternetAddress.anyIPv4;
@@ -129,8 +141,18 @@ class McpServerService extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
+      // Capture error for display
+      if (e is SocketException) {
+        if (e.osError?.errorCode == 48 || e.message.contains('Address already in use')) {
+          _lastError = 'Port $port is already in use';
+        } else {
+          _lastError = e.message;
+        }
+      } else {
+        _lastError = e.toString();
+      }
       await stop();
-      rethrow;
+      notifyListeners();
     }
   }
 
@@ -318,7 +340,7 @@ class McpServerService extends ChangeNotifier {
 
 
   Future<void> stop() async {
-    if (!isRunning) {
+    if (!isRunning && _lastError == null) {
       return;
     }
 
@@ -335,10 +357,13 @@ class McpServerService extends ChangeNotifier {
     _transports.clear();
     _servers.clear();
 
+    // Clear error when explicitly stopped
+    _lastError = null;
+
     notifyListeners();
   }
 
-  Future<void> restart({int port = 3000, InternetAddress? bindAddress}) async {
+  Future<void> restart({int port = 3847, InternetAddress? bindAddress}) async {
     await stop();
     await Future.delayed(const Duration(milliseconds: 500));
     await start(port: port, bindAddress: bindAddress);

@@ -6,7 +6,7 @@ import 'package:nt_helper/services/settings_service.dart';
 
 /// Small round LED indicator for MCP server status with tooltip
 class McpStatusIndicator extends StatelessWidget {
-  static const int mcpPort = 3000;
+  static const int mcpPort = 3847;
 
   const McpStatusIndicator({super.key});
 
@@ -15,18 +15,39 @@ class McpStatusIndicator extends StatelessWidget {
     final settings = SettingsService(); // Get SettingsService instance
     final mcpInstance =
         McpServerService.instance; // Get McpServerService instance
-    final isRunning = context.watch<McpServerService>().isRunning;
-    final baseColor = isRunning ? Colors.green.shade600 : Colors.grey.shade600;
-    final highlightColor = isRunning
-        ? Colors.green.shade300
-        : Colors.grey.shade400;
-    final shadowColor = isRunning
-        ? Colors.green.shade800
-        : Colors.grey.shade800;
+    final mcpService = context.watch<McpServerService>();
+    final isRunning = mcpService.isRunning;
+    final hasError = mcpService.hasError;
+    final lastError = mcpService.lastError;
 
-    final tooltip = isRunning
-        ? 'MCP server running at http://localhost:$mcpPort (Tap to disable)'
-        : 'MCP server is disabled (Tap to enable)';
+    // Determine color based on state: green=running, red=error, grey=disabled
+    final Color baseColor;
+    final Color highlightColor;
+    final Color shadowColor;
+
+    if (isRunning) {
+      baseColor = Colors.green.shade600;
+      highlightColor = Colors.green.shade300;
+      shadowColor = Colors.green.shade800;
+    } else if (hasError) {
+      baseColor = Colors.red.shade600;
+      highlightColor = Colors.red.shade300;
+      shadowColor = Colors.red.shade800;
+    } else {
+      baseColor = Colors.grey.shade600;
+      highlightColor = Colors.grey.shade400;
+      shadowColor = Colors.grey.shade800;
+    }
+
+    // Build tooltip message based on state
+    final String tooltip;
+    if (isRunning) {
+      tooltip = 'MCP server running at http://localhost:$mcpPort (Tap to disable)';
+    } else if (hasError) {
+      tooltip = 'MCP server failed: $lastError (Tap to retry)';
+    } else {
+      tooltip = 'MCP server is disabled (Tap to enable)';
+    }
 
     return GestureDetector(
       onTap: () async {
@@ -42,6 +63,12 @@ class McpStatusIndicator extends StatelessWidget {
           return;
         }
 
+        // If there's an error, tapping retries without toggling the setting
+        if (mcpInstance.hasError) {
+          await mcpInstance.start();
+          return;
+        }
+
         final bool currentMcpSetting = settings.mcpEnabled;
         final newMcpSetting = !currentMcpSetting;
         await settings.setMcpEnabled(newMcpSetting);
@@ -52,13 +79,13 @@ class McpStatusIndicator extends StatelessWidget {
         if (newMcpSetting) {
           // Try to turn ON
           if (!isServerCurrentlyRunning) {
-            await mcpInstance.start().catchError((e) {});
-          } else {}
+            await mcpInstance.start();
+          }
         } else {
           // Try to turn OFF
           if (isServerCurrentlyRunning) {
-            await mcpInstance.stop().catchError((e) {});
-          } else {}
+            await mcpInstance.stop();
+          }
         }
         // McpServerService.notifyListeners() is called by start()/stop(), which Consumer listens to.
       },
