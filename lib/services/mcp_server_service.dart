@@ -623,6 +623,34 @@ class McpServerService extends ChangeNotifier {
     );
 
     server.tool(
+      'remove',
+      description:
+          'Remove the algorithm from a slot, leaving it empty. Succeeds gracefully if slot is already empty.',
+      toolInputSchema: const ToolInputSchema(
+        properties: {
+          'target': {
+            'type': 'string',
+            'enum': ['slot'],
+            'description': 'Must be "slot".',
+          },
+          'slot_index': {
+            'type': 'integer',
+            'minimum': 0,
+            'maximum': 31,
+            'description': 'Slot index to clear (0-31).',
+          },
+        },
+        required: ['target', 'slot_index'],
+      ),
+      callback: ({args, extra}) async {
+        final resultJson = await tools.removeSlot(args ?? {});
+        return CallToolResult.fromContent(
+          content: [TextContent(text: resultJson)],
+        );
+      },
+    );
+
+    server.tool(
       'edit',
       description:
           'Edit preset, slot, or parameter with appropriate granularity. Target "preset": full preset state. Target "slot": specific slot with algorithm/parameters. Target "parameter": individual parameter value/mapping. Device must be in connected mode.',

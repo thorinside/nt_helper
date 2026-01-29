@@ -389,26 +389,65 @@ class DistingTools {
 
   /// MCP Tool: Removes (clears) the algorithm from a specific slot.
   /// Parameters:
-  ///   - slot_index (int, required): The index of the slot to clear.
+  ///   - target (string, required): Must be "slot"
+  ///   - slot_index (int, required): The index of the slot to clear (0-31).
   /// Returns:
-  ///   A JSON string confirming the removal or an error.
-  Future<String> removeAlgorithm(Map<String, dynamic> params) async {
-    final int? slotIndex = params['slot_index'];
+  ///   A JSON string confirming the removal. Lenient if slot is already empty.
+  Future<String> removeSlot(Map<String, dynamic> params) async {
+    final String? target = params['target'] as String?;
+    final int? slotIndex = params['slot_index'] as int?;
+
+    // Validate target
+    if (target == null || target != 'slot') {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError('Target must be "slot"'),
+        ),
+      );
+    }
+
+    // Validate slot_index presence
     if (slotIndex == null) {
       return jsonEncode(
         convertToSnakeCaseKeys(
+          MCPUtils.buildError('Missing required parameter: "slot_index"'),
+        ),
+      );
+    }
+
+    // Validate slot_index range
+    const maxSlots = 32;
+    if (slotIndex < 0 || slotIndex >= maxSlots) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
           MCPUtils.buildError(
-            '${MCPConstants.missingParamError}: "slot_index"',
+            'slot_index $slotIndex out of range. Must be 0-${maxSlots - 1}.',
           ),
         ),
       );
     }
 
     try {
+      // Check if slot is already empty
+      final allSlots = await _controller.getAllSlots();
+      final currentAlgorithm = slotIndex < allSlots.length ? allSlots[slotIndex] : null;
+
+      if (currentAlgorithm == null) {
+        // Slot is already empty - be kind about it
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildSuccess('Slot $slotIndex is already empty'),
+          ),
+        );
+      }
+
+      // Clear the slot
       await _controller.clearSlot(slotIndex);
       return jsonEncode(
         convertToSnakeCaseKeys(
-          MCPUtils.buildSuccess('Algorithm removed from slot $slotIndex'),
+          MCPUtils.buildSuccess(
+            'Removed "${currentAlgorithm.name}" from slot $slotIndex',
+          ),
         ),
       );
     } catch (e) {

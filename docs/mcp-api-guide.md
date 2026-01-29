@@ -2,11 +2,11 @@
 
 ## Overview
 
-The Disting NT MCP (Model Context Protocol) API provides a streamlined, six-tool interface for interacting with your hardware.
+The Disting NT MCP (Model Context Protocol) API provides a streamlined, seven-tool interface for interacting with your hardware.
 
 ### Design Philosophy
 
-- **Six core tools**: search, show, new, save, add, edit
+- **Seven core tools**: search, show, new, save, add, remove, edit
 - **Granular control**: edit tool supports three granularity levels (preset, slot, parameter)
 - **Insert semantics**: add tool inserts algorithms without replacing existing ones
 - **Mapping support**: Full CV/MIDI/i2c/performance page mapping for parameter control
@@ -197,6 +197,52 @@ Add to specific slot:
     "slot_index": 3,
     "guid": "vcod"
   }
+}
+```
+
+---
+
+### 2.7. remove - Clear Slot
+
+Remove the algorithm from a slot, leaving it empty.
+
+**Parameters**:
+- `target` (required): Must be "slot"
+- `slot_index` (required): Slot index to clear (0-31)
+
+**Behavior**:
+- If slot contains an algorithm, removes it and confirms what was removed
+- If slot is already empty, succeeds gracefully with a friendly message
+- Returns success in both cases (lenient design for LLM compatibility)
+
+**Returns**: Success confirmation with details about what was removed.
+
+**Examples**:
+
+Remove algorithm from slot 3:
+```json
+{
+  "tool": "remove",
+  "arguments": {
+    "target": "slot",
+    "slot_index": 3
+  }
+}
+```
+
+Response (slot was occupied):
+```json
+{
+  "success": true,
+  "message": "Removed \"Low-Pass Filter\" from slot 3"
+}
+```
+
+Response (slot was already empty):
+```json
+{
+  "success": true,
+  "message": "Slot 3 is already empty"
 }
 ```
 
@@ -1466,7 +1512,7 @@ If you're familiar with the old 20+ tool API, here's how tools map to the new 6-
 | get_algorithm_details | search (exact match) |
 | get_current_preset | show with target="preset" |
 | add_algorithm | new or edit with target="slot" |
-| remove_algorithm | edit to empty slot |
+| remove_algorithm | remove with target="slot" |
 | set_parameter_value | edit with target="parameter" |
 | get_parameter_value | show with target="parameter" |
 | set_preset_name | edit with target="preset" |
