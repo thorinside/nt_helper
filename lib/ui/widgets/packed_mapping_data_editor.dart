@@ -66,6 +66,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   bool _isDirty = false;
   bool _isSaving = false;
 
+  // Parameter value preview during range slider drag
+  DateTime? _lastPreviewSent;
+  static const _previewThrottleDuration = Duration(milliseconds: 100);
+
   @override
   void initState() {
     super.initState();
@@ -151,6 +155,34 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     _i2cMaxController.dispose();
 
     super.dispose();
+  }
+
+  void _previewParameterValue(int value) {
+    final now = DateTime.now();
+    if (_lastPreviewSent == null ||
+        now.difference(_lastPreviewSent!) > _previewThrottleDuration) {
+      _lastPreviewSent = now;
+      context.read<DistingCubit>().updateParameterValue(
+            algorithmIndex: widget.algorithmIndex,
+            parameterNumber: widget.parameterNumber,
+            value: value,
+            userIsChangingTheValue: true,
+          );
+    }
+  }
+
+  void _restoreParameterValue() {
+    final state = context.read<DistingCubit>().state;
+    if (state is DistingStateSynchronized) {
+      final currentValue = state
+          .slots[widget.algorithmIndex].values[widget.parameterNumber].value;
+      context.read<DistingCubit>().updateParameterValue(
+            algorithmIndex: widget.algorithmIndex,
+            parameterNumber: widget.parameterNumber,
+            value: currentValue,
+            userIsChangingTheValue: false,
+          );
+    }
   }
 
   void _triggerOptimisticSave({bool force = false}) {
@@ -607,12 +639,21 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             minValue: _data.midiMin,
             maxValue: _data.midiMax,
             onChanged: (rawMin, rawMax) {
+              final previousMin = _data.midiMin;
+              final previousMax = _data.midiMax;
               setState(() {
                 _data = _data.copyWith(midiMin: rawMin, midiMax: rawMax);
                 _midiMinController.text = rawMin.toString();
                 _midiMaxController.text = rawMax.toString();
               });
               _triggerOptimisticSave();
+              // Preview whichever thumb moved
+              final previewValue =
+                  (rawMin != previousMin) ? rawMin : rawMax;
+              _previewParameterValue(previewValue);
+            },
+            onChangeEnd: (_, __) {
+              _restoreParameterValue();
             },
           ),
           // Add the MIDI Detector
@@ -737,12 +778,21 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             minValue: _data.i2cMin,
             maxValue: _data.i2cMax,
             onChanged: (rawMin, rawMax) {
+              final previousMin = _data.i2cMin;
+              final previousMax = _data.i2cMax;
               setState(() {
                 _data = _data.copyWith(i2cMin: rawMin, i2cMax: rawMax);
                 _i2cMinController.text = rawMin.toString();
                 _i2cMaxController.text = rawMax.toString();
               });
               _triggerOptimisticSave();
+              // Preview whichever thumb moved
+              final previewValue =
+                  (rawMin != previousMin) ? rawMin : rawMax;
+              _previewParameterValue(previewValue);
+            },
+            onChangeEnd: (_, __) {
+              _restoreParameterValue();
             },
           ),
         ],
@@ -903,6 +953,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     required int minValue,
     required int maxValue,
     required void Function(int rawMin, int rawMax) onChanged,
+    void Function(int rawMin, int rawMax)? onChangeEnd,
   }) {
     final scale = pow(10, widget.powerOfTen).toDouble();
     var sliderMin = widget.parameterMin;
@@ -952,6 +1003,13 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             final rawMax = (values.end / scale).round();
             onChanged(rawMin, rawMax);
           },
+          onChangeEnd: onChangeEnd != null
+              ? (RangeValues values) {
+                  final rawMin = (values.start / scale).round();
+                  final rawMax = (values.end / scale).round();
+                  onChangeEnd(rawMin, rawMax);
+                }
+              : null,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
