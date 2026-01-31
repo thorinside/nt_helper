@@ -619,6 +619,10 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     final myMidiCubit = context.read<MidiListenerCubit>();
     final distingCubit = context.read<DistingCubit>();
 
+    final paramInfo = slot.parameters
+        .where((p) => p.parameterNumber == parameterNumber)
+        .firstOrNull;
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -629,6 +633,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         slots: state.slots,
         algorithmIndex: slotIndex,
         parameterNumber: parameterNumber,
+        parameterMin: paramInfo?.min ?? 0,
+        parameterMax: paramInfo?.max ?? 0,
+        powerOfTen: paramInfo?.powerOfTen ?? 0,
       ),
     );
   }

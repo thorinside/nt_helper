@@ -14,6 +14,10 @@ class MappingEditorBottomSheet extends StatelessWidget {
     required this.slots,
     required this.algorithmIndex,
     required this.parameterNumber,
+    required this.parameterMin,
+    required this.parameterMax,
+    required this.powerOfTen,
+    this.unitString,
   });
 
   final MidiListenerCubit myMidiCubit;
@@ -22,6 +26,10 @@ class MappingEditorBottomSheet extends StatelessWidget {
   final List<Slot> slots;
   final int algorithmIndex;
   final int parameterNumber;
+  final int parameterMin;
+  final int parameterMax;
+  final int powerOfTen;
+  final String? unitString;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +53,10 @@ class MappingEditorBottomSheet extends StatelessWidget {
               slots: slots,
               algorithmIndex: algorithmIndex,
               parameterNumber: parameterNumber,
+              parameterMin: parameterMin,
+              parameterMax: parameterMax,
+              powerOfTen: powerOfTen,
+              unitString: unitString,
               onSave: (updatedData) async {
                 // Save directly to cubit without closing the dialog
                 distingCubit.saveMapping(algorithmIndex, parameterNumber, updatedData);

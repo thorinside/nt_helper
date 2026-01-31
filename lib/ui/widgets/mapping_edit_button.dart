@@ -64,6 +64,10 @@ class MappingEditButton extends StatelessWidget {
                     slots: currentSlots,
                     algorithmIndex: widget.algorithmIndex,
                     parameterNumber: widget.parameterNumber,
+                    parameterMin: widget.min,
+                    parameterMax: widget.max,
+                    powerOfTen: widget.powerOfTen,
+                    unitString: widget.unit,
                   );
                 },
               );

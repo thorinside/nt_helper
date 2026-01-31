@@ -11,8 +11,7 @@
 
 import 'dart:async';
 import 'dart:collection';
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 
 // Domain classes
@@ -768,6 +767,13 @@ class DistingMessageScheduler {
       final parsed = decodeDistingNTSysEx(sysex);
       if (parsed == null) {
         return false;
+      }
+
+      // TEMPORARY DEBUG — remove after investigation
+      if (parsed.messageType ==
+          DistingNTRespMessageType.respParameterInfo) {
+        debugPrint(
+            'RAW SysEx len=${sysex.length}: ${sysex.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
       }
 
       if (parsed.sysExId != _sysExId) {

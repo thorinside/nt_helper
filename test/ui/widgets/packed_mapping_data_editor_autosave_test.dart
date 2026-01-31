@@ -26,6 +26,9 @@ void main() {
             slots: mockSlots,
             algorithmIndex: 0,
             parameterNumber: 0,
+            parameterMin: 0,
+            parameterMax: 100,
+            powerOfTen: 0,
           ),
         ),
       );
@@ -133,16 +136,14 @@ void main() {
       expect(lastSavedData?.midiCC, equals(64));
     });
 
-    testWidgets('MIDI Min field triggers save after debounce with negative value',
+    testWidgets('MIDI RangeSlider triggers save after debounce',
         (tester) async {
       int saveCount = 0;
-      PackedMappingData? lastSavedData;
 
       await tester.pumpWidget(
         createTestWidget(
           onSave: (data) async {
             saveCount++;
-            lastSavedData = data;
           },
         ),
       );
@@ -150,55 +151,10 @@ void main() {
       await tester.tap(find.text('MIDI'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'MIDI Min',
-      );
-
-      await tester.enterText(textFieldFinder, '-700');
-      await tester.pump();
+      // RangeSlider should be present
+      expect(find.byType(RangeSlider), findsOneWidget);
 
       expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1);
-      expect(lastSavedData?.midiMin, equals(-700));
-    });
-
-    testWidgets('MIDI Max field triggers save after debounce with negative value',
-        (tester) async {
-      int saveCount = 0;
-      PackedMappingData? lastSavedData;
-
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {
-            saveCount++;
-            lastSavedData = data;
-          },
-        ),
-      );
-
-      await tester.tap(find.text('MIDI'));
-      await tester.pumpAndSettle();
-
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'MIDI Max',
-      );
-
-      await tester.enterText(textFieldFinder, '-200');
-      await tester.pump();
-
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1);
-      expect(lastSavedData?.midiMax, equals(-200));
     });
 
     testWidgets('I2C CC field triggers save after debounce', (tester) async {
@@ -234,16 +190,14 @@ void main() {
       expect(lastSavedData?.i2cCC, equals(32));
     });
 
-    testWidgets('I2C Min field triggers save after debounce with negative value',
+    testWidgets('I2C RangeSlider is present',
         (tester) async {
       int saveCount = 0;
-      PackedMappingData? lastSavedData;
 
       await tester.pumpWidget(
         createTestWidget(
           onSave: (data) async {
             saveCount++;
-            lastSavedData = data;
           },
         ),
       );
@@ -251,55 +205,10 @@ void main() {
       await tester.tap(find.text('I2C'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'I2C Min',
-      );
-
-      await tester.enterText(textFieldFinder, '-1000');
-      await tester.pump();
+      // RangeSlider should be present
+      expect(find.byType(RangeSlider), findsOneWidget);
 
       expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1);
-      expect(lastSavedData?.i2cMin, equals(-1000));
-    });
-
-    testWidgets('I2C Max field triggers save after debounce with negative value',
-        (tester) async {
-      int saveCount = 0;
-      PackedMappingData? lastSavedData;
-
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {
-            saveCount++;
-            lastSavedData = data;
-          },
-        ),
-      );
-
-      await tester.tap(find.text('I2C'));
-      await tester.pumpAndSettle();
-
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'I2C Max',
-      );
-
-      await tester.enterText(textFieldFinder, '-500');
-      await tester.pump();
-
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1);
-      expect(lastSavedData?.i2cMax, equals(-500));
     });
 
     testWidgets('Rapid edits collapse to single save after final debounce', (
@@ -364,6 +273,9 @@ void main() {
             slots: mockSlots,
             algorithmIndex: 0,
             parameterNumber: 0,
+            parameterMin: 0,
+            parameterMax: 100,
+            powerOfTen: 0,
           ),
         ),
       );
@@ -800,6 +712,9 @@ void main() {
             slots: mockSlots,
             algorithmIndex: 0,
             parameterNumber: 0,
+            parameterMin: 0,
+            parameterMax: 100,
+            powerOfTen: 0,
           ),
         ),
       );
@@ -883,6 +798,9 @@ void main() {
                       slots: mockSlots,
                       algorithmIndex: 0,
                       parameterNumber: 0,
+                      parameterMin: 0,
+                      parameterMax: 100,
+                      powerOfTen: 0,
                     ),
                   );
                 },
@@ -940,6 +858,9 @@ void main() {
             slots: mockSlots,
             algorithmIndex: 0,
             parameterNumber: 0,
+            parameterMin: 0,
+            parameterMax: 100,
+            powerOfTen: 0,
           ),
         ),
       );
@@ -1242,7 +1163,7 @@ void main() {
     });
   });
 
-  group('PackedMappingDataEditor - Negative Number Input', () {
+  group('PackedMappingDataEditor - RangeSlider Min/Max', () {
     late PackedMappingData testData;
     late List<Slot> mockSlots;
 
@@ -1263,12 +1184,15 @@ void main() {
             slots: mockSlots,
             algorithmIndex: 0,
             parameterNumber: 0,
+            parameterMin: 0,
+            parameterMax: 100,
+            powerOfTen: 0,
           ),
         ),
       );
     }
 
-    testWidgets('MIDI Min TextField accepts negative input with signed keyboard',
+    testWidgets('MIDI tab shows RangeSlider instead of text fields',
         (tester) async {
       await tester.pumpWidget(
         createTestWidget(
@@ -1279,42 +1203,27 @@ void main() {
       await tester.tap(find.text('MIDI'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'MIDI Min',
-      );
+      // RangeSlider should be present
+      expect(find.byType(RangeSlider), findsOneWidget);
 
-      final textField = tester.widget<TextField>(textFieldFinder);
+      // Old text fields should not be present
       expect(
-        textField.keyboardType,
-        equals(const TextInputType.numberWithOptions(signed: true)),
-      );
-    });
-
-    testWidgets('MIDI Max TextField accepts negative input with signed keyboard',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == 'MIDI Min',
         ),
+        findsNothing,
       );
-
-      await tester.tap(find.text('MIDI'));
-      await tester.pumpAndSettle();
-
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'MIDI Max',
-      );
-
-      final textField = tester.widget<TextField>(textFieldFinder);
       expect(
-        textField.keyboardType,
-        equals(const TextInputType.numberWithOptions(signed: true)),
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == 'MIDI Max',
+        ),
+        findsNothing,
       );
     });
 
-    testWidgets('I2C Min TextField accepts negative input with signed keyboard',
+    testWidgets('I2C tab shows RangeSlider instead of text fields',
         (tester) async {
       await tester.pumpWidget(
         createTestWidget(
@@ -1325,42 +1234,28 @@ void main() {
       await tester.tap(find.text('I2C'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'I2C Min',
-      );
+      // RangeSlider should be present
+      expect(find.byType(RangeSlider), findsOneWidget);
 
-      final textField = tester.widget<TextField>(textFieldFinder);
+      // Old text fields should not be present
       expect(
-        textField.keyboardType,
-        equals(const TextInputType.numberWithOptions(signed: true)),
-      );
-    });
-
-    testWidgets('I2C Max TextField accepts negative input with signed keyboard',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == 'I2C Min',
         ),
+        findsNothing,
       );
-
-      await tester.tap(find.text('I2C'));
-      await tester.pumpAndSettle();
-
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'I2C Max',
-      );
-
-      final textField = tester.widget<TextField>(textFieldFinder);
       expect(
-        textField.keyboardType,
-        equals(const TextInputType.numberWithOptions(signed: true)),
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == 'I2C Max',
+        ),
+        findsNothing,
       );
     });
 
-    testWidgets('MIDI Min clamps value to -32768', (tester) async {
+    testWidgets('New mapping auto-defaults MIDI min/max to parameter range',
+        (tester) async {
       PackedMappingData? lastSavedData;
 
       await tester.pumpWidget(
@@ -1374,42 +1269,26 @@ void main() {
       await tester.tap(find.text('MIDI'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'MIDI Min',
-      );
+      // Enable MIDI to trigger a save
+      final switchFinder = find.byWidgetPredicate((widget) {
+        if (widget is! Row) return false;
+        final children = widget.children;
+        return children.any(
+          (child) => child is Text && child.data == 'MIDI Enabled',
+        );
+      });
 
-      await tester.enterText(textFieldFinder, '-40000');
+      await tester.tap(
+        find.descendant(of: switchFinder, matching: find.byType(Switch)),
+      );
+      await tester.pump();
+
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
-      expect(lastSavedData?.midiMin, equals(-32768));
-    });
-
-    testWidgets('MIDI Max clamps value to 32767', (tester) async {
-      PackedMappingData? lastSavedData;
-
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {
-            lastSavedData = data;
-          },
-        ),
-      );
-
-      await tester.tap(find.text('MIDI'));
-      await tester.pumpAndSettle();
-
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'MIDI Max',
-      );
-
-      await tester.enterText(textFieldFinder, '40000');
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
-      expect(lastSavedData?.midiMax, equals(32767));
+      // For new filler mapping, min/max should default to parameterMin/parameterMax (0, 100)
+      expect(lastSavedData?.midiMin, equals(0));
+      expect(lastSavedData?.midiMax, equals(100));
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +14,10 @@ class PackedMappingDataEditor extends StatefulWidget {
   final List<Slot> slots;
   final int algorithmIndex;
   final int parameterNumber;
+  final int parameterMin;
+  final int parameterMax;
+  final int powerOfTen;
+  final String? unitString;
 
   const PackedMappingDataEditor({
     super.key,
@@ -21,6 +26,10 @@ class PackedMappingDataEditor extends StatefulWidget {
     required this.slots,
     required this.algorithmIndex,
     required this.parameterNumber,
+    required this.parameterMin,
+    required this.parameterMax,
+    required this.powerOfTen,
+    this.unitString,
   });
 
   @override
@@ -62,6 +71,28 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     super.initState();
 
     _data = widget.initialData;
+
+    // Auto-default MIDI min/max to the full parameter range for new mappings
+    final bool isNewMidiMapping =
+        (_data.midiMin == 0 && _data.midiMax == 0 && !_data.isMidiEnabled) ||
+        (_data.midiMin == -1 && _data.midiMax == -1);
+    if (isNewMidiMapping && widget.parameterMin < widget.parameterMax) {
+      _data = _data.copyWith(
+        midiMin: widget.parameterMin,
+        midiMax: widget.parameterMax,
+      );
+    }
+
+    // Auto-default I2C min/max to the full parameter range for new mappings
+    final bool isNewI2cMapping =
+        (_data.i2cMin == 0 && _data.i2cMax == 0 && !_data.isI2cEnabled) ||
+        (_data.i2cMin == -1 && _data.i2cMax == -1);
+    if (isNewI2cMapping && widget.parameterMin < widget.parameterMax) {
+      _data = _data.copyWith(
+        i2cMin: widget.parameterMin,
+        i2cMax: widget.parameterMax,
+      );
+    }
 
     // Decide which tab should be displayed first.
     int initialIndex;
@@ -568,19 +599,17 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 ),
               ),
             ),
-          _buildNumericField(
-            label: 'MIDI Min',
-            controller: _midiMinController,
-            onSubmit: _updateMidiMinFromController,
-            onChanged: _triggerOptimisticSave,
-            signed: true,
-          ),
-          _buildNumericField(
-            label: 'MIDI Max',
-            controller: _midiMaxController,
-            onSubmit: _updateMidiMaxFromController,
-            onChanged: _triggerOptimisticSave,
-            signed: true,
+          _buildRangeSlider(
+            minValue: _data.midiMin,
+            maxValue: _data.midiMax,
+            onChanged: (rawMin, rawMax) {
+              setState(() {
+                _data = _data.copyWith(midiMin: rawMin, midiMax: rawMax);
+                _midiMinController.text = rawMin.toString();
+                _midiMaxController.text = rawMax.toString();
+              });
+              _triggerOptimisticSave();
+            },
           ),
           // Add the MIDI Detector
           MidiDetectorWidget(
@@ -699,19 +728,17 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               ),
             ],
           ),
-          _buildNumericField(
-            label: 'I2C Min',
-            controller: _i2cMinController,
-            onSubmit: _updateI2cMinFromController,
-            onChanged: _triggerOptimisticSave,
-            signed: true,
-          ),
-          _buildNumericField(
-            label: 'I2C Max',
-            controller: _i2cMaxController,
-            onSubmit: _updateI2cMaxFromController,
-            onChanged: _triggerOptimisticSave,
-            signed: true,
+          _buildRangeSlider(
+            minValue: _data.i2cMin,
+            maxValue: _data.i2cMax,
+            onChanged: (rawMin, rawMax) {
+              setState(() {
+                _data = _data.copyWith(i2cMin: rawMin, i2cMax: rawMax);
+                _i2cMinController.text = rawMin.toString();
+                _i2cMaxController.text = rawMax.toString();
+              });
+              _triggerOptimisticSave();
+            },
           ),
         ],
       ),
@@ -852,6 +879,93 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       Colors.red,
     ];
     return colors[(pageIndex - 1) % colors.length];
+  }
+
+  /// ---------------------
+  /// Range Slider
+  /// ---------------------
+  String _formatDisplayValue(double displayValue) {
+    final decimalPlaces = widget.powerOfTen.abs();
+    final formatted = displayValue.toStringAsFixed(decimalPlaces);
+    final unit = widget.unitString?.trim();
+    if (unit != null && unit.isNotEmpty) {
+      return '$formatted $unit';
+    }
+    return formatted;
+  }
+
+  Widget _buildRangeSlider({
+    required int minValue,
+    required int maxValue,
+    required void Function(int rawMin, int rawMax) onChanged,
+  }) {
+    final scale = pow(10, widget.powerOfTen).toDouble();
+    var sliderMin = widget.parameterMin;
+    var sliderMax = widget.parameterMax;
+    if (sliderMin > sliderMax) {
+      final tmp = sliderMin;
+      sliderMin = sliderMax;
+      sliderMax = tmp;
+    }
+
+    if (sliderMin == sliderMax) {
+      // Only one possible value — show a label instead of a slider
+      final displayValue = sliderMin * scale;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Text(
+          'Range: ${_formatDisplayValue(displayValue)}',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+
+    final displayMin = sliderMin * scale;
+    final displayMax = sliderMax * scale;
+
+    // Clamp current values to slider range
+    final clampedMin = minValue.clamp(sliderMin, sliderMax);
+    final clampedMax = maxValue.clamp(sliderMin, sliderMax);
+    final displayStart = clampedMin * scale;
+    final displayEnd = clampedMax * scale;
+
+    final divisions = sliderMax - sliderMin;
+
+    return Column(
+      children: [
+        RangeSlider(
+          values: RangeValues(displayStart, displayEnd),
+          min: displayMin,
+          max: displayMax,
+          divisions: divisions,
+          labels: RangeLabels(
+            _formatDisplayValue(displayStart),
+            _formatDisplayValue(displayEnd),
+          ),
+          onChanged: (RangeValues values) {
+            final rawMin = (values.start / scale).round();
+            final rawMax = (values.end / scale).round();
+            onChanged(rawMin, rawMax);
+          },
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Min: ${_formatDisplayValue(displayStart)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                'Max: ${_formatDisplayValue(displayEnd)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   /// ---------------------
