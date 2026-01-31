@@ -43,9 +43,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   // We'll keep a local copy of the data that we can edit
   late PackedMappingData _data;
 
-  // Controllers for numeric TextFields:
-  late TextEditingController _voltsController;
-  late TextEditingController _deltaController;
+  // CV range state (replaces volts/delta text controllers)
+  late int _cvRangeMin;
+  late int _cvRangeMax;
 
   // MIDI
   late TextEditingController _midiCcController;
@@ -98,6 +98,24 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       );
     }
 
+    // Auto-default CV range for new mappings
+    final bool isNewCvMapping = (_data.volts == -1) ||
+        (_data.volts == 0 && _data.delta == 0);
+    if (isNewCvMapping && widget.parameterMin < widget.parameterMax) {
+      _cvRangeMin = widget.parameterMin;
+      _cvRangeMax = widget.parameterMax;
+      final depth = widget.parameterMax - widget.parameterMin;
+      _data = _data.copyWith(volts: 5, delta: depth);
+    } else {
+      // Derive range from existing volts/delta
+      final depth = _data.isUnipolar
+          ? _data.delta
+          : _data.delta * 2;
+      _cvRangeMin = widget.parameterMin;
+      _cvRangeMax = (widget.parameterMin + depth)
+          .clamp(widget.parameterMin, widget.parameterMax);
+    }
+
     // Decide which tab should be displayed first.
     int initialIndex;
     if (_data.cvInput != 0) {
@@ -125,8 +143,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     );
 
     // Initialize controllers with the existing data
-    _voltsController = TextEditingController(text: _data.volts.toString());
-    _deltaController = TextEditingController(text: _data.delta.toString());
     _midiCcController = TextEditingController(text: _data.midiCC.toString());
     _midiMinController = TextEditingController(text: _data.midiMin.toString());
     _midiMaxController = TextEditingController(text: _data.midiMax.toString());
@@ -145,8 +161,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     _tabController.dispose();
 
     // Dispose controllers
-    _voltsController.dispose();
-    _deltaController.dispose();
     _midiCcController.dispose();
     _midiMinController.dispose();
     _midiMaxController.dispose();
@@ -206,8 +220,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   // Synchronous save for disposal - no setState calls
   void _performSaveSync() {
     // Update data from controllers without calling setState
-    final volts = int.tryParse(_voltsController.text) ?? _data.volts;
-    final delta = int.tryParse(_deltaController.text) ?? _data.delta;
     final midiCC = int.tryParse(_midiCcController.text) ?? _data.midiCC;
     final midiMin = int.tryParse(_midiMinController.text) ?? _data.midiMin;
     final midiMax = int.tryParse(_midiMaxController.text) ?? _data.midiMax;
@@ -216,8 +228,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final i2cMax = int.tryParse(_i2cMaxController.text) ?? _data.i2cMax;
 
     _data = _data.copyWith(
-      volts: volts,
-      delta: delta,
       midiCC: midiCC,
       midiMin: midiMin,
       midiMax: midiMax,
@@ -231,8 +241,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
   Future<void> _attemptSave({int attempt = 0}) async {
     try {
-      _updateVoltsFromController();
-      _updateDeltaFromController();
       _updateMidiCcFromController();
       _updateMidiMinFromController();
       _updateMidiMaxFromController();
@@ -436,6 +444,11 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   onChanged: (val) {
                     setState(() {
                       _data = _data.copyWith(isUnipolar: val);
+                      // Recompute range from existing delta
+                      final depth = val ? _data.delta : _data.delta * 2;
+                      _cvRangeMin = widget.parameterMin;
+                      _cvRangeMax = (widget.parameterMin + depth)
+                          .clamp(widget.parameterMin, widget.parameterMax);
                     });
                     _triggerOptimisticSave();
                   },
@@ -456,42 +469,52 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 ),
               ],
             ),
-            _buildNumericField(
-              label: 'Volts',
-              controller: _voltsController,
-              onSubmit: _updateVoltsFromController,
-              onChanged: _triggerOptimisticSave,
+            Row(
+              children: [
+                const Text('CV Voltage'),
+                Expanded(
+                  child: Slider(
+                    value: _data.volts.clamp(1, 10).toDouble(),
+                    min: 1,
+                    max: 10,
+                    divisions: 9,
+                    label: '${_data.volts.clamp(1, 10)}V',
+                    onChanged: (val) {
+                      setState(() {
+                        _data = _data.copyWith(volts: val.round());
+                      });
+                      _triggerOptimisticSave();
+                    },
+                  ),
+                ),
+                Text('${_data.volts.clamp(1, 10)}V'),
+              ],
             ),
-            _buildNumericField(
-              label: 'Delta',
-              controller: _deltaController,
-              onSubmit: _updateDeltaFromController,
-              onChanged: _triggerOptimisticSave,
+            _buildRangeSlider(
+              minValue: _cvRangeMin,
+              maxValue: _cvRangeMax,
+              onChanged: (rawMin, rawMax) {
+                final previousMin = _cvRangeMin;
+                setState(() {
+                  _cvRangeMin = rawMin;
+                  _cvRangeMax = rawMax;
+                  final depth = rawMax - rawMin;
+                  final delta = _data.isUnipolar ? depth : depth ~/ 2;
+                  _data = _data.copyWith(delta: delta);
+                });
+                _triggerOptimisticSave();
+                final previewValue =
+                    (rawMin != previousMin) ? rawMin : rawMax;
+                _previewParameterValue(previewValue);
+              },
+              onChangeEnd: (_, _) {
+                _restoreParameterValue();
+              },
             ),
           ],
         ),
       ),
     );
-  }
-
-  void _updateVoltsFromController() {
-    final parsed = int.tryParse(_voltsController.text) ?? _data.volts;
-    setState(() {
-      _data = _data.copyWith(volts: parsed);
-    });
-    if (_voltsController.text != _data.volts.toString()) {
-      _voltsController.text = _data.volts.toString();
-    }
-  }
-
-  void _updateDeltaFromController() {
-    final parsed = int.tryParse(_deltaController.text) ?? _data.delta;
-    setState(() {
-      _data = _data.copyWith(delta: parsed);
-    });
-    if (_deltaController.text != _data.delta.toString()) {
-      _deltaController.text = _data.delta.toString();
-    }
   }
 
   /// ---------------------
@@ -640,7 +663,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             maxValue: _data.midiMax,
             onChanged: (rawMin, rawMax) {
               final previousMin = _data.midiMin;
-              final previousMax = _data.midiMax;
               setState(() {
                 _data = _data.copyWith(midiMin: rawMin, midiMax: rawMax);
                 _midiMinController.text = rawMin.toString();
@@ -652,7 +674,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   (rawMin != previousMin) ? rawMin : rawMax;
               _previewParameterValue(previewValue);
             },
-            onChangeEnd: (_, __) {
+            onChangeEnd: (_, _) {
               _restoreParameterValue();
             },
           ),
@@ -779,7 +801,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             maxValue: _data.i2cMax,
             onChanged: (rawMin, rawMax) {
               final previousMin = _data.i2cMin;
-              final previousMax = _data.i2cMax;
               setState(() {
                 _data = _data.copyWith(i2cMin: rawMin, i2cMax: rawMax);
                 _i2cMinController.text = rawMin.toString();
@@ -791,7 +812,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   (rawMin != previousMin) ? rawMin : rawMax;
               _previewParameterValue(previewValue);
             },
-            onChangeEnd: (_, __) {
+            onChangeEnd: (_, _) {
               _restoreParameterValue();
             },
           ),

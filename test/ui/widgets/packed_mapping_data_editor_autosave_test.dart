@@ -34,7 +34,7 @@ void main() {
       );
     }
 
-    testWidgets('Volts field triggers save after 1-second debounce', (
+    testWidgets('CV Voltage slider triggers save after 1-second debounce', (
       tester,
     ) async {
       int saveCount = 0;
@@ -52,12 +52,13 @@ void main() {
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Volts',
-      );
+      // Find the CV Voltage Slider (not a RangeSlider)
+      final sliderFinder = find.byType(Slider);
+      expect(sliderFinder, findsOneWidget);
 
-      await tester.enterText(textFieldFinder, '42');
+      final slider = tester.widget<Slider>(sliderFinder);
+      // Invoke onChanged to simulate dragging to 7V
+      slider.onChanged!(7.0);
       await tester.pump();
 
       expect(saveCount, 0);
@@ -66,40 +67,40 @@ void main() {
       await tester.pump();
 
       expect(saveCount, 1);
-      expect(lastSavedData?.volts, equals(42));
+      expect(lastSavedData?.volts, equals(7));
     });
 
-    testWidgets('Delta field triggers save after debounce', (tester) async {
-      int saveCount = 0;
-      PackedMappingData? lastSavedData;
-
+    testWidgets('CV tab shows RangeSlider and Slider', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          onSave: (data) async {
-            saveCount++;
-            lastSavedData = data;
-          },
+          onSave: (data) async {},
         ),
       );
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Delta',
+      // CV tab should have a RangeSlider for the CV range
+      expect(find.byType(RangeSlider), findsOneWidget);
+
+      // CV tab should have a Slider for CV Voltage
+      expect(find.byType(Slider), findsOneWidget);
+
+      // Old text fields should not be present
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == 'Volts',
+        ),
+        findsNothing,
       );
-
-      await tester.enterText(textFieldFinder, '10');
-      await tester.pump();
-
-      expect(saveCount, 0);
-
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
-
-      expect(saveCount, 1);
-      expect(lastSavedData?.delta, equals(10));
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == 'Delta',
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('MIDI CC field triggers save after debounce', (tester) async {
@@ -211,7 +212,7 @@ void main() {
       expect(saveCount, 0);
     });
 
-    testWidgets('Rapid edits collapse to single save after final debounce', (
+    testWidgets('Rapid slider edits collapse to single save after final debounce', (
       tester,
     ) async {
       int saveCount = 0;
@@ -229,17 +230,15 @@ void main() {
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Volts',
-      );
+      final sliderFinder = find.byType(Slider);
+      expect(sliderFinder, findsOneWidget);
 
-      // Rapid edits
-      await tester.enterText(textFieldFinder, '10');
+      // Rapid slider changes
+      tester.widget<Slider>(sliderFinder).onChanged!(3.0);
       await tester.pump(const Duration(milliseconds: 200));
-      await tester.enterText(textFieldFinder, '20');
+      tester.widget<Slider>(sliderFinder).onChanged!(6.0);
       await tester.pump(const Duration(milliseconds: 200));
-      await tester.enterText(textFieldFinder, '30');
+      tester.widget<Slider>(sliderFinder).onChanged!(9.0);
       await tester.pump();
 
       expect(saveCount, 0);
@@ -248,7 +247,7 @@ void main() {
       await tester.pump();
 
       expect(saveCount, 1);
-      expect(lastSavedData?.volts, equals(30));
+      expect(lastSavedData?.volts, equals(9));
     });
   });
 
@@ -738,12 +737,9 @@ void main() {
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Volts',
-      );
-
-      await tester.enterText(textFieldFinder, '99');
+      // Change CV Voltage slider to 9V
+      final sliderFinder = find.byType(Slider);
+      tester.widget<Slider>(sliderFinder).onChanged!(9.0);
       await tester.pump();
 
       expect(saveCount, 0);
@@ -752,7 +748,7 @@ void main() {
       await tester.pumpWidget(Container());
 
       expect(saveCount, 1);
-      expect(lastSavedData?.volts, equals(99));
+      expect(lastSavedData?.volts, equals(9));
     });
 
     testWidgets('No save triggered on dispose if no pending changes', (
@@ -866,7 +862,7 @@ void main() {
       );
     }
 
-    testWidgets('Indicator shows when TextField is modified', (tester) async {
+    testWidgets('Indicator shows when slider is modified', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
           onSave: (data) async {},
@@ -887,12 +883,9 @@ void main() {
         findsNothing,
       );
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Volts',
-      );
-
-      await tester.enterText(textFieldFinder, '42');
+      // Change CV Voltage slider
+      final sliderFinder = find.byType(Slider);
+      tester.widget<Slider>(sliderFinder).onChanged!(7.0);
       await tester.pump();
 
       // Indicator should appear (amber - dirty)
@@ -989,12 +982,9 @@ void main() {
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Volts',
-      );
-
-      await tester.enterText(textFieldFinder, '42');
+      // Change CV Voltage slider
+      final sliderFinder = find.byType(Slider);
+      tester.widget<Slider>(sliderFinder).onChanged!(7.0);
       await tester.pump();
 
       // Dirty state (amber)
@@ -1042,12 +1032,9 @@ void main() {
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Volts',
-      );
-
-      await tester.enterText(textFieldFinder, '42');
+      // Change CV Voltage slider
+      final sliderFinder = find.byType(Slider);
+      tester.widget<Slider>(sliderFinder).onChanged!(7.0);
       await tester.pump();
 
       // Wait for save to complete
@@ -1078,12 +1065,9 @@ void main() {
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Volts',
-      );
-
-      await tester.enterText(textFieldFinder, '42');
+      // Change CV Voltage slider
+      final sliderFinder = find.byType(Slider);
+      tester.widget<Slider>(sliderFinder).onChanged!(7.0);
       await tester.pump();
 
       // Switch tabs
@@ -1129,12 +1113,9 @@ void main() {
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
 
-      final textFieldFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == 'Volts',
-      );
-
-      await tester.enterText(textFieldFinder, '42');
+      // Change CV Voltage slider
+      final sliderFinder = find.byType(Slider);
+      tester.widget<Slider>(sliderFinder).onChanged!(7.0);
       await tester.pump();
 
       // Find tooltip with "Unsaved changes" message
