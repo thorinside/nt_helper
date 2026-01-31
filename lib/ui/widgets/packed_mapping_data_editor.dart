@@ -153,18 +153,22 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     super.dispose();
   }
 
-  void _triggerOptimisticSave() {
+  void _triggerOptimisticSave({bool force = false}) {
     setState(() {
       _isDirty = true;
-      _isSaving = false;
+      _isSaving = force;
     });
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(_debounceDuration, () {
-      setState(() {
-        _isSaving = true;
-      });
+    if (force) {
       _attemptSave();
-    });
+    } else {
+      _debounceTimer = Timer(_debounceDuration, () {
+        setState(() {
+          _isSaving = true;
+        });
+        _attemptSave();
+      });
+    }
   }
 
   // Synchronous save for disposal - no setState calls
@@ -646,7 +650,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   });
                   // Also update the text field / controller if necessary
                   _midiCcController.text = number.toString();
-                  _triggerOptimisticSave();
+                  _triggerOptimisticSave(force: true);
                 },
           ),
         ],
