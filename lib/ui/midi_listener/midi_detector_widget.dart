@@ -70,6 +70,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
   late MidiListenerCubit _cubit;
   List<MidiDevice> _devices = [];
   MidiDevice? _selectedDevice;
+  final TextEditingController _dropdownController = TextEditingController();
 
   String? _statusMessage;
   Timer? _fadeTimer;
@@ -88,16 +89,47 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
         }
       });
     } else if (s is Data) {
-      setState(() {
-        _devices = s.devices;
-        _selectedDevice = s.selectedDevice;
-      });
+      _devices = s.devices;
+      _selectedDevice = s.selectedDevice;
+      if (_selectedDevice != null) {
+        _dropdownController.text = _selectedDevice!.name;
+      }
+
+      // Restore status message for connected device
+      if (s.isConnected && s.selectedDevice != null) {
+        _statusMessage = 'Connected to ${s.selectedDevice!.name}.';
+      }
+
+      // Replay last detection after first frame
+      if (s.lastDetectedType != null && s.lastDetectedChannel != null) {
+        final type = s.lastDetectedType!;
+        final channel = s.lastDetectedChannel!;
+        final eventInfo = switch (type) {
+          MidiEventType.cc => ('CC', s.lastDetectedCc),
+          MidiEventType.noteOn => ('Note On', s.lastDetectedNote),
+          MidiEventType.noteOff => ('Note Off', s.lastDetectedNote),
+        };
+        final eventNumber = eventInfo.$2;
+        if (eventNumber != null) {
+          _statusMessage =
+              'Detected ${eventInfo.$1} $eventNumber on channel ${channel + 1}';
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            widget.onMidiEventFound?.call(
+              type: type,
+              channel: channel,
+              number: eventNumber,
+            );
+          });
+        }
+      }
     }
   }
 
   @override
   void dispose() {
     _fadeTimer?.cancel();
+    _dropdownController.dispose();
 
     if (widget.useLocalCubit) {
       _cubit.close();
@@ -175,7 +207,9 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
   }
 
   Widget _buildDeviceDropdown() {
-    final entries = _devices.map((device) {
+    final sorted = List<MidiDevice>.of(_devices)
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final entries = sorted.map((device) {
       return DropdownMenuEntry<MidiDevice>(value: device, label: device.name);
     }).toList();
 
@@ -185,8 +219,8 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
         DropdownMenu<MidiDevice>(
           width: 200,
           requestFocusOnTap: false,
+          controller: _dropdownController,
           label: const Text('MIDI Device'),
-          initialSelection: _selectedDevice,
           dropdownMenuEntries: entries,
           onSelected: _onDeviceSelected,
         ),
@@ -232,6 +266,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
 
   void _onDisconnectPressed() {
     setState(() => _selectedDevice = null);
+    _dropdownController.clear();
     _cubit.disconnectDevice();
   }
 

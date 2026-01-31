@@ -27,10 +27,11 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       emit(
         MidiListenerState.data(
           devices: devices
-              .takeWhile(
+              .where(
                 (value) => !value.name.toLowerCase().contains('disting'),
               )
-              .toList(),
+              .toList()
+            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())),
           isConnected: false,
         ),
       );

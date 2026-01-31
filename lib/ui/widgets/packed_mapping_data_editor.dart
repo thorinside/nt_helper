@@ -646,6 +646,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   });
                   // Also update the text field / controller if necessary
                   _midiCcController.text = number.toString();
+                  _triggerOptimisticSave();
                 },
           ),
         ],
