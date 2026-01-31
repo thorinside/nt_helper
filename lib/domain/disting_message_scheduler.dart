@@ -769,13 +769,6 @@ class DistingMessageScheduler {
         return false;
       }
 
-      // TEMPORARY DEBUG — remove after investigation
-      if (parsed.messageType ==
-          DistingNTRespMessageType.respParameterInfo) {
-        debugPrint(
-            'RAW SysEx len=${sysex.length}: ${sysex.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
-      }
-
       if (parsed.sysExId != _sysExId) {
         return false;
       }

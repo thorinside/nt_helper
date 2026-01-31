@@ -353,8 +353,14 @@ extension GalleryPluginExtension on GalleryPlugin {
 
   /// Get formatted latest version
   String get formattedLatestVersion {
-    final version = releases.latest;
+    var version = releases.latest;
     if (version.isEmpty) return '';
+
+    // Strip path prefix (e.g., "directional-sequencer/v1.0.0" -> "v1.0.0")
+    final lastSlash = version.lastIndexOf('/');
+    if (lastSlash >= 0) {
+      version = version.substring(lastSlash + 1);
+    }
 
     // Check if version follows semantic version format (numbers and dots with optional 'v' prefix)
     final cleanVersion = version.startsWith('v')

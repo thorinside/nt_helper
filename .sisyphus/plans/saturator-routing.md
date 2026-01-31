@@ -41,13 +41,13 @@ Create a `SaturatorAlgorithmRouting` subclass that generates virtual input/outpu
 - `test/core/routing/saturator_routing_integration_test.dart` - Integration tests
 
 ### Definition of Done
-- [ ] `flutter analyze` passes with zero warnings
-- [ ] `flutter test` passes (all existing + new tests)
-- [ ] Saturator with 1 channel, width=1 shows 1 input + 1 output on same bus
-- [ ] Saturator with 1 channel, width=3 shows 3 inputs + 3 outputs on consecutive buses
-- [ ] Saturator with 2 channels shows separate input/output pairs per channel
-- [ ] All virtual outputs have `OutputMode.replace`
-- [ ] Any algorithm reading from bus 15 shows connection from hardware output O3
+- [x] `flutter analyze` passes with zero warnings
+- [x] `flutter test` passes (all existing + new tests)
+- [x] Saturator with 1 channel, width=1 shows 1 input + 1 output on same bus
+- [x] Saturator with 1 channel, width=3 shows 3 inputs + 3 outputs on consecutive buses
+- [x] Saturator with 2 channels shows separate input/output pairs per channel
+- [x] All virtual outputs have `OutputMode.replace`
+- [x] Any algorithm reading from bus 15 shows connection from hardware output O3
 
 ### Must Have
 - `SaturatorAlgorithmRouting` extends `MultiChannelAlgorithmRouting` and stores `Slot` reference
