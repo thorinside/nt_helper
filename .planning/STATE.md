@@ -10,30 +10,31 @@ See: .planning/PROJECT.md (updated 2026-01-31)
 ## Current Position
 
 Phase: 2 of 3 (14-Bit Detection)
-Plan: 1 of 2 (TDD Detection Engine)
-Status: In progress
-Last activity: 2026-02-01 — Completed 02-01-PLAN.md
+Plan: 2 of 2 (Engine Integration)
+Status: Phase complete
+Last activity: 2026-02-01 — Completed 02-02-PLAN.md
 
-Progress: [████░░░░░░] 40%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 9.5 minutes
-- Total execution time: 0.3 hours
+- Total plans completed: 3
+- Average duration: 7.3 minutes
+- Total execution time: 0.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-type-system-foundation | 1 | 7min | 7min |
-| 02-14-bit-detection | 1 | 12min | 12min |
+| 02-14-bit-detection | 2 | 15min | 7.5min |
 
 **Recent Trend:**
+- Plan 02-02 completed in 3 minutes (2026-02-01)
 - Plan 02-01 completed in 12 minutes (2026-02-01)
 - Plan 01-01 completed in 7 minutes (2026-02-01)
-- Trend: TDD phase took 70% longer (expected for test-first approach)
+- Trend: Integration phase 75% faster than TDD phase (straightforward refactoring)
 
 *Updated after each plan completion*
 
@@ -54,6 +55,8 @@ Recent decisions affecting current work:
 - Variance ratio threshold 0.8 for byte order ambiguity (02-01)
 - Ambiguous variance defaults to cc14BitLowFirst (02-01)
 - CC value map preserved across detection resets for performance (02-01)
+- Cubit delegates all detection logic to MidiDetectionEngine (separation of concerns) (02-02)
+- Sub-threshold CC events emit null detection with timestamp (preserves activity indication) (02-02)
 
 ### Pending Todos
 
@@ -65,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 — Phase 2 plan 02-01 execution
-Stopped at: Completed 02-01-PLAN.md (TDD Detection Engine)
+Last session: 2026-02-01 — Phase 2 plan 02-02 execution
+Stopped at: Completed 02-02-PLAN.md (Engine Integration)
 Resume file: None
