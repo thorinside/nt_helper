@@ -7,8 +7,8 @@
 
 ### UI Highlight
 
-- [ ] **UH-01**: Parameter row or its mapping icon is visually highlighted while the mapping editor bottom sheet is open for that parameter
-- [ ] **UH-02**: Highlight clears automatically when the bottom sheet is dismissed
+- [x] **UH-01**: Parameter row or its mapping icon is visually highlighted while the mapping editor bottom sheet is open for that parameter
+- [x] **UH-02**: Highlight clears automatically when the bottom sheet is dismissed
 
 ## Out of Scope
 
@@ -21,8 +21,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UH-01 | Phase 4 | Pending |
-| UH-02 | Phase 4 | Pending |
+| UH-01 | Phase 4 | Complete |
+| UH-02 | Phase 4 | Complete |
 
 **Coverage:**
 - Milestone requirements: 2 total
@@ -31,4 +31,4 @@
 
 ---
 *Requirements defined: 2026-02-01*
-*Last updated: 2026-02-01 after roadmap creation*
+*Last updated: 2026-02-01 after phase 4 completion*

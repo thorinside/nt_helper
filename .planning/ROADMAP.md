@@ -42,7 +42,7 @@ Plans:
 
 **Milestone Goal:** User can see at a glance which parameter row has its mapping editor open
 
-- [ ] **Phase 4: Mapping Row Highlight** - Visual indicator on the active parameter row while the mapping editor bottom sheet is open
+- [x] **Phase 4: Mapping Row Highlight** - Visual indicator on the active parameter row while the mapping editor bottom sheet is open
 
 ## Phase Details
 
@@ -56,7 +56,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md — Add orange highlight border to mapping icon during editing + tests
+- [x] 04-01-PLAN.md — Add orange highlight border to mapping icon during editing + tests
 
 ## Progress
 
@@ -65,4 +65,4 @@ Plans:
 | 1. Type System Foundation | v2.10 | 1/1 | Complete | 2026-02-01 |
 | 2. 14-bit Detection | v2.10 | 2/2 | Complete | 2026-02-01 |
 | 3. UI Integration | v2.10 | 1/1 | Complete | 2026-02-01 |
-| 4. Mapping Row Highlight | Row Highlight | 0/1 | Not started | - |
+| 4. Mapping Row Highlight | Row Highlight | 1/1 | Complete | 2026-02-01 |
