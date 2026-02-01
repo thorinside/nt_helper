@@ -62,26 +62,26 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DET-01 | — | Pending |
-| DET-02 | — | Pending |
-| DET-03 | — | Pending |
-| DET-04 | — | Pending |
-| DET-05 | — | Pending |
-| BYT-01 | — | Pending |
-| BYT-02 | — | Pending |
-| TYP-01 | — | Pending |
-| TYP-02 | — | Pending |
-| TYP-03 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
-| UI-04 | — | Pending |
+| DET-01 | Phase 2 | Pending |
+| DET-02 | Phase 2 | Pending |
+| DET-03 | Phase 2 | Pending |
+| DET-04 | Phase 2 | Pending |
+| DET-05 | Phase 2 | Pending |
+| BYT-01 | Phase 2 | Pending |
+| BYT-02 | Phase 2 | Pending |
+| TYP-01 | Phase 1 | Pending |
+| TYP-02 | Phase 1 | Pending |
+| TYP-03 | Phase 1 | Pending |
+| UI-01 | Phase 3 | Pending |
+| UI-02 | Phase 3 | Pending |
+| UI-03 | Phase 3 | Pending |
+| UI-04 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 (awaiting roadmap)
+- Mapped to phases: 14
+- Unmapped: 0 (100% coverage)
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-01-31 after initial definition*
+*Last updated: 2026-01-31 after roadmap creation*
