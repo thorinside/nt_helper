@@ -113,8 +113,12 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
         };
         final eventNumber = eventInfo.$2;
         if (eventNumber != null) {
-          _statusMessage =
-              'Detected ${eventInfo.$1} $eventNumber on channel ${channel + 1}';
+          _statusMessage = switch (type) {
+            MidiEventType.cc14BitLowFirst ||
+            MidiEventType.cc14BitHighFirst =>
+              '14-bit CC $eventNumber Ch ${channel + 1}',
+            _ => 'Detected ${eventInfo.$1} $eventNumber on channel ${channel + 1}',
+          };
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             widget.onMidiEventFound?.call(
@@ -188,9 +192,14 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                       final eventNumber = eventInfo.$2;
                       if (eventNumber != null) {
                         final eventTypeStr = eventInfo.$1;
-                        _showStatusMessage(
-                          'Detected $eventTypeStr $eventNumber on channel ${lastDetectedChannel + 1}',
-                        );
+                        final message = switch (lastDetectedType) {
+                          MidiEventType.cc14BitLowFirst ||
+                          MidiEventType.cc14BitHighFirst =>
+                            '14-bit CC $eventNumber Ch ${lastDetectedChannel + 1}',
+                          _ =>
+                            'Detected $eventTypeStr $eventNumber on channel ${lastDetectedChannel + 1}',
+                        };
+                        _showStatusMessage(message);
                         widget.onMidiEventFound?.call(
                           type: lastDetectedType,
                           channel: lastDetectedChannel,
