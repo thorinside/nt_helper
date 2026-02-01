@@ -57,7 +57,7 @@ class _DebugPanelState extends State<DebugPanel> {
                 const Icon(Icons.bug_report, size: 16),
                 const SizedBox(width: 8),
                 const Text(
-                  'USB Video Debug Log',
+                  'Debug Log',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
