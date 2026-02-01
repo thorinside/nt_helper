@@ -34,16 +34,17 @@ void main() {
           engine.processCc(0, 1, 64);
         }
 
-        // Send CC 2 - should reset count
+        // Send CC 2 - should reset count to 1
         var result = engine.processCc(0, 2, 64);
         expect(result, isNull);
 
-        // Need 10 more CC 2 messages to detect
-        for (int i = 0; i < 9; i++) {
+        // Need 9 more CC 2 messages to reach threshold (total 10)
+        for (int i = 0; i < 8; i++) {
           result = engine.processCc(0, 2, 64);
           expect(result, isNull);
         }
 
+        // 10th CC 2 message should detect
         result = engine.processCc(0, 2, 64);
         expect(result, isNotNull);
         expect(result!.number, 2);
@@ -55,16 +56,17 @@ void main() {
           engine.processCc(0, 1, 64);
         }
 
-        // Send on channel 1 - should reset
+        // Send on channel 1 - should reset count to 1
         var result = engine.processCc(1, 1, 64);
         expect(result, isNull);
 
-        // Need 10 more on channel 1 to detect
-        for (int i = 0; i < 9; i++) {
+        // Need 9 more on channel 1 to reach threshold (total 10)
+        for (int i = 0; i < 8; i++) {
           result = engine.processCc(1, 1, 64);
           expect(result, isNull);
         }
 
+        // 10th message on channel 1 should detect
         result = engine.processCc(1, 1, 64);
         expect(result, isNotNull);
         expect(result!.channel, 1);
@@ -132,21 +134,24 @@ void main() {
       });
 
       test('locks to single pair at a time', () {
-        // Start with CC 1 + CC 33 pair
+        // Start with CC 1 + CC 33 pair (forms pair, records hit #1)
         engine.processCc(0, 1, 64);
         engine.processCc(0, 33, 100);
 
-        // Now send CC 5 - should be ignored for 14-bit pairing
+        // Now send CC 5 - should be ignored for 14-bit pairing (single pair lock)
         engine.processCc(0, 5, 80);
         engine.processCc(0, 37, 90); // CC 5's partner
 
-        // Continue with original pair to reach threshold
+        // Continue with original pair to reach threshold (9 more hits needed)
+        DetectionResult? result;
         for (int i = 0; i < 9; i++) {
           engine.processCc(0, 1, 64);
-          engine.processCc(0, 33, 100);
+          result = engine.processCc(0, 33, 100);
+          if (i < 8) {
+            expect(result, isNull);
+          }
         }
 
-        final result = engine.processCc(0, 1, 64);
         expect(result, isNotNull);
         expect(result!.number, 1, reason: 'Should detect original pair CC 1, not CC 5');
       });
@@ -154,29 +159,46 @@ void main() {
 
     group('14-bit hit counting', () {
       test('increments hit count only when both CCs received', () {
-        // First pair hit
+        // First pair hit: both CCs arrive
         engine.processCc(0, 1, 64);
         var result = engine.processCc(0, 33, 100);
         expect(result, isNull, reason: 'Hit 1/10');
 
-        // Only CC 1 again - no new hit
+        // Only CC 1 again - no new hit yet (need CC 33 too)
         result = engine.processCc(0, 1, 65);
         expect(result, isNull, reason: 'Only one side, no new hit');
 
-        // Now CC 33 - completes second hit
+        // Now CC 33 arrives - completes second hit
         result = engine.processCc(0, 33, 101);
         expect(result, isNull, reason: 'Hit 2/10');
+
+        // Continue to reach threshold (8 more pair hits needed)
+        for (int i = 0; i < 8; i++) {
+          engine.processCc(0, 1, 64);
+          result = engine.processCc(0, 33, i);
+          if (i < 7) {
+            expect(result, isNull, reason: 'Hit ${i + 3}/10');
+          } else {
+            // 10th pair hit should detect
+            expect(result, isNotNull, reason: 'Hit 10/10 should detect');
+          }
+        }
       });
 
       test('detects after 10 pair hits with MSB-first byte order', () {
-        // Send 10 pairs where low CC (1) is stable (MSB), high CC (33) varies (LSB)
+        // Send pairs where low CC (1) is stable (MSB), high CC (33) varies (LSB)
+        // First pair forms and records hit #1
+        // Then 9 more pairs complete hits #2-#10
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 1, 64);  // Stable value = MSB
-          engine.processCc(0, 33, i);  // Varying value = LSB
+          result = engine.processCc(0, 33, i);  // Varying value = LSB
+          if (i < 9) {
+            expect(result, isNull, reason: 'Hit ${i + 1}/10');
+          }
         }
 
-        final result = engine.processCc(0, 1, 64);
-        expect(result, isNotNull);
+        expect(result, isNotNull, reason: 'Hit 10/10 should detect');
         expect(result!.type, MidiEventType.cc14BitLowFirst,
                reason: 'Low CC stable = MSB, so cc14BitLowFirst');
         expect(result.channel, 0);
@@ -184,14 +206,17 @@ void main() {
       });
 
       test('detects after 10 pair hits with LSB-first byte order', () {
-        // Send 10 pairs where high CC (33) is stable (MSB), low CC (1) varies (LSB)
+        // Send pairs where high CC (33) is stable (MSB), low CC (1) varies (LSB)
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 1, i);   // Varying value = LSB
-          engine.processCc(0, 33, 64); // Stable value = MSB
+          result = engine.processCc(0, 33, 64); // Stable value = MSB
+          if (i < 9) {
+            expect(result, isNull, reason: 'Hit ${i + 1}/10');
+          }
         }
 
-        final result = engine.processCc(0, 1, 10);
-        expect(result, isNotNull);
+        expect(result, isNotNull, reason: 'Hit 10/10 should detect');
         expect(result!.type, MidiEventType.cc14BitHighFirst,
                reason: 'High CC stable = MSB, so cc14BitHighFirst');
         expect(result.channel, 0);
@@ -199,14 +224,17 @@ void main() {
       });
 
       test('defaults to cc14BitLowFirst when variance is ambiguous', () {
-        // Send 10 pairs where both CCs vary similarly
+        // Send pairs where both CCs vary similarly
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 1, 50 + i);
-          engine.processCc(0, 33, 60 + i);
+          result = engine.processCc(0, 33, 60 + i);
+          if (i < 9) {
+            expect(result, isNull, reason: 'Hit ${i + 1}/10');
+          }
         }
 
-        final result = engine.processCc(0, 1, 60);
-        expect(result, isNotNull);
+        expect(result, isNotNull, reason: 'Hit 10/10 should detect');
         expect(result!.type, MidiEventType.cc14BitLowFirst,
                reason: 'Ambiguous variance should default to standard MSB-first');
       });
@@ -219,11 +247,15 @@ void main() {
 
         // Clear variance difference: low varies, high constant
         engine = MidiDetectionEngine();
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 2, i * 10);  // High variance
-          engine.processCc(0, 34, 64);     // Zero variance
+          result = engine.processCc(0, 34, 64);     // Zero variance
+          if (i < 9) {
+            expect(result, isNull);
+          }
         }
-        var result = engine.processCc(0, 2, 100);
+        expect(result, isNotNull);
         expect(result!.type, MidiEventType.cc14BitHighFirst,
                reason: 'Low varies → low is LSB → high is MSB');
 
@@ -231,21 +263,27 @@ void main() {
         engine = MidiDetectionEngine();
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 3, 64);      // Zero variance
-          engine.processCc(0, 35, i * 10); // High variance
+          result = engine.processCc(0, 35, i * 10); // High variance
+          if (i < 9) {
+            expect(result, isNull);
+          }
         }
-        result = engine.processCc(0, 3, 64);
+        expect(result, isNotNull);
         expect(result!.type, MidiEventType.cc14BitLowFirst,
                reason: 'High varies → high is LSB → low is MSB');
       });
 
       test('handles edge case of zero variance in both values', () {
         // Both values constant across all 10 hits
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 4, 64);
-          engine.processCc(0, 36, 100);
+          result = engine.processCc(0, 36, 100);
+          if (i < 9) {
+            expect(result, isNull);
+          }
         }
 
-        final result = engine.processCc(0, 4, 64);
         expect(result, isNotNull);
         expect(result!.type, MidiEventType.cc14BitLowFirst,
                reason: 'Zero variance is ambiguous, defaults to standard');
@@ -283,34 +321,39 @@ void main() {
         }
 
         // Now interleave with 14-bit pair that reaches threshold
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 1, 64);
-          engine.processCc(0, 33, i); // Varying
+          result = engine.processCc(0, 33, i); // Varying
+          if (i < 9) {
+            expect(result, isNull);
+          }
         }
 
-        final result = engine.processCc(0, 1, 64);
         expect(result, isNotNull);
         expect(result!.type, MidiEventType.cc14BitLowFirst);
         expect(result.number, 1);
       });
 
       test('detection resets both 7-bit and 14-bit state', () {
-        // Trigger 7-bit detection
+        // Trigger 7-bit detection (10 consecutive CC 5)
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
-          engine.processCc(0, 5, 80);
+          result = engine.processCc(0, 5, 80);
+          if (i < 9) {
+            expect(result, isNull);
+          }
         }
+        expect(result, isNotNull, reason: 'Should detect after 10 hits');
 
-        var result = engine.processCc(0, 5, 80);
-        expect(result, isNotNull);
-
-        // Verify both states reset by checking fresh detection needed
+        // Verify 7-bit state reset by checking fresh detection needed
         result = engine.processCc(0, 5, 80);
-        expect(result, isNull, reason: '7-bit state should reset');
+        expect(result, isNull, reason: '7-bit state should reset (count=1 now)');
 
         // Start new 14-bit pair - should work from fresh state
         engine.processCc(0, 1, 64);
         result = engine.processCc(0, 33, 100);
-        expect(result, isNull, reason: '14-bit state should reset');
+        expect(result, isNull, reason: '14-bit state reset, hit 1/10');
       });
     });
 
@@ -332,22 +375,25 @@ void main() {
       });
 
       test('note detection resets CC tracking state', () {
-        // Build up some 7-bit state
+        // Build up some 7-bit state (5 consecutive CC 1 messages)
         for (int i = 0; i < 5; i++) {
           engine.processCc(0, 1, 64);
         }
 
-        // Note on should reset
+        // Note on should reset CC tracking
         engine.processNoteOn(0, 60);
 
-        // Verify reset by checking fresh detection needed
+        // Verify reset: first CC 1 after note should start fresh count at 1
         var result = engine.processCc(0, 1, 64);
-        expect(result, isNull, reason: 'Should need fresh count after note detection');
+        expect(result, isNull, reason: 'Count reset to 1, needs 9 more');
 
-        // Need full 10 again
-        for (int i = 0; i < 9; i++) {
+        // Need 9 more to reach threshold (total 10)
+        for (int i = 0; i < 8; i++) {
           result = engine.processCc(0, 1, 64);
+          expect(result, isNull);
         }
+
+        // 10th message should detect
         result = engine.processCc(0, 1, 64);
         expect(result, isNotNull);
       });
@@ -371,7 +417,7 @@ void main() {
       });
 
       test('reset clears 14-bit state', () {
-        // Build up 14-bit pair
+        // Build up 14-bit pair (5 hits)
         for (int i = 0; i < 5; i++) {
           engine.processCc(0, 1, 64);
           engine.processCc(0, 33, i);
@@ -379,15 +425,16 @@ void main() {
 
         engine.reset();
 
-        // Should need full 10 pair hits again
+        // After reset, need 10 pair hits to detect
         DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 1, 64);
           result = engine.processCc(0, 33, i);
+          if (i < 9) {
+            expect(result, isNull);
+          }
         }
-        // After reset, need one more CC to trigger (11th pair hit)
-        result = engine.processCc(0, 1, 64);
-        expect(result, isNotNull);
+        expect(result, isNotNull, reason: 'Should detect after 10 hits');
       });
 
       test('reset clears CC value map', () {
@@ -399,39 +446,43 @@ void main() {
         engine.reset();
 
         // After reset, CC value map should be clear
-        // This is verified by internal behavior - pair formation
-        // should start fresh
+        // Pair formation starts fresh
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 2, 50);
-          engine.processCc(0, 34, i);
+          result = engine.processCc(0, 34, i);
+          if (i < 9) {
+            expect(result, isNull);
+          }
         }
 
-        final result = engine.processCc(0, 2, 50);
         expect(result, isNotNull, reason: 'Should detect fresh after reset');
       });
     });
 
     group('cross-channel isolation', () {
       test('same CC pair on different channels tracked independently', () {
-        // Start CC 1+33 on channel 0
+        // Start CC 1+33 on channel 0 (forms pair, records hit 1)
         engine.processCc(0, 1, 64);
         engine.processCc(0, 33, 100);
 
-        // Start CC 1+33 on channel 1
+        // Start CC 1+33 on channel 1 (but single pair lock prevents this)
         engine.processCc(1, 1, 50);
         engine.processCc(1, 33, 90);
 
-        // Complete 10 hits on channel 0 with varying high byte
-        for (int i = 0; i < 10; i++) {
+        // Continue with 9 more hits on channel 0 to reach threshold
+        DetectionResult? result;
+        for (int i = 0; i < 8; i++) {
           engine.processCc(0, 1, 64);
-          engine.processCc(0, 33, i);
+          result = engine.processCc(0, 33, i);
+          expect(result, isNull, reason: 'Hit ${i + 2}/10');
         }
 
-        final result = engine.processCc(0, 1, 64);
+        // 10th pair hit should detect
+        engine.processCc(0, 1, 64);
+        result = engine.processCc(0, 33, 8);
         expect(result, isNotNull);
         expect(result!.channel, 0, reason: 'Should detect on channel 0');
-
-        // Channel 1 should still need hits (but single pair lock applies)
       });
     });
 
@@ -441,42 +492,51 @@ void main() {
         var result = engine.processCc(0, 33, 100);
         expect(result, isNull);
 
-        // Low CC arrives - pair should form
+        // Low CC arrives - pair forms, records hit #1
         result = engine.processCc(0, 1, 64);
-        expect(result, isNull, reason: 'Pair formed but threshold not reached');
+        expect(result, isNull, reason: 'Pair formed but threshold not reached (hit 1/10)');
 
-        // Complete pair hits
+        // Complete 9 more pair hits to reach threshold
         for (int i = 0; i < 9; i++) {
           engine.processCc(0, 33, i);
-          engine.processCc(0, 1, 64);
+          result = engine.processCc(0, 1, 64);
+          if (i < 8) {
+            expect(result, isNull, reason: 'Hit ${i + 2}/10');
+          }
         }
 
-        result = engine.processCc(0, 33, 10);
-        expect(result, isNotNull);
+        expect(result, isNotNull, reason: 'Hit 10/10 should detect');
         expect(result!.type, isIn([MidiEventType.cc14BitLowFirst, MidiEventType.cc14BitHighFirst]));
       });
 
       test('CC 31 and CC 63 form valid pair (boundary case)', () {
         // CC 31 is highest in 0-31 range, CC 63 is its partner
+        DetectionResult? result;
         for (int i = 0; i < 10; i++) {
           engine.processCc(0, 31, 64);
-          engine.processCc(0, 63, i);
+          result = engine.processCc(0, 63, i);
+          if (i < 9) {
+            expect(result, isNull);
+          }
         }
 
-        final result = engine.processCc(0, 31, 64);
         expect(result, isNotNull);
         expect(result!.number, 31);
       });
 
       test('CC 64 and above do not form pairs', () {
-        // CC 64 has no valid partner (64+32 = 96, out of range)
-        for (int i = 0; i < 10; i++) {
-          engine.processCc(0, 64, 64);
-          engine.processCc(0, 96, i);
+        // CC 64 has no valid partner (64+32 = 96, out of MIDI CC range 0-127)
+        // Even if we send both CC 64 and CC 96, they won't pair
+        // So CC 64 should detect as 7-bit after 10 consecutive hits
+
+        DetectionResult? result;
+        for (int i = 0; i < 9; i++) {
+          result = engine.processCc(0, 64, 64);
+          expect(result, isNull, reason: 'Message ${i + 1}/10');
         }
 
-        // Should only detect as 7-bit
-        var result = engine.processCc(0, 64, 64);
+        // 10th CC 64 message should detect as 7-bit
+        result = engine.processCc(0, 64, 64);
         expect(result, isNotNull);
         expect(result!.type, MidiEventType.cc);
         expect(result.number, 64);
