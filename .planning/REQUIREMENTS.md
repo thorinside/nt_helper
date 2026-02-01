@@ -21,14 +21,14 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UH-01 | — | Pending |
-| UH-02 | — | Pending |
+| UH-01 | Phase 4 | Pending |
+| UH-02 | Phase 4 | Pending |
 
 **Coverage:**
 - Milestone requirements: 2 total
-- Mapped to phases: 0
-- Unmapped: 2
+- Mapped to phases: 2
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-01*
-*Last updated: 2026-02-01 after initial definition*
+*Last updated: 2026-02-01 after roadmap creation*
