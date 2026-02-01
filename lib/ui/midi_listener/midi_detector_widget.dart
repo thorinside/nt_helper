@@ -164,6 +164,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                   case Initial():
                     _showStatusMessage('No device connected.');
                   case Data(
+                    :final devices,
                     :final isConnected,
                     :final selectedDevice,
                     :final lastDetectedType,
@@ -171,6 +172,19 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                     :final lastDetectedCc,
                     :final lastDetectedNote,
                   ):
+                    // Sync device list from cubit state
+                    if (devices != _devices) {
+                      setState(() => _devices = devices);
+                    }
+
+                    // Handle disconnection when device disappeared
+                    if (selectedDevice == null && _selectedDevice != null) {
+                      setState(() {
+                        _selectedDevice = null;
+                        _dropdownController.clear();
+                      });
+                    }
+
                     if (isConnected) {
                       _showStatusMessage(
                         'Connected to ${selectedDevice?.name}.',
