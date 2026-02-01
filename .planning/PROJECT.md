@@ -32,12 +32,13 @@ Reliable, real-time parameter control of the Disting NT via MIDI — the bridge 
 - Emit typed detection events (standard CC, 14-bit CC with byte order, notes) — v2.10
 - Auto-configure mapping editor from 14-bit detection results — v2.10
 - Enable 14-bit range slider when 14-bit detection occurs — v2.10
+- Highlight the active parameter row when the mapping editor bottom sheet is open — v2.11
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Highlight the active parameter row when the mapping editor bottom sheet is open
+(No active requirements — next milestone not yet planned)
 
 ### Out of Scope
 
@@ -56,6 +57,8 @@ Reliable, real-time parameter control of the Disting NT via MIDI — the bridge 
 - Detection result feeds into `PackedMappingDataEditor` via `onMidiEventFound` callback
 - Status messages use concise "14-bit CC X Ch Y" format (5 words)
 - 45 MIDI detection tests across 3 test files
+- `MappingEditButton` is a StatefulWidget with local `_isEditing` state driving conditional orange border (added v2.11)
+- 3 highlight lifecycle widget tests in `mapping_edit_button_highlight_test.dart` (added v2.11)
 
 ## Constraints
 
@@ -77,6 +80,9 @@ Reliable, real-time parameter control of the Disting NT via MIDI — the bridge 
 | Ambiguous variance defaults to cc14BitLowFirst | MIDI spec standard is lower CC = MSB, safer default | Good |
 | Cubit delegates to MidiDetectionEngine | Separation of concerns, 56% code reduction, pure testable engine | Good |
 | Concise status format "14-bit CC X Ch Y" | Reduces 8 words to 5 for better UI density in status bar | Good |
+| Local _isEditing state for highlight | setState before/after await pattern; simpler than cubit/provider for widget-local visual state | Good |
+| Renamed 'widget' param to 'parameterViewRow' | Avoids shadowing StatefulWidget's built-in 'widget' property | Good |
+| Orange (tertiary) border for editing highlight | Distinct from primaryContainer (mapped state); theme-driven color | Good |
 
 ---
-*Last updated: 2026-02-01 after Mapping Row Highlight milestone started*
+*Last updated: 2026-02-01 after v2.11 Mapping Row Highlight milestone*

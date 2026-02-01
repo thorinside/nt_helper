@@ -5,17 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Reliable, real-time parameter control of the Disting NT via MIDI
-**Current focus:** Phase 4 - Mapping Row Highlight
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Milestone: Mapping Row Highlight
-Phase: 4 of 4 (Mapping Row Highlight)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-02-01 — Completed 04-01-PLAN.md
-
-Progress: [##########] 100% prior milestones | [##########] 100% current milestone
+Milestone: None (v2.11 shipped, next not yet planned)
+Phase: N/A
+Plan: N/A
+Status: Ready for next milestone
+Last activity: 2026-02-01 — v2.11 Mapping Row Highlight milestone complete
 
 ## Performance Metrics
 
@@ -34,7 +32,7 @@ Progress: [##########] 100% prior milestones | [##########] 100% current milesto
 
 *Metrics from v2.10 milestone*
 
-**Mapping Row Highlight Velocity:**
+**v2.11 Velocity:**
 - Total plans completed: 1
 - Duration: 8 minutes
 
@@ -46,12 +44,7 @@ Progress: [##########] 100% prior milestones | [##########] 100% current milesto
 
 ### Decisions
 
-All v2.10 decisions archived to PROJECT.md Key Decisions table.
-
-| Decision | Phase | Rationale |
-|----------|-------|-----------|
-| Renamed 'widget' param to 'parameterViewRow' | 04-01 | Avoid shadowing StatefulWidget's built-in 'widget' property |
-| Removed Builder wrapper from MappingEditButton | 04-01 | StatefulWidget provides its own build context, Builder was unnecessary |
+All v2.10 and v2.11 decisions archived to PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
@@ -63,6 +56,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-01T18:49:00Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-02-01
+Stopped at: v2.11 milestone archived
 Resume file: None

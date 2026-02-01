@@ -1,5 +1,29 @@
 # Project Milestones: nt_helper
 
+## v2.11 Mapping Row Highlight (Shipped: 2026-02-01)
+
+**Delivered:** Visual highlight on the mapping icon when its bottom sheet is open, so the user can see which parameter row is being edited
+
+**Phases completed:** 4 (1 plan total)
+
+**Key accomplishments:**
+- MappingEditButton shows a thin orange (tertiary color) border when its mapping editor bottom sheet is open
+- Border disappears when the bottom sheet is dismissed, with mounted guard for safety
+- 3 widget tests verify highlight lifecycle (no border by default, border when editing, border clears on dismiss)
+- Zero flutter analyze warnings, full test suite passes
+
+**Stats:**
+- 3 files created/modified
+- 452 lines of Dart changed (insertions + deletions)
+- 1 phase, 1 plan, 2 tasks
+- 1 day from start to ship
+
+**Git range:** `feat(04-01)` → `docs(phase-4)`
+
+**What's next:** TBD — next milestone not yet planned
+
+---
+
 ## v2.10 14-bit MIDI Detection (Shipped: 2026-02-01)
 
 **Delivered:** Intelligent 14-bit MIDI CC auto-detection with byte order analysis and mapping editor auto-configuration
