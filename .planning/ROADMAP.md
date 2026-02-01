@@ -62,10 +62,10 @@ Plans:
   3. Mapping editor auto-selects MidiMappingType (cc14BitLow or cc14BitHigh) based on detected byte order
   4. Mapping editor auto-fills CC number from 14-bit detection base CC
   5. 14-bit range slider enabled automatically when 14-bit detection occurs
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD during planning
+- [ ] 03-01-PLAN.md — Update 14-bit status message format and add widget tests
 
 ## Progress
 
@@ -76,4 +76,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Type System Foundation | 1/1 | Complete | 2026-01-31 |
 | 2. 14-Bit Detection | 2/2 | Complete | 2026-02-01 |
-| 3. UI Integration | 0/TBD | Not started | - |
+| 3. UI Integration | 0/1 | Not started | - |
