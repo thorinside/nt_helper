@@ -166,7 +166,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
         key: ValueKey(widescreen),
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          MappingEditButton(widget: widget),
+          MappingEditButton(parameterViewRow: widget),
           // Name column with reduced width
           Expanded(
             flex: widescreen ? 2 : 3,

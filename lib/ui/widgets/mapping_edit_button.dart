@@ -7,73 +7,97 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/widgets/mapping_editor_bottom_sheet.dart';
 import 'package:nt_helper/ui/widgets/parameter_view_row.dart';
 
-class MappingEditButton extends StatelessWidget {
-  const MappingEditButton({super.key, required this.widget});
+class MappingEditButton extends StatefulWidget {
+  const MappingEditButton({super.key, required this.parameterViewRow});
 
-  final ParameterViewRow widget;
+  final ParameterViewRow parameterViewRow;
+
+  @override
+  State<MappingEditButton> createState() => _MappingEditButtonState();
+}
+
+class _MappingEditButtonState extends State<MappingEditButton> {
+  bool _isEditing = false;
 
   @override
   Widget build(BuildContext context) {
+    final bool hasMapping =
+        widget.parameterViewRow.mappingData != null &&
+        widget.parameterViewRow.mappingData != PackedMappingData.filler() &&
+        widget.parameterViewRow.mappingData?.isMapped() == true;
+
+    final ButtonStyle defaultStyle = IconButton.styleFrom(
+      foregroundColor: Theme.of(context).colorScheme.onSurface,
+      backgroundColor:
+          Theme.of(context).colorScheme.surfaceContainerHighest,
+    );
+    final ButtonStyle mappedStyle = IconButton.styleFrom(
+      foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+    );
+
     return Transform.scale(
       scale: 0.6,
-      child: Builder(
-        builder: (context) {
-          final bool hasMapping =
-              widget.mappingData != null &&
-              widget.mappingData != PackedMappingData.filler() &&
-              widget.mappingData?.isMapped() == true;
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: _isEditing
+              ? Border.all(
+                  color: Theme.of(context).colorScheme.tertiary,
+                  width: 2.0,
+                )
+              : null,
+        ),
+        child: IconButton.filledTonal(
+          style: hasMapping ? mappedStyle : defaultStyle,
+          icon: const Icon(Icons.map_sharp),
+          tooltip: 'Edit mapping',
+          onPressed: () async {
+            final cubit = context.read<DistingCubit>();
+            final currentState = cubit.state;
+            List<Slot> currentSlots = [];
+            if (currentState is DistingStateSynchronized) {
+              currentSlots = currentState.slots;
+            }
 
-          // Define your two styles:
-          final ButtonStyle defaultStyle = IconButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.onSurface,
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.surfaceContainerHighest,
-          );
-          final ButtonStyle mappedStyle = IconButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.primaryContainer, // or any color you prefer
-          );
+            final data =
+                widget.parameterViewRow.mappingData ??
+                PackedMappingData.filler();
+            final myMidiCubit = context.read<MidiListenerCubit>();
+            final distingCubit = context.read<DistingCubit>();
 
-          return IconButton.filledTonal(
-            // Decide which style to use based on `hasMapping`
-            style: hasMapping ? mappedStyle : defaultStyle,
-            icon: const Icon(Icons.map_sharp),
-            tooltip: 'Edit mapping',
-            onPressed: () async {
-              final cubit = context.read<DistingCubit>();
-              final currentState = cubit.state;
-              List<Slot> currentSlots = [];
-              if (currentState is DistingStateSynchronized) {
-                currentSlots = currentState.slots;
-              }
+            setState(() {
+              _isEditing = true;
+            });
 
-              final data = widget.mappingData ?? PackedMappingData.filler();
-              final myMidiCubit = context.read<MidiListenerCubit>();
-              final distingCubit = context.read<DistingCubit>();
-              await showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) {
-                  return MappingEditorBottomSheet(
-                    myMidiCubit: myMidiCubit,
-                    distingCubit: distingCubit,
-                    data: data,
-                    slots: currentSlots,
-                    algorithmIndex: widget.algorithmIndex,
-                    parameterNumber: widget.parameterNumber,
-                    parameterMin: widget.min,
-                    parameterMax: widget.max,
-                    powerOfTen: widget.powerOfTen,
-                    unitString: widget.unit,
-                  );
-                },
-              );
-            },
-          );
-        },
+            await showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              builder: (context) {
+                return MappingEditorBottomSheet(
+                  myMidiCubit: myMidiCubit,
+                  distingCubit: distingCubit,
+                  data: data,
+                  slots: currentSlots,
+                  algorithmIndex:
+                      widget.parameterViewRow.algorithmIndex,
+                  parameterNumber:
+                      widget.parameterViewRow.parameterNumber,
+                  parameterMin: widget.parameterViewRow.min,
+                  parameterMax: widget.parameterViewRow.max,
+                  powerOfTen: widget.parameterViewRow.powerOfTen,
+                  unitString: widget.parameterViewRow.unit,
+                );
+              },
+            );
+
+            if (mounted) {
+              setState(() {
+                _isEditing = false;
+              });
+            }
+          },
+        ),
       ),
     );
   }
