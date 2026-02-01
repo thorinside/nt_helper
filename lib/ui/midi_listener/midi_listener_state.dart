@@ -1,6 +1,22 @@
 part of 'midi_listener_cubit.dart';
 
-enum MidiEventType { cc, noteOn, noteOff }
+/// MIDI event types detected by the listener.
+enum MidiEventType {
+  /// Standard 7-bit CC message (one byte of data)
+  cc,
+
+  /// Note On message
+  noteOn,
+
+  /// Note Off message
+  noteOff,
+
+  /// 14-bit CC where lower CC number (0-31) is MSB
+  cc14BitLowFirst,
+
+  /// 14-bit CC where higher CC number (32-63) is MSB
+  cc14BitHighFirst,
+}
 
 @freezed
 sealed class MidiListenerState with _$MidiListenerState {

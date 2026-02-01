@@ -108,6 +108,8 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
           MidiEventType.cc => ('CC', s.lastDetectedCc),
           MidiEventType.noteOn => ('Note On', s.lastDetectedNote),
           MidiEventType.noteOff => ('Note Off', s.lastDetectedNote),
+          MidiEventType.cc14BitLowFirst => ('14-bit CC', s.lastDetectedCc),
+          MidiEventType.cc14BitHighFirst => ('14-bit CC', s.lastDetectedCc),
         };
         final eventNumber = eventInfo.$2;
         if (eventNumber != null) {
@@ -179,6 +181,8 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                         MidiEventType.cc => ('CC', lastDetectedCc),
                         MidiEventType.noteOn => ('Note On', lastDetectedNote),
                         MidiEventType.noteOff => ('Note Off', lastDetectedNote),
+                        MidiEventType.cc14BitLowFirst => ('14-bit CC', lastDetectedCc),
+                        MidiEventType.cc14BitHighFirst => ('14-bit CC', lastDetectedCc),
                       };
 
                       final eventNumber = eventInfo.$2;

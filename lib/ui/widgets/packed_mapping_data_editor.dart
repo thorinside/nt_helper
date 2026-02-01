@@ -702,6 +702,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                         // Keep the existing note type if it was already set to one
                         detectedMappingType = _data.midiMappingType;
                       }
+                    } else if (type == MidiEventType.cc14BitLowFirst) {
+                      detectedMappingType = MidiMappingType.cc14BitLow;
+                    } else if (type == MidiEventType.cc14BitHighFirst) {
+                      detectedMappingType = MidiMappingType.cc14BitHigh;
                     }
 
                     _data = _data.copyWith(
