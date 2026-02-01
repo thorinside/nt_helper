@@ -28,10 +28,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Existing note detection continues working unchanged
   4. MidiListenerState can emit 14-bit detection results
   5. Freezed code regenerates without errors
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD during planning
+- [ ] 01-01-PLAN.md — Extend MidiEventType enum, update pattern matching, write tests
 
 ### Phase 2: 14-Bit Detection
 **Goal**: Detector identifies 14-bit CC pairs, determines byte order, and emits typed events
@@ -73,6 +73,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Type System Foundation | 0/TBD | Not started | - |
+| 1. Type System Foundation | 0/1 | Not started | - |
 | 2. 14-Bit Detection | 0/TBD | Not started | - |
 | 3. UI Integration | 0/TBD | Not started | - |
