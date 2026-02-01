@@ -74,12 +74,14 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
 
   String? _statusMessage;
   Timer? _fadeTimer;
+  bool _wasConnected = false;
 
   @override
   void initState() {
     super.initState();
     // Access the Cubit from the context
     _cubit = context.read<MidiListenerCubit>();
+    _cubit.startDetecting();
 
     final s = _cubit.state;
     if (s is Initial) {
@@ -96,6 +98,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
       }
 
       // Restore status message for connected device
+      _wasConnected = s.isConnected;
       if (s.isConnected && s.selectedDevice != null) {
         _statusMessage = 'Connected to ${s.selectedDevice!.name}.';
       }
@@ -139,6 +142,8 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
 
     if (widget.useLocalCubit) {
       _cubit.close();
+    } else {
+      _cubit.stopDetecting();
     }
 
     super.dispose();
@@ -185,13 +190,15 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                       });
                     }
 
-                    if (isConnected) {
+                    // Only show connection status on transitions
+                    if (isConnected && !_wasConnected) {
                       _showStatusMessage(
                         'Connected to ${selectedDevice?.name}.',
                       );
-                    } else {
+                    } else if (!isConnected && _wasConnected) {
                       _showStatusMessage('No device connected.');
                     }
+                    _wasConnected = isConnected;
                     if (lastDetectedType != null &&
                         lastDetectedChannel != null) {
                       final (String, int?)

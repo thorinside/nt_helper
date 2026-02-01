@@ -686,36 +686,39 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   required channel,
                   required number,
                 }) {
-                  // When we've detected 10 consecutive hits of the same CC,
-                  // automatically fill in the CC number, and midi channel in your form data
-                  // and assume we want to enable the midi mapping.
-                  setState(() {
-                    // Default to CC type, adjust if it's a note
-                    MidiMappingType detectedMappingType = MidiMappingType.cc;
-                    if (type == MidiEventType.noteOn ||
-                        type == MidiEventType.noteOff) {
-                      if (_data.midiMappingType !=
-                              MidiMappingType.noteMomentary &&
-                          _data.midiMappingType != MidiMappingType.noteToggle) {
-                        detectedMappingType = MidiMappingType.noteMomentary;
-                      } else {
-                        // Keep the existing note type if it was already set to one
-                        detectedMappingType = _data.midiMappingType;
-                      }
-                    } else if (type == MidiEventType.cc14BitLowFirst) {
-                      detectedMappingType = MidiMappingType.cc14BitLow;
-                    } else if (type == MidiEventType.cc14BitHighFirst) {
-                      detectedMappingType = MidiMappingType.cc14BitHigh;
+                  // Determine the mapping type from the detected event type
+                  MidiMappingType detectedMappingType = MidiMappingType.cc;
+                  if (type == MidiEventType.noteOn ||
+                      type == MidiEventType.noteOff) {
+                    if (_data.midiMappingType !=
+                            MidiMappingType.noteMomentary &&
+                        _data.midiMappingType != MidiMappingType.noteToggle) {
+                      detectedMappingType = MidiMappingType.noteMomentary;
+                    } else {
+                      detectedMappingType = _data.midiMappingType;
                     }
+                  } else if (type == MidiEventType.cc14BitLowFirst) {
+                    detectedMappingType = MidiMappingType.cc14BitLow;
+                  } else if (type == MidiEventType.cc14BitHighFirst) {
+                    detectedMappingType = MidiMappingType.cc14BitHigh;
+                  }
 
+                  // Skip save if nothing actually changed
+                  if (_data.midiMappingType == detectedMappingType &&
+                      _data.midiCC == number &&
+                      _data.midiChannel == channel &&
+                      _data.isMidiEnabled) {
+                    return;
+                  }
+
+                  setState(() {
                     _data = _data.copyWith(
                       midiMappingType: detectedMappingType,
-                      midiCC: number, // Use 'number' which is CC or Note
+                      midiCC: number,
                       midiChannel: channel,
                       isMidiEnabled: true,
                     );
                   });
-                  // Also update the text field / controller if necessary
                   _midiCcController.text = number.toString();
                   _triggerOptimisticSave(force: true);
                 },

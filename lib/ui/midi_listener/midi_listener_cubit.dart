@@ -17,8 +17,20 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
   StreamSubscription<String>? _midiSetupSubscription;
 
   final MidiDetectionEngine _detectionEngine = MidiDetectionEngine();
+  bool _isDetecting = false;
 
   MidiListenerCubit() : super(const MidiListenerState.initial());
+
+  /// Enable detection processing. Call when a mapping editor opens.
+  void startDetecting() {
+    _isDetecting = true;
+  }
+
+  /// Disable detection processing. Call when a mapping editor closes.
+  void stopDetecting() {
+    _isDetecting = false;
+    _detectionEngine.reset();
+  }
 
   void _debugLog(String message) {
     _debugService.addLocalMessage('[MidiListener] $message');
@@ -99,7 +111,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     // Cancel old subscription if needed
     await _midiSubscription?.cancel();
 
-    // Disconnect old device as well
+    // Disconnect old selected device if any
     final currentState = state;
     if (currentState is Data) {
       if (currentState.selectedDevice != null) {
@@ -107,14 +119,31 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       }
     }
 
-    // Connect
-    await _midiCommand.connectToDevice(device);
+    // Disconnect the target device in case it's still connected from a
+    // previous session (native side survives hot restart)
+    _midiCommand.disconnectDevice(device);
 
-    // Listen for events
-    _midiSubscription = _midiCommand.onMidiDataReceived?.listen(
-      _handleMidiData,
+    // Subscribe to the broadcast stream before connecting (stream already exists)
+    final stream = _midiCommand.onMidiDataReceived;
+    _debugLog('onMidiDataReceived stream: ${stream == null ? "NULL" : "available"}');
+    _midiSubscription = stream?.listen(
+      (packet) {
+        _debugLog('RAW: ${packet.data.length} bytes from ${packet.device.name}');
+        _handleMidiData(packet);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        _debugLog('Stream error: $error');
+      },
+      onDone: () {
+        _debugLog('Stream done (closed)');
+      },
+      cancelOnError: false,
     );
-    _debugLog('Connected to ${device.name}, listening for MIDI data');
+    _debugLog('Subscription: ${_midiSubscription == null ? "NULL" : "active"}');
+
+    // Connect — awaiting is safe now that we disconnected first
+    await _midiCommand.connectToDevice(device);
+    _debugLog('connectToDevice completed for ${device.name}');
 
     // Update the state with selected device & isConnected
     if (currentState is Data) {
@@ -163,8 +192,13 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
   }
 
   void _handleMidiData(MidiPacket packet) {
+    if (!_isDetecting) return;
+
     final data = packet.data;
-    if (data.isEmpty || data.length < 3) return;
+    if (data.isEmpty || data.length < 3) {
+      _debugLog('Short packet dropped: ${data.length} bytes from ${packet.device.name}');
+      return;
+    }
 
     final statusByte = data[0];
     final messageType = statusByte & 0xF0;
