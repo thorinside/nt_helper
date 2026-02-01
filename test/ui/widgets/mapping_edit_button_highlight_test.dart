@@ -122,7 +122,10 @@ void main() {
 
       final decoration = findHighlightDecoration(tester);
       expect(decoration, isNotNull);
-      expect(decoration!.border, isNull);
+      expect(decoration!.border, isNotNull);
+      final border = decoration.border! as Border;
+      expect(border.top.color, Colors.transparent);
+      expect(border.top.width, 2.0);
     });
 
     testWidgets('shows orange border when bottom sheet is open', (
@@ -164,10 +167,29 @@ void main() {
       navigatorState.pop();
       await tester.pumpAndSettle();
 
-      // Verify border is gone
+      // Verify border is transparent
       decoration = findHighlightDecoration(tester);
       expect(decoration, isNotNull);
-      expect(decoration!.border, isNull);
+      expect(decoration!.border, isNotNull);
+      final clearedBorder = decoration.border! as Border;
+      expect(clearedBorder.top.color, Colors.transparent);
+      expect(clearedBorder.top.width, 2.0);
+    });
+
+    testWidgets('layout size is stable across highlight states', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget());
+
+      final sizeBefore = tester.getSize(find.byType(MappingEditButton));
+
+      // Tap to open bottom sheet (triggers _isEditing = true)
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+
+      final sizeAfter = tester.getSize(find.byType(MappingEditButton));
+
+      expect(sizeAfter, sizeBefore);
     });
   });
 }

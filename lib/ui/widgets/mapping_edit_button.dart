@@ -41,12 +41,12 @@ class _MappingEditButtonState extends State<MappingEditButton> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          border: _isEditing
-              ? Border.all(
-                  color: Theme.of(context).colorScheme.tertiary,
-                  width: 2.0,
-                )
-              : null,
+          border: Border.all(
+            color: _isEditing
+                ? Theme.of(context).colorScheme.tertiary
+                : Colors.transparent,
+            width: 2.0,
+          ),
         ),
         child: IconButton.filledTonal(
           style: hasMapping ? mappedStyle : defaultStyle,
