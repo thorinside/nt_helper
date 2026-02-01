@@ -28,10 +28,10 @@ Requirements for milestone v2.10. Each maps to roadmap phases.
 
 ### UI Integration
 
-- [ ] **UI-01**: Status message shows concise 14-bit result (e.g., "14-bit CC 1 Ch 1")
-- [ ] **UI-02**: onMidiEventFound callback carries 14-bit type info to mapping editor
-- [ ] **UI-03**: Mapping editor auto-sets MidiMappingType (cc14BitLow/cc14BitHigh) from detection
-- [ ] **UI-04**: Mapping editor auto-fills CC number from 14-bit detection base CC
+- [x] **UI-01**: Status message shows concise 14-bit result (e.g., "14-bit CC 1 Ch 1")
+- [x] **UI-02**: onMidiEventFound callback carries 14-bit type info to mapping editor
+- [x] **UI-03**: Mapping editor auto-sets MidiMappingType (cc14BitLow/cc14BitHigh) from detection
+- [x] **UI-04**: Mapping editor auto-fills CC number from 14-bit detection base CC
 
 ## v2 Requirements
 
@@ -72,10 +72,10 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | TYP-01 | Phase 1 | Complete |
 | TYP-02 | Phase 1 | Complete |
 | TYP-03 | Phase 1 | Complete |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
-| UI-03 | Phase 3 | Pending |
-| UI-04 | Phase 3 | Pending |
+| UI-01 | Phase 3 | Complete |
+| UI-02 | Phase 3 | Complete |
+| UI-03 | Phase 3 | Complete |
+| UI-04 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 14 total
@@ -84,4 +84,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-02-01 after Phase 2 completion*
+*Last updated: 2026-02-01 after Phase 3 completion*
