@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 class DebugPanel extends StatefulWidget {
@@ -61,6 +62,23 @@ class _DebugPanelState extends State<DebugPanel> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
+                TextButton.icon(
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text('Copy'),
+                  onPressed: () {
+                    final text = _debugService.debugMessages.join('\n');
+                    Clipboard.setData(ClipboardData(text: text));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Debug log copied to clipboard'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
                 TextButton.icon(
                   icon: const Icon(Icons.delete_outline, size: 16),
                   label: const Text('Clear'),
