@@ -53,10 +53,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. When the mapping editor bottom sheet is open for a parameter, the corresponding row in the parameter list is visually distinguished from other rows
   2. When the bottom sheet is dismissed, no row retains highlight styling -- the list returns to its normal appearance
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md — Add orange highlight border to mapping icon during editing + tests
 
 ## Progress
 
@@ -65,4 +65,4 @@ Plans:
 | 1. Type System Foundation | v2.10 | 1/1 | Complete | 2026-02-01 |
 | 2. 14-bit Detection | v2.10 | 2/2 | Complete | 2026-02-01 |
 | 3. UI Integration | v2.10 | 1/1 | Complete | 2026-02-01 |
-| 4. Mapping Row Highlight | Row Highlight | 0/? | Not started | - |
+| 4. Mapping Row Highlight | Row Highlight | 0/1 | Not started | - |
