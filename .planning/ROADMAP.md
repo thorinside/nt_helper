@@ -46,10 +46,11 @@ Plans:
   6. Byte order determined via value analysis (MSB-first vs LSB-first)
   7. Standard MSB-first interpretation used when analysis is ambiguous
   8. Detector emits correct 14-bit event type with byte order encoded
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 02-01-PLAN.md — TDD: Create MidiDetectionEngine with pair tracking, byte order analysis, and comprehensive tests
+- [ ] 02-02-PLAN.md — Wire MidiDetectionEngine into MidiListenerCubit, replacing inline detection
 
 ### Phase 3: UI Integration
 **Goal**: Mapping editor auto-configures from 14-bit detection results
@@ -74,5 +75,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Type System Foundation | 1/1 | Complete | 2026-01-31 |
-| 2. 14-Bit Detection | 0/TBD | Not started | - |
+| 2. 14-Bit Detection | 0/2 | Not started | - |
 | 3. UI Integration | 0/TBD | Not started | - |
