@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 ## Current Position
 
-Milestone: v2.10 complete, shipped
-Status: Ready for next milestone
-Last activity: 2026-02-01 — v2.10 milestone archived
+Milestone: Mapping Row Highlight
+Status: Defining requirements
+Last activity: 2026-02-01 — Mapping Row Highlight milestone started
 
-Progress: Milestone complete
+Progress: Not started
 
 ## Performance Metrics
 
@@ -48,6 +48,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-01 — v2.10 milestone completed and archived
-Stopped at: Milestone complete, ready for /gsd:new-milestone
+Last session: 2026-02-01 — Mapping Row Highlight milestone started
+Stopped at: Defining requirements
 Resume file: None

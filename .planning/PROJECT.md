@@ -37,7 +37,7 @@ Reliable, real-time parameter control of the Disting NT via MIDI — the bridge 
 
 <!-- Current scope. Building toward these. -->
 
-(No active milestone — planning next)
+- [ ] Highlight the active parameter row when the mapping editor bottom sheet is open
 
 ### Out of Scope
 
@@ -79,4 +79,4 @@ Reliable, real-time parameter control of the Disting NT via MIDI — the bridge 
 | Concise status format "14-bit CC X Ch Y" | Reduces 8 words to 5 for better UI density in status bar | Good |
 
 ---
-*Last updated: 2026-02-01 after v2.10 milestone*
+*Last updated: 2026-02-01 after Mapping Row Highlight milestone started*
