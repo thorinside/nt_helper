@@ -9,16 +9,16 @@ Requirements for milestone v2.10. Each maps to roadmap phases.
 
 ### Detection Core
 
-- [ ] **DET-01**: Detector tracks all incoming CC numbers per channel simultaneously
-- [ ] **DET-02**: Detector identifies CC pairs where one CC is 32 higher than the other as 14-bit pairs
-- [ ] **DET-03**: 14-bit pair detection uses same 10-hit threshold as 7-bit (MSB+LSB pair = 1 hit)
-- [ ] **DET-04**: 7-bit and 14-bit detection run in parallel; first to reach threshold emits
-- [ ] **DET-05**: Reserved CCs excluded from 14-bit pairing (CC0/CC32 Bank Select)
+- [x] **DET-01**: Detector tracks all incoming CC numbers per channel simultaneously
+- [x] **DET-02**: Detector identifies CC pairs where one CC is 32 higher than the other as 14-bit pairs
+- [x] **DET-03**: 14-bit pair detection uses same 10-hit threshold as 7-bit (MSB+LSB pair = 1 hit)
+- [x] **DET-04**: 7-bit and 14-bit detection run in parallel; first to reach threshold emits
+- [x] **DET-05**: Reserved CCs excluded from 14-bit pairing (CC0/CC32 Bank Select)
 
 ### Byte Order
 
-- [ ] **BYT-01**: Detector analyzes values to determine byte order (MSB-first vs LSB-first)
-- [ ] **BYT-02**: Default to standard MSB-first interpretation when analysis is ambiguous
+- [x] **BYT-01**: Detector analyzes values to determine byte order (MSB-first vs LSB-first)
+- [x] **BYT-02**: Default to standard MSB-first interpretation when analysis is ambiguous
 
 ### Type System
 
@@ -62,13 +62,13 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DET-01 | Phase 2 | Pending |
-| DET-02 | Phase 2 | Pending |
-| DET-03 | Phase 2 | Pending |
-| DET-04 | Phase 2 | Pending |
-| DET-05 | Phase 2 | Pending |
-| BYT-01 | Phase 2 | Pending |
-| BYT-02 | Phase 2 | Pending |
+| DET-01 | Phase 2 | Complete |
+| DET-02 | Phase 2 | Complete |
+| DET-03 | Phase 2 | Complete |
+| DET-04 | Phase 2 | Complete |
+| DET-05 | Phase 2 | Complete |
+| BYT-01 | Phase 2 | Complete |
+| BYT-02 | Phase 2 | Complete |
 | TYP-01 | Phase 1 | Complete |
 | TYP-02 | Phase 1 | Complete |
 | TYP-03 | Phase 1 | Complete |
@@ -84,4 +84,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-01-31 after Phase 1 completion*
+*Last updated: 2026-02-01 after Phase 2 completion*
