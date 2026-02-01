@@ -4,6 +4,8 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'midi_detection_engine.dart';
+
 part 'midi_listener_cubit.freezed.dart';
 part 'midi_listener_state.dart';
 
@@ -11,10 +13,7 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
   final MidiCommand _midiCommand = MidiCommand();
   StreamSubscription<MidiPacket>? _midiSubscription;
 
-  static const int kThreshold = 10;
-  // Keep track of the last full event signature to detect consecutive identical events
-  ({MidiEventType type, int channel, int number})? _lastEventSignature;
-  int _consecutiveCount = 0;
+  final MidiDetectionEngine _detectionEngine = MidiDetectionEngine();
 
   MidiListenerCubit() : super(const MidiListenerState.initial());
 
@@ -99,109 +98,66 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       );
     }
 
-    // Reset consecutive count and signature
-    _consecutiveCount = 0;
-    _lastEventSignature = null;
+    // Reset detection engine
+    _detectionEngine.reset();
   }
 
   void _handleMidiData(MidiPacket packet) {
     final data = packet.data;
-    // Basic validation: need at least 3 bytes for most channel messages
     if (data.isEmpty || data.length < 3) return;
 
     final statusByte = data[0];
-    final messageType = statusByte & 0xF0; // 0x90, 0x80, 0xB0 etc.
-    final channel = statusByte & 0x0F; // 0-15
+    final messageType = statusByte & 0xF0;
+    final channel = statusByte & 0x0F;
 
-    // --- Declare variables to hold detected info ---
-    MidiEventType? detectedType;
-    int? detectedCc;
-    int? detectedNote;
-    int? detectedNumber; // Generic number (CC or Note) for signature
+    DetectionResult? result;
 
-    // --- Parse the message ---
-    // CC Message (0xB0)
     if (messageType == 0xB0) {
-      detectedType = MidiEventType.cc;
-      detectedCc = data[1]; // CC number
-      detectedNumber = detectedCc;
-      //
-    }
-    // Note On Message (0x90)
-    else if (messageType == 0x90) {
-      int note = data[1];
-      int velocity = data[2];
-      // Treat Note On with velocity 0 as Note Off
-      detectedType = (velocity == 0)
-          ? MidiEventType.noteOff
-          : MidiEventType.noteOn;
-      detectedNote = note;
-      detectedNumber = detectedNote;
-      //
-    }
-    // Note Off Message (0x80)
-    else if (messageType == 0x80) {
-      detectedType = MidiEventType.noteOff;
-      detectedNote = data[1]; // Note number
-      // data[2] is velocity, which we ignore for detection logic
-      detectedNumber = detectedNote;
-      //
+      // CC message
+      result = _detectionEngine.processCc(channel, data[1], data[2]);
+    } else if (messageType == 0x90) {
+      // Note On (velocity 0 = Note Off)
+      final note = data[1];
+      final velocity = data[2];
+      result = velocity == 0
+          ? _detectionEngine.processNoteOff(channel, note)
+          : _detectionEngine.processNoteOn(channel, note);
+    } else if (messageType == 0x80) {
+      // Note Off
+      result = _detectionEngine.processNoteOff(channel, data[1]);
     }
 
-    // --- Process if a relevant message was detected ---
-    if (detectedType != null && detectedNumber != null) {
-      final currentEventSignature = (
-        type: detectedType,
-        channel: channel,
-        number: detectedNumber,
-      );
-
-      // Check consecutive hits
-      if (currentEventSignature == _lastEventSignature) {
-        _consecutiveCount++;
-      } else {
-        _lastEventSignature = currentEventSignature;
-        _consecutiveCount = 1;
-      }
-
-      // Determine if the threshold is met for this event type
-      // Note: Notes always meet threshold >= 1
-      final bool thresholdMet =
-          (detectedType == MidiEventType.cc &&
-              _consecutiveCount >= kThreshold) ||
-          (detectedType != MidiEventType.cc /* i.e., Note On/Off */ );
-
-      // Update the state
+    if (result != null) {
+      _emitDetectionResult(result);
+    } else if (messageType == 0xB0 || messageType == 0x90 || messageType == 0x80) {
+      // Sub-threshold: emit state update with null detection (preserves activity indication)
       final currentState = state;
       if (currentState is Data) {
-        // --- Debug Print Start ---
-        // --- Debug Print End ---
-
-        // Set fields only if threshold is met, otherwise null
-        final nextState = currentState.copyWith(
-          lastDetectedType: thresholdMet ? detectedType : null,
-          lastDetectedChannel: thresholdMet ? channel : null,
-          lastDetectedCc: thresholdMet ? detectedCc : null,
-          lastDetectedNote: thresholdMet ? detectedNote : null,
+        emit(currentState.copyWith(
+          lastDetectedType: null,
+          lastDetectedChannel: null,
+          lastDetectedCc: null,
+          lastDetectedNote: null,
           lastDetectedTime: DateTime.timestamp(),
-        );
+        ));
+      }
+    }
+  }
 
-        // --- Debug Print Start ---
-        if (thresholdMet) {
-        } else {}
-        // --- Debug Print End ---
+  void _emitDetectionResult(DetectionResult result) {
+    final currentState = state;
+    if (currentState is Data) {
+      final isCcType = result.type == MidiEventType.cc ||
+          result.type == MidiEventType.cc14BitLowFirst ||
+          result.type == MidiEventType.cc14BitHighFirst;
 
-        emit(nextState);
-
-        // Reset count and signature ONLY if the threshold was met
-        if (thresholdMet) {
-          _consecutiveCount = 0;
-          _lastEventSignature = null;
-        }
-      } else {}
-    } else {
-      // Optionally log ignored message types
-      //
+      emit(currentState.copyWith(
+        lastDetectedType: result.type,
+        lastDetectedChannel: result.channel,
+        lastDetectedCc: isCcType ? result.number : null,
+        lastDetectedNote: !isCcType ? result.number : null,
+        lastDetectedTime: DateTime.timestamp(),
+      ));
     }
   }
 
