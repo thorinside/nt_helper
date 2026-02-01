@@ -22,9 +22,9 @@ Requirements for milestone v2.10. Each maps to roadmap phases.
 
 ### Type System
 
-- [ ] **TYP-01**: MidiEventType enum extended with 14-bit variants encoding byte order
-- [ ] **TYP-02**: Existing 7-bit CC and note detection unchanged by new type additions
-- [ ] **TYP-03**: MidiListenerState supports emitting 14-bit detection results
+- [x] **TYP-01**: MidiEventType enum extended with 14-bit variants encoding byte order
+- [x] **TYP-02**: Existing 7-bit CC and note detection unchanged by new type additions
+- [x] **TYP-03**: MidiListenerState supports emitting 14-bit detection results
 
 ### UI Integration
 
@@ -69,9 +69,9 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | DET-05 | Phase 2 | Pending |
 | BYT-01 | Phase 2 | Pending |
 | BYT-02 | Phase 2 | Pending |
-| TYP-01 | Phase 1 | Pending |
-| TYP-02 | Phase 1 | Pending |
-| TYP-03 | Phase 1 | Pending |
+| TYP-01 | Phase 1 | Complete |
+| TYP-02 | Phase 1 | Complete |
+| TYP-03 | Phase 1 | Complete |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
@@ -84,4 +84,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-31*
-*Last updated: 2026-01-31 after roadmap creation*
+*Last updated: 2026-01-31 after Phase 1 completion*
