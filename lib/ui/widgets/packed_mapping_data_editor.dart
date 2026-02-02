@@ -38,6 +38,8 @@ class PackedMappingDataEditor extends StatefulWidget {
 
 class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     with SingleTickerProviderStateMixin {
+  static int? _lastTabIndex;
+
   late TabController _tabController;
 
   // We'll keep a local copy of the data that we can edit
@@ -131,8 +133,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       // Performance page is assigned
       initialIndex = 3;
     } else {
-      // No CV, MIDI, I2C, or Performance in use, default to CV tab
-      initialIndex = 0;
+      // No mapping configured — use last selected tab if available
+      initialIndex = _lastTabIndex ?? 0;
     }
 
     // Create the TabController with initialIndex set to the matching page.
@@ -141,6 +143,11 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       vsync: this,
       initialIndex: initialIndex,
     );
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        _lastTabIndex = _tabController.index;
+      }
+    });
 
     // Initialize controllers with the existing data
     _midiCcController = TextEditingController(text: _data.midiCC.toString());
