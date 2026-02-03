@@ -67,13 +67,8 @@ String generateUUID() {
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
 
-/// Simplified MCP server service using StreamableHTTPServerTransport
-/// for automatic session management, connection persistence, and health monitoring.
-/// This service manages multiple MCP server instances, one per client connection.
-///
-/// MIGRATION NOTE: dart_mcp library (0.3.3) added to pubspec.yaml as dependency.
-/// Future stories (E4.2+) will incrementally migrate from mcp_dart to dart_mcp.
-/// Current implementation remains on mcp_dart for backward compatibility.
+/// MCP server service using Streamable HTTP transport on /mcp.
+/// Manages multiple MCP server instances, one per client session.
 class McpServerService extends ChangeNotifier {
   McpServerService._(this._distingCubit);
 
@@ -100,11 +95,14 @@ class McpServerService extends ChangeNotifier {
   // Map of session ID to server instance for multi-client support
   final Map<String, McpServer> _servers = {};
   final Map<String, StreamableHTTPServerTransport> _transports = {};
+
   HttpServer? _httpServer;
   StreamSubscription<HttpRequest>? _httpSubscription;
   String? _lastError;
 
   bool get isRunning => _httpServer != null;
+  int? get boundPort => _httpServer?.port;
+  InternetAddress? get boundAddress => _httpServer?.address;
 
   /// Returns the last error that occurred when trying to start the server
   String? get lastError => _lastError;
@@ -119,7 +117,7 @@ class McpServerService extends ChangeNotifier {
       'active_servers': _servers.length,
       'active_transports': _transports.length,
       'server_implementation': 'nt-helper-flutter',
-      'library_version': 'mcp_dart 0.5.3',
+      'library_version': 'mcp_dart 1.2.2',
     };
   }
 
@@ -134,7 +132,9 @@ class McpServerService extends ChangeNotifier {
     _lastError = null;
 
     try {
-      final address = bindAddress ?? InternetAddress.anyIPv6;
+      // Bind to localhost by default to avoid exposing the MCP server on the LAN.
+      // Use bindAddress: InternetAddress.anyIPv4 if you explicitly want to expose it.
+      final address = bindAddress ?? InternetAddress.loopbackIPv4;
 
       // Create HTTP server
       _httpServer = await HttpServer.bind(address, port);
@@ -168,7 +168,16 @@ class McpServerService extends ChangeNotifier {
     }
   }
 
+  void _log(String message) {
+    try {
+      stderr.writeln('MCP_LOG: $message');
+      final file = File('/tmp/nt_mcp.log');
+      file.writeAsStringSync('${DateTime.now()}: $message\n', mode: FileMode.append);
+    } catch (_) {}
+  }
+
   Future<void> _handleHttpRequest(HttpRequest request) async {
+    _log('Request: ${request.method} ${request.uri}');
     // Apply CORS headers to all responses
     _setCorsHeaders(request.response);
 
@@ -179,31 +188,28 @@ class McpServerService extends ChangeNotifier {
       return;
     }
 
-    if (request.uri.path != '/mcp') {
-      request.response.statusCode = HttpStatus.notFound;
-      request.response.headers.contentType = ContentType.text;
-      request.response.write('Not Found. Use /mcp endpoint.');
-      await request.response.close();
-      return;
-    }
-
-    switch (request.method) {
-      case 'POST':
-        await _handlePostRequest(request);
-        break;
-      case 'GET':
-        await _handleGetRequest(request);
-        break;
-      case 'DELETE':
-        await _handleDeleteRequest(request);
-        break;
+    switch (request.uri.path) {
+      case '/mcp':
+        switch (request.method) {
+          case 'POST':
+            await _handlePostRequest(request);
+          case 'GET':
+            await _handleGetRequest(request);
+          case 'DELETE':
+            await _handleDeleteRequest(request);
+          default:
+            request.response.statusCode = HttpStatus.methodNotAllowed;
+            request.response.headers.set(
+              HttpHeaders.allowHeader,
+              'GET, POST, DELETE, OPTIONS',
+            );
+            request.response.write('Method Not Allowed');
+            await request.response.close();
+        }
       default:
-        request.response.statusCode = HttpStatus.methodNotAllowed;
-        request.response.headers.set(
-          HttpHeaders.allowHeader,
-          'GET, POST, DELETE, OPTIONS',
-        );
-        request.response.write('Method Not Allowed');
+        request.response.statusCode = HttpStatus.notFound;
+        request.response.headers.contentType = ContentType.text;
+        request.response.write('Not Found.');
         await request.response.close();
     }
   }
@@ -224,24 +230,25 @@ class McpServerService extends ChangeNotifier {
   }
 
 
-  /// Handle POST requests for JSON-RPC calls
+  /// Handle POST requests for JSON-RPC calls (Streamable HTTP).
+  /// The transport validates Accept headers and handles the protocol per spec.
   Future<void> _handlePostRequest(HttpRequest request) async {
+    final sessionId = request.headers.value('mcp-session-id');
     try {
-      // Check for existing session ID
-      final sessionId = request.headers.value('mcp-session-id');
       StreamableHTTPServerTransport? transport;
 
       if (sessionId != null && _transports.containsKey(sessionId)) {
-        // Reuse existing transport for this session
+        _log('POST /mcp: existing session $sessionId');
         transport = _transports[sessionId]!;
       } else {
-        // Create new transport for new session
-        // If client provided a session ID, use it; otherwise generate one
+        _log('POST /mcp: creating new transport (sessionId: $sessionId)');
         transport = await _createNewTransport(sessionId: sessionId);
+        _log('POST /mcp: transport created, session: ${transport.sessionId}');
       }
 
-      // Handle the request - transport will parse the body internally
+      _log('POST /mcp: delegating to transport.handleRequest');
       await transport.handleRequest(request);
+      _log('POST /mcp: handleRequest completed');
     } catch (e) {
       _sendErrorResponse(
         request,
@@ -251,30 +258,20 @@ class McpServerService extends ChangeNotifier {
     }
   }
 
-  /// Handle GET requests for SSE streams
+  /// Handle GET requests on /mcp.
+  /// Returns 405 — this server does not use server-initiated notifications,
+  /// so no SSE stream is needed. Per spec, server MUST return text/event-stream
+  /// OR 405; we choose 405 to avoid long-lived SSE connections that cause
+  /// HTTP/1.1 head-of-line blocking in clients that reuse TCP connections.
   Future<void> _handleGetRequest(HttpRequest request) async {
-    final sessionId = request.headers.value('mcp-session-id');
-    if (sessionId == null) {
-      _sendErrorResponse(
-        request,
-        HttpStatus.badRequest,
-        'Missing session ID for SSE stream',
-      );
-      return;
-    }
-
-    // Unknown session → 404 per MCP Streamable HTTP spec
-    if (!_transports.containsKey(sessionId)) {
-      _sendErrorResponse(
-        request,
-        HttpStatus.notFound,
-        'Session not found. Re-initialize.',
-      );
-      return;
-    }
-
-    final transport = _transports[sessionId]!;
-    await transport.handleRequest(request);
+    _log('GET /mcp → 405 (SSE streams not supported)');
+    request.response.statusCode = HttpStatus.methodNotAllowed;
+    request.response.headers.set(
+      HttpHeaders.allowHeader,
+      'POST, DELETE, OPTIONS',
+    );
+    request.response.write('Method Not Allowed');
+    await request.response.close();
   }
 
   /// Handle DELETE requests for session termination
@@ -353,7 +350,7 @@ class McpServerService extends ChangeNotifier {
     await _httpServer?.close(force: true);
     _httpServer = null;
 
-    // Close all transports and servers
+    // Close all Streamable HTTP transports and servers
     for (final transport in _transports.values) {
       transport.close();
     }
@@ -397,6 +394,17 @@ class McpServerService extends ChangeNotifier {
     // Register MCP tools
     _registerAlgorithmTools(server, mcpAlgorithmTools, distingTools);
     _registerDistingTools(server, distingTools);
+
+    // Register and immediately disable a dummy resource to initialize the
+    // resources/list handler. Without this, clients that call resources/list
+    // get a "method not found" error that the transport never writes back
+    // (mcp_dart bug with enableJsonResponse + error responses).
+    server.registerResource(
+      '_init',
+      'nt://init',
+      null,
+      (uri, extra) => ReadResourceResult(contents: []),
+    ).disable();
 
     return server;
   }
@@ -908,9 +916,12 @@ class McpServerService extends ChangeNotifier {
     // Create new server instance first
     server = _buildServer();
 
-    // Create new transport with event store for resumability
+    // Create new transport with event store for resumability.
+    // enableJsonResponse: POST responses use application/json instead of SSE
+    // streams, which is more compatible with clients that don't handle SSE on POST.
     transport = StreamableHTTPServerTransport(
       options: StreamableHTTPServerTransportOptions(
+        enableJsonResponse: true,
         sessionIdGenerator: sessionId != null
             ? () => sessionId
             : () => generateUUID(),
