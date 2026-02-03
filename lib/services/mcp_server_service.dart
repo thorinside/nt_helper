@@ -11,6 +11,18 @@ import 'package:nt_helper/services/disting_controller_impl.dart';
 import 'dart:math' as math;
 import 'package:crypto/crypto.dart';
 
+/// Helper to bridge legacy Map-based JSON schemas to the typed JsonSchema system.
+ToolInputSchema _inputSchema({
+  required Map<String, dynamic> properties,
+  List<String>? required,
+}) {
+  return ToolInputSchema.fromJson({
+    'type': 'object',
+    'properties': properties,
+    'required': ?required,
+  });
+}
+
 /// Generate a unique session ID with secure random number generator
 String generateUUID() {
   // Try multiple approaches to get secure randomness
@@ -384,7 +396,7 @@ class McpServerService extends ChangeNotifier {
 
     final server = McpServer(
       Implementation(name: 'nt-helper-flutter', version: '1.39.0'),
-      options: ServerOptions(
+      options: McpServerOptions(
         capabilities: ServerCapabilities(
           tools: ServerCapabilitiesTools(),
         ),
@@ -399,11 +411,11 @@ class McpServerService extends ChangeNotifier {
   }
 
   void _registerAlgorithmTools(McpServer server, MCPAlgorithmTools tools, DistingTools distingTools) {
-    server.tool(
+    server.registerTool(
       'search',
       description:
           'Search for algorithms by name/category, or search for parameters within preset/slot. Algorithms use fuzzy matching (70% threshold), parameters use exact/partial name matching.',
-      toolInputSchema: const ToolInputSchema(
+      inputSchema: _inputSchema(
         properties: {
           'target': {
             'type': 'string',
@@ -434,13 +446,13 @@ class McpServerService extends ChangeNotifier {
         },
         required: ['target', 'query'],
       ),
-      callback: ({args, extra}) async {
+      callback: (args, extra) async {
         try {
-          final target = args?['target'] as String?;
+          final target = args['target'] as String?;
 
           late String resultJson;
           if (target == 'algorithm') {
-            resultJson = await tools.searchAlgorithms(args ?? {}).timeout(
+            resultJson = await tools.searchAlgorithms(args).timeout(
                   const Duration(seconds: 5),
                   onTimeout: () => jsonEncode({
                     'success': false,
@@ -448,7 +460,7 @@ class McpServerService extends ChangeNotifier {
                   }),
                 );
           } else if (target == 'parameter') {
-            resultJson = await distingTools.searchParameters(args ?? {}).timeout(
+            resultJson = await distingTools.searchParameters(args).timeout(
                   const Duration(seconds: 5),
                   onTimeout: () => jsonEncode({
                     'success': false,
@@ -463,7 +475,7 @@ class McpServerService extends ChangeNotifier {
           }
 
           return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)],
+            [TextContent(text: resultJson)],
           );
         } catch (e) {
           final errorJson = jsonEncode({
@@ -471,17 +483,17 @@ class McpServerService extends ChangeNotifier {
             'error': 'Tool execution failed: ${e.toString()}',
           });
           return CallToolResult.fromContent(
-            content: [TextContent(text: errorJson)],
+            [TextContent(text: errorJson)],
           );
         }
       },
     );
 
-    server.tool(
+    server.registerTool(
       'show',
       description:
           'Show preset, slot, parameter, screen, routing, or CPU information. Returns mappings for enabled CV/MIDI/i2c/performance page controls. Disabled mappings omitted from output. See docs/mcp-mapping-guide.md for mapping field details.',
-      toolInputSchema: const ToolInputSchema(
+      inputSchema: _inputSchema(
         properties: {
           'target': {
             'type': 'string',
@@ -503,9 +515,9 @@ class McpServerService extends ChangeNotifier {
         },
         required: ['target'],
       ),
-      callback: ({args, extra}) async {
+      callback: (args, extra) async {
         try {
-          final resultJson = await tools.show(args ?? {}).timeout(
+          final resultJson = await tools.show(args).timeout(
                 const Duration(seconds: 10),
                 onTimeout: () => jsonEncode({
                   'success': false,
@@ -513,7 +525,7 @@ class McpServerService extends ChangeNotifier {
                 }),
               );
           return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)],
+            [TextContent(text: resultJson)],
           );
         } catch (e) {
           final errorJson = jsonEncode({
@@ -521,7 +533,7 @@ class McpServerService extends ChangeNotifier {
             'error': 'Tool execution failed: ${e.toString()}',
           });
           return CallToolResult.fromContent(
-            content: [TextContent(text: errorJson)],
+            [TextContent(text: errorJson)],
           );
         }
       },
@@ -535,11 +547,11 @@ class McpServerService extends ChangeNotifier {
   }
 
   void _registerPresetTools(McpServer server, DistingTools tools) {
-    server.tool(
+    server.registerTool(
       'new',
       description:
           'Create new blank preset or preset with initial algorithms. WARNING: Clears current preset.',
-      toolInputSchema: const ToolInputSchema(
+      inputSchema: _inputSchema(
         properties: {
           'name': {
             'type': 'string',
@@ -566,31 +578,31 @@ class McpServerService extends ChangeNotifier {
         },
         required: ['name'],
       ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.newWithAlgorithms(args ?? {});
+      callback: (args, extra) async {
+        final resultJson = await tools.newWithAlgorithms(args);
         return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
+          [TextContent(text: resultJson)],
         );
       },
     );
 
-    server.tool(
+    server.registerTool(
       'save',
       description: 'Save the current preset to the device.',
-      toolInputSchema: const ToolInputSchema(properties: {}),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.savePreset(args ?? {});
+      inputSchema: _inputSchema(properties: {}),
+      callback: (args, extra) async {
+        final resultJson = await tools.savePreset(args);
         return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
+          [TextContent(text: resultJson)],
         );
       },
     );
 
     // Simple 'add' tool with flat parameter structure for reduced cognitive load
-    server.tool(
+    server.registerTool(
       'add',
       description: 'Add an algorithm to the preset. Requires name or guid.',
-      toolInputSchema: const ToolInputSchema(
+      inputSchema: _inputSchema(
         properties: {
           'target': {
             'type': 'string',
@@ -614,19 +626,19 @@ class McpServerService extends ChangeNotifier {
         },
         required: ['target'],
       ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.addSimple(args ?? {});
+      callback: (args, extra) async {
+        final resultJson = await tools.addSimple(args);
         return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
+          [TextContent(text: resultJson)],
         );
       },
     );
 
-    server.tool(
+    server.registerTool(
       'remove',
       description:
           'Remove the algorithm from a slot, leaving it empty. Succeeds gracefully if slot is already empty.',
-      toolInputSchema: const ToolInputSchema(
+      inputSchema: _inputSchema(
         properties: {
           'target': {
             'type': 'string',
@@ -642,19 +654,19 @@ class McpServerService extends ChangeNotifier {
         },
         required: ['target', 'slot_index'],
       ),
-      callback: ({args, extra}) async {
-        final resultJson = await tools.removeSlot(args ?? {});
+      callback: (args, extra) async {
+        final resultJson = await tools.removeSlot(args);
         return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
+          [TextContent(text: resultJson)],
         );
       },
     );
 
-    server.tool(
+    server.registerTool(
       'edit',
       description:
           'Edit preset, slot, or parameter with appropriate granularity. Target "preset": full preset state. Target "slot": specific slot with algorithm/parameters. Target "parameter": individual parameter value/mapping. Device must be in connected mode.',
-      toolInputSchema: const ToolInputSchema(
+      inputSchema: _inputSchema(
         properties: {
           'target': {
             'type': 'string',
@@ -867,16 +879,16 @@ class McpServerService extends ChangeNotifier {
         },
         required: ['target'],
       ),
-      callback: ({args, extra}) async {
-        final target = args?['target'] as String?;
+      callback: (args, extra) async {
+        final target = args['target'] as String?;
         String resultJson;
 
         if (target == 'preset') {
           // Edit entire preset
-          resultJson = await tools.editPreset(args ?? {});
+          resultJson = await tools.editPreset(args);
         } else if (target == 'slot' || target == 'parameter') {
           // Edit slot or parameter
-          resultJson = await tools.editSlot(args ?? {});
+          resultJson = await tools.editSlot(args);
         } else {
           resultJson = jsonEncode({
             'success': false,
@@ -885,7 +897,7 @@ class McpServerService extends ChangeNotifier {
         }
 
         return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
+          [TextContent(text: resultJson)],
         );
       },
     );
