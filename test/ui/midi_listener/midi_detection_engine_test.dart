@@ -107,6 +107,93 @@ void main() {
       });
     });
 
+    group('toggle CC early detection', () {
+      test('4 events with values 0/127 detects as CC', () {
+        DetectionResult? result;
+
+        // Two press-release cycles: 127, 0, 127, 0
+        result = engine.processCc(0, 64, 127);
+        expect(result, isNull);
+        result = engine.processCc(0, 64, 0);
+        expect(result, isNull);
+        result = engine.processCc(0, 64, 127);
+        expect(result, isNull);
+
+        result = engine.processCc(0, 64, 0);
+        expect(result, isNotNull);
+        expect(result!.type, MidiEventType.cc);
+        expect(result.channel, 0);
+        expect(result.number, 64);
+      });
+
+      test('3 events with values 0/127 does not detect yet', () {
+        DetectionResult? result;
+
+        result = engine.processCc(0, 64, 127);
+        expect(result, isNull);
+        result = engine.processCc(0, 64, 0);
+        expect(result, isNull);
+        result = engine.processCc(0, 64, 127);
+        expect(result, isNull);
+      });
+
+      test('4 events with mixed values including non-toggle does not detect early', () {
+        DetectionResult? result;
+
+        result = engine.processCc(0, 1, 127);
+        expect(result, isNull);
+        result = engine.processCc(0, 1, 0);
+        expect(result, isNull);
+        result = engine.processCc(0, 1, 64); // non-toggle value
+        expect(result, isNull);
+        result = engine.processCc(0, 1, 127);
+        expect(result, isNull, reason: 'Mixed values should not trigger early detection');
+      });
+
+      test('alternating 0, 127, 0, 127 pattern detects early', () {
+        DetectionResult? result;
+
+        result = engine.processCc(2, 10, 0);
+        expect(result, isNull);
+        result = engine.processCc(2, 10, 127);
+        expect(result, isNull);
+        result = engine.processCc(2, 10, 0);
+        expect(result, isNull);
+
+        result = engine.processCc(2, 10, 127);
+        expect(result, isNotNull);
+        expect(result!.type, MidiEventType.cc);
+        expect(result.channel, 2);
+        expect(result.number, 10);
+      });
+
+      test('all value 0 (4 events) detects early', () {
+        DetectionResult? result;
+
+        for (int i = 0; i < 3; i++) {
+          result = engine.processCc(0, 64, 0);
+          expect(result, isNull);
+        }
+
+        result = engine.processCc(0, 64, 0);
+        expect(result, isNotNull);
+        expect(result!.type, MidiEventType.cc);
+      });
+
+      test('all value 127 (4 events) detects early', () {
+        DetectionResult? result;
+
+        for (int i = 0; i < 3; i++) {
+          result = engine.processCc(0, 64, 127);
+          expect(result, isNull);
+        }
+
+        result = engine.processCc(0, 64, 127);
+        expect(result, isNotNull);
+        expect(result!.type, MidiEventType.cc);
+      });
+    });
+
     group('14-bit CC detection', () {
       test('detects alternating CC pair 32 apart', () {
         DetectionResult? result;

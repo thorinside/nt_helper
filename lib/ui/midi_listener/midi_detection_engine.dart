@@ -42,16 +42,37 @@ class MidiDetectionEngine {
   /// Number of CC events required in the buffer for detection.
   static const int kBufferSize = 10;
 
+  /// Number of toggle CC events (values only 0/127) required for early detection.
+  static const int kToggleBufferSize = 4;
+
   /// Sliding window of recent CC events.
-  final List<({int channel, int cc})> _buffer = [];
+  final List<({int channel, int cc, int value})> _buffer = [];
 
   /// Process a CC message.
   ///
   /// Returns [DetectionResult] when a pattern is detected, null otherwise.
   DetectionResult? processCc(int channel, int ccNumber, int ccValue) {
-    _buffer.add((channel: channel, cc: ccNumber));
+    _buffer.add((channel: channel, cc: ccNumber, value: ccValue));
     if (_buffer.length > kBufferSize) {
       _buffer.removeAt(0);
+    }
+
+    // Early detection for toggle CCs (values only 0/127)
+    if (_buffer.length >= kToggleBufferSize) {
+      final channels = _buffer.map((e) => e.channel).toSet();
+      final uniqueCCs = _buffer.map((e) => e.cc).toSet();
+      final values = _buffer.map((e) => e.value).toSet();
+      if (channels.length == 1 &&
+          uniqueCCs.length == 1 &&
+          values.every((v) => v == 0 || v == 127)) {
+        final result = DetectionResult(
+          type: MidiEventType.cc,
+          channel: channels.first,
+          number: uniqueCCs.first,
+        );
+        _buffer.clear();
+        return result;
+      }
     }
 
     if (_buffer.length < kBufferSize) {
