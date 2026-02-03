@@ -134,7 +134,7 @@ class McpServerService extends ChangeNotifier {
     _lastError = null;
 
     try {
-      final address = bindAddress ?? InternetAddress.anyIPv4;
+      final address = bindAddress ?? InternetAddress.anyIPv6;
 
       // Create HTTP server
       _httpServer = await HttpServer.bind(address, port);
@@ -263,24 +263,15 @@ class McpServerService extends ChangeNotifier {
       return;
     }
 
-    // If session doesn't exist, create a new transport for it
+    // Unknown session → 404 per MCP Streamable HTTP spec
     if (!_transports.containsKey(sessionId)) {
-      try {
-        await _createNewTransport(sessionId: sessionId);
-      } catch (e) {
-        _sendErrorResponse(
-          request,
-          HttpStatus.internalServerError,
-          'Failed to create session',
-        );
-        return;
-      }
+      _sendErrorResponse(
+        request,
+        HttpStatus.notFound,
+        'Session not found. Re-initialize.',
+      );
+      return;
     }
-
-    // Check for Last-Event-ID header for resumability
-    final lastEventId = request.headers.value('Last-Event-ID');
-    if (lastEventId != null) {
-    } else {}
 
     final transport = _transports[sessionId]!;
     await transport.handleRequest(request);
