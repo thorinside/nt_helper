@@ -361,7 +361,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                     children: [
                       Icon(Icons.link_off, size: 18),
                       SizedBox(width: 8),
-                      Flexible(child: Text('Reset Connections')),
+                      Text('Disconnect'),
                     ],
                   ),
                 ),
