@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html_parser;
 import 'package:archive/archive.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:nt_helper/utils/temp_directory_utils.dart';
 import 'package:nt_helper/models/firmware_release.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 
@@ -223,7 +223,7 @@ class FirmwareVersionService {
     FirmwareRelease version, {
     void Function(double progress)? onProgress,
   }) async {
-    final tempDir = await getTemporaryDirectory();
+    final tempDir = await TempDirectoryUtils.getWritableTempDirectory();
     final fileName = 'distingNT_${version.version}.zip';
     final filePath = path.join(tempDir.path, fileName);
 

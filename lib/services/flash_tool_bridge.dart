@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:nt_helper/models/flash_progress.dart';
+import 'package:nt_helper/utils/temp_directory_utils.dart';
 import 'package:nt_helper/models/flash_stage.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
 import 'package:nt_helper/utils/sandbox_utils.dart';
@@ -41,7 +42,7 @@ class FlashToolBridge {
     // Set TMPDIR to sandbox-accessible temp directory on macOS
     Map<String, String>? environment;
     if (Platform.isMacOS && SandboxUtils.isSandboxed) {
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await TempDirectoryUtils.getWritableTempDirectory();
       environment = {...Platform.environment, 'TMPDIR': tempDir.path};
     }
 
