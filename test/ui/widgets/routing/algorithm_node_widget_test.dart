@@ -323,8 +323,8 @@ void main() {
           findsAtLeast(2),
         ); // At least 2 in menu items (plus title bar icon)
 
-        // Verify divider is present
-        expect(find.byType(PopupMenuDivider), findsOneWidget);
+        // Verify dividers are present (one after mapped params, one before delete)
+        expect(find.byType(PopupMenuDivider), findsNWidgets(2));
 
         // Verify delete item is still present at the bottom
         expect(find.text('Delete'), findsOneWidget);

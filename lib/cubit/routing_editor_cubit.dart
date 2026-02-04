@@ -1071,6 +1071,51 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
   }
 
+  /// Reset all bus connections for a specific algorithm slot.
+  ///
+  /// Sets all bus parameters with `min == 0` to 0 (disconnected).
+  /// Parameters with `min > 0` are left unchanged.
+  /// Returns the number of parameters reset, or -1 if state is not ready.
+  Future<int> resetAllConnections(int algorithmIndex) async {
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized) {
+      return -1;
+    }
+    if (algorithmIndex < 0 || algorithmIndex >= distingState.slots.length) {
+      return -1;
+    }
+
+    final slot = distingState.slots[algorithmIndex];
+    var resetCount = 0;
+
+    for (final param in slot.parameters) {
+      final isBusParameter =
+          param.unit == 1 &&
+          (param.min == 0 || param.min == 1) &&
+          (param.max == 27 || param.max == 28 || param.max == 30);
+
+      if (!isBusParameter) continue;
+      if (param.min > 0) continue;
+
+      // Look up current value from slot.values
+      final currentValue = slot.values
+          .where((v) => v.parameterNumber == param.parameterNumber)
+          .firstOrNull
+          ?.value;
+      if (currentValue == null || currentValue == 0) continue;
+
+      await _distingCubit!.updateParameterValue(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: param.parameterNumber,
+        value: 0,
+        userIsChangingTheValue: false,
+      );
+      resetCount++;
+    }
+
+    return resetCount;
+  }
+
   /// Returns a user-facing reason if the connection cannot be deleted, otherwise null.
   ///
   /// Some parameters (notably certain bus inputs/outputs) have `min > 0` and do not

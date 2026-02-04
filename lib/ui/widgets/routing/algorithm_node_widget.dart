@@ -4,6 +4,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/ui/widgets/mapping_editor_bottom_sheet.dart';
 
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
@@ -352,6 +353,22 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                 }
               }
 
+              // Reset all connections item
+              items.add(
+                const PopupMenuItem(
+                  value: 'reset_connections',
+                  child: Row(
+                    children: [
+                      Icon(Icons.link_off, size: 18),
+                      SizedBox(width: 8),
+                      Flexible(child: Text('Reset All Connections')),
+                    ],
+                  ),
+                ),
+              );
+
+              items.add(const PopupMenuDivider());
+
               // Add existing delete item
               items.add(
                 PopupMenuItem(
@@ -379,6 +396,8 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             onSelected: (value) {
               if (value == 'delete') {
                 _handleDelete();
+              } else if (value == 'reset_connections') {
+                _handleResetConnections();
               } else if (value.startsWith('mapping_')) {
                 final paramNumber = int.parse(value.substring(8));
                 _handleMappingEdit(paramNumber);
@@ -556,6 +575,13 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
 
   // Toolbar action handlers removed; actions call callbacks directly
+
+  Future<void> _handleResetConnections() async {
+    final algorithmIndex = widget.slotNumber - 1;
+    await context
+        .read<RoutingEditorCubit>()
+        .resetAllConnections(algorithmIndex);
+  }
 
   void _handleDelete() async {
     // Show confirmation dialog
