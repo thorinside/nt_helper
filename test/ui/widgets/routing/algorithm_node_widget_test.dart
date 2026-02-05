@@ -9,6 +9,7 @@ import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
+import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {
   @override
@@ -18,6 +19,42 @@ class MockDistingCubit extends Mock implements DistingCubit {
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
 class MockMidiListenerCubit extends Mock implements MidiListenerCubit {}
+
+/// Helper to build an [AlgorithmNodeWidget] wrapped in the required providers.
+Widget _buildTestWidget({
+  required MockDistingCubit cubit,
+  String algorithmName = 'Test Algorithm',
+  int slotNumber = 1,
+  List<String> inputLabels = const [],
+  List<String> outputLabels = const [],
+  List<String>? inputPortIds,
+  List<String>? outputPortIds,
+  List<int>? outputChannelNumbers,
+  Set<String>? connectedPorts,
+  Map<int, bool>? es5ChannelToggles,
+  Map<int, int>? es5ExpanderParameterNumbers,
+}) {
+  return MaterialApp(
+    home: Scaffold(
+      body: BlocProvider<DistingCubit>.value(
+        value: cubit,
+        child: AlgorithmNodeWidget(
+          algorithmName: algorithmName,
+          slotNumber: slotNumber,
+          position: const Offset(100, 100),
+          inputLabels: inputLabels,
+          outputLabels: outputLabels,
+          inputPortIds: inputPortIds,
+          outputPortIds: outputPortIds,
+          outputChannelNumbers: outputChannelNumbers,
+          connectedPorts: connectedPorts,
+          es5ChannelToggles: es5ChannelToggles,
+          es5ExpanderParameterNumbers: es5ExpanderParameterNumbers,
+        ),
+      ),
+    ),
+  );
+}
 
 void main() {
   setUpAll(() {
@@ -418,6 +455,147 @@ void main() {
       );
 
       expect(mappingIcon, findsNothing); // Should not find mapping icon
+    });
+  });
+
+  group('AlgorithmNodeWidget Collapse Toggle Tests', () {
+    late MockDistingCubit mockCubit;
+
+    setUp(() {
+      mockCubit = MockDistingCubit();
+
+      // Default: no mappings (DistingStateInitial has no slots)
+      when(() => mockCubit.state).thenReturn(DistingStateInitial());
+    });
+
+    testWidgets('toggle not shown when <= 5 unconnected ports', (
+      tester,
+    ) async {
+      // 3 inputs + 2 outputs = 5 unconnected — threshold is >5
+      await tester.pumpWidget(
+        _buildTestWidget(
+          cubit: mockCubit,
+          inputLabels: ['In 1', 'In 2', 'In 3'],
+          outputLabels: ['Out 1', 'Out 2'],
+          inputPortIds: ['i1', 'i2', 'i3'],
+          outputPortIds: ['o1', 'o2'],
+          connectedPorts: {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.unfold_less), findsNothing);
+      expect(find.byIcon(Icons.unfold_more), findsNothing);
+    });
+
+    testWidgets('toggle shown when > 5 unconnected ports', (tester) async {
+      // 4 inputs + 4 outputs = 8 total, 1 connected → 7 unconnected
+      await tester.pumpWidget(
+        _buildTestWidget(
+          cubit: mockCubit,
+          inputLabels: ['In 1', 'In 2', 'In 3', 'In 4'],
+          outputLabels: ['Out 1', 'Out 2', 'Out 3', 'Out 4'],
+          inputPortIds: ['i1', 'i2', 'i3', 'i4'],
+          outputPortIds: ['o1', 'o2', 'o3', 'o4'],
+          connectedPorts: {'i1'},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show the unfold_less icon (collapse affordance)
+      expect(find.byIcon(Icons.unfold_less), findsOneWidget);
+    });
+
+    testWidgets('tapping toggle hides unconnected ports and shows hidden count',
+        (tester) async {
+      // 4 inputs + 4 outputs, 2 connected → 6 unconnected
+      await tester.pumpWidget(
+        _buildTestWidget(
+          cubit: mockCubit,
+          inputLabels: ['In 1', 'In 2', 'In 3', 'In 4'],
+          outputLabels: ['Out 1', 'Out 2', 'Out 3', 'Out 4'],
+          inputPortIds: ['i1', 'i2', 'i3', 'i4'],
+          outputPortIds: ['o1', 'o2', 'o3', 'o4'],
+          connectedPorts: {'i1', 'o2'},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // All 8 ports visible before collapse
+      expect(find.byType(PortWidget), findsNWidgets(8));
+
+      // Tap the collapse toggle
+      await tester.tap(find.byIcon(Icons.unfold_less));
+      await tester.pumpAndSettle();
+
+      // Only 2 connected ports visible
+      expect(find.byType(PortWidget), findsNWidgets(2));
+
+      // Should now show unfold_more icon and the hidden count
+      expect(find.byIcon(Icons.unfold_more), findsOneWidget);
+      expect(find.text('+6 hidden'), findsOneWidget);
+    });
+
+    testWidgets('tapping toggle again restores all ports', (tester) async {
+      await tester.pumpWidget(
+        _buildTestWidget(
+          cubit: mockCubit,
+          inputLabels: ['In 1', 'In 2', 'In 3', 'In 4'],
+          outputLabels: ['Out 1', 'Out 2', 'Out 3', 'Out 4'],
+          inputPortIds: ['i1', 'i2', 'i3', 'i4'],
+          outputPortIds: ['o1', 'o2', 'o3', 'o4'],
+          connectedPorts: {'i1', 'o2'},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Collapse
+      await tester.tap(find.byIcon(Icons.unfold_less));
+      await tester.pumpAndSettle();
+      expect(find.byType(PortWidget), findsNWidgets(2));
+
+      // Expand
+      await tester.tap(find.byIcon(Icons.unfold_more));
+      await tester.pumpAndSettle();
+
+      // All 8 ports visible again
+      expect(find.byType(PortWidget), findsNWidgets(8));
+      expect(find.byIcon(Icons.unfold_less), findsOneWidget);
+      expect(find.text('+6 hidden'), findsNothing);
+    });
+
+    testWidgets(
+        'ES-5 channel numbers stay aligned with correct outputs after collapse',
+        (tester) async {
+      // 1 input + 6 outputs with ES-5 toggles on channels 1-6
+      // Only output 'o3' (channel 3) is connected → 6 unconnected > 5 threshold
+      await tester.pumpWidget(
+        _buildTestWidget(
+          cubit: mockCubit,
+          inputLabels: ['Clock'],
+          inputPortIds: ['clk'],
+          outputLabels: ['Ch 1', 'Ch 2', 'Ch 3', 'Ch 4', 'Ch 5', 'Ch 6'],
+          outputPortIds: ['o1', 'o2', 'o3', 'o4', 'o5', 'o6'],
+          outputChannelNumbers: [1, 2, 3, 4, 5, 6],
+          connectedPorts: {'o3'},
+          es5ChannelToggles: {1: false, 2: false, 3: true, 4: false, 5: false, 6: false},
+          es5ExpanderParameterNumbers: {1: 10, 2: 11, 3: 12, 4: 13, 5: 14, 6: 15},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // All 7 ports visible (1 input + 6 outputs)
+      expect(find.byType(PortWidget), findsNWidgets(7));
+
+      // Collapse — only 'o3' (Ch 3) should remain
+      await tester.tap(find.byIcon(Icons.unfold_less));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PortWidget), findsNWidgets(1));
+      // The visible port should be 'Ch 3'
+      expect(find.text('Ch 3'), findsOneWidget);
+      // The ES-5 toggle icon should still be present for the connected channel
+      expect(find.byIcon(Icons.output), findsOneWidget);
     });
   });
 }

@@ -129,6 +129,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
 
 class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   bool _isDragging = false;
+  bool _isCollapsed = false;
   // Track drag start and initial position for stable deltas
   Offset _dragStartGlobal = Offset.zero;
   Offset _initialPosition = Offset.zero;
@@ -203,7 +204,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [_buildTitleBar(theme), _buildPorts(theme)],
+            children: [
+              _buildTitleBar(theme),
+              _buildPorts(theme),
+              if (_shouldShowCollapseToggle())
+                _buildCollapseToggle(theme),
+            ],
           ),
         ),
       ),
@@ -219,6 +225,24 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
 
     return content;
   }
+
+  int _unconnectedPortCount() {
+    final connected = widget.connectedPorts ?? {};
+    int count = 0;
+    if (widget.inputPortIds != null) {
+      for (final id in widget.inputPortIds!) {
+        if (!connected.contains(id)) count++;
+      }
+    }
+    if (widget.outputPortIds != null) {
+      for (final id in widget.outputPortIds!) {
+        if (!connected.contains(id)) count++;
+      }
+    }
+    return count;
+  }
+
+  bool _shouldShowCollapseToggle() => _unconnectedPortCount() > 5;
 
   Widget _buildTitleBar(ThemeData theme) {
     // Use app bar theming for better readability and consistency
@@ -412,6 +436,43 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   // Removed old overflow-only toolbar; actions are now visible icon buttons with delete in overflow
 
   Widget _buildPorts(ThemeData theme) {
+    final connected = widget.connectedPorts ?? {};
+
+    // Build filtered input list
+    final filteredInputs = <({String label, String? portId})>[];
+    for (int i = 0; i < widget.inputLabels.length; i++) {
+      final portId = (widget.inputPortIds != null &&
+              i < widget.inputPortIds!.length)
+          ? widget.inputPortIds![i]
+          : null;
+      if (_isCollapsed && portId != null && !connected.contains(portId)) {
+        continue;
+      }
+      filteredInputs.add((label: widget.inputLabels[i], portId: portId));
+    }
+
+    // Build filtered output list
+    final filteredOutputs =
+        <({String label, String? portId, int? channelNumber})>[];
+    for (int i = 0; i < widget.outputLabels.length; i++) {
+      final portId = (widget.outputPortIds != null &&
+              i < widget.outputPortIds!.length)
+          ? widget.outputPortIds![i]
+          : null;
+      final channelNumber = (widget.outputChannelNumbers != null &&
+              i < widget.outputChannelNumbers!.length)
+          ? widget.outputChannelNumbers![i]
+          : null;
+      if (_isCollapsed && portId != null && !connected.contains(portId)) {
+        continue;
+      }
+      filteredOutputs.add((
+        label: widget.outputLabels[i],
+        portId: portId,
+        channelNumber: channelNumber,
+      ));
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       child: Row(
@@ -422,19 +483,15 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              widget.inputLabels.length,
-              (index) => _buildPort(
-                theme,
-                widget.inputLabels[index],
-                true,
-                portId:
-                    (widget.inputPortIds != null &&
-                        index < widget.inputPortIds!.length)
-                    ? widget.inputPortIds![index]
-                    : null,
-              ),
-            ),
+            children: [
+              for (final input in filteredInputs)
+                _buildPort(
+                  theme,
+                  input.label,
+                  true,
+                  portId: input.portId,
+                ),
+            ],
           ),
           const SizedBox(width: 16),
           // Flexible spacer pushes outputs to the far right edge
@@ -443,26 +500,53 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              widget.outputLabels.length,
-              (index) => _buildPort(
-                theme,
-                widget.outputLabels[index],
-                false,
-                portId:
-                    (widget.outputPortIds != null &&
-                        index < widget.outputPortIds!.length)
-                    ? widget.outputPortIds![index]
-                    : null,
-                channelNumber:
-                    (widget.outputChannelNumbers != null &&
-                        index < widget.outputChannelNumbers!.length)
-                    ? widget.outputChannelNumbers![index]
-                    : null,
-              ),
-            ),
+            children: [
+              for (final output in filteredOutputs)
+                _buildPort(
+                  theme,
+                  output.label,
+                  false,
+                  portId: output.portId,
+                  channelNumber: output.channelNumber,
+                ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCollapseToggle(ThemeData theme) {
+    final unconnected = _unconnectedPortCount();
+    final color = theme.colorScheme.onSurface.withAlpha(153);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        setState(() {
+          _isCollapsed = !_isCollapsed;
+        });
+        _scheduleSizeReport();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _isCollapsed ? Icons.unfold_more : Icons.unfold_less,
+              size: 16,
+              color: color,
+            ),
+            if (_isCollapsed) ...[
+              const SizedBox(width: 4),
+              Text(
+                '+$unconnected hidden',
+                style: theme.textTheme.bodySmall?.copyWith(color: color),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
