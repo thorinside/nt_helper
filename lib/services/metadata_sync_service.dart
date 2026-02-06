@@ -20,6 +20,11 @@ class MetadataSyncService {
 
   MetadataSyncService(this._distingManager, this._database);
 
+  /// Factory GUIDs are strictly lowercase alphanumeric (e.g. `spcn`, `env2`).
+  /// Community plugin GUIDs contain uppercase letters (e.g. `TEST`, `MNPL`).
+  static bool _isFactoryGuid(String guid) =>
+      RegExp(r'^[a-z0-9]+$').hasMatch(guid);
+
   Future<FirmwareVersion> _requestFirmwareVersionSafe() async {
     try {
       return FirmwareVersion(await _distingManager.requestVersionString() ?? '');
@@ -418,26 +423,19 @@ class MetadataSyncService {
       // Reset processed count before starting instantiation phase
       algorithmsProcessed = resumeFromIndex ?? 0;
 
-      // 3. Process All Algorithms (Community First, then Factory)
+      // 3. Process Factory Algorithms (skip community plugins)
       reportProgress(
         "Processing Algorithms",
         "Starting algorithm processing...",
       );
 
-      // Separate but keep original order within each type
-      final communityAlgorithms = <AlgorithmInfo>[];
-      final factoryAlgorithms = <AlgorithmInfo>[];
-
-      for (final algoInfo in allAlgorithmInfo) {
-        if (algoInfo.isPlugin) {
-          communityAlgorithms.add(algoInfo);
-        } else {
-          factoryAlgorithms.add(algoInfo);
-        }
-      }
-
-      // Process community first for faster testing, then factory
-      final orderedAlgorithms = [...communityAlgorithms, ...factoryAlgorithms];
+      // Filter to factory algorithms only (lowercase alphanumeric GUIDs).
+      // Community plugins (uppercase GUIDs) cause memory issues during sync
+      // and are skipped here — their basic info is already cached above.
+      final orderedAlgorithms = allAlgorithmInfo
+          .where((a) => _isFactoryGuid(a.guid))
+          .toList();
+      totalAlgorithms = orderedAlgorithms.length;
 
       final dbUnits = await metadataDao.getAllUnits();
       final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();

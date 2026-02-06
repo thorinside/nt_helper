@@ -187,7 +187,7 @@ void main() {
         testAlgorithms: [
           AlgorithmInfo(
             algorithmIndex: 0,
-            guid: 'multi-channel-algo',
+            guid: 'mchn',
             name: 'Multi Channel Test',
             specifications: [],
             isPlugin: false,
@@ -554,14 +554,14 @@ void main() {
           testAlgorithms: [
             AlgorithmInfo(
               algorithmIndex: 0,
-              guid: 'sync-timeout',
+              guid: 'syto',
               name: 'Sync Timeout Plugin',
               specifications: [],
-              isPlugin: true,
+              isPlugin: false,
               isLoaded: true,
             ),
           ],
-          timeoutCountByGuid: {'sync-timeout': 1},
+          timeoutCountByGuid: {'syto': 1},
         );
 
         final service = MetadataSyncService(mockManager, database);
@@ -592,14 +592,14 @@ void main() {
           testAlgorithms: [
             AlgorithmInfo(
               algorithmIndex: 0,
-              guid: 'deferred-plugin',
+              guid: 'defr',
               name: 'Deferred Plugin',
               specifications: [],
-              isPlugin: true,
+              isPlugin: false,
               isLoaded: true,
             ),
           ],
-          timeoutCountByGuid: {'deferred-plugin': 2},
+          timeoutCountByGuid: {'defr': 2},
         );
 
         final service = MetadataSyncService(mockManager, database);
@@ -628,14 +628,14 @@ void main() {
           testAlgorithms: [
             AlgorithmInfo(
               algorithmIndex: 0,
-              guid: 'total-fail',
+              guid: 'tfal',
               name: 'Total Fail Plugin',
               specifications: [],
-              isPlugin: true,
+              isPlugin: false,
               isLoaded: true,
             ),
           ],
-          alwaysFailGuids: {'total-fail'},
+          alwaysFailGuids: {'tfal'},
         );
 
         final service = MetadataSyncService(mockManager, database);
@@ -664,14 +664,14 @@ void main() {
           testAlgorithms: [
             AlgorithmInfo(
               algorithmIndex: 0,
-              guid: 'cancel-reboot',
+              guid: 'cnrb',
               name: 'Cancel During Reboot',
               specifications: [],
-              isPlugin: true,
+              isPlugin: false,
               isLoaded: true,
             ),
           ],
-          timeoutCountByGuid: {'cancel-reboot': 1},
+          timeoutCountByGuid: {'cnrb': 1},
         );
 
         final service = MetadataSyncService(mockManager, database);

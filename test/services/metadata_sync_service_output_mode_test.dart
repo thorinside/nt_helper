@@ -106,7 +106,7 @@ void main() {
 
     test('should persist output mode usage when parameter has isOutputMode flag', () async {
       // Arrange
-      const algoGuid = 'test-algo-guid';
+      const algoGuid = 'tag1';
       const paramNum = 0; // Must be 0 because requestNumberOfParameters returns 1, so loop queries index 0
       final affectedOutputs = [1, 2, 3];
 
@@ -158,7 +158,7 @@ void main() {
 
     test('should NOT persist output mode usage when parameter does NOT have isOutputMode flag', () async {
       // Arrange
-      const algoGuid = 'test-algo-guid-2';
+      const algoGuid = 'tag2';
       const paramNum = 0;
 
       final algoInfo = AlgorithmInfo(
