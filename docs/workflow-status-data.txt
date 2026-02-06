@@ -1,7 +1,0 @@
-status_exists = true
-project_name = nt_helper
-project_type = software
-project_level = 2
-field_type = brownfield
-workflow_path = brownfield-level-2.yaml
-status_file_path = /Users/nealsanche/nosuch/nt_helper/docs/bmm-workflow-status.md
