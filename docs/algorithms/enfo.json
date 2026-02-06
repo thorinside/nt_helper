@@ -1,22 +1,24 @@
 {
   "guid": "enfo",
   "name": "Envelope Follower",
-  "description": "This algorithm is a simple envelope follower. It outputs a CV according to the volume envelope of the input audio. When operating on stereo (or multichannel) signals, it tracks the maximum of the various signals and outputs a single CV. If you want to separately track the left and right sides of a stereo signal, use this algorithm configured as two mono channels.",
+  "description": "This algorithm is a simple envelope follower. It outputs a CV according to the volume envelope of the input audio.\n\nWhen operating on stereo (or multichannel) signals, it tracks the maximum of the various signals and outputs a single CV. If you want to separately track the left and right sides of a stereo signal, use this algorithm configured as two mono channels.",
   "categories": [
-    "utility",
-    "CV processing"
+    "Dynamics",
+    "Audio Processing",
+    "CV Generation"
   ],
   "short_description": "Tracks the volume envelope of a signal",
   "use_cases": [
-    "CV modulation from audio signals",
-    "Stereo/multichannel envelope tracking (max mode)",
-    "Left/right channel separation in stereo processing",
-    "Modulation source for other effects or synths"
+    "Sidechain compression triggering",
+    "Dynamic CV modulation for synths",
+    "Volume envelope analysis for audio effects",
+    "Multichannel stereo processing (split into mono channels)",
+    "Envelope-based automation"
   ],
-  "gui_description": null,
   "specifications": [
     {
       "name": "Channels",
+      "description": "The number of bus channels to process.",
       "min": 1,
       "max": 12
     }
@@ -24,7 +26,7 @@
   "parameters": [
     {
       "name": "Enable",
-      "type": "toggle",
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -34,32 +36,30 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "scope": "per-channel",
-      "type": "bus",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
-      "is_bus": true
+      "is_bus": false
     },
     {
       "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
-      "type": "toggle",
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum",
       "is_per_channel": true,
-      "is_common": false
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Attack",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "scope": "per-channel",
-      "type": "scaled",
+      "description": "The follower attack time. Exponential scale from 0.1ms to 1000ms.",
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -69,8 +69,8 @@
       "min": 0,
       "max": 1023,
       "default": 100,
-      "scope": "per-channel",
-      "type": "scaled",
+      "description": "The follower release time. Exponential scale from 1.0ms to 3000ms.",
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -79,7 +79,7 @@
   "input_ports": [
     {
       "name": "Audio Input",
-      "description": "The audio signal to track the volume envelope from."
+      "description": "The audio signal input to be analyzed for envelope tracking."
     },
     {
       "name": "Input",
@@ -89,15 +89,15 @@
   "output_ports": [
     {
       "name": "CV Output",
-      "description": "The CV signal generated according to the input audio's volume envelope. For stereo/multichannel inputs in max mode, a single CV output is provided based on the maximum envelope across channels."
+      "description": "A control voltage (CV) output representing the tracked volume envelope of the input audio signal."
     },
     {
-      "name": "Audio Output (if enabled)",
-      "description": "The processed audio signal routed back to the specified bus when 'Output' is set to 'None'."
+      "name": "Audio Output",
+      "description": "(Optional, if Output mode is 'Replace') The processed audio output bus. If not set to 'None', this follows the same routing as the Input or Output parameter settings."
     },
     {
       "name": "Output",
-      "description": ""
+      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
     }
   ]
 }

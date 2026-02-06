@@ -3,27 +3,25 @@
   "name": "Rectifier",
   "description": "This simple algorithm computes the absolute value of the input voltage.",
   "categories": [
-    "utility",
-    "CV processing"
+    "Signal Processing",
+    "Math Operations",
+    "Audio Effects"
   ],
-  "short_description": "\"Full-wave rectifier/absolute value\"",
-  "use_cases": [
-    "Absolute value conversion for audio signals",
-    "Full-wave rectification in modular synthesis",
-    "Channel-level signal processing with adjustable routing"
+  "short_description": "Full-wave rectifier/absolute value",
+  "specifications": [
+    {
+      "name": "Channels",
+      "description": "The number of bus channels to process, ranging from 1-12."
+    }
   ],
-  "gui_description": null,
   "parameters": [
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "channelCountRef": "channels",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_common": false,
+      "scope": "per-channel",
+      "type": "toggle",
       "is_bus": false
     },
     {
@@ -31,33 +29,23 @@
       "min": 0,
       "max": 1,
       "default": 1,
+      "scope": "per-channel",
       "type": "enum",
-      "channelCountRef": "channels",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_common": false
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "The input bus to process."
-    },
-    {
-      "name": "Input",
       "description": "",
-      "isPerChannel": true
+      "busIdRef": "input_bus"
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
-    },
-    {
-      "name": "Output",
       "description": "",
-      "isPerChannel": true
+      "busIdRef": "output_bus"
     }
   ]
 }

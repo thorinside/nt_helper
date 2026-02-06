@@ -1,0 +1,56 @@
+{
+  "guid": "spcn",
+  "name": "Spectral Conquest",
+  "description": "Spectral Conquest is an effect plug-in that lets you directly manipulate the frequency spectrum of audio signals using FFT (Fast Fourier Transform). The incoming signal is analyzed into narrow frequency bands, allowing modification before regeneration via Inverse FFT. Originally a VST plugin from 2010, this algorithm provides parameter-based spectral manipulation instead of direct mouse interaction, including keyboard-controlled chordal resonance and sequential processing of shift, gate, comb, sieve, polysynth, and filter effects.",
+  "categories": [
+    "Audio Effects",
+    "Spectral Processing",
+    "FFT-Based Manipulation",
+    "Synthesis"
+  ],
+  "short_description": "Spectral (FFT) based audio manipulation",
+  "use_cases": [
+    "Frequency spectrum sculpting",
+    "Chordal resonance synthesis",
+    "Spectral gating and filtering",
+    "Harmonic sieve effects",
+    "Polysynth-based spectral modulation"
+  ],
+  "gui_description": "The display shows the frequency spectrum of the output signal, FFT size, and total module CPU usage (not algorithm-specific).",
+  "specifications": [
+    {
+      "name": "Max block size",
+      "min": 6,
+      "max": 11
+    },
+    {
+      "name": "Polysynth voices",
+      "min": 1,
+      "max": 24
+    },
+    {
+      "name": "Stereo capability",
+      "description": "Whether the algorithm is mono or stereo"
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "description": "The left or mono input audio bus (1-28)"
+    },
+    {
+      "name": "Right input",
+      "description": "The right input audio bus if stereo mode is enabled"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": "The left or mono output audio bus (1-28)"
+    },
+    {
+      "name": "Right output",
+      "description": "The right output audio bus if stereo mode is enabled"
+    }
+  ]
+}

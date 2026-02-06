@@ -1,28 +1,31 @@
 {
   "guid": "env2",
   "name": "Envelope (AR/AD)",
-  "description": "This algorithm generates simple attack/release or attack/decay envelopes. It is based on the disting mk4 algorithm 'E-1 AR Envelope'. In the disting mk4 version, the envelope times were always set together from a single knob; this version adds the option of setting them independently. The envelope times and shapes are set globally; each output channel can however be independently scaled and offset.\n\nIn 'Attack/release' mode, the envelope will rise to full level and stay there as long as the input is high. In 'Attack/decay' mode, the envelope will execute one full attack/decay cycle in response to a trigger input. In 'Looped AD' mode, the envelope will continually execute attack/decay cycles as long as the trigger input is high.\n\nIn 'Macro (asymmetric)' mode, the 'Joint time' parameter sweeps from short A & D, through short A & long D, through long A & D, through long A & short D, and finally back to short A & D. In 'Macro (symmetric)' mode, the 'Joint time' parameter sets the A & D times to the same value, from very short times (about 10ms) to very long times (about 8s). Note that the actual times are heavily dependent on the shape parameters.",
+  "description": "This algorithm generates simple attack/release or attack/decay envelopes. It is based on the disting mk4 algorithm 'E-1 AR Envelope'. In the disting mk4 version, the envelope times were always set together from a single knob; this version adds the option of setting them independently.\n\nThe envelope times and shapes are set globally; each output channel can however be independently scaled and offset.\n\nIn 'Attack/release' mode, the envelope will rise to full level and stay there as long as the input is high. In 'Attack/decay' mode, the envelope will execute one full attack/decay cycle in response to a trigger input. In 'Looped AD' mode, the envelope will continually execute attack/decay cycles as long as the trigger input is high.\n\nIn 'Macro (asymmetric)' mode, the 'Joint time' parameter sweeps from short A & D, through short A & long D, through long A & D, through long A & short D, and finally back to short A & D. In 'Macro (symmetric)' mode, the 'Joint time' parameter sets the A & D times to the same value, from very short times (about 10ms) to very long times (about 8s). Note that the actual times are heavily dependent on the shape parameters.",
   "categories": [
-    "utility",
-    "CV processing",
-    "sequencing"
+    "Envelope",
+    "Modulation",
+    "Audio Processing"
   ],
   "short_description": "A simple attack/release envelope",
+  "use_cases": [
+    "Synthesizer modulation",
+    "Sequencer control signals",
+    "Dynamic effects automation",
+    "MIDI note triggering",
+    "I2C note triggering"
+  ],
+  "gui_description": "The display shows the envelope shape. If the visible parameter page is one of the Channel pages, it also shows the current envelope level.",
   "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 8
-    },
-    {
-      "name": "Attack time range (Macro symmetric)",
-      "min": 0.01,
-      "max": 8
+      "value": "1-8",
+      "description": "The number of envelopes to generate."
     }
   ],
   "parameters": [
     {
-      "name": "Trigger mode",
+      "name": "Trigger_mode",
       "min": 0,
       "max": 2,
       "default": 0,
@@ -32,7 +35,7 @@
       "is_bus": false
     },
     {
-      "name": "Time mode",
+      "name": "Time_mode",
       "min": 0,
       "max": 2,
       "default": 0,
@@ -42,7 +45,7 @@
       "is_bus": false
     },
     {
-      "name": "Joint time",
+      "name": "Joint_time",
       "min": 0,
       "max": 1023,
       "default": 0,
@@ -52,7 +55,7 @@
       "is_bus": false
     },
     {
-      "name": "Attack time",
+      "name": "Attack_time",
       "min": 0,
       "max": 1023,
       "default": 64,
@@ -62,7 +65,7 @@
       "is_bus": false
     },
     {
-      "name": "Release time",
+      "name": "Release_time",
       "min": 0,
       "max": 1023,
       "default": 64,
@@ -72,7 +75,7 @@
       "is_bus": false
     },
     {
-      "name": "Attack shape",
+      "name": "Attack_shape",
       "min": 0,
       "max": 128,
       "default": 104,
@@ -82,7 +85,7 @@
       "is_bus": false
     },
     {
-      "name": "Release shape",
+      "name": "Release_shape",
       "min": 0,
       "max": 128,
       "default": 40,
@@ -102,7 +105,17 @@
       "is_bus": false
     },
     {
-      "name": "Output mode",
+      "name": "Trigger_input",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "type": "bus",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -132,7 +145,7 @@
       "is_bus": false
     },
     {
-      "name": "MIDI channel",
+      "name": "MIDI_channel",
       "min": 0,
       "max": 16,
       "default": 0,
@@ -142,7 +155,7 @@
       "is_bus": false
     },
     {
-      "name": "I2C channel",
+      "name": "I2C_channel",
       "min": 0,
       "max": 255,
       "default": 1,
@@ -152,7 +165,7 @@
       "is_bus": false
     },
     {
-      "name": "Note number",
+      "name": "Note_number",
       "min": -1,
       "max": 127,
       "default": -1,
@@ -164,12 +177,8 @@
   ],
   "input_ports": [
     {
-      "name": "Trigger input",
+      "name": "Trigger_input",
       "description": "Input bus for triggering the envelope (0-28)"
-    },
-    {
-      "name": "Trigger input",
-      "description": ""
     }
   ],
   "output_ports": [

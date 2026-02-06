@@ -1,12 +1,16 @@
 {
   "guid": "eqpa",
   "name": "EQ Parametric",
-  "description": "This algorithm is a multi-channel, multi-band, parametric EQ. Each channel can process a number of busses - you might typically have a channel processing one or two busses for a mono or stereo signal, but you could, say, process all 12 of the inputs with the same EQ settings by using a single channel with a width of 12.",
+  "description": "This algorithm is a multi-channel, multi-band, parametric EQ.\n\nEach channel can process a number of busses - you might typically have a channel processing one or two busses for a mono or stereo signal, but you could, say, process all 12 of the inputs with the same EQ settings by using a single channel with a width of 12.",
   "categories": [
-    "audio effects",
-    "filtering"
+    "Audio",
+    "Effects",
+    "EQ",
+    "Multi-band",
+    "Parametric"
   ],
   "short_description": "Multi-band parametric EQ",
+  "gui_description": "The display shows a graphical representation of the EQ curve for the current channel. The frequency and gain of the current band within the channel is indicated with a small box.",
   "specifications": [
     {
       "name": "Channels",
@@ -14,7 +18,7 @@
       "max": 12
     },
     {
-      "name": "Bands",
+      "name": "Bands per Channel",
       "min": 1,
       "max": 4
     }
@@ -26,23 +30,21 @@
       "max": 12,
       "default": 1,
       "scope": "channel",
-      "type": "bus",
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": true
     },
     {
-      "name": "Output_mode",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
+      "scope": "channel",
       "type": "enum",
       "is_per_channel": true,
-      "is_common": false
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Enable",
@@ -50,7 +52,9 @@
       "max": 1,
       "default": 1,
       "scope": "channel",
-      "type": "toggle",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -58,16 +62,10 @@
       "min": 0,
       "max": 6,
       "default": 6,
-      "enum_values": [
-        "Low pass (1st)",
-        "High pass (1st)",
-        "Low pass (2nd)",
-        "High pass (2nd)",
-        "Low shelf",
-        "High shelf",
-        "Peak"
-      ],
+      "scope": "channel",
       "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -76,7 +74,9 @@
       "max": 16383,
       "default": 8192,
       "scope": "channel",
-      "type": "folder",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -84,8 +84,10 @@
       "min": 0,
       "max": 127,
       "default": 48,
-      "description": "Sets the EQ band ‘Q’ or resonance. Note that some EQ types do not use this parameter.",
-      "type": "folder",
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -93,15 +95,17 @@
       "min": -12.0,
       "max": 12.0,
       "default": 0.0,
-      "description": "Sets the EQ band gain. Note that some EQ types do not use this parameter.",
-      "type": "folder",
+      "scope": "channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "The first input bus to process."
+      "name": "Input Bus",
+      "description": "The first input bus to process. Range: 0-28."
     },
     {
       "name": "Input",
@@ -110,8 +114,8 @@
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "description": "The first output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace’."
+      "name": "Output Bus",
+      "description": "The first output bus. If set to 'None', the input bus is used as output, and mode is always 'Replace'."
     },
     {
       "name": "Output",

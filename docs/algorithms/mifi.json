@@ -1,0 +1,102 @@
+{
+  "guid": "mifi",
+  "name": "MIDI Filter",
+  "description": "This algorithm is unusual inasmuch as it neither processes nor generates audio or CVs. Instead it filters and/or modifies MIDI on its way to the algorithms in the preset.\n\nMuch like the way in which audio flows through the algorithms (via the busses) from top to bottom, any MIDI that the module receives is processed by the algorithms in order. This algorithm sits in the preset and affects the MIDI seen by the algorithms that follow it. (It has no affect on the MIDI seen by the algorithms that precede it in the preset.)\n\nProcessing can be specified independently for each of the 16 MIDI channels. The various types of MIDI message (notes, controllers, etc.) can be passed through unaltered, suppressed (filtered out), or they may have their MIDI channel modified.",
+  "categories": [
+    "MIDI",
+    "Filtering",
+    "Modification"
+  ],
+  "short_description": "Filters MIDI messages",
+  "use_cases": [
+    "Routing MIDI selectively to downstream algorithms",
+    "Channel-specific MIDI message suppression or modification",
+    "Isolating MIDI processing for specific channels in a preset"
+  ],
+  "gui_description": "Per-channel controls for enabling/disabling MIDI processing and configuring behavior for note off, note on, poly pressure, CC, program change, channel pressure, and pitch bend messages.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Note off",
+      "min": 0,
+      "max": 18,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Note on",
+      "min": 0,
+      "max": 18,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Poly pressure",
+      "min": 0,
+      "max": 18,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "CC",
+      "min": 0,
+      "max": 18,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Program change",
+      "min": 0,
+      "max": 18,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Channel pressure",
+      "min": 0,
+      "max": 18,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch bend",
+      "min": 0,
+      "max": 18,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

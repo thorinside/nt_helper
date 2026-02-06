@@ -1,54 +1,67 @@
 {
   "guid": "augu",
   "name": "Augustus Loop",
-  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name. Essentially, it's a tape-inspired stereo delay. The delay time can be dialled in manually, or set by tap tempo or a clock input. The longest delay possible is around 44 seconds. Being a tape delay, you can change the tape speed via CV, patching an LFO into here for subtle detuning or extreme mangling effects. You can also stop and reverse the tape. There is an option to run the delay signal through an 'effects loop', allowing insertion of other effects or processing into the guts of the delay. The Pitch CV input changes the tape speed, scaled 1V/octave.",
+  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name. Essentially, it's a tape-inspired stereo delay with adjustable parameters for time, feedback, routing, and effects. The algorithm features four independent 'tape read heads', allowing for various delay configurations like straight stereo delays or ping-pong delays. It supports manual delay adjustment, tap tempo, clock input, CV control of tape speed (scaled 1V/octave), tape stop/reverse functionality, an effects loop for external processing, and a saturation/filter section. The module also includes advanced features such as inertia-free mode, bit depth selection, and detailed routing options.",
   "categories": [
-    "audio effects",
-    "delay",
-    "clocking",
-    "routing",
-    "external control",
-    "CV processing"
+    "Delay",
+    "Modulation",
+    "Effects",
+    "Audio Processing",
+    "Tape Emulation"
   ],
-  "short_description": "\"Tape-like delay\"",
+  "short_description": "Tape-like delay with stereo feedback paths, CV control, effects loop, and saturation/filtering.",
+  "use_cases": [
+    "Stereo delays (straight or ping-pong)",
+    "Multi-tap delay effects",
+    "CV-controlled tape speed modulation",
+    "External effects processing via FX loop",
+    "Saturation and filtering for warm tones"
+  ],
+  "gui_description": "The GUI displays feedback amount at the bottom left, delay time at the bottom right, and an animated center area indicating tape direction/speed. Clock pulses flash 'Clock', and tap tempo readiness shows as 'Tap'.",
   "specifications": [
     {
       "name": "Max Delay Time",
-      "value": "1-44 seconds",
-      "description": "The maximum delay time possible."
+      "value": "44 seconds"
     },
     {
-      "name": "Sample Rate",
-      "value": "Variable (depends on NT system)",
-      "description": "Supports the sample rate of the disting NT platform."
+      "name": "Sample Rate Compatibility",
+      "value": "Standard (NT-compatible)"
     }
   ],
   "input_ports": [
     {
-      "name": "Left Input",
-      "description": "Audio input for the left channel, fed to the tape write head."
+      "name": "Input L",
+      "description": "Left channel input for the delay module."
     },
     {
-      "name": "Right Input",
-      "description": "Audio input for the right channel, fed to the tape write head."
+      "name": "Input R",
+      "description": "Right channel input for the delay module."
     },
     {
       "name": "Pitch CV",
-      "description": "CV input that changes the tape speed (scaled 1V/octave)."
+      "description": "CV input controlling tape speed (scaled 1V/octave)."
     },
     {
       "name": "Clock Input",
-      "description": "CV clock input used to set delay time based on rising edges."
+      "description": "CV clock input to synchronize delay time with external timing signals."
     }
   ],
   "output_ports": [
     {
-      "name": "Left Output",
-      "description": "Audio output for the left channel, including processed delay signal."
+      "name": "Output L",
+      "description": "Left channel output of the processed signal."
     },
     {
-      "name": "Right Output",
-      "description": "Audio output for the right channel, including processed delay signal."
+      "name": "Output R",
+      "description": "Right channel output of the processed signal."
+    },
+    {
+      "name": "FX Loop Output L",
+      "description": "Left channel output for external effects loop processing (when enabled)."
+    },
+    {
+      "name": "FX Loop Output R",
+      "description": "Right channel output for external effects loop processing (when enabled)."
     }
   ]
 }

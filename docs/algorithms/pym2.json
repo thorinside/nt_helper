@@ -1,29 +1,61 @@
 {
   "guid": "pym2",
   "name": "Poly Macro Oscillator 2",
-  "description": "[This algorithm is a polysynth where each voice is essentially a Plaits (the open source Plaits](https://github.com/pichenettes/eurorack/tree/master/plaits) [92] module by Émilie Gillet). Please refer to the section 'Common polysynth features' above.",
+  "description": "This algorithm is a polysynth where each voice is essentially a Plaits (the open source Plaits module by Émilie Gillet). It features multiple voices (1-8) with synthesis models inspired by the original Plaits, offering rich sound design capabilities through parameters like harmonics, timbre, morph, and modulation controls. The display shows notes being played by various voices, which theoretically decay forever.",
   "categories": [
-    "synthesis",
-    "polyphonic",
-    "wavetable"
+    "Synthesis",
+    "Oscillator",
+    "Polysynth",
+    "Granular",
+    "FM Synthesis",
+    "Modulation"
   ],
-  "short_description": "\"It's lots of Plaits!\"",
-  "gui_description": "The display shows the notes being played by the various voices. Note that Plaits voices never really end – in theory they decay forever.",
+  "short_description": "It's lots of Plaits!",
+  "use_cases": [
+    "Polyphonic sound design with rich harmonic content",
+    "Complex modulation routing for evolving textures",
+    "MPE (Multi-dimensional Polyphonic Expression) control",
+    "Microtonal tuning experimentation",
+    "Arpeggiation and chord-based composition"
+  ],
+  "gui_description": "The display shows the notes being played by the various voices. Plaits voices never really end – in theory they decay forever.",
   "specifications": [
     {
       "name": "Voices",
-      "description": "Number of simultaneous voices, ranging from 1 to 8."
+      "min": 1,
+      "max": 8
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Level input",
+      "description": "Selects which bus is used as the level modulation input."
+    },
+    {
+      "name": "FM input",
+      "description": "Selects which bus is used as the FM modulation input."
+    },
+    {
+      "name": "Harmonics input",
+      "description": "Selects which bus is used to modulate harmonics."
+    },
+    {
+      "name": "Timbre input",
+      "description": "Selects which bus is used to modulate timbre."
+    },
+    {
+      "name": "Morph input",
+      "description": "Selects which bus is used to modulate morph parameters."
+    }
+  ],
   "output_ports": [
     {
       "name": "Main output",
-      "description": "The bus for the 'Main' output signal. Can be mixed with Aux if selected on the same bus."
+      "description": "The main audio output signal bus."
     },
     {
       "name": "Aux output",
-      "description": "The bus for the 'Aux' output signal."
+      "description": "The auxiliary audio output signal bus. If the same bus is selected for both Main and Aux outputs, they are mixed."
     }
   ]
 }

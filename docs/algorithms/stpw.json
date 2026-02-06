@@ -1,20 +1,24 @@
 {
   "guid": "stpw",
   "name": "Stopwatch",
-  "description": "This algorithm is simply a clock, for timing how long things (for example, your performance) have been going on, or for showing a countdown (for example, until you should stop your performance and get off the stage). It has no effect on any input/output bus and consumes almost no CPU.",
+  "description": "This algorithm is simply a clock for timing how long things (for example, your performance) have been going on, or for showing a countdown (for example, until you should stop your performance and get off the stage). It has no effect on any input/output bus and consumes almost no CPU.",
   "categories": [
-    "utility",
-    "clocking"
+    "Utility",
+    "Timing",
+    "Performance"
   ],
   "short_description": "Real-time clock for timing things",
+  "use_cases": [
+    "Measuring performance duration",
+    "Countdown timer",
+    "Stage cues",
+    "Event timing"
+  ],
+  "gui_description": "The display shows the stopwatch time. While running, it prevents screensaver activation.",
   "specifications": [
     {
       "name": "CPU_usage",
-      "description": "Almost negligible"
-    },
-    {
-      "name": "polyphony",
-      "description": "N/A (no audio processing)"
+      "value": "almost none"
     }
   ],
   "parameters": [
@@ -23,7 +27,6 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "setup",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -33,7 +36,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "setup",
+      "description": "Sets whether the start/stop control is a gate (start when high, stop when low) or a trigger (trigger to start, another trigger to stop).",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -73,7 +76,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "controls",
+      "description": "Starts and stops the timer/countdown.",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -83,7 +86,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "controls",
+      "description": "Sets the timer to zero, or resets the countdown to that specified by the countdown parameters.",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false

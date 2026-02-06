@@ -1,17 +1,19 @@
 {
   "guid": "voco",
   "name": "Vocoder",
-  "description": "This algorithm implements a vocoder. The spectral characteristics of the modulator input are applied to the carrier input. In classic usage, the modulator might be a human voice, and the carrier might be a synth sound, or simply noise.",
+  "description": "This algorithm implements a vocoder. The spectral characteristics of the modulator input are applied to the carrier input. In classic usage, the modulator might be a human voice, and the carrier might be a synth sound, or simply noise.\n\nThis version emulates an analogue vocoder inasmuch as it uses a number of bandpass filters to do the analysis and synthesis. There is also the Spectral Vocoder (above) which uses an FFT method.",
   "categories": [
-    "synthesis",
-    "audio effects",
-    "spectral"
+    "Audio",
+    "Effects",
+    "Modulation",
+    "Synthesis"
   ],
   "short_description": "A classic vocoder",
   "use_cases": [
-    "Speech synthesis enhancement",
-    "Vocal spectral processing for creative sound design",
-    "Classic human voice modulation over synth or noise carrier"
+    "Voice modulation",
+    "Speech synthesis",
+    "Sound design",
+    "Analog emulation"
   ],
   "gui_description": "The display shows the current level of the modulator bands.",
   "parameters": [
@@ -27,8 +29,7 @@
       "min": 50,
       "max": 1000,
       "default": 200,
-      "scope": "vocoder",
-      "type": "folder",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -37,8 +38,7 @@
       "min": 1000,
       "max": 10000,
       "default": 3200,
-      "scope": "vocoder",
-      "type": "folder",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -47,28 +47,28 @@
       "min": 25,
       "max": 400,
       "default": 100,
-      "scope": "vocoder",
-      "type": "folder",
+      "description": "Applies a scaling to the width of the bandpass filters.",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
     {
       "name": "Attack",
-      "min": 0.5,
+      "min": 0,
       "max": 1000,
       "default": 303,
-      "scope": "vocoder",
-      "type": "folder",
+      "description": "Sets the attack time of the band envelope trackers.\nExponential scaling from 0.5ms to 1000ms.",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
     {
       "name": "Decay",
-      "min": 0.5,
+      "min": 0,
       "max": 1000,
       "default": 394,
-      "scope": "vocoder",
-      "type": "folder",
+      "description": "Sets the decay time of the band envelope trackers.\nExponential scaling from 0.5ms to 1000ms.",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -77,8 +77,8 @@
       "min": 10,
       "max": 1000,
       "default": 50,
-      "scope": "vocoder",
-      "type": "folder",
+      "description": "Sets the frequency of a high-pass filter applied to both the modulator and carrier.",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -87,8 +87,8 @@
       "min": -40,
       "max": 24,
       "default": 0,
-      "scope": "vocoder",
-      "type": "folder",
+      "description": "Applies an overall gain.",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -97,8 +97,8 @@
       "min": -40,
       "max": 24,
       "default": -40,
-      "scope": "noise",
-      "type": "folder",
+      "description": "Sets the level of noise added to the carrier input, which can improve speech intelligibility. The noise is high-pass filtered at the frequency of the highest vocoder band.",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -107,48 +107,46 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "scope": "routing",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_bus": true
+      "description": "The number of carrier busses to process. For example, for a stereo signal, set this to 2."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "routing",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
+      "description": "The standard Add/Replace mode selector as described above.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ]
     }
   ],
   "input_ports": [
+    {
+      "name": "Modulator input",
+      "description": "Input for the modulator signal (e.g., human voice)"
+    },
+    {
+      "name": "Carrier input",
+      "description": "Input for the carrier signal (e.g., synth sound or noise)"
+    },
     {
       "name": "Modulator input",
       "description": "The bus to use for the modulator signal."
     },
     {
       "name": "Carrier input",
-      "description": "The first carrier bus to process (can be extended by Carrier width)."
-    },
-    {
-      "name": "Modulator input",
-      "description": ""
-    },
-    {
-      "name": "Carrier input",
-      "description": ""
+      "description": "The first carrier bus to process."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The first output bus for the vocoded signal."
+      "description": "Processed vocoder output"
     },
     {
       "name": "Output",
-      "description": ""
+      "description": "The first output bus."
     }
   ]
 }

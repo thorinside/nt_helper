@@ -1,24 +1,31 @@
 {
   "guid": "slew",
   "name": "Slew rate limiter",
-  "description": "This algorithm is a simple slew rate limiter, offering both logarithmic and linear slew to smooth CVs and create glissandos. You can choose to use a single slew rate for both rising and falling signals, or specify them separately. You can also choose to use the same rates for all the busses, or specify them individually.",
+  "description": "This algorithm is a simple slew rate limiter, offering both logarithmic and linear slew.\nYou can choose to use a single slew rate for both rising and falling signals, or specify them separately.\nYou can also choose to use the same rates for all the busses, or specify them individually.",
   "categories": [
-    "utility",
-    "CV processing"
+    "CV Processing",
+    "Audio Effects",
+    "Glissando Creation",
+    "Signal Shaping"
   ],
   "short_description": "Smooths CVs and creates glissandos",
+  "use_cases": [
+    "Smoothing control voltage signals",
+    "Creating gradual pitch bends (glissandos)",
+    "Shaping envelope transitions in modular synths",
+    "Reducing abrupt level changes in audio signals"
+  ],
   "specifications": [
     {
       "name": "Channels",
-      "description": "The number of bus channels to process, ranging from 1 to 8."
+      "description": "The number of bus channels to process.",
+      "min": 1,
+      "max": 8
     }
   ],
   "parameters": [
     {
       "name": "Through",
-      "min": 0,
-      "max": 1,
-      "default": 0,
       "type": "toggle",
       "is_common": true,
       "is_bus": false
@@ -28,7 +35,7 @@
       "min": 0,
       "max": 1000,
       "default": 0,
-      "scope": "common",
+      "scope": "global",
       "type": "scaled",
       "is_common": true,
       "is_bus": false
@@ -38,7 +45,7 @@
       "min": 0,
       "max": 1000,
       "default": 0,
-      "scope": "common",
+      "scope": "global",
       "type": "scaled",
       "is_common": true,
       "is_bus": false
@@ -49,7 +56,7 @@
       "max": 1,
       "default": 0,
       "scope": "per-channel",
-      "type": "toggle",
+      "type": "enum",
       "is_common": false,
       "is_bus": true
     },
@@ -86,14 +93,16 @@
   ],
   "input_ports": [
     {
-      "name": "Input bus",
-      "description": "The input bus, numbered from 1 to 28. The algorithm processes this bus for slew rate limiting."
+      "name": "Input",
+      "description": "The input bus.",
+      "channelCountRef": "1-28"
     }
   ],
   "output_ports": [
     {
-      "name": "Output bus",
-      "description": "The output bus, numbered from 0 to 28. If set to 'None', the input bus is used as output and the mode is always 'Replace'."
+      "name": "Output",
+      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'.",
+      "channelCountRef": "0-28"
     }
   ]
 }

@@ -3,15 +3,17 @@
   "name": "Sample Player (Speed)",
   "description": "This algorithm plays samples with flexible control over the playback speed, including the possibility of playing the sample backwards. It provides the features of a number of disting mk4 algorithms, including Audio Playback, Audio Playback with V/Oct, Audio Playback with Z Speed, and Audio Playback with Reverse.",
   "categories": [
-    "sampling",
-    "utility"
+    "Sample Player",
+    "Audio Processing",
+    "Pitch Control",
+    "Reverse Playback"
   ],
   "short_description": "Plays samples with speed/pitch control",
   "specifications": [
     {
       "name": "Record time",
       "min": 0,
-      "max": 60.0
+      "max": 60.000000000000014
     }
   ],
   "parameters": [
@@ -41,6 +43,20 @@
       "type": "folder",
       "is_common": false,
       "is_bus": false
+    },
+    {
+      "name": "Speed",
+      "description": "Sets the playback speed. Negative values play backwards."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "description": "Transposes the playback speed in semitones."
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "description": "Adjusts the playback speed in cents."
     }
   ],
   "input_ports": [
@@ -51,6 +67,14 @@
     {
       "name": "Pitch input",
       "description": ""
+    },
+    {
+      "name": "Speed input",
+      "description": "The bus to use for speed control, scaled as 5V for 100%."
+    },
+    {
+      "name": "Pitch input",
+      "description": "The bus to use for 1V/octave pitch control."
     }
   ],
   "output_ports": []

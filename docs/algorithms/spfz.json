@@ -1,21 +1,22 @@
 {
   "guid": "spfz",
   "name": "Spectral Freeze",
-  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The 'spectral' part of the name indicates that it works in the frequency domain, unlike simple loopers or granular effects which work in the time domain. It captures the spectrum of a sound (using an FFT) and uses that to resynthesize audio via phase vocoder technique. As well as completely freezing sound, the algorithm can play it back at any desired speed (time stretching) and pitch. Multiple 'voices' allow freezing different moments of audio simultaneously.",
+  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The ‘spectral’ part of the name indicates that it works in the frequency domain, unlike simple loopers or granular effects which work in the time domain. It captures the spectrum of a sound (using FFT) and uses that to resynthesize audio via phase vocoder technique.\n\nAs well as completely freezing sound, the algorithm can play it back at any desired speed (time stretching) and pitch. Multiple voices allow freezing different moments simultaneously.\n\nThe GUI visualizes each voice’s envelope level and frozen segment. Movement parameters enable dynamic playback within a history window, while pitch shifting and etherization effects further modify the output.",
   "categories": [
-    "audio effects",
-    "spectral",
-    "pitch",
-    "sampling"
+    "Audio Effects",
+    "Time Stretching",
+    "Pitch Shifting",
+    "Spectral Processing",
+    "Freeze/Loop"
   ],
-  "short_description": "An audio ‘freeze’ effect",
+  "short_description": "An audio ‘freeze’ effect that captures sound in the frequency domain and sustains it indefinitely with dynamic playback control.",
   "use_cases": [
-    "Static sound generation for ambient effects",
-    "Textural sustain with spectral interpolation",
-    "Pitch shifting and time stretching of frozen sounds",
-    "Etherization (transient removal) on live or frozen audio"
+    "Creating textural sustained sounds from transients",
+    "Time-stretching and pitch-shifting frozen audio",
+    "Etherization for harmonic isolation",
+    "Layered spectral freeze effects"
   ],
-  "gui_description": "The display shows information about each voice, including an envelope level vertical bar, small vertical lines visualizing the used audio segment, and a 'T' indicator for freeze target. If no 'T' is shown, the target is set to 'Auto'.",
+  "gui_description": "Displays voice envelopes, frozen segments (vertical lines), and a 'T' marker indicating the freeze target. Shows FFT frame-based movement parameters with equivalent time in milliseconds.",
   "specifications": [
     {
       "name": "Voices",
@@ -23,26 +24,170 @@
       "max": 8
     },
     {
-      "name": "History",
+      "name": "History Length",
       "min": 4,
       "max": 2048
     },
     {
-      "name": "FFT size",
+      "name": "FFT Size",
       "min": 8,
       "max": 12
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Freeze toggle",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze when the parameter changes from '0' to '1'."
+    },
+    {
+      "name": "Freeze gate",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "description": "Activates a new freeze when changing from '0' to '1', and releases the freeze when changing from '1' to '0'."
+    },
+    {
+      "name": "Freeze target",
+      "min": 0,
+      "max": 2,
+      "default": null,
+      "description": "Chooses the voice for the next freeze, or '0' for 'Auto'.",
+      "enum_values": [
+        "Auto (0)",
+        "Voice 1 (1)",
+        "Voice 2 (2)"
+      ]
+    },
+    {
+      "name": "Unfreeze all",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When set to '1', releases all active freezes."
+    },
+    {
+      "name": "Movement",
+      "min": 0,
+      "max": 4,
+      "default": 2,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Rate",
+      "min": 0,
+      "max": 1000,
+      "default": 340,
+      "description": "'0' stops motion; '1000' is normal speed. Non-linear scale for finer control at slower speeds."
+    },
+    {
+      "name": "Depth",
+      "min": 1,
+      "max": null,
+      "default": 2,
+      "description": "Maximum amount of movement in FFT frames (with equivalent time shown). '1' disables motion.",
+      "type": "enum"
+    },
+    {
+      "name": "Offset",
+      "min": 0,
+      "max": null,
+      "default": 0,
+      "description": "Directly controls playback position within the buffer. Combined with Movement/Rate/Depth."
+    },
+    {
+      "name": "Etherization",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Live process",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When set to '1', starts a new voice using live audio input (for etherization on live audio)."
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 127,
+      "default": 10,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 127,
+      "default": 10,
+      "description": "Sets the envelope release time."
+    },
+    {
+      "name": "Coarse shift (global)",
+      "min": -48,
+      "max": 24,
+      "default": 0,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Fine shift (global)",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets fine pitch shift amount for all voices in cents."
+    },
+    {
+      "name": "Freeze (per-voice)",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates/releases freeze on corresponding voice when toggled between '0' and '1'."
+    },
+    {
+      "name": "Coarse shift (per-voice)",
+      "min": -48,
+      "max": 24,
+      "default": 0,
+      "description": "Sets coarse pitch shift amount for individual voices."
+    },
+    {
+      "name": "Fine shift (per-voice)",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Output bus (per-voice)",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "description": "Sets the output bus for each voice."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "Sets the input audio bus (1-28)"
+      "description": "Sets the input audio bus (1-28)."
     }
   ],
-  "output_ports": [
-    {
-      "name": "Output Bus",
-      "description": "Each voice can be routed to a specific output bus (1-28) via the 'Output' parameter"
-    }
-  ]
+  "output_ports": []
 }

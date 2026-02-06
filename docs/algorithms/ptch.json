@@ -3,14 +3,15 @@
   "name": "Pitch reference",
   "description": "This algorithm simply generates a sine wave tone at a particular pitch or frequency. Note that if using a note to specify the pitch, it respects the global tuning setting.",
   "categories": [
-    "synthesis",
-    "utility"
+    "Utility",
+    "Audio Generation",
+    "Reference Tools"
   ],
   "short_description": "Generates a pitch reference tone",
   "use_cases": [
-    "Tuning reference",
-    "Pitch calibration",
-    "Frequency alignment tool"
+    "Tuning calibration",
+    "Frequency reference for audio processing",
+    "Pitch alignment in modular systems"
   ],
   "gui_description": "The display shows the chosen pitch as a MIDI note name plus cents, as a fractional MIDI note number, and as a frequency in Hz.",
   "specifications": [],
@@ -29,7 +30,7 @@
       "min": 0,
       "max": 127,
       "default": 69,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -38,7 +39,7 @@
       "min": 27.0,
       "max": 880.0,
       "default": 440.0,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -56,24 +57,16 @@
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
-    },
-    {
-      "name": "Gain",
-      "min": -40,
-      "max": 6,
-      "default": -40,
-      "type": "enum",
-      "is_bus": true
     }
   ],
   "input_ports": [],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus for the generated pitch reference tone."
+      "description": "The output audio signal bus."
     },
     {
       "name": "Output",

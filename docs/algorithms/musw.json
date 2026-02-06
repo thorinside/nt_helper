@@ -1,30 +1,32 @@
 {
   "guid": "musw",
   "name": "Multi-Switch",
-  "description": "This algorithm offers up to six highly configurable sequential or voltage-controlled switches that are DC-coupled and can handle both audio and CV signals. Each switch consists of two sub-switches: an input sub-switch and an output sub-switch, where the selected input is routed to the selected output. When multiple switches share the same output bus, their signals are summed. Both sub-switches support crossfading for click-free or blended transitions between sources/targets. The switches can be controlled via CV inputs or through 'Macro' parameters, which can themselves be mapped to various control sources like CV, MIDI, or I2C.",
+  "description": "This algorithm offers up to six highly configurable sequential or voltage-controlled switches that are DC-coupled and can handle both audio and CV signals. Each switch consists of two sub-switches: an input sub-switch and an output sub-switch, where the selected input is routed to the selected output. When multiple switches share the same output, their signals are summed. Each sub-switch supports crossfading for click-free transitions or noticeable blends between sources/targets. The switches can be controlled by CV inputs or via 'Macro' parameters, which can be mapped to various control sources like CV, MIDI, or I2C.",
   "categories": [
-    "utility",
-    "routing",
-    "mixing"
+    "Routing",
+    "Switching",
+    "Sequencing",
+    "CV Processing",
+    "Audio Processing"
   ],
   "short_description": "Sequential or CV-controlled switch",
   "use_cases": [
-    "Audio signal routing between multiple inputs and outputs",
-    "CV signal switching for modular synthesis",
-    "Sequencer step control via triggers or voltage",
-    "Macro parameter-based switching for complex patching",
-    "Click-free transitions with crossfading",
-    "Signal summation from multiple switches sharing an output"
+    "Audio signal routing",
+    "CV signal switching",
+    "Sequencer control",
+    "Modular synthesis patching",
+    "Dynamic signal path management"
   ],
   "gui_description": "The display shows which input and output busses are currently joined by the various switches.",
   "specifications": [
     {
       "name": "Number of Switches",
-      "description": "Supports configurable switching between 1 to 6 individual units."
+      "description": "Configurable from 1 to 6 switches."
     },
     {
-      "name": "DC Coupling",
-      "description": "Allows for seamless routing of both audio and CV signals."
+      "name": "Crossfade Time",
+      "min": 0,
+      "max": 1000
     }
   ],
   "parameters": [
@@ -171,22 +173,18 @@
   ],
   "input_ports": [
     {
-      "name": "Input A-L (1-12)",
-      "description": "The input busses for the switches, labeled from A to L. Each switch can select one of these inputs."
+      "name": "Control Source (CV/MIDI/I2C)",
+      "description": "Inputs for controlling switch behavior via CV, MIDI, or I2C mapping sources."
     },
     {
-      "name": "CV Inputs",
-      "description": "Voltage-controlled inputs that can trigger or directly control switch positions."
+      "name": "Input A-L",
+      "description": "Up to 12 input busses for each input sub-switch."
     }
   ],
   "output_ports": [
     {
-      "name": "Output A-H (1-8)",
-      "description": "The output busses for the switches, labeled from A to H. Each switch can select one of these outputs."
-    },
-    {
-      "name": "Summed Outputs",
-      "description": "When multiple switches share an output bus, their signals are summed and sent through that single output."
+      "name": "Output A-H",
+      "description": "Up to 8 output busses for each output sub-switch. Signals are summed when multiple switches share the same output."
     }
   ]
 }

@@ -1,18 +1,13 @@
 {
   "guid": "attn",
   "name": "Attenuverter",
-  "description": "This simple algorithm scales and offsets signals using the formula output = offset + (input × scale). It is probably most useful for CVs but can also be applied to audio. The signal is scaled first, then an offset voltage is added. Various offset parameters are provided, which might be useful in different scenarios—they are all simply summed together. Note that it is valid to use this algorithm with no input bus selected; in such cases, the output is just the offset voltage.",
+  "description": "This simple algorithm scales and offsets signals. It is probably most useful for CVs, but can be used for audio as well.\n\nThe signal is scaled and then offset i.e.\noutput = offset + (input × scale).\n\nVarious offset parameters are provided, which might be useful in different scenarios – they are all simply added together.\n\nNote that it is valid to use this algorithm with no input bus selected, in which case the output is simply the offset voltage.",
   "categories": [
-    "utility",
-    "CV processing"
+    "Signal Processing",
+    "CV Processing",
+    "Audio Effects"
   ],
   "short_description": "Attenuates and offsets signals",
-  "use_cases": [
-    "Scaling CV signals for modular synthesis",
-    "Adjusting audio signal levels in a mixing environment",
-    "Creating voltage offsets without input modulation",
-    "Fine-tuning control voltages for sequencers or LFOs"
-  ],
   "specifications": [
     {
       "name": "Channels",
@@ -26,29 +21,20 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
+      "description": "Enables the channel. Disabled channels have no effect on the bus."
     },
     {
       "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
-      "is_per_channel": true
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Scale",
       "min": -200.0,
       "max": 200.0,
       "default": 100.0,
-      "scope": "per-channel",
       "type": "scaled",
       "is_per_channel": true
     },
@@ -57,8 +43,7 @@
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "scope": "per-channel",
-      "type": "scaled",
+      "type": "folder",
       "is_per_channel": true
     },
     {
@@ -66,7 +51,6 @@
       "min": -1000,
       "max": 1000,
       "default": 0,
-      "scope": "per-channel",
       "type": "scaled",
       "is_per_channel": true
     },
@@ -75,7 +59,6 @@
       "min": -10,
       "max": 10,
       "default": 0,
-      "scope": "per-channel",
       "type": "scaled",
       "is_per_channel": true
     },
@@ -84,26 +67,17 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "scope": "per-channel",
       "type": "scaled",
       "is_per_channel": true
     }
   ],
   "input_ports": [
     {
-      "name": "Input_bus",
-      "description": "The input bus to process (0-28)."
-    },
-    {
       "name": "Input",
       "description": ""
     }
   ],
   "output_ports": [
-    {
-      "name": "Output_bus",
-      "description": "The output bus where processed signal is sent (0-28, or 'None' for direct input routing)."
-    },
     {
       "name": "Output",
       "description": ""

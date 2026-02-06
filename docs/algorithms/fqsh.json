@@ -1,30 +1,27 @@
 {
   "guid": "fqsh",
   "name": "Frequency Shifter",
-  "description": "This algorithm is based on the Frequency Shifter algorithm from the disting EX. It shifts frequency (not pitch), meaning it adds a fixed offset to all harmonic frequencies in an audio signal rather than scaling them uniformly like a pitch shifter. This process breaks harmonic relationships, producing 'clangorous' or 'bell-like' sounds. The algorithm allows adjustment of shift parameters such as frequency offset, multiplier, CV scaling, wet/dry mix, and output level, along with routing controls for input/output busses and mode selection (Add/Replace) for positive and negative shifted outputs.",
+  "description": "This algorithm is based on the Frequency Shifter algorithm from disting EX. It shifts frequency (not pitch), meaning it adds a shift to the frequencies of constituent harmonics rather than multiplying them like a pitch shifter, which preserves harmonic relationships. This creates more 'clangorous' or 'bell-like' sounds. The algorithm includes adjustable parameters for shift amount, multiplier scaling, CV input sensitivity, wet/dry mix, and output gain.",
   "categories": [
-    "audio effects",
-    "spectral",
-    "routing",
-    "utility",
-    "CV processing"
+    "Audio Effects",
+    "Frequency Modulation",
+    "Synthesis Tools"
   ],
   "short_description": "Shifts frequency (not pitch)",
   "use_cases": [
     "Creating metallic or bell-like sounds by breaking harmonic relationships",
-    "Adding frequency modulation effects to audio signals",
-    "Generating clangorous textures for sound design",
-    "CV-controlled frequency shifting in modular setups"
+    "Generating complex, evolving textures in sound design",
+    "Adding a 'ringing' effect to audio signals",
+    "Modulating frequencies with CV for dynamic processing"
   ],
-  "gui_description": null,
+  "gui_description": "The interface includes controls for frequency shift amount (with multiplier scaling), CV input sensitivity, wet/dry mix, and output level. Routing parameters allow selection of input/output buses and stereo width control.",
   "parameters": [
     {
       "name": "Shift",
-      "min": -1.0,
-      "max": 1.0,
-      "default": 0.0,
+      "min": -1,
+      "max": 1,
+      "default": 0,
       "type": "folder",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -32,130 +29,140 @@
       "min": -1.0,
       "max": 1.0,
       "default": 0.0,
+      "description": "Sets the frequency shift.",
+      "enum_values": [],
       "type": "folder",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
       "name": "Shift",
-      "unit": "Hz",
-      "description": "Sets the frequency shift."
+      "min": -1.0,
+      "max": 1.0,
+      "default": 0.0,
+      "description": "Sets the frequency shift.",
+      "enum_values": [],
+      "type": "folder",
+      "is_bus": false
     },
     {
       "name": "Multiplier",
       "min": 0,
       "max": 3,
       "default": 2,
+      "description": "Set a multiplier for the shift amount: x1, x10, x100, or x1000.",
+      "enum_values": [
+        "x1",
+        "x10",
+        "x100",
+        "x1000"
+      ],
       "type": "enum",
-      "is_per_channel": false,
       "is_bus": false
-    },
-    {
-      "name": "Multiplier",
-      "description": "Set a multiplier for the shift amount: x1, x10, x100, or x1000."
     },
     {
       "name": "Hz/V",
       "min": 0,
       "max": 3,
       "default": 1,
+      "description": "Sets the scaling of the shift CV input, in Hz/Volt. One of: 1Hz/V, 10Hz/V, 100Hz/V, or 1kHz/V.",
+      "enum_values": [
+        "1Hz/V",
+        "10Hz/V",
+        "100Hz/V",
+        "1kHz/V"
+      ],
       "type": "enum",
-      "is_per_channel": false,
       "is_bus": false
-    },
-    {
-      "name": "Hz/V",
-      "unit": "Hz/Volt",
-      "description": "Sets the scaling of the shift CV input, in Hz/Volt. One of: 1Hz/V, 10Hz/V, 100Hz/V, or 1kHz/V."
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
+      "description": "The output wet/dry mix.",
       "type": "folder",
-      "is_per_channel": false,
       "is_bus": false
-    },
-    {
-      "name": "Mix",
-      "unit": "%",
-      "description": "The output wet/dry mix."
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
+      "description": "The output gain applied to the effected signal.",
       "type": "folder",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
-      "name": "Level",
-      "unit": "dB",
-      "description": "The output gain applied to the effected signal."
+      "name": "Shift_input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the frequency shift CV.",
+      "type": "bus",
+      "is_bus": true
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Width",
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+      "name": "+ve_shift_output",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "description": "The bus to use for the positive shifted output.",
+      "type": "bus",
+      "is_bus": true
     },
     {
-      "name": "+ve shift mode",
+      "name": "+ve_shift_mode",
       "min": 0,
       "max": 1,
       "default": 0,
+      "description": "The standard Add/Replace mode selector for the positive shifted output.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
       "type": "enum",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
-      "name": "+ve shift mode",
-      "description": "The standard Add/Replace mode selector for the positive shifted output."
+      "name": "-ve_shift_output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the negative shifted output.",
+      "type": "bus",
+      "is_bus": true
     },
     {
-      "name": "-ve shift mode",
+      "name": "-ve_shift_mode",
       "min": 0,
       "max": 1,
       "default": 0,
+      "description": "The standard Add/Replace mode selector for the negative shifted output.",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
       "type": "enum",
-      "is_per_channel": false,
       "is_bus": false
-    },
-    {
-      "name": "-ve shift mode",
-      "description": "The standard Add/Replace mode selector for the negative shifted output."
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "The first audio input bus (1-28)."
+      "name": "Audio Input",
+      "description": "The first audio input bus (default: Bus 1). Supports mono or stereo inputs based on the Width parameter."
     },
     {
-      "name": "Shift input",
-      "description": "CV input bus for frequency shift control (0-28)."
-    },
-    {
-      "name": "Shift input",
-      "description": ""
-    },
-    {
-      "name": "Shift input",
-      "description": "The bus to use for the frequency shift CV."
-    },
-    {
-      "name": "Input",
-      "description": ""
+      "name": "Shift CV",
+      "description": "CV input for frequency shift, scaled by Hz/V parameter. Accepts voltage control signals."
     },
     {
       "name": "Input",
@@ -164,28 +171,12 @@
   ],
   "output_ports": [
     {
-      "name": "+ve shift output",
-      "description": "Bus for the positive shifted audio output."
+      "name": "+ve Shifted Output",
+      "description": "The bus carrying the positively shifted audio signal (default: Bus 13). Mode is selectable via +ve_shift_mode."
     },
     {
-      "name": "-ve shift output",
-      "description": "Bus for the negative shifted audio output."
-    },
-    {
-      "name": "+ve shift output",
-      "description": ""
-    },
-    {
-      "name": "+ve shift output",
-      "description": "The bus to use for the positive shifted output."
-    },
-    {
-      "name": "-ve shift output",
-      "description": ""
-    },
-    {
-      "name": "-ve shift output",
-      "description": "The bus to use for the negative shifted output."
+      "name": "-ve Shifted Output",
+      "description": "The bus carrying the negatively shifted audio signal (default: Bus 0). Mode is selectable via -ve_shift_mode."
     }
   ]
 }

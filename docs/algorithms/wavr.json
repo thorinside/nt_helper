@@ -1,31 +1,24 @@
 {
   "guid": "wavr",
   "name": "Audio recorder",
-  "description": "This algorithm records WAV files to the MicroSD card. A typical use for this would be to record the module’s inputs, but any bus can be the source for a recording, so you could also record the output of other algorithms – for example, you could run a mixer and record the stereo mix-down.\n\nThe algorithm can also play back its recordings. It does so to the same bus channels as are chosen for recording.\n\nSince the module is fully DC-coupled, it can also record and playback CVs.\n\nUp to 10 files can be recorded simultaneously, each mono or stereo. It goes without saying that the more files you record, and the larger the chosen bit depth, the more demands are placed on the MicroSD card. You would be advised to check your card performance before relying on the algorithm for any crucial recordings.",
+  "description": "This algorithm records WAV files to the MicroSD card. A typical use for this would be to record the module’s inputs, but any bus can be the source for a recording, so you could also record the output of other algorithms – for example, you could run a mixer and record the stereo mix-down.\n\nThe algorithm can also play back its recordings. It does so to the same bus channels as are chosen for recording.\n\nSince the module is fully DC-coupled, it can also record and play CVs.\n\nUp to 10 files can be recorded simultaneously, each mono or stereo. It goes without saying that the more files you record, and the larger the chosen bit depth, the more demands are placed on the MicroSD card. You would be advised to check your card performance before relying on the algorithm for any crucial recordings.",
   "categories": [
-    "utility",
-    "sampling"
+    "Audio",
+    "Recording",
+    "File Management",
+    "Playback"
   ],
   "short_description": "Records audio to the MicroSD card",
   "use_cases": [
-    "recording module inputs",
-    "recording outputs of other algorithms (e.g., mixers)",
-    "stereo mix-down recording",
-    "CV recording and playback"
+    "Recording module inputs",
+    "Mixing and recording stereo outputs (e.g., from a mixer)",
+    "CV signal recording/playback",
+    "Multi-track recording (up to 10 files)"
   ],
-  "gui_description": "The display shows a level meter for each file, grayed out if disabled. During recording/playback, it displays the current filename and elapsed time.\n\nWhen idle, it shows the last completed or played recording name.\n\nDuring playback, it also shows the current recording’s name and elapsed time.\n\nWhile recording, a gauge indicates MicroSD card pressure.",
   "specifications": [
     {
-      "name": "Max files",
-      "description": "The maximum number of simultaneous files to record is between 1 and 10."
-    },
-    {
-      "name": "Bit depth options",
-      "description": "Supports 16, 24, or 32-bit recording depths."
-    },
-    {
-      "name": "Voltage normalization",
-      "description": "Normalization options are 10V or 12V for full-scale voltage in recorded files."
+      "name": "Max simultaneous files",
+      "value": "1-10"
     }
   ],
   "parameters": [
@@ -34,75 +27,108 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Starts/stops recording.",
-      "type": "toggle"
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Play",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Starts/stops playback.",
-      "type": "toggle"
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Record lock",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If on, changes to the Record parameter are ignored.",
-      "type": "toggle"
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Play lock",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If on, changes to the Play parameter are ignored.",
-      "type": "toggle"
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Bit depth",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Chooses the bit depth for recording. The options are:\n16, 24, or 32-bit.",
+      "enum_values": [
+        "16-bit",
+        "24-bit",
+        "32-bit"
+      ],
       "type": "enum",
-      "is_per_channel": false
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Normalization",
+      "name": "Normalisation",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets the voltage that corresponds to full-scale in the recorded files. The options are:\n10V or 12V. Applies to both recording and playback.",
+      "enum_values": [
+        "10V full-scale",
+        "12V full-scale"
+      ],
       "type": "enum",
-      "is_per_channel": false
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Which recording",
-      "description": "Selects the recording to play.",
-      "type": "string"
+      "min": null,
+      "max": null,
+      "default": null,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 24,
       "default": 0,
-      "description": "Sets the playback level.",
-      "type": "folder",
-      "is_per_channel": false
+      "scope": "global",
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     }
   ],
-  "input_ports": [],
-  "output_ports": [
+  "input_ports": [
     {
-      "name": "Left/mono input",
-      "description": "Selects the left or mono channel for recording (per-file setting)."
+      "name": "Left/mono input (per file)",
+      "description": "Sets the left or mono channel to record for each enabled file",
+      "busIdRef": "1-28"
     },
     {
-      "name": "Right input",
-      "description": "Selects the right channel for recording (per-file setting)."
+      "name": "Right input (per file)",
+      "description": "Sets the right channel to record for each enabled file",
+      "busIdRef": "0-28"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Playback output (same bus as recording)",
+      "description": "Outputs playback signal to the same bus channels used during recording"
     }
   ]
 }

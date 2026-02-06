@@ -1,21 +1,23 @@
 {
   "guid": "resn",
   "name": "Resonator",
-  "description": "It's Rings! This algorithm is an implementation of the open source Rings module by Émilie Gillet. It can be played via MIDI or I2C, or simply via CV/gate as the original. The disting NT version relies on 'input' parameters being enabled to determine signal routing instead of detecting jack connections (e.g., if Strum input is set to None, it generates strums internally). Any demos or tutorials for the original Rings module apply equally here.",
+  "description": "This algorithm is an implementation of the open-source Rings module by Émilie Gillet. It can be played via MIDI or I2C, or simply via CV/gate as the original. The disting NT relies on 'input' parameters being enabled/disabled to simulate input normalization (e.g., if the 'Strum input' parameter is set to ‘None’, the algorithm generates its own strums internally). Any demos or tutorials for the original module apply equally here.",
   "categories": [
-    "utility",
-    "routing",
-    "MIDI"
+    "Synth",
+    "Resonator",
+    "CV/Gate",
+    "MIDI",
+    "I2C"
   ],
-  "short_description": "It's Rings!",
+  "short_description": "\"It's Rings!\"",
   "use_cases": [
-    "Generating strums internally when no CV input is connected",
-    "Playing via MIDI or I2C for pitch and/or strum control",
-    "Using CV/gate inputs as the original Rings module",
-    "Applying audio effects to synth output in Synth mode"
+    "Resonant sound synthesis",
+    "Strummed instrument emulation",
+    "Modular synth patching (audio/CV)",
+    "MIDI-controlled resonator",
+    "I2C-based audio processing"
   ],
-  "gui_description": null,
-  "specifications": [],
+  "gui_description": "Interface mimics the original Rings module with knobs for parameters like Brightness, Damping, Position, and Structure. Input/output routing is handled via parameter selections (e.g., 'Strum input', 'V/Oct input'). MIDI/I2C modes are configurable via dropdowns.",
   "parameters": [
     {
       "name": "Mode",
@@ -108,9 +110,7 @@
       "max": 10,
       "default": 0,
       "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "enum"
     },
     {
       "name": "Noise gate",
@@ -118,9 +118,7 @@
       "max": 1,
       "default": 1,
       "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "toggle"
     },
     {
       "name": "Input gain",
@@ -138,9 +136,7 @@
       "max": 1,
       "default": 0,
       "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
+      "type": "toggle"
     },
     {
       "name": "Even output mode",
@@ -148,9 +144,7 @@
       "max": 1,
       "default": 0,
       "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
+      "type": "toggle"
     },
     {
       "name": "Output gain",
@@ -160,7 +154,7 @@
       "scope": "global",
       "type": "scaled",
       "is_per_channel": false,
-      "is_bus": true
+      "is_bus": false
     },
     {
       "name": "Dry gain",
@@ -170,7 +164,7 @@
       "scope": "global",
       "type": "scaled",
       "is_per_channel": false,
-      "is_bus": true
+      "is_bus": false
     },
     {
       "name": "MIDI mode",
@@ -178,9 +172,7 @@
       "max": 3,
       "default": 0,
       "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
+      "type": "enum"
     },
     {
       "name": "I2C mode",
@@ -188,9 +180,7 @@
       "max": 3,
       "default": 0,
       "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
+      "type": "enum"
     },
     {
       "name": "MIDI channel",
@@ -198,9 +188,7 @@
       "max": 16,
       "default": 1,
       "scope": "global",
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": true
+      "type": "scaled"
     },
     {
       "name": "I2C channel",
@@ -208,23 +196,41 @@
       "max": 255,
       "default": 1,
       "scope": "global",
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": true
+      "type": "scaled"
     }
   ],
   "input_ports": [
     {
-      "name": "Strum input",
-      "description": "CV/gate input for strumming (if enabled)"
+      "name": "Strum input (CV)",
+      "description": "Input for strum CV/gate. Behavior depends on 'Strum input' parameter setting."
     },
     {
       "name": "V/Oct input",
-      "description": "CV input for V/octave pitch control"
+      "description": "Pitch CV input (V/octave). Bus selected via 'V/Oct input' parameter."
     },
     {
       "name": "Audio input",
-      "description": "Audio CV input for resonator processing"
+      "description": "External audio signal for resonator processing. Bus selected via 'Audio input' parameter."
+    },
+    {
+      "name": "Brightness input",
+      "description": "CV control for brightness modulation. Bus selected via 'Brightness input' parameter."
+    },
+    {
+      "name": "Frequency input",
+      "description": "CV control for frequency modulation. Bus selected via 'Frequency input' parameter."
+    },
+    {
+      "name": "Damping input",
+      "description": "CV control for damping modulation. Bus selected via 'Damping input' parameter."
+    },
+    {
+      "name": "Structure input",
+      "description": "CV control for resonator structure modulation. Bus selected via 'Structure input' parameter."
+    },
+    {
+      "name": "Position input",
+      "description": "CV control for position modulation. Bus selected via 'Position input' parameter."
     },
     {
       "name": "Strum input",
@@ -262,11 +268,11 @@
   "output_ports": [
     {
       "name": "Odd output",
-      "description": "Output bus for the Odd harmonic series (audio/CV)"
+      "description": "Resonator output (odd harmonics). Routing and mode controlled by parameters."
     },
     {
       "name": "Even output",
-      "description": "Output bus for the Even harmonic series (audio/CV)"
+      "description": "Resonator output (even harmonics). Routing and mode controlled by parameters."
     },
     {
       "name": "Odd output",

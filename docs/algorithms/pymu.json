@@ -1,16 +1,22 @@
 {
   "guid": "pymu",
   "name": "Poly Multisample",
-  "description": "This algorithm is inspired by the original 'SD Multisample' algorithm on the disting EX, with hints of the Crossfade Loop Synth VST plug-in and the 'Audio Playback with Crossfade' algorithm on the disting mk4. It is a polyphonic sample playback instrument that plays WAV files from the MicroSD card. The Poly Multisample can also record audio (i.e., sample in the traditional sense) and play it back, applying crossfade looping to create smooth looping pads out of any sample material. It supports multiple control methods including CV/gate, MIDI, or I2C, and features both velocity switches and round robins per sample. The algorithm leverages common polysynth features such as envelopes, microtuning, chords/arpeggiators, and routing parameters.",
+  "description": "This algorithm is inspired by the original 'SD Multisample' algorithm on the disting EX and hints from the Crossfade Loop Synth VST plug-in. It functions as a polyphonic sample playback instrument, playing WAV files from the MicroSD card with support for recording audio (sampling) and applying crossfade looping to create smooth looping pads. The algorithm can be triggered via CV/gate, MIDI, or I2C, supports velocity switches and round robins per sample, and shares features described in 'Common polysynth features' and 'Samples on the MicroSD card'.",
   "categories": [
-    "polyphonic",
-    "sampling",
-    "mixing",
-    "routing",
-    "arpeggiator",
-    "external control"
+    "Sample Player",
+    "Polyphonic Synthesizer",
+    "Looping Instrument",
+    "CV/Gate/MIDI/I2C Controlled"
   ],
-  "short_description": "A polyphonic sample player",
+  "short_description": "A polyphonic sample player with crossfade looping and multi-trigger support.",
+  "use_cases": [
+    "Polyphonic pad synthesis",
+    "Sample-based sound design",
+    "Looping instrument creation",
+    "CV/gate-controlled sampling",
+    "MIDI/I2C-triggered playback"
+  ],
+  "gui_description": "The display shows played notes with superimposed note envelopes, folder/filename of the last sample, microtuning info, and trim/loop point adjustments. Crossfade position is visualized for each voice when enabled.",
   "specifications": [
     {
       "name": "Voices",
@@ -20,278 +26,252 @@
     {
       "name": "Record time",
       "min": 0,
-      "max": 60
+      "max": 60.0
     }
   ],
   "parameters": [
     {
       "name": "Folder",
       "default": 0,
-      "scope": "sample rate",
-      "type": "string",
-      "is_common": true
+      "description": "Sets the sample folder to use."
     },
     {
       "name": "Sample",
       "min": -1,
-      "max": null,
       "default": -1,
-      "description": "Allows you to choose a single sample within the folder to play, or '<MULTISAMPLE>' for the usual case where you want the algorithm to choose the sample automatically based on the note pitch.",
-      "type": "string"
+      "enum_values": [
+        "<MULTISAMPLE>"
+      ],
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Gain",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "description": "Sets the output level.",
-      "type": "enum",
-      "is_common": true
+      "min": -40.0,
+      "max": 24.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": true
     },
     {
       "name": "Pan",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Sets the stereo pan position.",
-      "type": "enum"
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": true
     },
     {
       "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Adjusts the tuning in semitones.",
-      "type": "enum"
+      "min": -60.0,
+      "max": 60.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": true
     },
     {
       "name": "Fine tune",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Adjusts the tuning in cents.",
-      "type": "enum"
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": true
     },
     {
       "name": "Crossfade mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets the crossfade looping mode: Off, Forwards, or Alternating. When set to 'Off', no crossfading occurs; when set to 'Forwards' or 'Alternating', crossfade looping is applied.",
-      "type": "enum",
-      "is_common": false,
-      "is_bus": true
+      "enum_values": [
+        "Off",
+        "Forwards",
+        "Alternating"
+      ],
+      "type": "folder"
     },
     {
       "name": "Crossfade length",
       "min": 0.1,
       "max": 100.0,
       "default": 50.0,
-      "description": "Sets the length of the crossfade, as a percentage of the loop time (the difference between the loop point and end trim point).",
-      "type": "enum"
+      "description": "Sets the crossfade looping duration as a percentage of loop time."
     },
     {
       "name": "Loop point coarse",
       "min": 0.0,
       "max": 100.0,
-      "default": 0.0,
-      "description": "Sets the loop point, as a percentage of the sample length.",
-      "type": "enum"
+      "default": 0.0
     },
     {
       "name": "Loop point fine",
       "min": -500,
       "max": 500,
       "default": 0,
-      "description": "Adjusts the loop point in sample frames, allowing for precise positioning beyond what coarse percentage offers.",
-      "type": "enum"
+      "description": "Adjusts the loop point in sample frames."
     },
     {
       "name": "Sustain mode",
       "min": 0,
       "max": 1,
-      "default": 0,
-      "description": "The standard polysynth sustain mode parameter. See 'Common polysynth features'.",
-      "type": "enum",
-      "is_common": true
+      "default": 0
     },
     {
       "name": "Sustain",
       "min": 0,
       "max": 1,
-      "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain pedal).",
-      "type": "enum"
+      "default": 0
     },
     {
       "name": "Gate offset",
       "min": 0.0,
       "max": 10.0,
       "default": 0.2,
-      "description": "Offsets (delays) the gate inputs relative to the pitch inputs, useful for allowing pitch CVs to settle before they are sampled on the rising gate and coping with modules that change gates first.",
-      "type": "enum",
-      "is_bus": true
+      "description": "Offsets gate inputs relative to pitch inputs (useful for CV settling)."
     },
     {
       "name": "Round robin mode",
       "min": 0,
       "max": 3,
-      "default": 0,
-      "description": "The round-robin mode. See 'Common polysynth features'.",
-      "type": "enum"
+      "default": 0
     },
     {
       "name": "Loop",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "'From WAV file' will loop if the sample has loop points defined in the file, and not otherwise. 'Off' forces no looping; 'On' forces continuous looping.",
-      "type": "enum",
-      "is_bus": true
+      "enum_values": [
+        "Off",
+        "From WAV file",
+        "On"
+      ]
     },
     {
       "name": "Bend range",
-      "min": 0,
-      "max": 48,
-      "default": 2,
-      "description": "The MIDI pitch bend range, measured in semitones.",
-      "type": "enum"
+      "min": 0.0,
+      "max": 48.0,
+      "default": 2.0
     },
     {
       "name": "Confirm change",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets whether the folder and/or sample changes immediately or requires confirmation. Values likely correspond to different combinations of immediate/confirm modes.",
-      "type": "enum"
+      "description": "Sets whether folder/sample changes require confirmation."
     },
     {
-      "name": "Envelope",
+      "name": "Envelope enable",
       "min": 0,
       "max": 1,
-      "default": 0,
-      "description": "Enables an ADSR volume envelope. If disabled, the sample plays once until the end.",
-      "type": "enum"
+      "default": 0
     },
     {
       "name": "Attack",
       "min": 0,
       "max": 127,
       "default": 0,
-      "description": "Sets the envelope attack time (from 1ms to 15s, exponential response).",
-      "type": "enum"
+      "description": "Sets envelope attack time (1ms to 15s, exponential)."
     },
     {
       "name": "Decay",
       "min": 0,
       "max": 127,
       "default": 60,
-      "description": "Sets the envelope decay time (from 20ms to 15s, exponential response).",
-      "type": "enum"
+      "description": "Sets envelope decay time (20ms to 15s, exponential)."
     },
     {
       "name": "Sustain level",
       "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the envelope sustain level.",
-      "type": "enum"
+      "max": 100.0,
+      "default": 100.0
     },
     {
       "name": "Release",
       "min": 0,
       "max": 127,
       "default": 77,
-      "description": "Sets the envelope release time (from 10ms to 30s, exponential response).",
-      "type": "enum"
+      "description": "Sets envelope release time (10ms to 30s, exponential)."
     },
     {
       "name": "Velocity sensitivity",
       "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the amount by which note velocity affects note volume.",
-      "type": "enum"
+      "max": 100.0,
+      "default": 100.0
     },
     {
       "name": "Pressure to volume",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "The amount by which pressure (per note for MPE) affects the note volume.",
-      "type": "enum"
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0
     },
     {
       "name": "MPE Y to volume",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "The amount by which the MPE Y dimension affects the note volume.",
-      "type": "enum"
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0
     },
     {
       "name": "Left/mono output bus",
       "min": 1,
       "max": 28,
-      "default": 13,
-      "description": "The left or mono output bus.",
-      "type": "enum"
+      "default": 13
     },
     {
       "name": "Right output bus",
       "min": 0,
       "max": 28,
-      "default": 0,
-      "description": "The right output bus.",
-      "type": "enum"
+      "default": 0
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
-      "default": 1,
-      "description": "The MIDI channel to listen on.",
-      "type": "enum"
+      "default": 1
     },
     {
       "name": "MPE channels",
       "min": 1,
       "max": 16,
-      "default": 1,
-      "description": "Controls how the algorithm will respond to MPE (e.g., number of simultaneous MPE voices). See 'Common polysynth features'.",
-      "type": "enum"
+      "default": 1
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
-      "default": 1,
-      "description": "Sets the I2C channel for communication.",
-      "type": "enum"
+      "default": 1
     }
   ],
   "input_ports": [
     {
-      "name": "CV/gate pitch",
-      "description": "Accepts CV or gate signals to trigger notes and control pitch."
+      "name": "CV pitch input",
+      "description": "Pitch control via CV (shared with standard polysynth CV/gate parameters)"
+    },
+    {
+      "name": "Gate input",
+      "description": "Trigger input for note events"
+    },
+    {
+      "name": "Pressure input",
+      "description": "Per-note pressure control for MPE"
     },
     {
       "name": "MIDI input",
-      "description": "Receives MIDI note events for triggering playback."
+      "description": "Standard MIDI note and control messages"
     },
     {
-      "name": "I2C input",
-      "description": "Listens on the specified I2C channel for note triggering and control data."
+      "name": "I2C data input",
+      "description": "I2C communication interface"
     }
   ],
   "output_ports": [
     {
-      "name": "Left/mono output bus",
-      "description": "Outputs audio to the left or mono bus, controlled by the 'Left/mono output' parameter."
+      "name": "Audio left output",
+      "description": "Left channel audio output (bus 13 by default)"
     },
     {
-      "name": "Right output bus",
-      "description": "Outputs audio to the right bus, controlled by the 'Right output' parameter."
+      "name": "Audio right output",
+      "description": "Right channel audio output (bus 0 by default)"
     }
   ]
 }

@@ -3,131 +3,233 @@
   "name": "MIDI Triggers",
   "description": "This algorithm generates gates and triggers from MIDI or I2C note messages.",
   "categories": [
-    "utility",
-    "MIDI",
-    "triggers"
+    "MIDI Processing",
+    "Trigger Generation",
+    "I2C Interface",
+    "Modular Synthesis"
   ],
   "short_description": "Generates triggers from MIDI/I2C",
+  "use_cases": [
+    "MIDI-to-CV conversion",
+    "Sequencing control signals",
+    "Gate/trigger generation for modular synths",
+    "I2C-based event triggering"
+  ],
+  "gui_description": "Per-channel parameter interface with controls for trigger/gate settings, MIDI/I2C configuration, and output routing.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "description": "The number of triggers to generate (1-12).",
+      "min": 1,
+      "max": 12
+    }
+  ],
   "parameters": [
     {
       "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
       "type": "toggle",
-      "channelCountRef": "MIDI Triggers Channels"
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
+      "enum_values": [
+        "Trigger (Note On)",
+        "Gate (Note On/Off)"
+      ],
       "type": "enum",
-      "channelCountRef": "MIDI Triggers Channels",
-      "isPerChannel": true
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Length",
       "min": 1,
       "max": 100,
       "default": 10,
-      "scope": "per-channel",
       "type": "scaled",
-      "channelCountRef": "MIDI Triggers Channels",
-      "isPerChannel": true
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Length_unit",
+      "description": "The length of the trigger pulse.",
+      "enum_values": [
+        "ms"
+      ],
+      "type": "string",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Level",
       "min": -10.0,
       "max": 10.0,
       "default": 5.0,
-      "scope": "per-channel",
       "type": "scaled",
-      "channelCountRef": "MIDI Triggers Channels",
-      "isPerChannel": true
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Level_unit",
+      "description": "The magnitude of the trigger/gate.",
+      "enum_values": [
+        "V"
+      ],
+      "type": "string",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Velocity",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
+      "enum_values": [
+        "Off",
+        "On"
+      ],
       "type": "toggle",
-      "channelCountRef": "MIDI Triggers Channels"
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Min level",
+      "name": "Min_level",
       "min": -10.0,
       "max": 10.0,
       "default": 1.0,
-      "scope": "per-channel",
       "type": "scaled",
-      "channelCountRef": "MIDI Triggers Channels"
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "MIDI channel",
+      "name": "Min_level_unit",
+      "description": "If applying velocity scaling, the voltage corresponding to minimum velocity.",
+      "enum_values": [
+        "V"
+      ],
+      "type": "string",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI_channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "scope": "per-channel",
-      "type": "scaled",
-      "channelCountRef": "MIDI Triggers Channels"
+      "enum_values": [
+        "Off (0)",
+        "Channel 1-16"
+      ],
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "I2C channel",
+      "name": "I2C_channel",
       "min": 0,
       "max": 255,
       "default": 0,
-      "scope": "per-channel",
-      "type": "scaled",
-      "channelCountRef": "MIDI Triggers Channels"
+      "enum_values": [
+        "Off (0)",
+        "Channel 1-255"
+      ],
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Note number",
+      "name": "Note_number",
       "min": -1,
       "max": 127,
       "default": -1,
-      "scope": "per-channel",
-      "type": "scaled",
-      "channelCountRef": "MIDI Triggers Channels"
+      "enum_values": [
+        "Any (-1)",
+        "Note Number (0-127)"
+      ],
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Output mode",
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
+      "enum_values": [
+        "Add (0)",
+        "Replace (1)"
+      ],
       "type": "enum",
-      "channelCountRef": "MIDI Triggers Channels"
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "ES-5 Expander",
+      "name": "ES-5_Expander",
       "min": 0,
       "max": 6,
       "default": 0,
-      "scope": "per-channel",
-      "type": "scaled",
-      "channelCountRef": "MIDI Triggers Channels"
-    }
-  ],
-  "input_ports": [],
-  "output_ports": [
-    {
-      "name": "Trigger/Gate Output (Bus)",
-      "description": "The output bus for generated triggers or gates, depending on the Mode setting."
+      "enum_values": [
+        "Bus (0)",
+        "ES-5 Expander (1)",
+        "Expander Slot 2 (2)",
+        "Expander Slot 3 (3)",
+        "Expander Slot 4 (4)",
+        "Expander Slot 5 (5)",
+        "Expander Slot 6 (6)"
+      ],
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "ES-5 Expander Outputs",
-      "description": "If using an ES-5 expander header, outputs can be routed to any of its 8 available channels (1-8)."
+      "name": "ES-5_Output",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "MIDI_In",
+      "description": "Input for MIDI note messages (Note On/Off)."
+    },
+    {
+      "name": "I2C_In",
+      "description": "Input for I2C-based note events."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Trigger/Gate_Out",
+      "description": "Outputs generated triggers or gates based on the selected mode. Can route to bus or ES-5 expander outputs."
+    },
+    {
+      "name": "ES-5_Expander_Out",
+      "description": "Direct output to an ES-5 expander module when enabled."
     },
     {
       "name": "Output",
-      "description": ""
-    },
-    {
-      "name": "ES-5 Output",
       "description": ""
     }
   ]

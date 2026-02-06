@@ -1,22 +1,34 @@
 {
   "guid": "maco",
   "name": "Macro Oscillator",
-  "description": "This algorithm is an implementation of the open source Braids module by Émilie Gillet for Mutable Instruments. This implementation should behave and sound identical to the original, with the caveat that the original module runs at 96kHz – for a totally accurate recreation, you would need to run the disting NT at 96kHz. Any demos or tutorials found online for Braids apply equally well to this version. The documentation assumes familiarity with the [original Braids user manual](https://pichenettes.github.io/mutable-instruments-documentation/modules/braids/manual/).\n\nThe original Braids has a separate mode in which FM CV controls the choice of synthesis model, but the disting NT does not require this since you can use Mappings to control the model parameter as desired.",
+  "description": "This algorithm is an implementation of the open source Braids Eurorack module by Émilie Gillet. This implementation should behave and sound identical to the original, with the caveat that the original module runs at 96kHz – for a totally accurate recreation, you would need to run the disting NT at 96kHz. Any demos or tutorials found online should apply just as well to this version. The documentation assumes some familiarity with the [original Braids manual](https://pichenettes.github.io/mutable-instruments-documentation/modules/braids/manual/).\n\nThe original Braids has a separate mode in which FM CV controls the choice of synthesis model, but the disting NT does not require this since Mappings can control the model parameter directly.",
   "categories": [
-    "synthesis",
-    "FM",
-    "utility",
-    "CV processing"
+    "Oscillator",
+    "FM Synthesis",
+    "Granular Synthesis",
+    "Modular Synth Emulation"
   ],
+  "short_description": "It's Braids!",
   "use_cases": [
-    "Recreating Eurorack Braids module sounds",
-    "FM synthesis with adjustable timbre and colour",
-    "Pitch modulation via MIDI or CV inputs",
-    "Triggered sound generation for sequencers",
-    "Adding VCO-like imperfections to signals",
-    "Modular audio signal processing"
+    "Eurorack-style modular synthesis",
+    "Complex FM and granular sound design",
+    "Pitch modulation and envelope shaping",
+    "Quantized and detuned oscillators",
+    "MIDI/I2C-controlled synthesis"
   ],
-  "gui_description": null,
+  "gui_description": "The interface mimics the original Braids module with knobs for Model, Timbre, Colour, AD envelopes (Attack, Decay, FM, Timbre, Colour, VCA), tuning controls (Coarse, Fine), quantizer settings (Scale, Root), and additional tweaks like Resolution, Sample rate, Trigger source/delay, Flatten, Drift, Signature, Gain. Inputs for Trigger, Pitch, FM, Timbre, and Colour are selectable via bus numbers.",
+  "specifications": [
+    {
+      "name": "Sample Rate",
+      "value": "96kHz (for full accuracy; lower rates may affect sound)",
+      "description": "The original Braids module operates at 96kHz. While this implementation works at other sample rates, running at 96kHz ensures identical behavior."
+    },
+    {
+      "name": "Polyphony",
+      "value": "Multi-voice (via MIDI/I2C triggering)",
+      "description": "Supports multiple voices when triggered via MIDI or I2C."
+    }
+  ],
   "parameters": [
     {
       "name": "Model",
@@ -46,36 +58,35 @@
       "min": 0,
       "max": 15,
       "default": 0,
-      "type": "scaled"
+      "description": "Sets the envelope attack time."
     },
     {
       "name": "AD Decay",
       "min": 0,
       "max": 15,
       "default": 5,
-      "type": "scaled"
+      "description": "Sets the envelope decay time."
     },
     {
       "name": "AD FM",
       "min": 0,
       "max": 15,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": true
+      "description": "Sets the amount by which the envelope affects the FM."
     },
     {
       "name": "AD Timbre",
       "min": 0,
       "max": 15,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": true
+      "description": "Sets the amount by which the envelope affects the timbre."
     },
     {
       "name": "AD Colour",
       "min": 0,
       "max": 15,
       "default": 0,
+      "scope": "per-channel",
       "type": "scaled",
       "is_per_channel": true,
       "is_bus": false
@@ -85,21 +96,24 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum"
+      "description": "Sets whether the envelope is applied to the volume of the output."
     },
     {
       "name": "Coarse",
       "min": -48,
       "max": 48,
       "default": 0,
+      "scope": "per-channel",
       "type": "scaled",
-      "is_per_channel": true
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
       "name": "Fine",
       "min": -100,
       "max": 100,
       "default": 0,
+      "scope": "per-channel",
       "type": "scaled",
       "is_per_channel": true,
       "is_bus": false
@@ -109,14 +123,14 @@
       "min": 0,
       "max": 48,
       "default": 0,
-      "type": "enum"
+      "description": "Sets the quantizer scale."
     },
     {
       "name": "Root",
       "min": 0,
       "max": 11,
       "default": 0,
-      "type": "enum"
+      "description": "Sets the quantizer root note."
     },
     {
       "name": "Resolution",
@@ -124,13 +138,15 @@
       "max": 6,
       "default": 6,
       "type": "enum",
-      "is_per_channel": true
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Sample rate",
       "min": 0,
       "max": 6,
       "default": 6,
+      "description": "Sets the sample rate decimation.",
       "type": "enum"
     },
     {
@@ -138,51 +154,50 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum"
+      "description": "Enables automatic triggering on pitch changes."
     },
     {
       "name": "Trigger delay",
       "min": 0,
       "max": 6,
       "default": 1,
-      "type": "scaled"
+      "type": "enum"
     },
     {
       "name": "Flatten",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true
+      "description": "Applies a detuning in the lower and higher frequencies, to recreate some of the tuning imperfections of VCOs."
     },
     {
       "name": "Drift",
       "min": 0,
       "max": 4,
       "default": 0,
-      "type": "scaled"
+      "description": "Recreates the drifting of a disastrously designed VCO."
     },
     {
       "name": "Signature",
       "min": 0,
       "max": 4,
       "default": 0,
-      "type": "enum"
+      "description": "Applies grungy glitches/waveform imperfections to the output signal. The exact behavior of this option is unique to each module built."
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 12,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": true
+      "description": "Sets an output gain.",
+      "type": "scaled"
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum"
+      "description": "The standard Add/Replace mode selector."
     },
     {
       "name": "MIDI mode",
@@ -190,7 +205,8 @@
       "max": 3,
       "default": 0,
       "type": "enum",
-      "is_per_channel": true
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "I2C mode",
@@ -204,62 +220,62 @@
       "min": 0,
       "max": 16,
       "default": 1,
-      "type": "enum"
+      "description": "The MIDI channel to receive on."
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
       "default": 1,
-      "type": "enum"
+      "description": "The I2C channel to receive on."
     }
   ],
   "input_ports": [
+    {
+      "name": "Trigger input",
+      "description": "CV trigger input (bus-selectable via Trigger input parameter)."
+    },
+    {
+      "name": "Pitch input",
+      "description": "CV pitch input (bus-selectable via Pitch input parameter)."
+    },
+    {
+      "name": "FM input",
+      "description": "CV FM modulation input (bus-selectable via FM input parameter)."
+    },
+    {
+      "name": "Timbre input",
+      "description": "CV timbre modulation input (bus-selectable via Timbre input parameter)."
+    },
+    {
+      "name": "Colour input",
+      "description": "CV colour modulation input (bus-selectable via Colour input parameter)."
+    },
     {
       "name": "Trigger input",
       "description": "Selects which bus is used as the trigger input."
     },
     {
       "name": "Pitch input",
-      "description": "Selects which bus is used as the pitch input (CV)."
+      "description": "Selects which bus is used as the pitch input."
     },
     {
       "name": "FM input",
-      "description": "Selects which bus is used as the FM modulation input."
+      "description": "Selects which bus is used as the FM input."
     },
     {
       "name": "Timbre input",
-      "description": "Selects which bus is used as the timbre modulation input."
+      "description": "Selects which bus is used as the timbre input."
     },
     {
       "name": "Colour input",
-      "description": "Selects which bus is used as the colour modulation input."
-    },
-    {
-      "name": "Trigger input",
-      "description": ""
-    },
-    {
-      "name": "Pitch input",
-      "description": ""
-    },
-    {
-      "name": "FM input",
-      "description": ""
-    },
-    {
-      "name": "Timbre input",
-      "description": ""
-    },
-    {
-      "name": "Colour input",
-      "description": ""
+      "description": "Selects which bus is used as the colour input."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The bus for the output signal (1-28)."
+      "description": "Main audio output signal (bus-selectable via Output parameter). Supports Add/Replace mode."
     },
     {
       "name": "Output",

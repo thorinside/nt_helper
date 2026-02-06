@@ -1,226 +1,45 @@
 {
   "guid": "fsvf",
   "name": "VCF (State Variable)",
-  "description": "This algorithm is a voltage controlled filter using the common ‘State Variable’ topology, which yields simultaneous low-, band-, and highpass filter responses. All three filter outputs are available individually, plus an output which can be blended from lowpass, through bandpass, to highpass.\n\nThe input and the various outputs use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the ‘Width’ parameter. For example, to filter stereo signals, set the Width to 2.",
+  "description": "This algorithm is a voltage controlled filter using the common ‘State Variable’ topology, which yields simultaneous low-, band-, and highpass filter responses.\n\nAll three filter outputs are available individually, plus an output which can be blended from lowpass, through bandpass, to highpass.\n\nThe input and the various outputs use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the ‘Width’ parameter. For example, to filter stereo signals, set the Width to 2.",
   "categories": [
-    "audio effects",
-    "filtering",
-    "utility"
+    "Filter",
+    "State Variable Filter",
+    "Voltage Controlled Filter (VCF)",
+    "Audio Processing"
   ],
-  "use_cases": [
-    "Stereo or multi-channel audio filtering",
-    "Manual frequency sweep with CV offset",
-    "Resonance control for tonal shaping",
-    "Internal saturation to prevent unwanted distortion",
-    "Individual lowpass, bandpass, and highpass output routing",
-    "Blended signal routing (lowpass to highpass)",
-    "MIDI note-based filter cutoff modulation"
-  ],
-  "gui_description": "The display simply shows the filter centre frequency in Hz and as a MIDI note number.",
-  "parameters": [
-    {
-      "name": "Blend",
-      "min": 0,
-      "max": 200,
-      "default": 0,
-      "description": "Sets the blend for the blended output."
-    },
-    {
-      "name": "Sweep",
-      "min": -36.0,
-      "max": 84.0,
-      "default": 0.0,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Sweep",
-      "min": -36.0,
-      "max": 84.0,
-      "default": 0.0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
-    },
-    {
-      "name": "Resonance",
-      "min": 0,
-      "max": 100,
-      "default": 20,
-      "description": "Sets the filter resonance."
-    },
-    {
-      "name": "Saturate",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "toggle",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Saturate",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
-    },
-    {
-      "name": "Blended_gain",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
-    },
-    {
-      "name": "Lowpass_gain",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
-    },
-    {
-      "name": "Bandpass_gain",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
-    },
-    {
-      "name": "Highpass_gain",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
-    },
-    {
-      "name": "Audio_input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Width",
-      "min": 1,
-      "max": 8,
-      "default": 1,
-      "description": "The number of busses to process."
-    },
-    {
-      "name": "Frequency_input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Resonance_input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Blended_output",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Lowpass_output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Bandpass_output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Highpass_output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "MIDI_channel",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "description": "Sets the MIDI channel on which to respond to note on events."
-    },
-    {
-      "name": "Keyboard_track",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_bus": false
-    }
-  ],
+  "short_description": "Second order LP/BP/HP filter",
+  "gui_description": "The display simply shows the filter centre frequency, in Hz and as a MIDI note number.",
   "input_ports": [
     {
-      "name": "Audio_input",
-      "description": "The audio input bus. Bus number is set by the Audio input parameter."
+      "name": "audio_input",
+      "description": "Audio input bus for processing"
     },
     {
-      "name": "Frequency_CV_input",
-      "description": "The frequency CV input bus (1V/octave). Bus number is set by the Frequency input parameter."
+      "name": "frequency_cv_input",
+      "description": "Frequency control voltage input (1V/octave)"
     },
     {
-      "name": "Resonance_CV_input",
-      "description": "The resonance CV input bus. Scaled such that 5V corresponds to the full range. Bus number is set by the Resonance input parameter."
+      "name": "resonance_cv_input",
+      "description": "Resonance control voltage input (5V corresponds to full range)"
     }
   ],
   "output_ports": [
     {
-      "name": "Blended_output",
-      "description": "The output bus for the blended signal, which can be blended from lowpass through bandpass to highpass. Bus number and add/replace mode are set by Blended output and Blended mode parameters."
+      "name": "blended_output",
+      "description": "Blended filter output (lowpass through highpass)"
     },
     {
-      "name": "Lowpass_output",
-      "description": "The output bus for the lowpass signal. Bus number and add/replace mode are set by Lowpass output and Lowpass mode parameters."
+      "name": "lowpass_output",
+      "description": "Lowpass filter output"
     },
     {
-      "name": "Bandpass_output",
-      "description": "The output bus for the bandpass signal. Bus number and add/replace mode are set by Bandpass output and Bandpass mode parameters."
+      "name": "bandpass_output",
+      "description": "Bandpass filter output"
     },
     {
-      "name": "Highpass_output",
-      "description": "The output bus for the highpass signal. Bus number and add/replace mode are set by Highpass output and Highpass mode parameters."
+      "name": "highpass_output",
+      "description": "Highpass filter output"
     }
   ]
 }

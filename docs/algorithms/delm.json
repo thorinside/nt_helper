@@ -1,25 +1,28 @@
 {
   "guid": "delm",
   "name": "Delay (Mono)",
-  "description": "A simple mono delay effect that allows the delay time to be set manually, via a clock pulse, or via MIDI clock. The delay time can also be modulated through its 'V/oct input', which halves the delay time for every 1V rise in CV and doubles it for every 1V fall in CV. The algorithm includes adjustable parameters for wet/dry mix, gain on delayed signal, feedback, delay multiplier, handling of time changes (slew or crossfade), fractional delay times, DC blocking, clock source selection, MIDI timing settings, input/output routing, and V/oct modulation.",
+  "description": "This algorithm is a simple mono delay effect. The delay time can be set manually, via a clock pulse, or via MIDI clock. It can also be modulated via its ‘V/oct input’, which halves the delay time for every 1V rise in CV (conversely, doubles it for every 1V fall in CV). The ‘Fractional’ parameter allows for delay times that are not integer multiples of the sample rate, slightly increasing CPU load but improving sound quality when modulated. Turning fractional off creates a clean digital delay with no coloration.",
   "categories": [
-    "audio effects",
-    "delay",
-    "clocking",
-    "MIDI",
-    "routing",
-    "CV processing"
+    "Delay",
+    "Modulation",
+    "Effects",
+    "Audio Processing"
   ],
+  "short_description": "A simple mono delay effect",
   "use_cases": [
-    "General mono audio delays",
-    "Chorus effects via CV modulation",
-    "Flange effects via CV modulation",
-    "Rhythm processing with clock sync",
-    "MIDI-controlled delay times",
-    "Clean digital delays (when Fractional is off)",
-    "Audio signal routing"
+    "General audio delays",
+    "Chorus effects",
+    "Flange effects",
+    "CV modulation processing",
+    "MIDI clock synchronization"
   ],
-  "gui_description": null,
+  "gui_description": "The interface includes controls for wet/dry mix, level adjustment, manual and modulated delay time settings, feedback, delay multiplier, fractional delay toggle, sync parameters (clock source, MIDI divisor/numerator), routing options (input/output buses, V/oct input selection), and a DC blocker switch.",
+  "specifications": [
+    {
+      "name": "Max delay time",
+      "value": "1-30 seconds"
+    }
+  ],
   "parameters": [
     {
       "name": "Mix",
@@ -80,9 +83,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Enables fractional delay times, improving modulation quality but increasing CPU load."
     },
     {
       "name": "Block DC",
@@ -98,9 +99,7 @@
       "min": 0,
       "max": 2,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Chooses the clock source: 'None', 'Clock input', or 'MIDI clock'."
     },
     {
       "name": "MIDI divisor",
@@ -119,42 +118,53 @@
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Standard Add/Replace mode selector."
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "The audio input bus for the delay effect."
+      "name": "Audio Input",
+      "description": "Main audio signal input for processing through the mono delay effect. Connected via 'Input' parameter."
+    },
+    {
+      "name": "Clock Input (optional)",
+      "description": "External clock pulse input to synchronize delay time changes, selected via 'Clock source' and 'Clock input' parameters."
+    },
+    {
+      "name": "V/oct CV Input",
+      "description": "CV modulation input for 1V/octave control of the delay time. Each +1V increases delay by a factor of two; each -1V halves it."
     },
     {
       "name": "Clock input",
-      "description": "The input bus used for clock synchronization if 'Clock source' is set to 'Clock input'."
-    },
-    {
-      "name": "V/oct input",
-      "description": "The input bus used for 1V/octave modulation of the delay time."
-    },
-    {
-      "name": "Clock input",
       "description": ""
     },
     {
       "name": "Input",
-      "description": ""
+      "description": "The audio input bus."
     },
     {
       "name": "V/oct input",
-      "description": ""
+      "description": "The input bus to use for 1V/octave modulation of the delay time."
     }
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "description": "The audio output bus for the delayed signal."
+      "name": "Audio Output",
+      "description": "Processed audio signal output, combining wet/dry mix according to 'Mix' and 'Level' parameters. Connected via 'Output' parameter."
+    },
+    {
+      "name": "MIDI Clock (optional)",
+      "description": "If using MIDI clock synchronization, the algorithm responds to MIDI clock signals for delay time modulation."
     },
     {
       "name": "Output",
-      "description": ""
+      "description": "The audio output bus."
     }
   ]
 }

@@ -1,22 +1,22 @@
 {
   "guid": "envq",
   "name": "Envelope (DAHDSR)",
-  "description": "This algorithm is based on the disting EX 'Quad Envelope' algorithm and is a complex (DAHDSR) envelope generator. Various trigger modes include gated, triggered (oneshot), looping, and clock-triggered options. The envelopes can be synced to clocks (analogue pulses or MIDI). It separates the concepts of an envelope shape (its attack times, sustain level, etc.) and the envelope generator itself, allowing shapes to be shared between multiple generators for efficient modulation control.",
+  "description": "This algorithm is based on the disting EX 'Quad Envelope' algorithm and serves as a complex DAHDSR envelope generator. It features various trigger modes including gated, triggered (oneshot), looping, and clock synchronization options using analogue pulses or MIDI. The envelopes separate shape definitions from generators, allowing shared shapes across multiple envelopes for efficient editing. For example, in polyphonic synths, four envelopes can share the same shape to change attack times uniformly across all voices.",
   "categories": [
-    "utility",
-    "CV processing",
-    "clocking",
-    "MIDI",
-    "triggers"
+    "Modulation",
+    "Envelope Generator",
+    "DAHDSR",
+    "Clock Synchronization",
+    "Polyphonic"
   ],
-  "short_description": "A versatile envelope generator",
+  "short_description": "A versatile envelope generator with shared shapes, clock sync, and multiple trigger modes.",
   "use_cases": [
-    "Polyphonic synth voice modulation with shared or individual shapes",
-    "Monophonic patch modulation using multiple envelopes with a common trigger",
-    "Analogue clock synchronization for rhythmic control",
-    "MIDI note-triggered envelopes"
+    "Polyphonic synth modulation",
+    "Modular synthesis patch design",
+    "MIDI-triggered effects",
+    "Clock-synchronized rhythmic envelopes"
   ],
-  "gui_description": "The display shows a graphical representation of the envelope(s). If editing shape parameters, the relevant section (e.g., attack) is highlighted across all shared shapes. Otherwise, the current envelope is shown with an overlaid horizontal line indicating output level and the active stage highlighted.",
+  "gui_description": "The GUI displays a graphical representation of the envelope(s). When editing shape parameters, the relevant section (e.g., attack) is highlighted across all shared envelopes. Otherwise, it shows the current envelope with an overlaid horizontal line indicating output level and highlights the active stage.",
   "specifications": [
     {
       "name": "Channels",
@@ -42,7 +42,6 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "scope": "per-channel",
       "type": "enum",
       "is_per_channel": true,
       "is_common": false,
@@ -53,7 +52,6 @@
       "min": 0,
       "max": 5,
       "default": 0,
-      "scope": "per-channel",
       "type": "enum",
       "is_per_channel": true,
       "is_common": false,
@@ -64,7 +62,6 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "scope": "per-channel",
       "type": "enum",
       "is_per_channel": true,
       "is_common": false,
@@ -75,7 +72,6 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
       "type": "enum",
       "is_per_channel": true,
       "is_common": false,
@@ -86,7 +82,6 @@
       "min": 0,
       "max": 19,
       "default": 4,
-      "scope": "per-channel",
       "type": "enum",
       "is_per_channel": true,
       "is_common": false,
@@ -97,7 +92,6 @@
       "min": -10.0,
       "max": 10.0,
       "default": 8.0,
-      "scope": "per-channel",
       "type": "folder",
       "is_per_channel": true,
       "is_common": false,
@@ -108,7 +102,6 @@
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "scope": "per-channel",
       "type": "folder",
       "is_per_channel": true,
       "is_common": false,
@@ -119,7 +112,6 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "scope": "per-channel",
       "type": "folder",
       "is_per_channel": true,
       "is_common": false,
@@ -130,8 +122,67 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "per-channel",
       "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "End of cycle mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Active mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Note number",
+      "min": -1,
+      "max": 127,
+      "default": -1,
+      "type": "enum",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -141,10 +192,9 @@
       "min": 0,
       "max": 1000,
       "default": 0,
-      "scope": "per-channel",
       "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -152,10 +202,9 @@
       "min": 0,
       "max": 1000,
       "default": 500,
-      "scope": "per-channel",
       "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -163,10 +212,9 @@
       "min": 0,
       "max": 1000,
       "default": 0,
-      "scope": "per-channel",
       "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -174,10 +222,9 @@
       "min": 0,
       "max": 1000,
       "default": 500,
-      "scope": "per-channel",
       "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -185,10 +232,9 @@
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "scope": "per-channel",
       "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -196,10 +242,9 @@
       "min": 0,
       "max": 1000,
       "default": 500,
-      "scope": "per-channel",
       "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -207,10 +252,9 @@
       "min": 0,
       "max": 127,
       "default": 64,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -218,10 +262,9 @@
       "min": 0,
       "max": 127,
       "default": 64,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -229,35 +272,55 @@
       "min": 0,
       "max": 4,
       "default": 2,
-      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
+      "is_common": true,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Trigger input",
-      "description": "The bus to use for the envelope’s trigger input (0-28)."
+      "description": "Bus used for the envelope's trigger input."
     },
     {
       "name": "Clock input",
-      "description": "The bus to use for the envelope’s clock input (0-28)."
+      "description": "Bus used for the envelope's clock input."
+    },
+    {
+      "name": "Trigger input",
+      "description": ""
+    },
+    {
+      "name": "Clock input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The bus used for the envelope’s output (0-28, default: 15)."
+      "description": "Bus used for the envelope's output."
     },
     {
       "name": "End of cycle output",
-      "description": "The bus to use for a 5V trigger when the envelope becomes idle."
+      "description": "Outputs a 5V trigger when the envelope becomes idle.",
+      "busIdRef": "End of cycle output"
     },
     {
       "name": "Active output",
-      "description": "The bus used for a 5V signal while the envelope is active (not idle)."
+      "description": "Outputs 5V while the envelope is not idle."
+    },
+    {
+      "name": "Output",
+      "description": ""
+    },
+    {
+      "name": "End of cycle output",
+      "description": ""
+    },
+    {
+      "name": "Active output",
+      "description": ""
     }
   ]
 }

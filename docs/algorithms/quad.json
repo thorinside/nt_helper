@@ -1,24 +1,25 @@
 {
   "guid": "quad",
   "name": "Quadraphonic Mixer",
-  "description": "This algorithm is based on the disting EX algorithm of the same name. It is a quadraphonic mixer – that is, it has four outputs for four speakers, rather than the usual two for a stereo mixer. If you need a primer on quadraphonic audio, Wikipedia has a page here: https://en.wikipedia.org/wiki/Quadraphonic_sound [98]. The algorithm provides two means to perform that classic quadraphonic trick, spinning the audio around the audience. Each channel has a Spinner and an Orbiter. By default, each channel uses its own, but you can set it up to share spinners and orbiters between channels. The spinner internally modulates the Angle parameter; it only works if the channel is using polar coordinates. Therefore it spins the position around the centre. The orbiter is what was called the spinner in the disting EX version. It spins the audio position around the nominal position set by the coordinates; it therefore works in both polar and rectangular coordinate modes.",
+  "description": "This algorithm is based on the disting EX quadraphonic mixer. It functions as a quadraphonic mixer with four outputs for four speakers (front left, front right, rear left, and rear right) instead of the usual two for stereo mixers. The algorithm includes features like spinners and orbiters to manipulate audio positioning in 3D space, allowing users to rotate audio around the audience. It supports both rectangular and polar coordinate systems for channel positioning.",
   "categories": [
-    "mixing",
-    "audio effects",
-    "utility"
+    "Audio",
+    "Mixer",
+    "Spatial Audio",
+    "Quadraphonic"
   ],
-  "short_description": "A quadraphonic mixer",
+  "short_description": "A quadraphonic mixer with four speaker outputs, supporting spatial audio manipulation via spinners and orbiters.",
   "use_cases": [
-    "Quadraphonic sound mixing for four-speaker setups",
-    "Spatial audio positioning and manipulation",
-    "Shared spinner/orbiter effects between channels",
-    "Bass/treble tone control for front or rear speakers"
+    "Quadraphonic sound mixing for surround sound setups",
+    "3D audio positioning in immersive environments",
+    "Spatial effects and dynamic audio panning"
   ],
-  "gui_description": "When on the common parameters page, the GUI shows a mixer view similar to that of the Mixer Stereo algorithm but with four outputs. When viewing per-channel parameters, a graphical representation of the channel's position in the quadraphonic field is displayed.",
+  "gui_description": "The GUI displays a mixer view with four outputs when on the common parameters page. Per-channel views show graphical representations of channel positions within the quadraphonic field, including rectangular or polar coordinate visualizations.",
   "specifications": [
     {
       "name": "Channels",
-      "description": "The number of mixer channels supported by this algorithm ranges from 1 to 12."
+      "min": 1,
+      "max": 12
     }
   ],
   "parameters": [
@@ -27,252 +28,171 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "common",
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
       "type": "enum",
-      "is_per_channel": false,
       "is_common": true,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Overall gain",
       "min": -70.0,
       "max": -12.0,
       "default": 0.0,
-      "scope": "common",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "type": "file",
+      "is_bus": true
     },
     {
       "name": "Front gain",
       "min": -70.0,
       "max": -12.0,
       "default": 0.0,
-      "scope": "common",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "type": "file",
+      "is_bus": true
     },
     {
       "name": "Rear gain",
       "min": -70.0,
       "max": -12.0,
       "default": 0.0,
-      "scope": "common",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "type": "file",
+      "is_bus": true
     },
     {
       "name": "Front bass",
       "min": -24.0,
       "max": 24.0,
       "default": 0.0,
-      "scope": "common",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "type": "file",
+      "is_bus": true
     },
     {
       "name": "Front treble",
       "min": -24.0,
       "max": 24.0,
       "default": 0.0,
-      "scope": "common",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "type": "file",
+      "is_bus": true
     },
     {
       "name": "Rear bass",
       "min": -24.0,
       "max": 24.0,
       "default": 0.0,
-      "scope": "common",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "type": "file",
+      "is_bus": true
     },
     {
       "name": "Rear treble",
       "min": -24.0,
       "max": 24.0,
       "default": 0.0,
-      "scope": "common",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "type": "file",
+      "is_bus": true
     },
     {
       "name": "Gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "type": "file"
     },
     {
       "name": "Coordinates",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
+      "enum_values": [
+        "Rectangular",
+        "Polar"
+      ],
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "X",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "If using Rectangular coordinates, the channel’s X position, from left (-100%) to right (100%)."
     },
     {
       "name": "Y",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "If using Rectangular coordinates, the channel’s Y position, from rear (-100%) to front (100%)."
     },
     {
       "name": "Angle",
       "min": -180.0,
       "max": 180.0,
       "default": 0.0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "If using Polar coordinates, the channel’s angle, where 0 is front center and ±180 is rear center."
     },
     {
       "name": "Radius",
       "min": 0,
       "max": 100,
       "default": 0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "If using Polar coordinates, the channel’s radius, where 0% is center and 100% is maximum distance from center."
     },
     {
       "name": "Spinner",
       "min": 1,
-      "max": null,
-      "default": null,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Spin rate",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The rate of spin to apply."
     },
     {
       "name": "Orbiter",
       "min": 1,
-      "max": null,
-      "default": null,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
       "name": "Orbit rate",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The rate of the orbiter."
     },
     {
       "name": "Orbit radius",
       "min": 0,
       "max": 100,
       "default": 0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "type": "file"
     },
     {
       "name": "Orbit phase",
-      "min": -180,
-      "max": 180,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "min": -180.0,
+      "max": 180.0,
+      "default": 0.0,
+      "description": "Sets the phase angle to add to the orbiter. Different inputs with the same orbiter but different phases follow each other around the circle at a fixed offset."
     },
     {
       "name": "Mute",
       "min": 0,
       "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "default": 0
     },
     {
       "name": "Solo",
       "min": 0,
       "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "default": 0
     },
     {
       "name": "Name",
-      "min": null,
-      "max": null,
-      "default": null,
-      "scope": "per-channel",
       "type": "string",
       "is_per_channel": true,
-      "is_common": false,
       "is_bus": false
     },
     {
@@ -280,39 +200,37 @@
       "min": -24.0,
       "max": 24.0,
       "default": 0.0,
-      "scope": "per-channel",
-      "type": "folder",
+      "type": "file",
       "is_per_channel": true,
-      "is_common": false,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "The channel’s input bus, ranging from 0 to 28."
+      "description": "The channel’s input bus."
     },
     {
       "name": "Input",
-      "description": ""
+      "description": "The channel’s input bus."
     }
   ],
   "output_ports": [
     {
       "name": "Front left output",
-      "description": "Bus for the front left speaker output (1-28)."
+      "description": "Output for the front left speaker."
     },
     {
       "name": "Front right output",
-      "description": "Bus for the front right speaker output (1-28)."
+      "description": "Output for the front right speaker."
     },
     {
       "name": "Rear left output",
-      "description": "Bus for the rear left speaker output (1-28)."
+      "description": "Output for the rear left speaker."
     },
     {
       "name": "Rear right output",
-      "description": "Bus for the rear right speaker output (1-28)."
+      "description": "Output for the rear right speaker."
     },
     {
       "name": "Front left output",

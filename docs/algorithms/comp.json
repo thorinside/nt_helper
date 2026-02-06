@@ -1,27 +1,24 @@
 {
   "guid": "comp",
   "name": "Compressor",
-  "description": "This algorithm is a multi-channel compressor where each channel operates independently. It provides convenience for processing multiple bus channels (1-12) without needing to add separate copies of the algorithm. A sidechain input is available, allowing compression of one signal based on the envelope of another. The algorithm functions strictly as an insert effect, meaning its output replaces the input.",
+  "description": "This algorithm is a multi-channel compressor. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you want a compressor on all 12 module inputs, you don’t need to add 12 copies of the algorithm to do so.\n\nA sidechain input is available, to compress one signal according to the envelope of another.\n\nThe algorithm always works as an insert effect i.e. the output replaces the input.",
   "categories": [
-    "audio effects",
-    "dynamics",
-    "utility"
+    "Dynamics",
+    "Audio Effects",
+    "Signal Processing"
   ],
   "short_description": "A simple compressor",
   "use_cases": [
-    "Compressing multiple module inputs simultaneously (1-12 channels)",
-    "Sidechain compression for ducking effects or creative processing",
-    "Gain reduction to control dynamic range in a mix"
+    "Multi-channel audio compression",
+    "Sidechain compression",
+    "Dynamic range control in modular synths",
+    "Insert effect processing"
   ],
-  "gui_description": "The display features a right-to-left signal level graph with superimposed gain reduction. To the right of this graph, there is a bar representing the current gain reduction applied.",
+  "gui_description": "The display shows a graph of the signal level (travelling from right to left). Superimposed on this is the gain reduction amount. To the right of the graph, the bar represents the gain reduction currently being applied.",
   "specifications": [
     {
       "name": "Channels",
-      "description": "Handles 1-12 bus channels for processing."
-    },
-    {
-      "name": "Latency",
-      "description": "Lookahead time introduces audio delay equal to the lookahead setting."
+      "description": "The number of bus channels to process, ranging from 1-12."
     }
   ],
   "parameters": [
@@ -124,30 +121,52 @@
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
+    },
+    {
+      "name": "Reduction mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
       "name": "Left/mono input",
-      "description": "The left or mono input bus (1-28)."
+      "description": "The left or mono input bus for the compressor channel."
     },
     {
       "name": "Right input",
-      "description": "The right input bus for stereo mode, if applicable (0-28). 0 indicates no connection."
+      "description": "The right input bus, if stereo."
     },
     {
       "name": "Sidechain input",
-      "description": "The sidechain input bus used to drive compression based on another signal's envelope (0-28)."
+      "description": "The sidechain input bus to control compression via another signal's envelope."
+    },
+    {
+      "name": "Left/mono input",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "description": ""
+    },
+    {
+      "name": "Sidechain input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Reduction output",
-      "description": "Bus receiving scaled gain reduction values, where 1V equals 6dB of reduction."
+      "description": "Bus for gain reduction output, scaled as 1V per 6dB of gain reduction."
     },
     {
-      "name": "Main output",
-      "description": "The processed audio signal after compression and sidechain mixing."
+      "name": "Reduction output",
+      "description": ""
     }
   ]
 }

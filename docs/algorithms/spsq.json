@@ -1,562 +1,71 @@
 {
   "guid": "spsq",
   "name": "Step Sequencer",
-  "description": "A simple note sequencer based on the sequencers in the Expert Sleepers FH-2 module. It can output CVs and/or MIDI with each of its 16 steps featuring pitch, velocity, modulation, and division settings (repeat or ratchet counts). Each substep (repeat or ratchet) can be toggled on/off via the Pattern parameter, while ties are controlled by the Ties parameter. A tie sustains a note until just after the next step begins, creating legato playback for MIDI or gliding gates with pitch CVs when tied. The sequencer supports randomization of pitches, rhythm, or both and includes internal storage for 32 sequences, usable as snapshots or patterns to build songs. Every parameter is mappable, allowing modulation via LFOs or other sources. For scale/key constraints, pair this with a Quantizer.",
+  "description": "A simple note sequencer based on the sequencers in the Expert Sleepers FH-2 module. It can output CV and/or MIDI with each of its 16 steps featuring pitch, velocity, modulation values, division (repeat/ratchet count), pattern (substep activation), and ties for legato playback or gliding CV outputs. The algorithm supports randomization of pitches, rhythm, or both across 32 stored sequences, which can be switched manually or via CV control. Parameters are mappable, enabling complex modulation patterns like LFO-driven pitch evolution.",
   "categories": [
-    "sequencing",
-    "randomization",
+    "Sequencer",
     "MIDI",
-    "clocking",
-    "CV processing"
+    "CV",
+    "Pattern Generation",
+    "Modulation"
   ],
+  "short_description": "A simple note sequencer",
   "use_cases": [
-    "Generating rhythmic and melodic patterns for modular synthesizers",
-    "Creating evolving sequences via LFO modulation of step parameters",
-    "Building songs by switching between stored sequences (manually or under CV control)",
-    "Legato note playback in MIDI setups",
-    "Gliding pitch CVs with tied notes",
-    "Randomizing pitches, rhythms, or both for experimental music production"
+    "Generating rhythmic and melodic patterns for live performance or composition",
+    "Creating evolving sequences with LFO modulation of step parameters",
+    "Building layered sequences by chaining multiple stored patterns",
+    "Randomizing pitches, rhythms, or both for procedural music generation",
+    "Sequencing sequences via CV control for modular synth integration"
   ],
-  "gui_description": "The GUI displays an overview of the 16-step sequencer. Pitches are shown across the top, with the current step highlighted and start/end steps marked by solid bars. Edited parameters are visually emphasized, while divisions (repeats/ratchets), patterns, and ties appear graphically as stacks of blocks or longer bars. Pitch, velocity, and modulation values are displayed via thin lines to the left when applicable.",
-  "parameters": [
+  "gui_description": "The GUI displays an overview of the 16 steps with pitch values across the top. The current step is highlighted, and start/end steps are marked by solid bars. Edited parameters are visually emphasized, while divisions (repeats/ratchets) and ties are shown graphically as blocks or longer bars. Pitches, velocities, and modulation values for each step are displayed via thin lines to the left.",
+  "specifications": [
     {
-      "name": "Sequence",
-      "min": 1,
-      "max": 32,
-      "default": 1,
-      "scope": "sequencer",
-      "type": "enum",
-      "is_per_channel": false
+      "name": "Polyphony",
+      "description": "Unlimited (MIDI output only)"
     },
     {
-      "name": "Start",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "End",
-      "min": 1,
-      "max": 16,
-      "default": 16,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "Direction",
-      "min": 0,
-      "max": 6,
-      "default": 0,
-      "scope": "sequencer",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true
-    },
-    {
-      "name": "Permutation",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "Gate type",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
-      "scope": "sequencer",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true
-    },
-    {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "scope": "sequencer",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true
-    },
-    {
-      "name": "Glide",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "scope": "sequencer",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true
-    },
-    {
-      "name": "Next sequence",
-      "min": 0,
-      "max": 32,
-      "default": 0,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "Reset sequence",
-      "min": 0,
-      "max": 32,
-      "default": 0,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "Pitch",
-      "min": 0,
-      "max": 127,
-      "default": 48,
-      "scope": "step",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Division",
-      "min": 0,
-      "max": 14,
-      "default": 7,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Pattern",
-      "min": 0,
-      "max": 255,
-      "default": 0,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Ties",
-      "min": 0,
-      "max": 255,
-      "default": 0,
-      "scope": "step",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Velocity",
-      "min": 1,
-      "max": 127,
-      "default": 64,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Mod",
-      "min": -10.0,
-      "max": 10.0,
-      "default": 0.0,
-      "scope": "step",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Mute",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "step",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Skip",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "step",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Reset",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "step",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Repeat",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "step",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Randomise",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Randomise what",
-      "min": 0,
-      "max": 3,
-      "default": 3,
-      "scope": "randomise",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Note distribution",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Min note",
-      "min": 0,
-      "max": 127,
-      "default": 36,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Max note",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Mean note",
-      "min": 0,
-      "max": 127,
-      "default": 48,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Note deviation",
-      "min": 0,
-      "max": 127,
-      "default": 12,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Min repeat",
-      "min": 2,
-      "max": 8,
-      "default": 2,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Max repeat",
-      "min": 2,
-      "max": 8,
-      "default": 8,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Min ratchet",
-      "min": 2,
-      "max": 8,
-      "default": 2,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Max ratchet",
-      "min": 2,
-      "max": 8,
-      "default": 8,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Note probability",
-      "min": 0,
-      "max": 100,
-      "default": 50,
-      "scope": "randomise",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Tie probability",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Accent probability",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Repeat probability",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Ratchet probability",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Unaccented velocity",
-      "min": 1,
-      "max": 127,
-      "default": 1,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Reset mode",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "scope": "routing",
-      "type": "enum"
-    },
-    {
-      "name": "Pitch output mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "scope": "routing",
-      "type": "enum"
-    },
-    {
-      "name": "Gate output mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "scope": "routing",
-      "type": "enum"
-    },
-    {
-      "name": "Velocity output mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "scope": "routing",
-      "type": "enum"
-    },
-    {
-      "name": "Mod output mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "scope": "routing",
-      "type": "enum"
-    },
-    {
-      "name": "Step output mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "scope": "routing",
-      "type": "enum"
-    },
-    {
-      "name": "Sequence change mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "routing",
-      "type": "enum"
-    },
-    {
-      "name": "Follow MIDI clock",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Divisor",
-      "min": 0,
-      "max": 19,
-      "default": 4,
-      "scope": "mix",
-      "type": "enum"
-    },
-    {
-      "name": "MIDI channel (out)",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "scope": "mix",
-      "type": "enum"
-    },
-    {
-      "name": "Output to breakout",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum"
-    },
-    {
-      "name": "Output to Select Bus",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum"
-    },
-    {
-      "name": "Output to USB",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum"
-    },
-    {
-      "name": "Output to internal",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum"
-    },
-    {
-      "name": "Mod CC",
-      "min": 0,
-      "max": 127,
-      "default": 1,
-      "scope": "mix",
-      "type": "enum"
-    },
-    {
-      "name": "MIDI channel (in)",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum"
-    },
-    {
-      "name": "Record velocity",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum"
+      "name": "Stored Sequences",
+      "value": 32
     }
   ],
   "input_ports": [
     {
-      "name": "Clock input",
-      "description": "Bus used as the clock input for triggering sequencer steps."
+      "name": "Clock Input",
+      "description": "Bus used as the clock input for triggering steps."
     },
     {
-      "name": "Reset input",
-      "description": "Bus used to trigger a reset of the sequencer, or act as run/stop signal depending on Reset mode setting."
+      "name": "Reset Input",
+      "description": "Bus used to reset the sequencer or trigger run/stop actions, depending on Reset mode setting."
     },
     {
-      "name": "Sequence trigger input",
-      "description": "Trigger bus for selecting sequences when paired with Sequence CV input (if applicable)."
+      "name": "Sequence CV Input",
+      "description": "CV input scaled such that a semitone (1/12th of a Volt) corresponds to one sequence increment. Used for switching sequences via CV control."
     },
     {
-      "name": "MIDI channel (in)",
-      "description": "Input MIDI channel used to program step pitches via MIDI notes."
-    },
-    {
-      "name": "Clock input",
-      "description": ""
-    },
-    {
-      "name": "Reset input",
-      "description": ""
-    },
-    {
-      "name": "Sequence CV input",
-      "description": ""
-    },
-    {
-      "name": "Sequence trigger input",
-      "description": ""
+      "name": "Sequence Trigger Input",
+      "description": "Trigger input used in conjunction with Sequence CV Input to change sequences on trigger events."
     }
   ],
   "output_ports": [
     {
-      "name": "Pitch output",
-      "description": "Bus for pitch CV output, representing the current step's pitch value."
+      "name": "Pitch Output",
+      "description": "CV output for step pitch values, scaled as MIDI note numbers (0-127)."
     },
     {
-      "name": "Gate output",
-      "description": "Bus for gate CV output, controlling note duration based on Gate type and length settings."
+      "name": "Gate Output",
+      "description": "CV gate signal indicating when a step is active. Length determined by Gate type and length settings."
     },
     {
-      "name": "Velocity output",
-      "description": "Bus for velocity CV output, representing the current step's velocity value."
+      "name": "Velocity Output",
+      "description": "CV output for step velocity values (1-127)."
     },
     {
-      "name": "Mod output",
-      "description": "Bus for modulation CV output, representing the current step's modulation value."
+      "name": "Modulation Output",
+      "description": "CV output for step modulation values (-10.0 to 10.0 Volts)."
     },
     {
-      "name": "Step output",
-      "description": "Bus for step CV output, indicating the current sequencer step number (scaled as 1/12th of a Volt per step)."
-    },
-    {
-      "name": "Pitch output",
-      "description": ""
-    },
-    {
-      "name": "Gate output",
-      "description": ""
-    },
-    {
-      "name": "Velocity output",
-      "description": ""
-    },
-    {
-      "name": "Mod output",
-      "description": ""
-    },
-    {
-      "name": "Step output",
-      "description": ""
+      "name": "Step Output",
+      "description": "CV output representing the current sequencer step number, scaled as 1/12th of a Volt per step."
     }
   ]
 }

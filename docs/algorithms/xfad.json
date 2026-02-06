@@ -1,26 +1,30 @@
 {
   "guid": "xfad",
   "name": "Crossfader",
-  "description": "This algorithm crossfades between two sets of signals (from mono up to two sets of eight channels). Three different crossfade curves are available: Equal gain - appropriate for crossfading phase-coherent material; Equal power - appropriate for crossfading non-phase-coherent material; Transition - DJ-style crossfade where both sources are at full gain at the 50% position. Inputs A & B, and the output, use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the 'Width' parameter. For example, to crossfade stereo signals, set the Width to 2. The crossfade can be controlled by both a parameter and a CV, which are simply summed if both are in use.",
+  "description": "This algorithm crossfades between two or more sets of signals (from mono up to sets of eight channels). When crossfading between more than two sets of signals, it behaves like a ‘scanning’ or ‘morphing’ mixer. Three different crossfade curves are available: **Equal gain** - appropriate for phase-coherent material; **Equal power** - suitable for non-phase-coherent material; and **Transition** - DJ-style crossfade where both sources are at full gain at the 50% position. Inputs A to L, and the output, use a contiguous range of busses starting with the one set via parameters, with channel count determined by the ‘Width’ parameter.",
   "categories": [
-    "utility",
-    "mixing"
+    "Audio",
+    "Mixer",
+    "Crossfader",
+    "Signal Processing"
   ],
   "short_description": "Crossfades signals",
   "use_cases": [
-    "DJ crossfading between tracks",
-    "Phase-coherent signal blending (e.g., synths, effects)",
-    "Non-phase-coherent audio mixing (e.g., drums, vocals)",
-    "Multi-channel audio routing and transitioning"
+    "DJ crossfading",
+    "Phase-coherent signal blending (Equal gain)",
+    "Non-phase-coherent signal blending (Equal power)",
+    "Multi-channel scanning/morphing mixer",
+    "Audio routing and mixing"
   ],
-  "gui_description": "The display shows a graphical representation of the crossfade curves and the amount of the two signals that are combined in the output mix.",
+  "gui_description": "The display shows a graphical representation of the crossfade curves, illustrating the amount of each input signal in the output mix.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Crossfader",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "type": "scaled",
+      "type": "enum",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -29,11 +33,7 @@
       "min": 0,
       "max": 2,
       "default": 1,
-      "enum_values": [
-        "Equal gain (phase-coherent material)",
-        "Equal power (non-phase-coherent material)",
-        "Transition (DJ-style crossfade)"
-      ],
+      "description": "The crossfade curve type: 0 = Equal gain, 1 = Equal power, 2 = Transition (DJ-style).",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -43,52 +43,127 @@
       "min": 1,
       "max": 28,
       "default": 1,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
+      "description": "The first bus for input A.",
+      "type": "bus"
     },
     {
       "name": "Input B",
       "min": 1,
       "max": 28,
       "default": 2,
-      "type": "bus",
-      "is_per_channel": false,
-      "is_bus": true
+      "description": "The first bus for input B.",
+      "type": "bus"
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
+      "description": "Standard Add/Replace mode selector: 0 = Replace, 1 = Add.",
       "enum_values": [
-        "Add (mixes signals)",
-        "Replace (output replaces inputs)"
+        "Replace",
+        "Add"
       ],
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "enum"
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, defining the channel count for inputs and output.",
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": true
+      "description": "The number of busses to process. For example, set this to 2 for stereo signals.",
+      "type": "bus"
+    },
+    {
+      "name": "Number of inputs",
+      "min": 2,
+      "max": 12,
+      "default": 2,
+      "description": "The number of inputs to use (from 2 up to 12).",
+      "type": "enum"
+    },
+    {
+      "name": "Input C",
+      "min": 1,
+      "max": 28,
+      "default": 3,
+      "description": "The first bus for input C.",
+      "type": "bus"
+    },
+    {
+      "name": "Input D",
+      "min": 1,
+      "max": 28,
+      "default": 4,
+      "description": "The first bus for input D.",
+      "type": "bus"
+    },
+    {
+      "name": "Input E",
+      "min": 1,
+      "max": 28,
+      "default": 5,
+      "description": "The first bus for input E.",
+      "type": "bus"
+    },
+    {
+      "name": "Input F",
+      "min": 1,
+      "max": 28,
+      "default": 6,
+      "description": "The first bus for input F.",
+      "type": "bus"
+    },
+    {
+      "name": "Input G",
+      "min": 1,
+      "max": 28,
+      "default": 7,
+      "description": "The first bus for input G.",
+      "type": "bus"
+    },
+    {
+      "name": "Input H",
+      "min": 1,
+      "max": 28,
+      "default": 8,
+      "description": "The first bus for input H.",
+      "type": "bus"
+    },
+    {
+      "name": "Input I",
+      "min": 1,
+      "max": 28,
+      "default": 9,
+      "description": "The first bus for input I.",
+      "type": "bus"
+    },
+    {
+      "name": "Input J",
+      "min": 1,
+      "max": 28,
+      "default": 10,
+      "description": "The first bus for input J.",
+      "type": "bus"
+    },
+    {
+      "name": "Input K",
+      "min": 1,
+      "max": 28,
+      "default": 11,
+      "description": "The first bus for input K.",
+      "type": "bus"
+    },
+    {
+      "name": "Input L",
+      "min": 1,
+      "max": 28,
+      "default": 12,
+      "description": "The first bus for input L.",
+      "type": "bus"
     }
   ],
   "input_ports": [
-    {
-      "name": "Input A",
-      "description": "The first bus for input A, using a contiguous range of busses defined by the 'Width' parameter."
-    },
-    {
-      "name": "Input B",
-      "description": "The second set of inputs (contiguous with Input A), starting from the bus specified in the routing parameters and spanning the width set by the 'Width' parameter."
-    },
     {
       "name": "Crossfade input",
       "description": "The CV input to drive the crossfade, scaled so that 5V covers the range 0-100%."
@@ -97,11 +172,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The crossfaded signal output, using a contiguous range of busses defined by the 'Width' parameter."
-    },
-    {
-      "name": "Output",
-      "description": ""
+      "description": "The first bus for the output."
     }
   ]
 }

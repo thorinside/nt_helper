@@ -1,12 +1,13 @@
 {
   "guid": "ssjw",
   "name": "Seaside Jawari",
-  "description": "Tanpura synth by Seaside Modular based on the open source Jawari VCV Rack module. It simulates the tanpura, an Indian drone instrument with four strings typically played in sequence within a continuous loop. Each strum advances to and plays the next string. The second, third, and fourth strings are tuned in octaves (fourth string an octave below the others), while the first string is often tuned to the fifth of the scale. Microtuning support allows tuning strings to just intervals for an authentic sound.",
+  "description": "This algorithm is based on the open source Jawari VCV Rack module by Seaside Modular. It simulates a tanpura, an Indian drone instrument with four strings typically played in sequence as a continuous loop. Each strum advances to and plays the next string. The second, third, and fourth strings are tuned in octaves (fourth string an octave below), while the first string is often tuned to the fifth of the scale. Microtuning support allows for authentic just intervals.",
   "categories": [
-    "synthesis",
-    "sampling",
-    "utility",
-    "external control"
+    "Synth",
+    "Drone",
+    "String Simulation",
+    "Microtonal",
+    "Indian Instruments"
   ],
   "short_description": "Tanpura synth by Seaside Modular",
   "gui_description": "The display shows the tuning of the four strings, with the last string played highlighted.",
@@ -23,52 +24,25 @@
       "min": 0,
       "max": 11,
       "default": 7,
-      "description": "Sets the tuning of the first string, in semitones above the fourth string.",
-      "enum_values": [
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "11"
-      ]
+      "description": "Sets the tuning of the first string, in semitones above the fourth string."
     },
     {
       "name": "Transpose",
       "min": -36,
       "max": 36,
       "default": 0,
-      "description": "Transposes the whole instrument.",
-      "enum_values": [
-        "-36",
-        "-24",
-        "-12",
-        "0",
-        "12",
-        "24",
-        "36"
-      ],
-      "type": "scaled",
-      "channelCountRef": "mono",
-      "isPerChannel": false,
-      "isCommon": true
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "Fine tuning control for the whole instrument.",
-      "type": "scaled",
-      "channelCountRef": "mono",
-      "isPerChannel": false,
-      "isCommon": true
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Strum (parameter)",
@@ -82,8 +56,9 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Resets the sequence so that the next strum plays the first string.",
-      "type": "toggle"
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Velocity",
@@ -97,164 +72,92 @@
       "min": 0.0,
       "max": 1.0,
       "default": 0.995,
-      "description": "The damping factor for the string model.",
-      "type": "scaled"
+      "description": "The damping factor for the string model."
     },
     {
       "name": "Length",
       "min": 0.0,
       "max": 2.0,
       "default": 1.0,
-      "description": "The decay time for the string model, in seconds."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Bounce count",
       "min": 1,
       "max": 10000,
       "default": 1200,
-      "description": "The number of bridge bounces after the initial strum.",
-      "type": "scaled"
+      "description": "The number of bridge bounces after the initial strum."
     },
     {
       "name": "Strum level",
       "min": 0.0,
       "max": 100.0,
       "default": 25.0,
-      "description": "The relative strength of the strum vs the bounces, in percentage."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Bounce level",
       "min": 0.0,
       "max": 1000.0,
       "default": 150.0,
-      "description": "The relative strength of the bounces vs the strum, in percentage."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Start harmonic",
       "min": 1,
       "max": 20,
       "default": 3,
-      "description": "The emphasised harmonic at the start of the bounces.",
-      "enum_values": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "11",
-        "12",
-        "13",
-        "14",
-        "15",
-        "16",
-        "17",
-        "18",
-        "19",
-        "20"
-      ]
+      "description": "The emphasized harmonic at the start of the bounces."
     },
     {
       "name": "End harmonic",
       "min": 1,
       "max": 20,
       "default": 10,
-      "description": "The emphasised harmonic at the end of the bounces.",
-      "enum_values": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "11",
-        "12",
-        "13",
-        "14",
-        "15",
-        "16",
-        "17",
-        "18",
-        "19",
-        "20"
-      ]
+      "description": "The emphasized harmonic at the end of the bounces."
     },
     {
       "name": "Strum type",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The shape of the initial strum applied to the string model: Flat (0) or Ramped (1).",
-      "enum_values": [
-        "Flat",
-        "Ramped"
-      ],
-      "type": "toggle"
-    },
-    {
-      "name": "Strum trigger bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for a strum trigger.",
-      "type": "bus"
-    },
-    {
-      "name": "Bridge shape CV bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for CV control over the bridge shape."
-    },
-    {
-      "name": "Reset trigger bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for a reset trigger."
-    },
-    {
-      "name": "V/oct main pitch control bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for pitch control over the instrument as a whole."
-    },
-    {
-      "name": "V/oct 1st string tuning bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for pitch control over the tuning of the first string."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Strum input bus",
-      "description": "Input bus for strum trigger signals."
+      "name": "Strum (input)",
+      "description": "Trigger input for advancing to the next string."
     },
     {
-      "name": "Bridge shape CV bus (input)",
-      "description": "CV control input for bridge shape blending."
+      "name": "Bridge shape (CV)",
+      "description": "CV control over the bridge shape blend."
+    },
+    {
+      "name": "Reset",
+      "description": "Trigger input for resetting the sequence."
+    },
+    {
+      "name": "V/oct main",
+      "description": "Pitch control bus for tuning the whole instrument."
+    },
+    {
+      "name": "V/oct 1st string",
+      "description": "Pitch control bus for tuning the first string."
     }
   ],
   "output_ports": [
     {
-      "name": "Output bus",
-      "description": "The main audio output bus of the instrument.",
-      "busIdRef": "13"
-    },
-    {
-      "name": "Microtuning outputs (if applicable)",
-      "description": "(Not explicitly detailed in provided documentation, but implied as part of standard microtuning parameters.)"
+      "name": "Output",
+      "description": "Audio output of the tanpura strings."
     }
   ]
 }

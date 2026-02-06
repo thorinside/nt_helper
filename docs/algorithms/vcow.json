@@ -1,12 +1,12 @@
 {
   "guid": "vcow",
   "name": "VCO - Waveshaping",
-  "description": "This algorithm is based on the OG disting algorithms 'B-8 VCO with waveshaping' and 'B-7 VCO with linear FM'. There are four oscillator outputs: Triangle/saw, Square/pulse, Sub-octave square, and Sine. A shared waveshape parameter/CV controls both the shape of the triangle/saw and sine waves and the pulse width of the square/pulse wave. Linear through-zero FM is available via the 'FM input' parameter. If the 'Sync' input is used, a rising edge on the input sets the VCO phase to zero, which can produce 'oscillator sync' sounds. Note that it is perfectly valid to set the output bus for the four signals to the same bus, in which case they can be blended to taste with their gain parameters.",
+  "description": "This algorithm is based on the OG disting algorithms 'B-8 VCO with waveshaping' and 'B-7 VCO with linear FM'. There are four oscillator outputs: Triangle/saw, Square/pulse, Sub-octave square, and Sine. A shared waveshape parameter/CV controls both the shape of the triangle/saw and sine waves and the pulse width of the square/pulse wave. Linear through-zero FM is available via the 'FM input' parameter. If the 'Sync' input is used, a rising edge on the input sets the VCO phase to zero, which can produce oscillator sync sounds. It is perfectly valid to set the output bus for the four signals to the same bus, in which case they can be blended with their gain parameters.",
   "categories": [
-    "synthesis",
-    "FM",
-    "utility",
-    "CV processing"
+    "Oscillator",
+    "Synthesis",
+    "Waveshaping",
+    "FM Synthesis"
   ],
   "short_description": "Simple VCO with adjustable outputs",
   "gui_description": "The display shows a single cycle of the triangle/saw and square/pulse waveshapes, and the VCO’s pitch as a MIDI note name plus cents and as a frequency in Hz.",
@@ -17,6 +17,7 @@
       "max": 100,
       "default": 0,
       "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -24,8 +25,8 @@
       "min": -16,
       "max": 8,
       "default": 0,
-      "scope": "global",
       "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -33,8 +34,8 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "scope": "global",
       "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -42,8 +43,8 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "global",
       "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -57,89 +58,79 @@
         "2x",
         "4x"
       ],
-      "type": "enum",
-      "is_bus": false
+      "type": "enum"
     },
     {
       "name": "FM scale",
       "min": 1,
       "max": 1000,
       "default": 100,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the Hz/V sensitivity of the linear FM input.",
+      "type": "enum"
     },
     {
       "name": "Triangle/saw amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the amplitude of the triangle/saw output (before it’s affected by the gain).",
+      "type": "enum"
     },
     {
       "name": "Square/pulse amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the amplitude of the square/pulse output (before it’s affected by the gain).",
+      "type": "enum"
     },
     {
       "name": "Sub amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the amplitude of the sub-octave output (before it’s affected by the gain).",
+      "type": "enum"
     },
     {
       "name": "Sine amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the amplitude of the sine output (before it’s affected by the gain).",
+      "type": "enum"
     },
     {
       "name": "Triangle/saw gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the level of the triangle/saw output.",
+      "type": "enum"
     },
     {
       "name": "Square/pulse gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the level of the square/pulse output.",
+      "type": "enum"
     },
     {
       "name": "Sub gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the level of the sub-octave output.",
+      "type": "enum"
     },
     {
       "name": "Sine gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the level of the sine output.",
+      "type": "enum"
     },
     {
       "name": "MIDI channel",
@@ -147,8 +138,7 @@
       "max": 16,
       "default": 0,
       "description": "If enabled, MIDI notes on the specified channel will set the pitch of the VCO.",
-      "type": "enum",
-      "is_bus": false
+      "type": "enum"
     },
     {
       "name": "Triangle/saw mode",
@@ -156,8 +146,7 @@
       "max": 1,
       "default": 0,
       "description": "The add/replace mode for the triangle/saw signal.",
-      "type": "enum",
-      "is_bus": false
+      "type": "enum"
     },
     {
       "name": "Square/pulse mode",
@@ -165,8 +154,7 @@
       "max": 1,
       "default": 0,
       "description": "The add/replace mode for the square/pulse signal.",
-      "type": "enum",
-      "is_bus": false
+      "type": "enum"
     },
     {
       "name": "Sub output mode",
@@ -174,8 +162,7 @@
       "max": 1,
       "default": 0,
       "description": "The add/replace mode for the sub-octave signal.",
-      "type": "enum",
-      "is_bus": false
+      "type": "enum"
     },
     {
       "name": "Sine output mode",
@@ -183,26 +170,25 @@
       "max": 1,
       "default": 0,
       "description": "The add/replace mode for the sine signal.",
-      "type": "enum",
-      "is_bus": false
+      "type": "enum"
     }
   ],
   "input_ports": [
     {
       "name": "Pitch input",
-      "description": "CV input for pitch (1V/octave)."
+      "description": "CV input for pitch control (1V/octave)."
     },
     {
       "name": "Shape input",
-      "description": "CV input for waveshape (±5V corresponds to ±100% parameter range)."
+      "description": "CV input controlling waveshape/pulse width (±5V corresponds to ±100%)."
     },
     {
       "name": "Sync input",
-      "description": "Oscillator sync input (rising edge resets phase to zero)."
+      "description": "Oscillator sync trigger input (rising edge resets phase)."
     },
     {
       "name": "FM input",
-      "description": "Linear FM CV input."
+      "description": "Linear FM modulation input."
     },
     {
       "name": "Pitch input",
@@ -224,19 +210,19 @@
   "output_ports": [
     {
       "name": "Triangle/saw output",
-      "description": "Output bus for the triangle/saw signal."
+      "description": "Output bus for triangle or sawtooth waveform."
     },
     {
       "name": "Square/pulse output",
-      "description": "Output bus for the square/pulse signal."
+      "description": "Output bus for square or pulse waveform."
     },
     {
       "name": "Sub output",
-      "description": "Output bus for the sub-octave square signal."
+      "description": "Output bus for sub-octave square waveform."
     },
     {
       "name": "Sine output",
-      "description": "Output bus for the sine signal."
+      "description": "Output bus for sine waveform."
     },
     {
       "name": "Triangle/saw output",

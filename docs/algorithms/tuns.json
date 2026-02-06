@@ -1,25 +1,36 @@
 {
   "guid": "tuns",
   "name": "Tuner (simple)",
-  "description": "This algorithm provides four simultaneous tuners using a simple pitch detection method which will only work reliably for simple tones. These are typically found in analogue VCOs within a Eurorack environment, where tuning is often required. Microtuning via Scala or MTS is supported, and the algorithm consumes little CPU due to its simplicity.",
+  "description": "This algorithm provides four simultaneous tuners. It uses a simple pitch detection method which will only work reliably for simple tones, but happily 'simple tones' covers most of those that you will get from an analogue VCO, which in a Eurorack environment you might find yourself tuning quite often. Being simple, it consumes little CPU. Microtuning via Scala or MTS is supported.",
   "categories": [
-    "analysis",
-    "utility"
+    "Utility",
+    "Audio Analysis",
+    "Pitch Detection"
   ],
   "short_description": "A basic tuner for simple tones",
   "use_cases": [
     "Tuning analogue VCOs in Eurorack environments",
-    "Detecting pitch of monophonic or polyphonic simple tones",
+    "Real-time pitch detection of monophonic signals",
     "Microtuning with Scala or MTS tuning systems"
   ],
-  "gui_description": "The display shows the detected pitch of active channels as a MIDI note number and cents, alongside an Hz value. A bar grows to the left (flat) or right (sharp) based on how the note deviates from its true pitch.",
+  "gui_description": "The display shows the detected pitch of the active channels, as a MIDI note number and cents, and as a value in Hz. It also shows a bar which grows to the left or right depending on how flat or sharp the note is relative to the 'true' pitch of the detected note.",
+  "specifications": [
+    {
+      "name": "CPU Usage",
+      "description": "Low (simple pitch detection method)"
+    },
+    {
+      "name": "Polyphony",
+      "value": 4,
+      "description": "Four simultaneous tuners"
+    }
+  ],
   "parameters": [
     {
       "name": "Channel_1",
       "min": 0,
       "max": 28,
       "default": 1,
-      "scope": "global",
       "type": "enum",
       "is_bus": true
     },
@@ -28,7 +39,6 @@
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
       "type": "enum",
       "is_bus": true
     },
@@ -37,7 +47,6 @@
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
       "type": "enum",
       "is_bus": true
     },
@@ -46,16 +55,40 @@
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
       "type": "enum",
       "is_bus": true
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Channel_1_input",
+      "description": "Audio input for tuner number 1 (bus: Channel_1)"
+    },
+    {
+      "name": "Channel_2_input",
+      "description": "Audio input for tuner number 2 (bus: Channel_2)"
+    },
+    {
+      "name": "Channel_3_input",
+      "description": "Audio input for tuner number 3 (bus: Channel_3)"
+    },
+    {
+      "name": "Channel_4_input",
+      "description": "Audio input for tuner number 4 (bus: Channel_4)"
+    }
+  ],
   "output_ports": [
     {
-      "name": "Tuner_Output",
-      "description": "The detected pitch of the active channels (MIDI note number and cents, Hz value, and deviation bar)"
+      "name": "Pitch_MIDI_note",
+      "description": "Detected pitch as MIDI note number"
+    },
+    {
+      "name": "Pitch_cents",
+      "description": "Pitch deviation in cents from true note"
+    },
+    {
+      "name": "Pitch_Hz",
+      "description": "Detected pitch frequency in Hertz"
     }
   ]
 }

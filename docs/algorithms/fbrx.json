@@ -1,18 +1,21 @@
 {
   "guid": "fbrx",
   "name": "Feedback Receive/Send",
-  "description": "These two algorithms are taken together as they form a mechanism to introduce feedback into presets. Though perhaps misnamed – they can just as easily feed forward. Think of them as two ends of a teleport/hyperspace tunnel: what goes in one end (the send) comes out of the other (the receive). If the receive is placed above the send in the preset, you have feedback; if the receive is placed after the send, you create a way to teleport busses past a section of the preset. Both algorithms have an 'Identifier' parameter that allows matching up send/receive pairs if there is more than one. The send and receive can process a number of channels (1-8), but if these don't match, only the smaller number will be processed. Be careful when setting up feedback loops: the receive's gain defaults to fully silent (-40 dB) for safety reasons.",
+  "description": "These two algorithms are taken together as they form a mechanism to introduce feedback into presets. Though perhaps misnamed – they can just as easily feed forward. Think of them as two ends of a teleport/hyperspace tunnel: what goes in one end (the send) comes out the other (the receive). If the receive is placed above the send in the preset, you have feedback; if placed after the send, it acts as a way to teleport busses past a section of the preset.\n\nBoth algorithms share an 'Identifier' parameter to match up send/receive pairs when multiple exist. The number of channels processed depends on specifications (1-8). If channel counts mismatch, only the smaller number is processed.\n\n**Warning:** Be cautious with feedback loops; the receive's gain defaults to -40dB (silent) for safety.",
   "categories": [
-    "routing",
-    "utility"
+    "Routing",
+    "Signal Processing",
+    "Modulation",
+    "Feedback"
   ],
   "short_description": "Receive/send for internal feedback loop",
   "use_cases": [
-    "Internal feedback routing in presets",
-    "Teleporting audio busses past preset sections",
-    "Creating feedforward paths for signal processing",
-    "Multi-bus cross-routing with identifier matching"
+    "Creating feedback loops within presets",
+    "Teleporting audio busses across sections of a preset",
+    "Matching send/receive pairs for modular routing",
+    "Signal rerouting in complex patch structures"
   ],
+  "gui_description": "Two distinct modules (Receive/Send) with shared identifier parameter. Channel-specific controls include input/output selection, gain adjustment, and enable/disable toggles.",
   "specifications": [
     {
       "name": "Channels",
@@ -23,30 +26,66 @@
   "parameters": [
     {
       "name": "Identifier",
-      "scope": "common",
+      "min": 1,
+      "max": 32,
+      "default": 1,
+      "description": "An identifier to match up the receive with a send (or vice versa) when multiple pairs exist."
+    },
+    {
+      "name": "Output_mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
       "type": "enum",
-      "channelCountRef": "Receive",
-      "isPerChannel": false,
-      "isCommon": true,
-      "is_common": true,
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Gain",
+      "min": -40.0,
+      "max": 24.0,
+      "default": -40.0,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Identifier",
-      "scope": "common",
-      "type": "enum",
-      "channelCountRef": "Send",
-      "isPerChannel": false,
-      "isCommon": true,
-      "is_common": true,
-      "is_bus": false
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": null,
+      "description": "Enables or disables the channel.",
+      "is_bus": true
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Signal Input (Receive)",
+      "description": "Audio/CV signal input for the receive module, routed from a corresponding send."
+    },
+    {
+      "name": "Channel Inputs",
+      "description": "Per-channel inputs for the send module, sourced from specified busses.",
+      "isPerChannel": true
+    },
+    {
+      "name": "Input",
+      "description": ""
+    }
+  ],
   "output_ports": [
     {
+      "name": "Signal Output (Receive)",
+      "description": "Audio/CV signal output routed to a specified bus after gain processing."
+    },
+    {
+      "name": "Output Bus",
+      "description": "The selected bus where the received or sent signal is directed.",
+      "isPerChannel": true
+    },
+    {
       "name": "Output",
-      "description": "The bus on which to output the received signal."
+      "description": ""
     }
   ]
 }

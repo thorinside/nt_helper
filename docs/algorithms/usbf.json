@@ -1,174 +1,25 @@
 {
   "guid": "usbf",
   "name": "USB audio (from host)",
-  "description": "This algorithm exposes the USB audio from the host, if one is connected. The host sees 8 output channels. Each one of these can be output to any of the disting NT’s busses. Note that the signals from the USB host don’t just have to emerge directly from the module’s outputs; they could just as well be the inputs to other algorithms, allowing you to process audio from the host through the disting. Note also that 'USB audio' doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
+  "description": "This algorithm exposes the USB audio from the host, if one is connected.\n\nThe host sees 8 output channels. Each one of these can be output to any of the disting NT’s busses.\n\nNote that the signals from the USB host don’t just have to emerge directly from the module’s outputs; they could just as well be the inputs to other algorithms, allowing you to process audio from the host through the disting.\n\nNote also that “USB audio” doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
   "categories": [
-    "utility",
-    "routing",
-    "external control"
+    "Audio I/O",
+    "Signal Routing",
+    "External Integration"
   ],
+  "short_description": "Receives audio from USB host",
   "use_cases": [
-    "Receiving USB audio from a host",
-    "Routing USB channels to internal busses for further processing",
-    "Exchanging CV signals with external modular environments like VCV Rack",
-    "Audio signal routing and distribution within disting NT"
+    "Routing USB audio to internal busses for processing",
+    "Integrating with VCV Rack or similar modular environments via CV signals",
+    "Multi-channel audio distribution within disting NT system"
   ],
   "gui_description": null,
   "specifications": [],
-  "parameters": [
-    {
-      "name": "to",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "description": "The bus on which to output USB channel 1.",
-      "enum_values": []
-    },
-    {
-      "name": "mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "The standard Add/Replace mode selector for channel 1, as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "to_2",
-      "min": 0,
-      "max": 28,
-      "default": null,
-      "description": "The bus on which to output USB channel 2.",
-      "enum_values": []
-    },
-    {
-      "name": "mode_2",
-      "min": 0,
-      "max": 1,
-      "default": null,
-      "description": "The standard Add/Replace mode selector for channel 2, as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "to_3",
-      "min": 0,
-      "max": 28,
-      "default": null,
-      "description": "The bus on which to output USB channel 3.",
-      "enum_values": []
-    },
-    {
-      "name": "mode_3",
-      "min": 0,
-      "max": 1,
-      "default": null,
-      "description": "The standard Add/Replace mode selector for channel 3, as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "to_4",
-      "min": 0,
-      "max": 28,
-      "default": null,
-      "description": "The bus on which to output USB channel 4.",
-      "enum_values": []
-    },
-    {
-      "name": "mode_4",
-      "min": 0,
-      "max": 1,
-      "default": null,
-      "description": "The standard Add/Replace mode selector for channel 4, as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "to_5",
-      "min": 0,
-      "max": 28,
-      "default": null,
-      "description": "The bus on which to output USB channel 5.",
-      "enum_values": []
-    },
-    {
-      "name": "mode_5",
-      "min": 0,
-      "max": 1,
-      "default": null,
-      "description": "The standard Add/Replace mode selector for channel 5, as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "to_6",
-      "min": 0,
-      "max": 28,
-      "default": null,
-      "description": "The bus on which to output USB channel 6.",
-      "enum_values": []
-    },
-    {
-      "name": "mode_6",
-      "min": 0,
-      "max": 1,
-      "default": null,
-      "description": "The standard Add/Replace mode selector for channel 6, as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "to_7",
-      "min": 0,
-      "max": 28,
-      "default": null,
-      "description": "The bus on which to output USB channel 7.",
-      "enum_values": []
-    },
-    {
-      "name": "mode_7",
-      "min": 0,
-      "max": 1,
-      "default": null,
-      "description": "The standard Add/Replace mode selector for channel 7, as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "to_8",
-      "min": 0,
-      "max": 28,
-      "default": null,
-      "description": "The bus on which to output USB channel 8.",
-      "enum_values": []
-    },
-    {
-      "name": "mode_8",
-      "min": 0,
-      "max": 1,
-      "default": null,
-      "description": "The standard Add/Replace mode selector for channel 8, as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    }
-  ],
   "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "USB Channel 1-8 (Audio/CV)",
+      "description": "Eight output channels from USB host, usable as audio or control voltage signals"
+    }
+  ]
 }

@@ -1,32 +1,30 @@
 {
   "guid": "vcot",
   "name": "VCO - Wavetable",
-  "description": "This algorithm is a simple VCO which uses wavetables for its wave shapes. Please see the section above on how wavetables are formatted and arranged on the MicroSD card.",
+  "description": "This algorithm is a simple VCO which uses wavetables for its wave shapes. Please see the section on how wavetables are formatted and arranged on the MicroSD card.",
   "categories": [
-    "synthesis",
-    "wavetable"
+    "Oscillator",
+    "Synthesis",
+    "Wavetable"
   ],
   "short_description": "A wavetable VCO",
-  "use_cases": [
-    "Sound design with custom waveforms",
-    "Modular synthesis",
-    "Pitch modulation via MIDI or CV",
-    "Waveform offset modulation for dynamic textures"
-  ],
   "gui_description": "The display shows a single cycle of the current wavetable waveform, and the VCO’s pitch as a MIDI note name plus cents and as a frequency in Hz.",
   "parameters": [
     {
       "name": "Wavetable",
-      "description": "Chooses the wavetable."
+      "min": 0,
+      "default": null,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Wave offset",
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -34,9 +32,8 @@
       "min": -16,
       "max": 8,
       "default": 0,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
+      "type": "enum",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -44,9 +41,8 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "folder",
+      "type": "scaled",
       "is_per_channel": true,
-      "is_common": false,
       "is_bus": false
     },
     {
@@ -54,9 +50,8 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "folder",
+      "type": "scaled",
       "is_per_channel": true,
-      "is_common": false,
       "is_bus": false
     },
     {
@@ -64,9 +59,8 @@
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -74,9 +68,8 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "folder",
+      "type": "scaled",
       "is_per_channel": true,
-      "is_common": false,
       "is_bus": false
     },
     {
@@ -84,9 +77,8 @@
       "min": 0,
       "max": 16,
       "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -94,9 +86,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
+      "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
     }
   ],

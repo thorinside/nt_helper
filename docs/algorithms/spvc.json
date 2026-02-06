@@ -1,0 +1,149 @@
+{
+  "guid": "spvc",
+  "name": "Spectral Vocoder",
+  "description": "This algorithm implements a vocoder using a digital, FFT-based method. The spectral characteristics of the modulator input are applied to the carrier input. In classic usage, the modulator might be a human voice, and the carrier might be a synth sound or simply noise.",
+  "categories": [
+    "Audio",
+    "Modulation",
+    "Spectral Processing",
+    "Vocoder"
+  ],
+  "short_description": "Spectral (FFT) based vocoder",
+  "specifications": [
+    {
+      "name": "Max block size",
+      "min": 6,
+      "max": 11
+    },
+    {
+      "name": "Stereo support",
+      "description": "Whether the algorithm is mono or stereo."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Latency",
+      "min": 0,
+      "max": 5,
+      "default": 2,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Sample rate reduction",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Dry gain",
+      "min": -40,
+      "max": 24,
+      "default": -40,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Wet gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Modulator input bus",
+      "min": 1,
+      "max": 28,
+      "default": 3,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Carrier left/mono input bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Carrier right input bus",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Left/mono output bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Right output bus",
+      "min": 1,
+      "max": 28,
+      "default": 14,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Modulator input",
+      "description": "The bus used for the modulator signal (e.g., human voice)."
+    },
+    {
+      "name": "Carrier left/mono input",
+      "description": "The left or mono audio bus for the carrier signal."
+    },
+    {
+      "name": "Carrier right input",
+      "description": "The right audio bus for the carrier (if stereo mode is enabled)."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": "The left or mono output audio bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right output audio bus (if stereo mode is enabled)."
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "guid": "wtws",
+  "name": "Wavetable Waveshaper",
+  "description": "This algorithm is based on the Wavetable Waveshaper algorithm from the disting mk4. It functions as a wavetable-based waveshaper effect when applied to audio, or as a wavetable-based transfer function when considering input as CV lookup. This makes it suitable for phase distortion synthesis. The display shows the current wavetable.",
+  "categories": [
+    "Audio Effects",
+    "Synthesis",
+    "Waveshaping",
+    "Phase Distortion"
+  ],
+  "short_description": "Waveshaper that uses a wavetable",
+  "use_cases": [
+    "Audio distortion effects",
+    "CV modulation and transfer functions",
+    "Phase distortion synthesis",
+    "Custom waveshape creation"
+  ],
+  "gui_description": "The display shows the current wavetable.",
+  "parameters": [
+    {
+      "name": "Wavetable",
+      "min": 0,
+      "default": null,
+      "description": "Chooses the wavetable."
+    },
+    {
+      "name": "Wave offset",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Input gain",
+      "min": -32.0,
+      "max": 32.0,
+      "default": 1.0,
+      "description": "The input gain. Negative values invert the signal."
+    },
+    {
+      "name": "Mix",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Level",
+      "min": -40,
+      "max": 0,
+      "default": 0,
+      "description": "The output gain applied to the shaped signal.",
+      "type": "enum"
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of buses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Gain input",
+      "description": "Bus used to control the input gain via CV (scaled for 5V = 32x gain)."
+    },
+    {
+      "name": "Wave input",
+      "description": "Input bus modulating wave offset."
+    },
+    {
+      "name": "Audio Input",
+      "description": "First audio input bus to process, starting from the specified 'Input' parameter value."
+    },
+    {
+      "name": "Gain input",
+      "description": "The bus to use to control the input gain. Scaled such that a 5V CV gives 32x gain."
+    },
+    {
+      "name": "Wave input",
+      "description": "Sets an input bus to modulate the wave offset."
+    },
+    {
+      "name": "Input",
+      "description": "The first input bus to process."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Audio Output",
+      "description": "Processed audio output buses, starting from the specified 'Output' parameter value."
+    },
+    {
+      "name": "Output",
+      "description": "The first output bus."
+    }
+  ]
+}

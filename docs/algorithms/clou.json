@@ -1,0 +1,241 @@
+{
+  "guid": "clou",
+  "name": "Texture Synthesizer",
+  "description": "This algorithm is an implementation of the open source Clouds module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online for the original module apply just as well to this version. The user manual for the original module can be found [here](https://pichenettes.github.io/mutable-instruments-documentation/modules/clouds/manual/). The documentation below assumes some familiarity with this.",
+  "categories": [
+    "Granular Synthesis",
+    "Audio Effects",
+    "Texture Generation",
+    "Signal Processing"
+  ],
+  "short_description": "\"It's Clouds!\"",
+  "use_cases": [
+    "Granular sound design",
+    "Textural ambient soundscapes",
+    "Dynamic audio processing",
+    "Looping and delay effects with spectral manipulation",
+    "Creative sampling and resynthesis"
+  ],
+  "gui_description": "The interface mimics the original Clouds module, featuring knobs for primary parameters (Mode, Position, Size, etc.), routing controls for input/output buses, and a layout designed for intuitive granular synthesis manipulation.",
+  "parameters": [
+    {
+      "name": "Sample rate",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Buffer channels",
+      "min": 1,
+      "max": 2,
+      "default": 2,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Input channels",
+      "min": 1,
+      "max": 2,
+      "default": 2,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Bit depth",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Freeze",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "\"This latching parameter stops the recording of incoming audio. Granularization is now performed on the last few seconds of audio kept in memory in the module.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Position",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "\"Selects from which part of the recording buffer the audio grains are played. Turn the knob clockwise to travel back in time.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Size",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "\"Sets the grain size.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "\"Sets the grain transposition.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Coarse tune",
+      "min": -48,
+      "max": 48,
+      "default": 0,
+      "description": "\"Sets the grain pitch in semitones.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "\"Sets the grain pitch in cents.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Density",
+      "min": -100,
+      "max": 100,
+      "default": 50,
+      "description": "\"At 12 o'clock, no grains are generated. Turn clockwise and grains will be sown randomly, counter-clockwise and they will be played at a constant rate. The further you turn, the higher the overlap between grains.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Texture",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "\"Morphs through various shapes of grain envelopes: square (boxcar), triangle, and then Hann window. Past 2 o'clock, activates a diffuser which smears transients.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Wet/dry",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "\"Wet/dry mix balance.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Spread",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "\"Stereo spread (amount of random panning/balance applied to the grains).\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Feedback",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "\"Sets the amount of feedback.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Reverb",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "\"Sets the amount of reverb applied to the output.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "\"The standard Add/Replace mode selector.\" (From original Clouds manual)",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Audio Input",
+      "description": "Main audio signal input, configurable as mono or stereo via the 'Input channels' parameter."
+    },
+    {
+      "name": "V/Octave CV",
+      "description": "Pitch control voltage input for modulating grain transposition (connected to specified bus)."
+    },
+    {
+      "name": "Trigger CV",
+      "description": "External trigger signal input for controlling granular events (connected to specified bus)."
+    },
+    {
+      "name": "Left input",
+      "description": "\"The left audio input bus.\" (From original Clouds manual)"
+    },
+    {
+      "name": "Right input",
+      "description": "\"The right audio input bus.\" (From original Clouds manual)"
+    },
+    {
+      "name": "V/Oct input",
+      "description": "\"The bus to use for a V/octave pitch CV.\" (From original Clouds manual)"
+    },
+    {
+      "name": "Trigger input",
+      "description": "\"The bus to use for a trigger input.\" (From original Clouds manual)"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Audio Output",
+      "description": "Processed audio output, configurable as mono or stereo via the 'Buffer channels' parameter."
+    },
+    {
+      "name": "Left output",
+      "description": "\"The left audio output bus.\" (From original Clouds manual)"
+    },
+    {
+      "name": "Right output",
+      "description": "\"The right audio output bus.\" (From original Clouds manual)"
+    }
+  ]
+}

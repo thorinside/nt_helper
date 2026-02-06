@@ -1,22 +1,22 @@
 {
   "guid": "pyms",
   "name": "Poly Multisample (legacy)",
-  "description": "This algorithm is inspired by the original 'SD Multisample' algorithm on the disting EX. It is a polyphonic, multitimbral, sample playback instrument, playing WAV files from the MicroSD card. It can be played via CV/gate, MIDI, or I2C and supports both velocity switches and round robins per sample.",
+  "description": "This algorithm is inspired by the original 'SD Multisample' algorithm on the disting EX. It is a polyphonic, multitimbral sample playback instrument that plays WAV files from the MicroSD card. It supports CV/gate, MIDI, or I2C input methods and features both velocity switches and round robins per sample. The algorithm supports up to four different timbres (sample folders with unique parameters) sharing a pool of 1-16 simultaneous voices.",
   "categories": [
-    "synthesis",
-    "polyphonic",
-    "sampling",
-    "MIDI",
-    "external control"
+    "Polyphonic Synth",
+    "Multitimbral",
+    "Sample Player",
+    "MIDI Controller",
+    "CV/Gate Instrument"
   ],
   "short_description": "A polyphonic sample player",
   "use_cases": [
-    "Playing WAV files from MicroSD card via CV/gate, MIDI, or I2C",
-    "Polyphonic sound generation with up to four timbres and 16 voices",
-    "Adjusting tuning per timbre using semitones and cents",
-    "Volume envelope shaping (ADSR) for dynamic expression control"
+    "Live performance with CV/gate or MIDI control",
+    "Polyphonic sound design using WAV samples from MicroSD",
+    "Multitimbral layering via timbres (1-4)",
+    "Velocity-sensitive sample triggering"
   ],
-  "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar indicating the note envelope. The folder and filename of the last sample played are also shown. When adjusting microtuning parameters, more information about the chosen tuning is displayed.",
+  "gui_description": "Displays active notes on a bar graph showing note envelopes, last played folder/filename, and microtuning details when adjusted.",
   "specifications": [
     {
       "name": "Timbres",
@@ -33,309 +33,244 @@
     {
       "name": "Global gain",
       "min": -40,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Global gain",
-      "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "global",
       "type": "folder",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
-    },
-    {
-      "name": "Global gain",
-      "unit": "dB",
-      "description": "A global gain adjustment applied to all timbres (in addition to their individual gains)."
     },
     {
       "name": "Sustain mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "global",
       "type": "enum",
       "is_per_channel": false,
-      "is_common": true
-    },
-    {
-      "name": "Sustain mode",
-      "description": "The standard polysynth sustain mode parameter. See 'Common polysynth features' above."
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Gate offset",
       "min": 0.0,
       "max": 10.0,
       "default": 0.2,
-      "scope": "global",
       "type": "folder",
       "is_per_channel": false,
-      "is_common": true
-    },
-    {
-      "name": "Gate offset",
-      "unit": "ms",
-      "description": "Offsets (delays) the gate inputs relative to the pitch inputs. This is useful to allow pitch CVs to settle before they are sampled on the rising gate, and also to cope with modules which output both a pitch and gate but change their gate first."
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Round robin mode",
       "min": 0,
       "max": 3,
       "default": 0,
-      "scope": "global",
       "type": "enum",
       "is_per_channel": false,
-      "is_common": true
-    },
-    {
-      "name": "Round robin mode",
-      "description": "The round-robin mode. See 'Common polysynth features' above."
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Folder",
-      "min": 1,
-      "max": 1,
-      "default": 1,
-      "scope": "per-trigger",
-      "type": "enum"
-    },
-    {
-      "name": "Folder",
-      "description": "Sets the sample folder to use."
+      "scope": "timbre",
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 24,
       "default": 0,
-      "scope": "per-trigger",
-      "type": "folder"
-    },
-    {
-      "name": "Gain",
-      "unit": "dB",
-      "description": "Sets the output level."
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Pan",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "per-trigger",
-      "type": "folder"
-    },
-    {
-      "name": "Pan",
-      "unit": "%",
-      "description": "Sets the stereo pan position."
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
-      "scope": "per-trigger",
-      "type": "folder"
-    },
-    {
-      "name": "Transpose",
-      "unit": "ST",
-      "description": "Adjusts the tuning in semitones."
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "per-trigger",
-      "type": "folder"
-    },
-    {
-      "name": "Fine tune",
-      "unit": "cents",
-      "description": "Adjusts the tuning in cents."
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Envelope",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-trigger",
-      "type": "enum"
-    },
-    {
-      "name": "Envelope",
-      "description": "Enables an ADSR volume envelope. If the envelope is disabled, the sample simply plays once until the end."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Attack",
       "min": 0,
       "max": 127,
       "default": 0,
-      "scope": "per-trigger",
-      "type": "folder"
-    },
-    {
-      "name": "Attack",
-      "description": "Sets the envelope attack time (from 1ms to 15s, exponential response)."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Decay",
       "min": 0,
       "max": 127,
       "default": 60,
-      "scope": "per-trigger",
-      "type": "folder"
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Decay",
-      "description": "Sets the envelope decay time (from 20ms to 15s, exponential response)."
-    },
-    {
-      "name": "Sustain",
+      "name": "Sustain (envelope)",
       "min": 0,
       "max": 100,
       "default": 100,
-      "scope": "per-trigger",
-      "type": "folder"
-    },
-    {
-      "name": "Sustain",
-      "unit": "%",
-      "description": "Sets the envelope sustain level."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Release",
       "min": 0,
       "max": 127,
       "default": 77,
-      "scope": "per-trigger",
-      "type": "folder"
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Release",
-      "description": "Sets the envelope release time (from 10ms to 30s, exponential response)."
-    },
-    {
-      "name": "Velocity",
+      "name": "Velocity sensitivity",
       "min": 0,
       "max": 100,
       "default": 100,
-      "scope": "per-trigger",
-      "type": "folder"
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Velocity",
-      "unit": "%",
-      "description": "Sets the amount by which the note velocity affects the note volume."
-    },
-    {
-      "name": "Sustain (velocity)",
+      "name": "Sustain (pedal)",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-trigger",
-      "type": "enum"
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Sustain (velocity)",
-      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
+      "name": "Left/mono output bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
+    },
+    {
+      "name": "Right output bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 1,
-      "scope": "per-trigger",
-      "type": "enum"
-    },
-    {
-      "name": "MIDI channel",
-      "description": "The MIDI channel to listen on."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "MPE channels",
       "min": 1,
       "max": 16,
       "default": 1,
-      "scope": "per-trigger",
-      "type": "enum"
-    },
-    {
-      "name": "MPE channels",
-      "description": "Controls how the algorithm will respond to MPE. See 'Common polysynth features' above."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
       "default": 1,
-      "scope": "per-trigger",
-      "type": "enum"
-    },
-    {
-      "name": "I2C channel",
-      "description": "Sets the I2C channel."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Bend range",
       "min": 0,
       "max": 48,
       "default": 2,
-      "scope": "per-trigger",
-      "type": "enum"
-    },
-    {
-      "name": "Bend range",
-      "unit": "ST",
-      "description": "The MIDI pitch bend range."
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "CV/gate input",
-      "description": "Pitch and gate CV inputs for triggering samples"
+      "name": "CV/Gate Input",
+      "description": "Accepts CV/gate signals for triggering samples and controlling pitch"
     },
     {
-      "name": "MIDI input",
-      "description": "MIDI note, velocity, and control messages (e.g., sustain)"
+      "name": "MIDI Input",
+      "description": "Receives MIDI note events on specified channel(s)"
     },
     {
-      "name": "I2C input",
-      "description": "I2C communication interface for triggering samples"
+      "name": "I2C Input",
+      "description": "Communicates via I2C protocol for control data"
     }
   ],
   "output_ports": [
     {
-      "name": "Left/mono output bus",
-      "description": "Outputs audio signal to the left or mono channel"
+      "name": "Left Audio Output",
+      "description": "Stereo/mono left channel output (configurable bus)"
     },
     {
-      "name": "Right output bus",
-      "description": "Outputs audio signal to the right channel"
-    },
-    {
-      "name": "Left/mono output",
-      "description": ""
-    },
-    {
-      "name": "Left/mono output",
-      "description": "The left or mono output bus."
-    },
-    {
-      "name": "Right output",
-      "description": ""
-    },
-    {
-      "name": "Right output",
-      "description": "The right output bus."
+      "name": "Right Audio Output",
+      "description": "Stereo right channel output (configurable bus)"
     }
   ]
 }

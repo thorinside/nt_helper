@@ -1,0 +1,74 @@
+{
+  "guid": "spal",
+  "name": "Spectrum Analyzer",
+  "description": "This algorithm implements a simple but useful spectrum analyser.\nThe display shows the frequency spectrum of the input signal, according to the display mode.",
+  "categories": [
+    "Analysis",
+    "Visualization",
+    "Audio"
+  ],
+  "short_description": "Displays the frequency spectrum of a signal",
+  "specifications": [
+    {
+      "name": "FFT size",
+      "min": 8,
+      "max": 12
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Draw mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets the draw mode – Lines (continuous), Lines (vertical), or Points.",
+      "enum_values": [
+        "Lines (continuous)",
+        "Lines (vertical)",
+        "Points"
+      ]
+    },
+    {
+      "name": "X axis",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Sets whether the X axis is linear or logarithmic.",
+      "enum_values": [
+        "Linear",
+        "Logarithmic"
+      ]
+    },
+    {
+      "name": "Min dB",
+      "min": -140,
+      "max": 0,
+      "default": -140,
+      "description": "Sets the lower bound of the Y axis.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Max dB",
+      "min": -140,
+      "max": 0,
+      "default": -12,
+      "description": "Sets the upper bound of the Y axis.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "description": "The left or mono input audio bus."
+    },
+    {
+      "name": "Right input",
+      "description": "The right input audio bus (simply summed with the left bus, if provided)."
+    }
+  ],
+  "output_ports": []
+}

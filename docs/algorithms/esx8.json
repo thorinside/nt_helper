@@ -1,114 +1,127 @@
 {
   "guid": "esx8",
   "name": "ESX-8CV Combiner",
-  "description": "This algorithm allows you to drive the outputs of an ESX-8CV module attached to an ES-5 expander which is in turn attached to the disting NT. The 'Adaptive' parameter controls whether the algorithm updates all eight hardware outputs continuously (non-adaptive mode) or only those that are changing (adaptive mode). In non-adaptive mode, each output is updated sequentially at 2kHz when running at a sample rate of 48kHz, as each update takes three samples and 24 samples are required to cycle through all eight outputs. In adaptive mode, the update rate varies based on how many channels are changing: one channel changes at 16kHz, two at 8kHz, down to 2kHz for all eight channels changing simultaneously.",
+  "description": "This algorithm allows you to drive the outputs of an ESX-8CV module attached to an ES-5 expander which is in turn attached to the disting NT.",
   "categories": [
-    "utility",
-    "routing",
-    "CV processing"
+    "Modular Synthesis",
+    "Hardware Control",
+    "Audio Routing"
   ],
   "short_description": "Drives ESX-8CV outputs",
+  "use_cases": [
+    "Synthesizer output routing",
+    "Hardware modular control",
+    "Adaptive hardware update optimization"
+  ],
+  "gui_description": null,
+  "specifications": [],
   "parameters": [
     {
       "name": "Expander",
       "min": 1,
       "max": 6,
       "default": 1,
-      "description": "Chooses the expansion header on the ES-5 to which the ESX-8CV is connected."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Adaptive",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Controls whether the algorithm updates all eight hardware outputs continuously (non-adaptive mode, value=0) or only those that are changing (adaptive mode, value=1). Adaptive mode generally offers better performance unless predictable timing is required."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "1",
       "min": 0,
       "max": 28,
       "default": 1,
-      "description": "The inputs bus from which to drive output 1.",
-      "enum_values": [
-        "Bus number (0-28)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "2",
       "min": 0,
       "max": 28,
       "default": 2,
-      "description": "The inputs bus from which to drive output 2.",
-      "enum_values": [
-        "Bus number (0-28)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "3",
       "min": 0,
       "max": 28,
       "default": 3,
-      "description": "The inputs bus from which to drive output 3.",
-      "enum_values": [
-        "Bus number (0-28)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "4",
       "min": 0,
       "max": 28,
       "default": 4,
-      "description": "The inputs bus from which to drive output 4.",
-      "enum_values": [
-        "Bus number (0-28)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "5",
       "min": 0,
       "max": 28,
       "default": 5,
-      "description": "The inputs bus from which to drive output 5.",
-      "enum_values": [
-        "Bus number (0-28)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "6",
       "min": 0,
       "max": 28,
       "default": 6,
-      "description": "The inputs bus from which to drive output 6.",
-      "enum_values": [
-        "Bus number (0-28)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "7",
       "min": 0,
       "max": 28,
       "default": 7,
-      "description": "The inputs bus from which to drive output 7.",
-      "enum_values": [
-        "Bus number (0-28)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "8",
       "min": 0,
       "max": 28,
       "default": 8,
-      "description": "The inputs bus from which to drive output 8.",
-      "enum_values": [
-        "Bus number (0-28)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     }
   ],
   "input_ports": [],
   "output_ports": [
     {
-      "name": "ESX-8CV Outputs",
-      "description": "Eight CV outputs driven by the selected input buses, updated at a rate depending on adaptive mode and number of active channels."
+      "name": "ESX-8CV Outputs (1-8)",
+      "description": "Eight hardware-controlled CV outputs of the ESX-8CV module, driven by internal audio buses."
     }
   ]
 }

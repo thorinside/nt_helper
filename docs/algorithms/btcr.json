@@ -1,18 +1,27 @@
 {
   "guid": "btcr",
   "name": "Bit Crusher",
-  "description": "This algorithm is an implementation of the disting mk4 algorithm named 'Bit Crusher'. It applies sample rate and bit depth reduction to deliberately introduce quantisation and aliasing artefacts. The ‘Bit reduce’ parameter sets the bit depth reduction, with two types available: Type I (discontinuous, using powers of 2 bits) and Type II (smooth variation via integer math division). Additionally, symmetric or asymmetric bit reduction can be chosen via the 'Symmetric' parameter. Asymmetric treats the whole signal range as one number to quantise, while symmetric processes positive and negative sections separately by flipping them positive, quantising, and flipping back. The ‘Reduction’ parameter allows different types of bit reduction for positive and negative signals (combinations of Type I/II or no reduction). The ‘Mangling’ parameter selects non-linear distortion effects via various bitwise modifications like bit swaps, rotations, or XOR operations with previous samples.",
+  "description": "This algorithm is an implementation of the disting mk4 algorithm of the same name. It applies sample rate and bit depth reduction to deliberately introduce quantization and aliasing artifacts. The ‘Bit reduce’ parameter sets the bit depth reduction, with two types available: Type I (discontinuous power-of-2 bit reduction) and Type II (smooth variation via integer math division). Symmetric or asymmetric bit reduction can be selected via the ‘Symmetric’ parameter. The ‘Reduction’ parameter controls independent bit reduction types for positive/negative signal sections. Additionally, the ‘Mangling’ parameter selects non-linear distortion effects like bit swaps and XOR operations. Downsampling (sample rate reduction) is controlled by the ‘Downsample’ parameter.",
   "categories": [
-    "audio effects",
-    "distortion"
+    "Distortion",
+    "Bitcrushing",
+    "Sample Rate Reduction",
+    "Quantization Effects"
   ],
   "short_description": "Sample rate and bit depth reduction",
+  "use_cases": [
+    "Creating lo-fi or digital degradation effects",
+    "Adding gritty texture to audio signals",
+    "Experimental sound design with quantization artifacts",
+    "Non-linear distortion for creative processing"
+  ],
+  "gui_description": "The interface likely includes knobs/sliders for Bit reduce, Symmetric toggle, Reduction selector, Mangling selector, and Downsample control. Routing parameters (Input, Width, Output, etc.) may appear in a separate routing section.",
   "parameters": [
     {
-      "name": "Bit reduce",
-      "min": 0.0,
-      "max": 100.0,
-      "default": 0.0,
+      "name": "Bit_reduce",
+      "min": 0,
+      "max": 100,
+      "default": 0,
       "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
@@ -22,73 +31,107 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "global",
-      "type": "enum"
+      "type": "toggle",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Reduction",
       "min": 0,
       "max": 7,
       "default": 0,
-      "scope": "global",
+      "enum_values": [
+        "Type I (Positive/Negative)",
+        "Type II (Positive/Negative)",
+        "Type I Positive / Type II Negative",
+        "Type II Positive / Type I Negative",
+        "Type I Positive Only",
+        "Type II Positive Only",
+        "Type I Negative Only",
+        "Type II Negative Only"
+      ],
       "type": "enum",
-      "is_per_channel": false
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Mangling",
       "min": 0,
       "max": 7,
       "default": 0,
-      "scope": "global",
-      "type": "enum"
+      "enum_values": [
+        "None",
+        "Bit swap variant 1",
+        "Bit swap variant 2",
+        "Bit swap variant 3",
+        "Bit rotation",
+        "Previous sample XOR variant 1",
+        "Previous sample XOR variant 2",
+        "Previous sample XOR variant 3"
+      ],
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Downsample",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 0.0,
+      "min": 0,
+      "max": 10,
+      "default": 0,
       "type": "scaled",
-      "is_per_channel": false
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
-      "type": "enum"
+      "type": "bus",
+      "is_per_channel": false,
+      "is_bus": true
     },
     {
-      "name": "Output mode",
+      "name": "Output_mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "enum"
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Downsample_input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": false,
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "The first input bus to process."
+      "name": "Audio_input",
+      "description": "The audio signal input to be processed by the bit crusher and downsampling effects."
     },
     {
-      "name": "Downsample CV",
-      "description": "Bus used for downsampling control voltage (added to the Downsample parameter value)."
+      "name": "Downsample_CV",
+      "description": "Optional CV control input for additional sample rate reduction (Y input on disting mk4)."
     },
     {
       "name": "Input",
       "description": ""
-    },
-    {
-      "name": "Downsample input",
-      "description": "The bus to use for the downsample CV, which is added to the Downsample parameter value. (This corresponds to the Y input on the disting mk4 algorithm.)"
     }
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "description": "The first output bus."
+      "name": "Audio_output",
+      "description": "The processed audio signal with bit crushing and downsampling applied."
     },
     {
       "name": "Output",

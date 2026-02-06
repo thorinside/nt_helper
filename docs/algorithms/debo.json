@@ -1,27 +1,41 @@
 {
   "guid": "debo",
   "name": "Debouncer",
-  "description": "This algorithm implements a simple switch debouncer (see e.g. this Wikipedia page). It was added primarily so that simple passive guitar footswitches can be attached to the module’s inputs (with a suitable voltage source) and used with, for example, the Looper algorithm.",
+  "description": "This algorithm implements a simple switch debouncer designed to handle contact bounce in passive guitar footswitches or similar inputs. It ensures stable signal transitions by enforcing a hold-off period after an output change, making it suitable for use with algorithms like the Looper when interfacing with external voltage-sourced switches.",
   "categories": [
-    "utility",
-    "routing",
-    "logic"
+    "Signal Processing",
+    "Utility",
+    "Control Voltage",
+    "Switch Debouncing"
   ],
   "short_description": "A switch debouncer",
+  "use_cases": [
+    "Stabilizing passive guitar footswitch inputs for modular synthesizers",
+    "Debouncing external binary control signals (e.g., CV triggers)",
+    "Ensuring clean signal transitions in looper or sequencer applications"
+  ],
   "specifications": [
     {
       "name": "Channels",
-      "description": "The number of bus channels to process, ranging from 1 to 8."
+      "min": 1,
+      "max": 8
     }
   ],
   "parameters": [
     {
       "name": "Time",
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Time",
       "min": 1,
       "max": 100,
       "default": 10,
+      "scope": "global",
       "type": "enum",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -29,53 +43,61 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
+      "scope": "per-channel",
+      "type": "enum"
     },
     {
-      "name": "Output_mode",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_bus": false
+      "scope": "per-channel",
+      "type": "enum"
     },
     {
-      "name": "Output_Volts",
+      "name": "Output Volts",
       "min": -10,
       "max": 10,
       "default": 5,
-      "type": "enum",
-      "is_per_channel": true,
+      "scope": "per-channel",
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Output_semitones",
+      "name": "Output Volts",
+      "min": -10,
+      "max": 10,
+      "default": 5,
+      "scope": "per-channel",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Output semitones",
       "min": -60,
       "max": 60,
       "default": 0,
+      "scope": "per-channel",
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Output semitones",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "scope": "per-channel",
       "type": "enum",
-      "is_per_channel": true,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "The input bus for the switch signal (channels 1-8)."
-    },
-    {
-      "name": "Input",
       "description": ""
     }
   ],
   "output_ports": [
-    {
-      "name": "Output",
-      "description": "The debounced output bus, which can be routed to a different bus or use the same as input if set to 'None'."
-    },
     {
       "name": "Output",
       "description": ""

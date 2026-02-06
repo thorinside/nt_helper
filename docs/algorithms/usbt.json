@@ -3,22 +3,30 @@
   "name": "USB audio (to host)",
   "description": "This algorithm routes signals to the USB audio host, if one is connected.\n\nThe host sees 12 input channels. Each one of these can be set to receive any of the disting NT’s busses.\n\nNote that the signals seen by the algorithm, and so by the host, depend where in the list of algorithms this one appears. If it’s the first algorithm, it can send to the host the module’s own inputs, unmodified; if it’s the last algorithm, it can send to the host the outputs of all the other algorithms.\n\nNote also that “USB audio” doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
   "categories": [
-    "routing",
-    "utility",
-    "external control"
+    "Audio",
+    "Routing",
+    "Interface"
   ],
   "short_description": "Sends audio to USB host",
   "use_cases": [
-    "Audio routing to a computer for further processing",
-    "Exchanging control signals with VCV Rack or other modular synth environments",
-    "Monitoring internal module busses via external software",
-    "Debugging signal flow in the disting NT"
+    "Streaming audio to a DAW",
+    "Sending control voltages (CV) to VCV Rack or similar modular environments",
+    "Multi-channel signal routing for external processing"
   ],
-  "gui_description": null,
-  "specifications": [],
+  "gui_description": "The interface allows mapping each of the 12 USB channels to any bus (1-28) within the disting NT system. Each channel has an adjustable selector parameter.",
+  "specifications": [
+    {
+      "name": "Host Channels",
+      "value": "12"
+    },
+    {
+      "name": "Bus Range",
+      "value": "1 to 28"
+    }
+  ],
   "parameters": [
     {
-      "name": "USB_channel_1_from",
+      "name": "USB channel 1 from",
       "min": 1,
       "max": 28,
       "default": 1,
@@ -26,7 +34,7 @@
       "is_bus": true
     },
     {
-      "name": "USB_channel_2_from",
+      "name": "USB channel 2 from",
       "min": 1,
       "max": 28,
       "default": 2,
@@ -34,135 +42,96 @@
       "is_bus": true
     },
     {
-      "name": "USB_channel_3_from",
+      "name": "USB channel 3 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 3.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_4_from",
+      "name": "USB channel 4 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 4.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_5_from",
+      "name": "USB channel 5 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 5.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_6_from",
+      "name": "USB channel 6 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 6.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_7_from",
+      "name": "USB channel 7 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 7.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_8_from",
+      "name": "USB channel 8 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 8.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_9_from",
+      "name": "USB channel 9 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 9.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_10_from",
+      "name": "USB channel 10 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 10.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_11_from",
+      "name": "USB channel 11 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 11.",
       "type": "enum",
       "is_bus": true
     },
     {
-      "name": "USB_channel_12_from",
+      "name": "USB channel 12 from",
       "min": 1,
       "max": 28,
       "default": null,
+      "description": "The bus to send to USB channel 12.",
       "type": "enum",
       "is_bus": true
     }
   ],
   "input_ports": [],
-  "output_ports": [
-    {
-      "name": "USB_channel_1",
-      "description": "Outputs signal to USB host channel 1 (corresponds to disting NT bus 1 by default)"
-    },
-    {
-      "name": "USB_channel_2",
-      "description": "Outputs signal to USB host channel 2 (corresponds to disting NT bus 2 by default)"
-    },
-    {
-      "name": "USB_channel_3",
-      "description": "Outputs signal to USB host channel 3"
-    },
-    {
-      "name": "USB_channel_4",
-      "description": "Outputs signal to USB host channel 4"
-    },
-    {
-      "name": "USB_channel_5",
-      "description": "Outputs signal to USB host channel 5"
-    },
-    {
-      "name": "USB_channel_6",
-      "description": "Outputs signal to USB host channel 6"
-    },
-    {
-      "name": "USB_channel_7",
-      "description": "Outputs signal to USB host channel 7"
-    },
-    {
-      "name": "USB_channel_8",
-      "description": "Outputs signal to USB host channel 8"
-    },
-    {
-      "name": "USB_channel_9",
-      "description": "Outputs signal to USB host channel 9"
-    },
-    {
-      "name": "USB_channel_10",
-      "description": "Outputs signal to USB host channel 10"
-    },
-    {
-      "name": "USB_channel_11",
-      "description": "Outputs signal to USB host channel 11"
-    },
-    {
-      "name": "USB_channel_12",
-      "description": "Outputs signal to USB host channel 12"
-    }
-  ]
+  "output_ports": []
 }

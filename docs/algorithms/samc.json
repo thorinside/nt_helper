@@ -1,33 +1,38 @@
 {
   "guid": "samc",
   "name": "Sample Player (Clocked)",
-  "description": "This algorithm plays samples synced to a clock input, stretching or shrinking them to fit the tempo provided by the clock. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm but works somewhat differently. The Sample Player (Clocked) recalculates playback speed based on the chosen sample's length and the current tempo/time signature, adjusting it to fit a calculated number of bars. Parameters like 'Speed tune' allow manual adjustments for accuracy when samples don't perfectly align with bar counts.",
+  "description": "This algorithm plays samples synced to a clock input or MIDI. It stretches or shrinks the sample to fit the tempo and time signature provided by the clock, making it ideal for rhythmic synchronization. The algorithm calculates the optimal number of bars based on the sample length and adjusts playback speed accordingly. It also includes features like auto-triggering in loops and manual triggering options via bus, MIDI, or manually.",
   "categories": [
-    "sampling",
-    "clocking",
-    "utility"
+    "Audio",
+    "Sampling",
+    "Clock/Sync",
+    "MIDI",
+    "Sequencing"
   ],
   "short_description": "Plays samples synced to a clock",
   "use_cases": [
-    "Looping samples in time with MIDI or external clocks",
-    "Adjusting playback speed for tempo synchronization",
-    "Triggering samples via bus, MIDI, or manual controls",
-    "Automated sample triggering in fixed intervals or loop-based timing"
+    "Rhythmic sample playback",
+    "Tempo-synchronized loops",
+    "Live performance with clocked triggers",
+    "MIDI clock synchronization",
+    "Time signature-based sample stretching"
   ],
-  "gui_description": "Displays the waveform of the chosen sample, updated during playback. Shows tick marks for bars and beats above the waveform. To the right, it displays the sample length (in seconds), natural bar count at original speed, and adjusted bar count based on clocked tempo. The interface highlights how the sample fits into the calculated loop time.",
+  "gui_description": "The display shows the waveform of the sample, updated during playback. Unlike other Sample Players, it visualizes the calculated loop length rather than the full sample duration. Tick marks indicate bars and beats above the waveform. To the right, it displays the sample length (seconds), natural bar count at original speed, and adjusted bar count for sync.",
   "specifications": [
     {
       "name": "Record time",
-      "description": "The maximum length of audio that can be recorded (sampled).",
       "min": 0,
-      "max": 60
+      "max": 60.00000059604645
     }
   ],
   "parameters": [
     {
       "name": "Speed tune",
+      "min": 50.0,
+      "max": 200.0,
       "default": 100.0,
-      "type": "folder",
+      "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -36,8 +41,8 @@
       "min": 0,
       "max": 19,
       "default": 4,
-      "scope": "global",
       "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -46,8 +51,8 @@
       "min": 1,
       "max": 99,
       "default": 4,
-      "scope": "global",
       "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -56,8 +61,8 @@
       "min": 0,
       "max": 4,
       "default": 2,
-      "scope": "global",
       "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -66,8 +71,8 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "scope": "global",
       "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -76,8 +81,8 @@
       "min": 0,
       "max": 19,
       "default": 15,
-      "scope": "global",
       "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -86,8 +91,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "mix",
       "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -96,8 +101,8 @@
       "min": 0,
       "max": 19,
       "default": 4,
-      "scope": "mix",
       "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
       "is_bus": false
     },
@@ -106,29 +111,20 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "mix",
       "type": "enum",
+      "is_per_channel": false,
       "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Speed tune",
-      "min": 50.0,
-      "max": 200.0,
-      "default": 100.0,
-      "type": "folder",
-      "is_common": false,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Clock input",
-      "description": "The bus to use as the clock input for tempo synchronization."
+      "description": "Bus used as the clock signal source for synchronization."
     },
     {
       "name": "Reset input",
-      "description": "The bus to use as the reset input, which can trigger or stop/restart playback depending on 'Reset mode'."
+      "description": "Bus used to trigger a reset on the sample playback (either as a trigger or run/stop mode)."
     },
     {
       "name": "Clock input",

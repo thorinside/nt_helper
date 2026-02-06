@@ -1,44 +1,55 @@
 {
   "guid": "quan",
   "name": "Quantizer",
-  "description": "This algorithm is a multi-channel CV quantizer, loosely based on the Quad Quantizer algorithm on the disting EX. It supports microtuning but this is not a requirement. The quantization parameters are common to all channels; individual channels’ parameters relate solely to routing. It quantizes CV inputs and generates CV outputs and/or MIDI output.\n\nThe quantization process involves sampling input CV, applying input transpose (adjusting in multiples of 12-TET semitones), quantizing into a 'lookup' scale yielding a note number, applying the shift parameter, selecting an output CV based on the chosen tuning’s keyboard map, and finally applying the output transpose.\n\nIn Nearest and Warped modes, lookup and output scales are identical. In Mapped mode, the input is treated as 12-TET MIDI note numbers, which then select pitches from a custom scale via its keyboard map (kbm).\n\nWarped mode redistributes voltages in the lookup scale to be evenly spaced, ensuring regular rhythms when quantizing unevenly spaced scales like major chords.\n\nKey, Scale, and Mode parameters constrain quantization to specific scales but are ignored for non-12-TET tunings. Two MIDI-based scales ('MIDI (any octave)' and 'MIDI (exact)') dynamically define notes based on held keys. Mask parameters can override or supplement scale constraints by enabling/disabling specific notes.\n\nThe GUI alternates between a piano-key visualization of quantized notes (for 12-degree tunings) and detailed channel-specific data, including input/output voltages, sampled values, note numbers, tuning ratios/cents, and gate/trigger behavior.",
+  "description": "This algorithm is a multi-channel CV quantizer, loosely based on the Quad Quantizer algorithm on the disting EX. It supports microtuning but this is not a requirement.\n\nIt quantizes CV inputs and generates CV outputs and/or MIDI output.\n\nThe quantization parameters are common to all channels; the individual channels’ parameters are solely related to routing.\n\n**Quantization signal flow:**\n1. The input CV is sampled (triggered by gate input if selected, otherwise when changed sufficiently).\n2. Input transpose is applied (±12-TET semitones).\n3. CV is quantized into the ‘lookup’ scale, yielding a note number.\n4. Shift parameter is applied.\n5. Note number selects a CV in the ‘output’ scale.\n6. Output transpose is applied.\n\n**Modes:**\n- **Nearest/Warped**: Lookup and output scales are identical; input quantized to nearest note (Warped redistributes voltages for even spacing).\n- **Mapped**: Uses 12-TET lookup, maps MIDI note numbers to custom scale via keyboard map (.kbm file).\n\n**Key/Scale/Mode:** Constrains notes to a specific scale (ignored if tuning has ≠12 degrees or microtuning is active). Supports live MIDI scales ('MIDI (any octave)'/'MIDI (exact)').\n\n**Mask:** Overrides key/scale/mode by deselecting specific notes (visualized in GUI for 12-degree tunings).\n\n**GUI:** Shows piano-key visualization of selected notes or channel-specific CV/MIDI data (voltage, note number, cents, tuning ratios).",
   "categories": [
-    "utility",
-    "CV processing",
-    "MIDI"
+    "CV Processing",
+    "MIDI/CV Conversion",
+    "Microtonal Tuning",
+    "Modular Synthesis"
   ],
-  "short_description": "A CV quantizer",
+  "short_description": "A multi-channel CV quantizer supporting microtuning, scale constraints, and MIDI output with flexible routing.",
   "use_cases": [
-    "Quantizing LFO or envelope outputs to create microtonal note patterns",
-    "Converting MIDI input into custom-tuned CV output via keyboard mapping (kbm)",
-    "Generating rhythmic gate/trigger pulses for envelope generators or sequencers",
-    "Playing in non-standard tunings like 31-EDO from a standard MIDI controller"
+    "Microtonal music production (e.g., 31-EDO scales)",
+    "LFO-based rhythmic patterns with Warped mode",
+    "Live MIDI-to-CV quantization with custom keyboard maps",
+    "Pentatonic/blues-scale filtering via mask parameters",
+    "Pitch-bend modulation for dynamic tuning adjustments"
   ],
-  "gui_description": "The Quantizer GUI displays either:\n\n1. A piano-key visualization of one octave (when using Key, Scale, Mode, or Mask parameters with 12-degree tuning logic). Bright notes indicate quantized pitches; darker ones are deselected. The current output note is shown as an unfilled rectangle.\n\n2. Detailed per-channel data including:\n   - Input voltage and corresponding MIDI note number/name/cents,\n   - Sampled voltage value,\n   - Lookup and output note numbers (with names/cents for 12-TET tunings),\n   - Output voltage and tuning details (cents or ratio), and\n   - Gate/trigger behavior.\n\nThe display dynamically adjusts based on the selected parameter and tuning, highlighting active notes or channel-specific metrics.",
+  "gui_description": "Displays either:\n1. **Scale visualization** (for Key/Scale/Mode/Mask parameters): Piano-key layout showing selected/deselected notes, with current output note highlighted.\n2. **Channel details**: Real-time CV/MIDI data (input voltage, sampled voltage, quantized note numbers, output voltage, tuning info in cents or ratios).\n\nTuning-specific displays show equal temperament vs. just intonation differences (e.g., A=900cents ET vs. 5/3 ratio JI).",
   "specifications": [
     {
       "name": "Channels",
       "min": 1,
       "max": 12
+    },
+    {
+      "name": "Sample Rate Compatibility",
+      "description": "Standard audio/MIDI sample rates (not explicitly limited)"
     }
   ],
   "parameters": [
     {
       "name": "Quantize mode",
+      "min": 0,
+      "max": 2,
       "default": 0,
-      "description": "Sets the quantization mode: 'Nearest', 'Mapped', or 'Warped'.",
       "enum_values": [
         "Nearest",
         "Mapped",
         "Warped"
-      ]
+      ],
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Input transpose",
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "scaled",
+      "type": "enum",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -48,7 +59,7 @@
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "scaled",
+      "type": "enum",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -58,7 +69,7 @@
       "min": -12,
       "max": 12,
       "default": 0,
-      "type": "scaled",
+      "type": "enum",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -88,7 +99,7 @@
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "scaled",
+      "type": "enum",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -108,7 +119,7 @@
       "min": 0.0,
       "max": 10.0,
       "default": 2.0,
-      "type": "scaled",
+      "type": "enum",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -124,7 +135,7 @@
       "is_bus": false
     },
     {
-      "name": "Send pitch bend (MIDI)",
+      "name": "Output to breakout",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -134,50 +145,50 @@
       "is_bus": false
     },
     {
-      "name": "Pitch bend range (MIDI)",
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Send pitch bend",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch bend range",
       "min": 1,
       "max": 48,
       "default": 2,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Output to breakout (MIDI)",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Output to Select Bus (MIDI)",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Output to USB (MIDI)",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Output to internal (MIDI)",
-      "min": 0,
-      "max": 1,
-      "default": 0,
       "type": "enum",
       "is_per_channel": false,
       "is_common": true,
@@ -187,27 +198,30 @@
   "input_ports": [
     {
       "name": "CV input",
-      "description": "The pitch CV input bus for each channel. Adjustable via per-channel parameter.",
-      "channelCountRef": "CV input"
+      "description": "Pitch CV input bus (0-28). Each channel has an independent CV input.",
+      "isPerChannel": true
     },
     {
       "name": "Gate input",
-      "description": "Optional gate input bus that triggers sampling when high (per-channel parameter). If not used, the quantizer samples based on CV changes alone."
+      "description": "(Optional) Gate input bus (0-28) to trigger sampling. If unused, CV is sampled on sufficient change.",
+      "isPerChannel": true
     }
   ],
   "output_ports": [
     {
       "name": "CV output",
-      "description": "The pitch CV output bus for each channel. Always uses 'Replace' output mode.",
-      "channelCountRef": "CV output"
+      "description": "Pitch CV output bus (15 by default). Always uses 'Replace' mode.",
+      "isPerChannel": true
     },
     {
       "name": "Gate output",
-      "description": "The gate/trigger output bus, controlled by the 'Output gate mode' parameter and always using 'Replace' output mode."
+      "description": "Gate/trigger output bus (0 by default), controlled by 'Output gate mode'. Uses 'Replace' mode.",
+      "isPerChannel": true
     },
     {
       "name": "Change output",
-      "description": "Fires a trigger pulse when the quantized note changes (per-channel parameter). Always uses 'Replace' output mode."
+      "description": "'Change trigger' output bus. Fires a pulse when quantized note changes. Uses 'Replace' mode.",
+      "isPerChannel": true
     }
   ]
 }

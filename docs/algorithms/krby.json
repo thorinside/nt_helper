@@ -1,337 +1,68 @@
 {
   "guid": "krby",
   "name": "Kirbinator",
-  "description": "This algorithm continuously records audio into a buffer and plays slices of the buffer under the influence of various probabilities. The slices can be pitched up and down, played forwards and backwards, and panned in stereo.\n\nKey to its operation are two trigger inputs: the Mark input defines slice boundaries in the audio buffer based on rhythmic clock signals (e.g., quarter notes or eighth notes), while the Trigger input determines when new slices are selected for playback and when parameters like pitch, direction, and panning may change. Playback continues with updated parameters until another Trigger is received.\n\nThe stereo audio buffer can be routed as mono, stereo, or mono-in/stereo-out via adjustable routing settings. By default, behavior is stochastic (random), but repeatable patterns are achievable through the 'Random seed' parameter and gradual mutations between probability sets using the 'Mutate' parameter. Transient detection allows automatic slice marking when enabled.\n\nUnclocked operations enable creative use with irregular triggers (e.g., footswitches) for start/stop control, while the 'Feedback' parameter can simulate delay or echo effects—especially pronounced in reverse playback.",
+  "description": "This algorithm continuously records audio into a buffer and plays slices of the buffer under the influence of various probabilities. The slices can be pitched up and down, played forwards and backwards, and panned in stereo.\n\nKey to its operation are two trigger inputs: the Mark input (defining slice boundaries) and the Trigger input (instructing playback changes). By default, behavior is random but can be made repeatable via a Random seed parameter. The algorithm supports transient detection for automatic marking, unclocked operations with adjustable play probabilities, and feedback for delay/echo effects.\n\nThe audio buffer is stereo but can operate in mono/stereo modes based on routing parameters.",
   "categories": [
-    "sampling",
-    "granular",
-    "pitch",
-    "routing",
-    "triggers",
-    "randomization",
-    "delay"
+    "Audio Effects",
+    "Granular Synthesis",
+    "Probabilistic Processing",
+    "Sequencing",
+    "Transient Detection"
   ],
   "short_description": "Stochastic audio processor",
   "use_cases": [
-    "Rhythmic slice-based processing with clocked Mark/Trigger inputs",
-    "Unclocked granular effects using footswitches or manual triggers",
-    "Transient-triggered slice playback without explicit clocking",
-    "Glide and pitch modulation for tape-stop-like artifacts",
-    "Feedback-based delay/echo with reverse playback"
+    "Rhythmic slice playback with probabilistic pitch/direction changes",
+    "Automated granular synthesis via transient detection",
+    "Unclocked live performance effects",
+    "Feedback-based delay/echo simulations",
+    "Repeatable stochastic patterns using random seeds"
   ],
-  "gui_description": "The display shows a waveform of the audio buffer. A short, dark line indicates current recording position, while longer lines represent active playback slices. Checkmarks along the top denote slice boundaries (Marks). Visual feedback reflects real-time processing states.",
-  "parameters": [
-    {
-      "name": "Pitch up",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Pitch down",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Fifths",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Reverse",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Glide",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Stutter",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Triplet",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Play",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "type": "enum"
-    },
-    {
-      "name": "Glide control",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Glide",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Glide up",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "type": "enum"
-    },
-    {
-      "name": "Glide down",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "type": "enum"
-    },
-    {
-      "name": "Through zero",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "enum"
-    },
-    {
-      "name": "Min stutter",
-      "min": 1,
-      "max": 16,
-      "default": 2,
-      "type": "enum"
-    },
-    {
-      "name": "Max stutter",
-      "min": 1,
-      "max": 16,
-      "default": 3,
-      "type": "enum"
-    },
-    {
-      "name": "Min jump",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Max jump",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Stutter",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "enum"
-    },
-    {
-      "name": "Pitch offset",
-      "min": -24,
-      "max": 24,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Glide offset",
-      "min": -1000,
-      "max": 1000,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Fade",
-      "min": 0,
-      "max": 1000,
-      "default": 10,
-      "type": "enum"
-    },
-    {
-      "name": "Random seed",
-      "min": 0,
-      "max": 32767,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Apply seed",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Mutate",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Trigger hold time",
-      "min": 0.0,
-      "max": 5.0,
-      "default": 0.0,
-      "type": "enum"
-    },
+  "gui_description": "Displays a waveform of the audio buffer. A short dark line shows current recording position, longer lines indicate playback positions, and checkmarks mark slice boundaries defined by the Mark input.",
+  "specifications": [
     {
       "name": "Buffer size",
       "min": 1,
-      "max": 44,
-      "default": null,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
+      "max": 0.0
     },
     {
-      "name": "Feedback",
-      "min": -24.0,
-      "max": 0.0,
-      "default": -24.0,
-      "type": "enum"
-    },
-    {
-      "name": "Detect",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Sensitivity",
-      "min": 0,
-      "max": 200,
-      "default": 100,
-      "type": "enum"
-    },
-    {
-      "name": "Dry gain",
-      "min": -40,
-      "max": 6,
-      "default": -40,
-      "type": "enum"
-    },
-    {
-      "name": "Effect gain",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Pan mean",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Pan deviation",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "type": "enum"
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "routing",
-      "type": "enum"
+      "name": "Sample rate",
+      "description": "Standard audio sample rates supported"
     }
   ],
   "input_ports": [
     {
-      "name": "Audio Input (Left/mono)",
-      "description": "Stereo or mono audio signal input for recording into the buffer. Routing determined by 'Left/mono input' parameter."
+      "name": "Audio input (left/mono)",
+      "description": "Left or mono audio signal input, selectable via routing parameters."
     },
     {
-      "name": "Audio Input (Right)",
-      "description": "Right channel of stereo audio input, if applicable. Routing controlled via 'Right input' parameter."
+      "name": "Audio input (right)",
+      "description": "Right audio signal input. Disabled if operating in mono mode."
     },
     {
-      "name": "Mark Input",
-      "description": "Trigger signal defining slice boundaries in the buffer. Bus selected by 'Mark input' parameter."
+      "name": "Mark",
+      "description": "Trigger input defining slice boundaries in the buffer. Typically a clock but can be any signal."
     },
     {
-      "name": "Trigger Input",
-      "description": "Trigger signal initiating new slice playback and applying random parameters. Bus selected by 'Trigger input' parameter."
+      "name": "Trigger",
+      "description": "Trigger input initiating playback changes and selecting new slices."
     },
     {
-      "name": "Stop Input",
-      "description": "Trigger signal halting current playback. Bus selected by 'Stop input' parameter."
+      "name": "Stop",
+      "description": "Trigger input to halt current slice playback."
     },
     {
-      "name": "Pitch Offset CV Input",
-      "description": "1V/octave pitch control voltage added to the probabilistic pitch offset. Bus selected by 'Pitch offset input' parameter."
-    },
-    {
-      "name": "Left/mono input",
-      "description": ""
-    },
-    {
-      "name": "Right input",
-      "description": ""
-    },
-    {
-      "name": "Mark input",
-      "description": ""
-    },
-    {
-      "name": "Trigger input",
-      "description": ""
-    },
-    {
-      "name": "Stop input",
-      "description": ""
-    },
-    {
-      "name": "Pitch offset input",
-      "description": ""
+      "name": "Pitch offset CV",
+      "description": "1V/octave control voltage input for dynamic pitch offset adjustments."
     }
   ],
   "output_ports": [
     {
-      "name": "Audio Output (Left/mono)",
-      "description": "Left or mono channel of processed audio output, routed via 'Left/mono output' parameter."
+      "name": "Audio output (left/mono)",
+      "description": "Left or mono processed audio output, selectable via routing parameters."
     },
     {
-      "name": "Audio Output (Right)",
-      "description": "Right channel of stereo processed audio output, if applicable. Routing controlled by 'Right output' parameter."
-    },
-    {
-      "name": "Left/mono output",
-      "description": ""
-    },
-    {
-      "name": "Right output",
-      "description": ""
+      "name": "Audio output (right)",
+      "description": "Right processed audio output. Disabled if operating in mono mode."
     }
   ]
 }

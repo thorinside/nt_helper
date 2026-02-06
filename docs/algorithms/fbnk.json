@@ -1,260 +1,52 @@
 {
   "guid": "fbnk",
   "name": "Filter bank",
-  "description": "A fixed filter/resonator bank. This algorithm is based on the disting EX algorithm of the same name and provides a bank of filters or resonators that can be controlled manually, via CV, or with envelopes driven from gates. The original disting EX manual states 'this algorithm provides a bank of eight parallel stereo bandpass filters or resonators. The filters' levels can be controlled manually, via CV, or with envelopes driven from gates, and their pitch can also be set manually or via CV or MIDI. The resonators in particular are good for being played as chords over MIDI, in the manner of the Alesis Quadraverb Plus.' This implementation extends this by allowing up to 12 filters (mono, stereo, or up to 8 channels wide) and includes three filter modes: Resonator (peaking all-pass filters emphasizing narrow frequency bands), Bandpass (attenuating frequencies away from center frequencies), and Multiband (where filter frequencies set crossover points like a multiband compressor). All filters are independent except in Multiband mode, where each band's passed frequencies are bounded by its own frequency and the next band's frequency.",
+  "description": "This algorithm is based on the disting EX filter/resonator bank. It provides a configurable number of parallel filters (1-12) that can be mono, stereo, or up to 8 channels wide. The original disting EX implementation offered eight stereo bandpass filters or resonators with adjustable levels via CV/envelopes and pitch control via MIDI/CV. This version extends the filter count to 12 and introduces three modes: Resonator (peaking all-pass filters emphasizing narrow frequency bands), Bandpass (attenuating frequencies away from center points), and Multiband (crossover-based, like a multiband compressor). Filters can be manually controlled or driven by MIDI/CV/gates, with resonance/Q settings, envelope attack/release times, and individual gain controls. The GUI displays filter tuning notes overlaid on voice-level envelopes.",
   "categories": [
-    "audio effects",
-    "filtering",
-    "reverb",
+    "Filter",
+    "Resonator",
+    "Multiband",
     "MIDI",
-    "CV processing"
+    "CV/Gate",
+    "Polysynth",
+    "Spatial Audio"
   ],
-  "short_description": "A fixed filter/resonator bank",
+  "short_description": "A fixed filter/resonator bank with adjustable width (1-8 channels), modes, and per-filter controls.",
   "use_cases": [
-    "Fixed filter banks for sound design",
-    "Parallel stereo bandpass filtering",
-    "Resonators played as MIDI chords (e.g., Alesis Quadraverb Plus emulation)",
-    "Multiband processing with crossover points",
-    "Manual, CV, or envelope-driven pitch and level control"
+    "Chord-based sound design (e.g., Alesis Quadraverb-style resonators)",
+    "Multiband processing for dynamic frequency shaping",
+    "MIDI-driven filter banks for synths or effects",
+    "CV-controlled spectral manipulation",
+    "Spatial audio filtering with multi-channel support"
   ],
-  "gui_description": "The display shows the notes to which each filter is tuned, overlaid on a bar representing the envelope level of the voice.",
+  "gui_description": "The display shows notes corresponding to each filter’s tuning, overlaid on a bar representing the envelope level of the voice. This provides real-time visual feedback of filter pitch and signal presence.",
   "specifications": [
     {
       "name": "Filters",
-      "description": "Supports 1-12 filters in mono, stereo, or up to 8 channels wide."
+      "value": "1-12",
+      "description": "Number of parallel filters in the bank."
     },
     {
-      "name": "Polyphony",
-      "description": "Uses standard polysynth features (see 'Common polysynth features')."
-    }
-  ],
-  "parameters": [
-    {
-      "name": "Width",
-      "min": 1,
-      "max": 8,
-      "default": 1,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": true
+      "name": "Audio channels per filter",
+      "value": "Mono, Stereo, or up to 8 channels wide",
+      "description": "Configurable channel width for each filter."
     },
     {
-      "name": "Mode",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Resonance/Q",
-      "min": 1,
-      "max": 100,
-      "default": 50,
-      "scope": "global",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Attack time",
-      "min": 0,
-      "max": 1023,
-      "default": 64,
-      "scope": "global",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Release time",
-      "min": 0,
-      "max": 1023,
-      "default": 64,
-      "scope": "global",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Gain (global)",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "scope": "global",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Pitch",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Gate",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "trigger",
-      "is_bus": false
-    },
-    {
-      "name": "Output (filter)",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "scope": "per-channel",
-      "type": "bus",
-      "is_bus": true
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Gain (filter)",
-      "min": -40.0,
-      "max": 24.0,
-      "default": 0.0,
-      "scope": "per-channel",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 1,
-      "scope": "mix",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "MPE channels",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "scope": "mix",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "I2C channel",
-      "min": 0,
-      "max": 255,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Controlled voices",
-      "min": 1,
-      "max": 12,
-      "default": 12,
-      "scope": "mix",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "scope": "mix",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Fine tune",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "scope": "mix",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Sustain (MIDI)",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "mix",
-      "type": "trigger",
-      "is_bus": false
-    },
-    {
-      "name": "Bend range",
-      "min": 0,
-      "max": 48,
-      "default": 2,
-      "scope": "mix",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Unison",
-      "min": 1,
-      "max": 8,
-      "default": 1,
-      "scope": "mix",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Unison detune",
-      "min": 0,
-      "max": 100,
-      "default": 10,
-      "scope": "mix",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Sustain mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "mix",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Press -> volume",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "scope": "mix",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "MPE Y -> volume",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "scope": "mix",
-      "type": "scaled",
-      "is_bus": false
+      "name": "Filter modes",
+      "value": "Resonator, Bandpass, Multiband",
+      "description": "Operational modes defining frequency behavior and independence."
     }
   ],
   "input_ports": [
     {
       "name": "Audio input",
-      "description": ""
+      "description": "The first audio input bus (1-28). Additional buses are determined by the 'Width' parameter."
     }
   ],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Filter outputs",
+      "description": "Each filter’s output can be routed to a specific bus (1-28), with configurable Add/Replace mode."
+    }
+  ]
 }

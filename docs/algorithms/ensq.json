@@ -1,276 +1,62 @@
 {
   "guid": "ensq",
   "name": "Envelope Sequencer",
-  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer, and some of the documentation for this algorithm cross-references with that for the other.\n\nEach step has a curve shape, a scale, and an offset. It also has a 'Division', which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock).\n\nThe algorithm has a function for randomising the curves in various ways.\n\nEach Envelope Sequencer has internal storage for 32 sequences, which you can use like 'snapshots' or 'patterns' to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures.\n\nRemember that every curve shape, level, etc. is a parameter and therefore mappable.",
+  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer, and some of the documentation for this algorithm cross-references with that for the other.\n\nEach step has a curve shape, a scale, and an offset. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock).\n\nThe algorithm has a function for randomising the curves in various ways.\n\nEach Envelope Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures.\n\nRemember that every curve shape, level, etc. is a parameter and therefore mappable.",
   "categories": [
-    "sequencing",
-    "randomization",
-    "clocking",
-    "CV processing",
-    "MIDI"
+    "Sequencer",
+    "CV",
+    "MIDI",
+    "Modulation"
   ],
-  "short_description": "\"A really, really big curve sequencer\"",
+  "short_description": "A really, really big curve sequencer",
   "use_cases": [
-    "Creating complex CV envelopes for modular synthesizers",
-    "Generating rhythmic patterns with adjustable step lengths and repeats/ratchets",
-    "Switching between multiple stored sequences under CV or manual control",
-    "Randomizing envelope shapes for unpredictable modulation",
-    "Building larger structures by combining smaller sequences"
+    "Curve sequencing for modular synthesis",
+    "Dynamic modulation source",
+    "Pattern-based MIDI sequencing",
+    "CV-controlled pattern switching",
+    "Randomized envelope generation"
   ],
-  "gui_description": "The display shows an overview of the 16 steps. The current step being played is indicated by a highlight above the step, while start and end steps are marked with solid bars. The step whose parameter is being edited is highlighted in the GUI. Divisions (repeats or ratchets) appear as breaks in the highlight, accompanied by numbers indicating their values.",
-  "parameters": [
+  "gui_description": "The display shows an overview of the 16 steps. The current step being played is indicated by a highlight above the step. The start and end steps are indicated by solid bars. The step whose parameter is being edited is shown highlighted. Divisions (repeats or ratchets) are shown as breaks in the highlight, with a number above to indicate the division.",
+  "specifications": [
     {
-      "name": "Sequence",
-      "min": 1,
-      "max": 32,
-      "default": 1,
-      "scope": "sequencer",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "name": "Internal storage",
+      "value": "32 sequences"
     },
     {
-      "name": "Start",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "End",
-      "min": 1,
-      "max": 16,
-      "default": 16,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "Direction",
-      "min": 0,
-      "max": 6,
-      "default": 0,
-      "scope": "sequencer",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Permutation",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "Reset offset",
-      "min": -16,
-      "max": 16,
-      "default": 0,
-      "scope": "sequencer",
-      "type": "enum"
-    },
-    {
-      "name": "Length type",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "step",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "% length",
-      "min": 1,
-      "max": 100,
-      "default": 100,
-      "scope": "step",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Fixed length",
-      "min": 1,
-      "max": 1000,
-      "default": 100,
-      "scope": "step",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Curve",
-      "min": 0,
-      "max": 11,
-      "default": 0,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Scale",
-      "min": -10.0,
-      "max": 10.0,
-      "default": 0.0,
-      "scope": "step",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Offset",
-      "min": -10.0,
-      "max": 10.0,
-      "default": 0.0,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Division",
-      "min": 0,
-      "max": 14,
-      "default": 7,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Mute",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "step",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Skip",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Reset",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Repeat",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "step",
-      "type": "enum"
-    },
-    {
-      "name": "Randomise",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Levels",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Curves",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Repeats",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Min repeat",
-      "min": 2,
-      "max": 8,
-      "default": 2,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Max repeat",
-      "min": 2,
-      "max": 8,
-      "default": 8,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Min ratchet",
-      "min": 2,
-      "max": 8,
-      "default": 2,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Max ratchet",
-      "min": 2,
-      "max": 8,
-      "default": 8,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Repeat probability",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum"
-    },
-    {
-      "name": "Ratchet probability",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "type": "enum"
+      "name": "Steps per sequence",
+      "value": "16"
     }
   ],
   "input_ports": [
     {
       "name": "Clock input",
-      "description": "The bus to use as the clock input for triggering steps."
+      "description": "The bus to use as the clock input for sequencing."
     },
     {
       "name": "Reset input",
-      "description": "The bus to use as the reset trigger, run/stop signal, or one-shot trigger depending on Reset mode setting."
+      "description": "The bus to use as the reset input for the sequencer."
     },
     {
       "name": "Sequence CV input",
-      "description": "The bus used for selecting sequences under CV control (if Sequence change mode is set accordingly)."
+      "description": "The bus used to select the sequence via CV control."
     },
     {
       "name": "Sequence trigger input",
-      "description": "The bus to use as the sequence select trigger."
+      "description": "The bus used for triggering sequence changes via CV."
     }
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "description": "The bus used for CV output, which can be controlled by envelope sequences."
+      "name": "CV output",
+      "description": "The bus used for the CV output from the sequencer."
     },
     {
-      "name": "MIDI CC",
-      "description": "The MIDI CC number sent as part of the MIDI output (if enabled)."
+      "name": "MIDI breakout",
+      "description": "MIDI output to the breakout port (if enabled)."
+    },
+    {
+      "name": "Select Bus MIDI",
+      "description": "MIDI output to the Select Bus (if enabled)."
     }
   ]
 }

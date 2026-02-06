@@ -1,25 +1,28 @@
 {
   "guid": "micc",
   "name": "MIDI CC Generator",
-  "description": "This simple utility generates MIDI CCs. These can be sent to the various external MIDI destinations, and/or routed to other algorithms within the module. Some example uses include:\n\n   - CV to MIDI conversion: by mapping the Value parameter to a CV, you can generate a MIDI CC from a control voltage.\n\n   - Macro control: you can send the CCs from this algorithm to other algorithms, and map parameters in those algorithms to be controlled by the CC. Then, by changing the Value parameter in this algorithm, you can change many parameters in other algorithms at once. This is particularly useful in combination with the Performance Page.",
+  "description": "This simple utility generates MIDI CCs. These can be sent to various external MIDI destinations and/or routed to other algorithms within the module. Example uses include CV to MIDI conversion by mapping the Value parameter to a CV, or macro control where CCs from this algorithm control parameters in other algorithms (useful with the Performance Page).",
   "categories": [
-    "utility",
     "MIDI",
-    "routing"
+    "Utility",
+    "Control",
+    "Modulation"
   ],
   "short_description": "Generates MIDI CCs",
   "use_cases": [
     "CV to MIDI conversion",
-    "Macro control for parameter automation across algorithms",
-    "Integration with Performance Page for global adjustments"
+    "Macro control for parameter automation",
+    "External MIDI destination routing",
+    "Integration with Performance Page"
   ],
-  "gui_description": null,
-  "specifications": [],
-  "parameters": [
+  "gui_description": "The interface includes global output routing controls and per-channel parameters for enabling, channel selection, CC number/value assignment, and naming.",
+  "specifications": [
     {
-      "name": "CCs, 1-8",
-      "description": "The number of CCs to generate."
-    },
+      "name": "CCs supported",
+      "description": "1-8 controllable MIDI CC channels"
+    }
+  ],
+  "parameters": [
     {
       "name": "Output_to_breakout",
       "min": 0,
@@ -38,7 +41,7 @@
       "type": "toggle",
       "is_per_channel": false,
       "is_common": true,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Output_to_USB",
@@ -48,7 +51,7 @@
       "type": "toggle",
       "is_per_channel": false,
       "is_common": true,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Output_to_internal",
@@ -58,7 +61,7 @@
       "type": "toggle",
       "is_per_channel": false,
       "is_common": true,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Enable",
@@ -91,11 +94,21 @@
       "is_bus": false
     },
     {
-      "name": "Value",
+      "name": "CC",
       "min": 0,
       "max": 127,
       "default": 0,
       "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Name",
+      "min": null,
+      "max": null,
+      "default": "",
+      "type": "string",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false

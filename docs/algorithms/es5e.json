@@ -3,15 +3,11 @@
   "name": "ES-5 Encoder",
   "description": "This algorithm allows you to drive the outputs of an attached ES-5 expansion module, or of an ESX8GT expander attached to the ES-5.",
   "categories": [
-    "utility",
-    "routing",
-    "external control"
+    "Gate Processing",
+    "Expansion Module Control",
+    "Modular Synthesis"
   ],
   "short_description": "Converts gates into ES-5 outputs",
-  "use_cases": [
-    "Driving ES-5 expansion module outputs",
-    "Controlling ESX8GT expander outputs via ES-5"
-  ],
   "specifications": [
     {
       "name": "Channels",
@@ -24,30 +20,32 @@
       "name": "Enable",
       "min": 0,
       "max": 1,
-      "description": "Enables the channel."
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Expander",
       "min": 1,
       "max": 6,
       "default": 1,
-      "description": "Chooses the expander module – 1 for the ES-5 itself, or 2-6 for the attached ESX8GTs.",
-      "enum_values": [
-        "ES-5 (1)",
-        "Attached ESX8GT (2-6)"
-      ]
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "Chooses the input bus to convert."
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "Chooses the output on the selected expander."
+      "description": ""
     }
   ]
 }

@@ -1,218 +1,39 @@
 {
   "guid": "xaoc",
   "name": "Chaos",
-  "description": "This algorithm generates chaotic CVs according to a variety of so-called ‘attractors’, including the well-known Lorenz equations [58]. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation – ‘Rho mod’ affects 'r' (aka 'ρ'), and ‘Beta mod’ affects 'b' (aka 'β'). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
+  "description": "This algorithm generates chaotic CVs according to a variety of so-called ‘attractors’, including the well-known Lorenz equations [60]. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation – ‘Rho mod’ affects 'r' (aka 'ρ'), and ‘Beta mod’ affects 'b' (aka 'β'). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
   "categories": [
-    "randomization",
-    "sequencing",
-    "utility"
+    "Chaos",
+    "CV Generation",
+    "Mathematical Attractors",
+    "Modulation"
   ],
   "short_description": "CVs from the Lorenz equations",
-  "parameters": [
-    {
-      "name": "Attractor",
-      "min": 0,
-      "max": 4,
-      "default": 0,
-      "description": "Chooses which equations to use: Lorenz, Rössler, Aizawa, Arneodo, or Thomas.",
-      "enum_values": [
-        "Lorenz",
-        "Rössler",
-        "Aizawa",
-        "Arneodo",
-        "Thomas"
-      ]
-    },
-    {
-      "name": "Speed range",
-      "min": -64,
-      "max": 32,
-      "default": 0,
-      "description": "Sets the range of the Speed control, in quarter octaves (i.e. a change of 4 doubles or halves the speed)."
-    },
-    {
-      "name": "Speed",
-      "min": -500,
-      "max": 500,
-      "default": 0,
-      "description": "Controls the speed of the simulation."
-    },
-    {
-      "name": "Rho mod",
-      "min": -10.0,
-      "max": 10.0,
-      "default": 0.0,
-      "scope": "channel",
-      "type": "bus",
-      "channelCountRef": "X output",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_common": false,
-      "is_bus": true
-    },
-    {
-      "name": "Beta mod",
-      "min": -10.0,
-      "max": 10.0,
-      "default": 0.0,
-      "scope": "channel",
-      "type": "bus",
-      "channelCountRef": "Y output",
-      "isPerChannel": true,
-      "isCommon": false
-    },
-    {
-      "name": "Reset",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "When this parameter is set to 1, the system is reset to the values given by the Reset X/Y/Z parameters."
-    },
-    {
-      "name": "Reset X",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 0.1,
-      "description": "The X value to reset to."
-    },
-    {
-      "name": "Reset Y",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 0.0,
-      "description": "The Y value to reset to."
-    },
-    {
-      "name": "Reset Z",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 0.0,
-      "description": "The Z value to reset to."
-    },
-    {
-      "name": "X scale",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 10.0,
-      "scope": "channel",
-      "type": "bus",
-      "isPerChannel": true,
-      "isCommon": false
-    },
-    {
-      "name": "X offset",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 0.0,
-      "scope": "channel",
-      "type": "bus",
-      "isPerChannel": true,
-      "isCommon": false
-    },
-    {
-      "name": "Y scale",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 10.0,
-      "scope": "channel",
-      "type": "bus",
-      "isPerChannel": true,
-      "isCommon": false
-    },
-    {
-      "name": "Y offset",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 0.0,
-      "scope": "channel",
-      "type": "bus",
-      "isPerChannel": true,
-      "isCommon": false
-    },
-    {
-      "name": "Z scale",
-      "min": -20.0,
-      "max": 20.0,
-      "default": 10.0,
-      "scope": "channel",
-      "type": "bus",
-      "isPerChannel": true,
-      "isCommon": false
-    },
-    {
-      "name": "Z offset",
-      "min": -20.0,
-      "max": 20.0,
-      "default": -8.0,
-      "scope": "channel",
-      "type": "bus",
-      "isPerChannel": true,
-      "isCommon": false
-    },
-    {
-      "name": "X output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "Y output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    },
-    {
-      "name": "Z output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
-    }
+  "use_cases": [
+    "Generating chaotic control voltages for modular synthesizers",
+    "Creating unpredictable modulation sources",
+    "Exploring mathematical attractor behavior in audio/visual contexts",
+    "Dynamic patching and experimental sound design"
   ],
+  "gui_description": "The display shows a graphical representation of the outputs, projected onto the X/Y, X/Z, and Y/Z planes.",
   "input_ports": [
     {
       "name": "Reset input",
-      "description": "The bus to use for the reset input. A positive-going edge here resets the system to the values given by the Reset X/Y/Z parameters."
+      "description": "A positive-going edge here resets the system to the values given by the Reset X/Y/Z parameters."
     }
   ],
   "output_ports": [
     {
-      "name": "X",
-      "description": "Chaotic CV output corresponding to the Lorenz attractor's X value (or equivalent for other attractors)."
-    },
-    {
-      "name": "Y",
-      "description": "Chaotic CV output corresponding to the Lorenz attractor's Y value (or equivalent for other attractors)."
-    },
-    {
-      "name": "Z",
-      "description": "Chaotic CV output corresponding to the Lorenz attractor's Z value (or equivalent for other attractors)."
-    },
-    {
       "name": "X output",
-      "description": "The bus to use for the X output."
+      "description": "Outputs the chaotic CV for the X coordinate of the attractor."
     },
     {
       "name": "Y output",
-      "description": "The bus to use for the Y output."
+      "description": "Outputs the chaotic CV for the Y coordinate of the attractor."
     },
     {
       "name": "Z output",
-      "description": "The bus to use for the Z output."
+      "description": "Outputs the chaotic CV for the Z coordinate of the attractor."
     }
   ]
 }

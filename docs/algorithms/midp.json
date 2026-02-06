@@ -1,37 +1,50 @@
 {
   "guid": "midp",
   "name": "MIDI Player",
-  "description": "This algorithm plays standard MIDI files from the MicroSD card, outputting the MIDI messages and converting them to CVs and gates. It supports an internal clock (using the file's tempo if specified) or syncing with external analogue clocks or incoming MIDI clock. The built-in MIDI/CV converters are designed for simple monophonic use but can be paired with Poly CV for greater flexibility. It optionally processes live MIDI as well, allowing real-time conversion alongside playback.",
+  "description": "This algorithm plays standard MIDI files from the MicroSD card, outputting the MIDI messages and converting them to CVs and gates. It uses an internal clock (based on the file's tempo if specified) or syncs to analogue clocks or incoming MIDI clock. Optionally processes live MIDI. Supports up to 24 tracks per MIDI file, with looping enabled by default unless '_ONESHOT' is included in the filename.",
   "categories": [
-    "utility",
     "MIDI",
-    "clocking"
+    "Sequencing",
+    "Audio/MIDI Conversion",
+    "File Player"
   ],
+  "short_description": "Plays MIDI files from the MicroSD card",
   "use_cases": [
-    "Playing back MIDI files from MicroSD card",
-    "Converting MIDI to CV/gates for modular synthesis",
-    "Syncing with external analogue clocks or MIDI clock sources",
-    "Live MIDI processing alongside playback",
-    "Monophonic patching with optional polyphonic flexibility via Poly CV"
+    "Playing back MIDI sequences for modular synths",
+    "Generating CV/gate outputs from MIDI files",
+    "Sequencing with internal or external clock sources",
+    "Drum machine functionality via MIDI drum tracks"
   ],
-  "gui_description": "The GUI displays the current transport position (in bars, beats, and sixteenths) along with the file's position. It also shows the file’s tempo (if defined), length in bars, and a progress bar for playback position. Two lines of activity indicators represent tracks and MIDI channels respectively. For 'Track mode' parameters, additional details like track name and last played MIDI message are shown.",
+  "gui_description": "Displays transport position (bars, beats, sixteenths), file tempo, length in bars, and a progress bar. Shows track activity indicators and channel activity. For 'Track mode' parameters, displays track name and recent MIDI messages.",
+  "specifications": [
+    {
+      "name": "Polyphony",
+      "description": "Supports up to 24 tracks per MIDI file"
+    },
+    {
+      "name": "File Format Support",
+      "description": "Standard MIDI files (see MicroSD card documentation)"
+    }
+  ],
   "parameters": [
     {
       "name": "Folder",
-      "description": "Chooses the folder containing MIDI files on the MicroSD card."
+      "default": "",
+      "type": "string",
+      "is_bus": false
     },
     {
       "name": "File",
-      "description": "Selects the specific MIDI file within the chosen folder to play."
+      "default": "",
+      "type": "string",
+      "is_bus": false
     },
     {
       "name": "Play",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "toggle",
-      "is_per_channel": false,
-      "is_common": true,
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -39,9 +52,7 @@
       "min": 1,
       "max": 256,
       "default": 1,
-      "type": "trigger",
-      "is_per_channel": false,
-      "is_common": true,
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -49,63 +60,69 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets the behaviour when a new file is selected. Options:\n● Wait until end of current bar and then switch to the new file.\n● Wait until end of current file and then switch to the new file.\n● Change immediately.",
-      "enum_values": [
-        "Wait until end of bar",
-        "Wait until end of file",
-        "Change immediately"
-      ],
-      "type": "enum"
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "File restart",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Determines how the new file starts when switching from an old one. Options:\n● The new file begins playback from its start.\n● The new file continues playback from the current position in the old file (modulo its length).",
-      "enum_values": [
-        "Start from beginning",
-        "Continue from old position"
-      ],
-      "type": "toggle"
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Track mode 1-24",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets the playback mode for each of the first 24 tracks. Options:\n● Normal playback.\n● Track is muted.",
-      "enum_values": [
-        "Normal playback",
-        "Muted"
-      ],
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_common": false
+      "type": "enum",
+      "is_bus": false
     },
     {
-      "name": "1-4 MIDI channel",
+      "name": "1 MIDI channel",
       "min": 1,
       "max": 16,
-      "default": "1-4",
-      "description": "Selects the MIDI channel for each of the four built-in MIDI/CV converters.",
+      "default": 1,
       "type": "enum",
-      "is_per_channel": true
+      "is_bus": false
+    },
+    {
+      "name": "2 MIDI channel",
+      "min": 1,
+      "max": 16,
+      "default": 2,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "3 MIDI channel",
+      "min": 1,
+      "max": 16,
+      "default": 3,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "4 MIDI channel",
+      "min": 1,
+      "max": 16,
+      "default": 4,
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Drum first note",
       "min": 0,
       "max": 127,
       "default": 36,
-      "description": "Defines the lowest (first) MIDI note number for the drum converter.",
-      "type": "trigger"
+      "type": "enum"
     },
     {
       "name": "Drum channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "description": "Selects the MIDI channel used by the drum converter.",
       "type": "enum"
     },
     {
@@ -113,31 +130,21 @@
       "min": 1,
       "max": 100,
       "default": 10,
-      "description": "Sets the duration of output trigger pulses in milliseconds (ms).",
-      "type": "trigger",
-      "is_per_channel": false
+      "type": "enum",
+      "is_bus": false
     },
     {
       "name": "Convert live MIDI",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If enabled, incoming MIDI messages are processed and converted by the algorithm's built-in MIDI/CV converters as if they originated from the loaded MIDI file.",
-      "type": "toggle"
+      "type": "enum"
     },
     {
       "name": "Clock multiplier",
       "min": 0,
       "max": 4,
       "default": 0,
-      "description": "Adjusts how incoming clock pulses are interpreted. Options:\n● Clock is treated as 24ppqn (default).\n● Clock is treated as 1/32 notes.\n● Clock is treated as 1/16 notes.\n● Clock is treated as 1/8 notes.\n● Clock is treated as 1/4 notes.",
-      "enum_values": [
-        "24ppqn",
-        "1/32 notes",
-        "1/16 notes",
-        "1/8 notes",
-        "1/4 notes"
-      ],
       "type": "enum"
     },
     {
@@ -145,11 +152,6 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Defines how the reset input is interpreted. Options:\n● Reset trigger (restarts playback).\n● Run/stop signal (starts/stops playback).",
-      "enum_values": [
-        "Reset trigger",
-        "Run/stop signal"
-      ],
       "type": "enum"
     },
     {
@@ -157,76 +159,147 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "If enabled, the algorithm follows incoming MIDI clock signals for synchronization.",
-      "type": "toggle"
+      "type": "enum"
     },
     {
       "name": "Output MIDI clock",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables or disables output of MIDI clock pulses from the algorithm.",
-      "type": "toggle"
+      "type": "enum"
+    },
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum"
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum"
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum"
     }
   ],
   "input_ports": [
     {
       "name": "Clock input",
-      "description": "Bus used as an external clock source for synchronization."
+      "description": "Bus used as the clock input for synchronization."
     },
     {
       "name": "Reset input",
-      "description": "Bus used to trigger or control playback via reset signals."
+      "description": "Bus used to reset or stop playback."
     },
     {
-      "name": "Live MIDI (if enabled)",
-      "description": "Incoming MIDI messages processed in real-time by the algorithm's converters."
+      "name": "Live MIDI",
+      "description": "Input for real-time MIDI messages that will be converted to CV/gate outputs if enabled."
     },
     {
       "name": "Clock input",
-      "description": "Specifies the bus used as clock input for the algorithm."
+      "description": ""
     },
     {
       "name": "Reset input",
-      "description": "Selects the bus to use as reset input for the algorithm."
+      "description": ""
     }
   ],
   "output_ports": [
     {
-      "name": "MIDI messages",
-      "description": "Outputs raw MIDI data from the loaded file or live input (if enabled)."
+      "name": "1 Pitch output (Bus)",
+      "description": "CV output bus for pitch data from MIDI channel 1."
     },
     {
-      "name": "1-4 Pitch output",
-      "description": "CV pitch outputs for each of the four MIDI/CV converters, corresponding to MIDI note values."
+      "name": "2 Pitch output (Bus)",
+      "description": "CV output bus for pitch data from MIDI channel 2."
     },
     {
-      "name": "1-4 Gate output",
-      "description": "Gate outputs for each of the four MIDI/CV converters, triggered by MIDI notes or live input (if enabled)."
+      "name": "3 Pitch output (Bus)",
+      "description": "CV output bus for pitch data from MIDI channel 3."
     },
     {
-      "name": "MIDI clock (if enabled)",
-      "description": "Outputs MIDI clock pulses for synchronization with other devices."
+      "name": "4 Pitch output (Bus)",
+      "description": "CV output bus for pitch data from MIDI channel 4."
     },
     {
-      "name": "Breakout MIDI",
-      "description": "MIDI output routed to the Disting breakout port."
+      "name": "1 Gate output (Bus)",
+      "description": "Gate output bus for note events from MIDI channel 1."
     },
     {
-      "name": "Select Bus MIDI",
-      "description": "MIDI output routed to the Select Bus."
+      "name": "2 Gate output (Bus)",
+      "description": "Gate output bus for note events from MIDI channel 2."
     },
     {
-      "name": "USB MIDI",
-      "description": "MIDI output sent via USB connection."
+      "name": "3 Gate output (Bus)",
+      "description": "Gate output bus for note events from MIDI channel 3."
     },
     {
-      "name": "1-4 Pitch output",
-      "description": "Specifies the bus for pitch output from each of the four MIDI/CV converters."
+      "name": "4 Gate output (Bus)",
+      "description": "Gate output bus for note events from MIDI channel 4."
     },
     {
-      "name": "1-4 Gate output",
-      "description": "Specifies the bus for gate output from each of the four MIDI/CV converters."
+      "name": "MIDI Breakout",
+      "description": "Outputs raw MIDI messages to the breakout port if enabled."
+    },
+    {
+      "name": "Select Bus (MIDI)",
+      "description": "Outputs MIDI data to the Select Bus if enabled."
+    },
+    {
+      "name": "USB (MIDI)",
+      "description": "Outputs MIDI data via USB if enabled."
+    },
+    {
+      "name": "Internal MIDI",
+      "description": "Sends MIDI messages internally to other algorithms if enabled."
+    },
+    {
+      "name": "1 Pitch output",
+      "description": ""
+    },
+    {
+      "name": "2 Pitch output",
+      "description": ""
+    },
+    {
+      "name": "3 Pitch output",
+      "description": ""
+    },
+    {
+      "name": "4 Pitch output",
+      "description": ""
+    },
+    {
+      "name": "1 Gate output",
+      "description": ""
+    },
+    {
+      "name": "2 Gate output",
+      "description": ""
+    },
+    {
+      "name": "3 Gate output",
+      "description": ""
+    },
+    {
+      "name": "4 Gate output",
+      "description": ""
     }
   ]
 }

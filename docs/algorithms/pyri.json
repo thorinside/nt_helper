@@ -1,13 +1,20 @@
 {
   "guid": "pyri",
   "name": "Poly Resonator",
-  "description": "It's lots of Rings! This algorithm is a polysynth where each voice is essentially a Rings (the open source Rings module by Émilie Gillet). Rings itself does support a kind of polyphony, but it’s limited by having a single pitch and gate input – it’s very much designed so that only one note is triggered at a time. This algorithm gives you a full Rings implementation for each voice, with the convenience of shared parameter control.",
+  "description": "\"It's lots of Rings!\" This algorithm is a polysynth where each voice is essentially a Rings (the open source Rings module by Émilie Gillet). Rings itself does support a kind of polyphony, but it’s limited to having a single pitch and gate input. This algorithm gives you a full Rings implementation for each voice, with shared parameter control.\n\nRings has an internal 'resolution' parameter (default 64), which is divided by the number of voices when polyphony is enabled. This algorithm allows manual resolution control (default: 16) to balance sound and CPU load.",
   "categories": [
-    "synthesis",
-    "polyphonic",
-    "utility"
+    "Synth",
+    "Polysynth",
+    "Resonator",
+    "Modular Emulation"
   ],
-  "short_description": "\"It's lots of Rings!\"",
+  "short_description": "\"It's lots of Rings!\" A polysynthetic implementation of the Rings module with adjustable voice count (1-8) and manual resolution control.",
+  "use_cases": [
+    "Polyphonic resonator synthesis",
+    "Modular-style sound design",
+    "MPE-compatible texture generation"
+  ],
+  "gui_description": "The display shows notes being played by each voice. Voices decay indefinitely (theoretically forever).",
   "specifications": [
     {
       "name": "Voices",
@@ -16,27 +23,282 @@
     },
     {
       "name": "Resolution",
-      "description": "The number of resonator building blocks that contribute to the overall sound. Defaults to 16 (equivalent to a Rings set to 4-voice polyphony). Higher values increase CPU load."
+      "description": "Number of resonator building blocks per voice (default: 16, equivalent to Rings with 4-voice polyphony)"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Mode",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "description": "Selects the resonator mode."
+    },
+    {
+      "name": "Synth effect",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "If Mode is 'Synth', selects the audio effect applied to the synth output."
+    },
+    {
+      "name": "Coarse tune",
+      "min": -36,
+      "max": 24,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Resolution",
+      "min": 8,
+      "max": 64,
+      "default": 16,
+      "description": "Sets the resolution of the resonators. Higher values improve sound quality but increase CPU load."
+    },
+    {
+      "name": "Structure",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Controls the resonator 'structure'."
+    },
+    {
+      "name": "Brightness",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Controls the resonator 'brightness'."
+    },
+    {
+      "name": "Damping",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Controls the resonator 'damping'."
+    },
+    {
+      "name": "Position",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Controls the resonator 'position'."
+    },
+    {
+      "name": "Chord",
+      "min": 0,
+      "max": 10,
+      "default": 0,
+      "description": "Chooses the chord to use for resonator modes that support chords."
+    },
+    {
+      "name": "Noise gate",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Enables a noise gate on the audio input. Always enabled in original Rings."
+    },
+    {
+      "name": "Input gain",
+      "min": -40,
+      "max": 12,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Odd output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The Add/Replace mode for the Odd output (0=Add, 1=Replace)."
+    },
+    {
+      "name": "Even output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The Add/Replace mode for the Even output (0=Add, 1=Replace)."
+    },
+    {
+      "name": "Output gain",
+      "min": -40,
+      "max": 12,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false
+    },
+    {
+      "name": "Dry gain",
+      "min": -40,
+      "max": 12,
+      "default": -40,
+      "description": "The level of the input audio mixed into the output(s)."
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel to listen on."
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Controls how the algorithm responds to MPE (Multi-dimensional Polyphonic Expression)."
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range in semitones."
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Standard polysynth sustain mode parameter (0=Note, 1=Legato)."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
+    },
+    {
+      "name": "Press -> volume",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Press -> structure",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Press -> brightness",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Press -> damping",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Press -> position",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "MPE Y -> volume",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "MPE Y -> structure",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "MPE Y -> brightness",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which the MPE Y dimension affects brightness."
+    },
+    {
+      "name": "MPE Y -> damping",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "MPE Y -> position",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
     }
   ],
   "input_ports": [
     {
       "name": "Audio input",
-      "description": "Selects which input bus to use for the audio input, allowing routing from different sources."
+      "description": "Main audio signal input for the resonator."
     },
     {
-      "name": "CV/gate input (per voice)",
-      "description": "Uses standard polysynth CV/gate parameters for pitch and gate control per voice. See 'Common polysynth features' above."
+      "name": "Gate/CV inputs (standard polysynth)",
+      "description": "Standard CV/gate inputs for note triggering and pitch control."
+    },
+    {
+      "name": "Audio input",
+      "description": "Chooses which input bus to use for the audio input."
     }
   ],
   "output_ports": [
     {
       "name": "Odd output",
-      "description": "The bus used for the Odd output signal, which can be added or replaced in the mix."
+      "description": "Output bus for odd-numbered voices."
     },
     {
       "name": "Even output",
-      "description": "The bus used for the Even output signal, which can be added or replaced in the mix."
+      "description": "Output bus for even-numbered voices."
+    },
+    {
+      "name": "Odd output",
+      "description": "The bus to use for the Odd output."
+    },
+    {
+      "name": "Even output",
+      "description": "The bus to use for the Even output."
     }
   ]
 }

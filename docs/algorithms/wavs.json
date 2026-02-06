@@ -1,27 +1,29 @@
 {
   "guid": "wavs",
   "name": "Waveshaper",
-  "description": "This algorithm is based on the Dual Waveshaper algorithm from the disting mk4. It features two distinct waveshaping modes: Type 0 (wavefolder) and Type 1 (triangle-to-sine shaper).\n\n**Type 0 - Wavefolder:** This mode increases harmonic content in interesting ways, particularly as the gain changes.\n\n**Type 1 - Triangle-to-Sine Waveshaper:** When used on most audio signals, this provides a relatively gentle form of overdrive/saturation. However, when fed with an appropriate level of triangle wave input (such as from a VCO), it outputs a pure sine wave, which can be useful for generating clean sine waves while retaining the flexibility of a triangle wave source.\n\nThe GUI displays how an input sine wave is affected by the waveshaper, serving as a graphical aid to visualize the amount of waveshaping applied. It does not function as an oscilloscope and will only accurately reflect audio behavior when fed with a sine wave.",
+  "description": "This algorithm is based on the Dual Waveshaper algorithm from the disting mk4. It features two distinct modes:\n\nType 0 (Wavefolder) increases harmonic content, especially as gain changes.\nType 1 (Triangle-to-sine waveshaper) provides gentle overdrive/saturation for most audio or generates a pure sine wave when fed with an appropriate triangle wave input. The GUI visually demonstrates how an input sine wave is affected by the waveshaping process.",
   "categories": [
-    "synthesis",
-    "audio effects",
-    "distortion"
+    "Distortion",
+    "Waveshaping",
+    "Synthesis",
+    "Modulation"
   ],
-  "short_description": "\"Waveshaper/wavefolder\"",
+  "short_description": "Waveshaper/wavefolder",
   "use_cases": [
-    "Adding harmonic distortion to audio signals for creative effects",
-    "Generating pure sine waves from triangle wave sources",
-    "Introducing gentle overdrive/saturation in audio processing chains",
-    "Live performance with simplified UI via Lua scripting"
+    "Harmonic enhancement of audio signals",
+    "Generating pure sine waves from triangle waveforms",
+    "Gentle overdrive/saturation effects",
+    "Creative sound design and synthesis"
   ],
-  "gui_description": "The display shows how an input sine wave will be affected by the waveshaper. It is not an oscilloscope – it’s not showing what your actual audio looks like (unless you happen to be feeding it a sine wave). It’s just a graphical aid to get an idea of how much waveshaping is being applied.",
+  "gui_description": "The display shows how an input sine wave will be affected by the waveshaper. It is not an oscilloscope but a graphical aid to illustrate waveshaping intensity.",
   "parameters": [
     {
       "name": "Input gain",
-      "min": -32.0,
-      "max": 32.0,
-      "default": 1.0,
-      "type": "scaled",
+      "min": -32,
+      "max": 32,
+      "default": 1,
+      "scope": "global",
+      "type": "folder",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -30,11 +32,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "enum_values": [
-        "Wavefolder (Type 0)",
-        "Triangle-to-Sine Waveshaper (Type 1)"
-      ],
-      "type": "enum"
+      "scope": "global",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Mix",
@@ -42,17 +43,17 @@
       "max": 100,
       "default": 100,
       "scope": "global",
-      "type": "scaled",
+      "type": "folder",
       "is_per_channel": false,
       "is_bus": false
     },
     {
       "name": "Level",
-      "min": -40.0,
-      "max": 0.0,
-      "default": 0.0,
+      "min": -40,
+      "max": 0,
+      "default": 0,
       "scope": "global",
-      "type": "scaled",
+      "type": "folder",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -61,20 +62,23 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
-      "type": "scaled"
+      "scope": "routing",
+      "type": "folder",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector for routing output.",
       "enum_values": [
         "Add",
         "Replace"
       ],
-      "type": "enum"
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [

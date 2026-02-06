@@ -1,15 +1,28 @@
 {
   "guid": "revc",
   "name": "Reverb (Clouds)",
-  "description": "This algorithm implements the reverb and diffuser parts of the Clouds [101] module by Émilie Gillet. The diffuser is a simple network of all-pass filters which ‘smears’ the sound slightly, turning a mono source into something that sounds stereo.",
+  "description": "This algorithm implements the reverb and diffuser parts of the Clouds module by Émilie Gillet. The diffuser is a simple network of all-pass filters which 'smears' the sound slightly, turning a mono source into something that sounds stereo.",
   "categories": [
-    "audio effects",
-    "reverb",
-    "modulation"
+    "Reverb",
+    "Diffusion",
+    "Stereo Processing"
+  ],
+  "short_description": "The reverb from Clouds",
+  "use_cases": [
+    "Creating spatial effects in mono signals",
+    "Adding natural-sounding reverb to audio tracks",
+    "Enhancing stereo width through diffusion"
+  ],
+  "gui_description": "Contains controls for diffuser mix, reverb time/diffusion/low-pass filtering, input gain, and routing parameters (input/output buses). Includes a sample rate selector between 'Native' and 'Authentic (32kHz)' modes.",
+  "specifications": [
+    {
+      "name": "Sample Rate Options",
+      "value": "'Native' or 'Authentic (32kHz)'"
+    }
   ],
   "parameters": [
     {
-      "name": "Diffuser mix",
+      "name": "Diffuser_mix",
       "min": 0,
       "max": 100,
       "default": 0,
@@ -18,7 +31,7 @@
       "is_bus": false
     },
     {
-      "name": "Reverb mix",
+      "name": "Reverb_mix",
       "min": 0,
       "max": 100,
       "default": 100,
@@ -27,7 +40,7 @@
       "is_bus": false
     },
     {
-      "name": "Reverb time",
+      "name": "Reverb_time",
       "min": 0,
       "max": 100,
       "default": 0,
@@ -36,7 +49,7 @@
       "is_bus": false
     },
     {
-      "name": "Reverb diffusion",
+      "name": "Reverb_diffusion",
       "min": 0,
       "max": 100,
       "default": 70,
@@ -45,7 +58,7 @@
       "is_bus": false
     },
     {
-      "name": "Reverb low pass",
+      "name": "Reverb_low_pass",
       "min": 0,
       "max": 100,
       "default": 50,
@@ -54,7 +67,7 @@
       "is_bus": false
     },
     {
-      "name": "Reverb input gain",
+      "name": "Reverb_input_gain",
       "min": -40,
       "max": 0,
       "default": -14,
@@ -63,7 +76,7 @@
       "is_bus": false
     },
     {
-      "name": "Sample rate",
+      "name": "Sample_rate",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -74,26 +87,26 @@
   ],
   "input_ports": [
     {
-      "name": "Left input",
-      "description": "The left audio input bus.",
-      "channelCountRef": "1-28"
+      "name": "Left_input",
+      "description": "The left audio input bus (1-28). Defaults to bus 1.",
+      "channelCountRef": "1"
     },
     {
-      "name": "Right input",
-      "description": "The right audio input bus.",
-      "channelCountRef": "1-28"
+      "name": "Right_input",
+      "description": "The right audio input bus (1-28). Defaults to bus 2.",
+      "channelCountRef": "1"
     }
   ],
   "output_ports": [
     {
-      "name": "Left output",
-      "description": "The left audio output bus.",
-      "channelCountRef": "1-28"
+      "name": "Left_output",
+      "description": "The left audio output bus (1-28). Defaults to bus 13.",
+      "channelCountRef": "1"
     },
     {
-      "name": "Right output",
-      "description": "The right audio output bus.",
-      "channelCountRef": "1-28"
+      "name": "Right_output",
+      "description": "The right audio output bus (1-28). Defaults to bus 14.",
+      "channelCountRef": "1"
     }
   ]
 }

@@ -1,28 +1,30 @@
 {
   "guid": "mac2",
   "name": "Macro Oscillator 2",
-  "description": "This algorithm is an implementation of the open source Plaits module by Émilie Gillet. It should behave and sound identical to the original hardware version, which is based on v1.2 of the Plaits code. The disting NT relies on 'input' settings being enabled or disabled rather than detecting physical jack connections (unlike the original), so if a Trigger input setting is set to 'None', the algorithm generates constant sound; otherwise, it assumes triggers will be supplied via the selected bus.",
+  "description": "This algorithm is an implementation of the open source Plaits [88] module by Émilie Gillet. This version should behave and sound identical to the original, based on v1.2 of the Plaits code. The disting NT firmware relies on 'input' settings (enabled/disabled) instead of jack detection to determine behavior, such as whether triggers are active or envelopes are used. It includes two outputs ('Main' and 'Aux'), which can be mixed if set to the same bus.",
   "categories": [
-    "synthesis",
-    "wavetable",
-    "triggers"
+    "Synthesis",
+    "Oscillator",
+    "Modular",
+    "Polyphonic"
   ],
-  "short_description": "It's Plaits!",
+  "short_description": "\"It's Plaits!\"",
   "use_cases": [
-    "Wavetable synthesis with extensive modulation capabilities",
-    "Pitch and envelope modulation via CV inputs or MIDI/I2C",
-    "Morphing between different synthesis models",
-    "Replacement for traditional oscillators in modular systems"
+    "Sound design",
+    "Additive synthesis",
+    "FM synthesis",
+    "Morphing sounds",
+    "Eurorack-style modular patching",
+    "Pitch modulation",
+    "Envelope shaping"
   ],
-  "gui_description": null,
-  "specifications": [],
+  "gui_description": "The interface mimics the original Plaits module, featuring two output buses ('Main' and 'Aux'), extensive parameter controls for synthesis models, tuning, harmonics, timbre, morphing, FM depth, and envelope settings. Inputs can be routed via bus selection or MIDI/I2C modes.",
   "parameters": [
     {
       "name": "Model",
       "min": 0,
       "max": 23,
       "default": 0,
-      "scope": "global",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -32,9 +34,8 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -42,9 +43,8 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -52,9 +52,8 @@
       "min": 0,
       "max": 127,
       "default": 64,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -62,9 +61,8 @@
       "min": 0,
       "max": 127,
       "default": 64,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -72,9 +70,8 @@
       "min": 0,
       "max": 127,
       "default": 64,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -82,9 +79,8 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -92,9 +88,8 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -102,9 +97,8 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -112,9 +106,8 @@
       "min": 0,
       "max": 127,
       "default": 127,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -122,9 +115,8 @@
       "min": 0,
       "max": 127,
       "default": 64,
-      "scope": "global",
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "scaled",
+      "is_per_channel": true,
       "is_bus": false
     },
     {
@@ -132,7 +124,6 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "global",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -142,8 +133,7 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -152,8 +142,7 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "global",
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -162,7 +151,12 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "scope": "global",
+      "enum_values": [
+        "Off",
+        "Pitch",
+        "Trigger",
+        "Pitch & trigger"
+      ],
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -172,7 +166,12 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "scope": "global",
+      "enum_values": [
+        "Off",
+        "Pitch",
+        "Trigger",
+        "Pitch & trigger"
+      ],
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -182,8 +181,7 @@
       "min": 0,
       "max": 16,
       "default": 1,
-      "scope": "global",
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -192,8 +190,7 @@
       "min": 0,
       "max": 255,
       "default": 1,
-      "scope": "global",
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     }
@@ -201,31 +198,31 @@
   "input_ports": [
     {
       "name": "Trigger input (bus)",
-      "description": "Bus used as the trigger input. If set to 'None', the algorithm generates constant sound."
+      "description": "Selectable bus for trigger signals. When set to 'None' (0), the algorithm generates constant sound."
     },
     {
       "name": "Level input (bus)",
-      "description": "Bus used as the level input, modulating the amplitude of the output signal."
+      "description": "Selectable bus for level modulation inputs."
     },
     {
       "name": "CV input (bus)",
-      "description": "Bus used for pitch CV modulation. Can be controlled via MIDI/I2C if enabled."
+      "description": "Selectable bus for pitch CV inputs. MIDI/I2C in Pitch mode acts equivalently to a connected CV input."
     },
     {
       "name": "FM input (bus)",
-      "description": "Bus used as the FM modulation input, affecting synthesis model parameters."
+      "description": "Selectable bus for FM modulation inputs."
     },
     {
       "name": "Harmonics input (bus)",
-      "description": "Bus used for harmonics CV modulation. Can be controlled via MIDI/I2C if enabled."
+      "description": "Selectable bus for harmonics modulation inputs."
     },
     {
       "name": "Timbre input (bus)",
-      "description": "Bus used for timbre CV modulation. Can be controlled via MIDI/I2C if enabled."
+      "description": "Selectable bus for timbre modulation inputs."
     },
     {
       "name": "Morph input (bus)",
-      "description": "Bus used for morph CV modulation. Can be controlled via MIDI/I2C if enabled."
+      "description": "Selectable bus for morph modulation inputs."
     },
     {
       "name": "Trigger input",
@@ -259,11 +256,11 @@
   "output_ports": [
     {
       "name": "Main output",
-      "description": "Primary audio output bus, mixed with Aux output if both use the same bus."
+      "description": "Primary audio output. Can be mixed with Aux if set to the same bus."
     },
     {
       "name": "Aux output",
-      "description": "Secondary audio output bus. Mixed with Main output if both use the same bus."
+      "description": "Secondary audio output. Can be mixed with Main if set to the same bus."
     },
     {
       "name": "Main output",

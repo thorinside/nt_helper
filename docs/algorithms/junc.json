@@ -3,17 +3,17 @@
   "name": "Chorus (Vintage)",
   "description": "This algorithm is a stereo chorus effect, modelled on that of the classic Juno-6 polysynth, based on measurements of the author's own unit. Those with keen ears may recognise it as the chorus that is built into the Poly Wavetable algorithm on the disting EX.",
   "categories": [
-    "synthesis",
-    "modulation",
-    "polyphonic"
+    "effect",
+    "stereo",
+    "chorus",
+    "emulation"
   ],
-  "short_description": "\"Chorus effect based on an 80s polysynth\"",
+  "short_description": "Chorus effect based on an 80s polysynth",
   "use_cases": [
-    "emulating Juno-6 chorus sound",
-    "adding vintage-style modulation to audio signals",
-    "creating stereo chorus effects in synth patches"
+    "Stereo widening",
+    "Polysynth emulation",
+    "Vintage sound enhancement"
   ],
-  "gui_description": null,
   "specifications": [],
   "parameters": [
     {
@@ -21,32 +21,33 @@
       "min": 0,
       "max": 2,
       "default": 2,
-      "description": "The chorus effect to apply. The options are \"None\", \"Mode 1\", and \"Mode 2\".",
-      "enum_values": [
-        "None",
-        "Mode 1",
-        "Mode 2"
-      ]
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Left/mono input",
-      "description": "The left or mono input bus."
+      "description": "The left or mono input bus.",
+      "channelCountRef": "1-28"
     },
     {
       "name": "Right input",
-      "description": "The right input bus, if stereo."
+      "description": "The right input bus, if stereo.",
+      "channelCountRef": "0-28"
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": "The left output bus."
+      "description": "The left output bus.",
+      "channelCountRef": "13"
     },
     {
       "name": "Right output",
-      "description": "The right output bus."
+      "description": "The right output bus.",
+      "channelCountRef": "14"
     }
   ]
 }

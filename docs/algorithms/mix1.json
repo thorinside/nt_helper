@@ -3,19 +3,25 @@
   "name": "Mixer Mono",
   "description": "This algorithm is a mono mixer - it mixes mono inputs to a mono output. Up to four aux send busses are available, which can be switched to pre- or post-fade.",
   "categories": [
-    "mixing",
-    "routing"
+    "Audio",
+    "Mixing",
+    "Signal Routing"
   ],
   "short_description": "A mono mixer",
-  "gui_description": "The display shows level meters for each channel with a thin line at the top indicating 0dBFS. If a channel exceeds this, a clip indicator (small rectangle over the 0dBFS line) appears. Chevrons to the right of the level meters indicate mixer gains. Mute and Solo are marked by 'M' and 'S', respectively, with muted channels grayed out.",
+  "use_cases": [
+    "Mono audio mixing",
+    "Aux send routing (pre/post-fade)",
+    "Channel-level control for mono signals"
+  ],
+  "gui_description": "The display shows a level meter for each channel with a thin line at the top indicating 0dBFS. Clipping is shown as a small rectangle over the 0dBFS line. Chevrons indicate mixer gains, and mute/solo states are marked with 'M' or 'S'. Muted channels appear grayed out.",
   "specifications": [
     {
-      "name": "channels",
+      "name": "Channels",
       "min": 1,
       "max": 12
     },
     {
-      "name": "sends_per_channel",
+      "name": "Aux Sends per Channel",
       "min": 0,
       "max": 4
     }
@@ -33,101 +39,79 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "common",
       "type": "enum",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Output_gain",
       "min": -70.0,
       "max": 6.0,
       "default": 0.0,
-      "scope": "common",
       "type": "folder",
       "is_common": true,
-      "is_bus": false
+      "is_bus": true
     },
     {
-      "name": "Destination_per_send",
+      "name": "Destination",
       "min": 1,
       "max": 28,
       "default": 13,
-      "scope": "per-channel",
-      "type": "bus",
-      "is_common": false,
-      "is_bus": true
+      "description": "The output bus for the send."
     },
     {
-      "name": "Pre_post_per_send",
+      "name": "Pre_post",
       "min": 0,
       "max": 1,
       "default": 1,
-      "scope": "per-channel",
       "type": "enum",
       "is_common": false,
       "is_bus": true
     },
     {
-      "name": "Output_mode_per_send",
+      "name": "Output_mode_send",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
+      "description": "The standard Add/Replace mode selector for the send.",
       "type": "enum",
       "is_common": false,
       "is_bus": true
     },
     {
-      "name": "Input_per_channel",
-      "min": 0,
-      "max": 28,
-      "default": 1,
-      "scope": "per-channel",
-      "type": "bus",
-      "is_common": false,
-      "is_bus": true
-    },
-    {
-      "name": "Gain_per_channel",
+      "name": "Gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "scope": "per-channel",
       "type": "folder",
       "is_common": false,
       "is_bus": true
     },
     {
-      "name": "Mute_per_channel",
+      "name": "Mute",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "per-channel",
-      "type": "enum",
+      "description": "Mutes the channel."
+    },
+    {
+      "name": "Solo",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Solos the channel."
+    },
+    {
+      "name": "Name",
+      "type": "string",
       "is_common": false,
       "is_bus": true
     },
     {
-      "name": "Solo_per_channel",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_common": false,
-      "is_bus": true
-    },
-    {
-      "name": "Channel_name_per_channel",
-      "description": "A text name for the channel for identification."
-    },
-    {
-      "name": "Send_gain_per_channel_per_send",
+      "name": "Send_gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "scope": "per-channel",
       "type": "folder",
       "is_common": false,
       "is_bus": true
@@ -135,18 +119,26 @@
   ],
   "input_ports": [
     {
-      "name": "Input_per_channel",
-      "description": "The channel input bus for each mono mixer channel."
+      "name": "Channel Inputs (1-12)",
+      "description": "Up to twelve mono audio inputs per channel."
+    },
+    {
+      "name": "Aux Send Busses",
+      "description": "Up to four aux send busses for routing signals pre/post-fade."
+    },
+    {
+      "name": "Input",
+      "description": "The channel input bus."
     }
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "description": "The primary mono output bus of the mixer."
+      "name": "Mixer Output Bus",
+      "description": "The primary mono output of the mixer."
     },
     {
-      "name": "Duplicate_output",
-      "description": "An optional secondary mono output bus, which can be used to drive a stereo bus from a mono mix."
+      "name": "Duplicate Output Bus (optional)",
+      "description": "An optional secondary output for stereo routing or duplication."
     },
     {
       "name": "Output",

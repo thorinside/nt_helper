@@ -3,8 +3,9 @@
   "name": "Reverb",
   "description": "This algorithm offers a classic algorithmic reverb effect. It does not seek to emulate any particular hardware, or for that matter, any particular physical reverberant space.",
   "categories": [
-    "audio effects",
-    "reverb"
+    "effects",
+    "reverb",
+    "audio processing"
   ],
   "short_description": "A general purpose reverb effect",
   "parameters": [
@@ -93,22 +94,17 @@
   "input_ports": [
     {
       "name": "Left_input",
-      "description": "The left audio input bus.",
-      "busIdRef": "",
-      "channelCountRef": ""
+      "description": "The left audio input bus."
     },
     {
       "name": "Right_input",
-      "description": "The right audio input bus.",
-      "busIdRef": "",
-      "channelCountRef": ""
+      "description": "The right audio input bus."
     }
   ],
   "output_ports": [
     {
       "name": "Left_output",
-      "description": "The left audio output bus.",
-      "busIdRef": ""
+      "description": "The left audio output bus."
     },
     {
       "name": "Right_output",

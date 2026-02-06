@@ -1,27 +1,38 @@
 {
   "guid": "spin",
   "name": "Three Pot",
-  "description": "This algorithm allows you to run what are effectively DSP “plug-ins”, loaded from the MicroSD card. It was designed particularly to support programs written for the Spin Semiconductor FV-1 chip, a popular IC found in numerous products including Eurorack modules like FX Aid and Timiszoara. The conversion works by translating these programs to C++ and then compiling them for the disting NT, so you can also write C++ directly and use this algorithm to run it on the module.",
+  "description": "This algorithm allows you to run what are effectively DSP 'plug-ins', loaded from the MicroSD card. It was designed particularly to support programs written for the Spin Semiconductor FV-1 chip, a popular IC used in various Eurorack modules like FX Aid and Timiszoara. The name 'Three Pot' comes from the FV-1 hardware design, which features stereo inputs/outputs and three pots for user controls.\n\nAlthough primarily focused on converted FV-1 programs, the algorithm translates these to C++ and compiles them for the disting NT, enabling direct C++ programming as well. Programs are stored in JSON format with a '.3pot' extension inside the `/programs/three_pot` folder on the MicroSD card.\n\nThe 'Pre/post gain' parameter adjusts signal levels between normalized FV-1 DSP (±1.0) and disting NT's voltage range (±10.0V). The UI dynamically displays program names, pot labels, descriptions, and allows direct control of three physical pots mapped to the program parameters.",
   "categories": [
-    "utility",
-    "audio effects",
-    "MIDI"
+    "DSP",
+    "Audio Processing",
+    "Modular Synthesis",
+    "External Program Loading",
+    "Sample Rate Conversion"
   ],
   "short_description": "Runs DSP code from the SD card",
   "use_cases": [
-    "Loading and running FV-1-compatible programs on disting NT",
-    "Running custom C++-compiled DSP effects",
-    "Hosting third-party or community-converted SpinAsm programs",
-    "Audio processing with adjustable parameters via physical pots"
+    "Running converted FV-1 programs on disting NT",
+    "Direct C++ audio processing",
+    "Eurorack module emulation",
+    "Custom DSP patching via MicroSD-loaded programs"
   ],
-  "gui_description": "The UI provides a custom display showing the program name, pot labels, and description (from the .3pot file). The three module knobs directly control Pot 1, Pot 2, and Pot 3 parameters. During program selection, the full display shows the program description. The right encoder is used to change programs.",
+  "gui_description": "The UI dynamically shows the program name, pot labels, and description from the loaded .3pot file. The three physical pots on the disting NT directly control the first three parameters of the selected program. The right encoder is used to change programs. During program selection, the display shows a detailed description of the chosen program.",
+  "specifications": [
+    {
+      "name": "Code memory allocation",
+      "description": "Assignable in multiples of 512 bytes (range: 1-24)"
+    },
+    {
+      "name": "Sample rate range",
+      "value": "8.0 kHz to 40.0 kHz"
+    }
+  ],
   "parameters": [
     {
       "name": "Program",
       "min": 0,
       "max": 999,
       "default": 0,
-      "scope": "global",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -31,7 +42,6 @@
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "scope": "program",
       "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
@@ -41,7 +51,6 @@
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "scope": "program",
       "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
@@ -51,7 +60,6 @@
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "scope": "program",
       "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
@@ -61,7 +69,6 @@
       "min": -36,
       "max": 0,
       "default": -20,
-      "scope": "mix",
       "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
@@ -71,7 +78,11 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "scope": "mix",
+      "enum_values": [
+        "None",
+        "Wet/dry",
+        "Independent"
+      ],
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -81,7 +92,6 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "scope": "mix",
       "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
@@ -91,7 +101,6 @@
       "min": -40,
       "max": 24,
       "default": -40,
-      "scope": "mix",
       "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
@@ -101,7 +110,6 @@
       "min": -40,
       "max": 24,
       "default": 0,
-      "scope": "mix",
       "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
@@ -111,7 +119,6 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "sample rate",
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -121,56 +128,29 @@
       "min": 8.0,
       "max": 40.0,
       "default": 32.0,
-      "scope": "sample rate",
       "type": "scaled",
       "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "routing",
-      "type": "enum",
-      "is_per_channel": true,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Left input",
-      "description": "The left audio input bus (1-28)"
+      "description": "The left audio input bus (range: 1-28)"
     },
     {
       "name": "Right input",
-      "description": "The right audio input bus (1-28)"
-    },
-    {
-      "name": "Left input",
-      "description": ""
-    },
-    {
-      "name": "Right input",
-      "description": ""
+      "description": "The right audio input bus (range: 1-28)"
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": "The left audio output bus (1-28)"
+      "description": "The left audio output bus (range: 1-28)"
     },
     {
       "name": "Right output",
-      "description": "The right audio output bus (1-28)"
-    },
-    {
-      "name": "Left output",
-      "description": ""
-    },
-    {
-      "name": "Right output",
-      "description": ""
+      "description": "The right audio output bus (range: 1-28)"
     }
   ]
 }

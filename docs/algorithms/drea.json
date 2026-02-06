@@ -1,462 +1,61 @@
 {
   "guid": "drea",
   "name": "Dream Machine",
-  "description": "This algorithm is an implementation of the original Dream Machine algorithm on the disting EX. It is designed to generate drones, allowing the user to explore non-traditional harmonies based on prime ratios. Inspired by composer La Monte Young's theories, it excludes major thirds and focuses on just intonation principles. The output combines five sounds – a fundamental tone (default concert B♭) and four harmonics – with adjustable frequency relationships via prime ratio parameters. Wavetable synthesis generates tones, while the fundamental can also be a pure sine, triangle, or square wave. Each tone features an attack/release envelope controlled by individual gate parameters. By default, CV inputs are minimally mapped, enabling manual control but allowing optional mapping for FM modulation or gating.",
+  "description": "This algorithm is an implementation of the original Dream Machine algorithm on the disting EX. It is designed to generate drones, allowing the user to explore non-traditional harmonies based on prime ratios. Inspired by composer La Monte Young's theories, it generates five sounds—a fundamental and four harmonics—using wavetable synthesis (or pure sine/triangle/square waves for the fundamental). Each tone has an attack/release envelope controlled by its own gate parameter. By default, little is mapped to CV inputs, but users can map them as FM inputs or control gates.",
   "categories": [
-    "synthesis",
-    "wavetable",
-    "dynamics",
-    "randomization"
+    "Synthesis",
+    "Drone",
+    "Just Intonation",
+    "Experimental"
   ],
   "short_description": "Just intonation drone synth",
   "use_cases": [
-    "Exploring non-traditional harmonies based on prime ratios",
-    "Generating drones with customizable frequency relationships",
-    "Manual control of synthesis parameters for experimental sound design",
-    "Mapping CV inputs as FM modulation or gating controls"
+    "Exploring non-traditional harmonies using prime ratios",
+    "Generating ambient drones with custom tunings",
+    "Frequency modulation (FM) synthesis via CV inputs",
+    "Environmental sound tuning to resonant frequencies"
   ],
-  "gui_description": "The display shows the current waveform within the wavetable on the right side. The rest of the screen displays the frequency, ratio (reduced to lowest form), and gate level of five tones from left to right.",
+  "gui_description": "The display shows the current wavetable waveform on the right side of the screen. The rest of the screen displays frequency, ratio, and gate level for all five tones (fundamental + four harmonics) from left to right.",
   "specifications": [
     {
       "name": "Polyphony",
-      "description": "Supports five simultaneous tones (fundamental + four harmonics)"
+      "value": "5 voices (1 fundamental + 4 harmonics)"
     },
     {
-      "name": "Sample Rates",
-      "description": "Compatible with standard audio sample rates (implied by wavetable synthesis and CV modulation)"
-    }
-  ],
-  "parameters": [
-    {
-      "name": "Wavetable",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Wave offset",
-      "min": -100.0,
-      "max": 100.0,
-      "default": 0.0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Waveform 0",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Prime 1",
-      "min": 2,
-      "max": 32749,
-      "default": 2,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Prime 2",
-      "min": 1,
-      "max": 32749,
-      "default": 3,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Prime 3",
-      "min": 1,
-      "max": 32749,
-      "default": 7,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Prime 4",
-      "min": 1,
-      "max": 32749,
-      "default": 11,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Fundamental",
-      "min": 0.001,
-      "max": 32767,
-      "default": 29.135,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -8,
-      "max": 8,
-      "default": 1,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Denominator",
-      "min": 1,
-      "max": 256,
-      "default": 32,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Numerator 1",
-      "min": 1,
-      "max": 1024,
-      "default": 42,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Numerator 2",
-      "min": 1,
-      "max": 1024,
-      "default": 56,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Numerator 3",
-      "min": 1,
-      "max": 1024,
-      "default": 62,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Numerator 4",
-      "min": 1,
-      "max": 1024,
-      "default": 63,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate 0",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate 1",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate 2",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate 3",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate 4",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gain 0",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gain 1",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gain 2",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gain 3",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gain 4",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Pan 1",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Pan 2",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Pan 3",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Pan 4",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Attack time",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Decay time",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "FM input 1",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "FM input 2",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "FM input 3",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "FM input 4",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "FM Range",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Frequency slew",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Crossfade time",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "name": "Synthesis Method",
+      "value": "Wavetable synthesis (with optional pure sine/triangle/square waves for the fundamental)"
     }
   ],
   "input_ports": [
     {
-      "name": "Wave input (bus 1-28)",
-      "description": "Input bus to modulate the wave offset position within the wavetable."
+      "name": "Wave input",
+      "description": "Input bus to modulate wavetable offset"
     },
     {
       "name": "FM input 1",
-      "description": "Input bus for frequency modulation of tone 1, scaled according to FM Range parameter."
+      "description": "CV input for frequency modulation of tone 1 (scaled by FM Range)"
     },
     {
       "name": "FM input 2",
-      "description": "Input bus for frequency modulation of tone 2, scaled according to FM Range parameter."
+      "description": "CV input for frequency modulation of tone 2 (scaled by FM Range)"
     },
     {
       "name": "FM input 3",
-      "description": "Input bus for frequency modulation of tone 3, scaled according to FM Range parameter."
+      "description": "CV input for frequency modulation of tone 3 (scaled by FM Range)"
     },
     {
       "name": "FM input 4",
-      "description": "Input bus for frequency modulation of tone 4, scaled according to FM Range parameter."
-    },
-    {
-      "name": "Wave input",
-      "description": ""
+      "description": "CV input for frequency modulation of tone 4 (scaled by FM Range)"
     }
   ],
   "output_ports": [
     {
-      "name": "Left output (bus 1-28)",
-      "description": "Left stereo output bus for the combined five tones."
+      "name": "Left output bus",
+      "description": "Primary left stereo output"
     },
     {
-      "name": "Right output (bus 1-28)",
-      "description": "Right stereo output bus for the combined five tones."
-    },
-    {
-      "name": "Left output",
-      "description": ""
-    },
-    {
-      "name": "Right output",
-      "description": ""
+      "name": "Right output bus",
+      "description": "Primary right stereo output"
     }
   ]
 }

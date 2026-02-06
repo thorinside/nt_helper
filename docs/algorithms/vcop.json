@@ -1,38 +1,40 @@
 {
   "guid": "vcop",
   "name": "VCO - Pulsar",
-  "description": "This algorithm is based on the Pulsar VCO algorithm from the disting mk4 and implements pulsar synthesis, inspired by Curtis Roads's book *Microsound* (MIT Press) pp137-157. In pulsar synthesis, a small grain of sound (known as a *pulsaret*, typically a pulse or single cycle waveform) is repeated periodically, followed by silence. The length of the sound within the repeating period controls timbre without affecting perceived pitch. Changing fundamental pitch while keeping pulsaret speed constant achieves pitch shifts without spectral transposition, resembling 'vocal' or 'formant' synthesis. Two pitch inputs exist: fundamental frequency (rate of pulsaret train generation) and formant frequency (speed at which the pulsaret is played). If 'Pitch mode' is set to 'Independent', these pitches are separate; if set to 'Tracking', changing fundamental pitch also alters formant pitch. The algorithm uses wavetables from an SD card as the source for pulsarets, formatted as described in the MicroSD section above.",
+  "description": "This algorithm is based on the Pulsar VCO from the disting mk4 and implements pulsar synthesis inspired by Curtis Roads's book *Microsound* (MIT Press). It uses wavetables from an SD card as sources for 'pulsarets'—small sound grains repeated periodically with silence intervals. The algorithm controls timbre independently of pitch through two distinct frequency inputs: fundamental frequency (rate of pulsaret train generation) and formant frequency (playback speed of the pulsaret). When in 'Tracking' mode, changing the fundamental pitch also adjusts the formant pitch. Masking modes include Stochastic (random masking based on a percentage) and Burst (grouped masking with adjustable burst length). The GUI displays a single waveform cycle alongside MIDI note names, cents, and frequency in Hz.",
   "categories": [
-    "synthesis",
-    "wavetable",
-    "pitch"
+    "Synthesis",
+    "VCO",
+    "Granular Synthesis",
+    "Wavetable"
   ],
-  "short_description": "A pulsar VCO",
+  "short_description": "A pulsar VCO using wavetables for granular synthesis with independent pitch and formant controls.",
   "use_cases": [
-    "Pulsar synthesis for unique timbre control without pitch shift artifacts",
-    "Formant-like sound manipulation with independent pitch and speed parameters",
-    "Generating vocal or formant synthesis effects through CV modulation",
-    "Wavetable-based granular synthesis with masking capabilities"
+    "Timbre manipulation without affecting perceived pitch",
+    "Formant-like synthesis",
+    "Granular sound design",
+    "Wavetable-based audio processing"
   ],
-  "gui_description": "The display shows a single cycle of the current waveform, along with the VCO’s pitch as a MIDI note name plus cents and frequency in Hz. The wavetable waveform is visually stretched or expanded based on the relative pitch between the VCO and formant.",
+  "gui_description": "Displays a single waveform cycle of the current wavetable, stretched according to relative pitch and formant. Shows MIDI note name (with cents) and frequency in Hz.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Wavetable",
       "min": 0,
       "max": null,
       "default": null,
-      "scope": "global",
       "type": "enum",
-      "is_bus": true
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Wave offset",
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": true
     },
     {
       "name": "Window",
@@ -46,7 +48,7 @@
         "Gaussian"
       ],
       "type": "enum",
-      "is_bus": false
+      "is_per_channel": false
     },
     {
       "name": "Pitch mode",
@@ -58,7 +60,7 @@
         "Tracking"
       ],
       "type": "enum",
-      "is_bus": false
+      "is_per_channel": false
     },
     {
       "name": "Masking mode",
@@ -70,103 +72,139 @@
         "Burst"
       ],
       "type": "enum",
-      "is_bus": false
+      "is_per_channel": false
     },
     {
       "name": "Masking",
       "min": 0,
       "max": 100,
       "default": 0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "type": "scaled",
+      "is_per_channel": false
     },
     {
       "name": "Burst length",
       "min": 2,
       "max": 100,
       "default": 2,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "type": "scaled",
+      "is_per_channel": false
     },
     {
       "name": "Octave",
       "min": -16,
       "max": 8,
       "default": 0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "type": "scaled",
+      "is_per_channel": true
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "type": "scaled",
+      "is_per_channel": true
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "type": "scaled",
+      "is_per_channel": true
     },
     {
       "name": "Amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "type": "scaled",
+      "is_per_channel": false
     },
     {
       "name": "Gain",
       "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "global",
-      "type": "folder",
-      "is_bus": false
+      "type": "scaled",
+      "is_per_channel": false
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "scope": "global",
       "type": "enum",
-      "is_bus": true
+      "is_per_channel": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "enum",
+      "is_per_channel": false
+    },
+    {
+      "name": "Inverse output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "enum_values": [
+        "Add",
+        "Replace"
+      ],
+      "type": "enum",
+      "is_per_channel": false
     }
   ],
   "input_ports": [
     {
-      "name": "Pitch input",
-      "description": "The pitch CV input (1V/octave) for setting the fundamental frequency of the VCO."
+      "name": "Pitch input (CV)",
+      "description": "1V/octave CV input for fundamental frequency control."
     },
     {
-      "name": "Formant input",
-      "description": "The formant CV input (1V/octave) for setting the rate at which pulsarets are played, affecting timbre."
+      "name": "Formant input (CV)",
+      "description": "1V/octave CV input for formant frequency modulation."
     },
     {
       "name": "Wave input",
-      "description": "Sets an input bus to modulate the wave offset within the wavetable."
+      "description": "Bus input to modulate the wave offset parameter."
+    },
+    {
+      "name": "Pitch input",
+      "description": ""
+    },
+    {
+      "name": "Formant input",
+      "description": ""
+    },
+    {
+      "name": "Wave input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The main output bus for the VCO signal, with masking applied according to the selected mode."
+      "description": "Main audio output of the pulsar VCO."
     },
     {
       "name": "Inverse output",
-      "description": "Emits a pulsaret when the main output does not, providing an alternative masked signal path."
+      "description": "Complementary output emitting a pulsaret when the main output is silent, and vice versa."
+    },
+    {
+      "name": "Output",
+      "description": ""
+    },
+    {
+      "name": "Inverse output",
+      "description": ""
     }
   ]
 }

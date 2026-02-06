@@ -1,19 +1,22 @@
 {
   "guid": "phsh",
   "name": "Phase Shifter",
-  "description": "This algorithm is based on the Phase Shifter algorithm from the disting mk4. It generates two outputs with a fixed phase relationship between them, designed for mathematical accuracy rather than just creating swooshy sounds like the Phaser algorithm. While primarily intended for precise psycho-acoustic effects, it can also produce interesting sweeping sounds.",
+  "description": "This algorithm is based on the Phase Shifter algorithm from the disting mk4. It generates two outputs in a fixed phase relationship to each other, designed for mathematical accuracy and capable of producing interesting psycho-acoustic effects or swooshy sounds. Unlike the Phaser algorithm, it focuses on precise phase shifting rather than creating sweeping sound effects.",
   "categories": [
-    "synthesis",
-    "modulation"
+    "Audio",
+    "Modulation",
+    "Signal Processing",
+    "CV Processing"
   ],
   "short_description": "Shifts the phase of signals",
   "use_cases": [
-    "Mathematical signal processing",
-    "Psycho-acoustic effects generation",
-    "Stereo widening and thickening sounds",
-    "Creating sweeping or phasing sound textures"
+    "Mathematical audio processing",
+    "Psycho-acoustic effect generation",
+    "Phase-based modulation",
+    "Stereo widening or panning effects",
+    "CV-controlled phase shifting"
   ],
-  "gui_description": null,
+  "gui_description": "The interface includes controls for setting the phase shift amount, wet/dry mix, and output level. It also features routing options to specify input/output buses and select between Add/Replace modes for outputs.",
   "parameters": [
     {
       "name": "Shift",
@@ -21,6 +24,7 @@
       "max": 360,
       "default": 0,
       "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -29,6 +33,7 @@
       "max": 100,
       "default": 100,
       "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -37,48 +42,116 @@
       "max": 0,
       "default": 0,
       "type": "enum",
+      "is_per_channel": false,
       "is_bus": false
+    },
+    {
+      "name": "Shift_input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the phase shift CV, scaled as 5V per 360°.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "scope": "global",
+      "description": "The number of buses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
       "type": "enum",
-      "is_bus": false
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Unshifted_output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the unshifted output signal. Note that this is not the same as the dry signal unless the input is a pure sine wave.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "Unshifted_mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector for the unshifted output.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "+ve_shift_output",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "description": "The bus to use for the positive shifted output.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "+ve_shift_mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector for the positive shifted output.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "-ve_shift_output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the negative shifted output.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
+    },
+    {
+      "name": "-ve_shift_mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector for the negative shifted output.",
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
-      "name": "Shift input",
-      "description": "The bus to use for the phase shift CV, scaled as 5V per 360°."
+      "name": "Shift_input",
+      "description": "CV input bus controlling phase shift amount (scaled as 5V per 360°)."
     },
     {
       "name": "Input",
-      "description": "The first audio input bus (ranges from 1 to 28)."
-    },
-    {
-      "name": "Shift input",
-      "description": ""
+      "description": "Audio input bus for the signal to be processed."
     },
     {
       "name": "Input",
-      "description": ""
+      "description": "The first audio input bus."
     }
   ],
   "output_ports": [
     {
-      "name": "Unshifted output",
-      "description": "The bus for the unshifted output signal. This is not the same as dry signal unless the input is a pure sine wave."
+      "name": "Unshifted_output",
+      "description": "Output of the unshifted audio signal (not identical to dry unless input is a pure sine wave)."
     },
     {
-      "name": "+ve shift output",
-      "description": "The bus for the positive phase-shifted output signal."
+      "name": "+ve_shift_output",
+      "description": "Output of the positively phase-shifted audio signal."
     },
     {
-      "name": "-ve shift output",
-      "description": "The bus for the negative phase-shifted output signal."
+      "name": "-ve_shift_output",
+      "description": "Output of the negatively phase-shifted audio signal."
     }
   ]
 }

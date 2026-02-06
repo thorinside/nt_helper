@@ -1,31 +1,28 @@
 {
   "guid": "acsw",
   "name": "Accent sweep",
-  "description": "This algorithm recreates a very specific aspect of the Roland TB-303’s circuitry by generating an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered. The design is based on a detailed technical write-up available at https://www.firstpr.com.au/rwi/dfish/303-unique.html, simulating the internal pulse and resistor-capacitor network that produces the TB-303’s unique accent sweep behavior.",
+  "description": "This algorithm recreates a very specific aspect of the Roland TB-303’s circuitry. It creates an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered, based on the Devil Fish write-up detailing the unique behavior of the TB-303's accent sweep circuit.",
   "categories": [
-    "synthesis",
-    "filtering",
-    "triggers"
+    "Envelope",
+    "Synth",
+    "Roland TB-303 Emulation",
+    "Audio Processing"
   ],
   "short_description": "AD envelope with variable peak",
-  "gui_description": "The display shows the input (dark) and output (light) signals, visually representing how the AD shaper modifies the incoming signal based on trigger behavior.",
+  "use_cases": [
+    "Emulating Roland TB-303 accent sweep behavior",
+    "Creating dynamic AD envelopes for synths",
+    "Adding rhythmic emphasis to repetitive triggers",
+    "Shaping audio signals with variable peaks"
+  ],
+  "gui_description": "The display shows the input (dark) and output (light) signals.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Input mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets how the input is treated: 'Direct' feeds the input signal directly into the AD shaper; 'Trigger' uses the input to trigger an internal pulse, which is then fed into the shaper.",
-      "enum_values": [
-        "Direct",
-        "Trigger"
-      ]
-    },
-    {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 200,
-      "default": 100,
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -35,7 +32,7 @@
       "min": 1,
       "max": 200,
       "default": 100,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -44,7 +41,7 @@
       "min": 0.1,
       "max": 10.0,
       "default": 10.0,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -53,7 +50,7 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -62,7 +59,7 @@
       "min": 0,
       "max": 24,
       "default": 0,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -71,7 +68,7 @@
       "min": 1,
       "max": 470,
       "default": 47,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -80,7 +77,7 @@
       "min": 1,
       "max": 470,
       "default": 100,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -89,7 +86,7 @@
       "min": 1,
       "max": 470,
       "default": 100,
-      "type": "enum",
+      "type": "scaled",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -98,6 +95,15 @@
       "min": 0.1,
       "max": 10.0,
       "default": 1.0,
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
       "type": "enum",
       "is_per_channel": false,
       "is_bus": false
@@ -106,21 +112,13 @@
   "input_ports": [
     {
       "name": "Input",
-      "description": "The bus to use as input for the accent sweep algorithm (1-28)."
-    },
-    {
-      "name": "Input signal",
-      "description": "Audio/CV input signal fed into the AD shaper, depending on 'Input mode' setting."
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The bus to use as output for the accent sweep algorithm (1-28)."
-    },
-    {
-      "name": "Output signal",
-      "description": "Processed audio/CV signal shaped by the AD envelope with variable peak."
+      "description": ""
     }
   ]
 }

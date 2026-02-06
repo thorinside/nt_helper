@@ -3,10 +3,20 @@
   "name": "Oscilloscope",
   "description": "This algorithm implements a simple but useful 2-channel oscilloscope.",
   "categories": [
-    "utility",
-    "analysis"
+    "Analysis",
+    "Visualization",
+    "Audio",
+    "Signal Processing"
   ],
   "short_description": "Oscilloscope for viewing waveforms",
+  "use_cases": [
+    "Waveform analysis",
+    "Debugging audio signals",
+    "Real-time signal visualization",
+    "Trigger-based synchronization of waveforms"
+  ],
+  "gui_description": "The display shows one or both waveforms according to the display mode.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Input_1",
@@ -27,113 +37,119 @@
       "min": 0,
       "max": 4,
       "default": 0,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Trigger_type",
+      "description": "The type of trigger, to synchronise the display to the waveform. The options are:\n● Free running.\n● \"1 rising\" - trigger on the rising edge of input 1.\n● \"1 falling\" - trigger on the falling edge of input 1.\n● \"2 rising\" - trigger on the rising edge of input 2.\n● \"2 falling\" - trigger on the falling edge of input 2.",
       "enum_values": [
         "Free running",
         "1 rising",
         "1 falling",
         "2 rising",
         "2 falling"
-      ],
-      "type": "enum",
-      "is_bus": false
+      ]
     },
     {
       "name": "Trigger_voltage",
       "min": -11.0,
       "max": 11.0,
       "default": 0.0,
-      "description": "Set the trigger voltage - the voltage the input signal has to cross to trigger the oscilloscope.",
-      "enum_values": [],
       "type": "folder",
       "is_bus": false
     },
     {
+      "name": "Trigger_voltage",
+      "unit": "V",
+      "description": "Set the trigger voltage - the voltage the input signal has to cross to trigger the oscilloscope."
+    },
+    {
       "name": "Time_range",
-      "min": 0,
-      "max": 13,
-      "default": 7,
-      "description": "Sets the time range corresponding to the full width of the display. The special value \"Auto\" sets the time range to the time between consecutive triggers.",
-      "enum_values": [
-        "Auto"
-      ],
-      "type": "folder",
+      "default": 0,
+      "type": "enum",
       "is_bus": false
+    },
+    {
+      "name": "Time_range",
+      "description": "Sets the time range corresponding to the full width of the display. The special value \"Auto\" sets the time range to the time between consecutive triggers."
     },
     {
       "name": "Display_mode",
       "min": 0,
       "max": 4,
       "default": 2,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Display_mode",
       "description": "Sets which waveforms are displayed and how. The options are \"Overlaid\", \"Split\", \"Channel 1\", \"Channel 2\", and \"XY\". In \"XY\" mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa.",
       "enum_values": [
         "Overlaid",
         "Split",
-        "Channel_1",
-        "Channel_2",
+        "Channel 1",
+        "Channel 2",
         "XY"
-      ],
-      "type": "enum",
-      "is_bus": false
+      ]
     },
     {
       "name": "Draw_mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Draw_mode",
+      "description": "Sets how the waveform signals are drawn. The options are \"Lines (antialiased)\", \"Lines\", and \"Points\".",
       "enum_values": [
         "Lines (antialiased)",
         "Lines",
         "Points"
-      ],
-      "type": "enum",
-      "is_bus": false
+      ]
     },
     {
       "name": "Vertical_scale_1",
       "min": 0,
       "max": 3,
       "default": 0,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Vertical_scale_1",
       "description": "Sets the vertical scale for channel 1. The options are 10V, 5V, 2V, and 1V.",
       "enum_values": [
         "10V",
         "5V",
         "2V",
         "1V"
-      ],
-      "type": "enum",
-      "is_bus": false
+      ]
     },
     {
       "name": "Vertical_scale_2",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the vertical scale for channel 2.",
-      "enum_values": [
-        "10V",
-        "5V",
-        "2V",
-        "1V"
-      ],
       "type": "enum",
       "is_bus": false
+    },
+    {
+      "name": "Vertical_scale_2",
+      "description": "Sets the vertical scale for channel 2. The options are 10V, 5V, 2V, and 1V."
     }
   ],
   "input_ports": [
     {
       "name": "Input_1",
-      "description": "The bus for input 1."
+      "description": "The bus for input signal 1."
     },
     {
       "name": "Input_2",
-      "description": "The bus for input 2."
+      "description": "The bus for input signal 2."
     }
   ],
-  "output_ports": [
-    {
-      "name": "",
-      "description": ""
-    }
-  ]
+  "output_ports": []
 }

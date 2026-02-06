@@ -3,28 +3,36 @@
   "name": "Chorus/Flange",
   "description": "This algorithm is a stereo chorus or flanger effect.\n\nFor a chorus effect, select a longish Delay with a low Depth and low Feedback. For a flanger, you want a short Delay and a high Depth, and add feedback to taste.\n\nThe Spread control sets the phase difference in the LFOs for the left and right channel. When at the default setting of 180 you get the 'stereo chorus' effect provided on certain classic synths to generate a stereo output from an essentially mono source.",
   "categories": [
-    "audio effects",
-    "modulation"
+    "Effects",
+    "Modulation",
+    "Stereo Processing"
   ],
   "short_description": "Chorus or Flange effect",
+  "use_cases": [
+    "Creating stereo width from mono sources (chorus)",
+    "Classic flanger emulation",
+    "Vintage synth sound design",
+    "Ambient texture enhancement",
+    "Dynamic modulation effects"
+  ],
+  "gui_description": "Control interface featuring delay time, LFO speed/depth, feedback, channel spread, wet/dry mix, and output level controls with stereo routing options.",
   "parameters": [
     {
       "name": "Delay",
       "min": 0.1,
       "max": 150.0,
       "default": 20.0,
-      "type": "folder",
-      "is_per_channel": false
+      "type": "scaled",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Speed",
       "min": 0,
       "max": 1000,
       "default": 500,
-      "scope": "global",
       "type": "scaled",
       "is_per_channel": false,
-      "is_common": true,
       "is_bus": false
     },
     {
@@ -33,8 +41,7 @@
       "max": 100.0,
       "default": 0.0,
       "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -43,8 +50,7 @@
       "max": 100,
       "default": 15,
       "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -53,8 +59,7 @@
       "max": 360,
       "default": 180,
       "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -63,8 +68,7 @@
       "max": 100,
       "default": 50,
       "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -73,28 +77,27 @@
       "max": 0,
       "default": 0,
       "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Left/mono input",
+      "name": "Left/mono_input",
       "description": "The left or mono input bus."
     },
     {
-      "name": "Right input",
+      "name": "Right_input",
       "description": "The right input bus, if stereo."
     }
   ],
   "output_ports": [
     {
-      "name": "Left/mono output",
+      "name": "Left/mono_output",
       "description": "The left output bus."
     },
     {
-      "name": "Right output",
+      "name": "Right_output",
       "description": "The right output bus, if stereo."
     }
   ]

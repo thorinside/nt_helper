@@ -3,79 +3,71 @@
   "name": "Step Sequencer Head",
   "description": "This algorithm shares the sequence of another Step Sequencer algorithm (above), and replicates the parameters that define how that sequence is played. This allows you to, for example, have the same sequence played in different directions simultaneously, or at different speeds, or with different transpositions.\n\nThe Step Sequencer Head refers to the nearest Step Sequencer above it in the algorithm list. You can have as many Step Sequencer Heads as you like for each Step Sequencer.",
   "categories": [
-    "sequencing",
-    "utility",
-    "clocking"
+    "Sequencing",
+    "Modulation",
+    "Clock/Trigger"
   ],
+  "short_description": "An extra playback head",
+  "use_cases": [
+    "Playing sequences in different directions simultaneously",
+    "Adjusting sequence speed independently",
+    "Transposing sequences differently",
+    "Multi-layered sequencing"
+  ],
+  "gui_description": null,
   "parameters": [
     {
       "name": "Sequence",
       "min": 1,
       "max": 32,
       "default": 1,
-      "description": "Selects the current sequence."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Start",
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "The first step to play. A reset will jump to this step."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "End",
       "min": 1,
       "max": 16,
       "default": 16,
-      "description": "The last step to play."
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Direction",
       "min": 0,
       "max": 6,
       "default": 0,
-      "description": "The sequencer direction. See above.",
-      "enum_values": [
-        "Forward",
-        "Backward",
-        "Random",
-        "Alternate Forward/Backward",
-        "Alternate Backward/Forward",
-        "Ping-Pong"
-      ]
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Permutation",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "The sequencer permutation. See above.",
-      "enum_values": [
-        "Normal",
-        "Reverse",
-        "Random",
-        "Alternate"
-      ]
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Gate type",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets the gate type: “% of clock” or “Trigger”.",
-      "enum_values": [
-        "% of clock",
-        "Trigger"
-      ]
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -84,93 +76,7 @@
       "max": 99,
       "default": 50,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate length",
-      "min": 1,
-      "max": 99,
-      "default": 50,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gate length",
-      "unit": "%",
-      "description": "Sets the length of the gate output if the type is “% of clock”."
-    },
-    {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -179,368 +85,161 @@
       "max": 100,
       "default": 10,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
-      "name": "Trigger length",
+      "name": "Glide",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Octave",
+      "min": -10,
+      "max": 10,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Transpose",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Reset mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Gate output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Velocity output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Mod output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Step output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Follow MIDI clock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "type": "enum",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel (out)",
       "min": 1,
-      "max": 100,
-      "default": 10,
+      "max": 16,
+      "default": 1,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Trigger length",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Trigger length",
-      "unit": "ms",
-      "description": "Sets the length of the gate output if the type is “Trigger”."
-    },
-    {
-      "name": "Glide",
+      "name": "Output to breakout",
       "min": 0,
-      "max": 1000,
-      "default": 100,
+      "max": 1,
+      "default": 0,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
-      "name": "Glide",
+      "name": "Output to Select Bus",
       "min": 0,
-      "max": 1000,
-      "default": 100,
+      "max": 1,
+      "default": 0,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
-      "name": "Glide",
+      "name": "Output to USB",
       "min": 0,
-      "max": 1000,
-      "default": 100,
+      "max": 1,
+      "default": 0,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
-      "name": "Glide",
+      "name": "Output to internal",
       "min": 0,
-      "max": 1000,
-      "default": 100,
+      "max": 1,
+      "default": 0,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
     },
     {
-      "name": "Glide",
+      "name": "Mod CC",
       "min": 0,
-      "max": 1000,
-      "default": 100,
+      "max": 127,
+      "default": 1,
       "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
+      "is_per_channel": false,
       "is_bus": false
-    },
-    {
-      "name": "Glide",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Glide",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Glide",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Glide",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Glide",
-      "unit": "ms",
-      "description": "Sets the glide time for tied notes."
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Octave",
-      "description": "Transposes the sequence in octaves."
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "unit": "ST",
-      "description": "Transposes the sequence in semitones."
     }
   ],
   "input_ports": [
@@ -554,11 +253,27 @@
     },
     {
       "name": "Sequence CV input",
-      "description": "The bus to use to select the sequence. See above."
+      "description": "The bus to use to select the sequence."
     },
     {
       "name": "Sequence trigger input",
-      "description": "The bus to use for the sequence select trigger. See above."
+      "description": "The bus to use for the sequence select trigger."
+    },
+    {
+      "name": "Clock input",
+      "description": ""
+    },
+    {
+      "name": "Reset input",
+      "description": ""
+    },
+    {
+      "name": "Sequence CV input",
+      "description": ""
+    },
+    {
+      "name": "Sequence trigger input",
+      "description": ""
     }
   ],
   "output_ports": [
@@ -581,6 +296,26 @@
     {
       "name": "Step output",
       "description": "The bus to use for the step CV output. This represents the current sequencer step number scaled as 1/12th of a Volt per step."
+    },
+    {
+      "name": "Pitch output",
+      "description": ""
+    },
+    {
+      "name": "Gate output",
+      "description": ""
+    },
+    {
+      "name": "Velocity output",
+      "description": ""
+    },
+    {
+      "name": "Mod output",
+      "description": ""
+    },
+    {
+      "name": "Step output",
+      "description": ""
     }
   ]
 }
