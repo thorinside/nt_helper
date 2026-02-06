@@ -1,9 +1,12 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 
 class TestMockDistingMidiManager implements IDistingMidiManager {
@@ -11,7 +14,27 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   int _numAlgorithmsInPreset = 0;
   List<int>? lastSpecifications;
 
-  TestMockDistingMidiManager({required this.testAlgorithms});
+  // Auto-recovery tracking
+  int rebootCallCount = 0;
+  int rescanPluginsCallCount = 0;
+  int wakeCallCount = 0;
+
+  /// Per-GUID timeout configuration: maps GUID to number of times
+  /// requestAddAlgorithm should throw TimeoutException before succeeding.
+  final Map<String, int> timeoutCountByGuid;
+
+  /// Tracks how many times requestAddAlgorithm has been called per GUID.
+  final Map<String, int> _addAttemptsByGuid = {};
+
+  /// If non-null, requestAddAlgorithm always throws this for any GUID
+  /// in [alwaysFailGuids].
+  final Set<String> alwaysFailGuids;
+
+  TestMockDistingMidiManager({
+    required this.testAlgorithms,
+    this.timeoutCountByGuid = const {},
+    this.alwaysFailGuids = const {},
+  });
 
   Future<List<AlgorithmInfo>> scanAlgorithms({
     Function(String algorithmName, double progress)? onProgress,
@@ -50,7 +73,19 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   bool get isConnected => true;
 
   @override
-  Future<void> requestWake() async {}
+  Future<void> requestWake() async {
+    wakeCallCount++;
+  }
+
+  @override
+  Future<void> requestReboot() async {
+    rebootCallCount++;
+  }
+
+  @override
+  Future<void> requestRescanPlugins() async {
+    rescanPluginsCallCount++;
+  }
 
   @override
   Future<int?> requestNumAlgorithmsInPreset() async {
@@ -94,6 +129,23 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
     List<int> specifications,
   ) async {
     lastSpecifications = specifications;
+
+    final guid = algorithm.guid;
+
+    // Check for always-fail GUIDs
+    if (alwaysFailGuids.contains(guid)) {
+      throw TimeoutException('No response after 5000ms');
+    }
+
+    // Check for per-GUID timeout configuration
+    final maxTimeouts = timeoutCountByGuid[guid] ?? 0;
+    final attempts = _addAttemptsByGuid[guid] ?? 0;
+    _addAttemptsByGuid[guid] = attempts + 1;
+
+    if (attempts < maxTimeouts) {
+      throw TimeoutException('No response after 5000ms');
+    }
+
     _numAlgorithmsInPreset = 1;
   }
 
@@ -387,4 +439,275 @@ void main() {
       expect(mockManager.lastSpecifications, equals([4, 1, 2]));
     });
   });
+
+  group('MetadataSyncService - Auto-Recovery on Timeout', () {
+    test('rescanSingleAlgorithm: timeout triggers reboot then retry succeeds',
+        () {
+      fakeAsync((async) {
+        final database = AppDatabase.forTesting(NativeDatabase.memory());
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'timeout-plugin',
+              name: 'Timeout Plugin',
+              specifications: [],
+              isPlugin: true,
+              isLoaded: true,
+            ),
+          ],
+          timeoutCountByGuid: {'timeout-plugin': 1},
+        );
+
+        final service = MetadataSyncService(mockManager, database);
+        Object? caughtError;
+
+        service
+            .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
+            .catchError((e) => caughtError = e);
+
+        // Advance past all delays (30s reboot wait + polling + misc)
+        async.elapse(const Duration(minutes: 2));
+
+        expect(mockManager.rebootCallCount, equals(1));
+        expect(caughtError, isNull);
+
+        database.close();
+        async.elapse(const Duration(seconds: 1));
+      });
+    });
+
+    test('rescanSingleAlgorithm: both attempts fail throws TimeoutException',
+        () {
+      fakeAsync((async) {
+        final database = AppDatabase.forTesting(NativeDatabase.memory());
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'always-fail',
+              name: 'Always Fail',
+              specifications: [],
+              isPlugin: true,
+              isLoaded: true,
+            ),
+          ],
+          alwaysFailGuids: {'always-fail'},
+        );
+
+        final service = MetadataSyncService(mockManager, database);
+        Object? caughtError;
+
+        service
+            .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
+            .catchError((e) => caughtError = e);
+
+        async.elapse(const Duration(minutes: 2));
+
+        expect(caughtError, isA<TimeoutException>());
+        expect(mockManager.rebootCallCount, equals(1));
+
+        database.close();
+        async.elapse(const Duration(seconds: 1));
+      });
+    });
+
+    test('rescanSingleAlgorithm: non-timeout error does not trigger reboot',
+        () {
+      fakeAsync((async) {
+        final database = AppDatabase.forTesting(NativeDatabase.memory());
+        final mockManager = _NonTimeoutErrorMockManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'non-timeout',
+              name: 'Non-Timeout Error',
+              specifications: [],
+              isPlugin: false,
+              isLoaded: true,
+            ),
+          ],
+        );
+
+        final service = MetadataSyncService(mockManager, database);
+        Object? caughtError;
+
+        service
+            .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
+            .catchError((e) => caughtError = e);
+
+        async.elapse(const Duration(minutes: 1));
+
+        expect(caughtError, isA<Exception>());
+        expect(mockManager.rebootCallCount, equals(0));
+
+        database.close();
+        async.elapse(const Duration(seconds: 1));
+      });
+    });
+
+    test('syncAllAlgorithmMetadata: timeout then reboot then retry succeeds',
+        () {
+      fakeAsync((async) {
+        final database = AppDatabase.forTesting(NativeDatabase.memory());
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'sync-timeout',
+              name: 'Sync Timeout Plugin',
+              specifications: [],
+              isPlugin: true,
+              isLoaded: true,
+            ),
+          ],
+          timeoutCountByGuid: {'sync-timeout': 1},
+        );
+
+        final service = MetadataSyncService(mockManager, database);
+        final errors = <String>[];
+
+        service.syncAllAlgorithmMetadata(
+          onProgress: (progress, processed, total, mainMsg, subMsg) {},
+          onError: (error) => errors.add(error),
+        );
+
+        async.elapse(const Duration(minutes: 3));
+
+        expect(mockManager.rebootCallCount, equals(1));
+        expect(errors, isEmpty);
+
+        database.close();
+        async.elapse(const Duration(seconds: 1));
+      });
+    });
+
+    test(
+        'syncAllAlgorithmMetadata: retry fails then deferred rescan+reboot succeeds',
+        () {
+      fakeAsync((async) {
+        final database = AppDatabase.forTesting(NativeDatabase.memory());
+        // Fails first 2 attempts, succeeds on 3rd (after rescan+reboot)
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'deferred-plugin',
+              name: 'Deferred Plugin',
+              specifications: [],
+              isPlugin: true,
+              isLoaded: true,
+            ),
+          ],
+          timeoutCountByGuid: {'deferred-plugin': 2},
+        );
+
+        final service = MetadataSyncService(mockManager, database);
+        final errors = <String>[];
+
+        service.syncAllAlgorithmMetadata(
+          onProgress: (progress, processed, total, mainMsg, subMsg) {},
+          onError: (error) => errors.add(error),
+        );
+
+        async.elapse(const Duration(minutes: 5));
+
+        expect(mockManager.rescanPluginsCallCount, equals(1));
+        expect(mockManager.rebootCallCount, equals(2));
+        expect(errors, isEmpty);
+
+        database.close();
+        async.elapse(const Duration(seconds: 1));
+      });
+    });
+
+    test('syncAllAlgorithmMetadata: all retries fail reports error', () {
+      fakeAsync((async) {
+        final database = AppDatabase.forTesting(NativeDatabase.memory());
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'total-fail',
+              name: 'Total Fail Plugin',
+              specifications: [],
+              isPlugin: true,
+              isLoaded: true,
+            ),
+          ],
+          alwaysFailGuids: {'total-fail'},
+        );
+
+        final service = MetadataSyncService(mockManager, database);
+        final errors = <String>[];
+
+        service.syncAllAlgorithmMetadata(
+          onProgress: (progress, processed, total, mainMsg, subMsg) {},
+          onError: (error) => errors.add(error),
+        );
+
+        async.elapse(const Duration(minutes: 5));
+
+        expect(errors, hasLength(1));
+        expect(errors[0], contains('Total Fail Plugin'));
+        expect(errors[0], contains('after all retries'));
+
+        database.close();
+        async.elapse(const Duration(seconds: 1));
+      });
+    });
+
+    test('cancellation during reboot wait stops sync', () {
+      fakeAsync((async) {
+        final database = AppDatabase.forTesting(NativeDatabase.memory());
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'cancel-reboot',
+              name: 'Cancel During Reboot',
+              specifications: [],
+              isPlugin: true,
+              isLoaded: true,
+            ),
+          ],
+          timeoutCountByGuid: {'cancel-reboot': 1},
+        );
+
+        final service = MetadataSyncService(mockManager, database);
+        bool cancelled = false;
+        bool completed = false;
+
+        service.syncAllAlgorithmMetadata(
+          onProgress: (progress, processed, total, mainMsg, subMsg) {},
+          isCancelled: () => cancelled,
+        ).then((_) => completed = true);
+
+        // Advance past initial scan + timeout, into the reboot wait
+        async.elapse(const Duration(seconds: 5));
+        // Cancel while in the 30s reboot wait
+        cancelled = true;
+        async.elapse(const Duration(minutes: 2));
+
+        expect(completed, isTrue);
+
+        database.close();
+        async.elapse(const Duration(seconds: 1));
+      });
+    });
+  });
+}
+
+/// Mock that throws a non-timeout exception from requestAddAlgorithm.
+class _NonTimeoutErrorMockManager extends TestMockDistingMidiManager {
+  _NonTimeoutErrorMockManager({required super.testAlgorithms});
+
+  @override
+  Future<void> requestAddAlgorithm(
+    AlgorithmInfo algorithm,
+    List<int> specifications,
+  ) async {
+    lastSpecifications = specifications;
+    throw Exception('Connection lost unexpectedly');
+  }
 }

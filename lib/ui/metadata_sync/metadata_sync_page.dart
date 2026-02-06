@@ -70,7 +70,6 @@ class MetadataSyncPage extends StatelessWidget {
                 return PopScope(
                   canPop:
                       !(metaState is SyncingMetadata ||
-                          metaState is WaitingForUserContinue ||
                           metaState is SavingPreset ||
                           metaState is DeletingPreset),
                   onPopInvokedWithResult: (didPop, result) {
@@ -88,7 +87,6 @@ class MetadataSyncPage extends StatelessWidget {
                             onPressed: () {
                               // Cancel sync if in progress, otherwise just navigate back
                               if (metaState is SyncingMetadata ||
-                                  metaState is WaitingForUserContinue ||
                                   metaState is SavingPreset ||
                                   metaState is DeletingPreset) {
                                 context
@@ -346,7 +344,6 @@ class MetadataSyncPage extends StatelessWidget {
                         }
 
                         if (metaState is SyncingMetadata ||
-                            metaState is WaitingForUserContinue ||
                             metaState is SavingPreset ||
                             metaState is DeletingPreset) {
                           return Center(
@@ -421,8 +418,6 @@ class MetadataSyncPage extends StatelessWidget {
     String mainMessage = "Processing...";
     String? subMessage;
     double? progressValue; // Null for indeterminate
-    bool showContinueButtons = false;
-    String? userMessage;
     int? algorithmsProcessed;
     int? totalAlgorithms;
 
@@ -437,19 +432,6 @@ class MetadataSyncPage extends StatelessWidget {
         mainMessage = msg;
         subMessage = sub;
         progressValue = progress > 0 ? progress : null;
-        algorithmsProcessed = processed;
-        totalAlgorithms = total;
-        break;
-      case WaitingForUserContinue(
-        message: final msg,
-        progress: final progress,
-        algorithmsProcessed: final processed,
-        totalAlgorithms: final total,
-      ):
-        mainMessage = "Sync Paused - Device Reboot Required";
-        userMessage = msg;
-        progressValue = progress;
-        showContinueButtons = true;
         algorithmsProcessed = processed;
         totalAlgorithms = total;
         break;
@@ -565,111 +547,18 @@ class MetadataSyncPage extends StatelessWidget {
                 ),
               ],
 
-              // User message for reboot dialog
-              if (userMessage != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.error.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_rounded,
-                        color: Theme.of(context).colorScheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          userMessage,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onErrorContainer,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
               // Action buttons
               const SizedBox(height: 24),
-              if (showContinueButtons) ...[
-                Column(
-                  children: [
-                    // Primary action row - Cancel and Continue
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton.icon(
-                          onPressed: () {
-                            context
-                                .read<MetadataSyncCubit>()
-                                .cancelMetadataSync();
-                          },
-                          icon: const Icon(Icons.close, size: 18),
-                          label: const Text("Cancel"),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.error,
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            context.read<MetadataSyncCubit>().continueSync();
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: const Text("Continue"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Secondary action - Skip (centered)
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        context.read<MetadataSyncCubit>().userSkip();
-                      },
-                      icon: const Icon(Icons.skip_next),
-                      label: const Text("Skip Plugin"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ],
+              TextButton.icon(
+                onPressed: () {
+                  context.read<MetadataSyncCubit>().cancelMetadataSync();
+                },
+                icon: const Icon(Icons.close, size: 18),
+                label: const Text("Cancel Sync"),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
                 ),
-              ] else ...[
-                // Show cancel button for regular sync operations
-                TextButton.icon(
-                  onPressed: () {
-                    context.read<MetadataSyncCubit>().cancelMetadataSync();
-                  },
-                  icon: const Icon(Icons.close, size: 18),
-                  label: const Text("Cancel Sync"),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         ),

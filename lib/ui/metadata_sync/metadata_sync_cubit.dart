@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
@@ -29,9 +27,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
   // Cancellation flag for template injection
   bool _isInjectionCancelled = false;
-
-  // Completer for user continue prompt (returns bool)
-  Completer<bool>? _continueCompleter;
 
   // Checkpoint keys for SharedPreferences
   static const String _checkpointAlgorithmName =
@@ -97,33 +92,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           finalMessage = "Metadata Sync Failed: $error";
         }
       },
-      onContinueRequired: (message) async {
-        if (_isMetadataSyncCancelled || isClosed) return false;
-
-        // Store current progress for the waiting state
-        final currentState = state;
-        final currentProgress = currentState is SyncingMetadata
-            ? currentState.progress
-            : 0.0;
-        final algorithmsProcessed = currentState is SyncingMetadata
-            ? currentState.algorithmsProcessed
-            : null;
-        final totalAlgorithms = currentState is SyncingMetadata
-            ? currentState.totalAlgorithms
-            : null;
-
-        emit(
-          MetadataSyncState.waitingForUserContinue(
-            message: message,
-            progress: currentProgress,
-            algorithmsProcessed: algorithmsProcessed,
-            totalAlgorithms: totalAlgorithms,
-          ),
-        );
-
-        _continueCompleter = Completer<bool>();
-        return await _continueCompleter!.future;
-      },
       onCheckpoint: (algorithmName, algorithmIndex) async {
         await _saveCheckpoint(algorithmName, algorithmIndex);
       },
@@ -161,7 +129,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   void cancelMetadataSync() {
     final wasCancelled = switch (state) {
       SyncingMetadata() => true,
-      WaitingForUserContinue() => true,
       SavingPreset() => true,
       DeletingPreset() => true,
       _ => false,
@@ -172,12 +139,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // Resume CPU monitoring when cancelling
       _distingCubit?.resumeCpuMonitoring();
-
-      // If waiting for continue, complete with false (cancel)
-      if (_continueCompleter != null && !_continueCompleter!.isCompleted) {
-        _continueCompleter!.complete(false);
-        _continueCompleter = null;
-      }
 
       // Emit cancelled state immediately for better UX
       emit(
@@ -192,39 +153,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       });
     }
   }
-
-  void userContinue() {
-    if (state is WaitingForUserContinue &&
-        _continueCompleter != null &&
-        !_continueCompleter!.isCompleted) {
-      _continueCompleter!.complete(true);
-      _continueCompleter = null;
-    }
-  }
-
-  void userCancelAfterReboot() {
-    if (state is WaitingForUserContinue &&
-        _continueCompleter != null &&
-        !_continueCompleter!.isCompleted) {
-      _continueCompleter!.complete(false);
-      _continueCompleter = null;
-      _isMetadataSyncCancelled = true;
-    }
-  }
-
-  void userSkip() {
-    if (state is WaitingForUserContinue &&
-        _continueCompleter != null &&
-        !_continueCompleter!.isCompleted) {
-      _continueCompleter!.complete(
-        true,
-      ); // Skip means continue but skip this algorithm
-      _continueCompleter = null;
-    }
-  }
-
-  // Alias for userContinue() for UI compatibility
-  void continueSync() => userContinue();
 
   // --- Preset Management Methods ---
 
@@ -651,33 +579,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           errorOccurred = true;
           finalMessage = "Incremental Sync Failed: $error";
         }
-      },
-      onContinueRequired: (message) async {
-        if (_isMetadataSyncCancelled || isClosed) return false;
-
-        // Store current progress for the waiting state
-        final currentState = state;
-        final currentProgress = currentState is SyncingMetadata
-            ? currentState.progress
-            : 0.0;
-        final algorithmsProcessed = currentState is SyncingMetadata
-            ? currentState.algorithmsProcessed
-            : null;
-        final totalAlgorithms = currentState is SyncingMetadata
-            ? currentState.totalAlgorithms
-            : null;
-
-        emit(
-          MetadataSyncState.waitingForUserContinue(
-            message: message,
-            progress: currentProgress,
-            algorithmsProcessed: algorithmsProcessed,
-            totalAlgorithms: totalAlgorithms,
-          ),
-        );
-
-        _continueCompleter = Completer<bool>();
-        return await _continueCompleter!.future;
       },
       isCancelled: () => _isMetadataSyncCancelled,
     );

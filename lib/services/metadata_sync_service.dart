@@ -65,12 +65,157 @@ class MetadataSyncService {
         algoInfo;
   }
 
+  /// Check if an error is a timeout-related error that may require device reboot.
+  bool _isTimeoutError(Object error) {
+    final errorString = error.toString();
+    return errorString.contains('TimeoutException') ||
+        errorString.contains('No response after') ||
+        error is TimeoutException;
+  }
+
+  /// Reboot the device and wait for it to reconnect.
+  ///
+  /// Sends requestReboot(), waits 30s in 1-second increments (checking cancel),
+  /// then wakes the device and verifies communication.
+  Future<void> _rebootAndWaitForReconnection({
+    void Function(String message)? onStatus,
+    bool Function()? checkCancel,
+  }) async {
+    onStatus?.call('Sending reboot command...');
+    try {
+      await _distingManager.requestReboot();
+    } catch (_) {
+      // Fire-and-forget — device may disconnect immediately
+    }
+
+    // Wait 30 seconds in 1-second increments
+    for (int i = 0; i < 30; i++) {
+      if (checkCancel?.call() ?? false) return;
+      onStatus?.call('Waiting for device to reboot... ${30 - i}s remaining');
+      await Future.delayed(const Duration(seconds: 1));
+    }
+
+    if (checkCancel?.call() ?? false) return;
+
+    // Wake the device
+    onStatus?.call('Waking device...');
+    await _distingManager.requestWake();
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Verify communication — poll up to 5 times with 2s gaps
+    for (int attempt = 0; attempt < 5; attempt++) {
+      if (checkCancel?.call() ?? false) return;
+      onStatus?.call(
+        'Verifying communication... (attempt ${attempt + 1}/5)',
+      );
+      try {
+        final numAlgos = await _distingManager.requestNumberOfAlgorithms();
+        if (numAlgos != null && numAlgos > 0) {
+          // Communication restored — clear preset
+          await _distingManager.requestNewPreset();
+          await Future.delayed(const Duration(milliseconds: 500));
+          onStatus?.call('Device reconnected successfully.');
+          return;
+        }
+      } catch (_) {
+        // Not ready yet
+      }
+      await Future.delayed(const Duration(seconds: 2));
+    }
+
+    throw Exception('Failed to reconnect to device after reboot.');
+  }
+
+  /// Try to scan a single algorithm: add → poll → query → remove → poll.
+  ///
+  /// Returns true on success. Throws on failure.
+  Future<void> _tryScanAlgorithm({
+    required AlgorithmInfo algoInfo,
+    required MetadataDao metadataDao,
+    required Map<String, int> unitIdMap,
+    required List<String> dbUnitStrings,
+    required FirmwareVersion firmwareVersion,
+    bool Function()? checkCancel,
+  }) async {
+    // Load plugin if needed
+    if (algoInfo.isPlugin && !algoInfo.isLoaded) {
+      await _distingManager.requestLoadPlugin(algoInfo.guid);
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (checkCancel?.call() ?? false) return;
+    }
+
+    // Add algorithm with scan specs
+    final scanSpecs = _scanSpecValues(algoInfo);
+    await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
+
+    // Poll until added
+    final numInPreset = await _pollPresetCount(
+      expected: 1,
+      maxAttempts: algoInfo.isPlugin ? 15 : 10,
+      checkCancel: checkCancel,
+    );
+
+    if (checkCancel?.call() ?? false) return;
+
+    if (numInPreset != 1) {
+      throw Exception(
+        'Failed to add algorithm to preset (expected 1, found $numInPreset).',
+      );
+    }
+
+    // Query instantiated parameters
+    final algorithmToQuery = await _resolveAlgorithmForQuery(algoInfo);
+    await _syncInstantiatedAlgorithmParams(
+      metadataDao,
+      algorithmToQuery,
+      unitIdMap,
+      dbUnitStrings,
+      firmwareVersion,
+    );
+
+    // Remove algorithm
+    await _distingManager.requestRemoveAlgorithm(0);
+
+    // Poll until removed
+    await _pollPresetCount(
+      expected: 0,
+      maxAttempts: 8,
+      checkCancel: checkCancel,
+    );
+  }
+
+  /// Clean up a failed algorithm from DB and device.
+  Future<void> _cleanupFailedAlgorithm(
+    MetadataDao metadataDao,
+    String guid,
+  ) async {
+    // DB cleanup
+    try {
+      await metadataDao.clearAlgorithmMetadata(guid);
+      await (metadataDao.delete(
+        metadataDao.specifications,
+      )..where((s) => s.algorithmGuid.equals(guid))).go();
+      await (metadataDao.delete(
+        metadataDao.algorithms,
+      )..where((a) => a.guid.equals(guid))).go();
+    } catch (_) {
+      // Best effort
+    }
+
+    // Device cleanup
+    try {
+      await _distingManager.requestNewPreset();
+      await Future.delayed(const Duration(milliseconds: 500));
+    } catch (_) {
+      // Best effort
+    }
+  }
+
   /// Fetches all static algorithm metadata from the connected device
   /// by temporarily manipulating a preset, and caches it in the database.
   ///
   /// [onProgress] callback reports progress (0.0-1.0), counts, and messages.
   /// [onError] callback reports errors encountered during the process.
-  /// [onContinueRequired] callback prompts user to continue after reboot (returns Future&lt;bool&gt;).
   /// [onCheckpoint] callback saves checkpoint with algorithm name and index.
   /// [resumeFromIndex] optional algorithm index to resume from.
   /// [isCancelled] callback allows checking if cancellation has been requested.
@@ -84,7 +229,6 @@ class MetadataSyncService {
     )?
     onProgress,
     Function(String error)? onError,
-    Future<bool> Function(String message)? onContinueRequired,
     Future<void> Function(String algorithmName, int algorithmIndex)?
     onCheckpoint,
     int? resumeFromIndex,
@@ -299,6 +443,8 @@ class MetadataSyncService {
       final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();
 
       // 4. Process All Algorithms in Single Loop
+      final failedPlugins = <AlgorithmInfo>[];
+
       for (int i = 0; i < orderedAlgorithms.length; i++) {
         if (checkCancel()) break;
 
@@ -317,151 +463,108 @@ class MetadataSyncService {
         reportProgress(mainProgressMsg, "Starting...", incrementCount: true);
 
         try {
-          // A. Load plugin if it's a community plugin that needs loading
-          if (algoInfo.isPlugin && !algoInfo.isLoaded) {
-            reportProgress(mainProgressMsg, "Loading plugin...");
-            if (checkCancel()) break;
-            await _distingManager.requestLoadPlugin(algoInfo.guid);
-            await Future.delayed(
-              const Duration(milliseconds: 1000),
-            ); // Wait for plugin to load
-            if (checkCancel()) break;
-          }
-
-          // B. Add algorithm with default specs to slot 0
-          reportProgress(mainProgressMsg, "Adding to preset...");
-          if (checkCancel()) break;
-          final scanSpecs = _scanSpecValues(algoInfo);
-          await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
-
-          // C. Poll until algorithm is added to preset
-          reportProgress(
-            mainProgressMsg,
-            "Waiting for algorithm to be added...",
-          );
-          if (checkCancel()) break;
-
-          var numInPreset = await _pollPresetCount(
-            expected: 1,
-            maxAttempts: algoInfo.isPlugin ? 15 : 10,
+          await _tryScanAlgorithm(
+            algoInfo: algoInfo,
+            metadataDao: metadataDao,
+            unitIdMap: unitIdMap,
+            dbUnitStrings: dbUnitStrings,
+            firmwareVersion: firmwareVersion,
             checkCancel: checkCancel,
           );
-
-          if (checkCancel()) break;
-
-          if (numInPreset != 1) {
-            throw Exception(
-              "Failed to add algorithm to preset (expected 1, found $numInPreset).",
-            );
-          }
-
-          // D. Query the instantiated algorithm parameters
-          reportProgress(mainProgressMsg, "Querying parameters...");
-          if (checkCancel()) break;
-
-          final algorithmToQuery =
-              await _resolveAlgorithmForQuery(algoInfo);
-
-          await _syncInstantiatedAlgorithmParams(
-            metadataDao,
-            algorithmToQuery,
-            unitIdMap,
-            dbUnitStrings,
-            firmwareVersion,
-          );
-
-          // E. Remove algorithm from slot 0
-          reportProgress(mainProgressMsg, "Removing from preset...");
-          if (checkCancel()) break;
-          await _distingManager.requestRemoveAlgorithm(0);
-
-          // Poll until algorithm is removed from preset
-          reportProgress(
-            mainProgressMsg,
-            "Waiting for algorithm to be removed...",
-          );
-          await _pollPresetCount(
-            expected: 0,
-            maxAttempts: 8,
-            checkCancel: checkCancel,
-          );
-
           reportProgress(mainProgressMsg, "Done.");
         } catch (instantiationError, stackTrace) {
-          // Report the main error first
-          final errorMsg =
-              "Error processing ${algoInfo.name}: $instantiationError";
           debugPrintStack(stackTrace: stackTrace);
 
-          // Check if this is a timeout-related error that requires device reboot
-          final errorString = instantiationError.toString();
-          final isTimeoutError =
-              errorString.contains('TimeoutException') ||
-              errorString.contains('No response after') ||
-              instantiationError is TimeoutException;
-
-          if (isTimeoutError && onContinueRequired != null) {
-            // Timeout detected - prompt for reboot
+          if (_isTimeoutError(instantiationError)) {
+            // Timeout — auto-reboot and retry
             reportProgress(
               mainProgressMsg,
-              "Timeout detected - requesting device reboot...",
+              "Timeout detected — rebooting device...",
             );
-
-            final shouldContinue = await onContinueRequired(
-              "Algorithm ${algoInfo.name} failed with timeout errors. This may indicate the device needs a reboot. Please reboot your NT device and wait for it to fully start, then press Continue.",
-            );
-
-            if (!shouldContinue || checkCancel()) {
-              reportProgress(mainProgressMsg, "Sync cancelled by user.");
-              return;
-            }
-
-            reportProgress(mainProgressMsg, "Continuing after reboot...");
-            // Clear any potential state issues
             try {
-              await _distingManager.requestNewPreset();
-              await Future.delayed(const Duration(milliseconds: 500));
+              await _rebootAndWaitForReconnection(
+                onStatus: (msg) => reportProgress(mainProgressMsg, msg),
+                checkCancel: checkCancel,
+              );
+              if (checkCancel()) break;
 
-              // Test communication after reboot
-              final numAlgos = await _distingManager
-                  .requestNumberOfAlgorithms();
-              if (numAlgos == null || numAlgos != totalAlgorithms) {}
-            } catch (cleanupError) {
-              // Intentionally empty
+              reportProgress(mainProgressMsg, "Retrying after reboot...");
+              await _tryScanAlgorithm(
+                algoInfo: algoInfo,
+                metadataDao: metadataDao,
+                unitIdMap: unitIdMap,
+                dbUnitStrings: dbUnitStrings,
+                firmwareVersion: firmwareVersion,
+                checkCancel: checkCancel,
+              );
+              reportProgress(mainProgressMsg, "Retry succeeded.");
+            } catch (retryError) {
+              // Retry failed — defer to end-of-scan pass
+              failedPlugins.add(algoInfo);
+              await _cleanupFailedAlgorithm(metadataDao, algoInfo.guid);
+              reportProgress(
+                mainProgressMsg,
+                "Deferred for end-of-scan retry.",
+              );
             }
           } else {
-            onError?.call(errorMsg);
-          }
-
-          // Attempt DB cleanup
-          reportProgress(mainProgressMsg, "Attempting DB cleanup...");
-          try {
-            await metadataDao.clearAlgorithmMetadata(algoInfo.guid);
-            await (metadataDao.delete(
-              metadataDao.specifications,
-            )..where((s) => s.algorithmGuid.equals(algoInfo.guid))).go();
-            await (metadataDao.delete(
-              metadataDao.algorithms,
-            )..where((a) => a.guid.equals(algoInfo.guid))).go();
-            reportProgress(
-              mainProgressMsg,
-              "DB cleared for failed ${algoInfo.name}.",
+            // Non-timeout error — report and clean up
+            onError?.call(
+              "Error processing ${algoInfo.name}: $instantiationError",
             );
-          } catch (dbClearError) {
-            reportProgress(mainProgressMsg, "DB cleanup failed: $dbClearError");
+            await _cleanupFailedAlgorithm(metadataDao, algoInfo.guid);
           }
+        }
+      }
 
-          // Attempt device cleanup
-          reportProgress(mainProgressMsg, "Attempting device preset clear...");
-          try {
-            await _distingManager.requestNewPreset();
-            await Future.delayed(const Duration(milliseconds: 500));
-            reportProgress(mainProgressMsg, "Device preset cleared.");
-          } catch (presetClearError) {
-            reportProgress(
-              mainProgressMsg,
-              "Device preset clear failed: $presetClearError",
+      // 4b. End-of-scan retry pass for failed plugins
+      if (failedPlugins.isNotEmpty && !checkCancel()) {
+        reportProgress(
+          "Retrying Failed Plugins",
+          "Rescanning plugins and rebooting...",
+        );
+        try {
+          await _distingManager.requestRescanPlugins();
+          // Wait 5 seconds for rescan to complete
+          for (int i = 0; i < 5; i++) {
+            if (checkCancel()) break;
+            await Future.delayed(const Duration(seconds: 1));
+          }
+          if (!checkCancel()) {
+            await _rebootAndWaitForReconnection(
+              onStatus: (msg) =>
+                  reportProgress("Retrying Failed Plugins", msg),
+              checkCancel: checkCancel,
             );
+          }
+        } catch (e) {
+          reportProgress(
+            "Retrying Failed Plugins",
+            "Rescan/reboot failed: $e",
+          );
+        }
+
+        if (!checkCancel()) {
+          for (final algoInfo in failedPlugins) {
+            if (checkCancel()) break;
+            final retryMsg = "${algoInfo.name} (final retry)";
+            reportProgress(retryMsg, "Starting final retry...");
+            try {
+              await _tryScanAlgorithm(
+                algoInfo: algoInfo,
+                metadataDao: metadataDao,
+                unitIdMap: unitIdMap,
+                dbUnitStrings: dbUnitStrings,
+                firmwareVersion: firmwareVersion,
+                checkCancel: checkCancel,
+              );
+              reportProgress(retryMsg, "Final retry succeeded.");
+            } catch (finalError) {
+              onError?.call(
+                "Failed to scan ${algoInfo.name} after all retries: $finalError",
+              );
+              await _cleanupFailedAlgorithm(metadataDao, algoInfo.guid);
+            }
           }
         }
       }
@@ -473,7 +576,6 @@ class MetadataSyncService {
           "Checking for algorithms with missing parameters...",
         );
 
-        // Find algorithms with 0 parameters that should have been processed
         final algorithmsWithZeroParams = <AlgorithmInfo>[];
         try {
           final parameterCounts = await metadataDao
@@ -502,63 +604,15 @@ class MetadataSyncService {
             reportProgress(mainProgressMsg, "Starting retry...");
 
             try {
-              // A. Load plugin if it's a community plugin that needs loading
-              if (algoInfo.isPlugin && !algoInfo.isLoaded) {
-                reportProgress(mainProgressMsg, "Loading plugin...");
-                await _distingManager.requestLoadPlugin(algoInfo.guid);
-                await Future.delayed(const Duration(milliseconds: 1000));
-                if (checkCancel()) break;
-              }
-
-              // B. Add algorithm with default specs to slot 0
-              reportProgress(mainProgressMsg, "Adding to preset...");
-              final scanSpecs = _scanSpecValues(algoInfo);
-              await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
-
-              // C. Poll until algorithm is added to preset
-              reportProgress(
-                mainProgressMsg,
-                "Waiting for algorithm to be added...",
-              );
-              final numInPreset = await _pollPresetCount(
-                expected: 1,
-                maxAttempts: algoInfo.isPlugin ? 15 : 10,
+              await _tryScanAlgorithm(
+                algoInfo: algoInfo,
+                metadataDao: metadataDao,
+                unitIdMap: unitIdMap,
+                dbUnitStrings: dbUnitStrings,
+                firmwareVersion: firmwareVersion,
                 checkCancel: checkCancel,
               );
-
-              if (checkCancel()) break;
-
-              if (numInPreset == 1) {
-                // D. Query the instantiated algorithm parameters
-                reportProgress(
-                  mainProgressMsg,
-                  "Querying parameters (retry)...",
-                );
-
-                final algorithmToQuery =
-                    await _resolveAlgorithmForQuery(algoInfo);
-
-                await _syncInstantiatedAlgorithmParams(
-                  metadataDao,
-                  algorithmToQuery,
-                  unitIdMap,
-                  dbUnitStrings,
-                  firmwareVersion,
-                );
-
-                // E. Remove algorithm from slot 0
-                reportProgress(mainProgressMsg, "Removing from preset...");
-                await _distingManager.requestRemoveAlgorithm(0);
-
-                // Poll until algorithm is removed
-                await _pollPresetCount(
-                  expected: 0,
-                  maxAttempts: 8,
-                  checkCancel: checkCancel,
-                );
-
-                reportProgress(mainProgressMsg, "Retry completed.");
-              } else {}
+              reportProgress(mainProgressMsg, "Retry completed.");
             } catch (retryError, stackTrace) {
               debugPrintStack(stackTrace: stackTrace);
 
@@ -785,8 +839,9 @@ class MetadataSyncService {
 
   /// Rescan a single algorithm's parameters
   Future<void> rescanSingleAlgorithm(AlgorithmInfo algoInfo) async {
+    final metadataDao = _database.metadataDao;
     final firmwareVersion = await _requestFirmwareVersionSafe();
-    final dbUnits = await _database.metadataDao.getAllUnits();
+    final dbUnits = await metadataDao.getAllUnits();
     final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();
     final unitIdMap = <String, int>{};
     for (final unit in dbUnits) {
@@ -794,44 +849,31 @@ class MetadataSyncService {
     }
 
     // Clear existing parameter data for this algorithm
-    await _database.metadataDao.clearAlgorithmMetadata(algoInfo.guid);
+    await metadataDao.clearAlgorithmMetadata(algoInfo.guid);
 
-    // Load plugin if needed
-    if (algoInfo.isPlugin && !algoInfo.isLoaded) {
-      await _distingManager.requestLoadPlugin(algoInfo.guid);
-      await Future.delayed(const Duration(milliseconds: 1000));
+    try {
+      await _tryScanAlgorithm(
+        algoInfo: algoInfo,
+        metadataDao: metadataDao,
+        unitIdMap: unitIdMap,
+        dbUnitStrings: dbUnitStrings,
+        firmwareVersion: firmwareVersion,
+      );
+    } catch (error) {
+      if (_isTimeoutError(error)) {
+        // Timeout — reboot and retry once
+        await _rebootAndWaitForReconnection();
+        await _tryScanAlgorithm(
+          algoInfo: algoInfo,
+          metadataDao: metadataDao,
+          unitIdMap: unitIdMap,
+          dbUnitStrings: dbUnitStrings,
+          firmwareVersion: firmwareVersion,
+        );
+      } else {
+        rethrow;
+      }
     }
-
-    // Add to preset
-    final scanSpecs = _scanSpecValues(algoInfo);
-    await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
-
-    // Poll until added
-    final numInPreset = await _pollPresetCount(
-      expected: 1,
-      maxAttempts: algoInfo.isPlugin ? 15 : 10,
-    );
-
-    if (numInPreset != 1) {
-      throw Exception("Failed to add algorithm to preset");
-    }
-
-    final algorithmToQuery = await _resolveAlgorithmForQuery(algoInfo);
-
-    // Query parameters
-    await _syncInstantiatedAlgorithmParams(
-      _database.metadataDao,
-      algorithmToQuery,
-      unitIdMap,
-      dbUnitStrings,
-      firmwareVersion,
-    );
-
-    // Remove from preset
-    await _distingManager.requestRemoveAlgorithm(0);
-
-    // Poll until removed
-    await _pollPresetCount(expected: 0, maxAttempts: 8);
   }
 
   /// Incrementally sync only new algorithms not present in the database
@@ -845,7 +887,6 @@ class MetadataSyncService {
     )?
     onProgress,
     Function(String error)? onError,
-    Future<bool> Function(String message)? onContinueRequired,
     bool Function()? isCancelled,
   }) async {
     final metadataDao = _database.metadataDao;
@@ -974,6 +1015,8 @@ class MetadataSyncService {
       if (checkCancel()) return;
 
       // Process new algorithms
+      final failedPlugins = <AlgorithmInfo>[];
+
       for (int i = 0; i < orderedNewAlgorithms.length; i++) {
         if (checkCancel()) break;
 
@@ -1016,82 +1059,12 @@ class MetadataSyncService {
             await metadataDao.upsertSpecifications(specEntries);
           }
 
-          // Load plugin if needed
-          if (algoInfo.isPlugin && !algoInfo.isLoaded) {
-            reportProgress(
-              mainProgressMsg,
-              "Loading plugin...",
-              processed: i,
-              total: orderedNewAlgorithms.length,
-            );
-            await _distingManager.requestLoadPlugin(algoInfo.guid);
-            await Future.delayed(const Duration(milliseconds: 1000));
-            if (checkCancel()) break;
-          }
-
-          // Add algorithm with default specs to slot 0
-          reportProgress(
-            mainProgressMsg,
-            "Adding to preset...",
-            processed: i,
-            total: orderedNewAlgorithms.length,
-          );
-          final scanSpecs = _scanSpecValues(algoInfo);
-          await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
-
-          // Poll until algorithm is added to preset
-          reportProgress(
-            mainProgressMsg,
-            "Waiting for algorithm to be added...",
-            processed: i,
-            total: orderedNewAlgorithms.length,
-          );
-          final numInPreset = await _pollPresetCount(
-            expected: 1,
-            maxAttempts: algoInfo.isPlugin ? 15 : 10,
-            checkCancel: checkCancel,
-          );
-
-          if (checkCancel()) break;
-
-          if (numInPreset != 1) {
-            throw Exception(
-              "Failed to add algorithm to preset (expected 1, found $numInPreset).",
-            );
-          }
-
-          // Query parameters
-          reportProgress(
-            mainProgressMsg,
-            "Querying parameters...",
-            processed: i,
-            total: orderedNewAlgorithms.length,
-          );
-
-          final algorithmToQuery =
-              await _resolveAlgorithmForQuery(algoInfo);
-
-          await _syncInstantiatedAlgorithmParams(
-            metadataDao,
-            algorithmToQuery,
-            unitIdMap,
-            dbUnitStrings,
-            firmwareVersion,
-          );
-
-          // Remove algorithm from slot 0
-          reportProgress(
-            mainProgressMsg,
-            "Removing from preset...",
-            processed: i,
-            total: orderedNewAlgorithms.length,
-          );
-          await _distingManager.requestRemoveAlgorithm(0);
-
-          // Poll until algorithm is removed
-          await _pollPresetCount(
-            expected: 0,
-            maxAttempts: 8,
+          await _tryScanAlgorithm(
+            algoInfo: algoInfo,
+            metadataDao: metadataDao,
+            unitIdMap: unitIdMap,
+            dbUnitStrings: dbUnitStrings,
+            firmwareVersion: firmwareVersion,
             checkCancel: checkCancel,
           );
 
@@ -1102,20 +1075,135 @@ class MetadataSyncService {
             total: orderedNewAlgorithms.length,
           );
         } catch (error, stackTrace) {
-          final errorMsg =
-              "Error syncing new algorithm ${algoInfo.name}: $error";
           debugPrintStack(stackTrace: stackTrace);
 
-          // Clean up on error
-          try {
-            await metadataDao.clearAlgorithmMetadata(algoInfo.guid);
-            await _distingManager.requestNewPreset();
-            await Future.delayed(const Duration(milliseconds: 500));
-          } catch (cleanupError) {
-            // Intentionally empty
-          }
+          if (_isTimeoutError(error)) {
+            // Timeout — auto-reboot and retry
+            reportProgress(
+              mainProgressMsg,
+              "Timeout detected — rebooting device...",
+              processed: i,
+              total: orderedNewAlgorithms.length,
+            );
+            try {
+              await _rebootAndWaitForReconnection(
+                onStatus: (msg) => reportProgress(
+                  mainProgressMsg,
+                  msg,
+                  processed: i,
+                  total: orderedNewAlgorithms.length,
+                ),
+                checkCancel: checkCancel,
+              );
+              if (checkCancel()) break;
 
-          onError?.call(errorMsg);
+              reportProgress(
+                mainProgressMsg,
+                "Retrying after reboot...",
+                processed: i,
+                total: orderedNewAlgorithms.length,
+              );
+              await _tryScanAlgorithm(
+                algoInfo: algoInfo,
+                metadataDao: metadataDao,
+                unitIdMap: unitIdMap,
+                dbUnitStrings: dbUnitStrings,
+                firmwareVersion: firmwareVersion,
+                checkCancel: checkCancel,
+              );
+              reportProgress(
+                mainProgressMsg,
+                "Retry succeeded.",
+                processed: i + 1,
+                total: orderedNewAlgorithms.length,
+              );
+            } catch (retryError) {
+              // Retry failed — defer to end-of-scan pass
+              failedPlugins.add(algoInfo);
+              await _cleanupFailedAlgorithm(metadataDao, algoInfo.guid);
+              reportProgress(
+                mainProgressMsg,
+                "Deferred for end-of-scan retry.",
+                processed: i,
+                total: orderedNewAlgorithms.length,
+              );
+            }
+          } else {
+            // Non-timeout error — report and clean up
+            onError?.call(
+              "Error syncing new algorithm ${algoInfo.name}: $error",
+            );
+            await _cleanupFailedAlgorithm(metadataDao, algoInfo.guid);
+          }
+        }
+      }
+
+      // End-of-scan retry pass for failed plugins
+      if (failedPlugins.isNotEmpty && !checkCancel()) {
+        reportProgress(
+          "Retrying Failed Plugins",
+          "Rescanning plugins and rebooting...",
+          processed: orderedNewAlgorithms.length - failedPlugins.length,
+          total: orderedNewAlgorithms.length,
+        );
+        try {
+          await _distingManager.requestRescanPlugins();
+          for (int i = 0; i < 5; i++) {
+            if (checkCancel()) break;
+            await Future.delayed(const Duration(seconds: 1));
+          }
+          if (!checkCancel()) {
+            await _rebootAndWaitForReconnection(
+              onStatus: (msg) => reportProgress(
+                "Retrying Failed Plugins",
+                msg,
+                processed: orderedNewAlgorithms.length - failedPlugins.length,
+                total: orderedNewAlgorithms.length,
+              ),
+              checkCancel: checkCancel,
+            );
+          }
+        } catch (e) {
+          reportProgress(
+            "Retrying Failed Plugins",
+            "Rescan/reboot failed: $e",
+            processed: orderedNewAlgorithms.length - failedPlugins.length,
+            total: orderedNewAlgorithms.length,
+          );
+        }
+
+        if (!checkCancel()) {
+          for (final algoInfo in failedPlugins) {
+            if (checkCancel()) break;
+            final retryMsg = "${algoInfo.name} (final retry)";
+            reportProgress(
+              retryMsg,
+              "Starting final retry...",
+              processed: orderedNewAlgorithms.length - failedPlugins.length,
+              total: orderedNewAlgorithms.length,
+            );
+            try {
+              await _tryScanAlgorithm(
+                algoInfo: algoInfo,
+                metadataDao: metadataDao,
+                unitIdMap: unitIdMap,
+                dbUnitStrings: dbUnitStrings,
+                firmwareVersion: firmwareVersion,
+                checkCancel: checkCancel,
+              );
+              reportProgress(
+                retryMsg,
+                "Final retry succeeded.",
+                processed: orderedNewAlgorithms.length,
+                total: orderedNewAlgorithms.length,
+              );
+            } catch (finalError) {
+              onError?.call(
+                "Failed to scan ${algoInfo.name} after all retries: $finalError",
+              );
+              await _cleanupFailedAlgorithm(metadataDao, algoInfo.guid);
+            }
+          }
         }
       }
 

@@ -61,13 +61,12 @@ extension MetadataSyncStatePatterns on MetadataSyncState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( Idle value)?  idle,TResult Function( SyncingMetadata value)?  syncingMetadata,TResult Function( WaitingForUserContinue value)?  waitingForUserContinue,TResult Function( CheckpointFound value)?  checkpointFound,TResult Function( MetadataSyncSuccess value)?  metadataSyncSuccess,TResult Function( MetadataSyncFailure value)?  metadataSyncFailure,TResult Function( SavingPreset value)?  savingPreset,TResult Function( LoadingPreset value)?  loadingPreset,TResult Function( PresetSaveSuccess value)?  presetSaveSuccess,TResult Function( PresetSaveFailure value)?  presetSaveFailure,TResult Function( PresetLoadSuccess value)?  presetLoadSuccess,TResult Function( PresetLoadFailure value)?  presetLoadFailure,TResult Function( DeletingPreset value)?  deletingPreset,TResult Function( PresetDeleteSuccess value)?  presetDeleteSuccess,TResult Function( PresetDeleteFailure value)?  presetDeleteFailure,TResult Function( ViewingLocalData value)?  viewingLocalData,TResult Function( Failure value)?  failure,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( Idle value)?  idle,TResult Function( SyncingMetadata value)?  syncingMetadata,TResult Function( CheckpointFound value)?  checkpointFound,TResult Function( MetadataSyncSuccess value)?  metadataSyncSuccess,TResult Function( MetadataSyncFailure value)?  metadataSyncFailure,TResult Function( SavingPreset value)?  savingPreset,TResult Function( LoadingPreset value)?  loadingPreset,TResult Function( PresetSaveSuccess value)?  presetSaveSuccess,TResult Function( PresetSaveFailure value)?  presetSaveFailure,TResult Function( PresetLoadSuccess value)?  presetLoadSuccess,TResult Function( PresetLoadFailure value)?  presetLoadFailure,TResult Function( DeletingPreset value)?  deletingPreset,TResult Function( PresetDeleteSuccess value)?  presetDeleteSuccess,TResult Function( PresetDeleteFailure value)?  presetDeleteFailure,TResult Function( ViewingLocalData value)?  viewingLocalData,TResult Function( Failure value)?  failure,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case Idle() when idle != null:
 return idle(_that);case SyncingMetadata() when syncingMetadata != null:
-return syncingMetadata(_that);case WaitingForUserContinue() when waitingForUserContinue != null:
-return waitingForUserContinue(_that);case CheckpointFound() when checkpointFound != null:
+return syncingMetadata(_that);case CheckpointFound() when checkpointFound != null:
 return checkpointFound(_that);case MetadataSyncSuccess() when metadataSyncSuccess != null:
 return metadataSyncSuccess(_that);case MetadataSyncFailure() when metadataSyncFailure != null:
 return metadataSyncFailure(_that);case SavingPreset() when savingPreset != null:
@@ -99,13 +98,12 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( Idle value)  idle,required TResult Function( SyncingMetadata value)  syncingMetadata,required TResult Function( WaitingForUserContinue value)  waitingForUserContinue,required TResult Function( CheckpointFound value)  checkpointFound,required TResult Function( MetadataSyncSuccess value)  metadataSyncSuccess,required TResult Function( MetadataSyncFailure value)  metadataSyncFailure,required TResult Function( SavingPreset value)  savingPreset,required TResult Function( LoadingPreset value)  loadingPreset,required TResult Function( PresetSaveSuccess value)  presetSaveSuccess,required TResult Function( PresetSaveFailure value)  presetSaveFailure,required TResult Function( PresetLoadSuccess value)  presetLoadSuccess,required TResult Function( PresetLoadFailure value)  presetLoadFailure,required TResult Function( DeletingPreset value)  deletingPreset,required TResult Function( PresetDeleteSuccess value)  presetDeleteSuccess,required TResult Function( PresetDeleteFailure value)  presetDeleteFailure,required TResult Function( ViewingLocalData value)  viewingLocalData,required TResult Function( Failure value)  failure,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( Idle value)  idle,required TResult Function( SyncingMetadata value)  syncingMetadata,required TResult Function( CheckpointFound value)  checkpointFound,required TResult Function( MetadataSyncSuccess value)  metadataSyncSuccess,required TResult Function( MetadataSyncFailure value)  metadataSyncFailure,required TResult Function( SavingPreset value)  savingPreset,required TResult Function( LoadingPreset value)  loadingPreset,required TResult Function( PresetSaveSuccess value)  presetSaveSuccess,required TResult Function( PresetSaveFailure value)  presetSaveFailure,required TResult Function( PresetLoadSuccess value)  presetLoadSuccess,required TResult Function( PresetLoadFailure value)  presetLoadFailure,required TResult Function( DeletingPreset value)  deletingPreset,required TResult Function( PresetDeleteSuccess value)  presetDeleteSuccess,required TResult Function( PresetDeleteFailure value)  presetDeleteFailure,required TResult Function( ViewingLocalData value)  viewingLocalData,required TResult Function( Failure value)  failure,}){
 final _that = this;
 switch (_that) {
 case Idle():
 return idle(_that);case SyncingMetadata():
-return syncingMetadata(_that);case WaitingForUserContinue():
-return waitingForUserContinue(_that);case CheckpointFound():
+return syncingMetadata(_that);case CheckpointFound():
 return checkpointFound(_that);case MetadataSyncSuccess():
 return metadataSyncSuccess(_that);case MetadataSyncFailure():
 return metadataSyncFailure(_that);case SavingPreset():
@@ -133,13 +131,12 @@ return failure(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( Idle value)?  idle,TResult? Function( SyncingMetadata value)?  syncingMetadata,TResult? Function( WaitingForUserContinue value)?  waitingForUserContinue,TResult? Function( CheckpointFound value)?  checkpointFound,TResult? Function( MetadataSyncSuccess value)?  metadataSyncSuccess,TResult? Function( MetadataSyncFailure value)?  metadataSyncFailure,TResult? Function( SavingPreset value)?  savingPreset,TResult? Function( LoadingPreset value)?  loadingPreset,TResult? Function( PresetSaveSuccess value)?  presetSaveSuccess,TResult? Function( PresetSaveFailure value)?  presetSaveFailure,TResult? Function( PresetLoadSuccess value)?  presetLoadSuccess,TResult? Function( PresetLoadFailure value)?  presetLoadFailure,TResult? Function( DeletingPreset value)?  deletingPreset,TResult? Function( PresetDeleteSuccess value)?  presetDeleteSuccess,TResult? Function( PresetDeleteFailure value)?  presetDeleteFailure,TResult? Function( ViewingLocalData value)?  viewingLocalData,TResult? Function( Failure value)?  failure,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( Idle value)?  idle,TResult? Function( SyncingMetadata value)?  syncingMetadata,TResult? Function( CheckpointFound value)?  checkpointFound,TResult? Function( MetadataSyncSuccess value)?  metadataSyncSuccess,TResult? Function( MetadataSyncFailure value)?  metadataSyncFailure,TResult? Function( SavingPreset value)?  savingPreset,TResult? Function( LoadingPreset value)?  loadingPreset,TResult? Function( PresetSaveSuccess value)?  presetSaveSuccess,TResult? Function( PresetSaveFailure value)?  presetSaveFailure,TResult? Function( PresetLoadSuccess value)?  presetLoadSuccess,TResult? Function( PresetLoadFailure value)?  presetLoadFailure,TResult? Function( DeletingPreset value)?  deletingPreset,TResult? Function( PresetDeleteSuccess value)?  presetDeleteSuccess,TResult? Function( PresetDeleteFailure value)?  presetDeleteFailure,TResult? Function( ViewingLocalData value)?  viewingLocalData,TResult? Function( Failure value)?  failure,}){
 final _that = this;
 switch (_that) {
 case Idle() when idle != null:
 return idle(_that);case SyncingMetadata() when syncingMetadata != null:
-return syncingMetadata(_that);case WaitingForUserContinue() when waitingForUserContinue != null:
-return waitingForUserContinue(_that);case CheckpointFound() when checkpointFound != null:
+return syncingMetadata(_that);case CheckpointFound() when checkpointFound != null:
 return checkpointFound(_that);case MetadataSyncSuccess() when metadataSyncSuccess != null:
 return metadataSyncSuccess(_that);case MetadataSyncFailure() when metadataSyncFailure != null:
 return metadataSyncFailure(_that);case SavingPreset() when savingPreset != null:
@@ -170,12 +167,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)?  syncingMetadata,TResult Function( String message,  double progress,  int? algorithmsProcessed,  int? totalAlgorithms)?  waitingForUserContinue,TResult Function( String algorithmName,  int algorithmIndex)?  checkpointFound,TResult Function( String message)?  metadataSyncSuccess,TResult Function( String error)?  metadataSyncFailure,TResult Function()?  savingPreset,TResult Function()?  loadingPreset,TResult Function( String message)?  presetSaveSuccess,TResult Function( String error)?  presetSaveFailure,TResult Function( String message)?  presetLoadSuccess,TResult Function( String error)?  presetLoadFailure,TResult Function()?  deletingPreset,TResult Function( String message)?  presetDeleteSuccess,TResult Function( String error)?  presetDeleteFailure,TResult Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)?  viewingLocalData,TResult Function( String error)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)?  syncingMetadata,TResult Function( String algorithmName,  int algorithmIndex)?  checkpointFound,TResult Function( String message)?  metadataSyncSuccess,TResult Function( String error)?  metadataSyncFailure,TResult Function()?  savingPreset,TResult Function()?  loadingPreset,TResult Function( String message)?  presetSaveSuccess,TResult Function( String error)?  presetSaveFailure,TResult Function( String message)?  presetLoadSuccess,TResult Function( String error)?  presetLoadFailure,TResult Function()?  deletingPreset,TResult Function( String message)?  presetDeleteSuccess,TResult Function( String error)?  presetDeleteFailure,TResult Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)?  viewingLocalData,TResult Function( String error)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case Idle() when idle != null:
 return idle();case SyncingMetadata() when syncingMetadata != null:
-return syncingMetadata(_that.progress,_that.mainMessage,_that.subMessage,_that.algorithmsProcessed,_that.totalAlgorithms);case WaitingForUserContinue() when waitingForUserContinue != null:
-return waitingForUserContinue(_that.message,_that.progress,_that.algorithmsProcessed,_that.totalAlgorithms);case CheckpointFound() when checkpointFound != null:
+return syncingMetadata(_that.progress,_that.mainMessage,_that.subMessage,_that.algorithmsProcessed,_that.totalAlgorithms);case CheckpointFound() when checkpointFound != null:
 return checkpointFound(_that.algorithmName,_that.algorithmIndex);case MetadataSyncSuccess() when metadataSyncSuccess != null:
 return metadataSyncSuccess(_that.message);case MetadataSyncFailure() when metadataSyncFailure != null:
 return metadataSyncFailure(_that.error);case SavingPreset() when savingPreset != null:
@@ -207,12 +203,11 @@ return failure(_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)  syncingMetadata,required TResult Function( String message,  double progress,  int? algorithmsProcessed,  int? totalAlgorithms)  waitingForUserContinue,required TResult Function( String algorithmName,  int algorithmIndex)  checkpointFound,required TResult Function( String message)  metadataSyncSuccess,required TResult Function( String error)  metadataSyncFailure,required TResult Function()  savingPreset,required TResult Function()  loadingPreset,required TResult Function( String message)  presetSaveSuccess,required TResult Function( String error)  presetSaveFailure,required TResult Function( String message)  presetLoadSuccess,required TResult Function( String error)  presetLoadFailure,required TResult Function()  deletingPreset,required TResult Function( String message)  presetDeleteSuccess,required TResult Function( String error)  presetDeleteFailure,required TResult Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)  viewingLocalData,required TResult Function( String error)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)  syncingMetadata,required TResult Function( String algorithmName,  int algorithmIndex)  checkpointFound,required TResult Function( String message)  metadataSyncSuccess,required TResult Function( String error)  metadataSyncFailure,required TResult Function()  savingPreset,required TResult Function()  loadingPreset,required TResult Function( String message)  presetSaveSuccess,required TResult Function( String error)  presetSaveFailure,required TResult Function( String message)  presetLoadSuccess,required TResult Function( String error)  presetLoadFailure,required TResult Function()  deletingPreset,required TResult Function( String message)  presetDeleteSuccess,required TResult Function( String error)  presetDeleteFailure,required TResult Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)  viewingLocalData,required TResult Function( String error)  failure,}) {final _that = this;
 switch (_that) {
 case Idle():
 return idle();case SyncingMetadata():
-return syncingMetadata(_that.progress,_that.mainMessage,_that.subMessage,_that.algorithmsProcessed,_that.totalAlgorithms);case WaitingForUserContinue():
-return waitingForUserContinue(_that.message,_that.progress,_that.algorithmsProcessed,_that.totalAlgorithms);case CheckpointFound():
+return syncingMetadata(_that.progress,_that.mainMessage,_that.subMessage,_that.algorithmsProcessed,_that.totalAlgorithms);case CheckpointFound():
 return checkpointFound(_that.algorithmName,_that.algorithmIndex);case MetadataSyncSuccess():
 return metadataSyncSuccess(_that.message);case MetadataSyncFailure():
 return metadataSyncFailure(_that.error);case SavingPreset():
@@ -240,12 +235,11 @@ return failure(_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)?  syncingMetadata,TResult? Function( String message,  double progress,  int? algorithmsProcessed,  int? totalAlgorithms)?  waitingForUserContinue,TResult? Function( String algorithmName,  int algorithmIndex)?  checkpointFound,TResult? Function( String message)?  metadataSyncSuccess,TResult? Function( String error)?  metadataSyncFailure,TResult? Function()?  savingPreset,TResult? Function()?  loadingPreset,TResult? Function( String message)?  presetSaveSuccess,TResult? Function( String error)?  presetSaveFailure,TResult? Function( String message)?  presetLoadSuccess,TResult? Function( String error)?  presetLoadFailure,TResult? Function()?  deletingPreset,TResult? Function( String message)?  presetDeleteSuccess,TResult? Function( String error)?  presetDeleteFailure,TResult? Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)?  viewingLocalData,TResult? Function( String error)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)?  syncingMetadata,TResult? Function( String algorithmName,  int algorithmIndex)?  checkpointFound,TResult? Function( String message)?  metadataSyncSuccess,TResult? Function( String error)?  metadataSyncFailure,TResult? Function()?  savingPreset,TResult? Function()?  loadingPreset,TResult? Function( String message)?  presetSaveSuccess,TResult? Function( String error)?  presetSaveFailure,TResult? Function( String message)?  presetLoadSuccess,TResult? Function( String error)?  presetLoadFailure,TResult? Function()?  deletingPreset,TResult? Function( String message)?  presetDeleteSuccess,TResult? Function( String error)?  presetDeleteFailure,TResult? Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)?  viewingLocalData,TResult? Function( String error)?  failure,}) {final _that = this;
 switch (_that) {
 case Idle() when idle != null:
 return idle();case SyncingMetadata() when syncingMetadata != null:
-return syncingMetadata(_that.progress,_that.mainMessage,_that.subMessage,_that.algorithmsProcessed,_that.totalAlgorithms);case WaitingForUserContinue() when waitingForUserContinue != null:
-return waitingForUserContinue(_that.message,_that.progress,_that.algorithmsProcessed,_that.totalAlgorithms);case CheckpointFound() when checkpointFound != null:
+return syncingMetadata(_that.progress,_that.mainMessage,_that.subMessage,_that.algorithmsProcessed,_that.totalAlgorithms);case CheckpointFound() when checkpointFound != null:
 return checkpointFound(_that.algorithmName,_that.algorithmIndex);case MetadataSyncSuccess() when metadataSyncSuccess != null:
 return metadataSyncSuccess(_that.message);case MetadataSyncFailure() when metadataSyncFailure != null:
 return metadataSyncFailure(_that.error);case SavingPreset() when savingPreset != null:
@@ -381,86 +375,6 @@ progress: null == progress ? _self.progress : progress // ignore: cast_nullable_
 as double,mainMessage: null == mainMessage ? _self.mainMessage : mainMessage // ignore: cast_nullable_to_non_nullable
 as String,subMessage: null == subMessage ? _self.subMessage : subMessage // ignore: cast_nullable_to_non_nullable
 as String,algorithmsProcessed: freezed == algorithmsProcessed ? _self.algorithmsProcessed : algorithmsProcessed // ignore: cast_nullable_to_non_nullable
-as int?,totalAlgorithms: freezed == totalAlgorithms ? _self.totalAlgorithms : totalAlgorithms // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-
-}
-
-/// @nodoc
-
-
-class WaitingForUserContinue with DiagnosticableTreeMixin implements MetadataSyncState {
-  const WaitingForUserContinue({required this.message, required this.progress, this.algorithmsProcessed, this.totalAlgorithms});
-  
-
- final  String message;
-// Reboot instruction message
- final  double progress;
-// Current progress
- final  int? algorithmsProcessed;
- final  int? totalAlgorithms;
-
-/// Create a copy of MetadataSyncState
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$WaitingForUserContinueCopyWith<WaitingForUserContinue> get copyWith => _$WaitingForUserContinueCopyWithImpl<WaitingForUserContinue>(this, _$identity);
-
-
-@override
-void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
-    ..add(DiagnosticsProperty('type', 'MetadataSyncState.waitingForUserContinue'))
-    ..add(DiagnosticsProperty('message', message))..add(DiagnosticsProperty('progress', progress))..add(DiagnosticsProperty('algorithmsProcessed', algorithmsProcessed))..add(DiagnosticsProperty('totalAlgorithms', totalAlgorithms));
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WaitingForUserContinue&&(identical(other.message, message) || other.message == message)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.algorithmsProcessed, algorithmsProcessed) || other.algorithmsProcessed == algorithmsProcessed)&&(identical(other.totalAlgorithms, totalAlgorithms) || other.totalAlgorithms == totalAlgorithms));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,message,progress,algorithmsProcessed,totalAlgorithms);
-
-@override
-String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'MetadataSyncState.waitingForUserContinue(message: $message, progress: $progress, algorithmsProcessed: $algorithmsProcessed, totalAlgorithms: $totalAlgorithms)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $WaitingForUserContinueCopyWith<$Res> implements $MetadataSyncStateCopyWith<$Res> {
-  factory $WaitingForUserContinueCopyWith(WaitingForUserContinue value, $Res Function(WaitingForUserContinue) _then) = _$WaitingForUserContinueCopyWithImpl;
-@useResult
-$Res call({
- String message, double progress, int? algorithmsProcessed, int? totalAlgorithms
-});
-
-
-
-
-}
-/// @nodoc
-class _$WaitingForUserContinueCopyWithImpl<$Res>
-    implements $WaitingForUserContinueCopyWith<$Res> {
-  _$WaitingForUserContinueCopyWithImpl(this._self, this._then);
-
-  final WaitingForUserContinue _self;
-  final $Res Function(WaitingForUserContinue) _then;
-
-/// Create a copy of MetadataSyncState
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? message = null,Object? progress = null,Object? algorithmsProcessed = freezed,Object? totalAlgorithms = freezed,}) {
-  return _then(WaitingForUserContinue(
-message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
-as double,algorithmsProcessed: freezed == algorithmsProcessed ? _self.algorithmsProcessed : algorithmsProcessed // ignore: cast_nullable_to_non_nullable
 as int?,totalAlgorithms: freezed == totalAlgorithms ? _self.totalAlgorithms : totalAlgorithms // ignore: cast_nullable_to_non_nullable
 as int?,
   ));

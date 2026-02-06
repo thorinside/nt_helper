@@ -15,4 +15,43 @@ mixin _$MetadataDaoMixin on DatabaseAccessor<AppDatabase> {
   $ParameterOutputModeUsageTable get parameterOutputModeUsage =>
       attachedDatabase.parameterOutputModeUsage;
   $MetadataCacheTable get metadataCache => attachedDatabase.metadataCache;
+  MetadataDaoManager get managers => MetadataDaoManager(this);
+}
+
+class MetadataDaoManager {
+  final _$MetadataDaoMixin _db;
+  MetadataDaoManager(this._db);
+  $$AlgorithmsTableTableManager get algorithms =>
+      $$AlgorithmsTableTableManager(_db.attachedDatabase, _db.algorithms);
+  $$SpecificationsTableTableManager get specifications =>
+      $$SpecificationsTableTableManager(
+        _db.attachedDatabase,
+        _db.specifications,
+      );
+  $$UnitsTableTableManager get units =>
+      $$UnitsTableTableManager(_db.attachedDatabase, _db.units);
+  $$ParametersTableTableManager get parameters =>
+      $$ParametersTableTableManager(_db.attachedDatabase, _db.parameters);
+  $$ParameterEnumsTableTableManager get parameterEnums =>
+      $$ParameterEnumsTableTableManager(
+        _db.attachedDatabase,
+        _db.parameterEnums,
+      );
+  $$ParameterPagesTableTableManager get parameterPages =>
+      $$ParameterPagesTableTableManager(
+        _db.attachedDatabase,
+        _db.parameterPages,
+      );
+  $$ParameterPageItemsTableTableManager get parameterPageItems =>
+      $$ParameterPageItemsTableTableManager(
+        _db.attachedDatabase,
+        _db.parameterPageItems,
+      );
+  $$ParameterOutputModeUsageTableTableManager get parameterOutputModeUsage =>
+      $$ParameterOutputModeUsageTableTableManager(
+        _db.attachedDatabase,
+        _db.parameterOutputModeUsage,
+      );
+  $$MetadataCacheTableTableManager get metadataCache =>
+      $$MetadataCacheTableTableManager(_db.attachedDatabase, _db.metadataCache);
 }
