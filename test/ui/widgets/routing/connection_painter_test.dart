@@ -775,6 +775,157 @@ void main() {
       });
     });
 
+    group('Label Overlap Avoidance', () {
+      test('overlapping labels get nudged apart', () {
+        // Two connections with identical source/destination positions
+        // will produce labels at the same midpoint
+        final connection1 = Connection(
+          id: 'overlap_1',
+          sourcePortId: 'source_1',
+          destinationPortId: 'dest_1',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+        );
+
+        final connection2 = Connection(
+          id: 'overlap_2',
+          sourcePortId: 'source_2',
+          destinationPortId: 'dest_2',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+        );
+
+        final connectionData1 = ConnectionData(
+          connection: connection1,
+          sourcePosition: const Offset(50, 100),
+          destinationPosition: const Offset(250, 100),
+          busNumber: 1,
+        );
+
+        final connectionData2 = ConnectionData(
+          connection: connection2,
+          sourcePosition: const Offset(50, 100),
+          destinationPosition: const Offset(250, 100),
+          busNumber: 2,
+        );
+
+        final painter = ConnectionPainter(
+          connections: [connectionData1, connectionData2],
+          theme: ThemeData.light(),
+          showLabels: true,
+        );
+
+        final recorder = PictureRecorder();
+        final canvas = Canvas(recorder);
+        painter.paint(canvas, const Size(400, 300));
+
+        final bounds = painter.getLabelBounds();
+        final rect1 = bounds['overlap_1']!;
+        final rect2 = bounds['overlap_2']!;
+
+        // Labels should not overlap
+        expect(rect1.overlaps(rect2), isFalse);
+      });
+
+      test('non-overlapping labels remain unchanged', () {
+        // Two connections with very different positions
+        final connection1 = Connection(
+          id: 'far_1',
+          sourcePortId: 'source_1',
+          destinationPortId: 'dest_1',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+        );
+
+        final connection2 = Connection(
+          id: 'far_2',
+          sourcePortId: 'source_2',
+          destinationPortId: 'dest_2',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+        );
+
+        final connectionData1 = ConnectionData(
+          connection: connection1,
+          sourcePosition: const Offset(50, 50),
+          destinationPosition: const Offset(250, 50),
+          busNumber: 1,
+        );
+
+        final connectionData2 = ConnectionData(
+          connection: connection2,
+          sourcePosition: const Offset(50, 250),
+          destinationPosition: const Offset(250, 250),
+          busNumber: 2,
+        );
+
+        final painter = ConnectionPainter(
+          connections: [connectionData1, connectionData2],
+          theme: ThemeData.light(),
+          showLabels: true,
+        );
+
+        final recorder = PictureRecorder();
+        final canvas = Canvas(recorder);
+        painter.paint(canvas, const Size(400, 300));
+
+        final bounds = painter.getLabelBounds();
+        final rect1 = bounds['far_1']!;
+        final rect2 = bounds['far_2']!;
+
+        // Labels should already be non-overlapping (far apart vertically)
+        expect(rect1.overlaps(rect2), isFalse);
+
+        // Second label should not have been shifted (its center Y should be
+        // near the midpoint of the connection, i.e. y=250)
+        expect(rect2.center.dy, closeTo(250, 20));
+      });
+
+      test('gap between stacked labels is exactly 2px', () {
+        // Same positions → labels will overlap and get resolved
+        final connection1 = Connection(
+          id: 'gap_1',
+          sourcePortId: 'source_1',
+          destinationPortId: 'dest_1',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+        );
+
+        final connection2 = Connection(
+          id: 'gap_2',
+          sourcePortId: 'source_2',
+          destinationPortId: 'dest_2',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+        );
+
+        final connectionData1 = ConnectionData(
+          connection: connection1,
+          sourcePosition: const Offset(50, 100),
+          destinationPosition: const Offset(250, 100),
+          busNumber: 1,
+        );
+
+        final connectionData2 = ConnectionData(
+          connection: connection2,
+          sourcePosition: const Offset(50, 100),
+          destinationPosition: const Offset(250, 100),
+          busNumber: 2,
+        );
+
+        final painter = ConnectionPainter(
+          connections: [connectionData1, connectionData2],
+          theme: ThemeData.light(),
+          showLabels: true,
+        );
+
+        final recorder = PictureRecorder();
+        final canvas = Canvas(recorder);
+        painter.paint(canvas, const Size(400, 300));
+
+        final bounds = painter.getLabelBounds();
+        final rect1 = bounds['gap_1']!;
+        final rect2 = bounds['gap_2']!;
+
+        // The second label's top should be exactly 2px below the first label's bottom
+        expect(rect2.top, closeTo(rect1.bottom + 2.0, 0.01));
+      });
+    });
+
     group('Obstacle Avoidance', () {
       test('should route around obstacles', () {
         final theme = ThemeData.light();

@@ -637,6 +637,27 @@ class ConnectionPainter extends CustomPainter {
     return bestPos ?? _getPointAtT(metric, 0.5) ?? Offset.zero;
   }
 
+  /// Resolve overlap between a proposed label rect and already-placed labels.
+  /// Nudges the rect downward with a 2px gap until it no longer overlaps.
+  Rect _resolveOverlap(Rect proposed) {
+    const gap = 2.0;
+    const maxIterations = 10;
+    var resolved = proposed;
+    for (int i = 0; i < maxIterations; i++) {
+      Rect? overlapping;
+      for (final placed in _labelBounds.values) {
+        if (resolved.overlaps(placed)) {
+          overlapping = placed;
+          break;
+        }
+      }
+      if (overlapping == null) break;
+      final shift = overlapping.bottom - resolved.top + gap;
+      resolved = resolved.shift(Offset(0, shift));
+    }
+    return resolved;
+  }
+
   /// Calculate signed distance from point to rect.
   /// Positive = outside. Negative = inside.
   double _signedDistanceToRect(Offset p, Rect rect) {
@@ -752,12 +773,14 @@ class ConnectionPainter extends CustomPainter {
       );
     }
 
-    // Calculate label position
-    final labelRect = Rect.fromCenter(
+    // Calculate label position and resolve overlaps with existing labels
+    var labelRect = Rect.fromCenter(
       center: midPoint,
       width: labelWidth,
       height: labelHeight,
     );
+    labelRect = _resolveOverlap(labelRect);
+    midPoint = labelRect.center;
 
     // Store label bounds for hit testing
     _labelBounds[conn.connection.id] = labelRect;
@@ -839,13 +862,14 @@ class ConnectionPainter extends CustomPainter {
       labelCenter.dy - textPainter.height / 2,
     );
 
-    // Create label background with padding
-    final labelRect = Rect.fromLTWH(
+    // Create label background with padding and resolve overlaps
+    var labelRect = Rect.fromLTWH(
       labelOffset.dx - 4,
       labelOffset.dy - 2,
       textPainter.width + 8,
       textPainter.height + 4,
     );
+    labelRect = _resolveOverlap(labelRect);
 
     // Store bounds for partial connection bus labels to enable tap handling
     // Use a special prefix to distinguish from regular connection labels
@@ -870,8 +894,9 @@ class ConnectionPainter extends CustomPainter {
       borderPaint,
     );
 
-    // Draw the text
-    textPainter.paint(canvas, labelOffset);
+    // Draw the text at the resolved position (reverse the padding)
+    final resolvedLabelOffset = Offset(labelRect.left + 4, labelRect.top + 2);
+    textPainter.paint(canvas, resolvedLabelOffset);
   }
 
   /// Calculate the midpoint of a Bezier curve path
