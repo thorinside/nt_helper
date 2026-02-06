@@ -28,6 +28,43 @@ class MetadataSyncService {
     }
   }
 
+  /// Compute spec values for scanning: substitute 1 (clamped) for specs that default to 0.
+  List<int> _scanSpecValues(AlgorithmInfo algoInfo) {
+    return algoInfo.specifications.map((s) {
+      if (s.defaultValue != 0) return s.defaultValue;
+      return 1.clamp(s.min, s.max);
+    }).toList();
+  }
+
+  /// Poll until the preset count matches [expected], or [maxAttempts] is reached.
+  Future<int> _pollPresetCount({
+    required int expected,
+    required int maxAttempts,
+    bool Function()? checkCancel,
+  }) async {
+    var numInPreset = -1;
+    var attempts = 0;
+    while (numInPreset != expected &&
+        attempts < maxAttempts &&
+        !(checkCancel?.call() ?? false)) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      numInPreset =
+          await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+      attempts++;
+    }
+    return numInPreset;
+  }
+
+  /// For plugins, reload AlgorithmInfo after instantiation; otherwise return as-is.
+  Future<AlgorithmInfo> _resolveAlgorithmForQuery(
+    AlgorithmInfo algoInfo,
+  ) async {
+    if (!algoInfo.isPlugin) return algoInfo;
+    return await _distingManager
+            .requestAlgorithmInfo(algoInfo.algorithmIndex) ??
+        algoInfo;
+  }
+
   /// Fetches all static algorithm metadata from the connected device
   /// by temporarily manipulating a preset, and caches it in the database.
   ///
@@ -294,10 +331,8 @@ class MetadataSyncService {
           // B. Add algorithm with default specs to slot 0
           reportProgress(mainProgressMsg, "Adding to preset...");
           if (checkCancel()) break;
-          final defaultSpecs = algoInfo.specifications
-              .map((s) => s.defaultValue)
-              .toList();
-          await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
+          final scanSpecs = _scanSpecValues(algoInfo);
+          await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
 
           // C. Poll until algorithm is added to preset
           reportProgress(
@@ -306,26 +341,17 @@ class MetadataSyncService {
           );
           if (checkCancel()) break;
 
-          var numInPreset = 0;
-          var attempts = 0;
-          final maxAttempts = algoInfo.isPlugin
-              ? 15
-              : 10; // More time for plugins
-
-          while (numInPreset != 1 && attempts < maxAttempts && !checkCancel()) {
-            await Future.delayed(const Duration(milliseconds: 500));
-            numInPreset =
-                await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
-            attempts++;
-
-            if (numInPreset != 1) {}
-          }
+          var numInPreset = await _pollPresetCount(
+            expected: 1,
+            maxAttempts: algoInfo.isPlugin ? 15 : 10,
+            checkCancel: checkCancel,
+          );
 
           if (checkCancel()) break;
 
           if (numInPreset != 1) {
             throw Exception(
-              "Failed to add algorithm to preset after $attempts attempts (expected 1, found $numInPreset).",
+              "Failed to add algorithm to preset (expected 1, found $numInPreset).",
             );
           }
 
@@ -333,13 +359,8 @@ class MetadataSyncService {
           reportProgress(mainProgressMsg, "Querying parameters...");
           if (checkCancel()) break;
 
-          // For community plugins, reload algorithm info after adding
-          final algorithmToQuery = algoInfo.isPlugin
-              ? (await _distingManager.requestAlgorithmInfo(
-                      algoInfo.algorithmIndex,
-                    ) ??
-                    algoInfo)
-              : algoInfo;
+          final algorithmToQuery =
+              await _resolveAlgorithmForQuery(algoInfo);
 
           await _syncInstantiatedAlgorithmParams(
             metadataDao,
@@ -359,21 +380,11 @@ class MetadataSyncService {
             mainProgressMsg,
             "Waiting for algorithm to be removed...",
           );
-          attempts = 0;
-          const maxRemoveAttempts = 8;
-
-          while (numInPreset != 0 &&
-              attempts < maxRemoveAttempts &&
-              !checkCancel()) {
-            await Future.delayed(const Duration(milliseconds: 500));
-            numInPreset =
-                await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
-            attempts++;
-
-            if (numInPreset != 0) {}
-          }
-
-          if (numInPreset != 0) {}
+          await _pollPresetCount(
+            expected: 0,
+            maxAttempts: 8,
+            checkCancel: checkCancel,
+          );
 
           reportProgress(mainProgressMsg, "Done.");
         } catch (instantiationError, stackTrace) {
@@ -501,28 +512,19 @@ class MetadataSyncService {
 
               // B. Add algorithm with default specs to slot 0
               reportProgress(mainProgressMsg, "Adding to preset...");
-              final defaultSpecs = algoInfo.specifications
-                  .map((s) => s.defaultValue)
-                  .toList();
-              await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
+              final scanSpecs = _scanSpecValues(algoInfo);
+              await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
 
               // C. Poll until algorithm is added to preset
               reportProgress(
                 mainProgressMsg,
                 "Waiting for algorithm to be added...",
               );
-              var numInPreset = 0;
-              var attempts = 0;
-              final maxAttempts = algoInfo.isPlugin ? 15 : 10;
-
-              while (numInPreset != 1 &&
-                  attempts < maxAttempts &&
-                  !checkCancel()) {
-                await Future.delayed(const Duration(milliseconds: 500));
-                numInPreset =
-                    await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
-                attempts++;
-              }
+              final numInPreset = await _pollPresetCount(
+                expected: 1,
+                maxAttempts: algoInfo.isPlugin ? 15 : 10,
+                checkCancel: checkCancel,
+              );
 
               if (checkCancel()) break;
 
@@ -533,13 +535,8 @@ class MetadataSyncService {
                   "Querying parameters (retry)...",
                 );
 
-                // For community plugins, reload algorithm info after adding
-                final algorithmToQuery = algoInfo.isPlugin
-                    ? (await _distingManager.requestAlgorithmInfo(
-                            algoInfo.algorithmIndex,
-                          ) ??
-                          algoInfo)
-                    : algoInfo;
+                final algorithmToQuery =
+                    await _resolveAlgorithmForQuery(algoInfo);
 
                 await _syncInstantiatedAlgorithmParams(
                   metadataDao,
@@ -554,18 +551,11 @@ class MetadataSyncService {
                 await _distingManager.requestRemoveAlgorithm(0);
 
                 // Poll until algorithm is removed
-                attempts = 0;
-                const maxRemoveAttempts = 8;
-
-                while (numInPreset != 0 &&
-                    attempts < maxRemoveAttempts &&
-                    !checkCancel()) {
-                  await Future.delayed(const Duration(milliseconds: 500));
-                  numInPreset =
-                      await _distingManager.requestNumAlgorithmsInPreset() ??
-                      -1;
-                  attempts++;
-                }
+                await _pollPresetCount(
+                  expected: 0,
+                  maxAttempts: 8,
+                  checkCancel: checkCancel,
+                );
 
                 reportProgress(mainProgressMsg, "Retry completed.");
               } else {}
@@ -813,33 +803,20 @@ class MetadataSyncService {
     }
 
     // Add to preset
-    final defaultSpecs = algoInfo.specifications
-        .map((s) => s.defaultValue)
-        .toList();
-    await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
+    final scanSpecs = _scanSpecValues(algoInfo);
+    await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
 
     // Poll until added
-    var numInPreset = 0;
-    var attempts = 0;
-    final maxAttempts = algoInfo.isPlugin ? 15 : 10;
-
-    while (numInPreset != 1 && attempts < maxAttempts) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
-      attempts++;
-    }
+    final numInPreset = await _pollPresetCount(
+      expected: 1,
+      maxAttempts: algoInfo.isPlugin ? 15 : 10,
+    );
 
     if (numInPreset != 1) {
       throw Exception("Failed to add algorithm to preset");
     }
 
-    // For community plugins, reload algorithm info after adding
-    final algorithmToQuery = algoInfo.isPlugin
-        ? (await _distingManager.requestAlgorithmInfo(
-                algoInfo.algorithmIndex,
-              ) ??
-              algoInfo)
-        : algoInfo;
+    final algorithmToQuery = await _resolveAlgorithmForQuery(algoInfo);
 
     // Query parameters
     await _syncInstantiatedAlgorithmParams(
@@ -854,14 +831,7 @@ class MetadataSyncService {
     await _distingManager.requestRemoveAlgorithm(0);
 
     // Poll until removed
-    attempts = 0;
-    const maxRemoveAttempts = 8;
-
-    while (numInPreset != 0 && attempts < maxRemoveAttempts) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
-      attempts++;
-    }
+    await _pollPresetCount(expected: 0, maxAttempts: 8);
   }
 
   /// Incrementally sync only new algorithms not present in the database
@@ -1066,10 +1036,8 @@ class MetadataSyncService {
             processed: i,
             total: orderedNewAlgorithms.length,
           );
-          final defaultSpecs = algoInfo.specifications
-              .map((s) => s.defaultValue)
-              .toList();
-          await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
+          final scanSpecs = _scanSpecValues(algoInfo);
+          await _distingManager.requestAddAlgorithm(algoInfo, scanSpecs);
 
           // Poll until algorithm is added to preset
           reportProgress(
@@ -1078,22 +1046,17 @@ class MetadataSyncService {
             processed: i,
             total: orderedNewAlgorithms.length,
           );
-          var numInPreset = 0;
-          var attempts = 0;
-          final maxAttempts = algoInfo.isPlugin ? 15 : 10;
-
-          while (numInPreset != 1 && attempts < maxAttempts && !checkCancel()) {
-            await Future.delayed(const Duration(milliseconds: 500));
-            numInPreset =
-                await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
-            attempts++;
-          }
+          final numInPreset = await _pollPresetCount(
+            expected: 1,
+            maxAttempts: algoInfo.isPlugin ? 15 : 10,
+            checkCancel: checkCancel,
+          );
 
           if (checkCancel()) break;
 
           if (numInPreset != 1) {
             throw Exception(
-              "Failed to add algorithm to preset after $attempts attempts.",
+              "Failed to add algorithm to preset (expected 1, found $numInPreset).",
             );
           }
 
@@ -1105,13 +1068,8 @@ class MetadataSyncService {
             total: orderedNewAlgorithms.length,
           );
 
-          // For community plugins, reload algorithm info after adding
-          final algorithmToQuery = algoInfo.isPlugin
-              ? (await _distingManager.requestAlgorithmInfo(
-                      algoInfo.algorithmIndex,
-                    ) ??
-                    algoInfo)
-              : algoInfo;
+          final algorithmToQuery =
+              await _resolveAlgorithmForQuery(algoInfo);
 
           await _syncInstantiatedAlgorithmParams(
             metadataDao,
@@ -1131,17 +1089,11 @@ class MetadataSyncService {
           await _distingManager.requestRemoveAlgorithm(0);
 
           // Poll until algorithm is removed
-          attempts = 0;
-          const maxRemoveAttempts = 8;
-
-          while (numInPreset != 0 &&
-              attempts < maxRemoveAttempts &&
-              !checkCancel()) {
-            await Future.delayed(const Duration(milliseconds: 500));
-            numInPreset =
-                await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
-            attempts++;
-          }
+          await _pollPresetCount(
+            expected: 0,
+            maxAttempts: 8,
+            checkCancel: checkCancel,
+          );
 
           reportProgress(
             mainProgressMsg,

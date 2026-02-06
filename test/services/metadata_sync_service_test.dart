@@ -9,6 +9,7 @@ import 'package:drift/native.dart';
 class TestMockDistingMidiManager implements IDistingMidiManager {
   final List<AlgorithmInfo> testAlgorithms;
   int _numAlgorithmsInPreset = 0;
+  List<int>? lastSpecifications;
 
   TestMockDistingMidiManager({required this.testAlgorithms});
 
@@ -92,6 +93,7 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
     AlgorithmInfo algorithm,
     List<int> specifications,
   ) async {
+    lastSpecifications = specifications;
     _numAlgorithmsInPreset = 1;
   }
 
@@ -217,6 +219,172 @@ void main() {
       // Ensures each channel parameter gets a unique parameterNumber
 
       // Test implementation pending
+    });
+  });
+
+  group('MetadataSyncService - Scan Spec Values', () {
+    late AppDatabase database;
+
+    setUp(() async {
+      database = AppDatabase.forTesting(NativeDatabase.memory());
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test('spec with non-zero default sends default value', () async {
+      final mockManager = TestMockDistingMidiManager(
+        testAlgorithms: [
+          AlgorithmInfo(
+            algorithmIndex: 0,
+            guid: 'test-nonzero',
+            name: 'Non-Zero Default',
+            specifications: [
+              Specification(
+                name: 'Channels',
+                min: 0,
+                max: 10,
+                defaultValue: 5,
+                type: 0,
+              ),
+            ],
+            isPlugin: false,
+            isLoaded: true,
+          ),
+        ],
+      );
+
+      final service = MetadataSyncService(mockManager, database);
+      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+
+      expect(mockManager.lastSpecifications, equals([5]));
+    });
+
+    test('spec with default 0 sends 1 (clamped to valid range)', () async {
+      final mockManager = TestMockDistingMidiManager(
+        testAlgorithms: [
+          AlgorithmInfo(
+            algorithmIndex: 0,
+            guid: 'test-zero',
+            name: 'Zero Default',
+            specifications: [
+              Specification(
+                name: 'Aux Sends per Channel',
+                min: 0,
+                max: 10,
+                defaultValue: 0,
+                type: 0,
+              ),
+            ],
+            isPlugin: false,
+            isLoaded: true,
+          ),
+        ],
+      );
+
+      final service = MetadataSyncService(mockManager, database);
+      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+
+      expect(mockManager.lastSpecifications, equals([1]));
+    });
+
+    test('spec with default 0 and max 0 sends 0 (clamped)', () async {
+      final mockManager = TestMockDistingMidiManager(
+        testAlgorithms: [
+          AlgorithmInfo(
+            algorithmIndex: 0,
+            guid: 'test-zero-max',
+            name: 'Zero Max',
+            specifications: [
+              Specification(
+                name: 'Feature',
+                min: 0,
+                max: 0,
+                defaultValue: 0,
+                type: 0,
+              ),
+            ],
+            isPlugin: false,
+            isLoaded: true,
+          ),
+        ],
+      );
+
+      final service = MetadataSyncService(mockManager, database);
+      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+
+      expect(mockManager.lastSpecifications, equals([0]));
+    });
+
+    test('spec with default 0 and min 2 sends 2 (clamped to min)', () async {
+      final mockManager = TestMockDistingMidiManager(
+        testAlgorithms: [
+          AlgorithmInfo(
+            algorithmIndex: 0,
+            guid: 'test-high-min',
+            name: 'High Min',
+            specifications: [
+              Specification(
+                name: 'Mode',
+                min: 2,
+                max: 5,
+                defaultValue: 0,
+                type: 0,
+              ),
+            ],
+            isPlugin: false,
+            isLoaded: true,
+          ),
+        ],
+      );
+
+      final service = MetadataSyncService(mockManager, database);
+      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+
+      expect(mockManager.lastSpecifications, equals([2]));
+    });
+
+    test('multiple specs apply logic per-spec', () async {
+      final mockManager = TestMockDistingMidiManager(
+        testAlgorithms: [
+          AlgorithmInfo(
+            algorithmIndex: 0,
+            guid: 'test-multi',
+            name: 'Multi Spec',
+            specifications: [
+              Specification(
+                name: 'Channels',
+                min: 0,
+                max: 10,
+                defaultValue: 4,
+                type: 0,
+              ),
+              Specification(
+                name: 'Aux Sends',
+                min: 0,
+                max: 8,
+                defaultValue: 0,
+                type: 0,
+              ),
+              Specification(
+                name: 'Mode',
+                min: 2,
+                max: 5,
+                defaultValue: 0,
+                type: 0,
+              ),
+            ],
+            isPlugin: false,
+            isLoaded: true,
+          ),
+        ],
+      );
+
+      final service = MetadataSyncService(mockManager, database);
+      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+
+      expect(mockManager.lastSpecifications, equals([4, 1, 2]));
     });
   });
 }
