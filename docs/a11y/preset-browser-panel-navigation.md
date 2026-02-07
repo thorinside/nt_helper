@@ -2,7 +2,7 @@
 
 **Severity: High**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: mobile_drill_down_navigator.dart not modified
+**Status: Addressed (2026-02-06)** — Navigate to root label on home button, chevron icons wrapped in ExcludeSemantics in mobile_drill_down_navigator.dart
 
 ## Files Affected
 

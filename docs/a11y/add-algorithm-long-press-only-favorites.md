@@ -2,10 +2,7 @@
 
 **Severity:** Critical
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b + follow-up
-- Commit 664e27b: added semantic labels to icon-only chips, excluded GestureDetector from semantic tree
-- Follow-up: added `Semantics` wrapper to chip grid view (label, hint, selected state), `SemanticsService.sendAnnouncement` on algorithm selection
-- Remaining: `customSemanticsActions` for toggle favorite in all three view modes (chip, list, column)
+**Status: Addressed (2026-02-06)** — customSemanticsActions for Add/Remove from favorites in all 3 view modes (chip, list, column)
 
 **Files affected:**
 - `lib/ui/add_algorithm_screen.dart` (lines 1032-1079, chip grid view)

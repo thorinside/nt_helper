@@ -23,6 +23,7 @@ import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
 // Haptics can be reintroduced later if needed
+import 'package:nt_helper/ui/widgets/routing/accessible_routing_list_view.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
     as painter;
@@ -95,6 +96,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   String? _deletingPortId;
   Port? _deletingPort;
   bool _isFadingOut = false; // True during the final fade-out phase (not cancellable)
+
+  // Accessible list view toggle
+  bool _showAccessibleListView = false;
 
   // Platform service for hover detection
   late final PlatformInteractionService _platformService;
@@ -957,6 +961,39 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         return shouldRebuild;
       },
       builder: (context, state) {
+        // Auto-detect accessible navigation mode
+        final useListView = _showAccessibleListView ||
+            MediaQuery.of(context).accessibleNavigation;
+
+        if (useListView) {
+          return Stack(
+            children: [
+              Container(
+                width: widget.canvasSize.width,
+                height: widget.canvasSize.height,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor,
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const AccessibleRoutingListView(),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton.filledTonal(
+                  icon: const Icon(Icons.grid_view),
+                  tooltip: 'Switch to canvas view',
+                  onPressed: () => setState(() => _showAccessibleListView = false),
+                ),
+              ),
+            ],
+          );
+        }
+
         return Stack(
           children: [
             Container(
@@ -993,6 +1030,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                         ),
                       )
                     : _buildCanvasContent(context, state),
+              ),
+            ),
+            // Accessible list view toggle button
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton.filledTonal(
+                icon: const Icon(Icons.list_alt),
+                tooltip: 'Switch to accessible list view',
+                onPressed: () => setState(() => _showAccessibleListView = true),
               ),
             ),
             // MiniMapWidget positioned in bottom-right corner with 16px margin
@@ -2966,6 +3013,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     }
 
     _startDeletedConnectionLabelFade(connectionId, connections);
+
+    // Announce deletion for screen readers
+    if (conn != null) {
+      final sourceName = _portById[conn.sourcePortId]?.name ?? conn.sourcePortId;
+      final destName = _portById[conn.destinationPortId]?.name ?? conn.destinationPortId;
+      SemanticsService.sendAnnouncement(View.of(context),
+        'Connection deleted from $sourceName to $destName',
+        TextDirection.ltr,
+      );
+    }
 
     // Call the cubit to delete the connection
     context.read<RoutingEditorCubit>().deleteConnection(connectionId);

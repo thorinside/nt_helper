@@ -2,7 +2,7 @@
 
 **Severity: Critical**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: pitch_bar_painter.dart not modified
+**Status: Addressed (2026-02-06)** — step_column_widget.dart has full Semantics wrapper with label/value/hint/onIncrease/onDecrease
 
 ## Files Affected
 - `lib/ui/widgets/step_sequencer/step_column_widget.dart` (lines 63-193)

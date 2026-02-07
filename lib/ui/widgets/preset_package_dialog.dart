@@ -136,7 +136,10 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
     final presetName = widget.presetFilePath.split('/').last;
 
     return AlertDialog(
-      title: Text('Package: $presetName'),
+      title: Semantics(
+        header: true,
+        child: Text('Package: $presetName'),
+      ),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -144,7 +147,12 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (isAnalyzing) ...[
-              const Center(child: CircularProgressIndicator()),
+              Center(
+                child: Semantics(
+                  label: 'Analyzing preset dependencies',
+                  child: const CircularProgressIndicator(),
+                ),
+              ),
               const SizedBox(height: 16),
               const Text('Analyzing preset dependencies...'),
             ] else if (dependencies != null) ...[
@@ -156,7 +164,12 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
             ],
             if (isPackaging) ...[
               const SizedBox(height: 16),
-              const Center(child: CircularProgressIndicator()),
+              Center(
+                child: Semantics(
+                  label: 'Creating package: $_status',
+                  child: const CircularProgressIndicator(),
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 _status,

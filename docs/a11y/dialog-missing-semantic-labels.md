@@ -2,7 +2,7 @@
 
 **Severity: High**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: reset_outputs_dialog.dart and preset_package_dialog.dart not modified
+**Status: Addressed (2026-02-06)** — Dialog titles wrapped in Semantics with header: true
 
 ## Files Affected
 

@@ -2,7 +2,7 @@
 
 **Severity: Medium**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: accessibility_colors.dart and connection_painter.dart not modified
+**Status: Addressed (2026-02-06)** — AccessibilityColors.fromColorScheme() now used in connection_painter.dart _getPortColor() and port_widget.dart _getPortColor()
 
 ## Files Affected
 

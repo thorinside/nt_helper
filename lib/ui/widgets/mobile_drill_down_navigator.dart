@@ -42,14 +42,18 @@ class MobileDrillDownNavigator extends StatelessWidget {
               child: Row(
                 children: [
                   // Root icon/button
-                  InkWell(
-                    onTap: () => onBreadcrumbTap(-1),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Icon(
-                        Icons.home,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.primary,
+                  Semantics(
+                    label: 'Navigate to root',
+                    button: true,
+                    child: InkWell(
+                      onTap: () => onBreadcrumbTap(-1),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Icon(
+                          Icons.home,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -61,10 +65,12 @@ class MobileDrillDownNavigator extends StatelessWidget {
 
                     return Row(
                       children: [
-                        Icon(
-                          Icons.chevron_right,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ExcludeSemantics(
+                          child: Icon(
+                            Icons.chevron_right,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                         InkWell(
                           onTap: isLast ? null : () => onBreadcrumbTap(index),
@@ -172,11 +178,13 @@ class MobileDrillDownNavigator extends StatelessWidget {
                               )
                             : null,
                         trailing: item.isDirectory
-                            ? Icon(
-                                Icons.chevron_right,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                            ? ExcludeSemantics(
+                                child: Icon(
+                                  Icons.chevron_right,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               )
                             : null,
                         selected: isSelected,

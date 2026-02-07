@@ -2,7 +2,7 @@
 
 **Severity: High**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: mapping_editor_bottom_sheet.dart not modified
+**Status: Addressed (2026-02-06)** — showDragHandle: true added, close button + header added to mapping_editor_bottom_sheet.dart
 
 ## Files Affected
 

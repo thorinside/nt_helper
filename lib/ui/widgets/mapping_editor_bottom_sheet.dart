@@ -43,25 +43,47 @@ class MappingEditorBottomSheet extends StatelessWidget {
               : MediaQuery.of(context).padding.bottom,
         ),
         child: SingleChildScrollView(
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: myMidiCubit),
-              BlocProvider.value(value: distingCubit),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      'Mapping Editor',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+              const Divider(height: 1),
+              MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: myMidiCubit),
+                  BlocProvider.value(value: distingCubit),
+                ],
+                child: PackedMappingDataEditor(
+                  initialData: data,
+                  slots: slots,
+                  algorithmIndex: algorithmIndex,
+                  parameterNumber: parameterNumber,
+                  parameterMin: parameterMin,
+                  parameterMax: parameterMax,
+                  powerOfTen: powerOfTen,
+                  unitString: unitString,
+                  onSave: (updatedData) async {
+                    distingCubit.saveMapping(algorithmIndex, parameterNumber, updatedData);
+                  },
+                ),
+              ),
             ],
-            child: PackedMappingDataEditor(
-              initialData: data,
-              slots: slots,
-              algorithmIndex: algorithmIndex,
-              parameterNumber: parameterNumber,
-              parameterMin: parameterMin,
-              parameterMax: parameterMax,
-              powerOfTen: powerOfTen,
-              unitString: unitString,
-              onSave: (updatedData) async {
-                // Save directly to cubit without closing the dialog
-                distingCubit.saveMapping(algorithmIndex, parameterNumber, updatedData);
-              },
-            ),
           ),
         ),
       ),

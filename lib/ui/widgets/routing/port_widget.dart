@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
 
 /// Enum for configurable label positioning relative to port
 enum PortLabelPosition {
@@ -407,20 +408,11 @@ class _PortWidgetState extends State<PortWidget> {
           : theme.colorScheme.secondary;
     }
 
-    // Use port type to determine base color (audio vs CV)
+    // Use accessible colors derived from the current theme's color scheme
+    final colors = AccessibilityColors.fromColorScheme(theme.colorScheme);
     final baseColor = switch (widget.port!.type) {
-      PortType.audio => HSLColor.fromAHSL(
-          1.0,
-          30, // Orange hue (warm)
-          0.70, // 70% saturation
-          theme.brightness == Brightness.dark ? 0.55 : 0.50, // Adjusted lightness for theme
-        ).toColor(),
-      PortType.cv => HSLColor.fromAHSL(
-          1.0,
-          210, // Blue hue (cool)
-          0.70, // 70% saturation
-          theme.brightness == Brightness.dark ? 0.55 : 0.50, // Adjusted lightness for theme
-        ).toColor(),
+      PortType.audio => colors.audioPortColor,
+      PortType.cv => colors.cvPortColor,
     };
 
     // Slightly adjust brightness based on direction for additional distinction

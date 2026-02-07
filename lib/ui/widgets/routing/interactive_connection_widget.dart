@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
@@ -348,25 +349,47 @@ class _InteractiveConnectionWidgetState
     );
   }
 
+  String _getConnectionSemanticLabel() {
+    final conn = widget.connection;
+    final parts = <String>[
+      'Connection from ${conn.sourcePortId} to ${conn.destinationPortId}',
+      'on bus ${conn.busLabel}',
+    ];
+    return parts.join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     // Connection data mode: render the connection with hover detection
     if (widget.connectionData != null) {
       if (!_platformService.supportsHoverInteractions()) {
         // Mobile: just render the connection without hover
-        return CustomPaint(
-          size: widget.size ?? Size.zero,
-          painter: painter.ConnectionPainter(
-            connections: [widget.connectionData!],
-            theme: Theme.of(context),
-            showLabels: true,
+        return Semantics(
+          label: _getConnectionSemanticLabel(),
+          customSemanticsActions: {
+            const CustomSemanticsAction(label: 'Delete this connection'):
+                () => _showDeleteConfirmationDialog(),
+          },
+          child: CustomPaint(
+            size: widget.size ?? Size.zero,
+            painter: painter.ConnectionPainter(
+              connections: [widget.connectionData!],
+              theme: Theme.of(context),
+              showLabels: true,
+            ),
           ),
         );
       }
 
       // Desktop: render with hover detection
-      return Stack(
-        children: [
+      return Semantics(
+        label: _getConnectionSemanticLabel(),
+        customSemanticsActions: {
+          const CustomSemanticsAction(label: 'Delete this connection'):
+              () => _deleteConnection(),
+        },
+        child: Stack(
+          children: [
           // Render the actual connection
           CustomPaint(
             size: widget.size ?? Size.zero,
@@ -386,6 +409,7 @@ class _InteractiveConnectionWidgetState
           // Delete button overlay
           _buildDeleteButton(),
         ],
+        ),
       );
     }
 

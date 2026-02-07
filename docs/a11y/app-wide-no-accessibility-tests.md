@@ -2,7 +2,7 @@
 
 **Severity: High**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Added `accessibility_tools` dev dependency for debug-mode checks. Remaining: dedicated a11y test suite
+**Status: Addressed (2026-02-06)** — Created test/ui/accessibility/ with widget_semantics_test.dart (semantics, dialogs, bottom sheets) and routing_accessibility_test.dart (contrast ratios, WCAG compliance)
 
 ## Files Affected
 - `test/` directory (95+ test files, none for accessibility)

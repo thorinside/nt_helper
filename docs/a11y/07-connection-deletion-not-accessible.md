@@ -2,7 +2,7 @@
 
 **Severity: High**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: interactive_connection_widget.dart not modified
+**Status: Addressed (2026-02-06)** — Semantics with customSemanticsActions for delete on interactive_connection_widget.dart, connection delete announcements via SemanticsService
 
 ## Files Affected
 

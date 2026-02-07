@@ -2,7 +2,7 @@
 
 **Severity: Critical**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: connection_painter.dart not modified
+**Status: Addressed (2026-02-06)** — Accessible routing list view provides semantic equivalent. Connection delete/create announcements added.
 
 ## Files Affected
 

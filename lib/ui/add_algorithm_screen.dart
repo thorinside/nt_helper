@@ -1060,6 +1060,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               selected: isSelected,
               label: '${algo.name}${isFavorite ? ', favorite' : ''}${isCommunityPlugin ? ', community plugin' : ''}',
               hint: 'Double tap to ${isSelected ? 'deselect' : 'select'}',
+              customSemanticsActions: {
+                CustomSemanticsAction(label: isFavorite ? 'Remove from favorites' : 'Add to favorites'):
+                    () => _toggleFavorite(algo.guid),
+              },
               child: GestureDetector(
                 excludeFromSemantics: true,
                 onLongPress: () => _toggleFavorite(algo.guid),
@@ -1143,6 +1147,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             selected: isSelected,
             label: '${algo.name}${isFavorite ? ', favorite' : ''}${isCommunityPlugin ? ', community plugin' : ''}',
             hint: 'Double tap to ${isSelected ? 'deselect' : 'select'}',
+            customSemanticsActions: {
+              CustomSemanticsAction(label: isFavorite ? 'Remove from favorites' : 'Add to favorites'):
+                  () => _toggleFavorite(algo.guid),
+            },
             child: Material(
             color: isSelected
                 ? Theme.of(context).colorScheme.primaryContainer
@@ -1310,17 +1318,26 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         : (metadata?.description ?? '');
     final theme = Theme.of(context);
 
-    return Card(
-      elevation: isSelected ? 4 : 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isSelected
-            ? BorderSide(color: theme.colorScheme.primary, width: 2)
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        onTap: () => _selectAlgorithm(isSelected ? null : algo.guid),
-        onLongPress: () => _toggleFavorite(algo.guid),
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '${algo.name}${isFavorite ? ', favorite' : ''}${isCommunityPlugin ? ', community plugin' : ''}',
+      hint: 'Double tap to ${isSelected ? 'deselect' : 'select'}',
+      customSemanticsActions: {
+        CustomSemanticsAction(label: isFavorite ? 'Remove from favorites' : 'Add to favorites'):
+            () => _toggleFavorite(algo.guid),
+      },
+      child: Card(
+        elevation: isSelected ? 4 : 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: isSelected
+              ? BorderSide(color: theme.colorScheme.primary, width: 2)
+              : BorderSide.none,
+        ),
+        child: InkWell(
+          onTap: () => _selectAlgorithm(isSelected ? null : algo.guid),
+          onLongPress: () => _toggleFavorite(algo.guid),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -1378,6 +1395,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                 ),
               ],
             ],
+          ),
           ),
         ),
       ),

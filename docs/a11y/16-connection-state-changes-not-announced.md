@@ -2,7 +2,7 @@
 
 **Severity: High**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: routing_editor_cubit.dart not modified
+**Status: Addressed (2026-02-06)** — SemanticsService announcements for connection create/delete in routing_editor_widget.dart
 
 ## Files Affected
 

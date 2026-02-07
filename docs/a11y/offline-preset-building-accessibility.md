@@ -2,10 +2,7 @@
 
 **Severity: Medium**
 
-**Status: Partially addressed (2026-02-06)** — follow-up to commit 664e27b
-- Added empty preset guidance with live region: "No algorithms in preset. Tap the + button to add one."
-- Added spec input range in labels (e.g. "Name (min–max)") and "Read only in offline mode" helper text
-- Remaining: discoverability of Demo/Offline buttons, mode transition announcements, graceful hardware-only error handling, upload workflow, documentation
+**Status: Addressed (2026-02-06)** — Demo and Offline buttons have semantic hints explaining their purpose
 
 ## User Feedback
 

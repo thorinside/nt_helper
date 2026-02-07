@@ -5,6 +5,7 @@ import 'package:nt_helper/core/routing/models/connection.dart'
     show Connection, ConnectionType;
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:collection/collection.dart';
+import 'accessibility_colors.dart';
 import 'ghost_connection_tooltip.dart';
 import 'connection_theme.dart';
 import 'bus_label_formatter.dart';
@@ -983,16 +984,16 @@ class ConnectionPainter extends CustomPainter {
     return path;
   }
 
-  /// Get color for a port based on its type
+  /// Get color for a port based on its type, using accessible colors
   Color _getPortColor(String portId) {
-    // Parse port type from ID (simplified - should use actual port data)
-    if (portId.contains('audio')) return Colors.blue;
-    if (portId.contains('cv')) return Colors.orange;
-    if (portId.contains('gate')) return Colors.red;
+    final colors = AccessibilityColors.fromColorScheme(theme.colorScheme);
+    if (portId.contains('audio')) return colors.audioPortColor;
+    if (portId.contains('cv')) return colors.cvPortColor;
+    if (portId.contains('gate')) return colors.gatePortColor;
     if (portId.contains('clock') || portId.contains('trigger')) {
-      return Colors.purple;
+      return colors.clockPortColor;
     }
-    return Colors.grey;
+    return theme.colorScheme.outline;
   }
 
   /// Get current label bounds for testing purposes

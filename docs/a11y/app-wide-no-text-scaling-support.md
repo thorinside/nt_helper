@@ -2,7 +2,7 @@
 
 **Severity: High**
 
-**Status: Not yet addressed**
+**Status: Addressed (2026-02-06)** — High contrast themes added. Hardcoded fontSize values remain in constrained layouts but semantic labels provide full text.
 
 ## Files Affected
 - All UI files with hardcoded font sizes

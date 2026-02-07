@@ -2,7 +2,7 @@
 
 **Severity: High**
 
-**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: preset_package_dialog.dart not modified
+**Status: Addressed (2026-02-06)** — CircularProgressIndicator wrapped in Semantics with contextual labels in preset_package_dialog.dart
 
 ## Files Affected
 

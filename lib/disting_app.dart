@@ -87,13 +87,34 @@ class _DistingAppState extends State<DistingApp> {
       ).copyWith(surfaceTint: Colors.transparent, tertiary: Colors.orange),
     );
 
+    final highContrastLightTheme = buildThemeData(
+      ColorScheme.fromSeed(
+        seedColor: Colors.tealAccent.shade700,
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+        brightness: Brightness.light,
+        contrastLevel: 1.0,
+      ).copyWith(
+        surfaceTint: Colors.transparent,
+        tertiary: Colors.orange.shade800,
+      ),
+    );
+
+    final highContrastDarkTheme = buildThemeData(
+      ColorScheme.fromSeed(
+        seedColor: Colors.tealAccent.shade100,
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+        brightness: Brightness.dark,
+        contrastLevel: 1.0,
+      ).copyWith(surfaceTint: Colors.transparent, tertiary: Colors.orange),
+    );
+
     return MaterialApp(
       builder: (context, child) => AccessibilityTools(child: child),
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
-      // Light theme
       darkTheme: darkTheme,
-      // Dark theme using copyWith
+      highContrastTheme: highContrastLightTheme,
+      highContrastDarkTheme: highContrastDarkTheme,
       themeMode: ThemeMode.system,
       // Follow system settings
       initialRoute: '/',
@@ -453,10 +474,13 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   if (widget.canWorkOffline) ...[
                     const SizedBox(width: 12),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.cloud_off),
-                        label: const Text("Offline"),
-                        onPressed: widget.onOfflinePressed,
+                      child: Semantics(
+                        hint: 'Build presets using cached algorithm data without connecting to hardware',
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.cloud_off),
+                          label: const Text("Offline"),
+                          onPressed: widget.onOfflinePressed,
+                        ),
                       ),
                     ),
                   ],
@@ -494,10 +518,13 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 ),
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.play_arrow),
-                onPressed: widget.onDemoPressed,
-                label: const Text("Demo Mode"),
+              Semantics(
+                hint: 'Try the app with simulated algorithms, no hardware needed',
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.play_arrow),
+                  onPressed: widget.onDemoPressed,
+                  label: const Text("Demo Mode"),
+                ),
               ),
             ],
           ),

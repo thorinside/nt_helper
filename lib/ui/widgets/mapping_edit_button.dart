@@ -79,6 +79,7 @@ class _MappingEditButtonState extends State<MappingEditButton> {
             await showModalBottomSheet(
               context: context,
               isScrollControlled: true,
+              showDragHandle: true,
               builder: (context) {
                 return MappingEditorBottomSheet(
                   myMidiCubit: myMidiCubit,
