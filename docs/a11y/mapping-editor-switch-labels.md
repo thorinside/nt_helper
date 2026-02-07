@@ -2,6 +2,8 @@
 
 **Severity: Critical**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 
 - `lib/ui/widgets/packed_mapping_data_editor.dart` (lines 447-478, 613-656, 785-812)

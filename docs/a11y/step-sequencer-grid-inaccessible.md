@@ -2,6 +2,8 @@
 
 **Severity: Critical**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: pitch_bar_painter.dart not modified
+
 ## Files Affected
 - `lib/ui/widgets/step_sequencer/step_column_widget.dart` (lines 63-193)
 - `lib/ui/widgets/step_sequencer/step_grid_view.dart` (lines 50-154)

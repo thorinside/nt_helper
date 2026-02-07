@@ -2,6 +2,11 @@
 
 **Severity: Medium**
 
+**Status: Partially addressed (2026-02-06)** — follow-up to commit 664e27b
+- Added empty preset guidance with live region: "No algorithms in preset. Tap the + button to add one."
+- Added spec input range in labels (e.g. "Name (min–max)") and "Read only in offline mode" helper text
+- Remaining: discoverability of Demo/Offline buttons, mode transition announcements, graceful hardware-only error handling, upload workflow, documentation
+
 ## User Feedback
 
 A blind tester requested improved offline capabilities so presets can be built without connected hardware and later uploaded to the Disting NT. This capability largely **already exists** but needs better discoverability and accessibility.

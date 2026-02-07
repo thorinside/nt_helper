@@ -2,6 +2,8 @@
 
 **Severity: Medium**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 
 - `lib/ui/firmware/firmware_flow_diagram.dart` (entire file, especially lines 38-69 build, 72-318 painter)

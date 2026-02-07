@@ -4,19 +4,33 @@
 
 NT Helper is a Flutter-based MIDI controller app for the Expert Sleepers Disting NT Eurorack module, providing preset management, algorithm loading, parameter control, routing visualization, and step sequencing. This audit evaluated the app's accessibility for screen reader users, keyboard-only users, and users with low vision.
 
-**The app currently has no meaningful accessibility support.** While it uses Flutter's Material 3 framework (which provides some baseline accessibility), the app has:
+**The app has significant accessibility support after the 2026-02-06 audit and implementation pass.** Using Flutter's Material 3 framework as a baseline, the app now has:
 
-- **Zero** `SemanticsService.announce()` calls for dynamic state changes
-- **Zero** `FocusTraversalGroup` or focus management policies
-- **Zero** accessibility-specific tests
-- **Minimal** `Semantics` widgets (approximately 5-6 in the entire codebase)
-- **No** keyboard navigation for core workflows (parameter editing, routing, step sequencing)
+- **Extensive** `SemanticsService.announce()` calls for state transitions, slot/tab selection, algorithm add/select, mode switches
+- **Active** `FocusTraversalGroup` and `FocusNode` management in routing canvas and parameter lists
+- **Dev-time** accessibility checking via `accessibility_tools` (no dedicated test suite yet)
+- **Broad** `Semantics` widget coverage across parameters, routing, step sequencer, dialogs, and navigation
+- **Keyboard navigation** for global shortcuts (Mod+S/N/O/R), slot navigation (Mod+[/]), routing connections (Space), step sequencer (arrow keys + letter keys)
 - **No** text scaling support
 - **No** high contrast mode detection
 
-For a blind musician, the app is effectively unusable for its three most important workflows: **parameter control**, **routing**, and **step sequencing**. Parameter sliders have no semantic labels or screen reader values. The entire routing canvas is a visual-only `CustomPaint` with no accessible representation. The step sequencer grid is invisible to screen readers.
+### Progress Log
 
-The audit identified **75 individual issues** across all areas of the app, documented in detail in this directory. Below is a prioritized roadmap for making NT Helper accessible to blind and low-vision musicians.
+| Date | Changes |
+|------|---------|
+| 2026-02-06 | Commit 664e27b: keyboard shortcuts, parameter semantics, routing keyboard navigation, step sequencer a11y, icon labels, dialog labels, mapping editor SwitchListTile, tap target fixes, focus traversal, SemanticsService announcements, accessibility_tools dev dependency. **58 issues addressed, 12 partially addressed.** |
+| 2026-02-06 | Follow-up: FAB "Add to Preset" announcement, tab/slot selection announcements, algorithm selection announcement, chip grid view semantics, empty preset live region guidance, spec input range labels + offline read-only hint. |
+
+### Remaining Work
+
+Of 75 original issues: **58 fully addressed**, **15 partially addressed**, **2 not yet addressed** (text scaling, high contrast — no source file references changed).
+
+For a blind musician, the core workflows now have basic accessibility support. The main remaining gaps are:
+- **Text scaling** and **high contrast mode** detection
+- **Dedicated a11y test suite**
+- A few source files not yet modified (`connection_painter.dart`, `accessibility_colors.dart`, `interactive_connection_widget.dart`, `pitch_bar_painter.dart`, `mobile_drill_down_navigator.dart`, `mapping_editor_bottom_sheet.dart`, `reset_outputs_dialog.dart`, `preset_package_dialog.dart`)
+
+The audit identified **75 individual issues** across all areas of the app, documented in detail in this directory. Below is a prioritized roadmap for the remaining work.
 
 ---
 

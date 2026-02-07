@@ -2,6 +2,8 @@
 
 **Severity: Medium**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: accessibility_colors.dart not integrated
+
 ## Files Affected
 - `lib/disting_app.dart` (theme configuration)
 - All UI files

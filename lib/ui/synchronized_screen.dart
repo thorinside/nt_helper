@@ -173,6 +173,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       setState(() {
         _selectedIndex = _tabController.index;
       });
+      if (!_tabController.indexIsChanging && _selectedIndex < widget.slots.length) {
+        final slot = widget.slots[_selectedIndex];
+        final name = slot.algorithm.name;
+        SemanticsService.sendAnnouncement(
+          WidgetsBinding.instance.platformDispatcher.views.first,
+          'Slot ${_selectedIndex + 1}: $name',
+          TextDirection.ltr,
+        );
+      }
     }
   }
 
@@ -459,6 +468,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               await cubit.onAlgorithmSelected(
                 result['algorithm'],
                 result['specValues'],
+              );
+              SemanticsService.sendAnnouncement(
+                WidgetsBinding.instance.platformDispatcher.views.first,
+                'Algorithm added',
+                TextDirection.ltr,
               );
             }
           },
@@ -1034,15 +1048,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         }).toList(),
       );
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          "No algorithms",
-          style: Theme.of(context).textTheme.displaySmall,
+    return Center(
+      child: Semantics(
+        liveRegion: true,
+        child: Text(
+          "No algorithms in preset. Tap the + button to add one.",
+          style: Theme.of(context).textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),
-      ],
+      ),
     );
   }
 

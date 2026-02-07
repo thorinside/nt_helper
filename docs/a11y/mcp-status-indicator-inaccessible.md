@@ -2,6 +2,8 @@
 
 **Severity: Critical**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 
 - `lib/ui/widgets/mcp_status_indicator.dart` (lines 52-134)

@@ -2,6 +2,8 @@
 
 **Severity:** High
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/bpm_editor_widget.dart` (entire file, especially lines 250-327)
 

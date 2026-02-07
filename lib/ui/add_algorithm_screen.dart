@@ -325,6 +325,14 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         _isHelpAvailableForSelected = false;
       }
     });
+    if (guid != null) {
+      final name = _currentAlgoInfo?.name ?? 'algorithm';
+      SemanticsService.sendAnnouncement(
+        WidgetsBinding.instance.platformDispatcher.views.first,
+        '$name selected',
+        TextDirection.ltr,
+      );
+    }
   }
 
   void _clearSelection() {
@@ -1047,55 +1055,63 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             final bool isSelected = selectedAlgorithmGuid == algo.guid;
             final bool isFavorite = _favoriteGuids.contains(algo.guid);
             final bool isCommunityPlugin = algo.guid != algo.guid.toLowerCase();
-            return GestureDetector(
-              excludeFromSemantics: true,
-              onLongPress: () => _toggleFavorite(algo.guid),
-              child: ChoiceChip(
-                label: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        algo.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+            return Semantics(
+              button: true,
+              selected: isSelected,
+              label: '${algo.name}${isFavorite ? ', favorite' : ''}${isCommunityPlugin ? ', community plugin' : ''}',
+              hint: 'Double tap to ${isSelected ? 'deselect' : 'select'}',
+              child: GestureDetector(
+                excludeFromSemantics: true,
+                onLongPress: () => _toggleFavorite(algo.guid),
+                child: ExcludeSemantics(
+                  child: ChoiceChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            algo.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isFavorite) ...[
+                          const SizedBox(width: 4.0),
+                          Icon(
+                            Icons.star,
+                            size: 16,
+                            semanticLabel: 'Favorite',
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.onPrimaryContainer
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                        if (isCommunityPlugin) ...[
+                          const SizedBox(width: 4.0),
+                          Icon(
+                            Icons.extension,
+                            size: 14,
+                            semanticLabel: 'Community plugin',
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.onPrimaryContainer
+                                : Theme.of(context).colorScheme.secondary,
+                          ),
+                        ],
+                      ],
                     ),
-                    if (isFavorite) ...[
-                      const SizedBox(width: 4.0),
-                      Icon(
-                        Icons.star,
-                        size: 16,
-                        semanticLabel: 'Favorite',
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                            : Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                    if (isCommunityPlugin) ...[
-                      const SizedBox(width: 4.0),
-                      Icon(
-                        Icons.extension,
-                        size: 14,
-                        semanticLabel: 'Community plugin',
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                            : Theme.of(context).colorScheme.secondary,
-                      ),
-                    ],
-                  ],
+                    selected: isSelected,
+                    onSelected: (bool selected) {
+                      if (selected) {
+                        _selectAlgorithm(algo.guid);
+                      } else {
+                        if (isSelected) {
+                          _selectAlgorithm(null);
+                        }
+                      }
+                    },
+                    selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                  ),
                 ),
-                selected: isSelected,
-                onSelected: (bool selected) {
-                  if (selected) {
-                    _selectAlgorithm(algo.guid);
-                  } else {
-                    if (isSelected) {
-                      _selectAlgorithm(null);
-                    }
-                  }
-                },
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
               ),
             );
           }).toList(),
@@ -1500,9 +1516,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             readOnly: isOffline,
             decoration: InputDecoration(
               labelText: specInfo.name.isNotEmpty
-                  ? specInfo.name
-                  : 'Specification ${index + 1}',
-              hintText: '(${specInfo.min} to ${specInfo.max})',
+                  ? '${specInfo.name} (${specInfo.min}\u2013${specInfo.max})'
+                  : 'Specification ${index + 1} (${specInfo.min}\u2013${specInfo.max})',
+              helperText: isOffline ? 'Read only in offline mode' : null,
               border: const OutlineInputBorder(),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(

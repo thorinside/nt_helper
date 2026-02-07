@@ -89,7 +89,14 @@ class AlgorithmListView extends StatelessWidget {
                       selectedColor: Theme.of(
                         context,
                       ).colorScheme.onSecondaryContainer,
-                      onTap: () => onSelectionChanged(index),
+                      onTap: () {
+                      onSelectionChanged(index);
+                      SemanticsService.sendAnnouncement(
+                        WidgetsBinding.instance.platformDispatcher.views.first,
+                        'Slot ${index + 1}: $displayName selected',
+                        TextDirection.ltr,
+                      );
+                    },
                       onLongPress: () async {
                         var cubit = context.read<DistingCubit>();
                         final newName = await showDialog<String>(

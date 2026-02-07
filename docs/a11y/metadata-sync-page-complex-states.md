@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 
 - `lib/ui/metadata_sync/metadata_sync_page.dart` (lines 280-401, 414-567, 570-620)

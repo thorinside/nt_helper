@@ -2,6 +2,8 @@
 
 **Severity:** High
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/synchronized_screen.dart` (entire file - loading state throughout)
 - `lib/ui/performance_screen.dart` (line 322 - CircularProgressIndicator)

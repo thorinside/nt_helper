@@ -2,6 +2,8 @@
 
 **Severity:** Medium
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/plugin_manager_screen.dart` (lines 821-857, `_buildPluginTypeSection`)
 - `lib/ui/plugin_manager_screen.dart` (lines 860-921, `_buildPluginCard`)

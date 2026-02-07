@@ -2,6 +2,10 @@
 
 **Severity: Critical**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b + follow-up
+- Commit 664e27b: added `SemanticsService.sendAnnouncement` for all state transitions across the app
+- Follow-up: added announcements for FAB "Add to Preset" confirmation, tab/slot selection changes, algorithm selection in add screen
+
 ## Files Affected
 - Entire codebase (`lib/` directory)
 

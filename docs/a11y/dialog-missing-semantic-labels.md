@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: reset_outputs_dialog.dart and preset_package_dialog.dart not modified
+
 ## Files Affected
 
 - `lib/ui/widgets/rename_preset_dialog.dart` (lines 39-50)

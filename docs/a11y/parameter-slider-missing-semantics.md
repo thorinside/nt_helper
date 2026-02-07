@@ -2,6 +2,8 @@
 
 **Severity: Critical**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 - `lib/ui/widgets/parameter_view_row.dart` (lines 283-315)
 

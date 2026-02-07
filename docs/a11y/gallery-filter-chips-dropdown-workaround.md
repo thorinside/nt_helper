@@ -2,6 +2,8 @@
 
 **Severity:** Medium
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/gallery_screen.dart` (lines 626-669, `_buildCategoryFilter`)
 - `lib/ui/gallery_screen.dart` (lines 672-708, `_buildTypeFilter`)

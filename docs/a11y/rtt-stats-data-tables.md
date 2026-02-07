@@ -2,6 +2,8 @@
 
 **Severity: Low**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 
 - `lib/ui/widgets/rtt_stats_dialog.dart` (lines 131-173, 268-316)

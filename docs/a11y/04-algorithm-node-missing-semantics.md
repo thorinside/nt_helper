@@ -2,6 +2,8 @@
 
 **Severity: Critical**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 
 - `lib/ui/widgets/routing/algorithm_node_widget.dart` (lines 170-227 - build method)

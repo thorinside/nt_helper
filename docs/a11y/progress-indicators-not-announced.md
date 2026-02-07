@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: preset_package_dialog.dart not modified
+
 ## Files Affected
 
 - `lib/ui/widgets/template_preview_dialog.dart` (lines 185-209)

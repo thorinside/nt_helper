@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Added `accessibility_tools` dev dependency for debug-mode checks. Remaining: dedicated a11y test suite
+
 ## Files Affected
 - `test/` directory (95+ test files, none for accessibility)
 

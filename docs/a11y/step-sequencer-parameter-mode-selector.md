@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 - `lib/ui/widgets/step_sequencer/step_column_widget.dart` (line 36: `activeParameter`)
 - `lib/ui/widgets/step_sequencer/step_grid_view.dart` (line 23: `activeParameter`)

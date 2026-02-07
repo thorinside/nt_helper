@@ -2,6 +2,11 @@
 
 **Severity:** Critical
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b + follow-up
+- Commit 664e27b: added keyboard slot navigation shortcuts (Mod+[/])
+- Follow-up: added `SemanticsService.sendAnnouncement` on tab change: "Slot N: [name]"
+- Remaining: custom semantic actions for double-tap (focus algorithm UI) and long-press (rename) on tab bar items
+
 **Files affected:**
 - `lib/ui/synchronized_screen.dart` (lines 1466-1535, `_buildTabBar`)
 

@@ -2,6 +2,8 @@
 
 **Severity: Critical**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: connection_painter.dart not modified
+
 ## Files Affected
 
 - `lib/ui/widgets/routing/connection_painter.dart` (entire file, especially lines 70-1027)

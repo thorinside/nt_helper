@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: interactive_connection_widget.dart not modified
+
 ## Files Affected
 
 - `lib/ui/widgets/routing/interactive_connection_widget.dart` (lines 73-121 - hover/tap/long-press handlers)

@@ -2,6 +2,8 @@
 
 **Severity:** High
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/performance_screen.dart` (lines 117-140, `_buildPageBadge`)
 - `lib/ui/performance_screen.dart` (lines 300-314, NavigationRail setup)

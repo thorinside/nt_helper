@@ -2,6 +2,8 @@
 
 **Severity: Critical**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## User Feedback
 
 A blind tester specifically requested comprehensive keyboard shortcuts for **all major portions of the app**. This is the single most impactful accessibility improvement for power users who rely on keyboard and screen reader navigation.

@@ -2,6 +2,8 @@
 
 **Severity: Medium**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: accessibility_colors.dart and connection_painter.dart not modified
+
 ## Files Affected
 
 - `lib/ui/widgets/routing/accessibility_colors.dart` (entire file)

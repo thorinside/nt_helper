@@ -2,6 +2,8 @@
 
 **Severity: Medium**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 - `lib/ui/widgets/algorithm_list_view.dart` (lines 39-82)
 

@@ -2,6 +2,8 @@
 
 **Severity:** Medium
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/gallery_screen.dart` (lines 1162-1182, list tile documentation button)
 - `lib/ui/gallery_screen.dart` (lines 1448-1471, card view documentation button)

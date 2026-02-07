@@ -2,6 +2,8 @@
 
 **Severity: Low**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 
 - `lib/ui/widgets/routing/routing_editor_widget.dart` (lines 1505-1517 - `_CanvasGridPainter`)

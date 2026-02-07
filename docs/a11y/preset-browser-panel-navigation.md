@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: mobile_drill_down_navigator.dart not modified
+
 ## Files Affected
 
 - `lib/ui/widgets/preset_browser_dialog.dart` (lines 542-697)

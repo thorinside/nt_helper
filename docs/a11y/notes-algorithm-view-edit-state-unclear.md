@@ -2,6 +2,8 @@
 
 **Severity:** Medium
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/notes_algorithm_view.dart` (lines 250-324, build method)
 - `lib/ui/notes_algorithm_view.dart` (lines 326-351, `_buildTextDisplay`)

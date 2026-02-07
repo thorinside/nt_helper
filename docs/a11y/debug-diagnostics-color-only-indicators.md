@@ -2,6 +2,8 @@
 
 **Severity:** Low
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/debug_diagnostics_screen.dart` (lines 329-365, 367-409, 412-441, 470-474)
 

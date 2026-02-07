@@ -2,6 +2,8 @@
 
 **Severity:** High
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/firmware/firmware_update_screen.dart` (lines 434-463, download progress)
 - `lib/ui/firmware/firmware_update_screen.dart` (lines 577-626, flashing progress)

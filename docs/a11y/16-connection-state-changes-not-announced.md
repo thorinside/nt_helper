@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: routing_editor_cubit.dart not modified
+
 ## Files Affected
 
 - `lib/ui/widgets/routing/routing_editor_widget.dart` (lines 1231-1260 - connection creation, 292-308 - deletion animation completion)

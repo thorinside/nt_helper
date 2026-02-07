@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Not yet addressed**
+
 ## Files Affected
 - All UI files with hardcoded font sizes
 

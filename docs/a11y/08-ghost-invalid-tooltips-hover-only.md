@@ -2,6 +2,8 @@
 
 **Severity: Medium**
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 ## Files Affected
 
 - `lib/ui/widgets/routing/ghost_connection_tooltip.dart` (lines 96-116, 140-167)

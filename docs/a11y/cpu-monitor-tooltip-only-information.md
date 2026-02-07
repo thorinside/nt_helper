@@ -2,6 +2,8 @@
 
 **Severity:** Medium
 
+**Status: Addressed (2026-02-06)** — in commit 664e27b
+
 **Files affected:**
 - `lib/ui/cpu_monitor_widget.dart` (lines 131-167, `_buildCpuDisplay`)
 

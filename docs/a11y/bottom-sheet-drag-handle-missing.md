@@ -2,6 +2,8 @@
 
 **Severity: High**
 
+**Status: Partially addressed (2026-02-06)** — in commit 664e27b. Remaining: mapping_editor_bottom_sheet.dart not modified
+
 ## Files Affected
 
 - `lib/ui/widgets/mapping_edit_button.dart` (lines 73-92)
