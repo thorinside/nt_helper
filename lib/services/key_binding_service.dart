@@ -18,6 +18,46 @@ class ResetZoomIntent extends Intent {
   const ResetZoomIntent();
 }
 
+class SavePresetIntent extends Intent {
+  const SavePresetIntent();
+}
+
+class NewPresetIntent extends Intent {
+  const NewPresetIntent();
+}
+
+class BrowsePresetsIntent extends Intent {
+  const BrowsePresetsIntent();
+}
+
+class AddAlgorithmIntent extends Intent {
+  const AddAlgorithmIntent();
+}
+
+class RefreshIntent extends Intent {
+  const RefreshIntent();
+}
+
+class ShowShortcutHelpIntent extends Intent {
+  const ShowShortcutHelpIntent();
+}
+
+class SwitchToParametersIntent extends Intent {
+  const SwitchToParametersIntent();
+}
+
+class SwitchToRoutingIntent extends Intent {
+  const SwitchToRoutingIntent();
+}
+
+class PreviousSlotIntent extends Intent {
+  const PreviousSlotIntent();
+}
+
+class NextSlotIntent extends Intent {
+  const NextSlotIntent();
+}
+
 /// Abstracts access to the hardware keyboard to facilitate testing and
 /// deterministic modifier checks.
 abstract class HardwareKeyboardAdapter {
@@ -85,6 +125,74 @@ class KeyBindingService {
         const ResetZoomIntent(),
   };
 
+  /// Returns the global shortcut bindings available on the main screen.
+  ///
+  /// Includes both Ctrl and Cmd variants for cross-platform support.
+  Map<ShortcutActivator, Intent> get globalShortcuts => {
+    // Save preset: Mod+S
+    const SingleActivator(LogicalKeyboardKey.keyS, control: true):
+        const SavePresetIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
+        const SavePresetIntent(),
+
+    // New preset: Mod+N
+    const SingleActivator(LogicalKeyboardKey.keyN, control: true):
+        const NewPresetIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
+        const NewPresetIntent(),
+
+    // Browse presets: Mod+O
+    const SingleActivator(LogicalKeyboardKey.keyO, control: true):
+        const BrowsePresetsIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyO, meta: true):
+        const BrowsePresetsIntent(),
+
+    // Add algorithm: Mod+Shift+N
+    const SingleActivator(LogicalKeyboardKey.keyN, control: true, shift: true):
+        const AddAlgorithmIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyN, meta: true, shift: true):
+        const AddAlgorithmIntent(),
+
+    // Refresh: Mod+R
+    const SingleActivator(LogicalKeyboardKey.keyR, control: true):
+        const RefreshIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyR, meta: true):
+        const RefreshIntent(),
+
+    // Refresh: F5 (Windows convention)
+    const SingleActivator(LogicalKeyboardKey.f5): const RefreshIntent(),
+
+    // Show shortcut help: Mod+/
+    const SingleActivator(LogicalKeyboardKey.slash, control: true):
+        const ShowShortcutHelpIntent(),
+    const SingleActivator(LogicalKeyboardKey.slash, meta: true):
+        const ShowShortcutHelpIntent(),
+
+    // Switch to Parameters mode: Mod+1
+    const SingleActivator(LogicalKeyboardKey.digit1, control: true):
+        const SwitchToParametersIntent(),
+    const SingleActivator(LogicalKeyboardKey.digit1, meta: true):
+        const SwitchToParametersIntent(),
+
+    // Switch to Routing mode: Mod+2
+    const SingleActivator(LogicalKeyboardKey.digit2, control: true):
+        const SwitchToRoutingIntent(),
+    const SingleActivator(LogicalKeyboardKey.digit2, meta: true):
+        const SwitchToRoutingIntent(),
+
+    // Previous slot: Mod+[
+    const SingleActivator(LogicalKeyboardKey.bracketLeft, control: true):
+        const PreviousSlotIntent(),
+    const SingleActivator(LogicalKeyboardKey.bracketLeft, meta: true):
+        const PreviousSlotIntent(),
+
+    // Next slot: Mod+]
+    const SingleActivator(LogicalKeyboardKey.bracketRight, control: true):
+        const NextSlotIntent(),
+    const SingleActivator(LogicalKeyboardKey.bracketRight, meta: true):
+        const NextSlotIntent(),
+  };
+
   /// Creates the actions map for zoom in/out/reset callbacks.
   Map<Type, Action<Intent>> buildZoomActions({
     required VoidCallback onZoomIn,
@@ -107,6 +215,83 @@ class KeyBindingService {
       ResetZoomIntent: CallbackAction<ResetZoomIntent>(
         onInvoke: (_) {
           onResetZoom();
+          return null;
+        },
+      ),
+    };
+  }
+
+  /// Creates the actions map for global shortcut callbacks.
+  Map<Type, Action<Intent>> buildGlobalActions({
+    required VoidCallback onSavePreset,
+    required VoidCallback onNewPreset,
+    required VoidCallback onBrowsePresets,
+    required VoidCallback onAddAlgorithm,
+    required VoidCallback onRefresh,
+    required VoidCallback onShowShortcutHelp,
+    required VoidCallback onSwitchToParameters,
+    required VoidCallback onSwitchToRouting,
+    required VoidCallback onPreviousSlot,
+    required VoidCallback onNextSlot,
+  }) {
+    return {
+      SavePresetIntent: CallbackAction<SavePresetIntent>(
+        onInvoke: (_) {
+          onSavePreset();
+          return null;
+        },
+      ),
+      NewPresetIntent: CallbackAction<NewPresetIntent>(
+        onInvoke: (_) {
+          onNewPreset();
+          return null;
+        },
+      ),
+      BrowsePresetsIntent: CallbackAction<BrowsePresetsIntent>(
+        onInvoke: (_) {
+          onBrowsePresets();
+          return null;
+        },
+      ),
+      AddAlgorithmIntent: CallbackAction<AddAlgorithmIntent>(
+        onInvoke: (_) {
+          onAddAlgorithm();
+          return null;
+        },
+      ),
+      RefreshIntent: CallbackAction<RefreshIntent>(
+        onInvoke: (_) {
+          onRefresh();
+          return null;
+        },
+      ),
+      ShowShortcutHelpIntent: CallbackAction<ShowShortcutHelpIntent>(
+        onInvoke: (_) {
+          onShowShortcutHelp();
+          return null;
+        },
+      ),
+      SwitchToParametersIntent: CallbackAction<SwitchToParametersIntent>(
+        onInvoke: (_) {
+          onSwitchToParameters();
+          return null;
+        },
+      ),
+      SwitchToRoutingIntent: CallbackAction<SwitchToRoutingIntent>(
+        onInvoke: (_) {
+          onSwitchToRouting();
+          return null;
+        },
+      ),
+      PreviousSlotIntent: CallbackAction<PreviousSlotIntent>(
+        onInvoke: (_) {
+          onPreviousSlot();
+          return null;
+        },
+      ),
+      NextSlotIntent: CallbackAction<NextSlotIntent>(
+        onInvoke: (_) {
+          onNextSlot();
           return null;
         },
       ),

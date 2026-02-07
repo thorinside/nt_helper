@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/scale_quantizer.dart';
@@ -40,10 +42,33 @@ class _StepGridViewState extends State<StepGridView> {
   int? _lastPaintedStep;
   final _debouncer = ParameterWriteDebouncer();
   final _rowKey = GlobalKey(); // Key to get Row's position
+  late List<FocusNode> _stepFocusNodes;
+  int _focusedStepIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _stepFocusNodes = List.generate(16, (_) => FocusNode());
+  }
+
+  @override
+  void didUpdateWidget(StepGridView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeParameter != widget.activeParameter) {
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        'Now editing ${widget.activeParameter.name} for all steps',
+        TextDirection.ltr,
+      );
+    }
+  }
 
   @override
   void dispose() {
     _debouncer.dispose();
+    for (final node in _stepFocusNodes) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -86,25 +111,27 @@ class _StepGridViewState extends State<StepGridView> {
     final isBitPatternMode = widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties;
 
-    return GestureDetector(
-      onPanStart: isBitPatternMode
-          ? null
-          : (details) => _handleDragStart(details.globalPosition, slot, params),
-      onPanUpdate: isBitPatternMode
-          ? null
-          : (details) =>
-              _handleDragUpdate(details.globalPosition, slot, params),
-      onPanEnd: isBitPatternMode ? null : (details) => _handleDragEnd(),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          key: _rowKey,
-          children: List.generate(
-            params.numSteps,
-            (index) => SizedBox(
-              width: 60,
-              child: RepaintBoundary(
-                child: _buildStepColumn(context, slot, params, index),
+    return FocusTraversalGroup(
+      child: GestureDetector(
+        onPanStart: isBitPatternMode
+            ? null
+            : (details) => _handleDragStart(details.globalPosition, slot, params),
+        onPanUpdate: isBitPatternMode
+            ? null
+            : (details) =>
+                _handleDragUpdate(details.globalPosition, slot, params),
+        onPanEnd: isBitPatternMode ? null : (details) => _handleDragEnd(),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            key: _rowKey,
+            children: List.generate(
+              params.numSteps,
+              (index) => SizedBox(
+                width: 60,
+                child: RepaintBoundary(
+                  child: _buildStepColumn(context, slot, params, index),
+                ),
               ),
             ),
           ),
@@ -123,27 +150,29 @@ class _StepGridViewState extends State<StepGridView> {
     final isBitPatternMode = widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties;
 
-    return GestureDetector(
-      onPanStart: isBitPatternMode
-          ? null
-          : (details) => _handleDragStart(details.globalPosition, slot, params),
-      onPanUpdate: isBitPatternMode
-          ? null
-          : (details) =>
-              _handleDragUpdate(details.globalPosition, slot, params),
-      onPanEnd: isBitPatternMode ? null : (details) => _handleDragEnd(),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          key: _rowKey,
-          children: List.generate(
-            params.numSteps,
-            (index) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: SizedBox(
-                width: 60,
-                child: RepaintBoundary(
-                  child: _buildStepColumn(context, slot, params, index),
+    return FocusTraversalGroup(
+      child: GestureDetector(
+        onPanStart: isBitPatternMode
+            ? null
+            : (details) => _handleDragStart(details.globalPosition, slot, params),
+        onPanUpdate: isBitPatternMode
+            ? null
+            : (details) =>
+                _handleDragUpdate(details.globalPosition, slot, params),
+        onPanEnd: isBitPatternMode ? null : (details) => _handleDragEnd(),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            key: _rowKey,
+            children: List.generate(
+              params.numSteps,
+              (index) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: SizedBox(
+                  width: 60,
+                  child: RepaintBoundary(
+                    child: _buildStepColumn(context, slot, params, index),
+                  ),
                 ),
               ),
             ),
@@ -151,6 +180,77 @@ class _StepGridViewState extends State<StepGridView> {
         ),
       ),
     );
+  }
+
+  void _handleStepKeyEvent(int stepIndex, KeyEvent event, Slot slot, StepSequencerParams params) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) return;
+
+    final isBitMode = widget.activeParameter == StepParameter.pattern ||
+        widget.activeParameter == StepParameter.ties;
+
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowLeft:
+        if (stepIndex > 0) {
+          _stepFocusNodes[stepIndex - 1].requestFocus();
+        }
+      case LogicalKeyboardKey.arrowRight:
+        if (stepIndex < params.numSteps - 1) {
+          _stepFocusNodes[stepIndex + 1].requestFocus();
+        }
+      case LogicalKeyboardKey.arrowUp:
+        if (!isBitMode) {
+          _adjustStepValue(stepIndex, 1, slot, params);
+        }
+      case LogicalKeyboardKey.arrowDown:
+        if (!isBitMode) {
+          _adjustStepValue(stepIndex, -1, slot, params);
+        }
+      case LogicalKeyboardKey.pageUp:
+        if (!isBitMode) {
+          final delta = widget.activeParameter == StepParameter.pitch ? 12 : 10;
+          _adjustStepValue(stepIndex, delta, slot, params);
+        }
+      case LogicalKeyboardKey.pageDown:
+        if (!isBitMode) {
+          final delta = widget.activeParameter == StepParameter.pitch ? 12 : 10;
+          _adjustStepValue(stepIndex, -delta, slot, params);
+        }
+      case LogicalKeyboardKey.home:
+        if (!isBitMode) {
+          _setStepToMin(stepIndex, slot, params);
+        }
+      case LogicalKeyboardKey.end:
+        if (!isBitMode) {
+          _setStepToMax(stepIndex, slot, params);
+        }
+      default:
+        break;
+    }
+  }
+
+  void _adjustStepValue(int stepIndex, int delta, Slot slot, StepSequencerParams params) {
+    final paramIndex = _getParameterIndexForStep(stepIndex, params);
+    if (paramIndex == null || paramIndex >= slot.parameters.length) return;
+
+    final paramInfo = slot.parameters[paramIndex];
+    final currentValue = paramIndex < slot.values.length ? slot.values[paramIndex].value : 0;
+    final newValue = (currentValue + delta).clamp(paramInfo.min, paramInfo.max);
+
+    if (newValue != currentValue) {
+      _updateStepParameter(stepIndex, newValue, params);
+    }
+  }
+
+  void _setStepToMin(int stepIndex, Slot slot, StepSequencerParams params) {
+    final paramIndex = _getParameterIndexForStep(stepIndex, params);
+    if (paramIndex == null || paramIndex >= slot.parameters.length) return;
+    _updateStepParameter(stepIndex, slot.parameters[paramIndex].min, params);
+  }
+
+  void _setStepToMax(int stepIndex, Slot slot, StepSequencerParams params) {
+    final paramIndex = _getParameterIndexForStep(stepIndex, params);
+    if (paramIndex == null || paramIndex >= slot.parameters.length) return;
+    _updateStepParameter(stepIndex, slot.parameters[paramIndex].max, params);
   }
 
   /// Build individual step column widget
@@ -174,17 +274,56 @@ class _StepGridViewState extends State<StepGridView> {
         ? slot.values[velocityParamIndex].value
         : 0;
 
-    return StepColumnWidget(
-      stepIndex: stepIndex,
-      pitchValue: pitchValue,
-      velocityValue: velocityValue,
-      isActive: false, // TODO: Will be implemented in future story
-      slotIndex: widget.slotIndex,
-      slot: slot,
-      snapEnabled: widget.snapEnabled,
-      selectedScale: widget.selectedScale,
-      rootNote: widget.rootNote,
-      activeParameter: widget.activeParameter, // Pass global parameter mode
+    return Focus(
+      focusNode: _stepFocusNodes[stepIndex],
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _focusedStepIndex = hasFocus ? stepIndex : -1;
+        });
+      },
+      onKeyEvent: (node, event) {
+        final isBitMode = widget.activeParameter == StepParameter.pattern ||
+            widget.activeParameter == StepParameter.ties;
+
+        if (event is KeyDownEvent || event is KeyRepeatEvent) {
+          final key = event.logicalKey;
+          if (key == LogicalKeyboardKey.arrowLeft ||
+              key == LogicalKeyboardKey.arrowRight ||
+              (!isBitMode && (key == LogicalKeyboardKey.arrowUp ||
+                  key == LogicalKeyboardKey.arrowDown ||
+                  key == LogicalKeyboardKey.pageUp ||
+                  key == LogicalKeyboardKey.pageDown ||
+                  key == LogicalKeyboardKey.home ||
+                  key == LogicalKeyboardKey.end))) {
+            _handleStepKeyEvent(stepIndex, event, slot, params);
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Container(
+        decoration: _focusedStepIndex == stepIndex
+            ? BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              )
+            : null,
+        child: StepColumnWidget(
+          stepIndex: stepIndex,
+          pitchValue: pitchValue,
+          velocityValue: velocityValue,
+          isActive: false,
+          slotIndex: widget.slotIndex,
+          slot: slot,
+          snapEnabled: widget.snapEnabled,
+          selectedScale: widget.selectedScale,
+          rootNote: widget.rootNote,
+          activeParameter: widget.activeParameter,
+        ),
+      ),
     );
   }
 

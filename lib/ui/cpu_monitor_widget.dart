@@ -128,40 +128,48 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
       isLoading: isLoading,
     );
 
-    return Tooltip(
-      message: tooltipContent,
-      preferBelow: false,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.3,
-          ),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.memory,
-              size: 14,
-              color: isHighUsage
-                  ? theme.colorScheme.error
-                  : theme.colorScheme.onSurfaceVariant,
+    final semanticLabel = isLoading
+        ? 'CPU monitor: loading'
+        : 'CPU usage: Core 1 ${cpu1 ?? 0}%, Core 2 ${cpu2 ?? 0}%${isHighUsage ? ', warning: high usage' : ''}';
+
+    return Semantics(
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: tooltipContent,
+        preferBelow: false,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
             ),
-            const SizedBox(width: 4),
-            if (isLoading)
-              SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              )
-            else
-              Text('${cpu1 ?? 0}% | ${cpu2 ?? 0}%', style: textStyle),
-          ],
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.memory,
+                size: 14,
+                color: isHighUsage
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              if (isLoading)
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                Text('${cpu1 ?? 0}% | ${cpu2 ?? 0}%', style: textStyle),
+            ],
+          ),
         ),
       ),
     );

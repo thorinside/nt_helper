@@ -42,6 +42,7 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
+            tooltip: 'Back',
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: const Text('RTT Statistics'),
@@ -64,7 +65,7 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.wifi_off, size: 64, color: Colors.grey),
+            ExcludeSemantics(child: Icon(Icons.wifi_off, size: 64, color: Colors.grey)),
             SizedBox(height: 16),
             Text(
               'No MIDI connection available.',
@@ -80,7 +81,7 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.hourglass_empty, size: 64, color: Colors.grey),
+            ExcludeSemantics(child: Icon(Icons.hourglass_empty, size: 64, color: Colors.grey)),
             SizedBox(height: 16),
             Text(
               'No RTT data collected yet.',
@@ -239,29 +240,33 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
     IconData icon,
     Color color,
   ) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
-      ],
+    return Semantics(
+      label: '$label: $value',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

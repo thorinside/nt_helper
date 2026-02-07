@@ -44,9 +44,24 @@ class _PortWidgetState extends State<PortWidget> {
   // This prevents accidental connection starts when trying to tap on the port
   static const double _dragThreshold = 10.0;
 
+  String _getPortTypeLabel() {
+    final portName = widget.port.name.toLowerCase();
+    if (portName.contains('audio') || portName.contains('signal')) return 'Audio';
+    if (portName.contains('cv') || portName.contains('control')) return 'CV';
+    if (portName.contains('gate') || portName.contains('trigger')) return 'Gate';
+    if (portName.contains('clock') || portName.contains('sync')) return 'Clock';
+    return 'Signal';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final typeLabel = widget.type == PortType.input ? 'Input' : 'Output';
+    final connectionLabel = widget.isConnected ? 'Connected' : 'Not connected';
+
+    return Semantics(
+      label: '${widget.port.name}, ${_getPortTypeLabel()} $typeLabel, $connectionLabel',
+      button: true,
+      child: GestureDetector(
       onPanStart: (details) {
         setState(() {
           _isPressed = true;
@@ -159,6 +174,7 @@ class _PortWidgetState extends State<PortWidget> {
           ),
         ),
       ),
+    ),
     );
   }
 

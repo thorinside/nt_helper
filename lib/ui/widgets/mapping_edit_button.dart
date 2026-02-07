@@ -36,8 +36,9 @@ class _MappingEditButtonState extends State<MappingEditButton> {
       backgroundColor: Theme.of(context).colorScheme.primaryContainer,
     );
 
-    return Transform.scale(
-      scale: 0.6,
+    return SizedBox(
+      width: 40,
+      height: 40,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
@@ -49,9 +50,14 @@ class _MappingEditButtonState extends State<MappingEditButton> {
           ),
         ),
         child: IconButton.filledTonal(
-          style: hasMapping ? mappedStyle : defaultStyle,
+          style: (hasMapping ? mappedStyle : defaultStyle).copyWith(
+            iconSize: const WidgetStatePropertyAll(18),
+            padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+            minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
+            tapTargetSize: MaterialTapTargetSize.padded,
+          ),
           icon: const Icon(Icons.map_sharp),
-          tooltip: 'Edit mapping',
+          tooltip: hasMapping ? 'Edit mapping (active)' : 'Add mapping',
           onPressed: () async {
             final cubit = context.read<DistingCubit>();
             final currentState = cubit.state;

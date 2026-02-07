@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
-import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart'; // Import for MidiEventType
+import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
@@ -262,6 +263,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           _isDirty = false;
           _isSaving = false;
         });
+        SemanticsService.sendAnnouncement(
+          View.of(context), 'Changes saved', TextDirection.ltr,
+        );
       }
     } catch (e) {
       if (attempt < _maxRetries) {
@@ -269,11 +273,13 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
         await Future.delayed(delay);
         await _attemptSave(attempt: attempt + 1);
       } else {
-        // Silent failure after max retries - reset state
         if (mounted) {
           setState(() {
             _isSaving = false;
           });
+          SemanticsService.sendAnnouncement(
+            View.of(context), 'Failed to save changes', TextDirection.ltr,
+          );
         }
       }
     }
@@ -306,18 +312,22 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   top: 0,
                   bottom: 0,
                   child: Center(
-                    child: Tooltip(
-                      message: _isSaving
-                          ? 'Saving...'
-                          : 'Unsaved changes',
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _isSaving
-                              ? Colors.blue
-                              : Colors.amber,
+                    child: Semantics(
+                      liveRegion: true,
+                      label: _isSaving ? 'Saving changes' : 'Unsaved changes',
+                      child: Tooltip(
+                        message: _isSaving
+                            ? 'Saving...'
+                            : 'Unsaved changes',
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isSaving
+                                ? Colors.blue
+                                : Colors.amber,
+                          ),
                         ),
                       ),
                     ),
@@ -443,38 +453,33 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                const Text('Unipolar'),
-                Switch(
-                  value: _data.isUnipolar,
-                  onChanged: (val) {
-                    setState(() {
-                      _data = _data.copyWith(isUnipolar: val);
-                      // Recompute range from existing delta
-                      final depth = val ? _data.delta : _data.delta * 2;
-                      _cvRangeMin = widget.parameterMin;
-                      _cvRangeMax = (widget.parameterMin + depth)
-                          .clamp(widget.parameterMin, widget.parameterMax);
-                    });
-                    _triggerOptimisticSave();
-                  },
-                ),
-              ],
+            SwitchListTile(
+              title: const Text('Unipolar'),
+              value: _data.isUnipolar,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (val) {
+                setState(() {
+                  _data = _data.copyWith(isUnipolar: val);
+                  final depth = val ? _data.delta : _data.delta * 2;
+                  _cvRangeMin = widget.parameterMin;
+                  _cvRangeMax = (widget.parameterMin + depth)
+                      .clamp(widget.parameterMin, widget.parameterMax);
+                });
+                _triggerOptimisticSave();
+              },
             ),
-            Row(
-              children: [
-                const Text('Gate'),
-                Switch(
-                  value: _data.isGate,
-                  onChanged: (val) {
-                    setState(() {
-                      _data = _data.copyWith(isGate: val);
-                    });
-                    _triggerOptimisticSave();
-                  },
-                ),
-              ],
+            SwitchListTile(
+              title: const Text('Gate'),
+              value: _data.isGate,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (val) {
+                setState(() {
+                  _data = _data.copyWith(isGate: val);
+                });
+                _triggerOptimisticSave();
+              },
             ),
             Row(
               children: [
@@ -610,49 +615,43 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             onSubmit: _updateMidiCcFromController,
             onChanged: _triggerOptimisticSave,
           ),
-          Row(
-            children: [
-              const Text('MIDI Enabled'),
-              Switch(
-                value: _data.isMidiEnabled,
-                onChanged: (val) {
-                  setState(() {
-                    _data = _data.copyWith(isMidiEnabled: val);
-                  });
-                  _triggerOptimisticSave();
-                },
-              ),
-            ],
+          SwitchListTile(
+            title: const Text('MIDI Enabled'),
+            value: _data.isMidiEnabled,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (val) {
+              setState(() {
+                _data = _data.copyWith(isMidiEnabled: val);
+              });
+              _triggerOptimisticSave();
+            },
           ),
-          Row(
-            children: [
-              const Text('MIDI Symmetric'),
-              Switch(
-                value: _data.isMidiSymmetric,
-                onChanged: (val) {
-                  setState(() {
-                    _data = _data.copyWith(isMidiSymmetric: val);
-                  });
-                  _triggerOptimisticSave();
-                },
-              ),
-            ],
+          SwitchListTile(
+            title: const Text('MIDI Symmetric'),
+            value: _data.isMidiSymmetric,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (val) {
+              setState(() {
+                _data = _data.copyWith(isMidiSymmetric: val);
+              });
+              _triggerOptimisticSave();
+            },
           ),
-          Row(
-            children: [
-              const Text('MIDI Relative'),
-              Switch(
-                value: _data.isMidiRelative,
-                onChanged: _data.midiMappingType == MidiMappingType.cc
-                    ? (val) {
-                        setState(() {
-                          _data = _data.copyWith(isMidiRelative: val);
-                        });
-                        _triggerOptimisticSave();
-                      }
-                    : null,
-              ),
-            ],
+          SwitchListTile(
+            title: const Text('MIDI Relative'),
+            value: _data.isMidiRelative,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            onChanged: _data.midiMappingType == MidiMappingType.cc
+                ? (val) {
+                    setState(() {
+                      _data = _data.copyWith(isMidiRelative: val);
+                    });
+                    _triggerOptimisticSave();
+                  }
+                : null,
           ),
           if (_data.midiMappingType != MidiMappingType.cc)
             Padding(
@@ -782,33 +781,29 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             onSubmit: _updateI2cCcFromController,
             onChanged: _triggerOptimisticSave,
           ),
-          Row(
-            children: [
-              const Text('I2C Enabled'),
-              Switch(
-                value: _data.isI2cEnabled,
-                onChanged: (val) {
-                  setState(() {
-                    _data = _data.copyWith(isI2cEnabled: val);
-                  });
-                  _triggerOptimisticSave();
-                },
-              ),
-            ],
+          SwitchListTile(
+            title: const Text('I2C Enabled'),
+            value: _data.isI2cEnabled,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (val) {
+              setState(() {
+                _data = _data.copyWith(isI2cEnabled: val);
+              });
+              _triggerOptimisticSave();
+            },
           ),
-          Row(
-            children: [
-              const Text('I2C Symmetric'),
-              Switch(
-                value: _data.isI2cSymmetric,
-                onChanged: (val) {
-                  setState(() {
-                    _data = _data.copyWith(isI2cSymmetric: val);
-                  });
-                  _triggerOptimisticSave();
-                },
-              ),
-            ],
+          SwitchListTile(
+            title: const Text('I2C Symmetric'),
+            value: _data.isI2cSymmetric,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (val) {
+              setState(() {
+                _data = _data.copyWith(isI2cSymmetric: val);
+              });
+              _triggerOptimisticSave();
+            },
           ),
           _buildRangeSlider(
             minValue: _data.i2cMin,
@@ -1033,6 +1028,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             _formatDisplayValue(displayStart),
             _formatDisplayValue(displayEnd),
           ),
+          semanticFormatterCallback: (value) => _formatDisplayValue(value),
           onChanged: (RangeValues values) {
             final rawMin = (values.start / scale).round();
             final rawMax = (values.end / scale).round();

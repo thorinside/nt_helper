@@ -834,19 +834,23 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${plugins.length}',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+            Semantics(
+              label: '${plugins.length} plugins',
+              excludeSemantics: true,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${plugins.length}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -870,11 +874,13 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         ),
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-          child: Icon(
-            _getIconForPluginType(plugin.type),
-            color: theme.colorScheme.primary,
+        leading: ExcludeSemantics(
+          child: CircleAvatar(
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+            child: Icon(
+              _getIconForPluginType(plugin.type),
+              color: theme.colorScheme.primary,
+            ),
           ),
         ),
         title: Text(plugin.name),

@@ -629,19 +629,25 @@ class _GalleryViewState extends State<_GalleryView>
     }
 
     return PopupMenuButton<String?>(
-      child: Chip(
-        avatar: Icon(
-          Icons.category,
-          size: 18,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+      child: Semantics(
+        label: 'Category filter: ${state.selectedCategory ?? "All"}',
+        hint: 'Double-tap to change category',
+        button: true,
+        excludeSemantics: true,
+        child: Chip(
+          avatar: Icon(
+            Icons.category,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+          label: Text(state.selectedCategory ?? 'Category'),
+          deleteIcon: Icon(
+            Icons.arrow_drop_down,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+          onDeleted: () {},
         ),
-        label: Text(state.selectedCategory ?? 'Category'),
-        deleteIcon: Icon(
-          Icons.arrow_drop_down,
-          size: 18,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-        onDeleted: () {},
       ),
       onSelected: (value) {
         context.read<GalleryCubit>().applyFilters(category: value);
@@ -657,7 +663,7 @@ class _GalleryViewState extends State<_GalleryView>
             child: Row(
               children: [
                 if (cat.icon != null) ...[
-                  Icon(_getIconData(cat.icon!), size: 16),
+                  ExcludeSemantics(child: Icon(_getIconData(cat.icon!), size: 16)),
                   const SizedBox(width: 8),
                 ],
                 Text(cat.name),
@@ -670,24 +676,33 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   Widget _buildTypeFilter(GalleryState state) {
+    final typeLabel = state is GalleryLoaded
+        ? (state.selectedType?.displayName ?? 'All')
+        : 'All';
     return PopupMenuButton<GalleryPluginType?>(
-      child: Chip(
-        avatar: Icon(
-          Icons.extension,
-          size: 18,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+      child: Semantics(
+        label: 'Type filter: $typeLabel',
+        hint: 'Double-tap to change type',
+        button: true,
+        excludeSemantics: true,
+        child: Chip(
+          avatar: Icon(
+            Icons.extension,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+          label: Text(
+            state is GalleryLoaded
+                ? (state.selectedType?.displayName ?? 'Type')
+                : 'Type',
+          ),
+          deleteIcon: Icon(
+            Icons.arrow_drop_down,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+          onDeleted: () {},
         ),
-        label: Text(
-          state is GalleryLoaded
-              ? (state.selectedType?.displayName ?? 'Type')
-              : 'Type',
-        ),
-        deleteIcon: Icon(
-          Icons.arrow_drop_down,
-          size: 18,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-        onDeleted: () {},
       ),
       onSelected: (value) {
         context.read<GalleryCubit>().applyFilters(type: value);
@@ -1159,26 +1174,16 @@ class _GalleryViewState extends State<_GalleryView>
                 ),
               // Documentation button
               if (plugin.hasReadmeDocumentation)
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => _showReadmeDialog(parentContext, plugin),
-                      child: Tooltip(
-                        message: 'View Documentation',
-                        child: Icon(
-                          Icons.description_outlined,
-                          size: 16,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ),
+                IconButton(
+                  icon: Icon(
+                    Icons.description_outlined,
+                    size: 20,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
+                  tooltip: 'View Documentation',
+                  onPressed: () => _showReadmeDialog(parentContext, plugin),
                 ),
               const SizedBox(width: 4),
               _buildListActionButton(
@@ -1446,28 +1451,18 @@ class _GalleryViewState extends State<_GalleryView>
                                 ),
                           ),
                         if (plugin.hasReadmeDocumentation)
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () =>
-                                    _showReadmeDialog(parentContext, plugin),
-                                child: Tooltip(
-                                  message: 'View Documentation',
-                                  child: Icon(
-                                    Icons.description_outlined,
-                                    size: 16,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                                ),
-                              ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.description_outlined,
+                              size: 20,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
                             ),
+                            tooltip: 'View Documentation',
+                            onPressed: () =>
+                                _showReadmeDialog(parentContext, plugin),
                           ),
                       ],
                     ),

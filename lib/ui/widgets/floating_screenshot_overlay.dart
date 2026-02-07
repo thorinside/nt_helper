@@ -110,13 +110,17 @@ class _FloatingScreenshotContent extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: screenshot != null
-                  ? GestureDetector(
-                      onLongPress: onCopyToClipboard,
-                      child: SizedBox.expand(
-                        child: Image.memory(
-                          screenshot!,
-                          fit: BoxFit.cover, // Fill the available space
-                          gaplessPlayback: true,
+                  ? Semantics(
+                      label: 'Disting NT screen capture. Long press to copy to clipboard.',
+                      image: true,
+                      child: GestureDetector(
+                        onLongPress: onCopyToClipboard,
+                        child: SizedBox.expand(
+                          child: Image.memory(
+                            screenshot!,
+                            fit: BoxFit.cover,
+                            gaplessPlayback: true,
+                          ),
                         ),
                       ),
                     )

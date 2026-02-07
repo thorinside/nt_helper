@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -108,6 +109,34 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     context.read<DistingCubit>().scheduleParameterRefresh(widget.algorithmIndex);
   }
 
+  String _getAccessibleValueString([int? value]) {
+    final v = value ?? currentValue;
+    if (widget.isOnOff) return v == 1 ? 'On' : 'Off';
+    if (widget.dropdownItems != null &&
+        v >= 0 &&
+        v < widget.dropdownItems!.length) {
+      return widget.dropdownItems![v];
+    }
+    if (widget.displayString != null) return widget.displayString!;
+    if (widget.name.toLowerCase().contains("note") && widget.unit != "%") {
+      return midiNoteToNoteString(v);
+    }
+    if (widget.name.toLowerCase().contains("midi channel")) {
+      return v == 0 ? "None" : v.toString();
+    }
+    if (widget.unit != null) {
+      return formatWithUnit(
+        v,
+        name: widget.name,
+        min: widget.min,
+        max: widget.max,
+        unit: widget.unit,
+        powerOfTen: widget.powerOfTen,
+      );
+    }
+    return v.toString();
+  }
+
   DateTime? _lastSent;
   final Duration throttleDuration = const Duration(milliseconds: 100);
 
@@ -156,13 +185,11 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           )
         : null;
 
-    final rowContent = Opacity(
-      opacity: widget.isDisabled ? 0.5 : 1.0,
-      child: IgnorePointer(
-        ignoring: widget.isDisabled,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
-          child: Row(
+    final paramName = cleanTitle(widget.name);
+
+    final innerRow = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
+      child: Row(
         key: ValueKey(widescreen),
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -170,54 +197,71 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           // Name column with reduced width
           Expanded(
             flex: widescreen ? 2 : 3,
-            child: GestureDetector(
-              onDoubleTap: () async {
-                var cubit = context.read<DistingCubit>();
-                cubit.disting()?.let((manager) {
+            child: Semantics(
+              label: paramName,
+              customSemanticsActions: {
+                CustomSemanticsAction(label: 'Focus on hardware display'):
+                    () {
+                  var cubit = context.read<DistingCubit>();
+                  cubit.disting()?.let((manager) {
+                    manager.requestSetFocus(
+                      widget.algorithmIndex,
+                      widget.parameterNumber,
+                    );
+                    manager.requestSetDisplayMode(DisplayMode.parameters);
+                    if (SettingsService().hapticsEnabled) {
+                      Haptics.vibrate(HapticsType.medium);
+                    }
+                  });
+                },
+              },
+              child: GestureDetector(
+                onDoubleTap: () async {
+                  var cubit = context.read<DistingCubit>();
+                  cubit.disting()?.let((manager) {
+                    manager.requestSetFocus(
+                      widget.algorithmIndex,
+                      widget.parameterNumber,
+                    );
+                    manager.requestSetDisplayMode(DisplayMode.parameters);
+                    if (SettingsService().hapticsEnabled) {
+                      Haptics.vibrate(HapticsType.medium);
+                    }
+                  });
+                },
+                onLongPress: () {
+                  final manager =
+                      context.read<DistingCubit>().requireDisting();
                   manager.requestSetFocus(
                     widget.algorithmIndex,
                     widget.parameterNumber,
                   );
-                  manager.requestSetDisplayMode(DisplayMode.parameters);
                   if (SettingsService().hapticsEnabled) {
                     Haptics.vibrate(HapticsType.medium);
                   }
-                });
-              },
-              onLongPress: () {
-                // Get the manager from the cubit
-                final manager = context.read<DistingCubit>().requireDisting();
-                // Call requestSetFocus on the manager
-                manager.requestSetFocus(
-                  widget.algorithmIndex,
-                  widget.parameterNumber,
-                );
-                if (SettingsService().hapticsEnabled) {
-                  Haptics.vibrate(HapticsType.medium);
-                }
-              },
-              child: Text(
-                cleanTitle(widget.name),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 3,
-                softWrap: false,
-                textAlign: TextAlign.start,
-                style: widescreen
-                    ? textTheme.titleMedium
-                    : textTheme.labelMedium,
+                },
+                child: Text(
+                  paramName,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 3,
+                  softWrap: false,
+                  textAlign: TextAlign.start,
+                  style: widescreen
+                      ? textTheme.titleMedium
+                      : textTheme.labelMedium,
+                ),
               ),
             ),
           ),
 
           // Slider column
           Expanded(
-            flex: widescreen ? 8 : 6, // Decreased flex
-            // Proportionally larger space for the slider
+            flex: widescreen ? 8 : 6,
             child: GestureDetector(
               onDoubleTap: () =>
                   isBpmUnit ||
                       fileEditor != null ||
-                      _showAlternateEditor // Do not allow double tap to change editor for BPM, file editor, or if alternate is already shown
+                      _showAlternateEditor
                   ? () {}
                   : setState(() {
                       currentValue = widget.defaultValue;
@@ -249,69 +293,91 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                       : fileEditor ??
                             (_showAlternateEditor
                                 ? Row(
-                                    // Alternate +/- editor
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      OutlinedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            currentValue = min(
-                                              max(currentValue - 1, widget.min),
-                                              widget.max,
-                                            );
-                                          });
-                                          _updateCubitValue(currentValue);
-                                          _scheduleParameterRefresh();
-                                        },
-                                        child: const Text("-"),
+                                      Semantics(
+                                        button: true,
+                                        label: 'Decrease $paramName',
+                                        child: OutlinedButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              currentValue = min(
+                                                max(currentValue - 1, widget.min),
+                                                widget.max,
+                                              );
+                                            });
+                                            _updateCubitValue(currentValue);
+                                            _scheduleParameterRefresh();
+                                          },
+                                          child: const Text("-"),
+                                        ),
                                       ),
-                                      OutlinedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            currentValue = min(
-                                              max(currentValue + 1, widget.min),
-                                              widget.max,
-                                            );
-                                          });
-                                          _updateCubitValue(currentValue);
-                                          _scheduleParameterRefresh();
-                                        },
-                                        child: const Text("+"),
+                                      Semantics(
+                                        button: true,
+                                        label: 'Increase $paramName',
+                                        child: OutlinedButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              currentValue = min(
+                                                max(currentValue + 1, widget.min),
+                                                widget.max,
+                                              );
+                                            });
+                                            _updateCubitValue(currentValue);
+                                            _scheduleParameterRefresh();
+                                          },
+                                          child: const Text("+"),
+                                        ),
                                       ),
                                     ],
                                   )
-                                : Slider(
-                                    // Default Slider editor
-                                    value: currentValue.toDouble(),
-                                    min: widget.min.toDouble(),
-                                    max: widget.max.toDouble(),
-                                    divisions: (widget.max - widget.min > 0)
-                                        ? widget.max - widget.min
+                                : Semantics(
+                                    label: paramName,
+                                    value: _getAccessibleValueString(),
+                                    increasedValue: currentValue < widget.max
+                                        ? _getAccessibleValueString(currentValue + 1)
                                         : null,
-                                    onChangeStart: (value) {
-                                      isChanging = true;
-                                    },
-                                    onChangeEnd: (value) {
-                                      isChanging = false;
-                                      setState(() {
-                                        currentValue = value.toInt();
-                                        if (widget.isOnOff) {
-                                          isChecked = currentValue == 1;
-                                        }
-                                      });
-                                      _updateCubitValue(currentValue);
-                                      _scheduleParameterRefresh();
-                                    },
-                                    onChanged: (value) {
-                                      setState(() {
-                                        currentValue = value.toInt();
-                                        if (widget.isOnOff) {
-                                          isChecked = currentValue == 1;
-                                        }
-                                      });
-                                      // Throttle a bit
-                                      onSliderChanged(currentValue);
-                                    },
+                                    decreasedValue: currentValue > widget.min
+                                        ? _getAccessibleValueString(currentValue - 1)
+                                        : null,
+                                    child: Slider(
+                                      value: currentValue.toDouble(),
+                                      min: widget.min.toDouble(),
+                                      max: widget.max.toDouble(),
+                                      divisions: (widget.max - widget.min > 0)
+                                          ? widget.max - widget.min
+                                          : null,
+                                      semanticFormatterCallback: (value) =>
+                                          _getAccessibleValueString(value.toInt()),
+                                      onChangeStart: (value) {
+                                        isChanging = true;
+                                      },
+                                      onChangeEnd: (value) {
+                                        isChanging = false;
+                                        setState(() {
+                                          currentValue = value.toInt();
+                                          if (widget.isOnOff) {
+                                            isChecked = currentValue == 1;
+                                          }
+                                        });
+                                        _updateCubitValue(currentValue);
+                                        _scheduleParameterRefresh();
+                                        SemanticsService.sendAnnouncement(
+                                          View.of(context),
+                                          '$paramName: ${_getAccessibleValueString()}',
+                                          TextDirection.ltr,
+                                        );
+                                      },
+                                      onChanged: (value) {
+                                        setState(() {
+                                          currentValue = value.toInt();
+                                          if (widget.isOnOff) {
+                                            isChecked = currentValue == 1;
+                                          }
+                                        });
+                                        onSliderChanged(currentValue);
+                                      },
+                                    ),
                                   )),
                 ),
               ),
@@ -319,7 +385,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           ),
           // Control column
           Expanded(
-            flex: widescreen ? 4 : 5, // Increased flex
+            flex: widescreen ? 4 : 5,
             child: Align(
               alignment: Alignment.centerLeft,
               child: ParameterValueDisplay(
@@ -347,7 +413,6 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                   _scheduleParameterRefresh();
                 },
                 onLongPress: () => setState(() {
-                  // Show alternate editor only if not BPM or file editor
                   if (!isBpmUnit && fileEditor == null) {
                     _showAlternateEditor = !_showAlternateEditor;
                   }
@@ -355,12 +420,21 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               ),
             ),
           ),
-          ],
-        ),
+        ],
       ),
-    ),
     );
 
-    return rowContent;
+    if (widget.isDisabled) {
+      return Semantics(
+        label: '$paramName, disabled',
+        excludeSemantics: true,
+        child: Opacity(
+          opacity: 0.5,
+          child: IgnorePointer(ignoring: true, child: innerRow),
+        ),
+      );
+    }
+
+    return innerRow;
   }
 }

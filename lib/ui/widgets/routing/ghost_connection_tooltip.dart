@@ -140,7 +140,17 @@ class _GhostConnectionTooltipState extends State<GhostConnectionTooltip>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return MouseRegion(
+    final semanticLabel = widget.connection.isGhostConnection
+        ? 'Ghost connection: indirect routing path'
+        : 'Direct connection';
+    final gainLabel = widget.connection.gain != 1.0
+        ? '. Gain: ${widget.connection.gain.toStringAsFixed(2)}'
+        : '';
+    final muteLabel = widget.connection.isMuted ? '. Muted' : '';
+
+    return Semantics(
+      label: '$semanticLabel$gainLabel$muteLabel',
+      child: MouseRegion(
       onEnter: (_) => _onHoverEnter(),
       onExit: (_) => _onHoverExit(),
       child: Stack(
@@ -163,6 +173,7 @@ class _GhostConnectionTooltipState extends State<GhostConnectionTooltip>
             ),
         ],
       ),
+    ),
     );
   }
 

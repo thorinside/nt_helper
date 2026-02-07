@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
@@ -26,6 +27,7 @@ import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
+import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 
@@ -33,6 +35,7 @@ import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/plugin_manager_screen.dart';
+import 'package:nt_helper/ui/widgets/shortcut_help_overlay.dart';
 
 import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -86,6 +89,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     with TickerProviderStateMixin {
   late final PlatformInteractionService _platformService;
   final RoutingEditorController _editorController = RoutingEditorController();
+  final KeyBindingService _keyBindingService = KeyBindingService();
+  final FocusNode _screenFocusNode = FocusNode();
   late int _selectedIndex;
   late TabController _tabController;
   EditMode _currentMode = EditMode.parameters;
@@ -138,6 +143,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
   @override
   void dispose() {
+    _screenFocusNode.dispose();
     _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     super.dispose();
@@ -173,11 +179,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   @override
   Widget build(BuildContext context) {
     bool isWideScreen = MediaQuery.of(context).size.width > 900;
+    final cubit = context.read<DistingCubit>();
+
+    final isOffline = switch (cubit.state) {
+      DistingStateSynchronized(offline: final o) => o,
+      _ => false,
+    };
+
+    Widget scaffold;
 
     // Use a conditional widget based on screen width
     if (isWideScreen && widget.slots.isNotEmpty) {
       // Wide screen layout with vertical list
-      return Scaffold(
+      scaffold = Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: _buildAppBar(context, isWideScreen),
         body: Column(
@@ -207,7 +221,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       );
     } else {
       // Default layout with TabBar
-      return Scaffold(
+      scaffold = Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: _buildAppBar(context, isWideScreen),
         body: Column(
@@ -235,6 +249,138 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         floatingActionButton: _buildFloatingActionButton(),
         bottomNavigationBar: _buildBottomAppBar(),
       );
+    }
+
+    return Shortcuts(
+      shortcuts: _keyBindingService.globalShortcuts,
+      child: Actions(
+        actions: _keyBindingService.buildGlobalActions(
+          onSavePreset: () {
+            cubit.requireDisting().requestSavePreset();
+            SemanticsService.sendAnnouncement(View.of(context),'Preset saved', TextDirection.ltr);
+          },
+          onNewPreset: () => _handleNewPresetShortcut(cubit),
+          onBrowsePresets: () =>
+              widget.loading || isOffline ? null : _handleBrowsePresets(cubit),
+          onAddAlgorithm: () => _handleAddAlgorithmShortcut(cubit),
+          onRefresh: () {
+            if (!widget.loading && !isOffline) {
+              cubit.refresh();
+              SemanticsService.sendAnnouncement(View.of(context),'Refreshing', TextDirection.ltr);
+            }
+          },
+          onShowShortcutHelp: () => ShortcutHelpOverlay.show(context),
+          onSwitchToParameters: () {
+            setState(() => _currentMode = EditMode.parameters);
+            SemanticsService.sendAnnouncement(View.of(context),
+              'Switched to Parameters mode',
+              TextDirection.ltr,
+            );
+          },
+          onSwitchToRouting: () {
+            setState(() => _currentMode = EditMode.routing);
+            SemanticsService.sendAnnouncement(View.of(context),
+              'Switched to Routing mode',
+              TextDirection.ltr,
+            );
+          },
+          onPreviousSlot: () {
+            if (widget.slots.isNotEmpty && _selectedIndex > 0) {
+              final newIndex = _selectedIndex - 1;
+              setState(() {
+                _selectedIndex = newIndex;
+                _tabController.animateTo(newIndex);
+              });
+              SemanticsService.sendAnnouncement(View.of(context),
+                'Slot ${newIndex + 1}: ${widget.slots[newIndex].algorithm.name} selected',
+                TextDirection.ltr,
+              );
+            }
+          },
+          onNextSlot: () {
+            if (widget.slots.isNotEmpty &&
+                _selectedIndex < widget.slots.length - 1) {
+              final newIndex = _selectedIndex + 1;
+              setState(() {
+                _selectedIndex = newIndex;
+                _tabController.animateTo(newIndex);
+              });
+              SemanticsService.sendAnnouncement(View.of(context),
+                'Slot ${newIndex + 1}: ${widget.slots[newIndex].algorithm.name} selected',
+                TextDirection.ltr,
+              );
+            }
+          },
+        ),
+        child: Focus(
+          focusNode: _screenFocusNode,
+          autofocus: true,
+          child: scaffold,
+        ),
+      ),
+    );
+  }
+
+  void _handleNewPresetShortcut(DistingCubit cubit) {
+    if (widget.loading) return;
+    cubit.newPreset();
+    SemanticsService.sendAnnouncement(View.of(context),'New preset created', TextDirection.ltr);
+  }
+
+  Future<void> _handleAddAlgorithmShortcut(DistingCubit cubit) async {
+    final view = View.of(context);
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: cubit,
+          child: const AddAlgorithmScreen(),
+        ),
+      ),
+    );
+
+    if (result != null && result is Map) {
+      await cubit.onAlgorithmSelected(
+        result['algorithm'],
+        result['specValues'],
+      );
+      SemanticsService.sendAnnouncement(view, 'Algorithm added', TextDirection.ltr);
+    }
+  }
+
+  Future<void> _handleBrowsePresets(DistingCubit cubit) async {
+    final currentState = cubit.state;
+    if (currentState is DistingStateSynchronized && context.mounted) {
+      final midiManager = cubit.disting();
+      if (midiManager != null) {
+        final prefs = await SharedPreferences.getInstance();
+        if (!mounted) return;
+        final presetInfo = await showDialog(
+          context: context,
+          builder: (context) => BlocProvider(
+            create: (context) => PresetBrowserCubit(
+              midiManager: midiManager,
+              prefs: prefs,
+            ),
+            child: PresetBrowserDialog(distingCubit: cubit),
+          ),
+        );
+        if (presetInfo != null && presetInfo is Map) {
+          final sdCardPath = presetInfo['sdCardPath'];
+          final action = presetInfo['action'] as PresetAction?;
+          if (sdCardPath != null && sdCardPath.isNotEmpty && action != null) {
+            switch (action) {
+              case PresetAction.load:
+                cubit.loadPreset(sdCardPath, false);
+                break;
+              case PresetAction.append:
+                break;
+              case PresetAction.export:
+                break;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -566,11 +712,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   value: EditMode.parameters,
                   label: isWideScreen ? const Text('Parameters') : null,
                   icon: const Icon(Icons.tune),
+                  tooltip: 'Parameters mode',
                 ),
                 ButtonSegment(
                   value: EditMode.routing,
                   label: isWideScreen ? const Text('Routing') : null,
                   icon: const Icon(Icons.account_tree),
+                  tooltip: 'Routing mode',
                 ),
               ],
               selected: {_currentMode},
@@ -1410,51 +1558,58 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          InkWell(
-            onTap: () async {
-              var cubit = context.read<DistingCubit>();
+          Semantics(
+            button: true,
+            label: 'Preset: ${widget.presetName.trim()}',
+            hint: 'Double tap to rename preset',
+            child: InkWell(
+              onTap: () async {
+                var cubit = context.read<DistingCubit>();
 
-              final newName = await showDialog<String>(
-                context: context,
-                builder: (context) =>
-                    RenamePresetDialog(initialName: widget.presetName),
-              );
+                final newName = await showDialog<String>(
+                  context: context,
+                  builder: (context) =>
+                      RenamePresetDialog(initialName: widget.presetName),
+                );
 
-              if (newName != null &&
-                  newName.isNotEmpty &&
-                  newName != widget.presetName) {
-                cubit.renamePreset(newName);
-              }
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min, // Shrinks to fit content
-              children: [
-                Text.rich(
-                  TextSpan(
-                    children: [
+                if (newName != null &&
+                    newName.isNotEmpty &&
+                    newName != widget.presetName) {
+                  cubit.renamePreset(newName);
+                }
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ExcludeSemantics(
+                    child: Text.rich(
                       TextSpan(
-                        text: 'Preset:\u2007',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold, // Make 'Preset: ' bold
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Preset:\u2007',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          TextSpan(
+                            text: widget.presetName.trim(),
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                      TextSpan(
-                        text: widget.presetName.trim(),
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.edit,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -1480,49 +1635,68 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               dividerHeight: 0,
               tabs: List<Widget>.generate(syncState.length, (index) {
                 final slot = syncState[index];
-                // Use slot.algorithm.name directly (includes custom name)
                 final displayName = slot.algorithm.name;
 
-                return MouseRegion(
-                  onEnter: (_) {
-                    if (_showContextualHelp) {
-                      setState(() {
-                        _contextualHelpText = _algorithmNameHelpText;
-                      });
-                    }
-                  },
-                  onExit: (_) {
-                    setState(() {
-                      _contextualHelpText = null;
-                    });
-                  },
-                  child: GestureDetector(
-                    onDoubleTap: () async {
+                return Semantics(
+                  label: 'Slot ${index + 1}: $displayName',
+                  hint: 'Double tap to select. Long press to rename.',
+                  customSemanticsActions: {
+                    const CustomSemanticsAction(label: 'Rename algorithm'): () async {
                       var cubit = context.read<DistingCubit>();
-                      cubit.disting()?.let((manager) {
-                        manager.requestSetFocus(index, 0);
-                        manager.requestSetDisplayMode(DisplayMode.algorithmUI);
-                      });
-                      if (SettingsService().hapticsEnabled) {
-                        Haptics.vibrate(HapticsType.medium);
-                      }
-                    },
-                    onLongPress: () async {
-                      var cubit = context.read<DistingCubit>();
-                      // Use the current displayName for the dialog initial value
                       final newName = await showDialog<String>(
                         context: context,
                         builder: (dialogCtx) =>
                             RenameSlotDialog(initialName: displayName),
                       );
-
                       if (newName != null && newName != displayName) {
-                        // Use slot index directly (algorithmIndex on Algorithm is different)
                         cubit.renameSlot(index, newName);
                       }
                     },
-                    // Display the correct name in the Tab
-                    child: Tab(text: displayName),
+                    const CustomSemanticsAction(label: 'Focus algorithm UI'): () {
+                      var cubit = context.read<DistingCubit>();
+                      cubit.disting()?.let((manager) {
+                        manager.requestSetFocus(index, 0);
+                        manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+                      });
+                    },
+                  },
+                  child: MouseRegion(
+                    onEnter: (_) {
+                      if (_showContextualHelp) {
+                        setState(() {
+                          _contextualHelpText = _algorithmNameHelpText;
+                        });
+                      }
+                    },
+                    onExit: (_) {
+                      setState(() {
+                        _contextualHelpText = null;
+                      });
+                    },
+                    child: GestureDetector(
+                      onDoubleTap: () async {
+                        var cubit = context.read<DistingCubit>();
+                        cubit.disting()?.let((manager) {
+                          manager.requestSetFocus(index, 0);
+                          manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+                        });
+                        if (SettingsService().hapticsEnabled) {
+                          Haptics.vibrate(HapticsType.medium);
+                        }
+                      },
+                      onLongPress: () async {
+                        var cubit = context.read<DistingCubit>();
+                        final newName = await showDialog<String>(
+                          context: context,
+                          builder: (dialogCtx) =>
+                              RenameSlotDialog(initialName: displayName),
+                        );
+                        if (newName != null && newName != displayName) {
+                          cubit.renameSlot(index, newName);
+                        }
+                      },
+                      child: Tab(text: displayName),
+                    ),
                   ),
                 );
               }),

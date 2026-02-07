@@ -349,18 +349,22 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
   }
 
   Widget _buildSummaryItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
+    return Semantics(
+      label: '$label: $value',
+      excludeSemantics: true,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        Text(label, style: const TextStyle(fontSize: 12)),
-      ],
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
     );
   }
 
@@ -372,7 +376,7 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle, size: 64, color: Colors.green),
+            ExcludeSemantics(child: Icon(Icons.check_circle, size: 64, color: Colors.green)),
             SizedBox(height: 16),
             Text('No issues detected! All tests passed successfully.'),
           ],
@@ -387,9 +391,12 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         final test = problematicTests[index];
         return Card(
           child: ListTile(
-            leading: Icon(
-              Icons.warning,
-              color: test.successRate < 0.5 ? Colors.red : Colors.orange,
+            leading: Semantics(
+              label: test.successRate < 0.5 ? 'Critical issue' : 'Warning',
+              child: Icon(
+                Icons.warning,
+                color: test.successRate < 0.5 ? Colors.red : Colors.orange,
+              ),
             ),
             title: Text(test.testName),
             subtitle: Column(
@@ -419,20 +426,26 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         final test = slowestTests[index];
         return Card(
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: _getPerformanceColor(test.avgDuration),
-              child: Text('${index + 1}'),
+            leading: ExcludeSemantics(
+              child: CircleAvatar(
+                backgroundColor: _getPerformanceColor(test.avgDuration),
+                child: Text('${index + 1}'),
+              ),
             ),
             title: Text(test.testName),
             subtitle: Text(
               '${test.avgDuration.toStringAsFixed(1)}ms avg '
               '(${test.minDuration}-${test.maxDuration}ms range)',
             ),
-            trailing: Text(
-              '${(test.successRate * 100).toStringAsFixed(0)}%',
-              style: TextStyle(
-                color: test.successRate == 1.0 ? Colors.green : Colors.red,
-                fontWeight: FontWeight.bold,
+            trailing: Semantics(
+              label: 'Success rate: ${(test.successRate * 100).toStringAsFixed(0)}%${test.successRate == 1.0 ? '' : ', issues detected'}',
+              excludeSemantics: true,
+              child: Text(
+                '${(test.successRate * 100).toStringAsFixed(0)}%',
+                style: TextStyle(
+                  color: test.successRate == 1.0 ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

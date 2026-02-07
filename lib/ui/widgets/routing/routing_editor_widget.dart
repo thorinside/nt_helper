@@ -134,6 +134,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   // Ephemeral fading overlays for labels of connections deleted instantly (click delete).
   final List<_FadingDeletedConnectionLabel> _fadingDeletedConnectionLabels = [];
 
+  // Pending connection source for keyboard connection creation flow
+  String? _pendingConnectionSourcePortId;
+
   @override
   void initState() {
     super.initState();
@@ -293,8 +296,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   void _onFadeOutAnimationStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed && _deletingPort != null) {
       // Fade-out completed - delete the connections
+      final portName = _deletingPort!.name;
       final cubit = context.read<RoutingEditorCubit>();
       cubit.deleteConnectionsForPort(_deletingPort!.id);
+
+      SemanticsService.sendAnnouncement(View.of(context),
+        'All connections on $portName deleted',
+        TextDirection.ltr,
+      );
 
       // Reset all delete state
       setState(() {
@@ -1015,15 +1024,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                       }
                     }
 
-                    return MiniMapWidget(
-                      horizontalScrollController: _horizontalScrollController,
-                      verticalScrollController: _verticalScrollController,
-                      canvasWidth: _canvasWidth,
-                      canvasHeight: _canvasHeight,
-                      width: miniMapWidth,
-                      height: miniMapHeight,
-                      nodePositions: _nodePositions,
-                      connections: state.connections,
+                    return ExcludeSemantics(
+                      child: MiniMapWidget(
+                        horizontalScrollController: _horizontalScrollController,
+                        verticalScrollController: _verticalScrollController,
+                        canvasWidth: _canvasWidth,
+                        canvasHeight: _canvasHeight,
+                        width: miniMapWidth,
+                        height: miniMapHeight,
+                        nodePositions: _nodePositions,
+                        connections: state.connections,
+                      ),
                     );
                   },
                 ),
@@ -1082,7 +1093,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     return Positioned(
       top: 8,
       right: 8,
-      child: Container(
+      child: Semantics(
+        liveRegion: true,
+        child: Container(
         constraints: const BoxConstraints(maxWidth: 300),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -1127,6 +1140,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -1138,6 +1152,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
+      // Cancel pending keyboard connection first
+      if (_pendingConnectionSourcePortId != null) {
+        setState(() {
+          _pendingConnectionSourcePortId = null;
+        });
+        SemanticsService.sendAnnouncement(View.of(context),
+          'Connection cancelled',
+          TextDirection.ltr,
+        );
+        return KeyEventResult.handled;
+      }
       if (_isDraggingConnection) {
         _cancelDragOperation();
         return KeyEventResult.handled;
@@ -1164,7 +1189,80 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       }
     }
 
+    // Arrow keys for canvas pan when no child node is focused
+    if (event is KeyDownEvent && _canvasFocusNode.hasPrimaryFocus) {
+      const scrollAmount = 50.0;
+      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        if (_horizontalScrollController.hasClients) {
+          _horizontalScrollController.jumpTo(
+            (_horizontalScrollController.offset - scrollAmount).clamp(
+              0.0, _horizontalScrollController.position.maxScrollExtent),
+          );
+        }
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        if (_horizontalScrollController.hasClients) {
+          _horizontalScrollController.jumpTo(
+            (_horizontalScrollController.offset + scrollAmount).clamp(
+              0.0, _horizontalScrollController.position.maxScrollExtent),
+          );
+        }
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        if (_verticalScrollController.hasClients) {
+          _verticalScrollController.jumpTo(
+            (_verticalScrollController.offset - scrollAmount).clamp(
+              0.0, _verticalScrollController.position.maxScrollExtent),
+          );
+        }
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        if (_verticalScrollController.hasClients) {
+          _verticalScrollController.jumpTo(
+            (_verticalScrollController.offset + scrollAmount).clamp(
+              0.0, _verticalScrollController.position.maxScrollExtent),
+          );
+        }
+        return KeyEventResult.handled;
+      }
+    }
+
     return KeyEventResult.ignored;
+  }
+
+  /// Handle keyboard Space/Enter on a port for accessible connection creation.
+  void _handlePortKeyboardActivation(String portId) {
+    if (_pendingConnectionSourcePortId == null) {
+      // First press: select source
+      setState(() {
+        _pendingConnectionSourcePortId = portId;
+      });
+      final portName = _portById[portId]?.name ?? portId;
+      SemanticsService.sendAnnouncement(View.of(context),
+        'Selected $portName as connection source. Navigate to a destination port and press Space to connect, or press Escape to cancel.',
+        TextDirection.ltr,
+      );
+    } else if (_pendingConnectionSourcePortId == portId) {
+      // Same port: cancel
+      setState(() {
+        _pendingConnectionSourcePortId = null;
+      });
+      SemanticsService.sendAnnouncement(View.of(context),
+        'Connection cancelled',
+        TextDirection.ltr,
+      );
+    } else {
+      // Second press: create connection
+      final sourceId = _pendingConnectionSourcePortId!;
+      setState(() {
+        _pendingConnectionSourcePortId = null;
+      });
+      final cubit = context.read<RoutingEditorCubit>();
+      _createConnectionWithErrorHandling(cubit, sourceId, portId);
+    }
   }
 
   /// Cancel current drag operation
@@ -1233,6 +1331,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     String sourcePortId,
     String targetPortId,
   ) async {
+    final view = View.of(context);
     try {
       // Check current state
       final currentState = cubit.state;
@@ -1250,8 +1349,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         sourcePortId: sourcePortId,
         targetPortId: targetPortId,
       );
+
+      // Announce success for screen readers
+      final sourceName = _portById[sourcePortId]?.name ?? sourcePortId;
+      final destName = _portById[targetPortId]?.name ?? targetPortId;
+      SemanticsService.sendAnnouncement(view,
+        'Connection created from $sourceName to $destName',
+        TextDirection.ltr,
+      );
     } on ArgumentError catch (e) {
       _showError('Invalid connection: ${e.message}');
+      SemanticsService.sendAnnouncement(view,
+        'Connection failed: ${e.message}',
+        TextDirection.ltr,
+      );
     } on StateError catch (e) {
       _showError('State error: ${e.message}');
     } catch (e) {
@@ -1476,6 +1587,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                   ),
+                  child: FocusTraversalGroup(
+                  policy: OrderedTraversalPolicy(),
                   child: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -1502,18 +1615,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                         onPanEnd: _handleCanvasPanEnd,
                         behavior: HitTestBehavior
                             .translucent, // Allow events to pass through to child widgets
-                        child: CustomPaint(
-                          painter: _CanvasGridPainter(
-                            minorGridColor: Theme.of(
-                              context,
-                            ).colorScheme.outline.withValues(alpha: 0.1),
-                            majorGridColor: Theme.of(
-                              context,
-                            ).colorScheme.outline.withValues(alpha: 0.2),
-                            gridSize: 50.0,
-                            majorEvery: 5,
+                        child: ExcludeSemantics(
+                          child: CustomPaint(
+                            painter: _CanvasGridPainter(
+                              minorGridColor: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.1),
+                              majorGridColor: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.2),
+                              gridSize: 50.0,
+                              majorEvery: 5,
+                            ),
+                            size: Size(_canvasWidth, _canvasHeight),
                           ),
-                          size: Size(_canvasWidth, _canvasHeight),
                         ),
                       ),
                     ),
@@ -1577,11 +1692,52 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
                     // Labels for instant-deleted connections fade out here.
                     ..._buildFadingDeletedConnectionLabelOverlays(),
+
+                    // Semantic-only connection list for screen readers
+                    _buildConnectionSemanticsOverlay(connections),
                   ],
+                ),
                 ),
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build a semantic-only overlay listing all connections for screen readers.
+  Widget _buildConnectionSemanticsOverlay(List<Connection> connections) {
+    if (connections.isEmpty) return const SizedBox.shrink();
+
+    return Positioned(
+      left: 0,
+      top: 0,
+      child: SizedBox(
+        width: 1,
+        height: 1,
+        child: Semantics(
+          container: true,
+          label: '${connections.length} connections',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: connections.map((conn) {
+              final sourceName = _portById[conn.sourcePortId]?.name ?? conn.sourcePortId;
+              final destName = _portById[conn.destinationPortId]?.name ?? conn.destinationPortId;
+              final statusPrefix = conn.isGhostConnection
+                  ? 'Ghost connection'
+                  : conn.isBackwardEdge
+                      ? 'Invalid connection'
+                      : 'Connection';
+              final busLabel = conn.busLabel ?? '';
+              final busText = busLabel.isNotEmpty ? ' via $busLabel' : '';
+
+              return Semantics(
+                label: '$statusPrefix: $sourceName to $destName$busText',
+                child: const SizedBox.shrink(),
+              );
+            }).toList(),
           ),
         ),
       ),
@@ -1616,7 +1772,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         key: const ValueKey('physical_input_node'),
         left: nodePosition.dx,
         top: nodePosition.dy,
-        child: PhysicalInputNode(
+        child: FocusTraversalOrder(
+          order: const NumericFocusOrder(0),
+          child: PhysicalInputNode(
           ports: physicalInputs,
           connectedPorts: _getConnectedPortIds(connections).toSet(),
           position: nodePosition,
@@ -1662,6 +1820,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           onSizeResolved: (size) =>
               _handleNodeSizeResolved('physical_inputs', size),
         ),
+        ),
       ),
     ];
   }
@@ -1694,7 +1853,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         key: const ValueKey('physical_output_node'),
         left: nodePosition.dx,
         top: nodePosition.dy,
-        child: PhysicalOutputNode(
+        child: FocusTraversalOrder(
+          order: const NumericFocusOrder(100),
+          child: PhysicalOutputNode(
           ports: physicalOutputs,
           connectedPorts: _getConnectedPortIds(connections).toSet(),
           position: nodePosition,
@@ -1740,6 +1901,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           onSizeResolved: (size) =>
               _handleNodeSizeResolved('physical_outputs', size),
         ),
+        ),
       ),
     ];
   }
@@ -1773,7 +1935,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         key: const ValueKey('es5_node'),
         left: nodePosition.dx,
         top: nodePosition.dy,
-        child: ES5Node(
+        child: FocusTraversalOrder(
+          order: const NumericFocusOrder(50),
+          child: ES5Node(
           ports: es5Inputs,
           connectedPorts: _getConnectedPortIds(connections).toSet(),
           position: nodePosition,
@@ -1817,6 +1981,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             // Node drag end handler
           },
           onSizeResolved: (size) => _handleNodeSizeResolved('es5_node', size),
+        ),
         ),
       ),
     ];
@@ -1864,7 +2029,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         Positioned(
           left: position.dx,
           top: position.dy,
-          child: AlgorithmNodeWidget(
+          child: FocusTraversalOrder(
+            order: NumericFocusOrder(algorithm.index + 1.0),
+            child: AlgorithmNodeWidget(
             key: ValueKey(algorithm.id), // Use stable ID for widget key
             algorithmName: algorithm.algorithm.name,
             slotNumber: algorithm.index + 1, // 1-indexed for display
@@ -1986,6 +2153,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 : null,
             onSizeResolved: (size) => _handleNodeSizeResolved(nodeId, size),
             onTap: () => _handleNodeTap(nodeId),
+          ),
           ),
         ),
       ];
@@ -2925,8 +3093,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   // Port and node interaction handlers
   void _handlePortTap(Port port) {
     _clearSelectedConnection();
-    // Tap is now reserved for future functionality (e.g., selection)
-    // Deletion has moved to long-press for consistency
+    // Use tap for accessible connection creation (two-tap flow)
+    _handlePortKeyboardActivation(port.id);
   }
 
   /// Handle long-press on a port to delete its connections.

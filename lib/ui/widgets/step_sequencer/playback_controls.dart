@@ -504,31 +504,39 @@ class _PlaybackControlsState extends State<PlaybackControls> {
 
     final isDisabled = _isGateLengthDisabled;
 
-    return Opacity(
-      opacity: isDisabled ? 0.5 : 1.0,
-      child: Tooltip(
-        message: isDisabled
-            ? 'Disabled when Gate Type is Trigger'
-            : 'Sets gate length as percentage of step duration',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Gate Length: $currentValue%',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            Slider(
-              value: currentValue.toDouble().clamp(1, 99),
-              min: 1,
-              max: 99,
-              divisions: 98,
-              label: '$currentValue%',
-              onChanged: isDisabled ? null : (value) {
-                _updateParameter(gateLengthParam, value.toInt(), debounce: true);
-              },
-            ),
-          ],
+    return Semantics(
+      label: 'Gate Length: $currentValue%',
+      enabled: !isDisabled,
+      hint: isDisabled ? 'Disabled when Gate Type is Trigger' : null,
+      child: Opacity(
+        opacity: isDisabled ? 0.5 : 1.0,
+        child: Tooltip(
+          message: isDisabled
+              ? 'Disabled when Gate Type is Trigger'
+              : 'Sets gate length as percentage of step duration',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ExcludeSemantics(
+                child: Text(
+                  'Gate Length: $currentValue%',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              Slider(
+                value: currentValue.toDouble().clamp(1, 99),
+                min: 1,
+                max: 99,
+                divisions: 98,
+                label: '$currentValue%',
+                semanticFormatterCallback: (v) => '${v.round()}%',
+                onChanged: isDisabled ? null : (value) {
+                  _updateParameter(gateLengthParam, value.toInt(), debounce: true);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -546,31 +554,39 @@ class _PlaybackControlsState extends State<PlaybackControls> {
 
     final isDisabled = _isTriggerLengthDisabled;
 
-    return Opacity(
-      opacity: isDisabled ? 0.5 : 1.0,
-      child: Tooltip(
-        message: isDisabled
-            ? 'Disabled when Gate Type is Gate'
-            : 'Sets trigger length in milliseconds',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Trigger Length: ${currentValue}ms',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            Slider(
-              value: currentValue.toDouble().clamp(1, 100),
-              min: 1,
-              max: 100,
-              divisions: 99,
-              label: '${currentValue}ms',
-              onChanged: isDisabled ? null : (value) {
-                _updateParameter(triggerLengthParam, value.toInt(), debounce: true);
-              },
-            ),
-          ],
+    return Semantics(
+      label: 'Trigger Length: ${currentValue}ms',
+      enabled: !isDisabled,
+      hint: isDisabled ? 'Disabled when Gate Type is Gate' : null,
+      child: Opacity(
+        opacity: isDisabled ? 0.5 : 1.0,
+        child: Tooltip(
+          message: isDisabled
+              ? 'Disabled when Gate Type is Gate'
+              : 'Sets trigger length in milliseconds',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ExcludeSemantics(
+                child: Text(
+                  'Trigger Length: ${currentValue}ms',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              Slider(
+                value: currentValue.toDouble().clamp(1, 100),
+                min: 1,
+                max: 100,
+                divisions: 99,
+                label: '${currentValue}ms',
+                semanticFormatterCallback: (v) => '${v.round()} milliseconds',
+                onChanged: isDisabled ? null : (value) {
+                  _updateParameter(triggerLengthParam, value.toInt(), debounce: true);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -586,25 +602,31 @@ class _PlaybackControlsState extends State<PlaybackControls> {
         ? slot.values[glideTimeParam].value
         : 0;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Glide Time: ${currentValue}ms',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        Slider(
-          value: currentValue.toDouble().clamp(0, 1000),
-          min: 0,
-          max: 1000,
-          divisions: 100,
-          label: '${currentValue}ms',
-          onChanged: (value) {
-            _updateParameter(glideTimeParam, value.toInt(), debounce: true);
-          },
-        ),
-      ],
+    return Semantics(
+      label: 'Glide Time: ${currentValue}ms',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ExcludeSemantics(
+            child: Text(
+              'Glide Time: ${currentValue}ms',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          Slider(
+            value: currentValue.toDouble().clamp(0, 1000),
+            min: 0,
+            max: 1000,
+            divisions: 100,
+            label: '${currentValue}ms',
+            semanticFormatterCallback: (v) => '${v.round()} milliseconds',
+            onChanged: (value) {
+              _updateParameter(glideTimeParam, value.toInt(), debounce: true);
+            },
+          ),
+        ],
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_cubit.dart';
@@ -82,9 +83,31 @@ class _FirmwareUpdateView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<FirmwareUpdateCubit, FirmwareUpdateState>(
       listener: (context, state) {
-        // Handle any side effects from state changes
-        if (state is FirmwareUpdateStateError) {
-          // Could show snackbar or other notification
+        if (state is FirmwareUpdateStateDownloading) {
+          SemanticsService.sendAnnouncement(View.of(context),
+            'Downloading firmware: ${(state.progress * 100).toInt()}%',
+            TextDirection.ltr,
+          );
+        } else if (state is FirmwareUpdateStateFlashing) {
+          SemanticsService.sendAnnouncement(View.of(context),
+            'Flashing firmware: ${state.progress.percent}%',
+            TextDirection.ltr,
+          );
+        } else if (state is FirmwareUpdateStateSuccess) {
+          SemanticsService.sendAnnouncement(View.of(context),
+            'Firmware update complete',
+            TextDirection.ltr,
+          );
+        } else if (state is FirmwareUpdateStateError) {
+          SemanticsService.sendAnnouncement(View.of(context),
+            'Firmware update error: ${state.message}',
+            TextDirection.ltr,
+          );
+        } else if (state is FirmwareUpdateStateWaitingForBootloader) {
+          SemanticsService.sendAnnouncement(View.of(context),
+            'Waiting for bootloader mode',
+            TextDirection.ltr,
+          );
         }
       },
       builder: (context, state) {

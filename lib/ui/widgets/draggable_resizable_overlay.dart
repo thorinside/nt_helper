@@ -176,7 +176,8 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final showControls = _controlsVisible || _isResizing || _isDragging;
+    final isAccessible = MediaQuery.of(context).accessibleNavigation;
+    final showControls = _controlsVisible || _isResizing || _isDragging || isAccessible;
 
     return Positioned(
       left: _x,
@@ -224,21 +225,25 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
               child: AnimatedOpacity(
                 opacity: showControls ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 300),
-                child: GestureDetector(
-                  onTap: () {
-                    widget.overlayEntry.remove();
-                  },
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Colors.white,
+                child: Semantics(
+                  label: 'Close overlay',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: () {
+                      widget.overlayEntry.remove();
+                    },
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -252,24 +257,27 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
               child: AnimatedOpacity(
                 opacity: showControls ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 300),
-                child: GestureDetector(
-                  onPanStart: _onResizeStart,
-                  onPanUpdate: _onResizeUpdate,
-                  onPanEnd: _onResizeEnd,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(4),
-                        bottomRight: Radius.circular(6),
+                child: Semantics(
+                  label: 'Resize overlay',
+                  child: GestureDetector(
+                    onPanStart: _onResizeStart,
+                    onPanUpdate: _onResizeUpdate,
+                    onPanEnd: _onResizeEnd,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(4),
+                          bottomRight: Radius.circular(6),
+                        ),
                       ),
-                    ),
-                    child: const Icon(
-                      Icons.open_in_full,
-                      size: 14,
-                      color: Colors.white,
+                      child: const Icon(
+                        Icons.open_in_full,
+                        size: 14,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),

@@ -49,83 +49,82 @@ class McpStatusIndicator extends StatelessWidget {
       tooltip = 'MCP server is disabled (Tap to enable)';
     }
 
-    return GestureDetector(
-      onTap: () async {
-        // Check if on supported platform first
-        if (!(Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                "MCP Service can only be toggled on desktop platforms.",
+    final semanticLabel = isRunning
+        ? 'MCP server running. Double tap to disable'
+        : hasError
+            ? 'MCP server error. Double tap to retry'
+            : 'MCP server disabled. Double tap to enable';
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: IconButton(
+        iconSize: 16,
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        tooltip: tooltip,
+        onPressed: () async {
+          if (!(Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  "MCP Service can only be toggled on desktop platforms.",
+                ),
               ),
-            ),
-          );
-          return;
-        }
+            );
+            return;
+          }
 
-        // If there's an error, tapping retries without toggling the setting
-        if (mcpInstance.hasError) {
-          await mcpInstance.start();
-          return;
-        }
-
-        final bool currentMcpSetting = settings.mcpEnabled;
-        final newMcpSetting = !currentMcpSetting;
-        await settings.setMcpEnabled(newMcpSetting);
-
-        // Now apply the logic to start/stop the server
-        final bool isServerCurrentlyRunning = mcpInstance.isRunning;
-
-        if (newMcpSetting) {
-          // Try to turn ON
-          if (!isServerCurrentlyRunning) {
+          if (mcpInstance.hasError) {
             await mcpInstance.start();
+            return;
           }
-        } else {
-          // Try to turn OFF
-          if (isServerCurrentlyRunning) {
-            await mcpInstance.stop();
+
+          final bool currentMcpSetting = settings.mcpEnabled;
+          final newMcpSetting = !currentMcpSetting;
+          await settings.setMcpEnabled(newMcpSetting);
+
+          final bool isServerCurrentlyRunning = mcpInstance.isRunning;
+
+          if (newMcpSetting) {
+            if (!isServerCurrentlyRunning) {
+              await mcpInstance.start();
+            }
+          } else {
+            if (isServerCurrentlyRunning) {
+              await mcpInstance.stop();
+            }
           }
-        }
-        // McpServerService.notifyListeners() is called by start()/stop(), which Consumer listens to.
-      },
-      child: Tooltip(
-        message: tooltip,
-        child: Container(
-          width: 16, // Slightly larger for better effect
-          height: 16,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              center: const Alignment(
-                -0.3,
-                -0.4,
-              ), // Offset center for top-right light source
-              radius: 0.9,
-              colors: [highlightColor, baseColor, shadowColor],
-              stops: const [0.0, 0.6, 1.0],
+        },
+        icon: ExcludeSemantics(
+          child: Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                center: const Alignment(-0.3, -0.4),
+                radius: 0.9,
+                colors: [highlightColor, baseColor, shadowColor],
+                stops: const [0.0, 0.6, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(77),
+                  blurRadius: 2,
+                  offset: const Offset(1, 1),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(77),
-                blurRadius: 2,
-                offset: const Offset(1, 1),
+            child: Center(
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withAlpha(179),
+                ),
+                margin: const EdgeInsets.only(right: 3, bottom: 3),
               ),
-            ],
-          ),
-          child: Center(
-            // For specular highlight
-            child: Container(
-              width: 5, // Size of specular highlight
-              height: 5,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withAlpha(179),
-              ),
-              margin: const EdgeInsets.only(
-                right: 3,
-                bottom: 3,
-              ), // Position highlight
             ),
           ),
         ),

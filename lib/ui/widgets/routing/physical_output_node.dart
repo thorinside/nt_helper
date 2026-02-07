@@ -90,9 +90,11 @@ class PhysicalOutputNode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final connectedCount = connectedPorts?.where((id) => ports.any((p) => p.id == id)).length ?? 0;
     return Semantics(
-      label: 'Outputs',
+      label: 'Outputs: ${ports.length} hardware output jacks, $connectedCount connected',
       hint: 'Hardware output jacks. These act as inputs from algorithms.',
+      container: true,
       child: MovablePhysicalIONode(
         ports: ports,
         connectedPorts: connectedPorts,

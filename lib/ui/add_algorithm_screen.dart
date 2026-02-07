@@ -1,7 +1,8 @@
-import 'dart:async'; // Added for Timer
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -155,15 +156,25 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   }
 
   void _toggleFavorite(String guid) {
+    final wasAdded = !_favoriteGuids.contains(guid);
     setState(() {
-      if (_favoriteGuids.contains(guid)) {
-        _favoriteGuids.remove(guid);
-      } else {
+      if (wasAdded) {
         _favoriteGuids.add(guid);
+      } else {
+        _favoriteGuids.remove(guid);
       }
-      _saveFavorites(); // Save favorite list changes
-      _filterAlgorithms(); // Re-filter to update list if needed (e.g., if showFavOnly is true) and update chip icon
+      _saveFavorites();
+      _filterAlgorithms();
     });
+    final algoName = _allAlgorithms
+        .firstWhereOrNull((a) => a.guid == guid)
+        ?.name ?? guid;
+    SemanticsService.sendAnnouncement(View.of(context),
+      wasAdded
+          ? '$algoName added to favorites'
+          : '$algoName removed from favorites',
+      TextDirection.ltr,
+    );
   }
 
   void _toggleShowFavoritesOnly() {
@@ -1113,42 +1124,52 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   horizontal: 16,
                   vertical: 12,
                 ),
-                child: Stack(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Main content
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                algo.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleMedium,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  algo.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
                               ),
-                            ),
-                            // Space for favorite icon
-                            if (isFavorite) const SizedBox(width: 28),
-                            if (isCommunityPlugin)
-                              Icon(
-                                Icons.extension,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                          ],
-                        ),
-                        _buildListSubtitle(metadata, isCommunityPlugin),
-                      ],
-                    ),
-                    // Favorite icon in top right
-                    if (isFavorite)
-                      const Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Icon(Icons.star, color: Colors.amber, size: 20),
+                              if (isCommunityPlugin)
+                                Icon(
+                                  Icons.extension,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.secondary,
+                                ),
+                            ],
+                          ),
+                          _buildListSubtitle(metadata, isCommunityPlugin),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.star : Icons.star_border,
+                        color: isFavorite ? Colors.amber : null,
+                        size: 20,
+                      ),
+                      tooltip: isFavorite
+                          ? 'Remove from favorites'
+                          : 'Add to favorites',
+                      onPressed: () => _toggleFavorite(algo.guid),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
                   ],
                 ),
               ),

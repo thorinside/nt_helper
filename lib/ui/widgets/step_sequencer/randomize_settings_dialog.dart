@@ -161,14 +161,17 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+    return Semantics(
+      header: true,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
       ),
     );
   }
@@ -359,14 +362,18 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
             max: maxValue.toDouble(),
             divisions: maxValue - minValue,
             label: showMidiNote ? _midiNoteToString(value) : '$value',
+            semanticFormatterCallback: (v) =>
+                showMidiNote ? _midiNoteToString(v.round()) : '${v.round()}',
             onChanged: (newValue) {
               _updateParameter(paramNum, newValue.toInt());
             },
           ),
-          Text(
-            showMidiNote ? _midiNoteToString(value) : '$value',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall,
+          ExcludeSemantics(
+            child: Text(
+              showMidiNote ? _midiNoteToString(value) : '$value',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
         ],
       ),
@@ -393,16 +400,19 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
             max: 100,
             divisions: 100,
             label: '$percentage%',
+            semanticFormatterCallback: (v) => '${v.round()}%',
             onChanged: (value) {
               // Convert UI range (0-100%) back to firmware range (0-127)
               final firmwareValue = (value / 100 * 127).round();
               _updateParameter(paramNum, firmwareValue);
             },
           ),
-          Text(
-            '$percentage%',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall,
+          ExcludeSemantics(
+            child: Text(
+              '$percentage%',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
         ],
       ),

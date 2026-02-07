@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -186,6 +187,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
     setState(() {
       _isSaving = true;
     });
+    SemanticsService.sendAnnouncement(
+      View.of(context), 'Saving notes...', TextDirection.ltr,
+    );
 
     final lines = _splitTextIntoLines(text);
     final cubit = context.read<DistingCubit>();
@@ -224,6 +228,11 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
         _isEditing = false;
         _isSaving = false;
       });
+      if (mounted) {
+        SemanticsService.sendAnnouncement(
+          View.of(context), 'Notes saved', TextDirection.ltr,
+        );
+      }
     } catch (e) {
       setState(() {
         _isSaving = false;
@@ -231,12 +240,14 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
 
       if (mounted) {
         _showError('Failed to save text: $e');
+        SemanticsService.sendAnnouncement(
+          View.of(context), 'Failed to save notes', TextDirection.ltr,
+        );
       }
     }
   }
 
   void _cancelEdit() {
-    // Don't allow cancel during save operation
     if (_isSaving) {
       return;
     }
@@ -245,6 +256,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
       _isEditing = false;
       _textController.text = _getCurrentText();
     });
+    SemanticsService.sendAnnouncement(
+      View.of(context), 'Edit cancelled', TextDirection.ltr,
+    );
   }
 
   @override
@@ -273,6 +287,11 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                           setState(() {
                             _isEditing = true;
                           });
+                          SemanticsService.sendAnnouncement(
+                            View.of(context),
+                            'Editing mode. Enter your notes text.',
+                            TextDirection.ltr,
+                          );
                         },
                         icon: const Icon(Icons.edit),
                         label: const Text('Edit'),
@@ -324,29 +343,42 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
   }
 
   Widget _buildTextDisplay() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (
-            int i = 1;
-            i <= _maxLinesCount && i < widget.slot.valueStrings.length;
-            i++
-          )
-            Builder(
-              builder: (context) {
-                final valueToDisplay = widget.slot.valueStrings[i].value;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2.0),
-                  child: Text(
-                    valueToDisplay.trim(),
-                    textAlign: TextAlign.start,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                );
-              },
-            ),
-        ],
+    final allText = <String>[];
+    for (
+      int i = 1;
+      i <= _maxLinesCount && i < widget.slot.valueStrings.length;
+      i++
+    ) {
+      allText.add(widget.slot.valueStrings[i].value.trim());
+    }
+    final combinedText = allText.where((l) => l.isNotEmpty).join('. ');
+
+    return Semantics(
+      label: combinedText.isEmpty ? 'Notes: empty' : 'Notes: $combinedText',
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (
+              int i = 1;
+              i <= _maxLinesCount && i < widget.slot.valueStrings.length;
+              i++
+            )
+              Builder(
+                builder: (context) {
+                  final valueToDisplay = widget.slot.valueStrings[i].value;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Text(
+                      valueToDisplay.trim(),
+                      textAlign: TextAlign.start,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
       ),
     );
   }

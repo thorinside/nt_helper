@@ -86,7 +86,9 @@ class _PluginSelectionDialogState extends State<PluginSelectionDialog> {
         return AlertDialog(
           title: Row(
             children: [
-              Icon(_getPluginIcon(widget.plugin.type)),
+              ExcludeSemantics(
+                child: Icon(_getPluginIcon(widget.plugin.type)),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -134,7 +136,7 @@ class _PluginSelectionDialogState extends State<PluginSelectionDialog> {
                   controller: searchController,
                   decoration: const InputDecoration(
                     hintText: 'Search plugins...',
-                    prefixIcon: Icon(Icons.search),
+                    prefixIcon: ExcludeSemantics(child: Icon(Icons.search)),
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -144,9 +146,12 @@ class _PluginSelectionDialogState extends State<PluginSelectionDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '$selectedCount of ${plugins.length} selected',
-                      style: Theme.of(dlgContext).textTheme.bodySmall,
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        '$selectedCount of ${plugins.length} selected',
+                        style: Theme.of(dlgContext).textTheme.bodySmall,
+                      ),
                     ),
                     TextButton(
                       onPressed: _toggleSelectAll,
@@ -172,12 +177,14 @@ class _PluginSelectionDialogState extends State<PluginSelectionDialog> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(
-                                    _getFileTypeIcon(plugin.fileType),
-                                    size: 16,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
+                                  ExcludeSemantics(
+                                    child: Icon(
+                                      _getFileTypeIcon(plugin.fileType),
+                                      size: 16,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(

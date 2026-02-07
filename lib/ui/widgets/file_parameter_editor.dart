@@ -782,133 +782,149 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       );
     }
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isEditingText = true;
-          // Make sure text controller has current value
-          _textController.text = _currentDisplayValue ?? '';
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                _currentDisplayValue?.isNotEmpty == true
-                    ? _currentDisplayValue!
-                    : '', // Show empty when no name is set
-                style: const TextStyle(fontSize: 16),
+    return Semantics(
+      label: _currentDisplayValue?.isNotEmpty == true
+          ? '${widget.parameterInfo.name}: $_currentDisplayValue. Tap to edit.'
+          : '${widget.parameterInfo.name}: empty. Tap to edit.',
+      button: true,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _isEditingText = true;
+            _textController.text = _currentDisplayValue ?? '';
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _currentDisplayValue?.isNotEmpty == true
+                      ? _currentDisplayValue!
+                      : '',
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.edit,
-              size: 18,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ],
+              const SizedBox(width: 8),
+              Icon(
+                Icons.edit,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildFileSelectionEditor() {
+    final itemType = widget.rule.mode == FileSelectionMode.folderOnly
+        ? 'folder'
+        : 'file';
+    final canGoPrev = widget.currentValue > widget.parameterInfo.min;
+    final canGoNext = widget.currentValue < widget.parameterInfo.max;
+
     return Row(
       children: [
-        // Previous button
-        InkWell(
-          onTap: widget.currentValue > widget.parameterInfo.min
-              ? _decrementValue
-              : null,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            child: Icon(
-              Icons.navigate_before,
-              size: 24,
-              color: widget.currentValue > widget.parameterInfo.min
-                  ? null
-                  : Colors.grey.shade400,
+        Semantics(
+          button: true,
+          label: 'Previous $itemType',
+          enabled: canGoPrev,
+          child: InkWell(
+            onTap: canGoPrev ? _decrementValue : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              child: Icon(
+                Icons.navigate_before,
+                size: 24,
+                color: canGoPrev ? null : Colors.grey.shade400,
+              ),
             ),
           ),
         ),
 
         const SizedBox(width: 8),
 
-        // Current selection display
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(_getIconForMode(), size: 18, color: Colors.grey.shade600),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _currentDisplayValue ?? 'No selection',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+          child: Semantics(
+            label: 'Selected: ${_currentDisplayValue ?? "No selection"}',
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(_getIconForMode(), size: 18, color: Colors.grey.shade600),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _currentDisplayValue ?? 'No selection',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
 
         const SizedBox(width: 8),
 
-        // Next button
-        InkWell(
-          onTap: widget.currentValue < widget.parameterInfo.max
-              ? _incrementValue
-              : null,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            child: Icon(
-              Icons.navigate_next,
-              size: 24,
-              color: widget.currentValue < widget.parameterInfo.max
-                  ? null
-                  : Colors.grey.shade400,
+        Semantics(
+          button: true,
+          label: 'Next $itemType',
+          enabled: canGoNext,
+          child: InkWell(
+            onTap: canGoNext ? _incrementValue : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              child: Icon(
+                Icons.navigate_next,
+                size: 24,
+                color: canGoNext ? null : Colors.grey.shade400,
+              ),
             ),
           ),
         ),
 
         const SizedBox(width: 8),
 
-        // Browse button - hide during development mode but maintain layout space
         Visibility(
           visible: _devState == _DevelopmentState.inactive,
           maintainSize: true,
           maintainAnimation: true,
           maintainState: true,
-          child: InkWell(
-            onTap: _isLoadingFiles ? null : _showFileSelectionDialog,
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _isLoadingFiles
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.folder_open, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isLoadingFiles ? 'Loading...' : 'Browse',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
+          child: Semantics(
+            button: true,
+            label: 'Browse ${itemType}s',
+            child: InkWell(
+              onTap: _isLoadingFiles ? null : _showFileSelectionDialog,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _isLoadingFiles
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.folder_open, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isLoadingFiles ? 'Loading...' : 'Browse',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -969,23 +985,27 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     return Positioned(
       top: 8,
       right: 8,
-      child: GestureDetector(
-        onTap: _toggleDevelopmentMode,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _getStateColor().withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _getStateColor()),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildStateIcon(),
-              const SizedBox(width: 4),
-              Text(_getStateText(), style: const TextStyle(fontSize: 12)),
-            ],
+      child: Semantics(
+        label: 'Development mode: ${_getStateText()}',
+        button: true,
+        child: GestureDetector(
+          onTap: _toggleDevelopmentMode,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _getStateColor().withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _getStateColor()),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildStateIcon(),
+                const SizedBox(width: 4),
+                Text(_getStateText(), style: const TextStyle(fontSize: 12)),
+              ],
+            ),
           ),
         ),
       ),

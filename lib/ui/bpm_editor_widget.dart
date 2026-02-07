@@ -259,6 +259,7 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
             icon: const Icon(Icons.remove_circle_outline),
             iconSize: iconSize,
             splashRadius: splashRadius,
+            tooltip: 'Decrease BPM',
             onPressed: () => _handleIconButtonTap(false),
           ),
         ),
@@ -276,6 +277,8 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
                 style: textStyle?.copyWith(fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   isDense: true,
+                  labelText: 'BPM',
+                  floatingLabelBehavior: FloatingLabelBehavior.never,
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 12.0,
                     horizontal: 8.0,
@@ -283,7 +286,6 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  // Remove suffix text entirely
                   suffixText: null,
                 ),
                 onSubmitted: (_) => _validateAndSubmit(),
@@ -319,6 +321,7 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
             icon: const Icon(Icons.add_circle_outline),
             iconSize: iconSize,
             splashRadius: splashRadius,
+            tooltip: 'Increase BPM',
             onPressed: () => _handleIconButtonTap(true),
           ),
         ),

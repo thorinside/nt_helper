@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart'; // For Clipboard
 import 'package:nt_helper/util/in_app_logger.dart';
 import 'package:provider/provider.dart';
@@ -28,8 +29,10 @@ class LogDisplayPage extends StatelessWidget {
             onPressed: () {
               if (logger.isRecording) {
                 logger.stopRecording();
+                SemanticsService.sendAnnouncement(View.of(context), 'Logging paused', TextDirection.ltr);
               } else {
                 logger.startRecording();
+                SemanticsService.sendAnnouncement(View.of(context), 'Logging resumed', TextDirection.ltr);
               }
             },
           ),

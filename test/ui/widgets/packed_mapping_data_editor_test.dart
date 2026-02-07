@@ -137,18 +137,14 @@ void main() {
 
       // Find the MIDI Relative switch
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'MIDI Relative',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Relative';
       });
       expect(switchFinder, findsOneWidget);
 
-      // Find the Switch widget within that Row
-      final switchWidget = tester.widget<Switch>(
-        find.descendant(of: switchFinder, matching: find.byType(Switch)),
-      );
+      final switchListTile = tester.widget<SwitchListTile>(switchFinder);
+      final switchWidget = Switch(value: switchListTile.value, onChanged: switchListTile.onChanged);
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
@@ -169,18 +165,14 @@ void main() {
 
       // Find the MIDI Relative switch
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'MIDI Relative',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Relative';
       });
       expect(switchFinder, findsOneWidget);
 
-      // Find the Switch widget within that Row
-      final switchWidget = tester.widget<Switch>(
-        find.descendant(of: switchFinder, matching: find.byType(Switch)),
-      );
+      final switchListTile = tester.widget<SwitchListTile>(switchFinder);
+      final switchWidget = Switch(value: switchListTile.value, onChanged: switchListTile.onChanged);
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
@@ -197,18 +189,14 @@ void main() {
 
       // Find the MIDI Relative switch
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'MIDI Relative',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Relative';
       });
       expect(switchFinder, findsOneWidget);
 
-      // Find the Switch widget within that Row
-      final switchWidget = tester.widget<Switch>(
-        find.descendant(of: switchFinder, matching: find.byType(Switch)),
-      );
+      final switchListTile = tester.widget<SwitchListTile>(switchFinder);
+      final switchWidget = Switch(value: switchListTile.value, onChanged: switchListTile.onChanged);
 
       // Verify it's enabled (onChanged is not null)
       expect(switchWidget.onChanged, isNotNull);
@@ -227,18 +215,14 @@ void main() {
 
       // Find the MIDI Relative switch
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'MIDI Relative',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Relative';
       });
       expect(switchFinder, findsOneWidget);
 
-      // Find the Switch widget within that Row
-      final switchWidget = tester.widget<Switch>(
-        find.descendant(of: switchFinder, matching: find.byType(Switch)),
-      );
+      final switchListTile = tester.widget<SwitchListTile>(switchFinder);
+      final switchWidget = Switch(value: switchListTile.value, onChanged: switchListTile.onChanged);
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
@@ -323,11 +307,9 @@ void main() {
 
       // Find the Unipolar switch
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'Unipolar',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Unipolar';
       });
 
       // Make 5 rapid changes
@@ -367,17 +349,15 @@ void main() {
 
       // Find switches
       final unipolarFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'Unipolar',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Unipolar';
       });
 
       final gateFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any((child) => child is Text && child.data == 'Gate');
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Gate';
       });
 
       // Toggle Unipolar
@@ -419,11 +399,9 @@ void main() {
 
       // Find the Unipolar switch
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'Unipolar',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Unipolar';
       });
 
       // Trigger a change to start timer
@@ -563,11 +541,9 @@ void main() {
 
       // Find the I2C Enabled switch
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'I2C Enabled',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'I2C Enabled';
       });
 
       // Toggle switch
@@ -603,17 +579,15 @@ void main() {
 
       // Find switches
       final unipolarFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'Unipolar',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Unipolar';
       });
 
       final gateFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any((child) => child is Text && child.data == 'Gate');
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Gate';
       });
 
       // Make multiple changes across different fields

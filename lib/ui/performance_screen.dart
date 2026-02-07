@@ -304,12 +304,15 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       _selectedPageIndex = populatedPages[index];
                     });
                   },
-                  labelType: NavigationRailLabelType.none,
+                  labelType: NavigationRailLabelType.all,
                   destinations: populatedPages.map((pageIndex) {
                     final isSelected = pageIndex == _selectedPageIndex;
                     return NavigationRailDestination(
                       icon: _buildPageBadge(pageIndex, isSelected: isSelected),
-                      label: const Text(''),
+                      label: Semantics(
+                        label: 'Page $pageIndex',
+                        child: Text('Page $pageIndex'),
+                      ),
                     );
                   }).toList(),
                 ),

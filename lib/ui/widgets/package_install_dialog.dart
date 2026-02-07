@@ -74,7 +74,9 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          Icon(Icons.archive, color: Theme.of(context).colorScheme.primary),
+          ExcludeSemantics(
+            child: Icon(Icons.archive, color: Theme.of(context).colorScheme.primary),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -221,10 +223,12 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
         return ExpansionTile(
           title: Row(
             children: [
-              Icon(
-                Icons.folder,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
+              ExcludeSemantics(
+                child: Icon(
+                  Icons.folder,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(width: 8),
               Text('/$directory'),
@@ -248,10 +252,15 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
 
     return ListTile(
       dense: true,
-      leading: CircleAvatar(
-        radius: 12,
-        backgroundColor: _getFileStatusColor(file),
-        child: Icon(_getFileStatusIcon(file), size: 16, color: Colors.white),
+      leading: Semantics(
+        label: _getFileStatusDescription(file),
+        child: CircleAvatar(
+          radius: 12,
+          backgroundColor: _getFileStatusColor(file),
+          child: ExcludeSemantics(
+            child: Icon(_getFileStatusIcon(file), size: 16, color: Colors.white),
+          ),
+        ),
       ),
       title: Text(
         file.filename,
@@ -279,37 +288,43 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.check_circle, size: 16),
-                  label: const Text('Install'),
-                  onPressed: () =>
-                      _updateFileAction(file.targetPath, FileAction.install),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: willInstall
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surface,
-                    foregroundColor: willInstall
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.onSurface,
-                    elevation: willInstall ? 2 : 0,
-                    minimumSize: const Size(80, 32),
+                Semantics(
+                  selected: willInstall,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.check_circle, size: 16),
+                    label: const Text('Install'),
+                    onPressed: () =>
+                        _updateFileAction(file.targetPath, FileAction.install),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: willInstall
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.surface,
+                      foregroundColor: willInstall
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : Theme.of(context).colorScheme.onSurface,
+                      elevation: willInstall ? 2 : 0,
+                      minimumSize: const Size(80, 32),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.cancel, size: 16),
-                  label: const Text('Skip'),
-                  onPressed: () =>
-                      _updateFileAction(file.targetPath, FileAction.skip),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: !willInstall
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).colorScheme.surface,
-                    foregroundColor: !willInstall
-                        ? Theme.of(context).colorScheme.onError
-                        : Theme.of(context).colorScheme.onSurface,
-                    elevation: !willInstall ? 2 : 0,
-                    minimumSize: const Size(80, 32),
+                Semantics(
+                  selected: !willInstall,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.cancel, size: 16),
+                    label: const Text('Skip'),
+                    onPressed: () =>
+                        _updateFileAction(file.targetPath, FileAction.skip),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: !willInstall
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.surface,
+                      foregroundColor: !willInstall
+                          ? Theme.of(context).colorScheme.onError
+                          : Theme.of(context).colorScheme.onSurface,
+                      elevation: !willInstall ? 2 : 0,
+                      minimumSize: const Size(80, 32),
+                    ),
                   ),
                 ),
               ],
@@ -335,6 +350,13 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
       return file.shouldInstall ? Icons.download : Icons.skip_next;
     }
     return file.shouldInstall ? Icons.check : Icons.remove;
+  }
+
+  String _getFileStatusDescription(PackageFile file) {
+    if (file.hasConflict) {
+      return file.shouldInstall ? 'Conflict: will overwrite' : 'Conflict: will skip';
+    }
+    return file.shouldInstall ? 'Will install' : 'Will skip';
   }
 
   void _handleInstall() async {
@@ -423,7 +445,9 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+            ExcludeSemantics(
+              child: Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+            ),
             const SizedBox(width: 8),
             const Text('Installation Errors'),
           ],

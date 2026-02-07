@@ -111,7 +111,7 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.download, size: 24),
+          ExcludeSemantics(child: Icon(Icons.download, size: 24)),
           SizedBox(width: 8),
           Text('Export Algorithm Details'),
         ],
@@ -203,7 +203,7 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.folder_open, size: 20),
+                      const ExcludeSemantics(child: Icon(Icons.folder_open, size: 20)),
                       const SizedBox(width: 8),
                       Text(
                         'Save Location:',

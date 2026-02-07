@@ -57,7 +57,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Description', style: Theme.of(context).textTheme.titleLarge),
+            Semantics(
+              header: true,
+              child: Text('Description', style: Theme.of(context).textTheme.titleLarge),
+            ),
             const Divider(),
             Text(
               metadata.description,
@@ -77,7 +80,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Categories', style: Theme.of(context).textTheme.titleLarge),
+            Semantics(
+              header: true,
+              child: Text('Categories', style: Theme.of(context).textTheme.titleLarge),
+            ),
             const Divider(),
             Wrap(
               spacing: 8.0,
@@ -100,7 +106,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('I/O Ports', style: Theme.of(context).textTheme.titleLarge),
+            Semantics(
+              header: true,
+              child: Text('I/O Ports', style: Theme.of(context).textTheme.titleLarge),
+            ),
             const Divider(),
             if (metadata.inputPorts.isNotEmpty) ...[
               Text('Inputs', style: Theme.of(context).textTheme.titleMedium),
@@ -120,7 +129,7 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
   Widget _buildPortTile(AlgorithmPort port) {
     return ListTile(
       dense: true,
-      leading: const Icon(Icons.arrow_circle_right_outlined),
+      leading: const ExcludeSemantics(child: Icon(Icons.arrow_circle_right_outlined)),
       title: Text(port.name),
       subtitle: port.description != null ? Text(port.description!) : null,
     );
@@ -134,9 +143,12 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Specifications',
-              style: Theme.of(context).textTheme.titleLarge,
+            Semantics(
+              header: true,
+              child: Text(
+                'Specifications',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             const Divider(),
             ...metadata.specifications.map((spec) => _buildSpecTile(spec)),
@@ -179,7 +191,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Parameters', style: Theme.of(context).textTheme.titleLarge),
+            Semantics(
+              header: true,
+              child: Text('Parameters', style: Theme.of(context).textTheme.titleLarge),
+            ),
             const Divider(),
             ...expandedParams.map(
               (param) => _buildParameterTile(
@@ -253,7 +268,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Features', style: Theme.of(context).textTheme.titleLarge),
+            Semantics(
+              header: true,
+              child: Text('Features', style: Theme.of(context).textTheme.titleLarge),
+            ),
             const Divider(),
             ...metadata.features.map((featureGuid) {
               final feature = AlgorithmMetadataService().getFeatureByGuid(

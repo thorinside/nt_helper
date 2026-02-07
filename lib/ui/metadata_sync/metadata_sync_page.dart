@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
@@ -279,7 +280,36 @@ class MetadataSyncPage extends StatelessWidget {
                       ],
                     ),
                     // Body uses MetadataSyncCubit for DB DistingCubit for state
-                    body: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                    body: BlocListener<MetadataSyncCubit, MetadataSyncState>(
+                      listener: (context, metaState) {
+                        if (metaState is SyncingMetadata) {
+                          SemanticsService.sendAnnouncement(View.of(context),
+                            metaState.mainMessage,
+                            TextDirection.ltr,
+                          );
+                        } else if (metaState is MetadataSyncSuccess) {
+                          SemanticsService.sendAnnouncement(View.of(context),
+                            'Metadata sync complete',
+                            TextDirection.ltr,
+                          );
+                        } else if (metaState is MetadataSyncFailure) {
+                          SemanticsService.sendAnnouncement(View.of(context),
+                            'Metadata sync failed: ${metaState.error}',
+                            TextDirection.ltr,
+                          );
+                        } else if (metaState is PresetSaveSuccess) {
+                          SemanticsService.sendAnnouncement(View.of(context),
+                            'Preset saved',
+                            TextDirection.ltr,
+                          );
+                        } else if (metaState is PresetDeleteSuccess) {
+                          SemanticsService.sendAnnouncement(View.of(context),
+                            'Preset deleted',
+                            TextDirection.ltr,
+                          );
+                        }
+                      },
+                      child: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
                       builder: (metaCtx, metaState) {
                         final isOperationInProgress =
                             metaState is! ViewingLocalData &&
@@ -399,6 +429,7 @@ class MetadataSyncPage extends StatelessWidget {
                           ),
                         );
                       },
+                    ),
                     ),
                   ), // Scaffold
                 ); // PopScope

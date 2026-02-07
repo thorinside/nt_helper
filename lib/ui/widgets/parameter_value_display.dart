@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
 
 /// Widget that displays parameter values with appropriate formatting.
@@ -59,76 +60,105 @@ class ParameterValueDisplay extends StatelessWidget {
 
     // On/Off checkbox
     if (isOnOff) {
-      return Checkbox(
-        value: currentValue == 1,
-        onChanged: (value) {
-          onValueChanged(value! ? 1 : 0);
-        },
+      return Semantics(
+        label: '$name: ${currentValue == 1 ? "On" : "Off"}',
+        toggled: currentValue == 1,
+        child: Checkbox(
+          value: currentValue == 1,
+          onChanged: (value) {
+            onValueChanged(value! ? 1 : 0);
+          },
+        ),
       );
     }
 
     // Enum dropdown
     if (dropdownItems != null) {
-      return DropdownMenu(
-        requestFocusOnTap: false,
-        initialSelection: dropdownItems![currentValue],
-        inputDecorationTheme: const InputDecorationTheme(
-          contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-          border: OutlineInputBorder(),
-          isDense: true,
+      return Semantics(
+        label: name,
+        value: dropdownItems![currentValue],
+        child: DropdownMenu(
+          requestFocusOnTap: false,
+          initialSelection: dropdownItems![currentValue],
+          inputDecorationTheme: const InputDecorationTheme(
+            contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          textStyle: widescreen ? textTheme.labelLarge : textTheme.labelMedium,
+          dropdownMenuEntries: dropdownItems!
+              .map((item) => DropdownMenuEntry(value: item, label: item))
+              .toList(),
+          onSelected: (value) {
+            final newValue = dropdownItems!.indexOf(value!).clamp(min, max);
+            onValueChanged(newValue);
+          },
         ),
-        textStyle: widescreen ? textTheme.labelLarge : textTheme.labelMedium,
-        dropdownMenuEntries: dropdownItems!
-            .map((item) => DropdownMenuEntry(value: item, label: item))
-            .toList(),
-        onSelected: (value) {
-          final newValue = dropdownItems!.indexOf(value!).clamp(min, max);
-          onValueChanged(newValue);
-        },
       );
     }
 
     // MIDI note parameters (but not percentages)
     if (name.toLowerCase().contains("note") && unit != "%") {
-      return Text(midiNoteToNoteString(currentValue), style: textStyle);
+      final noteStr = midiNoteToNoteString(currentValue);
+      return Semantics(
+        liveRegion: true,
+        label: '$name: $noteStr',
+        child: Text(noteStr, style: textStyle),
+      );
     }
 
     // MIDI channel parameters
     if (name.toLowerCase().contains("midi channel")) {
-      return Text(
-        currentValue == 0 ? "None" : currentValue.toString(),
-        style: textStyle,
+      final channelStr = currentValue == 0 ? "None" : currentValue.toString();
+      return Semantics(
+        liveRegion: true,
+        label: '$name: $channelStr',
+        child: Text(channelStr, style: textStyle),
       );
     }
 
     // Hardware-provided display string
     if (displayString != null) {
-      return GestureDetector(
-        onLongPress: onLongPress,
-        child: Text(
-          displayString!,
-          overflow: TextOverflow.ellipsis,
-          style: textStyle,
+      return Semantics(
+        liveRegion: true,
+        label: '$name: $displayString',
+        customSemanticsActions: {
+          CustomSemanticsAction(label: 'Switch to step editor'):
+              onLongPress,
+        },
+        child: GestureDetector(
+          onLongPress: onLongPress,
+          child: Text(
+            displayString!,
+            overflow: TextOverflow.ellipsis,
+            style: textStyle,
+          ),
         ),
       );
     }
 
-    // Unit-based formatting with powerOfTen scaling (RESTORED)
+    // Unit-based formatting with powerOfTen scaling
     if (unit != null) {
-      return Text(
-        formatWithUnit(
-          currentValue,
-          name: name,
-          min: min,
-          max: max,
-          unit: unit,
-          powerOfTen: powerOfTen,
-        ),
-        style: textStyle,
+      final formatted = formatWithUnit(
+        currentValue,
+        name: name,
+        min: min,
+        max: max,
+        unit: unit,
+        powerOfTen: powerOfTen,
+      );
+      return Semantics(
+        liveRegion: true,
+        label: '$name: $formatted',
+        child: Text(formatted, style: textStyle),
       );
     }
 
     // Default: raw integer value
-    return Text(currentValue.toString(), style: textStyle);
+    return Semantics(
+      liveRegion: true,
+      label: '$name: $currentValue',
+      child: Text(currentValue.toString(), style: textStyle),
+    );
   }
 }
