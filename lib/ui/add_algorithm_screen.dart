@@ -315,7 +315,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       selectedAlgorithmGuid = guid;
       _currentAlgoInfo = _allAlgorithms.firstWhereOrNull((a) => a.guid == guid);
       specValues = _currentAlgoInfo?.specifications
-          .map((s) => s.defaultValue)
+          .map((s) => s.safeDefaultValue)
           .toList();
 
       if (guid != null) {
@@ -368,7 +368,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           setState(() {
             _currentAlgoInfo = loadedInfo;
             specValues = loadedInfo.specifications
-                .map((s) => s.defaultValue)
+                .map((s) => s.safeDefaultValue)
                 .toList();
           });
           // Trigger filtering to update the display
@@ -426,7 +426,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             if (_currentAlgoInfo!.specifications.length !=
                 (specValues?.length ?? 0)) {
               specValues = _currentAlgoInfo!.specifications
-                  .map((s) => s.defaultValue)
+                  .map((s) => s.safeDefaultValue)
                   .toList();
             }
           }
@@ -1465,7 +1465,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     if (specValues == null ||
         specValues!.length != algorithm.numSpecifications ||
         _currentAlgoInfo?.guid != algorithm.guid) {
-      specValues = algorithm.specifications.map((s) => s.defaultValue).toList();
+      specValues = algorithm.specifications.map((s) => s.safeDefaultValue).toList();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {});

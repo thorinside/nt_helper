@@ -61,6 +61,8 @@ class Specification {
         type: json['type'] as int,
       );
 
+  int get safeDefaultValue => defaultValue != 0 ? defaultValue : 1.clamp(min, max);
+
   @override
   String toString() {
     return "Specification: min=$min, max=$max, defaultValue=$defaultValue, type=$type";
