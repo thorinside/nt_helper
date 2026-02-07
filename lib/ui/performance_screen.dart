@@ -233,6 +233,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               _pollingEnabled
                   ? Icons.pause_circle_filled
                   : Icons.play_circle_fill,
+              semanticLabel: _pollingEnabled ? 'Stop polling' : 'Start polling',
             ),
             tooltip: _pollingEnabled ? 'Stop polling' : 'Start polling',
             onPressed: () {

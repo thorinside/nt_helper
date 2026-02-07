@@ -56,7 +56,7 @@ class _MappingEditButtonState extends State<MappingEditButton> {
             minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
             tapTargetSize: MaterialTapTargetSize.padded,
           ),
-          icon: const Icon(Icons.map_sharp),
+          icon: Icon(Icons.map_sharp, semanticLabel: hasMapping ? 'Edit mapping (active)' : 'Add mapping'),
           tooltip: hasMapping ? 'Edit mapping (active)' : 'Add mapping',
           onPressed: () async {
             final cubit = context.read<DistingCubit>();

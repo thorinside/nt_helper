@@ -180,7 +180,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           ),
           // Remove button
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, semanticLabel: 'Remove from performance page'),
             tooltip: 'Remove from performance page',
             onPressed: () => _removeFromPerformancePage(parameterNumber),
           ),
@@ -378,12 +378,12 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                       },
                       enableFeedback: true,
                       icon: _isCollapsed
-                          ? const Icon(Icons.keyboard_double_arrow_down_sharp)
-                          : const Icon(Icons.keyboard_double_arrow_up_sharp),
+                          ? const Icon(Icons.keyboard_double_arrow_down_sharp, semanticLabel: 'Expand all')
+                          : const Icon(Icons.keyboard_double_arrow_up_sharp, semanticLabel: 'Collapse all'),
                     ),
                   ),
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
+                    icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
                     itemBuilder: (context) {
                       final metadata = AlgorithmMetadataService()
                           .getAlgorithmByGuid(widget.slot.algorithm.guid);

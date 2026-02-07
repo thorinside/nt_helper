@@ -97,7 +97,7 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
           appBar: AppBar(
             title: const Text('Randomize Settings'),
             leading: IconButton(
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close, semanticLabel: 'Close randomize settings'),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),

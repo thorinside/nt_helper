@@ -426,20 +426,20 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           // Material 3 specs: use density for closer action spacing
           IconButton(
             tooltip: 'Move Up',
-            icon: const Icon(Icons.arrow_upward, size: 18),
+            icon: const Icon(Icons.arrow_upward, size: 18, semanticLabel: 'Move Up'),
             onPressed: widget.onMoveUp,
             visualDensity: VisualDensity.compact,
           ),
           IconButton(
             tooltip: 'Move Down',
-            icon: const Icon(Icons.arrow_downward, size: 18),
+            icon: const Icon(Icons.arrow_downward, size: 18, semanticLabel: 'Move Down'),
             onPressed: widget.onMoveDown,
             visualDensity: VisualDensity.compact,
           ),
           // Overflow menu: mapped parameters and delete
           PopupMenuButton<String>(
             tooltip: 'More',
-            icon: Icon(Icons.more_vert, size: 18, color: foregroundColor),
+            icon: Icon(Icons.more_vert, size: 18, color: foregroundColor, semanticLabel: 'More'),
             itemBuilder: (context) {
               List<PopupMenuEntry<String>> items = [];
 
@@ -759,6 +759,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
               tooltip: isEs5Enabled ? 'ES-5 Mode: On' : 'ES-5 Mode: Off',
               icon: Icon(
                 Icons.output,
+                semanticLabel: isEs5Enabled ? 'ES-5 Mode: On' : 'ES-5 Mode: Off',
                 color: isEs5Enabled
                     ? theme.colorScheme.primary
                     : theme.colorScheme.onSurface.withAlpha(128),

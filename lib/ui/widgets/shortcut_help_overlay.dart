@@ -34,7 +34,7 @@ class ShortcutHelpOverlay extends StatelessWidget {
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, semanticLabel: 'Close'),
                       tooltip: 'Close',
                       onPressed: () => Navigator.of(context).pop(),
                     ),

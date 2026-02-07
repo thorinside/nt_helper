@@ -41,14 +41,14 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
       child: Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back, semanticLabel: 'Back'),
             tooltip: 'Back',
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: const Text('RTT Statistics'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh, semanticLabel: 'Refresh'),
               tooltip: 'Refresh',
               onPressed: _refreshStats,
             ),

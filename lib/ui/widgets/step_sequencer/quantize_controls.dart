@@ -209,7 +209,7 @@ class QuantizeControls extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return IconButton(
-      icon: const Icon(Icons.undo),
+      icon: const Icon(Icons.undo, semanticLabel: 'Undo last quantize'),
       tooltip: 'Undo last quantize',
       onPressed: canUndo ? onUndo : null,
       style: IconButton.styleFrom(

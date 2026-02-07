@@ -162,7 +162,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                         ),
                         const SizedBox(width: 8),
                         PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert),
+                          icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
                           itemBuilder: (context) => [
                             const PopupMenuItem(
                               value: 'randomize',

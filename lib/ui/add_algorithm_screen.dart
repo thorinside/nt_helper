@@ -456,7 +456,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           // Rescan Plugins button - only visible when connected to real hardware
           if (!isOffline)
             IconButton(
-              icon: const Icon(Icons.sync),
+              icon: const Icon(Icons.sync, semanticLabel: 'Rescan Plugins on Hardware'),
               tooltip: 'Rescan Plugins on Hardware',
               onPressed: () async {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -469,7 +469,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               },
             ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, semanticLabel: 'Refresh Algorithm List'),
             tooltip: 'Refresh Algorithm List',
             onPressed: () {
               // Call the refresh method from DistingCubit
@@ -485,7 +485,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.help_outline),
+            icon: const Icon(Icons.help_outline, semanticLabel: 'Help'),
+            tooltip: 'Help',
             onPressed: () {
               showDialog(
                 context: context,
@@ -522,6 +523,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       ),
       floatingActionButton: _isHelpAvailableForSelected
           ? FloatingActionButton(
+              tooltip: 'View algorithm documentation',
               onPressed: () => _showDocumentation(selectedAlgorithmGuid!),
               child: const Icon(Icons.question_mark),
             )
@@ -566,7 +568,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                     suffixIcon:
                                         _searchController.text.isNotEmpty
                                         ? IconButton(
-                                            icon: const Icon(Icons.clear),
+                                            icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
+                                            tooltip: 'Clear search',
                                             onPressed: () {
                                               _searchController.clear();
                                             },
@@ -587,6 +590,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                         _showFavoritesOnly
                                             ? Icons.star
                                             : Icons.star_border,
+                                        semanticLabel: 'Show Favorites Only',
                                       ),
                                       tooltip: 'Show Favorites Only',
                                       color: _showFavoritesOnly
@@ -600,7 +604,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.filter_alt_off),
+                                      icon: const Icon(Icons.filter_alt_off, semanticLabel: 'Clear Filters'),
                                       tooltip: 'Clear Filters',
                                       style: ButtonStyle(
                                         foregroundColor: WidgetStatePropertyAll(
@@ -823,11 +827,13 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         const ButtonSegment(
           value: AlgorithmViewMode.chipGrid,
           icon: Icon(Icons.grid_view, size: 18),
+          label: Text('Chips'),
           tooltip: 'Chip Grid',
         ),
         const ButtonSegment(
           value: AlgorithmViewMode.list,
           icon: Icon(Icons.view_list, size: 18),
+          label: Text('List'),
           tooltip: 'List',
         ),
         // Only show column mode on desktop/tablet
@@ -835,6 +841,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           const ButtonSegment(
             value: AlgorithmViewMode.column,
             icon: Icon(Icons.view_column, size: 18),
+            label: Text('Columns'),
             tooltip: 'Column',
           ),
       ],
@@ -1041,6 +1048,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             final bool isFavorite = _favoriteGuids.contains(algo.guid);
             final bool isCommunityPlugin = algo.guid != algo.guid.toLowerCase();
             return GestureDetector(
+              excludeFromSemantics: true,
               onLongPress: () => _toggleFavorite(algo.guid),
               child: ChoiceChip(
                 label: Row(
@@ -1058,6 +1066,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       Icon(
                         Icons.star,
                         size: 16,
+                        semanticLabel: 'Favorite',
                         color: isSelected
                             ? Theme.of(context).colorScheme.onPrimaryContainer
                             : Theme.of(context).colorScheme.primary,
@@ -1068,6 +1077,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       Icon(
                         Icons.extension,
                         size: 14,
+                        semanticLabel: 'Community plugin',
                         color: isSelected
                             ? Theme.of(context).colorScheme.onPrimaryContainer
                             : Theme.of(context).colorScheme.secondary,
@@ -1112,11 +1122,17 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             algo.guid.toLowerCase(),
           );
 
-          return Material(
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            label: '${algo.name}${isFavorite ? ', favorite' : ''}${isCommunityPlugin ? ', community plugin' : ''}',
+            hint: 'Double tap to ${isSelected ? 'deselect' : 'select'}',
+            child: Material(
             color: isSelected
                 ? Theme.of(context).colorScheme.primaryContainer
                 : Colors.transparent,
-            child: InkWell(
+            child: ExcludeSemantics(
+              child: InkWell(
               onTap: () => _selectAlgorithm(isSelected ? null : algo.guid),
               onLongPress: () => _toggleFavorite(algo.guid),
               child: Padding(
@@ -1158,6 +1174,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                         isFavorite ? Icons.star : Icons.star_border,
                         color: isFavorite ? Colors.amber : null,
                         size: 20,
+                        semanticLabel: isFavorite
+                            ? 'Remove from favorites'
+                            : 'Add to favorites',
                       ),
                       tooltip: isFavorite
                           ? 'Remove from favorites'
@@ -1173,6 +1192,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   ],
                 ),
               ),
+            ),
+            ),
             ),
           );
         },

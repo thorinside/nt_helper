@@ -172,12 +172,12 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         actions: _currentReport != null && !_isRunning
             ? [
                 IconButton(
-                  icon: const Icon(Icons.copy),
+                  icon: const Icon(Icons.copy, semanticLabel: 'Copy to Clipboard'),
                   tooltip: 'Copy to Clipboard',
                   onPressed: _copyReportToClipboard,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.share),
+                  icon: const Icon(Icons.share, semanticLabel: 'Export Report'),
                   tooltip: 'Export Report',
                   onPressed: _exportReport,
                 ),

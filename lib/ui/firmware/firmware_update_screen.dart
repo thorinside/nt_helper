@@ -155,7 +155,7 @@ class _FirmwareUpdateView extends StatelessWidget {
     // During flashing, show a disabled back button to prevent accidental exit
     if (state is FirmwareUpdateStateFlashing) {
       return IconButton(
-        icon: const Icon(Icons.arrow_back),
+        icon: const Icon(Icons.arrow_back, semanticLabel: 'Cannot exit during firmware update'),
         onPressed: null,
         tooltip: 'Cannot exit during firmware update',
       );

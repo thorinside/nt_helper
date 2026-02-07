@@ -346,6 +346,9 @@ class _GalleryViewState extends State<_GalleryView>
                   )
                 : Icon(
                     updateCount > 0 ? Icons.update : Icons.sync,
+                    semanticLabel: updateCount > 0
+                        ? 'Updates available ($updateCount)'
+                        : 'Refresh gallery',
                     color: updateCount > 0 ? Colors.orange : null,
                   ),
             onPressed: isRefreshing
@@ -365,7 +368,7 @@ class _GalleryViewState extends State<_GalleryView>
           isLabelVisible: queueCount > 0,
           label: Text('$queueCount'),
           child: IconButton(
-            icon: const Icon(Icons.download_for_offline),
+            icon: Icon(Icons.download_for_offline, semanticLabel: 'Install Queue ($queueCount)'),
             onPressed: () {
               _tabController.animateTo(1);
             },
@@ -373,7 +376,7 @@ class _GalleryViewState extends State<_GalleryView>
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.settings),
+          icon: const Icon(Icons.settings, semanticLabel: 'Settings'),
           onPressed: () {
             // Get the midi manager and algorithms for RTT stats if connected
             IDistingMidiManager? midiManager;
@@ -508,7 +511,7 @@ class _GalleryViewState extends State<_GalleryView>
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
                         onPressed: () {
                           _searchController.clear();
                           context.read<GalleryCubit>().clearFilters();
@@ -562,7 +565,7 @@ class _GalleryViewState extends State<_GalleryView>
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
                               onPressed: () {
                                 _searchController.clear();
                                 context.read<GalleryCubit>().clearFilters();
@@ -767,11 +770,13 @@ class _GalleryViewState extends State<_GalleryView>
         ButtonSegment(
           value: GalleryViewMode.card,
           icon: Icon(Icons.grid_view),
+          label: Text('Cards'),
           tooltip: 'Card View',
         ),
         ButtonSegment(
           value: GalleryViewMode.list,
           icon: Icon(Icons.view_list),
+          label: Text('List'),
           tooltip: 'List View',
         ),
       ],
@@ -1177,6 +1182,7 @@ class _GalleryViewState extends State<_GalleryView>
                 IconButton(
                   icon: Icon(
                     Icons.description_outlined,
+                    semanticLabel: 'View Documentation',
                     size: 20,
                     color: Theme.of(
                       context,
@@ -1217,7 +1223,7 @@ class _GalleryViewState extends State<_GalleryView>
   ) {
     if (isInQueue) {
       return IconButton(
-        icon: const Icon(Icons.remove_from_queue),
+        icon: const Icon(Icons.remove_from_queue, semanticLabel: 'Remove from queue'),
         onPressed: () =>
             parentContext.read<GalleryCubit>().removeFromQueue(plugin.id),
         tooltip: 'Remove from queue',
@@ -1225,7 +1231,7 @@ class _GalleryViewState extends State<_GalleryView>
       );
     } else if (hasUpdate) {
       return IconButton(
-        icon: const Icon(Icons.update),
+        icon: const Icon(Icons.update, semanticLabel: 'Update'),
         onPressed: () async =>
             await parentContext.read<GalleryCubit>().addToQueue(plugin),
         tooltip: 'Update',
@@ -1234,7 +1240,7 @@ class _GalleryViewState extends State<_GalleryView>
     } else if (isInstalled && !plugin.isCollection) {
       // Single plugin is installed - show reinstall option
       return IconButton(
-        icon: const Icon(Icons.refresh),
+        icon: const Icon(Icons.refresh, semanticLabel: 'Reinstall'),
         onPressed: () async =>
             await parentContext.read<GalleryCubit>().addToQueue(plugin),
         tooltip: 'Reinstall',
@@ -1243,7 +1249,7 @@ class _GalleryViewState extends State<_GalleryView>
     } else {
       // Not installed, OR is a collection (can always add more)
       return IconButton(
-        icon: const Icon(Icons.add_to_queue),
+        icon: const Icon(Icons.add_to_queue, semanticLabel: 'Add to queue'),
         onPressed: () async =>
             await parentContext.read<GalleryCubit>().addToQueue(plugin),
         tooltip: 'Add to queue',
@@ -1454,6 +1460,7 @@ class _GalleryViewState extends State<_GalleryView>
                           IconButton(
                             icon: Icon(
                               Icons.description_outlined,
+                              semanticLabel: 'View Documentation',
                               size: 20,
                               color: Theme.of(context)
                                   .colorScheme
@@ -1832,6 +1839,9 @@ class _GalleryViewState extends State<_GalleryView>
           IconButton(
             icon: Icon(
               queuedPlugin.hasSelectedPlugins ? Icons.edit : Icons.tune,
+              semanticLabel: queuedPlugin.hasSelectedPlugins
+                  ? 'Edit plugin selection'
+                  : 'Choose plugins to install',
               color: queuedPlugin.hasSelectedPlugins
                   ? null
                   : Theme.of(context).colorScheme.error,
@@ -1843,7 +1853,11 @@ class _GalleryViewState extends State<_GalleryView>
           ),
           // Remove button
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: Icon(Icons.close,
+              semanticLabel: queuedPlugin.status == QueuedPluginStatus.failed
+                  ? 'Dismiss error'
+                  : 'Remove from queue',
+            ),
             onPressed: () =>
                 context.read<GalleryCubit>().removeFromQueue(plugin.id),
             tooltip: queuedPlugin.status == QueuedPluginStatus.failed
@@ -1856,7 +1870,11 @@ class _GalleryViewState extends State<_GalleryView>
 
     // For single plugins, show only remove button
     return IconButton(
-      icon: const Icon(Icons.close),
+      icon: Icon(Icons.close,
+        semanticLabel: queuedPlugin.status == QueuedPluginStatus.failed
+            ? 'Dismiss error'
+            : 'Remove from queue',
+      ),
       onPressed: () => context.read<GalleryCubit>().removeFromQueue(plugin.id),
       tooltip: queuedPlugin.status == QueuedPluginStatus.failed
           ? 'Dismiss error'

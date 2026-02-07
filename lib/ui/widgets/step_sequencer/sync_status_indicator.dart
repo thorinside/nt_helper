@@ -80,7 +80,7 @@ class SyncStatusIndicator extends StatelessWidget {
           if (status == SyncStatus.error && onRetry != null) ...[
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.refresh, size: 16),
+              icon: const Icon(Icons.refresh, size: 16, semanticLabel: 'Retry failed writes'),
               onPressed: onRetry,
               tooltip: 'Retry failed writes',
               padding: const EdgeInsets.all(4),

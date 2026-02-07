@@ -119,6 +119,7 @@ class MetadataSyncPage extends StatelessWidget {
                             return IconButton(
                               icon: Icon(
                                 isOffline ? Icons.wifi_off : Icons.wifi,
+                                semanticLabel: isOffline ? 'Go Online' : 'Work Offline',
                               ),
                               tooltip: isOffline ? 'Go Online' : 'Work Offline',
                               onPressed: isBusy
@@ -150,7 +151,7 @@ class MetadataSyncPage extends StatelessWidget {
                             // Can sync if connected and not busy
                             final canSync = isConnected && !isBusy;
                             return IconButton(
-                              icon: const Icon(Icons.sync),
+                              icon: const Icon(Icons.sync, semanticLabel: 'Sync From Device'),
                               tooltip: 'Sync From Device',
                               // Pass manager only if action is possible
                               onPressed: canSync && currentManager != null
@@ -177,7 +178,7 @@ class MetadataSyncPage extends StatelessWidget {
                             // Can save if connected and not busy
                             final canSave = isConnected && !isBusy;
                             return IconButton(
-                              icon: const Icon(Icons.save_alt_outlined),
+                              icon: const Icon(Icons.save_alt_outlined, semanticLabel: 'Save Current Device Preset'),
                               tooltip: 'Save Current Device Preset',
                               // Pass manager only if action is possible
                               onPressed: canSave && currentManager != null
@@ -203,7 +204,7 @@ class MetadataSyncPage extends StatelessWidget {
                             final canSync = isConnected && !isBusy;
 
                             return PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert),
+                              icon: const Icon(Icons.more_vert, semanticLabel: 'More Actions'),
                               tooltip: 'More Actions',
                               enabled: !isBusy,
                               onSelected: (value) {
@@ -891,6 +892,9 @@ class _PresetListView extends StatelessWidget {
                   color: preset.isTemplate
                       ? Theme.of(context).colorScheme.tertiary
                       : Colors.grey,
+                  semanticLabel: preset.isTemplate
+                      ? 'Unmark as Template'
+                      : 'Mark as Template',
                 ),
                 tooltip: preset.isTemplate
                     ? 'Unmark as Template'
@@ -911,6 +915,7 @@ class _PresetListView extends StatelessWidget {
                   color: canLoad
                       ? Theme.of(context).colorScheme.primary
                       : Colors.grey,
+                  semanticLabel: isOffline ? 'Load Preset Offline' : 'Send to NT',
                 ),
                 tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
                 onPressed: canLoad
@@ -931,6 +936,7 @@ class _PresetListView extends StatelessWidget {
                   color: canDelete
                       ? Theme.of(context).colorScheme.error
                       : Colors.grey,
+                  semanticLabel: 'Delete Saved Preset',
                 ),
                 tooltip: 'Delete Saved Preset',
                 onPressed: canDelete
@@ -1190,6 +1196,9 @@ class _TemplateListView extends StatelessWidget {
                       color: canLoad
                           ? Theme.of(context).colorScheme.secondary
                           : Colors.grey,
+                      semanticLabel: isOffline
+                          ? 'Inject Template (Offline)'
+                          : 'Inject Template',
                     ),
                     tooltip: isOffline
                         ? 'Inject Template (Offline)'
@@ -1210,6 +1219,7 @@ class _TemplateListView extends StatelessWidget {
                       color: canLoad
                           ? Theme.of(context).colorScheme.primary
                           : Colors.grey,
+                      semanticLabel: isOffline ? 'Load Preset Offline' : 'Send to NT',
                     ),
                     tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
                     onPressed: canLoad
@@ -1229,6 +1239,7 @@ class _TemplateListView extends StatelessWidget {
                       color: canDelete
                           ? Theme.of(context).colorScheme.error
                           : Colors.grey,
+                      semanticLabel: 'Delete Template',
                     ),
                     tooltip: 'Delete Template',
                     onPressed: canDelete
@@ -1516,7 +1527,7 @@ class _AlgorithmMetadataListViewState
               // Add clear button
               suffixIcon: _filterController.text.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear),
+                      icon: const Icon(Icons.clear, semanticLabel: 'Clear filter'),
                       onPressed: () {
                         _filterController.clear();
                         // _filterList will be called by the listener

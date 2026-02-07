@@ -137,7 +137,7 @@ class _FloatingScreenshotContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: const Icon(Icons.close, color: Colors.white, semanticLabel: 'Close screenshot overlay'),
                   iconSize: 16,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(

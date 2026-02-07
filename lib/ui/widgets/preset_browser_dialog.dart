@@ -63,7 +63,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                   state.maybeMap(
                     loaded: (loaded) => loaded.navigationHistory.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.arrow_back),
+                            icon: const Icon(Icons.arrow_back, semanticLabel: 'Back'),
                             onPressed: () {
                               context.read<PresetBrowserCubit>().navigateBack();
                             },
@@ -79,6 +79,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                         loaded.sortByDate
                             ? Icons.date_range
                             : Icons.sort_by_alpha,
+                        semanticLabel: loaded.sortByDate
+                            ? 'Sort by date'
+                            : 'Sort alphabetically',
                       ),
                       onPressed: () {
                         context.read<PresetBrowserCubit>().toggleSortMode();

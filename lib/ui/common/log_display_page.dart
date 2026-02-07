@@ -24,6 +24,7 @@ class LogDisplayPage extends StatelessWidget {
               logger.isRecording
                   ? Icons.pause_circle_filled
                   : Icons.play_circle_filled,
+              semanticLabel: logger.isRecording ? 'Pause Logging' : 'Resume Logging',
             ),
             tooltip: logger.isRecording ? 'Pause Logging' : 'Resume Logging',
             onPressed: () {
@@ -37,14 +38,14 @@ class LogDisplayPage extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.copy_all),
+            icon: const Icon(Icons.copy_all, semanticLabel: 'Copy Logs'),
             tooltip: 'Copy Logs',
             onPressed: () {
               Clipboard.setData(ClipboardData(text: logger.logs.join('\n')));
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete_forever),
+            icon: const Icon(Icons.delete_forever, semanticLabel: 'Clear Logs'),
             tooltip: 'Clear Logs',
             onPressed: () {
               logger.clearLogs();

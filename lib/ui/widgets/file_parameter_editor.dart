@@ -760,7 +760,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               onPressed: () {
                 _onTextSubmitted(_textController.text);
               },
-              icon: const Icon(Icons.check),
+              icon: const Icon(Icons.check, semanticLabel: 'Confirm text input'),
               iconSize: 24,
               visualDensity: VisualDensity.compact,
               color: Theme.of(context).colorScheme.primary,
@@ -772,7 +772,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
                   _textController.text = _currentDisplayValue ?? '';
                 });
               },
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close, semanticLabel: 'Cancel text input'),
               iconSize: 24,
               visualDensity: VisualDensity.compact,
               color: Theme.of(context).colorScheme.error,

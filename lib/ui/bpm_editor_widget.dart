@@ -256,7 +256,7 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
           onLongPressEnd: (_) => _stopAcceleratedChange(performSnap: true),
           onLongPressCancel: () => _stopAcceleratedChange(performSnap: false),
           child: IconButton(
-            icon: const Icon(Icons.remove_circle_outline),
+            icon: const Icon(Icons.remove_circle_outline, semanticLabel: 'Decrease BPM'),
             iconSize: iconSize,
             splashRadius: splashRadius,
             tooltip: 'Decrease BPM',
@@ -318,7 +318,7 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
           onLongPressEnd: (_) => _stopAcceleratedChange(performSnap: true),
           onLongPressCancel: () => _stopAcceleratedChange(performSnap: false),
           child: IconButton(
-            icon: const Icon(Icons.add_circle_outline),
+            icon: const Icon(Icons.add_circle_outline, semanticLabel: 'Increase BPM'),
             iconSize: iconSize,
             splashRadius: splashRadius,
             tooltip: 'Increase BPM',

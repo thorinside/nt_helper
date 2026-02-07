@@ -462,7 +462,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               );
             }
           },
-          child: Icon(Icons.add_circle_rounded),
+          child: Icon(Icons.add_circle_rounded, semanticLabel: 'Add Algorithm to Preset'),
         );
       },
     );
@@ -499,7 +499,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           IconButton(
                             onPressed: () =>
                                 context.read<RoutingEditorCubit>().zoomOut(),
-                            icon: const Icon(Icons.zoom_out),
+                            icon: const Icon(Icons.zoom_out, semanticLabel: 'Zoom out'),
                             tooltip: 'Zoom out (Ctrl/Cmd + -)',
                             style: buttonStyle,
                           ),
@@ -531,14 +531,14 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           IconButton(
                             onPressed: () =>
                                 context.read<RoutingEditorCubit>().zoomIn(),
-                            icon: const Icon(Icons.zoom_in),
+                            icon: const Icon(Icons.zoom_in, semanticLabel: 'Zoom in'),
                             tooltip: 'Zoom in (Ctrl/Cmd + +)',
                             style: buttonStyle,
                           ),
                           IconButton(
                             onPressed: () =>
                                 context.read<RoutingEditorCubit>().resetZoom(),
-                            icon: const Icon(Icons.zoom_out_map),
+                            icon: const Icon(Icons.zoom_out_map, semanticLabel: 'Reset zoom'),
                             tooltip: 'Reset zoom (100%)',
                             style: buttonStyle,
                           ),
@@ -551,7 +551,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           SizedBox(width: isMobile ? 4 : 8),
                         ],
                         IconButton(
-                          icon: const Icon(Icons.refresh),
+                          icon: const Icon(Icons.refresh, semanticLabel: 'Refresh Routing'),
                           style: buttonStyle,
                           onPressed: state.maybeWhen(
                             loaded:
@@ -624,7 +624,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
                                 // Show normal layout button
                                 return IconButton(
-                                  icon: const Icon(Icons.auto_fix_high),
+                                  icon: const Icon(Icons.auto_fix_high, semanticLabel: 'Apply Layout Algorithm'),
                                   onPressed: () {
                                     context
                                         .read<RoutingEditorCubit>()
@@ -638,7 +638,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         ),
                         // Center View
                         IconButton(
-                          icon: const Icon(Icons.center_focus_strong),
+                          icon: const Icon(Icons.center_focus_strong, semanticLabel: 'Center View'),
                           onPressed: () => _editorController.fitToView(),
                           tooltip: 'Center View',
                           style: buttonStyle,
@@ -648,6 +648,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         IconButton(
                           icon: Icon(
                             isMobile ? Icons.share : Icons.image_outlined,
+                            semanticLabel: isMobile
+                                ? 'Share Nodes Image'
+                                : 'Copy Nodes Image',
                           ),
                           onPressed: () {
                             if (isMobile) {
@@ -711,13 +714,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 ButtonSegment(
                   value: EditMode.parameters,
                   label: isWideScreen ? const Text('Parameters') : null,
-                  icon: const Icon(Icons.tune),
+                  icon: const Icon(Icons.tune, semanticLabel: 'Parameters'),
                   tooltip: 'Parameters mode',
                 ),
                 ButtonSegment(
                   value: EditMode.routing,
                   label: isWideScreen ? const Text('Routing') : null,
-                  icon: const Icon(Icons.account_tree),
+                  icon: const Icon(Icons.account_tree, semanticLabel: 'Routing'),
                   tooltip: 'Routing mode',
                 ),
               ],
@@ -747,7 +750,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 // Show "Offline Data" button when offline
                 return IconButton(
                   tooltip: "Offline Data",
-                  icon: const Icon(Icons.sync_alt_rounded),
+                  icon: const Icon(Icons.sync_alt_rounded, semanticLabel: 'Offline Data'),
                   onPressed: () {
                     final distingCubit = context.read<DistingCubit>();
                     Navigator.push(
@@ -768,7 +771,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         button: true,
                         child: IconButton(
                           tooltip: "View Options",
-                          icon: const Icon(Icons.view_list),
+                          icon: const Icon(Icons.view_list, semanticLabel: 'View Options'),
                           onPressed: () => _showDisplayModeBottomSheet(context),
                         ),
                       )
@@ -781,7 +784,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 DisplayMode.parameters,
                               );
                             },
-                            icon: const Icon(Icons.list_alt_rounded),
+                            icon: const Icon(Icons.list_alt_rounded, semanticLabel: 'Parameter View'),
                           ),
                           IconButton(
                             tooltip: "Algorithm UI",
@@ -790,7 +793,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 DisplayMode.algorithmUI,
                               );
                             },
-                            icon: const Icon(Icons.line_axis_rounded),
+                            icon: const Icon(Icons.line_axis_rounded, semanticLabel: 'Algorithm UI'),
                           ),
                           IconButton(
                             tooltip: "Overview UI",
@@ -799,7 +802,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 DisplayMode.overview,
                               );
                             },
-                            icon: const Icon(Icons.line_weight_rounded),
+                            icon: const Icon(Icons.line_weight_rounded, semanticLabel: 'Overview UI'),
                           ),
                           IconButton(
                             tooltip: "Overview VU Meters",
@@ -808,7 +811,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 DisplayMode.overviewVUs,
                               );
                             },
-                            icon: const Icon(Icons.leaderboard_rounded),
+                            icon: const Icon(Icons.leaderboard_rounded, semanticLabel: 'Overview VU Meters'),
                           ),
                         ],
                       );
@@ -860,6 +863,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         child: IconButton(
                           icon: Icon(
                             Icons.arrow_circle_up,
+                            semanticLabel: 'Firmware update available: v${updateAvailable.version}',
                             color: Theme.of(context).colorScheme.primary,
                             size: 20,
                           ),
@@ -1081,7 +1085,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     return [
       // Refresh: Only disabled by loading OR offline
       IconButton(
-        icon: const Icon(Icons.refresh_rounded),
+        icon: const Icon(Icons.refresh_rounded, semanticLabel: 'Refresh'),
         tooltip: 'Refresh',
         onPressed: widget.loading || isOffline
             ? null
@@ -1115,7 +1119,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       Builder(
         builder: (ctx) {
           return IconButton(
-            icon: const Icon(Icons.arrow_upward_rounded),
+            icon: const Icon(Icons.arrow_upward_rounded, semanticLabel: 'Move Algorithm Up'),
             tooltip: 'Move Algorithm Up',
             onPressed: widget.loading
                 ? null
@@ -1135,7 +1139,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       Builder(
         builder: (ctx) {
           return IconButton(
-            icon: const Icon(Icons.arrow_downward_rounded),
+            icon: const Icon(Icons.arrow_downward_rounded, semanticLabel: 'Move Algorithm Down'),
             tooltip: 'Move Algorithm Down',
             onPressed: widget.loading
                 ? null
@@ -1162,7 +1166,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       Builder(
         builder: (ctx) {
           return IconButton(
-            icon: const Icon(Icons.delete_forever_rounded),
+            icon: const Icon(Icons.delete_forever_rounded, semanticLabel: 'Remove Algorithm'),
             tooltip: 'Remove Algorithm',
             onPressed: widget.loading
                 ? null
@@ -1183,7 +1187,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
   Widget _buildOverflowMenu(DistingCubit cubit) {
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert),
+      icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
       itemBuilder: (popupCtx) {
         // Get offline status here for menu items that need it
         final isOffline = switch (cubit.state) {
