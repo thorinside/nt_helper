@@ -15,6 +15,58 @@ import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/debug_metadata_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/template_preview_dialog.dart';
 
+class MetadataSyncAnnouncementListener extends StatelessWidget {
+  final Widget child;
+  final BlocBase<MetadataSyncState>? bloc;
+
+  const MetadataSyncAnnouncementListener({
+    super.key,
+    required this.child,
+    this.bloc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<BlocBase<MetadataSyncState>, MetadataSyncState>(
+      bloc: bloc,
+      listener: (context, metaState) {
+        if (metaState is SyncingMetadata) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            metaState.mainMessage,
+            TextDirection.ltr,
+          );
+        } else if (metaState is MetadataSyncSuccess) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Metadata sync complete',
+            TextDirection.ltr,
+          );
+        } else if (metaState is MetadataSyncFailure) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Metadata sync failed: ${metaState.error}',
+            TextDirection.ltr,
+          );
+        } else if (metaState is PresetSaveSuccess) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Preset saved',
+            TextDirection.ltr,
+          );
+        } else if (metaState is PresetDeleteSuccess) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Preset deleted',
+            TextDirection.ltr,
+          );
+        }
+      },
+      child: child,
+    );
+  }
+}
+
 class MetadataSyncPage extends StatelessWidget {
   // Accept DistingCubit as a parameter
   final DistingCubit distingCubit;
@@ -119,7 +171,9 @@ class MetadataSyncPage extends StatelessWidget {
                             return IconButton(
                               icon: Icon(
                                 isOffline ? Icons.wifi_off : Icons.wifi,
-                                semanticLabel: isOffline ? 'Go Online' : 'Work Offline',
+                                semanticLabel: isOffline
+                                    ? 'Go Online'
+                                    : 'Work Offline',
                               ),
                               tooltip: isOffline ? 'Go Online' : 'Work Offline',
                               onPressed: isBusy
@@ -151,7 +205,10 @@ class MetadataSyncPage extends StatelessWidget {
                             // Can sync if connected and not busy
                             final canSync = isConnected && !isBusy;
                             return IconButton(
-                              icon: const Icon(Icons.sync, semanticLabel: 'Sync From Device'),
+                              icon: const Icon(
+                                Icons.sync,
+                                semanticLabel: 'Sync From Device',
+                              ),
                               tooltip: 'Sync From Device',
                               // Pass manager only if action is possible
                               onPressed: canSync && currentManager != null
@@ -178,7 +235,10 @@ class MetadataSyncPage extends StatelessWidget {
                             // Can save if connected and not busy
                             final canSave = isConnected && !isBusy;
                             return IconButton(
-                              icon: const Icon(Icons.save_alt_outlined, semanticLabel: 'Save Current Device Preset'),
+                              icon: const Icon(
+                                Icons.save_alt_outlined,
+                                semanticLabel: 'Save Current Device Preset',
+                              ),
                               tooltip: 'Save Current Device Preset',
                               // Pass manager only if action is possible
                               onPressed: canSave && currentManager != null
@@ -204,7 +264,10 @@ class MetadataSyncPage extends StatelessWidget {
                             final canSync = isConnected && !isBusy;
 
                             return PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert, semanticLabel: 'More Actions'),
+                              icon: const Icon(
+                                Icons.more_vert,
+                                semanticLabel: 'More Actions',
+                              ),
                               tooltip: 'More Actions',
                               enabled: !isBusy,
                               onSelected: (value) {
@@ -281,156 +344,135 @@ class MetadataSyncPage extends StatelessWidget {
                       ],
                     ),
                     // Body uses MetadataSyncCubit for DB DistingCubit for state
-                    body: BlocListener<MetadataSyncCubit, MetadataSyncState>(
-                      listener: (context, metaState) {
-                        if (metaState is SyncingMetadata) {
-                          SemanticsService.sendAnnouncement(View.of(context),
-                            metaState.mainMessage,
-                            TextDirection.ltr,
-                          );
-                        } else if (metaState is MetadataSyncSuccess) {
-                          SemanticsService.sendAnnouncement(View.of(context),
-                            'Metadata sync complete',
-                            TextDirection.ltr,
-                          );
-                        } else if (metaState is MetadataSyncFailure) {
-                          SemanticsService.sendAnnouncement(View.of(context),
-                            'Metadata sync failed: ${metaState.error}',
-                            TextDirection.ltr,
-                          );
-                        } else if (metaState is PresetSaveSuccess) {
-                          SemanticsService.sendAnnouncement(View.of(context),
-                            'Preset saved',
-                            TextDirection.ltr,
-                          );
-                        } else if (metaState is PresetDeleteSuccess) {
-                          SemanticsService.sendAnnouncement(View.of(context),
-                            'Preset deleted',
-                            TextDirection.ltr,
-                          );
-                        }
-                      },
+                    body: MetadataSyncAnnouncementListener(
                       child: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
-                      builder: (metaCtx, metaState) {
-                        final isOperationInProgress =
-                            metaState is! ViewingLocalData &&
-                            metaState is! Idle &&
-                            metaState is! Failure;
+                        builder: (metaCtx, metaState) {
+                          final isOperationInProgress =
+                              metaState is! ViewingLocalData &&
+                              metaState is! Idle &&
+                              metaState is! Failure;
 
-                        if (metaState is Idle || metaState is LoadingPreset) {
-                          // Show spinner if metadata cubit is loading
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
+                          if (metaState is Idle || metaState is LoadingPreset) {
+                            // Show spinner if metadata cubit is loading
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
 
-                        if (metaState is Failure ||
-                            metaState is MetadataSyncFailure ||
-                            metaState is PresetSaveFailure ||
-                            metaState is PresetDeleteFailure ||
-                            metaState is PresetLoadFailure) {
-                          final errorMsg = switch (metaState) {
-                            Failure(error: final e) => e,
-                            MetadataSyncFailure(error: final e) => e,
-                            PresetSaveFailure(error: final e) => e,
-                            PresetDeleteFailure(error: final e) => e,
-                            PresetLoadFailure(error: final e) => e,
-                            _ => "An unknown error occurred.",
-                          };
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    color: Theme.of(context).colorScheme.error,
-                                    size: 48,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(errorMsg, textAlign: TextAlign.center),
-                                  const SizedBox(height: 16),
-                                  TextButton(
-                                    onPressed: () {
-                                      // Reset only MetadataSyncCubit, let user handle Disting mode
-                                      metaCtx.read<MetadataSyncCubit>().reset();
-                                      metaCtx
-                                          .read<MetadataSyncCubit>()
-                                          .loadLocalData(); // Reload list
-                                      // If DistingCubit was also in error, user uses toggle
-                                    },
-                                    child: const Text("Retry Loading List"),
-                                  ),
-                                ],
+                          if (metaState is Failure ||
+                              metaState is MetadataSyncFailure ||
+                              metaState is PresetSaveFailure ||
+                              metaState is PresetDeleteFailure ||
+                              metaState is PresetLoadFailure) {
+                            final errorMsg = switch (metaState) {
+                              Failure(error: final e) => e,
+                              MetadataSyncFailure(error: final e) => e,
+                              PresetSaveFailure(error: final e) => e,
+                              PresetDeleteFailure(error: final e) => e,
+                              PresetLoadFailure(error: final e) => e,
+                              _ => "An unknown error occurred.",
+                            };
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                      size: 48,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(errorMsg, textAlign: TextAlign.center),
+                                    const SizedBox(height: 16),
+                                    TextButton(
+                                      onPressed: () {
+                                        // Reset only MetadataSyncCubit, let user handle Disting mode
+                                        metaCtx
+                                            .read<MetadataSyncCubit>()
+                                            .reset();
+                                        metaCtx
+                                            .read<MetadataSyncCubit>()
+                                            .loadLocalData(); // Reload list
+                                        // If DistingCubit was also in error, user uses toggle
+                                      },
+                                      child: const Text("Retry Loading List"),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            );
+                          }
+
+                          if (metaState is CheckpointFound) {
+                            return Center(
+                              child: _buildCheckpointDialog(context, metaState),
+                            );
+                          }
+
+                          if (metaState is SyncingMetadata ||
+                              metaState is SavingPreset ||
+                              metaState is DeletingPreset) {
+                            return Center(
+                              child: _buildProgressIndicator(
+                                context,
+                                metaState,
+                              ),
+                            );
+                          }
+
+                          // Primarily use ViewingLocalData state
+                          if (metaState is ViewingLocalData) {
+                            // Offline highlighting removed for now
+                            return _buildDataView(
+                              metaCtx,
+                              metaState.algorithms,
+                              metaState.parameterCounts,
+                              metaState.presets,
+                              isConnected,
+                              isOperationInProgress,
+                              isOffline,
+                              null, // No loaded preset ID passed
+                            );
+                          }
+                          // Handle transient success states - might briefly show loading
+                          if (metaState is MetadataSyncSuccess ||
+                              metaState is PresetSaveSuccess ||
+                              metaState is PresetDeleteSuccess ||
+                              metaState is PresetLoadSuccess) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+
+                          // Fallback - this should rarely occur now
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.warning,
+                                  size: 48,
+                                  color: Colors.orange,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "Unexpected state: ${metaState.runtimeType}",
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text("Return to Main Screen"),
+                                ),
+                              ],
                             ),
                           );
-                        }
-
-                        if (metaState is CheckpointFound) {
-                          return Center(
-                            child: _buildCheckpointDialog(context, metaState),
-                          );
-                        }
-
-                        if (metaState is SyncingMetadata ||
-                            metaState is SavingPreset ||
-                            metaState is DeletingPreset) {
-                          return Center(
-                            child: _buildProgressIndicator(context, metaState),
-                          );
-                        }
-
-                        // Primarily use ViewingLocalData state
-                        if (metaState is ViewingLocalData) {
-                          // Offline highlighting removed for now
-                          return _buildDataView(
-                            metaCtx,
-                            metaState.algorithms,
-                            metaState.parameterCounts,
-                            metaState.presets,
-                            isConnected,
-                            isOperationInProgress,
-                            isOffline,
-                            null, // No loaded preset ID passed
-                          );
-                        }
-                        // Handle transient success states - might briefly show loading
-                        if (metaState is MetadataSyncSuccess ||
-                            metaState is PresetSaveSuccess ||
-                            metaState is PresetDeleteSuccess ||
-                            metaState is PresetLoadSuccess) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        // Fallback - this should rarely occur now
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.warning,
-                                size: 48,
-                                color: Colors.orange,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                "Unexpected state: ${metaState.runtimeType}",
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text("Return to Main Screen"),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                        },
+                      ),
                     ),
                   ), // Scaffold
                 ); // PopScope
@@ -915,7 +957,9 @@ class _PresetListView extends StatelessWidget {
                   color: canLoad
                       ? Theme.of(context).colorScheme.primary
                       : Colors.grey,
-                  semanticLabel: isOffline ? 'Load Preset Offline' : 'Send to NT',
+                  semanticLabel: isOffline
+                      ? 'Load Preset Offline'
+                      : 'Send to NT',
                 ),
                 tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
                 onPressed: canLoad
@@ -1219,7 +1263,9 @@ class _TemplateListView extends StatelessWidget {
                       color: canLoad
                           ? Theme.of(context).colorScheme.primary
                           : Colors.grey,
-                      semanticLabel: isOffline ? 'Load Preset Offline' : 'Send to NT',
+                      semanticLabel: isOffline
+                          ? 'Load Preset Offline'
+                          : 'Send to NT',
                     ),
                     tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
                     onPressed: canLoad
@@ -1527,7 +1573,10 @@ class _AlgorithmMetadataListViewState
               // Add clear button
               suffixIcon: _filterController.text.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear, semanticLabel: 'Clear filter'),
+                      icon: const Icon(
+                        Icons.clear,
+                        semanticLabel: 'Clear filter',
+                      ),
                       onPressed: () {
                         _filterController.clear();
                         // _filterList will be called by the listener

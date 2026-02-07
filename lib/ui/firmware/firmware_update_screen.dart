@@ -81,35 +81,70 @@ class _FirmwareUpdateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<FirmwareUpdateCubit, FirmwareUpdateState>(
+    return const FirmwareUpdateAnnouncementListener(
+      child: _FirmwareUpdateScaffold(),
+    );
+  }
+}
+
+class FirmwareUpdateAnnouncementListener extends StatelessWidget {
+  final Widget child;
+  final BlocBase<FirmwareUpdateState>? bloc;
+
+  const FirmwareUpdateAnnouncementListener({
+    super.key,
+    required this.child,
+    this.bloc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<BlocBase<FirmwareUpdateState>, FirmwareUpdateState>(
+      bloc: bloc,
       listener: (context, state) {
         if (state is FirmwareUpdateStateDownloading) {
-          SemanticsService.sendAnnouncement(View.of(context),
+          SemanticsService.sendAnnouncement(
+            View.of(context),
             'Downloading firmware: ${(state.progress * 100).toInt()}%',
             TextDirection.ltr,
           );
         } else if (state is FirmwareUpdateStateFlashing) {
-          SemanticsService.sendAnnouncement(View.of(context),
+          SemanticsService.sendAnnouncement(
+            View.of(context),
             'Flashing firmware: ${state.progress.percent}%',
             TextDirection.ltr,
           );
         } else if (state is FirmwareUpdateStateSuccess) {
-          SemanticsService.sendAnnouncement(View.of(context),
+          SemanticsService.sendAnnouncement(
+            View.of(context),
             'Firmware update complete',
             TextDirection.ltr,
           );
         } else if (state is FirmwareUpdateStateError) {
-          SemanticsService.sendAnnouncement(View.of(context),
+          SemanticsService.sendAnnouncement(
+            View.of(context),
             'Firmware update error: ${state.message}',
             TextDirection.ltr,
           );
         } else if (state is FirmwareUpdateStateWaitingForBootloader) {
-          SemanticsService.sendAnnouncement(View.of(context),
+          SemanticsService.sendAnnouncement(
+            View.of(context),
             'Waiting for bootloader mode',
             TextDirection.ltr,
           );
         }
       },
+      child: child,
+    );
+  }
+}
+
+class _FirmwareUpdateScaffold extends StatelessWidget {
+  const _FirmwareUpdateScaffold();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<FirmwareUpdateCubit, FirmwareUpdateState>(
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(
@@ -155,7 +190,10 @@ class _FirmwareUpdateView extends StatelessWidget {
     // During flashing, show a disabled back button to prevent accidental exit
     if (state is FirmwareUpdateStateFlashing) {
       return IconButton(
-        icon: const Icon(Icons.arrow_back, semanticLabel: 'Cannot exit during firmware update'),
+        icon: const Icon(
+          Icons.arrow_back,
+          semanticLabel: 'Cannot exit during firmware update',
+        ),
         onPressed: null,
         tooltip: 'Cannot exit during firmware update',
       );
@@ -398,9 +436,12 @@ class _InitialStateView extends StatelessWidget {
               SizedBox(
                 height: 14,
                 child: isLatest
-                    ? Text('Latest',
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: theme.colorScheme.primary))
+                    ? Text(
+                        'Latest',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      )
                     : null,
               ),
             ],
@@ -626,8 +667,11 @@ class _FlashingStateView extends StatelessWidget {
         SizedBox(
           height: 16,
           child: state.progress.message.isNotEmpty
-              ? Text(state.progress.message,
-                  style: theme.textTheme.bodySmall, textAlign: TextAlign.center)
+              ? Text(
+                  state.progress.message,
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                )
               : null,
         ),
         const SizedBox(height: 24),

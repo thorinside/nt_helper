@@ -30,6 +30,7 @@ Of 75 original issues: **75 fully addressed**. All source files referenced in th
 
 For ongoing maintenance:
 - Run `test/ui/accessibility/` tests to catch a11y regressions
+- Use [blind-coverage-checklist.md](blind-coverage-checklist.md) to track blind-user specific test depth
 - Text scaling (hardcoded fontSize values) could be further improved by migrating to theme-based text styles in constrained layouts
 
 The audit identified **75 individual issues** across all areas of the app, documented in detail in this directory. Below is a prioritized roadmap for the remaining work.

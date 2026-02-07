@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/cubit/routing_editor_cubit.dart';
+import 'package:nt_helper/cubit/routing_editor_state.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
+import 'package:nt_helper/ui/widgets/routing/accessible_routing_list_view.dart';
 
 void main() {
   group('Routing Accessibility', () {
@@ -146,10 +153,119 @@ void main() {
     });
 
     group('Accessible routing list view', () {
-      testWidgets('renders when no state is loaded', (tester) async {
-        // Basic smoke test - the full integration test would need a cubit
-        expect(true, isTrue);
+      testWidgets('announces algorithm and connection summaries',
+          (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+        final cubit = _TestRoutingEditorCubit(_loadedState());
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<RoutingEditorCubit>.value(
+              value: cubit,
+              child: const Scaffold(body: AccessibleRoutingListView()),
+            ),
+          ),
+        );
+
+        expect(find.text('Algorithms (1)'), findsOneWidget);
+        expect(find.text('Connections (1)'), findsOneWidget);
+        expect(find.byTooltip('Delete this connection'), findsOneWidget);
+
+        expect(
+          find.bySemanticsLabel(
+            RegExp(r'Slot 1: Bassline.*1 active connections'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel(
+            RegExp(r'Bassline: Audio Out to Bassline: CV In on Bus A1'),
+          ),
+          findsOneWidget,
+        );
+
+        semanticsHandle.dispose();
+        await cubit.close();
+      });
+
+      testWidgets('renders an explicit empty connections message',
+          (tester) async {
+        final cubit = _TestRoutingEditorCubit(_loadedState(connections: const []));
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<RoutingEditorCubit>.value(
+              value: cubit,
+              child: const Scaffold(body: AccessibleRoutingListView()),
+            ),
+          ),
+        );
+
+        expect(find.text('Connections (0)'), findsOneWidget);
+        expect(
+          find.text(
+            'No connections. Use the canvas view to create connections between ports.',
+          ),
+          findsOneWidget,
+        );
+
+        await cubit.close();
       });
     });
   });
+}
+
+RoutingEditorState _loadedState({List<Connection>? connections}) {
+  final algorithm = Algorithm(
+    algorithmIndex: 0,
+    guid: 'test',
+    name: 'Bassline',
+  );
+
+  const inputPort = Port(
+    id: 'algo_1_in',
+    name: 'CV In',
+    type: PortType.cv,
+    direction: PortDirection.input,
+    parameterNumber: 1,
+  );
+
+  const outputPort = Port(
+    id: 'algo_1_out',
+    name: 'Audio Out',
+    type: PortType.audio,
+    direction: PortDirection.output,
+    parameterNumber: 2,
+  );
+
+  final defaultConnections = <Connection>[
+    const Connection(
+      id: 'conn_1',
+      sourcePortId: 'algo_1_out',
+      destinationPortId: 'algo_1_in',
+      connectionType: ConnectionType.algorithmToAlgorithm,
+      busLabel: 'Bus A1',
+    ),
+  ];
+
+  return RoutingEditorState.loaded(
+    physicalInputs: const [],
+    physicalOutputs: const [],
+    algorithms: [
+      RoutingAlgorithm(
+        id: 'algo_1',
+        index: 0,
+        algorithm: algorithm,
+        inputPorts: const [inputPort],
+        outputPorts: const [outputPort],
+      ),
+    ],
+    connections: connections ?? defaultConnections,
+  );
+}
+
+class _TestRoutingEditorCubit extends RoutingEditorCubit {
+  _TestRoutingEditorCubit(RoutingEditorState initialState) : super(null) {
+    emit(initialState);
+  }
 }

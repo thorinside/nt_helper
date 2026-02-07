@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/ui/widgets/parameter_value_display.dart';
 
 void main() {
   group('Widget Semantics', () {
     group('PortWidget', () {
-      testWidgets('has semantic label with port name', (tester) async {
+      testWidgets(
+          'announces disconnected output port with keyboard action hint',
+          (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
@@ -19,11 +25,19 @@ void main() {
           ),
         );
 
-        expect(find.text('Audio Out'), findsOneWidget);
+        final node = tester.getSemantics(find.byType(PortWidget));
+        final data = node.getSemanticsData();
+        expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(data.label, contains('Audio Out'));
+        expect(data.label, contains('not connected'));
+        expect(data.hint, contains('Press Space'));
+
+        semanticsHandle.dispose();
       });
 
-      testWidgets('port with model includes type in semantics',
-          (tester) async {
+      testWidgets('announces port type and connection state', (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+
         const port = Port(
           id: 'test_port',
           name: 'Test Port',
@@ -40,111 +54,113 @@ void main() {
                 isInput: false,
                 portId: 'test_port',
                 port: port,
+                isConnected: true,
               ),
             ),
           ),
         );
 
-        expect(find.text('Test Port'), findsOneWidget);
+        final node = tester.getSemantics(find.byType(PortWidget));
+        final data = node.getSemanticsData();
+        expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(data.label, contains('Test Port'));
+        expect(data.label, contains('Audio Output'));
+        expect(data.label, contains('connected'));
+        expect(data.hint, contains('Long press'));
+
+        semanticsHandle.dispose();
       });
     });
 
-    group('Dialog semantics', () {
-      testWidgets('AlertDialog title has header semantics', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Semantics(
-                      header: true,
-                      child: const Text('Test Dialog'),
-                    ),
-                    content: const Text('Content'),
-                  ),
-                ),
-                child: const Text('Open'),
-              ),
-            ),
-          ),
-        );
+    group('ParameterValueDisplay', () {
+      testWidgets('announces On/Off values', (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
 
-        await tester.tap(find.text('Open'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Test Dialog'), findsOneWidget);
-        expect(find.text('Content'), findsOneWidget);
-      });
-    });
-
-    group('Add Algorithm Screen', () {
-      testWidgets('algorithm chip has semantic label', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: Semantics(
-                button: true,
-                selected: false,
-                label: 'Test Algorithm, favorite',
-                hint: 'Double tap to select',
-                child: const SizedBox(width: 100, height: 40),
+              body: ParameterValueDisplay(
+                currentValue: 1,
+                min: 0,
+                max: 1,
+                name: 'Bypass',
+                isOnOff: true,
+                widescreen: false,
+                onValueChanged: _noopOnValueChanged,
+                onLongPress: _noopOnLongPress,
               ),
             ),
           ),
         );
 
-        expect(
-          find.bySemanticsLabel(RegExp('Test Algorithm')),
-          findsOneWidget,
-        );
-      });
-    });
+        final node = tester.getSemantics(find.byType(ParameterValueDisplay));
+        final data = node.getSemanticsData();
+        expect(data.label, contains('Bypass: On'));
+        expect(data.hasFlag(SemanticsFlag.isToggled), isTrue);
 
-    group('Bottom sheet accessibility', () {
-      testWidgets('showModalBottomSheet with showDragHandle', (tester) async {
+        semanticsHandle.dispose();
+      });
+
+      testWidgets('announces note values in a live region', (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+
         await tester.pumpWidget(
           MaterialApp(
-            home: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showModalBottomSheet(
-                  context: context,
-                  showDragHandle: true,
-                  builder: (ctx) => const SizedBox(
-                    height: 200,
-                    child: Center(child: Text('Sheet Content')),
-                  ),
-                ),
-                child: const Text('Open Sheet'),
+            home: Scaffold(
+              body: ParameterValueDisplay(
+                currentValue: 60,
+                min: 0,
+                max: 127,
+                name: 'Root Note',
+                widescreen: false,
+                onValueChanged: _noopOnValueChanged,
+                onLongPress: _noopOnLongPress,
               ),
             ),
           ),
         );
 
-        await tester.tap(find.text('Open Sheet'));
-        await tester.pumpAndSettle();
+        final node = tester.getSemantics(find.byType(ParameterValueDisplay));
+        final data = node.getSemanticsData();
+        expect(data.label, contains('Root Note'));
+        expect(data.label, contains('C4'));
+        expect(data.hasFlag(SemanticsFlag.isLiveRegion), isTrue);
 
-        expect(find.text('Sheet Content'), findsOneWidget);
+        semanticsHandle.dispose();
       });
-    });
 
-    group('Progress indicator semantics', () {
-      testWidgets('CircularProgressIndicator wrapped in Semantics',
+      testWidgets('announces enumerated parameter labels and selected value',
           (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: Semantics(
-                label: 'Loading data',
-                child: const SizedBox(width: 40, height: 40),
+              body: ParameterValueDisplay(
+                currentValue: 1,
+                min: 0,
+                max: 2,
+                name: 'Mode',
+                dropdownItems: ['Off', 'On', 'Auto'],
+                widescreen: false,
+                onValueChanged: _noopOnValueChanged,
+                onLongPress: _noopOnLongPress,
               ),
             ),
           ),
         );
 
-        expect(find.bySemanticsLabel('Loading data'), findsOneWidget);
+        final node = tester.getSemantics(find.byType(ParameterValueDisplay));
+        final data = node.getSemanticsData();
+        expect(data.label, contains('Mode'));
+        expect(data.value, contains('On'));
+
+        semanticsHandle.dispose();
       });
     });
   });
 }
+
+void _noopOnValueChanged(int _) {}
+
+void _noopOnLongPress() {}
