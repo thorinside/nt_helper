@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
@@ -130,7 +132,9 @@ class _StepSequencerViewState extends State<StepSequencerView> {
           // Update sync status based on offline state
           final effectiveSyncStatus = isOffline ? SyncStatus.offline : _syncStatus;
 
-          return Padding(
+          return Focus(
+            onKeyEvent: _handleParameterModeShortcut,
+            child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: SingleChildScrollView(
               child: Column(
@@ -158,7 +162,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                         ),
                         const SizedBox(width: 8),
                         PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert),
+                          icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
                           itemBuilder: (context) => [
                             const PopupMenuItem(
                               value: 'randomize',
@@ -283,6 +287,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
                 ],
               ),
             ),
+          ),
           );
         },
       );
@@ -519,6 +524,59 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       _syncStatus = SyncStatus.synced;
       _lastError = null;
     });
+  }
+
+  void _switchParameterMode(StepParameter mode) {
+    setState(() {
+      _activeParameter = mode;
+    });
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      'Switched to ${mode.name} mode',
+      TextDirection.ltr,
+    );
+  }
+
+  KeyEventResult _handleParameterModeShortcut(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    // Only handle when no modifier keys are pressed (except Shift for M)
+    final isShiftOnly = HardwareKeyboard.instance.isShiftPressed &&
+        !HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isMetaPressed &&
+        !HardwareKeyboard.instance.isAltPressed;
+    final noModifiers = !HardwareKeyboard.instance.isShiftPressed &&
+        !HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isMetaPressed &&
+        !HardwareKeyboard.instance.isAltPressed;
+
+    StepParameter? newMode;
+
+    if (noModifiers) {
+      switch (event.logicalKey) {
+        case LogicalKeyboardKey.keyP:
+          newMode = StepParameter.pitch;
+        case LogicalKeyboardKey.keyV:
+          newMode = StepParameter.velocity;
+        case LogicalKeyboardKey.keyG:
+          newMode = StepParameter.division;
+        case LogicalKeyboardKey.keyT:
+          newMode = StepParameter.ties;
+        case LogicalKeyboardKey.keyB:
+          newMode = StepParameter.pattern;
+        default:
+          break;
+      }
+    } else if (isShiftOnly && event.logicalKey == LogicalKeyboardKey.keyM) {
+      newMode = StepParameter.mod;
+    }
+
+    if (newMode != null && newMode != _activeParameter) {
+      _switchParameterMode(newMode);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
   }
 
   /// Triggers randomization by setting Randomise parameter to 1, waiting 100ms, then resetting to 0

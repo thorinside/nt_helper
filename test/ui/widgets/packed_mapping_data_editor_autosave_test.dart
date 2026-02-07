@@ -438,11 +438,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'Unipolar',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Unipolar';
       });
 
       await tester.tap(
@@ -476,9 +474,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any((child) => child is Text && child.data == 'Gate');
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Gate';
       });
 
       await tester.tap(
@@ -512,11 +510,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'MIDI Enabled',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Enabled';
       });
 
       await tester.tap(
@@ -550,11 +546,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'MIDI Symmetric',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Symmetric';
       });
 
       await tester.tap(
@@ -592,11 +586,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'MIDI Relative',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Relative';
       });
 
       await tester.tap(
@@ -630,11 +622,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'I2C Enabled',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'I2C Enabled';
       });
 
       await tester.tap(
@@ -668,11 +658,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'I2C Symmetric',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'I2C Symmetric';
       });
 
       await tester.tap(
@@ -942,11 +930,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'Unipolar',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'Unipolar';
       });
 
       await tester.tap(
@@ -1252,11 +1238,9 @@ void main() {
 
       // Enable MIDI to trigger a save
       final switchFinder = find.byWidgetPredicate((widget) {
-        if (widget is! Row) return false;
-        final children = widget.children;
-        return children.any(
-          (child) => child is Text && child.data == 'MIDI Enabled',
-        );
+        if (widget is! SwitchListTile) return false;
+        final title = widget.title;
+        return title is Text && title.data == 'MIDI Enabled';
       });
 
       await tester.tap(

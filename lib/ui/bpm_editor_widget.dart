@@ -256,9 +256,10 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
           onLongPressEnd: (_) => _stopAcceleratedChange(performSnap: true),
           onLongPressCancel: () => _stopAcceleratedChange(performSnap: false),
           child: IconButton(
-            icon: const Icon(Icons.remove_circle_outline),
+            icon: const Icon(Icons.remove_circle_outline, semanticLabel: 'Decrease BPM'),
             iconSize: iconSize,
             splashRadius: splashRadius,
+            tooltip: 'Decrease BPM',
             onPressed: () => _handleIconButtonTap(false),
           ),
         ),
@@ -276,6 +277,8 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
                 style: textStyle?.copyWith(fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   isDense: true,
+                  labelText: 'BPM',
+                  floatingLabelBehavior: FloatingLabelBehavior.never,
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 12.0,
                     horizontal: 8.0,
@@ -283,7 +286,6 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  // Remove suffix text entirely
                   suffixText: null,
                 ),
                 onSubmitted: (_) => _validateAndSubmit(),
@@ -316,9 +318,10 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
           onLongPressEnd: (_) => _stopAcceleratedChange(performSnap: true),
           onLongPressCancel: () => _stopAcceleratedChange(performSnap: false),
           child: IconButton(
-            icon: const Icon(Icons.add_circle_outline),
+            icon: const Icon(Icons.add_circle_outline, semanticLabel: 'Increase BPM'),
             iconSize: iconSize,
             splashRadius: splashRadius,
+            tooltip: 'Increase BPM',
             onPressed: () => _handleIconButtonTap(true),
           ),
         ),

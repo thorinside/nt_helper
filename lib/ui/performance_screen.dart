@@ -233,6 +233,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               _pollingEnabled
                   ? Icons.pause_circle_filled
                   : Icons.play_circle_fill,
+              semanticLabel: _pollingEnabled ? 'Stop polling' : 'Start polling',
             ),
             tooltip: _pollingEnabled ? 'Stop polling' : 'Start polling',
             onPressed: () {
@@ -304,12 +305,15 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       _selectedPageIndex = populatedPages[index];
                     });
                   },
-                  labelType: NavigationRailLabelType.none,
+                  labelType: NavigationRailLabelType.all,
                   destinations: populatedPages.map((pageIndex) {
                     final isSelected = pageIndex == _selectedPageIndex;
                     return NavigationRailDestination(
                       icon: _buildPageBadge(pageIndex, isSelected: isSelected),
-                      label: const Text(''),
+                      label: Semantics(
+                        label: 'Page $pageIndex',
+                        child: Text('Page $pageIndex'),
+                      ),
                     );
                   }).toList(),
                 ),

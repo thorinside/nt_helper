@@ -55,7 +55,7 @@ class _DebugPanelState extends State<DebugPanel> {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                const Icon(Icons.bug_report, size: 16),
+                const ExcludeSemantics(child: Icon(Icons.bug_report, size: 16)),
                 const SizedBox(width: 8),
                 const Text(
                   'Debug Log',
@@ -92,7 +92,7 @@ class _DebugPanelState extends State<DebugPanel> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close, semanticLabel: 'Dismiss panel'),
                   iconSize: 16,
                   onPressed: widget.onDismiss,
                   tooltip: 'Dismiss panel',

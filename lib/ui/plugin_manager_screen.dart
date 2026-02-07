@@ -579,12 +579,12 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
                 (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
               IconButton(
                 onPressed: _backupPlugins,
-                icon: const Icon(Icons.backup),
+                icon: const Icon(Icons.backup, semanticLabel: 'Backup All Plugins'),
                 tooltip: 'Backup All Plugins',
               ),
             IconButton(
               onPressed: _installPlugin,
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add, semanticLabel: 'Install Plugin from File'),
               tooltip: 'Install Plugin from File',
             ),
           ],
@@ -834,19 +834,23 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${plugins.length}',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+            Semantics(
+              label: '${plugins.length} plugins',
+              excludeSemantics: true,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${plugins.length}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -870,11 +874,13 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         ),
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-          child: Icon(
-            _getIconForPluginType(plugin.type),
-            color: theme.colorScheme.primary,
+        leading: ExcludeSemantics(
+          child: CircleAvatar(
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+            child: Icon(
+              _getIconForPluginType(plugin.type),
+              color: theme.colorScheme.primary,
+            ),
           ),
         ),
         title: Text(plugin.name),
@@ -904,12 +910,12 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.info_outline),
+              icon: const Icon(Icons.info_outline, semanticLabel: 'Plugin Details'),
               onPressed: () => _showPluginDetails(plugin),
               tooltip: 'Plugin Details',
             ),
             IconButton(
-              icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+              icon: Icon(Icons.delete_outline, color: theme.colorScheme.error, semanticLabel: 'Delete Plugin'),
               onPressed: () => _deletePlugin(plugin),
               tooltip: 'Delete Plugin',
             ),

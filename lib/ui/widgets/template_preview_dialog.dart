@@ -122,10 +122,12 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
                   final slot = widget.template.slots[index];
                   return ListTile(
                     dense: true,
-                    leading: Icon(
-                      Icons.music_note,
-                      size: 16,
-                      color: theme.colorScheme.primary,
+                    leading: ExcludeSemantics(
+                      child: Icon(
+                        Icons.music_note,
+                        size: 16,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
                     title: Text(
                       slot.algorithm.name,
@@ -228,7 +230,9 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          Icon(Icons.error, color: theme.colorScheme.error),
+          ExcludeSemantics(
+            child: Icon(Icons.error, color: theme.colorScheme.error),
+          ),
           const SizedBox(width: 8),
           const Expanded(child: Text('Injection Failed')),
         ],

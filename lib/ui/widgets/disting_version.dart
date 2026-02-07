@@ -45,6 +45,16 @@ class DistingVersion extends StatelessWidget {
       content = Tooltip(message: tooltipMessage, child: text);
     }
 
+    final wrappedContent = Semantics(
+      label: isNotSupported
+          ? 'Firmware version $distingVersion - update required, minimum $requiredVersion'
+          : 'Firmware version $distingVersion',
+      button: onTap != null,
+      hint: onTap != null ? 'Tap to manage firmware updates' : null,
+      excludeSemantics: true,
+      child: content,
+    );
+
     if (onTap != null) {
       return MouseRegion(
         onEnter: (_) => onHelpTextChanged?.call(firmwareHelpText),
@@ -54,12 +64,12 @@ class DistingVersion extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            child: content,
+            child: wrappedContent,
           ),
         ),
       );
     }
 
-    return content;
+    return wrappedContent;
   }
 }

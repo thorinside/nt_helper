@@ -384,7 +384,8 @@ class MiniMapWidgetState extends State<MiniMapWidget> {
       cursor = SystemMouseCursors.grab;
     }
 
-    return Container(
+    return ExcludeSemantics(
+      child: Container(
       width: widget.width,
       height: widget.height,
       decoration: BoxDecoration(
@@ -423,6 +424,7 @@ class MiniMapWidgetState extends State<MiniMapWidget> {
           ),
         ),
       ),
+    ),
     );
   }
 }

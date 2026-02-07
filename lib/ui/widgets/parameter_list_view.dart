@@ -12,7 +12,9 @@ class ParameterListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: ListView.builder(
       cacheExtent: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       itemCount: slot.parameters.length,
@@ -40,16 +42,20 @@ class ParameterListView extends StatelessWidget {
             !ParameterEditorRegistry.isStringTypeUnit(parameter.unit);
         final unit = shouldShowUnit ? parameter.getUnitString(units) : null;
 
-        return ParameterEditorView(
-          slot: slot,
-          parameterInfo: parameter,
-          value: value,
-          enumStrings: safeEnumStrings,
-          mapping: mapping,
-          valueString: safeValueString,
-          unit: unit,
+        return FocusTraversalOrder(
+          order: NumericFocusOrder(index.toDouble()),
+          child: ParameterEditorView(
+            slot: slot,
+            parameterInfo: parameter,
+            value: value,
+            enumStrings: safeEnumStrings,
+            mapping: mapping,
+            valueString: safeValueString,
+            unit: unit,
+          ),
         );
       },
+    ),
     );
   }
 }

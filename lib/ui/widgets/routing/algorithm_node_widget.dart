@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
@@ -137,6 +138,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   final GlobalKey _containerKey = GlobalKey();
   Size? _lastSize;
 
+  // Focus and keyboard navigation state
+  final FocusNode _focusNode = FocusNode();
+  bool _hasFocus = false;
+  int _focusedPortIndex = -1; // -1 = node level (no port focused)
+  List<String?> _visiblePortIds = [];
+
   @override
   void initState() {
     super.initState();
@@ -144,9 +151,19 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
 
   @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(AlgorithmNodeWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     _scheduleSizeReport();
+    if (widget.inputLabels.length != oldWidget.inputLabels.length ||
+        widget.outputLabels.length != oldWidget.outputLabels.length) {
+      _focusedPortIndex = -1;
+    }
   }
 
   void _scheduleSizeReport() {
@@ -171,47 +188,72 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    Widget content = GestureDetector(
-      onTap: () {
-        widget.onTap?.call();
+    final inputCount = widget.inputLabels.length;
+    final outputCount = widget.outputLabels.length;
+    final connectedCount = widget.connectedPorts?.length ?? 0;
+
+    Widget content = Focus(
+      focusNode: _focusNode,
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _hasFocus = hasFocus;
+          if (!hasFocus) _focusedPortIndex = -1;
+        });
       },
-      onPanStart: _handleDragStart,
-      onPanUpdate: _handleDragUpdate,
-      onPanEnd: _handleDragEnd,
-      child: AnimatedContainer(
-        key: _containerKey,
-        duration: _isDragging
-            ? Duration.zero
-            : const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: widget.isSelected
-                ? theme.colorScheme.tertiary
-                : theme.colorScheme.outline.withAlpha(179),
-            width: widget.isSelected ? 3 : 1, // Thicker border when selected
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(_isDragging ? 77 : 26),
-              blurRadius: _isDragging ? 8 : 4,
-              offset: Offset(0, _isDragging ? 4 : 2),
+      onKeyEvent: _handleNodeKeyEvent,
+      child: Semantics(
+        label: 'Slot ${widget.slotNumber}: ${widget.algorithmName}, $inputCount inputs, $outputCount outputs, $connectedCount connected',
+        hint: _focusedPortIndex >= 0
+            ? 'In port navigation. Arrow keys to move between ports. Escape to exit.'
+            : 'Press Enter to navigate ports. Tab to next node.',
+        container: true,
+        selected: widget.isSelected,
+        focused: _hasFocus,
+        child: GestureDetector(
+        onTap: () {
+          widget.onTap?.call();
+        },
+        onPanStart: _handleDragStart,
+        onPanUpdate: _handleDragUpdate,
+        onPanEnd: _handleDragEnd,
+        child: AnimatedContainer(
+          key: _containerKey,
+          duration: _isDragging
+              ? Duration.zero
+              : const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: widget.isSelected
+                  ? theme.colorScheme.tertiary
+                  : _hasFocus
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline.withAlpha(179),
+              width: (widget.isSelected || _hasFocus) ? 3 : 1,
             ),
-          ],
-        ),
-        child: IntrinsicWidth(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildTitleBar(theme),
-              _buildPorts(theme),
-              if (_shouldShowCollapseToggle())
-                _buildCollapseToggle(theme),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(_isDragging ? 77 : 26),
+                blurRadius: _isDragging ? 8 : 4,
+                offset: Offset(0, _isDragging ? 4 : 2),
+              ),
             ],
           ),
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTitleBar(theme),
+                _buildPorts(theme),
+                if (_shouldShowCollapseToggle())
+                  _buildCollapseToggle(theme),
+              ],
+            ),
+          ),
         ),
+      ),
       ),
     );
 
@@ -224,6 +266,77 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     }
 
     return content;
+  }
+
+  KeyEventResult _handleNodeKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (event.logicalKey == LogicalKeyboardKey.enter) {
+      if (_focusedPortIndex < 0 && _visiblePortIds.isNotEmpty) {
+        setState(() { _focusedPortIndex = 0; });
+        return KeyEventResult.handled;
+      }
+      if (_focusedPortIndex >= 0) {
+        _activateFocusedPort();
+        return KeyEventResult.handled;
+      }
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      if (_focusedPortIndex >= 0) {
+        setState(() { _focusedPortIndex = -1; });
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown && _focusedPortIndex >= 0) {
+      if (_visiblePortIds.isNotEmpty) {
+        setState(() {
+          _focusedPortIndex = (_focusedPortIndex + 1).clamp(0, _visiblePortIds.length - 1);
+        });
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp && _focusedPortIndex >= 0) {
+      if (_visiblePortIds.isNotEmpty) {
+        setState(() {
+          _focusedPortIndex = (_focusedPortIndex - 1).clamp(0, _visiblePortIds.length - 1);
+        });
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.space && _focusedPortIndex >= 0) {
+      _activateFocusedPort();
+      return KeyEventResult.handled;
+    }
+
+    if ((event.logicalKey == LogicalKeyboardKey.delete ||
+         event.logicalKey == LogicalKeyboardKey.backspace) &&
+        _focusedPortIndex >= 0) {
+      _deleteFocusedPortConnections();
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _activateFocusedPort() {
+    if (_focusedPortIndex < 0 || _focusedPortIndex >= _visiblePortIds.length) return;
+    final portId = _visiblePortIds[_focusedPortIndex];
+    if (portId != null) {
+      widget.onPortTapped?.call(portId);
+    }
+  }
+
+  void _deleteFocusedPortConnections() {
+    if (_focusedPortIndex < 0 || _focusedPortIndex >= _visiblePortIds.length) return;
+    final portId = _visiblePortIds[_focusedPortIndex];
+    if (portId != null) {
+      widget.onPortLongPress?.call(portId);
+    }
   }
 
   int _unconnectedPortCount() {
@@ -274,16 +387,19 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           ],
           // Show mapping icon if any parameters are mapped
           if (_hasAnyMappings()) ...[
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Icon(
-                Icons.map_sharp,
-                size: 16,
-                color: theme.colorScheme.onPrimaryContainer,
+            Semantics(
+              label: 'Has parameter mappings',
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Icon(
+                  Icons.map_sharp,
+                  size: 16,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -310,20 +426,20 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           // Material 3 specs: use density for closer action spacing
           IconButton(
             tooltip: 'Move Up',
-            icon: const Icon(Icons.arrow_upward, size: 18),
+            icon: const Icon(Icons.arrow_upward, size: 18, semanticLabel: 'Move Up'),
             onPressed: widget.onMoveUp,
             visualDensity: VisualDensity.compact,
           ),
           IconButton(
             tooltip: 'Move Down',
-            icon: const Icon(Icons.arrow_downward, size: 18),
+            icon: const Icon(Icons.arrow_downward, size: 18, semanticLabel: 'Move Down'),
             onPressed: widget.onMoveDown,
             visualDensity: VisualDensity.compact,
           ),
           // Overflow menu: mapped parameters and delete
           PopupMenuButton<String>(
             tooltip: 'More',
-            icon: Icon(Icons.more_vert, size: 18, color: foregroundColor),
+            icon: Icon(Icons.more_vert, size: 18, color: foregroundColor, semanticLabel: 'More'),
             itemBuilder: (context) {
               List<PopupMenuEntry<String>> items = [];
 
@@ -473,6 +589,17 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       ));
     }
 
+    // Track visible ports for keyboard navigation
+    _visiblePortIds = [
+      ...filteredInputs.map((i) => i.portId),
+      ...filteredOutputs.map((o) => o.portId),
+    ];
+    // Clamp focused index if ports changed
+    if (_focusedPortIndex >= _visiblePortIds.length) {
+      _focusedPortIndex = _visiblePortIds.isEmpty ? -1 : _visiblePortIds.length - 1;
+    }
+
+    int portFocusIndex = 0;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       child: Row(
@@ -490,6 +617,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                   input.label,
                   true,
                   portId: input.portId,
+                  focusIndex: portFocusIndex++,
                 ),
             ],
           ),
@@ -508,6 +636,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                   false,
                   portId: output.portId,
                   channelNumber: output.channelNumber,
+                  focusIndex: portFocusIndex++,
                 ),
             ],
           ),
@@ -519,8 +648,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   Widget _buildCollapseToggle(ThemeData theme) {
     final unconnected = _unconnectedPortCount();
     final color = theme.colorScheme.onSurface.withAlpha(153);
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return Semantics(
+      button: true,
+      label: _isCollapsed
+          ? 'Show $unconnected hidden ports'
+          : 'Hide unconnected ports',
+      child: InkWell(
       onTap: () {
         setState(() {
           _isCollapsed = !_isCollapsed;
@@ -548,6 +681,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -557,6 +691,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     bool isInput, {
     String? portId,
     int? channelNumber,
+    int? focusIndex,
   }) {
     final isConnected =
         portId != null && (widget.connectedPorts?.contains(portId) ?? false);
@@ -585,6 +720,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           isConnected, // Keep using the passed connection info for algorithm ports
       isHighlighted: portId != null && portId == widget.highlightedPortId,
       showShadowDot: showShadowDot,
+      isFocused: focusIndex != null && focusIndex == _focusedPortIndex,
       onPortPositionResolved: widget.onPortPositionResolved,
       onRoutingAction: widget.onRoutingAction,
       // Long-press to delete - available on both inputs and outputs
@@ -623,6 +759,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
               tooltip: isEs5Enabled ? 'ES-5 Mode: On' : 'ES-5 Mode: Off',
               icon: Icon(
                 Icons.output,
+                semanticLabel: isEs5Enabled ? 'ES-5 Mode: On' : 'ES-5 Mode: Off',
                 color: isEs5Enabled
                     ? theme.colorScheme.primary
                     : theme.colorScheme.onSurface.withAlpha(128),

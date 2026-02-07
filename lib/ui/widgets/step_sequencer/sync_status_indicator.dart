@@ -45,39 +45,50 @@ class SyncStatusIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width <= 768;
+    final statusText = _getStatusText(status);
+    final semanticLabel = 'Sync status: $statusText'
+        '${status == SyncStatus.error && errorMessage != null ? ". Error: $errorMessage" : ""}';
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: isMobile ? 8 : 12,
-          height: isMobile ? 8 : 12,
-          decoration: BoxDecoration(
-            color: _getStatusColor(status),
-            shape: BoxShape.circle,
-          ),
-        ),
-        if (!isMobile) ...[
-          const SizedBox(width: 8),
-          Text(
-            _getStatusText(status),
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).textTheme.bodyMedium?.color,
+    return Semantics(
+      label: semanticLabel,
+      liveRegion: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ExcludeSemantics(
+            child: Container(
+              width: isMobile ? 8 : 12,
+              height: isMobile ? 8 : 12,
+              decoration: BoxDecoration(
+                color: _getStatusColor(status),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
+          if (!isMobile) ...[
+            const SizedBox(width: 8),
+            ExcludeSemantics(
+              child: Text(
+                statusText,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+              ),
+            ),
+          ],
+          if (status == SyncStatus.error && onRetry != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 16, semanticLabel: 'Retry failed writes'),
+              onPressed: onRetry,
+              tooltip: 'Retry failed writes',
+              padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(),
+            ),
+          ],
         ],
-        if (status == SyncStatus.error && onRetry != null) ...[
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.refresh, size: 16),
-            onPressed: onRetry,
-            tooltip: 'Retry failed writes',
-            padding: const EdgeInsets.all(4),
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ],
+      ),
     );
   }
 

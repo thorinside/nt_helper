@@ -105,7 +105,6 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     return perfParams;
   }
 
-  // Build page badge widget
   Widget _buildPageBadge(int pageIndex) {
     final colors = [
       Colors.blue,
@@ -116,16 +115,19 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     ];
     final color = colors[(pageIndex - 1) % colors.length];
 
-    return Chip(
-      label: Text('P$pageIndex'),
-      backgroundColor: color,
-      labelStyle: const TextStyle(
-        color: Colors.white,
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
+    return Semantics(
+      label: 'Performance page $pageIndex',
+      child: Chip(
+        label: Text('P$pageIndex'),
+        backgroundColor: color,
+        labelStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        visualDensity: VisualDensity.compact,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      visualDensity: VisualDensity.compact,
     );
   }
 
@@ -178,7 +180,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           ),
           // Remove button
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, semanticLabel: 'Remove from performance page'),
             tooltip: 'Remove from performance page',
             onPressed: () => _removeFromPerformancePage(parameterNumber),
           ),
@@ -287,30 +289,32 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           // Only show inline dropdown on desktop (width >= 600)
           if (MediaQuery.of(context).size.width >= 600) ...[
             const SizedBox(width: 8),
-            // Performance page selector
-            DropdownButton<int>(
-              value: perfPageIndex,
-              isDense: true,
-              underline: const SizedBox.shrink(),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontSize: 11),
-              hint: const Text('Page'),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              onChanged: (newValue) {
-                if (newValue != null) {
-                  _assignToPerformancePage(parameterNumber, newValue);
-                }
-              },
-              items: [
-                const DropdownMenuItem(value: 0, child: Text('Not Assigned')),
-                ...List.generate(15, (i) {
-                  return DropdownMenuItem(
-                    value: i + 1,
-                    child: Text('Page ${i + 1}'),
-                  );
-                }),
-              ],
+            Semantics(
+              label: 'Assign to performance page',
+              child: DropdownButton<int>(
+                value: perfPageIndex,
+                isDense: true,
+                underline: const SizedBox.shrink(),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontSize: 11),
+                hint: const Text('Page'),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                onChanged: (newValue) {
+                  if (newValue != null) {
+                    _assignToPerformancePage(parameterNumber, newValue);
+                  }
+                },
+                items: [
+                  const DropdownMenuItem(value: 0, child: Text('Not Assigned')),
+                  ...List.generate(15, (i) {
+                    return DropdownMenuItem(
+                      value: i + 1,
+                      child: Text('Page ${i + 1}'),
+                    );
+                  }),
+                ],
+              ),
             ),
           ],
         ],
@@ -374,12 +378,12 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                       },
                       enableFeedback: true,
                       icon: _isCollapsed
-                          ? const Icon(Icons.keyboard_double_arrow_down_sharp)
-                          : const Icon(Icons.keyboard_double_arrow_up_sharp),
+                          ? const Icon(Icons.keyboard_double_arrow_down_sharp, semanticLabel: 'Expand all')
+                          : const Icon(Icons.keyboard_double_arrow_up_sharp, semanticLabel: 'Collapse all'),
                     ),
                   ),
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
+                    icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
                     itemBuilder: (context) {
                       final metadata = AlgorithmMetadataService()
                           .getAlgorithmByGuid(widget.slot.algorithm.guid);

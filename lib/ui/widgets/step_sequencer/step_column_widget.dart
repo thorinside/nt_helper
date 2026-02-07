@@ -59,6 +59,17 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
   // OLD: Per-step parameter selection (_activeParam) - REMOVED
   // NEW: Global parameter mode is passed via widget.activeParameter
 
+  String _getSemanticLabel() {
+    final stepLabel = 'Step ${widget.stepIndex + 1}';
+    final paramName = widget.activeParameter.name;
+    final value = _getCurrentParameterValue();
+    final formattedValue = _isBitPatternMode()
+        ? '${_getValidBitCount()} substeps'
+        : _formatStepValue(value);
+    final activeLabel = widget.isActive ? ', active' : '';
+    return '$stepLabel, $paramName: $formattedValue$activeLabel';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -68,7 +79,27 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
     final borderColor = widget.isActive ? primaryTeal : _getBorderColor(isDark);
     final borderWidth = widget.isActive ? 2.0 : 1.0;
 
-    return Container(
+    final currentValue = _getCurrentParameterValue();
+    final minVal = _getParameterMin();
+    final maxVal = _getParameterMax();
+
+    return Semantics(
+      label: _getSemanticLabel(),
+      value: _isBitPatternMode() ? null : _formatStepValue(currentValue),
+      hint: 'Swipe up or down to adjust ${widget.activeParameter.name}',
+      increasedValue: _isBitPatternMode()
+          ? null
+          : _formatStepValue((currentValue + 1).clamp(minVal, maxVal)),
+      decreasedValue: _isBitPatternMode()
+          ? null
+          : _formatStepValue((currentValue - 1).clamp(minVal, maxVal)),
+      onIncrease: _isBitPatternMode()
+          ? null
+          : () => _updateParameter((currentValue + 1).clamp(minVal, maxVal)),
+      onDecrease: _isBitPatternMode()
+          ? null
+          : () => _updateParameter((currentValue - 1).clamp(minVal, maxVal)),
+      child: Container(
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
         color: widget.isActive
@@ -190,6 +221,7 @@ class _StepColumnWidgetState extends State<StepColumnWidget> {
           ),
         ],
       ),
+    ),
     );
   }
 

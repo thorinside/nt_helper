@@ -81,6 +81,7 @@ class LinkifiedText extends StatelessWidget {
         text: shortUrl,
         style: defaultLinkStyle,
         recognizer: TapGestureRecognizer()..onTap = () => _launchUrl(url),
+        semanticsLabel: 'Link: $url',
       ));
 
       lastEnd = match.end;

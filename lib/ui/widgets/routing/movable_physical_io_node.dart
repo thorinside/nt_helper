@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 
@@ -103,6 +104,11 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   Offset _initialPosition = Offset.zero;
   final GlobalKey _nodeKey = GlobalKey();
 
+  // Focus and keyboard navigation state
+  final FocusNode _focusNode = FocusNode();
+  bool _hasFocus = false;
+  int _focusedPortIndex = -1; // -1 = node level (no port focused)
+
   @override
   void initState() {
     super.initState();
@@ -110,9 +116,18 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   }
 
   @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant MovablePhysicalIONode oldWidget) {
     super.didUpdateWidget(oldWidget);
     WidgetsBinding.instance.addPostFrameCallback((_) => _reportSize());
+    if (widget.ports.length != oldWidget.ports.length) {
+      _focusedPortIndex = -1;
+    }
   }
 
   void _reportSize() {
@@ -130,41 +145,53 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return GestureDetector(
-      onPanStart: _handleDragStart,
-      onPanUpdate: _handleDragUpdate,
-      onPanEnd: _handleDragEnd,
-      child: AnimatedContainer(
-        key: _nodeKey,
-        duration: _isDragging
-            ? Duration.zero
-            : const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
-          border: Border.all(
-            color: colorScheme.outline.withValues(alpha: 0.4),
-            width: 1.5,
-          ),
-          borderRadius: BorderRadius.circular(12.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _isDragging ? 0.3 : 0.1),
-              blurRadius: _isDragging ? 8 : 4,
-              offset: Offset(0, _isDragging ? 4 : 2),
+    return Focus(
+      focusNode: _focusNode,
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _hasFocus = hasFocus;
+          if (!hasFocus) _focusedPortIndex = -1;
+        });
+      },
+      onKeyEvent: _handleNodeKeyEvent,
+      child: GestureDetector(
+        onPanStart: _handleDragStart,
+        onPanUpdate: _handleDragUpdate,
+        onPanEnd: _handleDragEnd,
+        child: AnimatedContainer(
+          key: _nodeKey,
+          duration: _isDragging
+              ? Duration.zero
+              : const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
+            border: Border.all(
+              color: _hasFocus
+                  ? colorScheme.primary
+                  : colorScheme.outline.withValues(alpha: 0.4),
+              width: _hasFocus ? 2.5 : 1.5,
             ),
-          ],
-        ),
-        child: IntrinsicWidth(
-          child: IntrinsicHeight(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeader(colorScheme, theme),
-                const SizedBox(height: 8.0),
-                _buildPortList(),
-                const SizedBox(height: 8.0),
-              ],
+            borderRadius: BorderRadius.circular(12.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: _isDragging ? 0.3 : 0.1),
+                blurRadius: _isDragging ? 8 : 4,
+                offset: Offset(0, _isDragging ? 4 : 2),
+              ),
+            ],
+          ),
+          child: IntrinsicWidth(
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(colorScheme, theme),
+                  const SizedBox(height: 8.0),
+                  _buildPortList(),
+                  const SizedBox(height: 8.0),
+                ],
+              ),
             ),
           ),
         ),
@@ -174,7 +201,9 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
 
   /// Builds the header section with title and icon.
   Widget _buildHeader(ColorScheme colorScheme, ThemeData theme) {
-    return Container(
+    return Semantics(
+      header: true,
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
         color: colorScheme.primary.withValues(alpha: 0.1),
@@ -198,6 +227,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -208,13 +238,16 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: widget.ports.map((port) => _buildPortRow(port)).toList(),
+        children: [
+          for (int i = 0; i < widget.ports.length; i++)
+            _buildPortRow(widget.ports[i], i),
+        ],
       ),
     );
   }
 
   /// Builds a single port row using PortWidget.
-  Widget _buildPortRow(Port port) {
+  Widget _buildPortRow(Port port, int portIndex) {
     final portIsInput = port.direction == PortDirection.input;
 
     Widget inner = PortWidget(
@@ -234,6 +267,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
           (widget.connectedPorts?.contains(port.id) ??
               false), // Check both port's connection status and connectedPorts
       isHighlighted: port.id == widget.highlightedPortId,
+      isFocused: portIndex == _focusedPortIndex,
       onPortPositionResolved: widget.onPortPositionResolved != null
           ? (portId, globalCenter, isInput) {
               widget.onPortPositionResolved!(port, globalCenter);
@@ -264,6 +298,69 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: inner,
     );
+  }
+
+  KeyEventResult _handleNodeKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (event.logicalKey == LogicalKeyboardKey.enter) {
+      if (_focusedPortIndex < 0 && widget.ports.isNotEmpty) {
+        setState(() { _focusedPortIndex = 0; });
+        return KeyEventResult.handled;
+      }
+      if (_focusedPortIndex >= 0) {
+        _activateFocusedPort();
+        return KeyEventResult.handled;
+      }
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      if (_focusedPortIndex >= 0) {
+        setState(() { _focusedPortIndex = -1; });
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown && _focusedPortIndex >= 0) {
+      setState(() {
+        _focusedPortIndex = (_focusedPortIndex + 1).clamp(0, widget.ports.length - 1);
+      });
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp && _focusedPortIndex >= 0) {
+      setState(() {
+        _focusedPortIndex = (_focusedPortIndex - 1).clamp(0, widget.ports.length - 1);
+      });
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.space && _focusedPortIndex >= 0) {
+      _activateFocusedPort();
+      return KeyEventResult.handled;
+    }
+
+    if ((event.logicalKey == LogicalKeyboardKey.delete ||
+         event.logicalKey == LogicalKeyboardKey.backspace) &&
+        _focusedPortIndex >= 0) {
+      _deleteFocusedPortConnections();
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _activateFocusedPort() {
+    if (_focusedPortIndex < 0 || _focusedPortIndex >= widget.ports.length) return;
+    final port = widget.ports[_focusedPortIndex];
+    widget.onPortTapped?.call(port);
+  }
+
+  void _deleteFocusedPortConnections() {
+    if (_focusedPortIndex < 0 || _focusedPortIndex >= widget.ports.length) return;
+    final port = widget.ports[_focusedPortIndex];
+    widget.onPortLongPress?.call(port);
   }
 
   void _handleDragStart(DragStartDetails details) {

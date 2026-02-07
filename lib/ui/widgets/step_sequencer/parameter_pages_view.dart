@@ -99,7 +99,7 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
         appBar: AppBar(
           title: const Text('Parameter Pages'),
           leading: IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, semanticLabel: 'Close parameter pages'),
             onPressed: () => Navigator.of(context).pop(),
           ),
           bottom: TabBar(
@@ -130,7 +130,7 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
             appBar: AppBar(
               title: const Text('Parameter Pages'),
               leading: IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close, semanticLabel: 'Close parameter pages'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               bottom: TabBar(
@@ -163,7 +163,7 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
       appBar: AppBar(
         title: const Text('Parameter Pages'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close, semanticLabel: 'Close parameter pages'),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),

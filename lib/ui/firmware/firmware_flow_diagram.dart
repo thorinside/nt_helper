@@ -34,37 +34,69 @@ class _FirmwareFlowDiagramState extends State<FirmwareFlowDiagram>
     super.dispose();
   }
 
+  String _getStageDescription() {
+    if (widget.progress.isError) {
+      return 'Error during firmware update';
+    }
+    switch (widget.progress.stage) {
+      case FlashStage.sdpConnect:
+        return 'Connecting to Disting NT';
+      case FlashStage.blCheck:
+        return 'Checking bootloader';
+      case FlashStage.sdpUpload:
+        return 'Uploading firmware to device';
+      case FlashStage.write:
+        return 'Writing firmware to flash memory';
+      case FlashStage.configure:
+        return 'Configuring device';
+      case FlashStage.reset:
+        return 'Resetting device';
+      case FlashStage.complete:
+        return 'Firmware update complete';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Check if animations should be disabled
     final reduceMotion = MediaQuery.of(context).disableAnimations;
 
+    final semanticDescription = _getStageDescription();
+
     if (reduceMotion) {
       // Static version for reduced motion
-      return CustomPaint(
-        painter: _FlowDiagramPainter(
-          stage: widget.progress.stage,
-          isError: widget.progress.isError,
-          animationValue: 0.5,
-          theme: Theme.of(context),
-        ),
-        size: const Size(double.infinity, 150),
-      );
-    }
-
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
+      return Semantics(
+        label: 'Firmware update diagram: $semanticDescription',
+        liveRegion: true,
+        child: CustomPaint(
           painter: _FlowDiagramPainter(
             stage: widget.progress.stage,
             isError: widget.progress.isError,
-            animationValue: _controller.value,
+            animationValue: 0.5,
             theme: Theme.of(context),
           ),
           size: const Size(double.infinity, 150),
-        );
-      },
+        ),
+      );
+    }
+
+    return Semantics(
+      label: 'Firmware update diagram: $semanticDescription',
+      liveRegion: true,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _FlowDiagramPainter(
+              stage: widget.progress.stage,
+              isError: widget.progress.isError,
+              animationValue: _controller.value,
+              theme: Theme.of(context),
+            ),
+            size: const Size(double.infinity, 150),
+          );
+        },
+      ),
     );
   }
 }

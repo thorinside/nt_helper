@@ -94,6 +94,9 @@ class PortWidget extends StatefulWidget {
   /// Show a centered red dot to indicate a "shadowed" output
   final bool showShadowDot;
 
+  /// Whether this port is currently keyboard-focused
+  final bool isFocused;
+
   const PortWidget({
     super.key,
     required this.label,
@@ -118,6 +121,7 @@ class PortWidget extends StatefulWidget {
     this.onRoutingAction,
     this.isHighlighted = false,
     this.showShadowDot = false,
+    this.isFocused = false,
   });
 
   @override
@@ -239,7 +243,24 @@ class _PortWidgetState extends State<PortWidget> {
       );
     }
 
-    return portWidget;
+    // Wrap in Semantics for accessibility
+    final directionLabel = widget.isInput ? 'Input' : 'Output';
+    final connectionLabel = widget.isConnected ? 'connected' : 'not connected';
+    final shadowLabel = widget.showShadowDot ? ', shadowed by later slot' : '';
+    final portTypeLabel = widget.port != null
+        ? (widget.port!.type == PortType.audio ? 'Audio' : 'CV')
+        : '';
+    final typePrefix = portTypeLabel.isNotEmpty ? '$portTypeLabel ' : '';
+    final hintText = widget.isConnected
+        ? 'Long press to delete connections. Press Space to start connection.'
+        : 'Press Space to start a connection.';
+
+    return Semantics(
+      label: '${widget.label}, $typePrefix$directionLabel, $connectionLabel$shadowLabel',
+      hint: hintText,
+      button: true,
+      child: portWidget,
+    );
   }
 
   /// Builds the simple dot style port (for algorithm nodes)
@@ -270,20 +291,30 @@ class _PortWidgetState extends State<PortWidget> {
         shape: BoxShape.circle,
         color: portColor,
         border: Border.all(
-          color: widget.isHighlighted
-              ? portColor.withValues(alpha: 0.8)
-              : theme.colorScheme.outline,
-          width: widget.isHighlighted ? 3 : 2,
+          color: widget.isFocused
+              ? theme.colorScheme.primary
+              : widget.isHighlighted
+                  ? portColor.withValues(alpha: 0.8)
+                  : theme.colorScheme.outline,
+          width: (widget.isFocused || widget.isHighlighted) ? 3 : 2,
         ),
-        boxShadow: widget.isHighlighted
+        boxShadow: widget.isFocused
             ? [
                 BoxShadow(
-                  color: portColor.withValues(alpha: 0.3),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.4),
                   blurRadius: 6,
                   spreadRadius: 1,
                 ),
               ]
-            : null,
+            : widget.isHighlighted
+                ? [
+                    BoxShadow(
+                      color: portColor.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
       ),
     );
 
@@ -427,7 +458,21 @@ class _PortWidgetState extends State<PortWidget> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: _getPortColor(theme),
-        border: Border.all(color: theme.colorScheme.outline, width: 1),
+        border: Border.all(
+          color: widget.isFocused
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outline,
+          width: widget.isFocused ? 2 : 1,
+        ),
+        boxShadow: widget.isFocused
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
       ),
     );
 

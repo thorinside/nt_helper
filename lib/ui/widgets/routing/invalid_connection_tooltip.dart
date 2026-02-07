@@ -155,7 +155,17 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return MouseRegion(
+    final semanticLabel = widget.connection.isBackwardEdge
+        ? 'Warning: Invalid connection order. Reorder algorithms to fix.'
+        : 'Valid connection';
+    final gainLabel = widget.connection.gain != 1.0
+        ? '. Gain: ${widget.connection.gain.toStringAsFixed(2)}'
+        : '';
+    final muteLabel = widget.connection.isMuted ? '. Muted' : '';
+
+    return Semantics(
+      label: '$semanticLabel$gainLabel$muteLabel',
+      child: MouseRegion(
       onEnter: (_) => _onHoverEnter(),
       onExit: (_) => _onHoverExit(),
       child: Stack(
@@ -178,6 +188,7 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
             ),
         ],
       ),
+    ),
     );
   }
 

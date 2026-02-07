@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart'; // For Clipboard
 import 'package:nt_helper/util/in_app_logger.dart';
 import 'package:provider/provider.dart';
@@ -23,25 +24,28 @@ class LogDisplayPage extends StatelessWidget {
               logger.isRecording
                   ? Icons.pause_circle_filled
                   : Icons.play_circle_filled,
+              semanticLabel: logger.isRecording ? 'Pause Logging' : 'Resume Logging',
             ),
             tooltip: logger.isRecording ? 'Pause Logging' : 'Resume Logging',
             onPressed: () {
               if (logger.isRecording) {
                 logger.stopRecording();
+                SemanticsService.sendAnnouncement(View.of(context), 'Logging paused', TextDirection.ltr);
               } else {
                 logger.startRecording();
+                SemanticsService.sendAnnouncement(View.of(context), 'Logging resumed', TextDirection.ltr);
               }
             },
           ),
           IconButton(
-            icon: const Icon(Icons.copy_all),
+            icon: const Icon(Icons.copy_all, semanticLabel: 'Copy Logs'),
             tooltip: 'Copy Logs',
             onPressed: () {
               Clipboard.setData(ClipboardData(text: logger.logs.join('\n')));
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete_forever),
+            icon: const Icon(Icons.delete_forever, semanticLabel: 'Clear Logs'),
             tooltip: 'Clear Logs',
             onPressed: () {
               logger.clearLogs();

@@ -35,10 +35,7 @@ class MetadataSyncService {
 
   /// Compute spec values for scanning: substitute 1 (clamped) for specs that default to 0.
   List<int> _scanSpecValues(AlgorithmInfo algoInfo) {
-    return algoInfo.specifications.map((s) {
-      if (s.defaultValue != 0) return s.defaultValue;
-      return 1.clamp(s.min, s.max);
-    }).toList();
+    return algoInfo.specifications.map((s) => s.safeDefaultValue).toList();
   }
 
   /// Poll until the preset count matches [expected], or [maxAttempts] is reached.

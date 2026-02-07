@@ -161,7 +161,9 @@ class FloatingVideoContent extends StatelessWidget {
               final fadeT = (framesIntoFade / _fadeInFrames).clamp(0.0, 1.0);
               final opacity = 0.3 + 0.7 * Curves.easeOut.transform(fadeT);
 
-              return GestureDetector(
+              return Semantics(
+                label: 'Disting NT video feed. Long press to copy frame to clipboard.',
+                child: GestureDetector(
                 onLongPress: onCopyToClipboard,
                 child: SizedBox.expand(
                   child: RepaintBoundary(
@@ -188,6 +190,7 @@ class FloatingVideoContent extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
               );
             } else {
               return const ColoredBox(color: Colors.black);

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 
@@ -308,6 +309,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
     setState(() {
       _statusMessage = newMessage;
     });
+    SemanticsService.sendAnnouncement(View.of(context),newMessage, TextDirection.ltr);
     _fadeTimer?.cancel();
     _fadeTimer = Timer(const Duration(seconds: 3), () {
       setState(() {

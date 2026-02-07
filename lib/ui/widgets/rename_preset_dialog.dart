@@ -42,6 +42,7 @@ class _RenamePresetDialogState extends State<RenamePresetDialog> {
         controller: _controller,
         decoration: const InputDecoration(labelText: 'Preset Name'),
         autofocus: true,
+        onSubmitted: (_) => _onConfirm(),
       ),
       actions: [
         TextButton(onPressed: _onCancel, child: const Text('CANCEL')),

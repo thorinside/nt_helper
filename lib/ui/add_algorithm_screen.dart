@@ -1,7 +1,8 @@
-import 'dart:async'; // Added for Timer
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -155,15 +156,25 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   }
 
   void _toggleFavorite(String guid) {
+    final wasAdded = !_favoriteGuids.contains(guid);
     setState(() {
-      if (_favoriteGuids.contains(guid)) {
-        _favoriteGuids.remove(guid);
-      } else {
+      if (wasAdded) {
         _favoriteGuids.add(guid);
+      } else {
+        _favoriteGuids.remove(guid);
       }
-      _saveFavorites(); // Save favorite list changes
-      _filterAlgorithms(); // Re-filter to update list if needed (e.g., if showFavOnly is true) and update chip icon
+      _saveFavorites();
+      _filterAlgorithms();
     });
+    final algoName = _allAlgorithms
+        .firstWhereOrNull((a) => a.guid == guid)
+        ?.name ?? guid;
+    SemanticsService.sendAnnouncement(View.of(context),
+      wasAdded
+          ? '$algoName added to favorites'
+          : '$algoName removed from favorites',
+      TextDirection.ltr,
+    );
   }
 
   void _toggleShowFavoritesOnly() {
@@ -304,7 +315,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       selectedAlgorithmGuid = guid;
       _currentAlgoInfo = _allAlgorithms.firstWhereOrNull((a) => a.guid == guid);
       specValues = _currentAlgoInfo?.specifications
-          .map((s) => s.defaultValue)
+          .map((s) => s.safeDefaultValue)
           .toList();
 
       if (guid != null) {
@@ -357,7 +368,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           setState(() {
             _currentAlgoInfo = loadedInfo;
             specValues = loadedInfo.specifications
-                .map((s) => s.defaultValue)
+                .map((s) => s.safeDefaultValue)
                 .toList();
           });
           // Trigger filtering to update the display
@@ -415,7 +426,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             if (_currentAlgoInfo!.specifications.length !=
                 (specValues?.length ?? 0)) {
               specValues = _currentAlgoInfo!.specifications
-                  .map((s) => s.defaultValue)
+                  .map((s) => s.safeDefaultValue)
                   .toList();
             }
           }
@@ -445,7 +456,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           // Rescan Plugins button - only visible when connected to real hardware
           if (!isOffline)
             IconButton(
-              icon: const Icon(Icons.sync),
+              icon: const Icon(Icons.sync, semanticLabel: 'Rescan Plugins on Hardware'),
               tooltip: 'Rescan Plugins on Hardware',
               onPressed: () async {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -458,7 +469,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               },
             ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, semanticLabel: 'Refresh Algorithm List'),
             tooltip: 'Refresh Algorithm List',
             onPressed: () {
               // Call the refresh method from DistingCubit
@@ -474,7 +485,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.help_outline),
+            icon: const Icon(Icons.help_outline, semanticLabel: 'Help'),
+            tooltip: 'Help',
             onPressed: () {
               showDialog(
                 context: context,
@@ -511,6 +523,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       ),
       floatingActionButton: _isHelpAvailableForSelected
           ? FloatingActionButton(
+              tooltip: 'View algorithm documentation',
               onPressed: () => _showDocumentation(selectedAlgorithmGuid!),
               child: const Icon(Icons.question_mark),
             )
@@ -555,7 +568,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                     suffixIcon:
                                         _searchController.text.isNotEmpty
                                         ? IconButton(
-                                            icon: const Icon(Icons.clear),
+                                            icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
+                                            tooltip: 'Clear search',
                                             onPressed: () {
                                               _searchController.clear();
                                             },
@@ -576,6 +590,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                         _showFavoritesOnly
                                             ? Icons.star
                                             : Icons.star_border,
+                                        semanticLabel: 'Show Favorites Only',
                                       ),
                                       tooltip: 'Show Favorites Only',
                                       color: _showFavoritesOnly
@@ -589,7 +604,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.filter_alt_off),
+                                      icon: const Icon(Icons.filter_alt_off, semanticLabel: 'Clear Filters'),
                                       tooltip: 'Clear Filters',
                                       style: ButtonStyle(
                                         foregroundColor: WidgetStatePropertyAll(
@@ -812,11 +827,13 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         const ButtonSegment(
           value: AlgorithmViewMode.chipGrid,
           icon: Icon(Icons.grid_view, size: 18),
+          label: Text('Chips'),
           tooltip: 'Chip Grid',
         ),
         const ButtonSegment(
           value: AlgorithmViewMode.list,
           icon: Icon(Icons.view_list, size: 18),
+          label: Text('List'),
           tooltip: 'List',
         ),
         // Only show column mode on desktop/tablet
@@ -824,6 +841,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           const ButtonSegment(
             value: AlgorithmViewMode.column,
             icon: Icon(Icons.view_column, size: 18),
+            label: Text('Columns'),
             tooltip: 'Column',
           ),
       ],
@@ -1030,6 +1048,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             final bool isFavorite = _favoriteGuids.contains(algo.guid);
             final bool isCommunityPlugin = algo.guid != algo.guid.toLowerCase();
             return GestureDetector(
+              excludeFromSemantics: true,
               onLongPress: () => _toggleFavorite(algo.guid),
               child: ChoiceChip(
                 label: Row(
@@ -1047,6 +1066,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       Icon(
                         Icons.star,
                         size: 16,
+                        semanticLabel: 'Favorite',
                         color: isSelected
                             ? Theme.of(context).colorScheme.onPrimaryContainer
                             : Theme.of(context).colorScheme.primary,
@@ -1057,6 +1077,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       Icon(
                         Icons.extension,
                         size: 14,
+                        semanticLabel: 'Community plugin',
                         color: isSelected
                             ? Theme.of(context).colorScheme.onPrimaryContainer
                             : Theme.of(context).colorScheme.secondary,
@@ -1101,11 +1122,17 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             algo.guid.toLowerCase(),
           );
 
-          return Material(
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            label: '${algo.name}${isFavorite ? ', favorite' : ''}${isCommunityPlugin ? ', community plugin' : ''}',
+            hint: 'Double tap to ${isSelected ? 'deselect' : 'select'}',
+            child: Material(
             color: isSelected
                 ? Theme.of(context).colorScheme.primaryContainer
                 : Colors.transparent,
-            child: InkWell(
+            child: ExcludeSemantics(
+              child: InkWell(
               onTap: () => _selectAlgorithm(isSelected ? null : algo.guid),
               onLongPress: () => _toggleFavorite(algo.guid),
               child: Padding(
@@ -1113,45 +1140,60 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   horizontal: 16,
                   vertical: 12,
                 ),
-                child: Stack(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Main content
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                algo.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleMedium,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  algo.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
                               ),
-                            ),
-                            // Space for favorite icon
-                            if (isFavorite) const SizedBox(width: 28),
-                            if (isCommunityPlugin)
-                              Icon(
-                                Icons.extension,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                          ],
-                        ),
-                        _buildListSubtitle(metadata, isCommunityPlugin),
-                      ],
-                    ),
-                    // Favorite icon in top right
-                    if (isFavorite)
-                      const Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Icon(Icons.star, color: Colors.amber, size: 20),
+                              if (isCommunityPlugin)
+                                Icon(
+                                  Icons.extension,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.secondary,
+                                ),
+                            ],
+                          ),
+                          _buildListSubtitle(metadata, isCommunityPlugin),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.star : Icons.star_border,
+                        color: isFavorite ? Colors.amber : null,
+                        size: 20,
+                        semanticLabel: isFavorite
+                            ? 'Remove from favorites'
+                            : 'Add to favorites',
+                      ),
+                      tooltip: isFavorite
+                          ? 'Remove from favorites'
+                          : 'Add to favorites',
+                      onPressed: () => _toggleFavorite(algo.guid),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
                   ],
                 ),
               ),
+            ),
+            ),
             ),
           );
         },
@@ -1423,7 +1465,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     if (specValues == null ||
         specValues!.length != algorithm.numSpecifications ||
         _currentAlgoInfo?.guid != algorithm.guid) {
-      specValues = algorithm.specifications.map((s) => s.defaultValue).toList();
+      specValues = algorithm.specifications.map((s) => s.safeDefaultValue).toList();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {});
