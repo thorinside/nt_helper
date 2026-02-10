@@ -589,6 +589,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                   subState,
                                   focusedAlgorithmIds,
                                   cascadeScrollTarget,
+                                  auxBusUsage,
+                                  hasExtendedAuxBuses,
                                 ) => () {
                                   context
                                       .read<RoutingEditorCubit>()
@@ -620,6 +622,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 subState,
                                 focusedAlgorithmIds,
                                 cascadeScrollTarget,
+                                auxBusUsage,
+                                hasExtendedAuxBuses,
                               ) {
                                 // Show loading during layout calculation
                                 if (subState == SubState.syncing) {
@@ -673,6 +677,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 subState,
                                 focusedAlgorithmIds,
                                 cascadeScrollTarget,
+                                auxBusUsage,
+                                hasExtendedAuxBuses,
                               ) {
                                 return IconButton(
                                   icon: const Icon(Icons.compress, semanticLabel: 'Optimize Buses'),

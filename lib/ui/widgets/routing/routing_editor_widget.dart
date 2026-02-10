@@ -27,6 +27,7 @@ import 'package:nt_helper/ui/widgets/routing/accessible_routing_list_view.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
     as painter;
+import 'package:nt_helper/ui/widgets/routing/aux_bus_usage_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/mini_map_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
@@ -1043,48 +1044,60 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 onPressed: () => setState(() => _showAccessibleListView = true),
               ),
             ),
-            // MiniMapWidget positioned in bottom-right corner with 16px margin
+            // AUX bus usage + MiniMap in bottom-right corner
             if (state is RoutingEditorStateLoaded)
               Positioned(
                 bottom: 16.0,
                 right: 16.0,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Define responsive breakpoints based on platform
-                    double miniMapWidth;
-                    double miniMapHeight;
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    AuxBusUsageWidget(
+                      auxBusUsage: state.auxBusUsage,
+                      hasExtendedAuxBuses: state.hasExtendedAuxBuses,
+                      focusedBusNumber: _deriveFocusedBusNumber(state),
+                      onBusTapped: (bus) =>
+                          context.read<RoutingEditorCubit>().focusAuxBus(bus),
+                    ),
+                    const SizedBox(height: 8),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        double miniMapWidth;
+                        double miniMapHeight;
 
-                    if (_platformService.isMobilePlatform()) {
-                      // Mobile: smaller minimap
-                      miniMapWidth = 120.0;
-                      miniMapHeight = 90.0;
-                    } else {
-                      // Desktop/Web: Check screen width for more granular sizing
-                      final screenWidth = MediaQuery.of(context).size.width;
-                      if (screenWidth < 900) {
-                        // Smaller desktop window or tablet: medium minimap
-                        miniMapWidth = 160.0;
-                        miniMapHeight = 120.0;
-                      } else {
-                        // Large desktop window: default size
-                        miniMapWidth = 200.0;
-                        miniMapHeight = 150.0;
-                      }
-                    }
+                        if (_platformService.isMobilePlatform()) {
+                          miniMapWidth = 120.0;
+                          miniMapHeight = 90.0;
+                        } else {
+                          final screenWidth =
+                              MediaQuery.of(context).size.width;
+                          if (screenWidth < 900) {
+                            miniMapWidth = 160.0;
+                            miniMapHeight = 120.0;
+                          } else {
+                            miniMapWidth = 200.0;
+                            miniMapHeight = 150.0;
+                          }
+                        }
 
-                    return ExcludeSemantics(
-                      child: MiniMapWidget(
-                        horizontalScrollController: _horizontalScrollController,
-                        verticalScrollController: _verticalScrollController,
-                        canvasWidth: _canvasWidth,
-                        canvasHeight: _canvasHeight,
-                        width: miniMapWidth,
-                        height: miniMapHeight,
-                        nodePositions: _nodePositions,
-                        connections: state.connections,
-                      ),
-                    );
-                  },
+                        return ExcludeSemantics(
+                          child: MiniMapWidget(
+                            horizontalScrollController:
+                                _horizontalScrollController,
+                            verticalScrollController:
+                                _verticalScrollController,
+                            canvasWidth: _canvasWidth,
+                            canvasHeight: _canvasHeight,
+                            width: miniMapWidth,
+                            height: miniMapHeight,
+                            nodePositions: _nodePositions,
+                            connections: state.connections,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             // Error display widget in top-right corner (above mini-map in z-order)
@@ -1093,6 +1106,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         );
       },
     );
+  }
+
+  /// Derive which AUX bus is currently focused (if any) from the state.
+  int? _deriveFocusedBusNumber(RoutingEditorStateLoaded state) {
+    if (state.focusedAlgorithmIds.isEmpty) return null;
+    for (final entry in state.auxBusUsage.entries) {
+      final info = entry.value;
+      if (info.algorithmIds.isNotEmpty &&
+          info.algorithmIds.length == state.focusedAlgorithmIds.length &&
+          state.focusedAlgorithmIds.containsAll(info.algorithmIds)) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   /// Remove stale node positions and ensure required defaults exist for the
@@ -1447,6 +1474,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             subState,
             focusedAlgorithmIds,
             cascadeScrollTarget,
+            auxBusUsage,
+            hasExtendedAuxBuses,
           ) => _buildLoadedCanvas(
             context,
             physicalInputs,

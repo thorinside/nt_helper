@@ -236,6 +236,8 @@ class _TestLayoutButtonWidget extends StatelessWidget {
                 subState,
                 focusedAlgorithmIds,
                 cascadeScrollTarget,
+                auxBusUsage,
+                hasExtendedAuxBuses,
               ) {
                 // Show loading during layout calculation
                 if (subState == SubState.syncing) {
@@ -306,6 +308,8 @@ class _TestButtonsRowWidget extends StatelessWidget {
                     subState,
                     focusedAlgorithmIds,
                     cascadeScrollTarget,
+                    auxBusUsage,
+                    hasExtendedAuxBuses,
                   ) {
                     // Show loading during layout calculation
                     if (subState == SubState.syncing) {

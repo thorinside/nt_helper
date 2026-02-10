@@ -244,6 +244,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           ? currentState.panOffset
           : Offset.zero;
 
+      // Compute AUX bus usage info
+      final distingState = _distingCubit?.state;
+      final hasExtended = distingState is DistingStateSynchronized &&
+          distingState.firmwareVersion.hasExtendedAuxBuses;
+      final auxBusUsage = _computeAuxBusUsage(algorithms, slots, hasExtended);
+
       emit(
         RoutingEditorState.loaded(
           physicalInputs: physicalInputs,
@@ -255,6 +261,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           panOffset: panOffset,
           isHardwareSynced: true,
           lastSyncTime: DateTime.now(),
+          auxBusUsage: auxBusUsage,
+          hasExtendedAuxBuses: hasExtended,
         ),
       );
 
@@ -948,6 +956,78 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     return null;
+  }
+
+  /// Compute per-AUX-bus usage info from the current algorithms and slots.
+  Map<int, AuxBusUsageInfo> _computeAuxBusUsage(
+    List<RoutingAlgorithm> algorithms,
+    List<Slot> slots,
+    bool hasExtended,
+  ) {
+    final auxCeiling = BusSpec.auxMaxForFirmware(
+      hasExtendedAuxBuses: hasExtended,
+    );
+    final result = <int, AuxBusUsageInfo>{};
+
+    for (final algorithm in algorithms) {
+      if (algorithm.index >= slots.length) continue;
+      final slot = slots[algorithm.index];
+      final algoName = slot.algorithm.name;
+
+      for (final port in algorithm.outputPorts) {
+        if (port.parameterNumber == null) continue;
+        try {
+          final paramValue = slot.values
+              .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
+              .value;
+          if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
+          if (!BusSpec.isAux(paramValue)) continue;
+          final info = result.putIfAbsent(
+            paramValue,
+            () => AuxBusUsageInfo(busNumber: paramValue),
+          );
+          info.algorithmIds.add(algorithm.id);
+          info.sourceNames.add(algoName);
+        } catch (_) {}
+      }
+
+      for (final port in algorithm.inputPorts) {
+        if (port.parameterNumber == null) continue;
+        try {
+          final paramValue = slot.values
+              .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
+              .value;
+          if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
+          if (!BusSpec.isAux(paramValue)) continue;
+          final info = result.putIfAbsent(
+            paramValue,
+            () => AuxBusUsageInfo(busNumber: paramValue),
+          );
+          info.algorithmIds.add(algorithm.id);
+          info.destNames.add(algoName);
+        } catch (_) {}
+      }
+    }
+
+    return result;
+  }
+
+  /// Focus algorithms using a specific AUX bus (toggle behavior).
+  void focusAuxBus(int busNumber) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    final info = currentState.auxBusUsage[busNumber];
+    if (info == null || info.algorithmIds.isEmpty) return;
+
+    // Toggle: if already focused on exactly this bus's algorithms, clear focus
+    if (currentState.focusedAlgorithmIds.isNotEmpty &&
+        currentState.focusedAlgorithmIds.length == info.algorithmIds.length &&
+        currentState.focusedAlgorithmIds.containsAll(info.algorithmIds)) {
+      clearFocus();
+    } else {
+      emit(currentState.copyWith(focusedAlgorithmIds: info.algorithmIds));
+    }
   }
 
   /// Find an available AUX bus (21-28) for an algorithm connection.

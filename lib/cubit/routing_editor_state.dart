@@ -7,6 +7,25 @@ import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 
 part 'routing_editor_state.freezed.dart';
 
+/// Holds per-bus usage data for AUX bus visualization.
+class AuxBusUsageInfo {
+  final int busNumber;
+  final Set<String> algorithmIds;
+  final List<String> sourceNames;
+  final List<String> destNames;
+
+  AuxBusUsageInfo({
+    required this.busNumber,
+    Set<String>? algorithmIds,
+    List<String>? sourceNames,
+    List<String>? destNames,
+  })  : algorithmIds = algorithmIds ?? {},
+        sourceNames = sourceNames ?? [],
+        destNames = destNames ?? [];
+
+  int get sessionCount => algorithmIds.length;
+}
+
 /// Represents status of a routing bus
 enum BusStatus {
   /// Bus is available for assignment
@@ -90,5 +109,7 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     @Default(SubState.idle) SubState subState, // Current sub-state
     @Default({}) Set<String> focusedAlgorithmIds, // IDs of algorithms in focus mode
     Offset? cascadeScrollTarget, // Target position to scroll to after cascade layout
+    @Default({}) Map<int, AuxBusUsageInfo> auxBusUsage, // Per-AUX-bus usage info
+    @Default(false) bool hasExtendedAuxBuses, // Firmware 1.15+ extended AUX
   }) = RoutingEditorStateLoaded;
 }

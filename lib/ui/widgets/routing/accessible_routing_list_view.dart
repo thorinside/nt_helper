@@ -39,6 +39,8 @@ class AccessibleRoutingListView extends StatelessWidget {
             subState,
             focusedAlgorithmIds,
             cascadeScrollTarget,
+            auxBusUsage,
+            hasExtendedAuxBuses,
           ) =>
               _buildListView(
             context,
