@@ -23,7 +23,7 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
   late final Set<int> _enabledMerges;
 
   // Progress tracking: mergeIndex → set of completed step indices
-  final Set<int> _replaceModesDone = {};
+  final Map<int, Set<int>> _replaceModesDone = {};
   final Map<int, Set<int>> _completedSteps = {};
 
   @override
@@ -55,9 +55,14 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
 
     await widget.cubit.executeConsolidationPlan(
       enabledPlan,
-      onReplaceModeSet: (filteredIndex) {
+      onReplaceModeSet: (filteredIndex, replaceModeIndex) {
         if (mounted) {
-          setState(() => _replaceModesDone.add(originalIndices[filteredIndex]));
+          setState(() {
+            final origIdx = originalIndices[filteredIndex];
+            _replaceModesDone
+                .putIfAbsent(origIdx, () => {})
+                .add(replaceModeIndex);
+          });
         }
       },
       onStepComplete: (filteredIndex, stepIndex) {
@@ -202,11 +207,12 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
             ),
           ),
         if (enabled) ...[
-          if (merge.hasReplaceModeStep)
+          for (int r = 0; r < merge.replaceModeSteps.length; r++)
             _buildStepRow(
-              done: _replaceModesDone.contains(mergeIndex),
+              done:
+                  _replaceModesDone[mergeIndex]?.contains(r) ?? false,
               label:
-                  'Set ${merge.replaceModeAlgorithmName} to Replace on AUX $keepLocal',
+                  'Set ${merge.replaceModeSteps[r].algorithmName} to Replace on AUX $keepLocal',
               colorScheme: colorScheme,
             ),
           for (int i = 0; i < merge.steps.length; i++)

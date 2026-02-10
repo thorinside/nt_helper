@@ -1042,16 +1042,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             paramValue,
             () => _AuxBusInfo(),
           );
-          info.sourceCount++;
           info.addPort(algorithm.index, isSource: true);
-          if (port.modeParameterNumber != null) {
-            // Track the highest-slot Replace-capable source
-            if (info.replaceSourceSlot == null ||
-                algorithm.index > info.replaceSourceSlot!) {
-              info.replaceSourceSlot = algorithm.index;
-              info.replaceSourceModeParameter = port.modeParameterNumber;
-            }
-          }
+          info.sources.add(_SourceRecord(
+            algorithm.index,
+            port.modeParameterNumber != null,
+            port.modeParameterNumber,
+          ));
           info.ports.add(
             _BusPort(algorithm.index, port.parameterNumber!),
           );
@@ -1099,6 +1095,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               keepBus: busA,
               freeBus: busB,
               keepBusInfo: infoA,
+              freeBusInfo: infoB,
               portsToMove: infoB.ports,
               distingState: distingState,
             ));
@@ -1112,6 +1109,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               keepBus: busB,
               freeBus: busA,
               keepBusInfo: infoB,
+              freeBusInfo: infoA,
               portsToMove: infoA.ports,
               distingState: distingState,
             ));
@@ -1140,9 +1138,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Requirements:
   /// 1. Keep bus has a Replace-capable source at slot R
   /// 2. Free bus's entire activity (maxSlot) < R
-  /// 3. No keep bus ports exist in the "danger zone" [free bus's min source
-  ///    slot, R) that aren't also free bus ports — otherwise those keep bus
-  ///    ports would see the free bus's source data instead of their own.
+  /// 3. No keep bus ports in the danger zone that aren't also free bus ports
+  /// 4. Every source on the merged bus except the lowest-slot one must have
+  ///    Replace capability — otherwise earlier data stays on the bus and mixes
   bool _canMerge({
     required _AuxBusInfo keepInfo,
     required _AuxBusInfo freeInfo,
@@ -1167,6 +1165,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
     }
 
+    // Every source except the lowest-slot one on the merged bus must have
+    // Replace capability so each creates a clean session boundary.
+    final allSources = [...keepInfo.sources, ...freeInfo.sources];
+    allSources.sort((a, b) => a.slot.compareTo(b.slot));
+    for (int i = 1; i < allSources.length; i++) {
+      if (!allSources[i].canReplace) return false;
+    }
+
     return true;
   }
 
@@ -1182,13 +1188,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     keepInfo.ports.addAll(freeInfo.ports);
     keepInfo.portSlots.addAll(freeInfo.portSlots);
-    keepInfo.sourceCount += freeInfo.sourceCount;
-    if (freeInfo.minSourceSlot != null) {
-      if (keepInfo.minSourceSlot == null ||
-          freeInfo.minSourceSlot! < keepInfo.minSourceSlot!) {
-        keepInfo.minSourceSlot = freeInfo.minSourceSlot;
-      }
-    }
+    keepInfo.sources.addAll(freeInfo.sources);
     if (freeInfo.maxSlot != null) {
       if (keepInfo.maxSlot == null || freeInfo.maxSlot! > keepInfo.maxSlot!) {
         keepInfo.maxSlot = freeInfo.maxSlot;
@@ -1201,6 +1201,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     required int keepBus,
     required int freeBus,
     required _AuxBusInfo keepBusInfo,
+    required _AuxBusInfo freeBusInfo,
     required List<_BusPort> portsToMove,
     required DistingStateSynchronized distingState,
   }) {
@@ -1221,11 +1222,25 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     }).toList();
 
-    String? replaceModeAlgoName;
-    if (keepBusInfo.replaceSourceSlot != null &&
-        keepBusInfo.replaceSourceSlot! < distingState.slots.length) {
-      replaceModeAlgoName =
-          distingState.slots[keepBusInfo.replaceSourceSlot!].algorithm.name;
+    // Collect all sources from both buses, sort by slot. Every source except
+    // the lowest-slot one needs Replace mode set to create session boundaries.
+    final allSources = [...keepBusInfo.sources, ...freeBusInfo.sources];
+    allSources.sort((a, b) => a.slot.compareTo(b.slot));
+
+    final replaceModeSteps = <ReplaceModeStep>[];
+    for (int i = 1; i < allSources.length; i++) {
+      final src = allSources[i];
+      if (src.canReplace && src.modeParameterNumber != null) {
+        String algoName = 'Slot ${src.slot}';
+        if (src.slot < distingState.slots.length) {
+          algoName = distingState.slots[src.slot].algorithm.name;
+        }
+        replaceModeSteps.add(ReplaceModeStep(
+          algorithmIndex: src.slot,
+          algorithmName: algoName,
+          parameterNumber: src.modeParameterNumber!,
+        ));
+      }
     }
 
     return ConsolidationMerge(
@@ -1233,30 +1248,35 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       freeBus: freeBus,
       description: 'Merge AUX $freeLocal into AUX $keepLocal',
       steps: steps,
-      replaceModeAlgorithmIndex: keepBusInfo.replaceSourceSlot,
-      replaceModeAlgorithmName: replaceModeAlgoName,
-      replaceModeParameterNumber: keepBusInfo.replaceSourceModeParameter,
+      replaceModeSteps: replaceModeSteps,
     );
   }
 
   /// Execute a previously-built consolidation plan, iterating through each
   /// merge and calling progress callbacks as steps complete.
+  ///
+  /// Paces parameter updates with short delays to let the parameter queue
+  /// drain and the model stay in sync with hardware.
   Future<void> executeConsolidationPlan(
     AuxBusConsolidationPlan plan, {
     void Function(int mergeIndex, int stepIndex)? onStepComplete,
-    void Function(int mergeIndex)? onReplaceModeSet,
+    void Function(int mergeIndex, int replaceModeIndex)? onReplaceModeSet,
   }) async {
+    const paceDelay = Duration(milliseconds: 150);
+
     for (int m = 0; m < plan.merges.length; m++) {
       final merge = plan.merges[m];
 
-      if (merge.hasReplaceModeStep) {
+      for (int r = 0; r < merge.replaceModeSteps.length; r++) {
+        final rStep = merge.replaceModeSteps[r];
         await _distingCubit!.updateParameterValue(
-          algorithmIndex: merge.replaceModeAlgorithmIndex!,
-          parameterNumber: merge.replaceModeParameterNumber!,
+          algorithmIndex: rStep.algorithmIndex,
+          parameterNumber: rStep.parameterNumber,
           value: 1, // 1 = Replace
           userIsChangingTheValue: false,
         );
-        onReplaceModeSet?.call(m);
+        onReplaceModeSet?.call(m, r);
+        await Future.delayed(paceDelay);
       }
 
       for (int i = 0; i < merge.steps.length; i++) {
@@ -1268,6 +1288,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           userIsChangingTheValue: false,
         );
         onStepComplete?.call(m, i);
+        await Future.delayed(paceDelay);
       }
     }
   }
@@ -3012,26 +3033,34 @@ class ConsolidationStep {
   });
 }
 
+class ReplaceModeStep {
+  final int algorithmIndex;
+  final String algorithmName;
+  final int parameterNumber;
+
+  const ReplaceModeStep({
+    required this.algorithmIndex,
+    required this.algorithmName,
+    required this.parameterNumber,
+  });
+}
+
 class ConsolidationMerge {
   final int keepBus;
   final int freeBus;
   final String description;
   final List<ConsolidationStep> steps;
-  final int? replaceModeAlgorithmIndex;
-  final String? replaceModeAlgorithmName;
-  final int? replaceModeParameterNumber;
+  final List<ReplaceModeStep> replaceModeSteps;
 
   const ConsolidationMerge({
     required this.keepBus,
     required this.freeBus,
     required this.description,
     required this.steps,
-    this.replaceModeAlgorithmIndex,
-    this.replaceModeAlgorithmName,
-    this.replaceModeParameterNumber,
+    this.replaceModeSteps = const [],
   });
 
-  bool get hasReplaceModeStep => replaceModeParameterNumber != null;
+  bool get hasReplaceModeStep => replaceModeSteps.isNotEmpty;
 }
 
 class AuxBusConsolidationPlan {
@@ -3051,33 +3080,55 @@ class _AvailableAuxBus {
   const _AvailableAuxBus({required this.bus, required this.isReused});
 }
 
+class _SourceRecord {
+  final int slot;
+  final bool canReplace;
+  final int? modeParameterNumber;
+  const _SourceRecord(this.slot, this.canReplace, this.modeParameterNumber);
+}
+
 class _AuxBusInfo {
-  /// Highest-slot source that supports Replace mode (the session boundary).
-  int? replaceSourceSlot;
-  int? replaceSourceModeParameter;
-
-  /// Lowest slot index that WRITES (output port) to this bus.
-  int? minSourceSlot;
-
-  /// Number of distinct output ports writing to this bus.
-  int sourceCount = 0;
-
   /// Highest slot index across ALL ports (input and output) on this bus.
   int? maxSlot;
 
   /// All slot indices that have ports on this bus.
   final Set<int> portSlots = {};
 
+  /// All output sources on this bus, in scan order.
+  final List<_SourceRecord> sources = [];
+
   final List<_BusPort> ports = [];
 
   void addPort(int slot, {required bool isSource}) {
     portSlots.add(slot);
     if (maxSlot == null || slot > maxSlot!) maxSlot = slot;
-    if (isSource) {
-      if (minSourceSlot == null || slot < minSourceSlot!) {
-        minSourceSlot = slot;
-      }
+  }
+
+  /// Highest-slot Replace-capable source, or null.
+  int? get replaceSourceSlot {
+    int? best;
+    for (final s in sources) {
+      if (s.canReplace && (best == null || s.slot > best)) best = s.slot;
     }
+    return best;
+  }
+
+  /// Mode parameter number for the highest-slot Replace-capable source.
+  int? get replaceSourceModeParameter {
+    _SourceRecord? best;
+    for (final s in sources) {
+      if (s.canReplace && (best == null || s.slot > best.slot)) best = s;
+    }
+    return best?.modeParameterNumber;
+  }
+
+  int? get minSourceSlot {
+    if (sources.isEmpty) return null;
+    int m = sources.first.slot;
+    for (final s in sources) {
+      if (s.slot < m) m = s.slot;
+    }
+    return m;
   }
 }
 
