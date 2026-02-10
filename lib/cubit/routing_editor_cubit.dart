@@ -1044,6 +1044,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           );
           info.sourceSlot = algorithm.index;
           info.canReplace = port.modeParameterNumber != null;
+          info.modeParameterNumber = port.modeParameterNumber;
           info.ports.add(
             _BusPort(algorithm.index, port.parameterNumber!),
           );
@@ -1090,6 +1091,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           return _buildPlan(
             keepBus: busA,
             freeBus: busB,
+            keepBusInfo: infoA,
             portsToMove: infoB.ports,
             currentState: currentState,
             distingState: distingState,
@@ -1104,6 +1106,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           return _buildPlan(
             keepBus: busB,
             freeBus: busA,
+            keepBusInfo: infoB,
             portsToMove: infoA.ports,
             currentState: currentState,
             distingState: distingState,
@@ -1118,6 +1121,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   AuxBusConsolidationPlan _buildPlan({
     required int keepBus,
     required int freeBus,
+    required _AuxBusInfo keepBusInfo,
     required List<_BusPort> portsToMove,
     required RoutingEditorStateLoaded currentState,
     required DistingStateSynchronized distingState,
@@ -1139,20 +1143,45 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     }).toList();
 
+    String? replaceModeAlgoName;
+    if (keepBusInfo.sourceSlot != null &&
+        keepBusInfo.sourceSlot! < distingState.slots.length) {
+      replaceModeAlgoName =
+          distingState.slots[keepBusInfo.sourceSlot!].algorithm.name;
+    }
+
     return AuxBusConsolidationPlan(
       keepBus: keepBus,
       freeBus: freeBus,
       description: 'Merge AUX $freeLocal into AUX $keepLocal',
       steps: steps,
+      replaceModeAlgorithmIndex: keepBusInfo.sourceSlot,
+      replaceModeAlgorithmName: replaceModeAlgoName,
+      replaceModeParameterNumber: keepBusInfo.modeParameterNumber,
     );
   }
 
   /// Execute a previously-built consolidation plan, calling [onStepComplete]
   /// after each parameter update so the UI can show progress.
+  ///
+  /// Also ensures the keep-bus source is set to Replace mode so the merged
+  /// session boundary works correctly.
   Future<void> executeConsolidationPlan(
     AuxBusConsolidationPlan plan, {
     void Function(int stepIndex)? onStepComplete,
+    void Function()? onReplaceModeSet,
   }) async {
+    // Ensure the keep-bus source is in Replace mode
+    if (plan.hasReplaceModeStep) {
+      await _distingCubit!.updateParameterValue(
+        algorithmIndex: plan.replaceModeAlgorithmIndex!,
+        parameterNumber: plan.replaceModeParameterNumber!,
+        value: 1, // 1 = Replace
+        userIsChangingTheValue: false,
+      );
+      onReplaceModeSet?.call();
+    }
+
     for (int i = 0; i < plan.steps.length; i++) {
       final step = plan.steps[i];
       await _distingCubit!.updateParameterValue(
@@ -2910,13 +2939,21 @@ class AuxBusConsolidationPlan {
   final int freeBus;
   final String description;
   final List<ConsolidationStep> steps;
+  final int? replaceModeAlgorithmIndex;
+  final String? replaceModeAlgorithmName;
+  final int? replaceModeParameterNumber;
 
   const AuxBusConsolidationPlan({
     required this.keepBus,
     required this.freeBus,
     required this.description,
     required this.steps,
+    this.replaceModeAlgorithmIndex,
+    this.replaceModeAlgorithmName,
+    this.replaceModeParameterNumber,
   });
+
+  bool get hasReplaceModeStep => replaceModeParameterNumber != null;
 }
 
 /// Result from [_findAvailableAuxBus].
@@ -2929,6 +2966,7 @@ class _AvailableAuxBus {
 class _AuxBusInfo {
   int? sourceSlot;
   bool canReplace = false;
+  int? modeParameterNumber;
   int? maxReaderSlot;
   final List<_BusPort> ports = [];
 }

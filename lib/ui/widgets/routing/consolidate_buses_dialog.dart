@@ -20,12 +20,16 @@ class ConsolidateBusesDialog extends StatefulWidget {
 class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
   bool _isExecuting = false;
   bool _isComplete = false;
+  bool _replaceModeSet = false;
   final Set<int> _completedSteps = {};
 
   Future<void> _execute() async {
     setState(() => _isExecuting = true);
     await widget.cubit.executeConsolidationPlan(
       widget.plan,
+      onReplaceModeSet: () {
+        if (mounted) setState(() => _replaceModeSet = true);
+      },
       onStepComplete: (i) {
         if (mounted) setState(() => _completedSteps.add(i));
       },
@@ -42,6 +46,8 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final plan = widget.plan;
+    final keepLocal = BusSpec.toLocalNumber(plan.keepBus) ?? plan.keepBus;
 
     return PopScope(
       canPop: !_isExecuting,
@@ -61,40 +67,36 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.plan.description,
-                style: textTheme.titleSmall,
-              ),
+              Text(plan.description, style: textTheme.titleSmall),
               const Divider(height: 24),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 300),
-                child: ListView.builder(
+                child: ListView(
                   shrinkWrap: true,
-                  itemCount: widget.plan.steps.length,
-                  itemBuilder: (context, index) {
-                    final step = widget.plan.steps[index];
-                    final done = _completedSteps.contains(index);
-                    final busLocal =
-                        BusSpec.toLocalNumber(step.toBus) ?? step.toBus;
-                    return ListTile(
-                      dense: true,
-                      leading: done
-                          ? Icon(Icons.check_circle,
-                              color: Colors.green, size: 20)
-                          : Icon(Icons.circle_outlined,
-                              color: colorScheme.onSurfaceVariant, size: 20),
-                      title: Text(
-                        'Move ${step.algorithmName} to AUX $busLocal',
+                  children: [
+                    if (plan.hasReplaceModeStep)
+                      ListTile(
+                        dense: true,
+                        leading: _replaceModeSet
+                            ? const Icon(Icons.check_circle,
+                                color: Colors.green, size: 20)
+                            : Icon(Icons.circle_outlined,
+                                color: colorScheme.onSurfaceVariant, size: 20),
+                        title: Text(
+                          'Set ${plan.replaceModeAlgorithmName} to Replace on AUX $keepLocal',
+                        ),
                       ),
-                    );
-                  },
+                    for (int i = 0; i < plan.steps.length; i++)
+                      _buildStepTile(plan.steps[i], i, colorScheme),
+                  ],
                 ),
               ),
               if (_isComplete) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    const Icon(Icons.check_circle,
+                        color: Colors.green, size: 18),
                     const SizedBox(width: 8),
                     Text(
                       'Optimization complete',
@@ -127,6 +129,20 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStepTile(
+      ConsolidationStep step, int index, ColorScheme colorScheme) {
+    final done = _completedSteps.contains(index);
+    final busLocal = BusSpec.toLocalNumber(step.toBus) ?? step.toBus;
+    return ListTile(
+      dense: true,
+      leading: done
+          ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+          : Icon(Icons.circle_outlined,
+              color: colorScheme.onSurfaceVariant, size: 20),
+      title: Text('Move ${step.algorithmName} to AUX $busLocal'),
     );
   }
 }
