@@ -8,6 +8,7 @@ class RoutingEditorController {
   Future<void> Function()? _copyNodesImage;
   Future<void> Function()? _shareCanvasImage;
   Future<void> Function()? _shareNodesImage;
+  void Function(String)? _showError;
 
   void attach({
     required VoidCallback fitToView,
@@ -16,6 +17,7 @@ class RoutingEditorController {
     required Future<void> Function() copyNodesImage,
     Future<void> Function()? shareCanvasImage,
     Future<void> Function()? shareNodesImage,
+    void Function(String)? showError,
   }) {
     _fitToView = fitToView;
     _copyCanvasImage = copyCanvasImage;
@@ -23,6 +25,7 @@ class RoutingEditorController {
     _copyNodesImage = copyNodesImage;
     _shareCanvasImage = shareCanvasImage;
     _shareNodesImage = shareNodesImage;
+    _showError = showError;
   }
 
   void fitToView() => _fitToView?.call();
@@ -31,4 +34,5 @@ class RoutingEditorController {
   Future<void> copyNodesImage() async => await _copyNodesImage?.call();
   Future<void> shareCanvasImage() async => await _shareCanvasImage?.call();
   Future<void> shareNodesImage() async => await _shareNodesImage?.call();
+  void showError(String message) => _showError?.call(message);
 }

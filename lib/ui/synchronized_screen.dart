@@ -650,6 +650,43 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               },
                           orElse: () => const SizedBox.shrink(),
                         ),
+                        // Optimize AUX Buses
+                        state.maybeWhen(
+                          loaded:
+                              (
+                                physicalInputs,
+                                physicalOutputs,
+                                es5Inputs,
+                                algorithms,
+                                connections,
+                                buses,
+                                portOutputModes,
+                                nodePositions,
+                                zoomLevel,
+                                panOffset,
+                                isHardwareSynced,
+                                isPersistenceEnabled,
+                                lastSyncTime,
+                                lastPersistTime,
+                                lastError,
+                                subState,
+                                focusedAlgorithmIds,
+                                cascadeScrollTarget,
+                              ) {
+                                return IconButton(
+                                  icon: const Icon(Icons.compress, semanticLabel: 'Optimize Buses'),
+                                  onPressed: () async {
+                                    final freed = await context.read<RoutingEditorCubit>().consolidateAuxBuses();
+                                    if (!freed && context.mounted) {
+                                      _editorController.showError('Could not free an AUX bus');
+                                    }
+                                  },
+                                  tooltip: 'Optimize AUX Buses',
+                                  style: buttonStyle,
+                                );
+                              },
+                          orElse: () => const SizedBox.shrink(),
+                        ),
                         // Center View
                         IconButton(
                           icon: const Icon(Icons.center_focus_strong, semanticLabel: 'Center View'),

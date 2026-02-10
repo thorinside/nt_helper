@@ -184,6 +184,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       copyNodesImage: _copyNodesAreaToClipboard,
       shareCanvasImage: _shareCanvasViewportImage,
       shareNodesImage: _shareNodesAreaImage,
+      showError: _showError,
     );
 
     // Center the view on the canvas after the first frame
@@ -1411,7 +1412,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         TextDirection.ltr,
       );
     } on StateError catch (e) {
-      _showError('State error: ${e.message}');
+      _showError(e.message);
     } catch (e) {
       _showError('Connection failed: ${e.toString()}');
     }
@@ -3411,7 +3412,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             targetPortId: actualTargetPortId,
           );
         } catch (e) {
-          _showError('Failed to create connection: ${e.toString()}');
+          _showError(e is StateError ? e.message : 'Connection failed: ${e.toString()}');
         }
       }
     } finally {
@@ -3490,7 +3491,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         );
       }
     } catch (e) {
-      _showError('Failed to create connection: ${e.toString()}');
+      _showError(e is StateError ? e.message : 'Connection failed: ${e.toString()}');
     } finally {
       // Always clear drag state
       setState(() {

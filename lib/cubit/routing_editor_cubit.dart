@@ -15,6 +15,7 @@ import 'package:nt_helper/core/routing/services/connection_validator.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/core/routing/models/es5_hardware_node.dart';
+import 'package:nt_helper/core/routing/bus_spec.dart';
 
 import 'routing_editor_state.dart';
 
@@ -514,7 +515,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // Mark hardware as out of sync after parameter changes
       await _autoSyncToHardware();
     } catch (e) {
-      // Intentionally empty
+      rethrow;
     }
   }
 
@@ -849,26 +850,25 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       targetBusValue = targetParam.value;
     }
 
-    // New logic: Use source bus if it exists (non-zero), otherwise allocate new
-    // Always overwrite target bus regardless of its current value
     int busToUse;
-    if (sourceBusValue != null && sourceBusValue > 0) {
-      // Source already has a bus - reuse it for fan-out
+    if (sourceBusValue != null && BusSpec.isAux(sourceBusValue)) {
+      // Source already on an AUX bus — reuse for fan-out
       busToUse = sourceBusValue;
     } else {
-      // Source has no bus - allocate a new one
-      // Prefer aux buses first, then fall back to any free internal bus.
-      final availableBus = await _findFirstAvailableInternalBus(state);
+      // Source unassigned or on a physical bus — allocate an AUX bus
+      // Add-only sources (no mode parameter) must use an empty bus;
+      // sources that support Replace can reuse a bus from lower slots.
+      final canReplace = sourceOutputPort.modeParameterNumber != null;
+      final availableBus = await _findAvailableAuxBus(
+        state,
+        sourceAlgorithmIndex,
+        allowReuse: canReplace,
+      );
       if (availableBus == null) {
-        throw StateError(
-          'No available internal buses for algorithm connections',
-        );
+        throw StateError('No free AUX busses');
       }
-      busToUse = availableBus;
+      busToUse = availableBus.bus;
     }
-
-    // Note: We're intentionally ignoring targetBusValue to allow easy overwriting
-    if (targetBusValue != null && targetBusValue > 0) {}
 
     // Update both source output and target input bus parameters
     bool sourceUpdated = false;
@@ -886,6 +886,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       sourceUpdated = true;
     } else if (sourceBusValue == busToUse) {
       sourceUpdated = true; // Already has the correct bus
+    }
+
+    // Set output mode to Replace for algorithm-to-algorithm connections
+    if (sourceOutputPort.modeParameterNumber != null) {
+      await _distingCubit!.updateParameterValue(
+        algorithmIndex: sourceAlgorithmIndex,
+        parameterNumber: sourceOutputPort.modeParameterNumber!,
+        value: 1, // 1 = Replace
+        userIsChangingTheValue: false,
+      );
     }
 
     // Update target input port (if it doesn't already have this bus based on actual hardware value)
@@ -940,77 +950,184 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return null;
   }
 
-  /// Find the first available internal bus, preferring aux (21-28),
-  /// then input (1-12), then output (13-20), excluding ES-5 by default.
-  Future<int?> _findFirstAvailableInternalBus(
+  /// Find an available AUX bus (21-28) for an algorithm connection.
+  ///
+  /// A bus is available if it's completely unused, or if all algorithms
+  /// currently using it are at slot numbers lower than [sourceSlot]
+  /// (i.e., they execute before the source, so a Replace write starts
+  /// a clean session).
+  Future<_AvailableAuxBus?> _findAvailableAuxBus(
     RoutingEditorStateLoaded state,
-  ) async {
-    // Get actual parameter values from live slot data to determine bus usage
+    int sourceSlot, {
+    bool allowReuse = true,
+  }) async {
     final distingState = _distingCubit?.state;
-    if (distingState is! DistingStateSynchronized) {
-      return null;
-    }
+    if (distingState is! DistingStateSynchronized) return null;
 
-    // Get all currently used bus numbers from actual hardware values
-    final usedBuses = <int>{};
+    final auxCeiling = BusSpec.auxMaxForFirmware(
+      hasExtendedAuxBuses: distingState.firmwareVersion.hasExtendedAuxBuses,
+    );
 
-    // Check all algorithm ports for their current bus assignments from live slot data
+    // Map each AUX bus to the highest slot number that uses it
+    final maxSlotPerBus = <int, int>{};
     for (final algorithm in state.algorithms) {
       if (algorithm.index >= distingState.slots.length) continue;
+      final slot = distingState.slots[algorithm.index];
+      for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
+        if (port.parameterNumber != null) {
+          try {
+            final paramValue = slot.values
+                .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
+                .value;
+            if (BusSpec.isAux(paramValue)) {
+              final current = maxSlotPerBus[paramValue];
+              if (current == null || algorithm.index > current) {
+                maxSlotPerBus[paramValue] = algorithm.index;
+              }
+            }
+          } catch (_) {}
+        }
+      }
+    }
 
+    // Prefer a completely unused AUX bus first
+    for (int b = BusSpec.auxMin; b <= auxCeiling; b++) {
+      if (!BusSpec.isAux(b)) continue;
+      if (!maxSlotPerBus.containsKey(b)) {
+        return _AvailableAuxBus(bus: b, isReused: false);
+      }
+    }
+
+    // Fall back to a reusable AUX bus whose users are all at lower slots
+    if (allowReuse) {
+      for (int b = BusSpec.auxMin; b <= auxCeiling; b++) {
+        if (!BusSpec.isAux(b)) continue;
+        if (maxSlotPerBus[b]! < sourceSlot) {
+          return _AvailableAuxBus(bus: b, isReused: true);
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /// Attempt to consolidate AUX bus usage by merging compatible sessions.
+  ///
+  /// Two buses A and B can be merged if the source on one bus supports
+  /// Replace mode and its slot index is higher than all readers of the
+  /// other bus (so Replace starts a clean session after those readers).
+  ///
+  /// Returns `true` if a bus was freed, `false` if no consolidation was possible.
+  Future<bool> consolidateAuxBuses() async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return false;
+
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized) return false;
+
+    final auxCeiling = BusSpec.auxMaxForFirmware(
+      hasExtendedAuxBuses: distingState.firmwareVersion.hasExtendedAuxBuses,
+    );
+
+    // Build per-bus info from live slot data
+    // For each AUX bus: source slot index, whether source supports Replace,
+    // max reader slot index, and all (algorithmIndex, parameterNumber) pairs.
+    final busInfo = <int, _AuxBusInfo>{};
+
+    for (final algorithm in currentState.algorithms) {
+      if (algorithm.index >= distingState.slots.length) continue;
       final slot = distingState.slots[algorithm.index];
 
-      // Check input port parameters
-      for (final port in algorithm.inputPorts) {
-        if (port.parameterNumber != null) {
-          try {
-            final paramValue = slot.values
-                .firstWhere(
-                  (v) => v.parameterNumber == port.parameterNumber!,
-                  orElse: () => throw StateError('Parameter not found'),
-                )
-                .value;
-
-            if (paramValue > 0) {
-              usedBuses.add(paramValue);
-            }
-          } catch (e) {
-            // Parameter not found, skip
-          }
-        }
-      }
-
-      // Check output port parameters
       for (final port in algorithm.outputPorts) {
-        if (port.parameterNumber != null) {
-          try {
-            final paramValue = slot.values
-                .firstWhere(
-                  (v) => v.parameterNumber == port.parameterNumber!,
-                  orElse: () => throw StateError('Parameter not found'),
-                )
-                .value;
+        if (port.parameterNumber == null) continue;
+        try {
+          final paramValue = slot.values
+              .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
+              .value;
+          if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
 
-            if (paramValue > 0) {
-              usedBuses.add(paramValue);
-            }
-          } catch (e) {
-            // Parameter not found, skip
+          final info = busInfo.putIfAbsent(
+            paramValue,
+            () => _AuxBusInfo(),
+          );
+          info.sourceSlot = algorithm.index;
+          info.canReplace = port.modeParameterNumber != null;
+          info.ports.add(
+            _BusPort(algorithm.index, port.parameterNumber!),
+          );
+        } catch (_) {}
+      }
+
+      for (final port in algorithm.inputPorts) {
+        if (port.parameterNumber == null) continue;
+        try {
+          final paramValue = slot.values
+              .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
+              .value;
+          if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
+
+          final info = busInfo.putIfAbsent(
+            paramValue,
+            () => _AuxBusInfo(),
+          );
+          if (info.maxReaderSlot == null ||
+              algorithm.index > info.maxReaderSlot!) {
+            info.maxReaderSlot = algorithm.index;
           }
+          info.ports.add(
+            _BusPort(algorithm.index, port.parameterNumber!),
+          );
+        } catch (_) {}
+      }
+    }
+
+    final busNumbers = busInfo.keys.toList();
+
+    // Try to merge pairs of buses
+    for (int i = 0; i < busNumbers.length; i++) {
+      for (int j = i + 1; j < busNumbers.length; j++) {
+        final busA = busNumbers[i];
+        final busB = busNumbers[j];
+        final infoA = busInfo[busA]!;
+        final infoB = busInfo[busB]!;
+
+        // Can A's source Replace after B is done reading?
+        if (infoA.canReplace &&
+            infoA.sourceSlot != null &&
+            infoB.maxReaderSlot != null &&
+            infoA.sourceSlot! > infoB.maxReaderSlot!) {
+          // Merge B into A: move all B's ports to bus A
+          for (final port in infoB.ports) {
+            await _distingCubit!.updateParameterValue(
+              algorithmIndex: port.algorithmIndex,
+              parameterNumber: port.parameterNumber,
+              value: busA,
+              userIsChangingTheValue: false,
+            );
+          }
+          return true;
+        }
+
+        // Can B's source Replace after A is done reading?
+        if (infoB.canReplace &&
+            infoB.sourceSlot != null &&
+            infoA.maxReaderSlot != null &&
+            infoB.sourceSlot! > infoA.maxReaderSlot!) {
+          // Merge A into B: move all A's ports to bus B
+          for (final port in infoA.ports) {
+            await _distingCubit!.updateParameterValue(
+              algorithmIndex: port.algorithmIndex,
+              parameterNumber: port.parameterNumber,
+              value: busB,
+              userIsChangingTheValue: false,
+            );
+          }
+          return true;
         }
       }
     }
 
-    // Search order: AUX (21–28) → INPUT (1–12) → OUTPUT (13–20)
-    // AUX preferred to avoid implicitly tying to physical I/O.
-    int? pickFrom(int min, int max) {
-      for (int b = min; b <= max; b++) {
-        if (!usedBuses.contains(b)) return b;
-      }
-      return null;
-    }
-
-    return pickFrom(21, 28) ?? pickFrom(1, 12) ?? pickFrom(13, 20);
+    return false;
   }
 
   /// Delete an existing connection by ID
@@ -2735,4 +2852,24 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     _distingStateSubscription?.cancel();
     return super.close();
   }
+}
+
+/// Result from [_findAvailableAuxBus].
+class _AvailableAuxBus {
+  final int bus;
+  final bool isReused;
+  const _AvailableAuxBus({required this.bus, required this.isReused});
+}
+
+class _AuxBusInfo {
+  int? sourceSlot;
+  bool canReplace = false;
+  int? maxReaderSlot;
+  final List<_BusPort> ports = [];
+}
+
+class _BusPort {
+  final int algorithmIndex;
+  final int parameterNumber;
+  const _BusPort(this.algorithmIndex, this.parameterNumber);
 }

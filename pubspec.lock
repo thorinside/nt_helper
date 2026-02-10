@@ -10,7 +10,7 @@ packages:
     source: hosted
     version: "91.0.0"
   accessibility_tools:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: accessibility_tools
       sha256: c29732e423175a51e0a6ace7df1255f5d77812c7c7b7101d8ba0186a43d533aa

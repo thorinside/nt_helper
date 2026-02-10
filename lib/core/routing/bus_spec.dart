@@ -7,6 +7,9 @@ class BusSpec {
   static const int min = 1;
   static const int max = 30;
 
+  // Extended max for firmware 1.15+ (44 AUX buses: 21-64)
+  static const int extendedMax = 64;
+
   // Physical input buses (wired from hardware inputs)
   static const int inputMin = 1;
   static const int inputMax = 12;
@@ -19,15 +22,23 @@ class BusSpec {
   static const int auxMin = 21;
   static const int auxMax = 28;
 
+  // Extended auxiliary buses (firmware 1.15+)
+  static const int auxMaxExtended = 64;
+
   // ES-5 expansion (treated as physical output buses for edge mapping)
   static const int es5Min = 29;
   static const int es5Max = 30;
 
-  static bool isValid(int? n) => n != null && n >= min && n <= max;
+  static bool isValid(int? n) => n != null && n >= min && n <= extendedMax;
   static bool isPhysicalInput(int n) => n >= inputMin && n <= inputMax;
   static bool isPhysicalOutput(int n) => n >= outputMin && n <= outputMax;
-  static bool isAux(int n) => n >= auxMin && n <= auxMax;
+  static bool isAux(int n) =>
+      n >= auxMin && n <= auxMaxExtended && !isEs5(n);
   static bool isEs5(int n) => n >= es5Min && n <= es5Max;
+
+  /// Returns the AUX bus ceiling based on firmware capability.
+  static int auxMaxForFirmware({required bool hasExtendedAuxBuses}) =>
+      hasExtendedAuxBuses ? auxMaxExtended : auxMax;
 
   /// Returns the local (1-based) index for a given global bus number
   /// within its category, or null if invalid.

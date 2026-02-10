@@ -1,5 +1,6 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
@@ -27,7 +28,7 @@ void main() {
 
         final node = tester.getSemantics(find.byType(PortWidget));
         final data = node.getSemanticsData();
-        expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(data.flagsCollection.isButton, isTrue);
         expect(data.label, contains('Audio Out'));
         expect(data.label, contains('not connected'));
         expect(data.hint, contains('Press Space'));
@@ -62,7 +63,7 @@ void main() {
 
         final node = tester.getSemantics(find.byType(PortWidget));
         final data = node.getSemanticsData();
-        expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(data.flagsCollection.isButton, isTrue);
         expect(data.label, contains('Test Port'));
         expect(data.label, contains('Audio Output'));
         expect(data.label, contains('connected'));
@@ -96,7 +97,7 @@ void main() {
         final node = tester.getSemantics(find.byType(ParameterValueDisplay));
         final data = node.getSemanticsData();
         expect(data.label, contains('Bypass: On'));
-        expect(data.hasFlag(SemanticsFlag.isToggled), isTrue);
+        expect(data.flagsCollection.isToggled == Tristate.isTrue, isTrue);
 
         semanticsHandle.dispose();
       });
@@ -124,7 +125,7 @@ void main() {
         final data = node.getSemanticsData();
         expect(data.label, contains('Root Note'));
         expect(data.label, contains('C4'));
-        expect(data.hasFlag(SemanticsFlag.isLiveRegion), isTrue);
+        expect(data.flagsCollection.isLiveRegion, isTrue);
 
         semanticsHandle.dispose();
       });
