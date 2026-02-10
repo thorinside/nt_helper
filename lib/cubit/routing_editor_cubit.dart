@@ -1043,7 +1043,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             () => _AuxBusInfo(),
           );
           info.sourceCount++;
-          info.updateMaxSlot(algorithm.index);
+          info.addPort(algorithm.index, isSource: true);
           if (port.modeParameterNumber != null) {
             // Track the highest-slot Replace-capable source
             if (info.replaceSourceSlot == null ||
@@ -1070,7 +1070,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             paramValue,
             () => _AuxBusInfo(),
           );
-          info.updateMaxSlot(algorithm.index);
+          info.addPort(algorithm.index, isSource: false);
           info.ports.add(
             _BusPort(algorithm.index, port.parameterNumber!),
           );
@@ -1094,11 +1094,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           final infoA = busInfo[busA]!;
           final infoB = busInfo[busB]!;
 
-          // Can A's Replace source create a clean session after ALL of B's
-          // activity (both sources and readers)?
-          if (infoA.replaceSourceSlot != null &&
-              infoB.maxSlot != null &&
-              infoA.replaceSourceSlot! > infoB.maxSlot!) {
+          if (_canMerge(keepInfo: infoA, freeInfo: infoB)) {
             merges.add(_buildMerge(
               keepBus: busA,
               freeBus: busB,
@@ -1111,11 +1107,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             break;
           }
 
-          // Can B's Replace source create a clean session after ALL of A's
-          // activity (both sources and readers)?
-          if (infoB.replaceSourceSlot != null &&
-              infoA.maxSlot != null &&
-              infoB.replaceSourceSlot! > infoA.maxSlot!) {
+          if (_canMerge(keepInfo: infoB, freeInfo: infoA)) {
             merges.add(_buildMerge(
               keepBus: busB,
               freeBus: busA,
@@ -1143,6 +1135,41 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     );
   }
 
+  /// Check whether the free bus can be safely merged into the keep bus.
+  ///
+  /// Requirements:
+  /// 1. Keep bus has a Replace-capable source at slot R
+  /// 2. Free bus's entire activity (maxSlot) < R
+  /// 3. No keep bus ports exist in the "danger zone" [free bus's min source
+  ///    slot, R) that aren't also free bus ports — otherwise those keep bus
+  ///    ports would see the free bus's source data instead of their own.
+  bool _canMerge({
+    required _AuxBusInfo keepInfo,
+    required _AuxBusInfo freeInfo,
+  }) {
+    if (keepInfo.replaceSourceSlot == null || freeInfo.maxSlot == null) {
+      return false;
+    }
+    if (keepInfo.replaceSourceSlot! <= freeInfo.maxSlot!) return false;
+
+    // If the free bus has no sources, it's read-only — safe to merge.
+    if (freeInfo.minSourceSlot == null) return true;
+
+    // Check for keep bus ports in the danger zone that would be affected
+    // by the free bus's source writes.
+    final dangerStart = freeInfo.minSourceSlot!;
+    final dangerEnd = keepInfo.replaceSourceSlot!;
+    for (final slot in keepInfo.portSlots) {
+      if (slot >= dangerStart &&
+          slot < dangerEnd &&
+          !freeInfo.portSlots.contains(slot)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /// Simulate a merge in the busInfo map so the next search iteration
   /// sees updated bus membership.
   void _simulateMerge(
@@ -1154,9 +1181,18 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final freeInfo = busInfo[freeBus]!;
 
     keepInfo.ports.addAll(freeInfo.ports);
+    keepInfo.portSlots.addAll(freeInfo.portSlots);
     keepInfo.sourceCount += freeInfo.sourceCount;
+    if (freeInfo.minSourceSlot != null) {
+      if (keepInfo.minSourceSlot == null ||
+          freeInfo.minSourceSlot! < keepInfo.minSourceSlot!) {
+        keepInfo.minSourceSlot = freeInfo.minSourceSlot;
+      }
+    }
     if (freeInfo.maxSlot != null) {
-      keepInfo.updateMaxSlot(freeInfo.maxSlot!);
+      if (keepInfo.maxSlot == null || freeInfo.maxSlot! > keepInfo.maxSlot!) {
+        keepInfo.maxSlot = freeInfo.maxSlot;
+      }
     }
     busInfo.remove(freeBus);
   }
@@ -3020,16 +3056,28 @@ class _AuxBusInfo {
   int? replaceSourceSlot;
   int? replaceSourceModeParameter;
 
+  /// Lowest slot index that WRITES (output port) to this bus.
+  int? minSourceSlot;
+
   /// Number of distinct output ports writing to this bus.
   int sourceCount = 0;
 
   /// Highest slot index across ALL ports (input and output) on this bus.
   int? maxSlot;
 
+  /// All slot indices that have ports on this bus.
+  final Set<int> portSlots = {};
+
   final List<_BusPort> ports = [];
 
-  void updateMaxSlot(int slot) {
+  void addPort(int slot, {required bool isSource}) {
+    portSlots.add(slot);
     if (maxSlot == null || slot > maxSlot!) maxSlot = slot;
+    if (isSource) {
+      if (minSourceSlot == null || slot < minSourceSlot!) {
+        minSourceSlot = slot;
+      }
+    }
   }
 }
 
