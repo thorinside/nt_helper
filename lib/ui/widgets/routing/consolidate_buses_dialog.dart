@@ -20,18 +20,53 @@ class ConsolidateBusesDialog extends StatefulWidget {
 class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
   bool _isExecuting = false;
   bool _isComplete = false;
-  bool _replaceModeSet = false;
-  final Set<int> _completedSteps = {};
+  late final Set<int> _enabledMerges;
+
+  // Progress tracking: mergeIndex → set of completed step indices
+  final Set<int> _replaceModesDone = {};
+  final Map<int, Set<int>> _completedSteps = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _enabledMerges =
+        Set<int>.from(List.generate(widget.plan.merges.length, (i) => i));
+  }
+
+  bool get _hasEnabledMerges => _enabledMerges.isNotEmpty;
 
   Future<void> _execute() async {
     setState(() => _isExecuting = true);
+
+    // Build a filtered plan with only enabled merges
+    final enabledPlan = AuxBusConsolidationPlan(
+      description: widget.plan.description,
+      merges: [
+        for (int i = 0; i < widget.plan.merges.length; i++)
+          if (_enabledMerges.contains(i)) widget.plan.merges[i],
+      ],
+    );
+
+    // Map filtered indices back to original indices for progress tracking
+    final originalIndices = <int>[
+      for (int i = 0; i < widget.plan.merges.length; i++)
+        if (_enabledMerges.contains(i)) i,
+    ];
+
     await widget.cubit.executeConsolidationPlan(
-      widget.plan,
-      onReplaceModeSet: () {
-        if (mounted) setState(() => _replaceModeSet = true);
+      enabledPlan,
+      onReplaceModeSet: (filteredIndex) {
+        if (mounted) {
+          setState(() => _replaceModesDone.add(originalIndices[filteredIndex]));
+        }
       },
-      onStepComplete: (i) {
-        if (mounted) setState(() => _completedSteps.add(i));
+      onStepComplete: (filteredIndex, stepIndex) {
+        if (mounted) {
+          setState(() {
+            final origIdx = originalIndices[filteredIndex];
+            _completedSteps.putIfAbsent(origIdx, () => {}).add(stepIndex);
+          });
+        }
       },
     );
     if (mounted) {
@@ -46,8 +81,7 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final plan = widget.plan;
-    final keepLocal = BusSpec.toLocalNumber(plan.keepBus) ?? plan.keepBus;
+    final merges = widget.plan.merges;
 
     return PopScope(
       canPop: !_isExecuting,
@@ -67,28 +101,15 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(plan.description, style: textTheme.titleSmall),
+              Text(widget.plan.description, style: textTheme.titleSmall),
               const Divider(height: 24),
               ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 300),
-                child: ListView(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: ListView.builder(
                   shrinkWrap: true,
-                  children: [
-                    if (plan.hasReplaceModeStep)
-                      ListTile(
-                        dense: true,
-                        leading: _replaceModeSet
-                            ? const Icon(Icons.check_circle,
-                                color: Colors.green, size: 20)
-                            : Icon(Icons.circle_outlined,
-                                color: colorScheme.onSurfaceVariant, size: 20),
-                        title: Text(
-                          'Set ${plan.replaceModeAlgorithmName} to Replace on AUX $keepLocal',
-                        ),
-                      ),
-                    for (int i = 0; i < plan.steps.length; i++)
-                      _buildStepTile(plan.steps[i], i, colorScheme),
-                  ],
+                  itemCount: merges.length,
+                  itemBuilder: (context, mergeIndex) =>
+                      _buildMergeSection(mergeIndex, colorScheme, textTheme),
                 ),
               ),
               if (_isComplete) ...[
@@ -119,7 +140,7 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
             ),
           if (!_isExecuting && !_isComplete)
             ElevatedButton(
-              onPressed: _execute,
+              onPressed: _hasEnabledMerges ? _execute : null,
               child: const Text('Confirm'),
             ),
           if (_isComplete)
@@ -132,17 +153,93 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
     );
   }
 
-  Widget _buildStepTile(
-      ConsolidationStep step, int index, ColorScheme colorScheme) {
-    final done = _completedSteps.contains(index);
-    final busLocal = BusSpec.toLocalNumber(step.toBus) ?? step.toBus;
-    return ListTile(
-      dense: true,
-      leading: done
-          ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
-          : Icon(Icons.circle_outlined,
-              color: colorScheme.onSurfaceVariant, size: 20),
-      title: Text('Move ${step.algorithmName} to AUX $busLocal'),
+  Widget _buildMergeSection(
+      int mergeIndex, ColorScheme colorScheme, TextTheme textTheme) {
+    final merge = widget.plan.merges[mergeIndex];
+    final enabled = _enabledMerges.contains(mergeIndex);
+    final keepLocal = BusSpec.toLocalNumber(merge.keepBus) ?? merge.keepBus;
+    final canToggle = !_isExecuting && !_isComplete;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.plan.merges.length > 1)
+          InkWell(
+            onTap: canToggle
+                ? () => setState(() {
+                      if (enabled) {
+                        _enabledMerges.remove(mergeIndex);
+                      } else {
+                        _enabledMerges.add(mergeIndex);
+                      }
+                    })
+                : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  if (canToggle)
+                    Checkbox(
+                      value: enabled,
+                      onChanged: (_) => setState(() {
+                        if (enabled) {
+                          _enabledMerges.remove(mergeIndex);
+                        } else {
+                          _enabledMerges.add(mergeIndex);
+                        }
+                      }),
+                    ),
+                  Expanded(
+                    child: Text(
+                      merge.description,
+                      style: textTheme.titleSmall?.copyWith(
+                        color: enabled ? null : colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (enabled) ...[
+          if (merge.hasReplaceModeStep)
+            _buildStepRow(
+              done: _replaceModesDone.contains(mergeIndex),
+              label:
+                  'Set ${merge.replaceModeAlgorithmName} to Replace on AUX $keepLocal',
+              colorScheme: colorScheme,
+            ),
+          for (int i = 0; i < merge.steps.length; i++)
+            _buildStepRow(
+              done: _completedSteps[mergeIndex]?.contains(i) ?? false,
+              label:
+                  'Move ${merge.steps[i].algorithmName} to AUX $keepLocal',
+              colorScheme: colorScheme,
+            ),
+        ],
+        if (mergeIndex < widget.plan.merges.length - 1)
+          const Divider(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildStepRow({
+    required bool done,
+    required String label,
+    required ColorScheme colorScheme,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+      child: Row(
+        children: [
+          done
+              ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
+              : Icon(Icons.circle_outlined,
+                  color: colorScheme.onSurfaceVariant, size: 20),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label)),
+        ],
+      ),
     );
   }
 }

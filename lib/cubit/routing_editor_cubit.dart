@@ -1011,8 +1011,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return null;
   }
 
-  /// Build a plan for consolidating AUX bus usage by merging compatible
-  /// sessions.  Returns `null` if no consolidation is possible.
+  /// Build a greedy plan that consolidates as many AUX buses as possible.
+  /// Returns `null` if no consolidation is possible.
   AuxBusConsolidationPlan? buildConsolidationPlan() {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) return null;
@@ -1074,56 +1074,96 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
     }
 
-    final busNumbers = busInfo.keys.toList();
+    // Greedily find all possible merges, simulating each one before searching
+    // for the next so that updated bus membership is taken into account.
+    final merges = <ConsolidationMerge>[];
 
-    for (int i = 0; i < busNumbers.length; i++) {
-      for (int j = i + 1; j < busNumbers.length; j++) {
-        final busA = busNumbers[i];
-        final busB = busNumbers[j];
-        final infoA = busInfo[busA]!;
-        final infoB = busInfo[busB]!;
+    bool foundMerge = true;
+    while (foundMerge) {
+      foundMerge = false;
+      final busNumbers = busInfo.keys.toList();
 
-        // Can A's source Replace after B is done reading?
-        if (infoA.canReplace &&
-            infoA.sourceSlot != null &&
-            infoB.maxReaderSlot != null &&
-            infoA.sourceSlot! > infoB.maxReaderSlot!) {
-          return _buildPlan(
-            keepBus: busA,
-            freeBus: busB,
-            keepBusInfo: infoA,
-            portsToMove: infoB.ports,
-            currentState: currentState,
-            distingState: distingState,
-          );
-        }
+      for (int i = 0; i < busNumbers.length && !foundMerge; i++) {
+        for (int j = i + 1; j < busNumbers.length && !foundMerge; j++) {
+          final busA = busNumbers[i];
+          final busB = busNumbers[j];
+          final infoA = busInfo[busA]!;
+          final infoB = busInfo[busB]!;
 
-        // Can B's source Replace after A is done reading?
-        if (infoB.canReplace &&
-            infoB.sourceSlot != null &&
-            infoA.maxReaderSlot != null &&
-            infoB.sourceSlot! > infoA.maxReaderSlot!) {
-          return _buildPlan(
-            keepBus: busB,
-            freeBus: busA,
-            keepBusInfo: infoB,
-            portsToMove: infoA.ports,
-            currentState: currentState,
-            distingState: distingState,
-          );
+          // Can A's source Replace after B is done reading?
+          if (infoA.canReplace &&
+              infoA.sourceSlot != null &&
+              infoB.maxReaderSlot != null &&
+              infoA.sourceSlot! > infoB.maxReaderSlot!) {
+            merges.add(_buildMerge(
+              keepBus: busA,
+              freeBus: busB,
+              keepBusInfo: infoA,
+              portsToMove: infoB.ports,
+              distingState: distingState,
+            ));
+            _simulateMerge(busInfo, keepBus: busA, freeBus: busB);
+            foundMerge = true;
+            break;
+          }
+
+          // Can B's source Replace after A is done reading?
+          if (infoB.canReplace &&
+              infoB.sourceSlot != null &&
+              infoA.maxReaderSlot != null &&
+              infoB.sourceSlot! > infoA.maxReaderSlot!) {
+            merges.add(_buildMerge(
+              keepBus: busB,
+              freeBus: busA,
+              keepBusInfo: infoB,
+              portsToMove: infoA.ports,
+              distingState: distingState,
+            ));
+            _simulateMerge(busInfo, keepBus: busB, freeBus: busA);
+            foundMerge = true;
+            break;
+          }
         }
       }
     }
 
-    return null;
+    if (merges.isEmpty) return null;
+
+    final description = merges.length == 1
+        ? merges.first.description
+        : 'Free ${merges.length} AUX buses';
+
+    return AuxBusConsolidationPlan(
+      description: description,
+      merges: merges,
+    );
   }
 
-  AuxBusConsolidationPlan _buildPlan({
+  /// Simulate a merge in the busInfo map so the next search iteration
+  /// sees updated bus membership.
+  void _simulateMerge(
+    Map<int, _AuxBusInfo> busInfo, {
+    required int keepBus,
+    required int freeBus,
+  }) {
+    final keepInfo = busInfo[keepBus]!;
+    final freeInfo = busInfo[freeBus]!;
+
+    keepInfo.ports.addAll(freeInfo.ports);
+    if (freeInfo.maxReaderSlot != null) {
+      if (keepInfo.maxReaderSlot == null ||
+          freeInfo.maxReaderSlot! > keepInfo.maxReaderSlot!) {
+        keepInfo.maxReaderSlot = freeInfo.maxReaderSlot;
+      }
+    }
+    busInfo.remove(freeBus);
+  }
+
+  ConsolidationMerge _buildMerge({
     required int keepBus,
     required int freeBus,
     required _AuxBusInfo keepBusInfo,
     required List<_BusPort> portsToMove,
-    required RoutingEditorStateLoaded currentState,
     required DistingStateSynchronized distingState,
   }) {
     final keepLocal = BusSpec.toLocalNumber(keepBus) ?? keepBus;
@@ -1150,7 +1190,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           distingState.slots[keepBusInfo.sourceSlot!].algorithm.name;
     }
 
-    return AuxBusConsolidationPlan(
+    return ConsolidationMerge(
       keepBus: keepBus,
       freeBus: freeBus,
       description: 'Merge AUX $freeLocal into AUX $keepLocal',
@@ -1161,36 +1201,36 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     );
   }
 
-  /// Execute a previously-built consolidation plan, calling [onStepComplete]
-  /// after each parameter update so the UI can show progress.
-  ///
-  /// Also ensures the keep-bus source is set to Replace mode so the merged
-  /// session boundary works correctly.
+  /// Execute a previously-built consolidation plan, iterating through each
+  /// merge and calling progress callbacks as steps complete.
   Future<void> executeConsolidationPlan(
     AuxBusConsolidationPlan plan, {
-    void Function(int stepIndex)? onStepComplete,
-    void Function()? onReplaceModeSet,
+    void Function(int mergeIndex, int stepIndex)? onStepComplete,
+    void Function(int mergeIndex)? onReplaceModeSet,
   }) async {
-    // Ensure the keep-bus source is in Replace mode
-    if (plan.hasReplaceModeStep) {
-      await _distingCubit!.updateParameterValue(
-        algorithmIndex: plan.replaceModeAlgorithmIndex!,
-        parameterNumber: plan.replaceModeParameterNumber!,
-        value: 1, // 1 = Replace
-        userIsChangingTheValue: false,
-      );
-      onReplaceModeSet?.call();
-    }
+    for (int m = 0; m < plan.merges.length; m++) {
+      final merge = plan.merges[m];
 
-    for (int i = 0; i < plan.steps.length; i++) {
-      final step = plan.steps[i];
-      await _distingCubit!.updateParameterValue(
-        algorithmIndex: step.algorithmIndex,
-        parameterNumber: step.parameterNumber,
-        value: plan.keepBus,
-        userIsChangingTheValue: false,
-      );
-      onStepComplete?.call(i);
+      if (merge.hasReplaceModeStep) {
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: merge.replaceModeAlgorithmIndex!,
+          parameterNumber: merge.replaceModeParameterNumber!,
+          value: 1, // 1 = Replace
+          userIsChangingTheValue: false,
+        );
+        onReplaceModeSet?.call(m);
+      }
+
+      for (int i = 0; i < merge.steps.length; i++) {
+        final step = merge.steps[i];
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: step.algorithmIndex,
+          parameterNumber: step.parameterNumber,
+          value: merge.keepBus,
+          userIsChangingTheValue: false,
+        );
+        onStepComplete?.call(m, i);
+      }
     }
   }
 
@@ -2934,7 +2974,7 @@ class ConsolidationStep {
   });
 }
 
-class AuxBusConsolidationPlan {
+class ConsolidationMerge {
   final int keepBus;
   final int freeBus;
   final String description;
@@ -2943,7 +2983,7 @@ class AuxBusConsolidationPlan {
   final String? replaceModeAlgorithmName;
   final int? replaceModeParameterNumber;
 
-  const AuxBusConsolidationPlan({
+  const ConsolidationMerge({
     required this.keepBus,
     required this.freeBus,
     required this.description,
@@ -2954,6 +2994,16 @@ class AuxBusConsolidationPlan {
   });
 
   bool get hasReplaceModeStep => replaceModeParameterNumber != null;
+}
+
+class AuxBusConsolidationPlan {
+  final String description;
+  final List<ConsolidationMerge> merges;
+
+  const AuxBusConsolidationPlan({
+    required this.description,
+    required this.merges,
+  });
 }
 
 /// Result from [_findAvailableAuxBus].
