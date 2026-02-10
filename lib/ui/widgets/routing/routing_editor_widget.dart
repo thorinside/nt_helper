@@ -2953,7 +2953,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       final destPos = _getPortPosition(connection.destinationPortId);
       if (sourcePos == null || destPos == null) continue;
 
-      final d = _distanceFromPointToLine(tapPoint, sourcePos, destPos);
+      final d = connection.isPartial
+          ? _distanceFromPointToLine(tapPoint, sourcePos, destPos)
+          : _distanceFromPointToBezier(tapPoint, sourcePos, destPos);
       if (d <= hitRadius && d < bestDistance) {
         bestDistance = d;
         bestId = connection.id;
@@ -2999,6 +3001,24 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     final dx = point.dx - xx;
     final dy = point.dy - yy;
     return math.sqrt(dx * dx + dy * dy);
+  }
+
+  double _distanceFromPointToBezier(Offset point, Offset start, Offset end) {
+    final path = painter.ConnectionPainter.createBezierPath(start, end);
+    final metrics = path.computeMetrics();
+    double minDistance = double.infinity;
+    for (final metric in metrics) {
+      final length = metric.length;
+      const step = 2.0;
+      for (double distance = 0; distance <= length; distance += step) {
+        final pos = metric.getTangentForOffset(distance)?.position;
+        if (pos != null) {
+          final d = (point - pos).distance;
+          if (d < minDistance) minDistance = d;
+        }
+      }
+    }
+    return minDistance;
   }
 
   void _deleteConnection(String connectionId, List<Connection> connections) {
