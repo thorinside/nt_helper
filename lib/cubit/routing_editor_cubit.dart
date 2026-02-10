@@ -1042,9 +1042,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             paramValue,
             () => _AuxBusInfo(),
           );
-          info.sourceSlot = algorithm.index;
-          info.canReplace = port.modeParameterNumber != null;
-          info.modeParameterNumber = port.modeParameterNumber;
+          info.sourceCount++;
+          info.updateMaxSlot(algorithm.index);
+          if (port.modeParameterNumber != null) {
+            // Track the highest-slot Replace-capable source
+            if (info.replaceSourceSlot == null ||
+                algorithm.index > info.replaceSourceSlot!) {
+              info.replaceSourceSlot = algorithm.index;
+              info.replaceSourceModeParameter = port.modeParameterNumber;
+            }
+          }
           info.ports.add(
             _BusPort(algorithm.index, port.parameterNumber!),
           );
@@ -1063,10 +1070,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             paramValue,
             () => _AuxBusInfo(),
           );
-          if (info.maxReaderSlot == null ||
-              algorithm.index > info.maxReaderSlot!) {
-            info.maxReaderSlot = algorithm.index;
-          }
+          info.updateMaxSlot(algorithm.index);
           info.ports.add(
             _BusPort(algorithm.index, port.parameterNumber!),
           );
@@ -1090,11 +1094,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           final infoA = busInfo[busA]!;
           final infoB = busInfo[busB]!;
 
-          // Can A's source Replace after B is done reading?
-          if (infoA.canReplace &&
-              infoA.sourceSlot != null &&
-              infoB.maxReaderSlot != null &&
-              infoA.sourceSlot! > infoB.maxReaderSlot!) {
+          // Can A's Replace source create a clean session after ALL of B's
+          // activity (both sources and readers)?
+          if (infoA.replaceSourceSlot != null &&
+              infoB.maxSlot != null &&
+              infoA.replaceSourceSlot! > infoB.maxSlot!) {
             merges.add(_buildMerge(
               keepBus: busA,
               freeBus: busB,
@@ -1107,11 +1111,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             break;
           }
 
-          // Can B's source Replace after A is done reading?
-          if (infoB.canReplace &&
-              infoB.sourceSlot != null &&
-              infoA.maxReaderSlot != null &&
-              infoB.sourceSlot! > infoA.maxReaderSlot!) {
+          // Can B's Replace source create a clean session after ALL of A's
+          // activity (both sources and readers)?
+          if (infoB.replaceSourceSlot != null &&
+              infoA.maxSlot != null &&
+              infoB.replaceSourceSlot! > infoA.maxSlot!) {
             merges.add(_buildMerge(
               keepBus: busB,
               freeBus: busA,
@@ -1150,11 +1154,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final freeInfo = busInfo[freeBus]!;
 
     keepInfo.ports.addAll(freeInfo.ports);
-    if (freeInfo.maxReaderSlot != null) {
-      if (keepInfo.maxReaderSlot == null ||
-          freeInfo.maxReaderSlot! > keepInfo.maxReaderSlot!) {
-        keepInfo.maxReaderSlot = freeInfo.maxReaderSlot;
-      }
+    keepInfo.sourceCount += freeInfo.sourceCount;
+    if (freeInfo.maxSlot != null) {
+      keepInfo.updateMaxSlot(freeInfo.maxSlot!);
     }
     busInfo.remove(freeBus);
   }
@@ -1184,10 +1186,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }).toList();
 
     String? replaceModeAlgoName;
-    if (keepBusInfo.sourceSlot != null &&
-        keepBusInfo.sourceSlot! < distingState.slots.length) {
+    if (keepBusInfo.replaceSourceSlot != null &&
+        keepBusInfo.replaceSourceSlot! < distingState.slots.length) {
       replaceModeAlgoName =
-          distingState.slots[keepBusInfo.sourceSlot!].algorithm.name;
+          distingState.slots[keepBusInfo.replaceSourceSlot!].algorithm.name;
     }
 
     return ConsolidationMerge(
@@ -1195,9 +1197,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       freeBus: freeBus,
       description: 'Merge AUX $freeLocal into AUX $keepLocal',
       steps: steps,
-      replaceModeAlgorithmIndex: keepBusInfo.sourceSlot,
+      replaceModeAlgorithmIndex: keepBusInfo.replaceSourceSlot,
       replaceModeAlgorithmName: replaceModeAlgoName,
-      replaceModeParameterNumber: keepBusInfo.modeParameterNumber,
+      replaceModeParameterNumber: keepBusInfo.replaceSourceModeParameter,
     );
   }
 
@@ -3014,11 +3016,21 @@ class _AvailableAuxBus {
 }
 
 class _AuxBusInfo {
-  int? sourceSlot;
-  bool canReplace = false;
-  int? modeParameterNumber;
-  int? maxReaderSlot;
+  /// Highest-slot source that supports Replace mode (the session boundary).
+  int? replaceSourceSlot;
+  int? replaceSourceModeParameter;
+
+  /// Number of distinct output ports writing to this bus.
+  int sourceCount = 0;
+
+  /// Highest slot index across ALL ports (input and output) on this bus.
+  int? maxSlot;
+
   final List<_BusPort> ports = [];
+
+  void updateMaxSlot(int slot) {
+    if (maxSlot == null || slot > maxSlot!) maxSlot = slot;
+  }
 }
 
 class _BusPort {
