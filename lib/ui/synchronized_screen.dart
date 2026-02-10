@@ -22,6 +22,7 @@ import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 import 'package:nt_helper/ui/performance_screen.dart';
 import 'package:nt_helper/ui/widgets/rename_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
+import 'package:nt_helper/ui/widgets/routing/consolidate_buses_dialog.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
@@ -676,10 +677,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 return IconButton(
                                   icon: const Icon(Icons.compress, semanticLabel: 'Optimize Buses'),
                                   onPressed: () async {
-                                    final freed = await context.read<RoutingEditorCubit>().consolidateAuxBuses();
-                                    if (!freed && context.mounted) {
-                                      _editorController.showError('Could not free an AUX bus');
+                                    final cubit = context.read<RoutingEditorCubit>();
+                                    final plan = cubit.buildConsolidationPlan();
+                                    if (plan == null) {
+                                      if (context.mounted) {
+                                        _editorController.showError('No AUX buses can be consolidated');
+                                      }
+                                      return;
                                     }
+                                    if (!context.mounted) return;
+                                    await showDialog(
+                                      context: context,
+                                      builder: (_) => ConsolidateBusesDialog(plan: plan, cubit: cubit),
+                                    );
                                   },
                                   tooltip: 'Optimize AUX Buses',
                                   style: buttonStyle,

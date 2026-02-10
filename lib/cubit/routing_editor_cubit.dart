@@ -1011,27 +1011,19 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return null;
   }
 
-  /// Attempt to consolidate AUX bus usage by merging compatible sessions.
-  ///
-  /// Two buses A and B can be merged if the source on one bus supports
-  /// Replace mode and its slot index is higher than all readers of the
-  /// other bus (so Replace starts a clean session after those readers).
-  ///
-  /// Returns `true` if a bus was freed, `false` if no consolidation was possible.
-  Future<bool> consolidateAuxBuses() async {
+  /// Build a plan for consolidating AUX bus usage by merging compatible
+  /// sessions.  Returns `null` if no consolidation is possible.
+  AuxBusConsolidationPlan? buildConsolidationPlan() {
     final currentState = state;
-    if (currentState is! RoutingEditorStateLoaded) return false;
+    if (currentState is! RoutingEditorStateLoaded) return null;
 
     final distingState = _distingCubit?.state;
-    if (distingState is! DistingStateSynchronized) return false;
+    if (distingState is! DistingStateSynchronized) return null;
 
     final auxCeiling = BusSpec.auxMaxForFirmware(
       hasExtendedAuxBuses: distingState.firmwareVersion.hasExtendedAuxBuses,
     );
 
-    // Build per-bus info from live slot data
-    // For each AUX bus: source slot index, whether source supports Replace,
-    // max reader slot index, and all (algorithmIndex, parameterNumber) pairs.
     final busInfo = <int, _AuxBusInfo>{};
 
     for (final algorithm in currentState.algorithms) {
@@ -1083,7 +1075,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     final busNumbers = busInfo.keys.toList();
 
-    // Try to merge pairs of buses
     for (int i = 0; i < busNumbers.length; i++) {
       for (int j = i + 1; j < busNumbers.length; j++) {
         final busA = busNumbers[i];
@@ -1096,16 +1087,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             infoA.sourceSlot != null &&
             infoB.maxReaderSlot != null &&
             infoA.sourceSlot! > infoB.maxReaderSlot!) {
-          // Merge B into A: move all B's ports to bus A
-          for (final port in infoB.ports) {
-            await _distingCubit!.updateParameterValue(
-              algorithmIndex: port.algorithmIndex,
-              parameterNumber: port.parameterNumber,
-              value: busA,
-              userIsChangingTheValue: false,
-            );
-          }
-          return true;
+          return _buildPlan(
+            keepBus: busA,
+            freeBus: busB,
+            portsToMove: infoB.ports,
+            currentState: currentState,
+            distingState: distingState,
+          );
         }
 
         // Can B's source Replace after A is done reading?
@@ -1113,21 +1101,68 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             infoB.sourceSlot != null &&
             infoA.maxReaderSlot != null &&
             infoB.sourceSlot! > infoA.maxReaderSlot!) {
-          // Merge A into B: move all A's ports to bus B
-          for (final port in infoA.ports) {
-            await _distingCubit!.updateParameterValue(
-              algorithmIndex: port.algorithmIndex,
-              parameterNumber: port.parameterNumber,
-              value: busB,
-              userIsChangingTheValue: false,
-            );
-          }
-          return true;
+          return _buildPlan(
+            keepBus: busB,
+            freeBus: busA,
+            portsToMove: infoA.ports,
+            currentState: currentState,
+            distingState: distingState,
+          );
         }
       }
     }
 
-    return false;
+    return null;
+  }
+
+  AuxBusConsolidationPlan _buildPlan({
+    required int keepBus,
+    required int freeBus,
+    required List<_BusPort> portsToMove,
+    required RoutingEditorStateLoaded currentState,
+    required DistingStateSynchronized distingState,
+  }) {
+    final keepLocal = BusSpec.toLocalNumber(keepBus) ?? keepBus;
+    final freeLocal = BusSpec.toLocalNumber(freeBus) ?? freeBus;
+
+    final steps = portsToMove.map((port) {
+      String algoName = 'Slot ${port.algorithmIndex}';
+      if (port.algorithmIndex < distingState.slots.length) {
+        algoName = distingState.slots[port.algorithmIndex].algorithm.name;
+      }
+      return ConsolidationStep(
+        algorithmIndex: port.algorithmIndex,
+        algorithmName: algoName,
+        parameterNumber: port.parameterNumber,
+        fromBus: freeBus,
+        toBus: keepBus,
+      );
+    }).toList();
+
+    return AuxBusConsolidationPlan(
+      keepBus: keepBus,
+      freeBus: freeBus,
+      description: 'Merge AUX $freeLocal into AUX $keepLocal',
+      steps: steps,
+    );
+  }
+
+  /// Execute a previously-built consolidation plan, calling [onStepComplete]
+  /// after each parameter update so the UI can show progress.
+  Future<void> executeConsolidationPlan(
+    AuxBusConsolidationPlan plan, {
+    void Function(int stepIndex)? onStepComplete,
+  }) async {
+    for (int i = 0; i < plan.steps.length; i++) {
+      final step = plan.steps[i];
+      await _distingCubit!.updateParameterValue(
+        algorithmIndex: step.algorithmIndex,
+        parameterNumber: step.parameterNumber,
+        value: plan.keepBus,
+        userIsChangingTheValue: false,
+      );
+      onStepComplete?.call(i);
+    }
   }
 
   /// Delete an existing connection by ID
@@ -2852,6 +2887,36 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     _distingStateSubscription?.cancel();
     return super.close();
   }
+}
+
+class ConsolidationStep {
+  final int algorithmIndex;
+  final String algorithmName;
+  final int parameterNumber;
+  final int fromBus;
+  final int toBus;
+
+  const ConsolidationStep({
+    required this.algorithmIndex,
+    required this.algorithmName,
+    required this.parameterNumber,
+    required this.fromBus,
+    required this.toBus,
+  });
+}
+
+class AuxBusConsolidationPlan {
+  final int keepBus;
+  final int freeBus;
+  final String description;
+  final List<ConsolidationStep> steps;
+
+  const AuxBusConsolidationPlan({
+    required this.keepBus,
+    required this.freeBus,
+    required this.description,
+    required this.steps,
+  });
 }
 
 /// Result from [_findAvailableAuxBus].
