@@ -50,7 +50,11 @@ import 'package:nt_helper/ui/widgets/mcp_status_indicator.dart';
 import 'package:nt_helper/ui/widgets/debug_panel.dart';
 import 'package:nt_helper/services/debug_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
+import 'package:nt_helper/ui/widgets/app_update_banner.dart';
+import 'package:nt_helper/ui/widgets/app_update_dialog.dart';
 import 'package:nt_helper/ui/widgets/contextual_help_bar.dart';
+import 'package:nt_helper/models/app_release.dart';
+import 'package:nt_helper/services/app_update_service.dart';
 
 enum EditMode { parameters, routing }
 
@@ -98,6 +102,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   bool _showDebugPanel = true;
   bool _showContextualHelp = true;
   String? _contextualHelpText;
+  AppRelease? _availableAppUpdate;
+  AppUpdateService? _appUpdateService;
 
   @override
   void initState() {
@@ -115,6 +121,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
     // Initialize contextual help setting
     _showContextualHelp = SettingsService().showContextualHelp;
+
+    // Check for app updates on desktop
+    if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+      _checkForAppUpdate();
+    }
 
     // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
     int newValidIndex = _selectedIndex;
@@ -186,6 +197,37 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
   }
 
+  Future<void> _checkForAppUpdate() async {
+    _appUpdateService ??= AppUpdateService();
+    final release = await _appUpdateService!.checkForUpdate();
+    if (!mounted || release == null) return;
+
+    final settings = SettingsService();
+    final dismissed = settings.dismissedUpdateVersion;
+    if (dismissed == release.version) return;
+
+    setState(() => _availableAppUpdate = release);
+  }
+
+  void _dismissAppUpdate() {
+    final version = _availableAppUpdate?.version;
+    if (version != null) {
+      SettingsService().setDismissedUpdateVersion(version);
+    }
+    setState(() => _availableAppUpdate = null);
+  }
+
+  void _showAppUpdateDialog(AppRelease release) {
+    _appUpdateService ??= AppUpdateService();
+    showDialog(
+      context: context,
+      builder: (ctx) => AppUpdateDialog(
+        release: release,
+        updateService: _appUpdateService!,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isWideScreen = MediaQuery.of(context).size.width > 900;
@@ -211,6 +253,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 index: _currentMode == EditMode.parameters ? 0 : 1,
                 children: [_buildWideScreenBody(), _buildRoutingCanvas()],
               ),
+            ),
+            AppUpdateBanner(
+              release: _availableAppUpdate,
+              onWhatsNew: () {
+                if (_availableAppUpdate != null) {
+                  _showAppUpdateDialog(_availableAppUpdate!);
+                }
+              },
+              onDismiss: _dismissAppUpdate,
             ),
             if (_showContextualHelp)
               ContextualHelpBar(helpText: _contextualHelpText),
@@ -241,6 +292,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 index: _currentMode == EditMode.parameters ? 0 : 1,
                 children: [_buildBody(), _buildRoutingCanvas()],
               ),
+            ),
+            AppUpdateBanner(
+              release: _availableAppUpdate,
+              onWhatsNew: () {
+                if (_availableAppUpdate != null) {
+                  _showAppUpdateDialog(_availableAppUpdate!);
+                }
+              },
+              onDismiss: _dismissAppUpdate,
             ),
             if (_showContextualHelp)
               ContextualHelpBar(helpText: _contextualHelpText),
@@ -1597,7 +1657,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         applicationVersion:
                             "${info.version} (${info.buildNumber})",
                         applicationLegalese:
-                            "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
+                            "Written by Neal Sanche (Thorinside), 2026, No Rights Reserved.",
                         children: [
                           Padding(
                             padding: const EdgeInsets.all(24.0),
@@ -1609,6 +1669,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                     dialogCtx,
                                   ).textTheme.bodySmall,
                                 ),
+                                if (Platform.isMacOS ||
+                                    Platform.isLinux ||
+                                    Platform.isWindows) ...[
+                                  const SizedBox(height: 16),
+                                  _UpdateCheckButton(
+                                    onUpdateFound: (release) {
+                                      Navigator.of(dialogCtx).pop();
+                                      _showAppUpdateDialog(release);
+                                    },
+                                    updateService: _appUpdateService ??=
+                                        AppUpdateService(),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -1812,5 +1885,88 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
 
     return closest;
+  }
+}
+
+class _UpdateCheckButton extends StatefulWidget {
+  final void Function(AppRelease release) onUpdateFound;
+  final AppUpdateService updateService;
+
+  const _UpdateCheckButton({
+    required this.onUpdateFound,
+    required this.updateService,
+  });
+
+  @override
+  State<_UpdateCheckButton> createState() => _UpdateCheckButtonState();
+}
+
+class _UpdateCheckButtonState extends State<_UpdateCheckButton> {
+  bool _checking = false;
+  String? _message;
+
+  Future<void> _check({bool skipVersionCheck = false}) async {
+    setState(() {
+      _checking = true;
+      _message = null;
+    });
+
+    final release = await widget.updateService.checkForUpdate(
+      forceRefresh: true,
+      skipVersionCheck: skipVersionCheck,
+    );
+
+    if (!mounted) return;
+
+    if (release != null) {
+      widget.onUpdateFound(release);
+    } else {
+      setState(() {
+        _checking = false;
+        _message = "You're up to date!";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        OutlinedButton.icon(
+          onPressed: _checking
+              ? null
+              : () => _check(
+                    skipVersionCheck: kDebugMode &&
+                        HardwareKeyboard.instance.logicalKeysPressed.any(
+                          (k) =>
+                              k == LogicalKeyboardKey.shiftLeft ||
+                              k == LogicalKeyboardKey.shiftRight,
+                        ),
+                  ),
+          icon: _checking
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.system_update),
+          label: Text(_checking ? 'Checking...' : 'Check for Updates'),
+        ),
+        const SizedBox(height: 8),
+        Visibility(
+          visible: _message != null,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: Text(
+            _message ?? '',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

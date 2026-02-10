@@ -44,6 +44,8 @@ class SettingsService {
   static const String _showContextualHelpKey = 'show_contextual_help';
   static const String _algorithmCacheDaysKey = 'algorithm_cache_days';
   static const String _cpuMonitorEnabledKey = 'cpu_monitor_enabled';
+  static const String _dismissedUpdateVersionKey = 'dismissed_update_version';
+  static const String _lastUpdateCheckTimestampKey = 'last_update_check_timestamp';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -210,6 +212,27 @@ class SettingsService {
       cpuMonitorEnabledNotifier.value = value;
     }
     return result;
+  }
+
+  /// Get the dismissed update version (user chose to skip this version)
+  String? get dismissedUpdateVersion =>
+      _prefs?.getString(_dismissedUpdateVersionKey);
+
+  /// Set the dismissed update version
+  Future<bool> setDismissedUpdateVersion(String? value) async {
+    if (value == null) {
+      return await _prefs?.remove(_dismissedUpdateVersionKey) ?? false;
+    }
+    return await _prefs?.setString(_dismissedUpdateVersionKey, value) ?? false;
+  }
+
+  /// Get the last update check timestamp (epoch milliseconds)
+  int? get lastUpdateCheckTimestamp =>
+      _prefs?.getInt(_lastUpdateCheckTimestampKey);
+
+  /// Set the last update check timestamp
+  Future<bool> setLastUpdateCheckTimestamp(int value) async {
+    return await _prefs?.setInt(_lastUpdateCheckTimestampKey, value) ?? false;
   }
 
   /// Reset all settings to their default values

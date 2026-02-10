@@ -97,6 +97,7 @@ dependencies:
       path: flutter
   html: ^0.15.6
   accessibility_tools: ^2.8.0
+  flutter_markdown: ^0.7.6
 
 dev_dependencies:
   flutter_test:
