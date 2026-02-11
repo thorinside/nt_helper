@@ -102,6 +102,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   bool _isDragging = false;
   Offset _dragStartGlobal = Offset.zero;
   Offset _initialPosition = Offset.zero;
+  double _dragScale = 1.0;
   final GlobalKey _nodeKey = GlobalKey();
 
   // Focus and keyboard navigation state
@@ -364,6 +365,11 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   }
 
   void _handleDragStart(DragStartDetails details) {
+    // Capture the local-to-global scale factor from the render tree.
+    // This accounts for any ancestor Transform.scale (e.g. canvas zoom).
+    final box = context.findRenderObject() as RenderBox?;
+    _dragScale = box != null ? box.getTransformTo(null).entry(0, 0) : 1.0;
+
     setState(() {
       _isDragging = true;
       _dragStartGlobal = details.globalPosition;
@@ -376,7 +382,9 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   void _handleDragUpdate(DragUpdateDetails details) {
     if (!_isDragging) return;
 
-    final dragDelta = details.globalPosition - _dragStartGlobal;
+    // Account for canvas zoom level (screen pixels != canvas pixels)
+    final dragDelta =
+        (details.globalPosition - _dragStartGlobal) / _dragScale;
     final newPosition = _initialPosition + dragDelta;
 
     // Snap to grid

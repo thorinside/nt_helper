@@ -134,6 +134,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   // Track drag start and initial position for stable deltas
   Offset _dragStartGlobal = Offset.zero;
   Offset _initialPosition = Offset.zero;
+  double _dragScale = 1.0;
 
   final GlobalKey _containerKey = GlobalKey();
   Size? _lastSize;
@@ -785,6 +786,11 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
 
   void _handleDragStart(DragStartDetails details) {
+    // Capture the local-to-global scale factor from the render tree.
+    // This accounts for any ancestor Transform.scale (e.g. canvas zoom).
+    final box = context.findRenderObject() as RenderBox?;
+    _dragScale = box != null ? box.getTransformTo(null).entry(0, 0) : 1.0;
+
     setState(() {
       _isDragging = true;
       _dragStartGlobal = details.globalPosition;
@@ -903,8 +909,10 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
 
   void _handleDragUpdate(DragUpdateDetails details) {
     if (!_isDragging) return;
-    // Compute new position from drag delta relative to drag start
-    final dragDelta = details.globalPosition - _dragStartGlobal;
+    // Compute new position from drag delta relative to drag start,
+    // accounting for canvas zoom level (screen pixels != canvas pixels)
+    final dragDelta =
+        (details.globalPosition - _dragStartGlobal) / _dragScale;
     final newPosition = _initialPosition + dragDelta;
 
     // Snap to grid
