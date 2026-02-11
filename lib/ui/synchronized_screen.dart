@@ -283,6 +283,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     LogicalKeyboardKey.digit2: 1,
     LogicalKeyboardKey.digit3: 2,
     LogicalKeyboardKey.digit4: 3,
+    LogicalKeyboardKey.digit5: 4,
+    LogicalKeyboardKey.digit6: 5,
+    LogicalKeyboardKey.digit7: 6,
+    LogicalKeyboardKey.digit8: 7,
+    LogicalKeyboardKey.digit9: 8,
+    LogicalKeyboardKey.digit0: 9,
   };
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
@@ -303,7 +309,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
     final pageIndex = _digitKeyToPageIndex[event.logicalKey];
     if (pageIndex != null && _currentMode != EditMode.routing) {
-      _sectionController.goToPage(pageIndex);
+      _sectionController.goToPage(_selectedIndex, pageIndex);
       return KeyEventResult.handled;
     }
 

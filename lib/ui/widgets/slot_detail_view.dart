@@ -48,6 +48,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
     return SafeArea(
       child: SectionParameterListView(
         slot: widget.slot,
+        slotIndex: widget.slotIndex,
         units: widget.units,
         pages: widget.slot.pages,
         sectionController: widget.sectionController,

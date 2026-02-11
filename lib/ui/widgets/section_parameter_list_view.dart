@@ -15,6 +15,7 @@ import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 
 class SectionParameterListView extends StatefulWidget {
   final Slot slot;
+  final int slotIndex;
   final List<String> units;
   final ParameterPages pages;
   final SectionParameterController? sectionController;
@@ -22,6 +23,7 @@ class SectionParameterListView extends StatefulWidget {
   const SectionParameterListView({
     super.key,
     required this.slot,
+    required this.slotIndex,
     required this.units,
     required this.pages,
     this.sectionController,
@@ -37,7 +39,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   late bool _isCollapsed;
   // Track optimistic performance page assignments for immediate UI updates
   final Map<int, int> _optimisticPerfPageAssignments = {};
-  StreamSubscription<int>? _sectionControllerSub;
+  StreamSubscription<({int slotIndex, int pageIndex})>? _sectionControllerSub;
 
   @override
   void initState() {
@@ -52,9 +54,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
 
   void _subscribeSectionController() {
     _sectionControllerSub?.cancel();
-    _sectionControllerSub = widget.sectionController?.stream.listen((
-      pageIndex,
-    ) {
+    _sectionControllerSub = widget.sectionController?.stream.listen((event) {
+      if (event.slotIndex != widget.slotIndex) return;
+      final pageIndex = event.pageIndex;
       if (pageIndex >= 0 && pageIndex < _tileControllers.length) {
         for (int i = 0; i < _tileControllers.length; i++) {
           if (i == pageIndex) {
