@@ -46,6 +46,7 @@ class SettingsService {
   static const String _cpuMonitorEnabledKey = 'cpu_monitor_enabled';
   static const String _dismissedUpdateVersionKey = 'dismissed_update_version';
   static const String _lastUpdateCheckTimestampKey = 'last_update_check_timestamp';
+  static const String _splitDividerPositionKey = 'split_divider_position';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -67,6 +68,7 @@ class SettingsService {
   static const bool defaultShowContextualHelp = true;
   static const int defaultAlgorithmCacheDays = 2;
   static const bool defaultCpuMonitorEnabled = true;
+  static const double defaultSplitDividerPosition = 0.5;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -214,6 +216,16 @@ class SettingsService {
     return result;
   }
 
+  /// Get the split-screen divider position (0.0 to 1.0, fraction of width for left pane)
+  double get splitDividerPosition =>
+      _prefs?.getDouble(_splitDividerPositionKey) ??
+      defaultSplitDividerPosition;
+
+  /// Set the split-screen divider position
+  Future<bool> setSplitDividerPosition(double value) async {
+    return await _prefs?.setDouble(_splitDividerPositionKey, value) ?? false;
+  }
+
   /// Get the dismissed update version (user chose to skip this version)
   String? get dismissedUpdateVersion =>
       _prefs?.getString(_dismissedUpdateVersionKey);
@@ -252,6 +264,7 @@ class SettingsService {
     await setShowContextualHelp(defaultShowContextualHelp);
     await setAlgorithmCacheDays(defaultAlgorithmCacheDays);
     await setCpuMonitorEnabled(defaultCpuMonitorEnabled);
+    await setSplitDividerPosition(defaultSplitDividerPosition);
   }
 }
 

@@ -101,6 +101,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   late int _selectedIndex;
   late TabController _tabController;
   EditMode _currentMode = EditMode.parameters;
+  double _splitDividerPosition = SettingsService.defaultSplitDividerPosition;
   bool _showDebugPanel = true;
   bool _showContextualHelp = true;
   String? _contextualHelpText;
@@ -128,6 +129,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
     // Initialize contextual help setting
     _showContextualHelp = SettingsService().showContextualHelp;
+
+    // Initialize split divider position
+    _splitDividerPosition = SettingsService().splitDividerPosition;
 
     // Check for app updates on desktop
     if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
@@ -342,13 +346,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           children: [
             Expanded(
               child: _currentMode == EditMode.both
-                  ? Row(
-                      children: [
-                        Expanded(child: _buildWideScreenBody()),
-                        const VerticalDivider(width: 1),
-                        Expanded(child: _buildRoutingCanvas()),
-                      ],
-                    )
+                  ? _buildSplitView()
                   : IndexedStack(
                       index: _currentMode == EditMode.routing ? 1 : 0,
                       children: [_buildWideScreenBody(), _buildRoutingCanvas()],
@@ -582,6 +580,70 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         }
       }
     }
+  }
+
+  Widget _buildSplitView() {
+    const double dividerWidth = 8.0;
+    const double minPaneWidth = 500.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth - dividerWidth;
+        final minFraction = minPaneWidth / availableWidth;
+        final maxFraction = 1.0 - minFraction;
+        final clampedPosition =
+            _splitDividerPosition.clamp(minFraction, maxFraction);
+        final leftFlex = (clampedPosition * 1000).round();
+        final rightFlex = ((1.0 - clampedPosition) * 1000).round();
+
+        return Row(
+          children: [
+            Expanded(
+              flex: leftFlex,
+              child: _buildWideScreenBody(),
+            ),
+            MouseRegion(
+              cursor: SystemMouseCursors.resizeColumn,
+              child: GestureDetector(
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    final newPosition = _splitDividerPosition +
+                        details.delta.dx / availableWidth;
+                    _splitDividerPosition =
+                        newPosition.clamp(minFraction, maxFraction);
+                  });
+                },
+                onHorizontalDragEnd: (_) {
+                  SettingsService()
+                      .setSplitDividerPosition(_splitDividerPosition);
+                },
+                child: Container(
+                  width: dividerWidth,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: Container(
+                      width: 4,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: rightFlex,
+              child: _buildRoutingCanvas(),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildWideScreenBody() {
