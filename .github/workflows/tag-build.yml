@@ -536,6 +536,23 @@ jobs:
       - name: Build macOS
         run: flutter build macos
 
+      - name: Fix malformed framework bundles
+        run: |
+          # Apple requires versioned frameworks to have proper symlinks:
+          #   Versions/Current -> A
+          #   Resources -> Versions/Current/Resources
+          FRAMEWORKS_DIR="build/macos/Build/Products/Release/nt_helper.app/Contents/Frameworks"
+          for framework in "$FRAMEWORKS_DIR"/*.framework; do
+            if [ -d "$framework/Versions/A" ] && [ ! -e "$framework/Versions/Current" ]; then
+              echo "Fixing missing Current symlink in $(basename "$framework")"
+              ln -s "A" "$framework/Versions/Current"
+            fi
+            if [ -d "$framework/Versions/Current/Resources" ] && [ ! -e "$framework/Resources" ]; then
+              echo "Fixing missing Resources symlink in $(basename "$framework")"
+              ln -s "Versions/Current/Resources" "$framework/Resources"
+            fi
+          done
+
       - name: Download and bundle nt-flash for sandboxed builds
         env:
           GH_TOKEN: ${{ github.token }}
@@ -665,6 +682,11 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+
+      - name: Select Xcode 26
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26'
 
       - name: Print macOS & Xcode info (debug)
         run: |
