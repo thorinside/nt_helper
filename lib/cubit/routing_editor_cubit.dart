@@ -246,7 +246,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Compute AUX bus usage info
       final distingState = _distingCubit?.state;
-      final hasExtended = distingState is DistingStateSynchronized &&
+      final hasExtended =
+          distingState is DistingStateSynchronized &&
           distingState.firmwareVersion.hasExtendedAuxBuses;
       final auxBusUsage = _computeAuxBusUsage(algorithms, slots, hasExtended);
 
@@ -1118,19 +1119,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               .value;
           if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
 
-          final info = busInfo.putIfAbsent(
-            paramValue,
-            () => _AuxBusInfo(),
-          );
+          final info = busInfo.putIfAbsent(paramValue, () => _AuxBusInfo());
           info.addPort(algorithm.index, isSource: true);
-          info.sources.add(_SourceRecord(
-            algorithm.index,
-            port.modeParameterNumber != null,
-            port.modeParameterNumber,
-          ));
-          info.ports.add(
-            _BusPort(algorithm.index, port.parameterNumber!),
+          info.sources.add(
+            _SourceRecord(
+              algorithm.index,
+              port.modeParameterNumber != null,
+              port.modeParameterNumber,
+            ),
           );
+          info.ports.add(_BusPort(algorithm.index, port.parameterNumber!));
         } catch (_) {}
       }
 
@@ -1142,14 +1140,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               .value;
           if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
 
-          final info = busInfo.putIfAbsent(
-            paramValue,
-            () => _AuxBusInfo(),
-          );
+          final info = busInfo.putIfAbsent(paramValue, () => _AuxBusInfo());
           info.addPort(algorithm.index, isSource: false);
-          info.ports.add(
-            _BusPort(algorithm.index, port.parameterNumber!),
-          );
+          info.ports.add(_BusPort(algorithm.index, port.parameterNumber!));
         } catch (_) {}
       }
     }
@@ -1171,28 +1164,32 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           final infoB = busInfo[busB]!;
 
           if (_canMerge(keepInfo: infoA, freeInfo: infoB)) {
-            merges.add(_buildMerge(
-              keepBus: busA,
-              freeBus: busB,
-              keepBusInfo: infoA,
-              freeBusInfo: infoB,
-              portsToMove: infoB.ports,
-              distingState: distingState,
-            ));
+            merges.add(
+              _buildMerge(
+                keepBus: busA,
+                freeBus: busB,
+                keepBusInfo: infoA,
+                freeBusInfo: infoB,
+                portsToMove: infoB.ports,
+                distingState: distingState,
+              ),
+            );
             _simulateMerge(busInfo, keepBus: busA, freeBus: busB);
             foundMerge = true;
             break;
           }
 
           if (_canMerge(keepInfo: infoB, freeInfo: infoA)) {
-            merges.add(_buildMerge(
-              keepBus: busB,
-              freeBus: busA,
-              keepBusInfo: infoB,
-              freeBusInfo: infoA,
-              portsToMove: infoA.ports,
-              distingState: distingState,
-            ));
+            merges.add(
+              _buildMerge(
+                keepBus: busB,
+                freeBus: busA,
+                keepBusInfo: infoB,
+                freeBusInfo: infoA,
+                portsToMove: infoA.ports,
+                distingState: distingState,
+              ),
+            );
             _simulateMerge(busInfo, keepBus: busB, freeBus: busA);
             foundMerge = true;
             break;
@@ -1207,10 +1204,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         ? merges.first.description
         : 'Free ${merges.length} AUX buses';
 
-    return AuxBusConsolidationPlan(
-      description: description,
-      merges: merges,
-    );
+    return AuxBusConsolidationPlan(description: description, merges: merges);
   }
 
   /// Check whether the free bus can be safely merged into the keep bus.
@@ -1315,11 +1309,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         if (src.slot < distingState.slots.length) {
           algoName = distingState.slots[src.slot].algorithm.name;
         }
-        replaceModeSteps.add(ReplaceModeStep(
-          algorithmIndex: src.slot,
-          algorithmName: algoName,
-          parameterNumber: src.modeParameterNumber!,
-        ));
+        replaceModeSteps.add(
+          ReplaceModeStep(
+            algorithmIndex: src.slot,
+            algorithmName: algoName,
+            parameterNumber: src.modeParameterNumber!,
+          ),
+        );
       }
     }
 
@@ -1496,7 +1492,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     // For algorithm-input connections, we clear the destination input bus.
-    final targetPort = _findPortById(currentState, connection.destinationPortId);
+    final targetPort = _findPortById(
+      currentState,
+      connection.destinationPortId,
+    );
     final targetParamNumber = targetPort?.parameterNumber;
     if (targetParamNumber == null) {
       return null;
@@ -1526,7 +1525,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     final portConnections = currentState.connections
         .where(
-          (conn) => conn.sourcePortId == portId || conn.destinationPortId == portId,
+          (conn) =>
+              conn.sourcePortId == portId || conn.destinationPortId == portId,
         )
         .toList();
     for (final conn in portConnections) {
@@ -2777,7 +2777,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Apply cascade layout to focused nodes only
   /// Arranges nodes in a diagonal stair-step pattern (down-right), sorted by slot
-  Future<void> _applyCascadeLayout(RoutingEditorStateLoaded currentState) async {
+  Future<void> _applyCascadeLayout(
+    RoutingEditorStateLoaded currentState,
+  ) async {
     final focusedIds = currentState.focusedAlgorithmIds;
 
     // Find centroid of focused nodes using node centers (not left edges)
@@ -2798,10 +2800,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final centroidY = sumY / focusedPositions.length;
 
     // Sort focused algorithms by slot number (lower slots first)
-    final sortedFocused = currentState.algorithms
-        .where((a) => focusedIds.contains(a.id))
-        .toList()
-      ..sort((a, b) => a.index.compareTo(b.index));
+    final sortedFocused =
+        currentState.algorithms.where((a) => focusedIds.contains(a.id)).toList()
+          ..sort((a, b) => a.index.compareTo(b.index));
 
     // Gap between right edge of one node and left edge of next (2 grid squares)
     const horizontalGap = 100.0;
@@ -2820,7 +2821,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final nodeWidth = existingPos?.width ?? 200.0;
       final nodeHeight = existingPos?.height ?? 100.0;
 
-      tempPositions[algoId] = (currentX, i * verticalOffset, nodeWidth, nodeHeight);
+      tempPositions[algoId] = (
+        currentX,
+        i * verticalOffset,
+        nodeWidth,
+        nodeHeight,
+      );
       currentX += nodeWidth + horizontalGap;
     }
 
@@ -2849,10 +2855,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     }
 
-    emit(currentState.copyWith(
-      nodePositions: updatedPositions,
-      cascadeScrollTarget: Offset(centroidX, centroidY),
-    ));
+    emit(
+      currentState.copyWith(
+        nodePositions: updatedPositions,
+        cascadeScrollTarget: Offset(centroidX, centroidY),
+      ),
+    );
     await saveNodePositions();
   }
 
@@ -3061,6 +3069,27 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     emit(currentState.copyWith(focusedAlgorithmIds: updatedFocused));
+  }
+
+  /// Set focus to exactly one algorithm (replaces current focus set)
+  void setFocusedAlgorithm(String algorithmId) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    emit(currentState.copyWith(focusedAlgorithmIds: {algorithmId}));
+  }
+
+  /// Set focus by slot index - finds the algorithm at that slot and focuses it
+  void setFocusedAlgorithmBySlotIndex(int slotIndex) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    final algorithm = currentState.algorithms
+        .where((a) => a.index == slotIndex)
+        .firstOrNull;
+    if (algorithm != null) {
+      setFocusedAlgorithm(algorithm.id);
+    }
   }
 
   /// Clear all focused algorithms (exit focus mode)

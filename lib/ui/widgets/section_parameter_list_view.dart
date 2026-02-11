@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -9,17 +11,20 @@ import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
+import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 
 class SectionParameterListView extends StatefulWidget {
   final Slot slot;
   final List<String> units;
   final ParameterPages pages;
+  final SectionParameterController? sectionController;
 
   const SectionParameterListView({
     super.key,
     required this.slot,
     required this.units,
     required this.pages,
+    this.sectionController,
   });
 
   @override
@@ -32,6 +37,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   late bool _isCollapsed;
   // Track optimistic performance page assignments for immediate UI updates
   final Map<int, int> _optimisticPerfPageAssignments = {};
+  StreamSubscription<int>? _sectionControllerSub;
 
   @override
   void initState() {
@@ -41,6 +47,33 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
       (_) => ExpansibleController(),
     );
     _isCollapsed = SettingsService().startPagesCollapsed;
+    _subscribeSectionController();
+  }
+
+  void _subscribeSectionController() {
+    _sectionControllerSub?.cancel();
+    _sectionControllerSub = widget.sectionController?.stream.listen((
+      pageIndex,
+    ) {
+      if (pageIndex >= 0 && pageIndex < _tileControllers.length) {
+        for (int i = 0; i < _tileControllers.length; i++) {
+          if (i == pageIndex) {
+            _tileControllers[i].expand();
+          } else {
+            _tileControllers[i].collapse();
+          }
+        }
+        setState(() {
+          _isCollapsed = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sectionControllerSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -51,6 +84,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
       _optimisticPerfPageAssignments.clear();
     }
 
+    if (oldWidget.sectionController != widget.sectionController) {
+      _subscribeSectionController();
+    }
+
     // Rebuild tile controllers if page count changed (e.g., Lua script program change)
     if (oldWidget.pages.pages.length != widget.pages.pages.length) {
       // Dispose old controllers
@@ -58,19 +95,16 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         controller.dispose();
       }
       // Create new controllers matching new page count and current collapse state
-      _tileControllers = List.generate(
-        widget.pages.pages.length,
-        (_) {
-          final controller = ExpansibleController();
-          // Match current collapse state
-          if (_isCollapsed) {
-            controller.collapse();
-          } else {
-            controller.expand();
-          }
-          return controller;
-        },
-      );
+      _tileControllers = List.generate(widget.pages.pages.length, (_) {
+        final controller = ExpansibleController();
+        // Match current collapse state
+        if (_isCollapsed) {
+          controller.collapse();
+        } else {
+          controller.expand();
+        }
+        return controller;
+      });
     }
   }
 
@@ -152,8 +186,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     final safeValueString = valueString ?? ParameterValueString.filler();
     // For string-type parameters, don't fetch unit - they use value strings
     // The registry handles firmware version differences automatically
-    final shouldShowUnit =
-        !ParameterEditorRegistry.isStringTypeUnit(parameterInfo.unit);
+    final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
+      parameterInfo.unit,
+    );
     final unit = shouldShowUnit
         ? parameterInfo.getUnitString(widget.units)
         : null;
@@ -180,7 +215,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           ),
           // Remove button
           IconButton(
-            icon: const Icon(Icons.close, semanticLabel: 'Remove from performance page'),
+            icon: const Icon(
+              Icons.close,
+              semanticLabel: 'Remove from performance page',
+            ),
             tooltip: 'Remove from performance page',
             onPressed: () => _removeFromPerformancePage(parameterNumber),
           ),
@@ -378,12 +416,21 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                       },
                       enableFeedback: true,
                       icon: _isCollapsed
-                          ? const Icon(Icons.keyboard_double_arrow_down_sharp, semanticLabel: 'Expand all')
-                          : const Icon(Icons.keyboard_double_arrow_up_sharp, semanticLabel: 'Collapse all'),
+                          ? const Icon(
+                              Icons.keyboard_double_arrow_down_sharp,
+                              semanticLabel: 'Expand all',
+                            )
+                          : const Icon(
+                              Icons.keyboard_double_arrow_up_sharp,
+                              semanticLabel: 'Collapse all',
+                            ),
                     ),
                   ),
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
+                    icon: const Icon(
+                      Icons.more_vert,
+                      semanticLabel: 'More options',
+                    ),
                     itemBuilder: (context) {
                       final metadata = AlgorithmMetadataService()
                           .getAlgorithmByGuid(widget.slot.algorithm.guid);
@@ -511,9 +558,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                         valueString ?? ParameterValueString.filler();
 
                     // For string-type parameters, don't show unit
-                    final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
-                      parameterInfo.unit,
-                    );
+                    final shouldShowUnit =
+                        !ParameterEditorRegistry.isStringTypeUnit(
+                          parameterInfo.unit,
+                        );
                     final unit = shouldShowUnit
                         ? parameterInfo.getUnitString(widget.units)
                         : null;
@@ -659,9 +707,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
             child: const Text('No, I panicked'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.read<DistingCubit>().reboot();

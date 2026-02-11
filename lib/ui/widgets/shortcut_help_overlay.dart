@@ -6,10 +6,7 @@ class ShortcutHelpOverlay extends StatelessWidget {
   const ShortcutHelpOverlay({super.key});
 
   static void show(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => const ShortcutHelpOverlay(),
-    );
+    showDialog(context: context, builder: (_) => const ShortcutHelpOverlay());
   }
 
   String get _mod => Platform.isMacOS ? 'Cmd' : 'Ctrl';
@@ -44,7 +41,10 @@ class ShortcutHelpOverlay extends StatelessWidget {
               const Divider(),
               Flexible(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                   children: [
                     _buildSection(context, 'Global', [
                       _ShortcutEntry('$_mod+S', 'Save Preset'),
@@ -54,9 +54,16 @@ class ShortcutHelpOverlay extends StatelessWidget {
                       _ShortcutEntry('$_mod+R', 'Refresh'),
                       _ShortcutEntry('$_mod+1', 'Parameters Mode'),
                       _ShortcutEntry('$_mod+2', 'Routing Mode'),
+                      _ShortcutEntry(
+                        '$_mod+3',
+                        'Split View (Parameters + Routing)',
+                      ),
                       _ShortcutEntry('$_mod+[', 'Previous Slot'),
                       _ShortcutEntry('$_mod+]', 'Next Slot'),
                       _ShortcutEntry('$_mod+/', 'Show This Help'),
+                    ]),
+                    _buildSection(context, 'Parameters', [
+                      _ShortcutEntry('1-4', 'Jump to Parameter Page'),
                     ]),
                     _buildSection(context, 'Routing', [
                       _ShortcutEntry('$_mod+= / $_mod++', 'Zoom In'),
@@ -92,33 +99,35 @@ class ShortcutHelpOverlay extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ...entries.map((entry) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 180,
-                  child: Semantics(
-                    label: '${entry.shortcut}: ${entry.description}',
-                    excludeSemantics: true,
-                    child: Text(
-                      entry.shortcut,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.w600,
+          ...entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 180,
+                    child: Semantics(
+                      label: '${entry.shortcut}: ${entry.description}',
+                      excludeSemantics: true,
+                      child: Text(
+                        entry.shortcut,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Text(
-                    entry.description,
-                    style: theme.textTheme.bodyMedium,
+                  Expanded(
+                    child: Text(
+                      entry.description,
+                      style: theme.textTheme.bodyMedium,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );

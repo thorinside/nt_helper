@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -48,6 +49,7 @@ import 'package:nt_helper/ui/widgets/disting_version.dart';
 import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
 import 'package:nt_helper/ui/widgets/mcp_status_indicator.dart';
 import 'package:nt_helper/ui/widgets/debug_panel.dart';
+import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 import 'package:nt_helper/services/debug_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/widgets/app_update_banner.dart';
@@ -56,7 +58,7 @@ import 'package:nt_helper/ui/widgets/contextual_help_bar.dart';
 import 'package:nt_helper/models/app_release.dart';
 import 'package:nt_helper/services/app_update_service.dart';
 
-enum EditMode { parameters, routing }
+enum EditMode { parameters, routing, both }
 
 /// Help text for algorithm name interactions
 const String _algorithmNameHelpText =
@@ -104,6 +106,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   String? _contextualHelpText;
   AppRelease? _availableAppUpdate;
   AppUpdateService? _appUpdateService;
+  RoutingEditorCubit? _routingEditorCubit;
+  StreamSubscription<RoutingEditorState>? _routingFocusSub;
+  bool _isSyncingSelection = false;
+  final SectionParameterController _sectionController =
+      SectionParameterController();
 
   @override
   void initState() {
@@ -156,8 +163,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   @override
   void dispose() {
     _screenFocusNode.dispose();
+    _routingFocusSub?.cancel();
     _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
+    _routingEditorCubit?.close();
+    _sectionController.dispose();
     super.dispose();
   }
 
@@ -185,7 +195,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       setState(() {
         _selectedIndex = _tabController.index;
       });
-      if (!_tabController.indexIsChanging && _selectedIndex < widget.slots.length) {
+      _syncSelectionToRouting(_selectedIndex);
+      if (!_tabController.indexIsChanging &&
+          _selectedIndex < widget.slots.length) {
         final slot = widget.slots[_selectedIndex];
         final name = slot.algorithm.name;
         SemanticsService.sendAnnouncement(
@@ -221,17 +233,91 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     _appUpdateService ??= AppUpdateService();
     showDialog(
       context: context,
-      builder: (ctx) => AppUpdateDialog(
-        release: release,
-        updateService: _appUpdateService!,
-      ),
+      builder: (ctx) =>
+          AppUpdateDialog(release: release, updateService: _appUpdateService!),
     );
+  }
+
+  RoutingEditorCubit _getOrCreateRoutingCubit(DistingCubit distingCubit) {
+    if (_routingEditorCubit == null) {
+      _routingEditorCubit = RoutingEditorCubit(distingCubit);
+      _routingEditorCubit!.injectLayoutAlgorithm(NodeLayoutAlgorithm());
+      _routingFocusSub = _routingEditorCubit!.stream.listen(
+        _onRoutingStateChanged,
+      );
+    }
+    return _routingEditorCubit!;
+  }
+
+  void _onRoutingStateChanged(RoutingEditorState routingState) {
+    if (_isSyncingSelection) return;
+    if (routingState is! RoutingEditorStateLoaded) return;
+
+    final focusedIds = routingState.focusedAlgorithmIds;
+    if (focusedIds.length != 1) return;
+
+    final focusedId = focusedIds.first;
+    final algorithm = routingState.algorithms
+        .where((a) => a.id == focusedId)
+        .firstOrNull;
+    if (algorithm == null) return;
+
+    final slotIndex = algorithm.index;
+    if (slotIndex == _selectedIndex) return;
+    if (slotIndex < 0 || slotIndex >= widget.slots.length) return;
+
+    _isSyncingSelection = true;
+    setState(() {
+      _selectedIndex = slotIndex;
+      _tabController.animateTo(slotIndex);
+    });
+    _isSyncingSelection = false;
+  }
+
+  static final _digitKeyToPageIndex = {
+    LogicalKeyboardKey.digit1: 0,
+    LogicalKeyboardKey.digit2: 1,
+    LogicalKeyboardKey.digit3: 2,
+    LogicalKeyboardKey.digit4: 3,
+  };
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    // Only handle bare digit keys (no modifiers held)
+    final pressed = HardwareKeyboard.instance.logicalKeysPressed;
+    final hasModifier = pressed.any(
+      (k) =>
+          k == LogicalKeyboardKey.controlLeft ||
+          k == LogicalKeyboardKey.controlRight ||
+          k == LogicalKeyboardKey.metaLeft ||
+          k == LogicalKeyboardKey.metaRight ||
+          k == LogicalKeyboardKey.altLeft ||
+          k == LogicalKeyboardKey.altRight,
+    );
+    if (hasModifier) return KeyEventResult.ignored;
+
+    final pageIndex = _digitKeyToPageIndex[event.logicalKey];
+    if (pageIndex != null && _currentMode != EditMode.routing) {
+      _sectionController.goToPage(pageIndex);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _syncSelectionToRouting(int slotIndex) {
+    if (_isSyncingSelection) return;
+    _isSyncingSelection = true;
+    _routingEditorCubit?.setFocusedAlgorithmBySlotIndex(slotIndex);
+    _isSyncingSelection = false;
   }
 
   @override
   Widget build(BuildContext context) {
     bool isWideScreen = MediaQuery.of(context).size.width > 900;
     final cubit = context.read<DistingCubit>();
+    final routingCubit = _getOrCreateRoutingCubit(cubit);
 
     final isOffline = switch (cubit.state) {
       DistingStateSynchronized(offline: final o) => o,
@@ -239,6 +325,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     };
 
     Widget scaffold;
+
+    // Fall back to single mode if split-screen conditions aren't met
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (_currentMode == EditMode.both && !_canShowSplitScreen(screenWidth)) {
+      _currentMode = EditMode.parameters;
+    }
 
     // Use a conditional widget based on screen width
     if (isWideScreen && widget.slots.isNotEmpty) {
@@ -249,10 +341,18 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         body: Column(
           children: [
             Expanded(
-              child: IndexedStack(
-                index: _currentMode == EditMode.parameters ? 0 : 1,
-                children: [_buildWideScreenBody(), _buildRoutingCanvas()],
-              ),
+              child: _currentMode == EditMode.both
+                  ? Row(
+                      children: [
+                        Expanded(child: _buildWideScreenBody()),
+                        const VerticalDivider(width: 1),
+                        Expanded(child: _buildRoutingCanvas()),
+                      ],
+                    )
+                  : IndexedStack(
+                      index: _currentMode == EditMode.routing ? 1 : 0,
+                      children: [_buildWideScreenBody(), _buildRoutingCanvas()],
+                    ),
             ),
             AppUpdateBanner(
               release: _availableAppUpdate,
@@ -289,7 +389,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           children: [
             Expanded(
               child: IndexedStack(
-                index: _currentMode == EditMode.parameters ? 0 : 1,
+                index: _currentMode == EditMode.routing ? 1 : 0,
                 children: [_buildBody(), _buildRoutingCanvas()],
               ),
             ),
@@ -327,7 +427,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         actions: _keyBindingService.buildGlobalActions(
           onSavePreset: () {
             cubit.requireDisting().requestSavePreset();
-            SemanticsService.sendAnnouncement(View.of(context),'Preset saved', TextDirection.ltr);
+            SemanticsService.sendAnnouncement(
+              View.of(context),
+              'Preset saved',
+              TextDirection.ltr,
+            );
           },
           onNewPreset: () => _handleNewPresetShortcut(cubit),
           onBrowsePresets: () =>
@@ -336,23 +440,40 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           onRefresh: () {
             if (!widget.loading && !isOffline) {
               cubit.refresh();
-              SemanticsService.sendAnnouncement(View.of(context),'Refreshing', TextDirection.ltr);
+              SemanticsService.sendAnnouncement(
+                View.of(context),
+                'Refreshing',
+                TextDirection.ltr,
+              );
             }
           },
           onShowShortcutHelp: () => ShortcutHelpOverlay.show(context),
           onSwitchToParameters: () {
             setState(() => _currentMode = EditMode.parameters);
-            SemanticsService.sendAnnouncement(View.of(context),
+            SemanticsService.sendAnnouncement(
+              View.of(context),
               'Switched to Parameters mode',
               TextDirection.ltr,
             );
           },
           onSwitchToRouting: () {
             setState(() => _currentMode = EditMode.routing);
-            SemanticsService.sendAnnouncement(View.of(context),
+            SemanticsService.sendAnnouncement(
+              View.of(context),
               'Switched to Routing mode',
               TextDirection.ltr,
             );
+          },
+          onSwitchToBoth: () {
+            final screenWidth = MediaQuery.of(context).size.width;
+            if (_canShowSplitScreen(screenWidth)) {
+              setState(() => _currentMode = EditMode.both);
+              SemanticsService.sendAnnouncement(
+                View.of(context),
+                'Switched to Split View mode',
+                TextDirection.ltr,
+              );
+            }
           },
           onPreviousSlot: () {
             if (widget.slots.isNotEmpty && _selectedIndex > 0) {
@@ -361,7 +482,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 _selectedIndex = newIndex;
                 _tabController.animateTo(newIndex);
               });
-              SemanticsService.sendAnnouncement(View.of(context),
+              _syncSelectionToRouting(newIndex);
+              SemanticsService.sendAnnouncement(
+                View.of(context),
                 'Slot ${newIndex + 1}: ${widget.slots[newIndex].algorithm.name} selected',
                 TextDirection.ltr,
               );
@@ -375,7 +498,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 _selectedIndex = newIndex;
                 _tabController.animateTo(newIndex);
               });
-              SemanticsService.sendAnnouncement(View.of(context),
+              _syncSelectionToRouting(newIndex);
+              SemanticsService.sendAnnouncement(
+                View.of(context),
                 'Slot ${newIndex + 1}: ${widget.slots[newIndex].algorithm.name} selected',
                 TextDirection.ltr,
               );
@@ -385,7 +510,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         child: Focus(
           focusNode: _screenFocusNode,
           autofocus: true,
-          child: scaffold,
+          onKeyEvent: _handleKeyEvent,
+          child: BlocProvider.value(value: routingCubit, child: scaffold),
         ),
       ),
     );
@@ -394,7 +520,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   void _handleNewPresetShortcut(DistingCubit cubit) {
     if (widget.loading) return;
     cubit.newPreset();
-    SemanticsService.sendAnnouncement(View.of(context),'New preset created', TextDirection.ltr);
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      'New preset created',
+      TextDirection.ltr,
+    );
   }
 
   Future<void> _handleAddAlgorithmShortcut(DistingCubit cubit) async {
@@ -402,10 +532,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BlocProvider.value(
-          value: cubit,
-          child: const AddAlgorithmScreen(),
-        ),
+        builder: (context) =>
+            BlocProvider.value(value: cubit, child: const AddAlgorithmScreen()),
       ),
     );
 
@@ -414,7 +542,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         result['algorithm'],
         result['specValues'],
       );
-      SemanticsService.sendAnnouncement(view, 'Algorithm added', TextDirection.ltr);
+      SemanticsService.sendAnnouncement(
+        view,
+        'Algorithm added',
+        TextDirection.ltr,
+      );
     }
   }
 
@@ -428,10 +560,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         final presetInfo = await showDialog(
           context: context,
           builder: (context) => BlocProvider(
-            create: (context) => PresetBrowserCubit(
-              midiManager: midiManager,
-              prefs: prefs,
-            ),
+            create: (context) =>
+                PresetBrowserCubit(midiManager: midiManager, prefs: prefs),
             child: PresetBrowserDialog(distingCubit: cubit),
           ),
         );
@@ -476,6 +606,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 _selectedIndex = index;
                 _tabController.animateTo(index);
               });
+              _syncSelectionToRouting(index);
             },
             onHelpTextChanged: _showContextualHelp
                 ? (text) => setState(() => _contextualHelpText = text)
@@ -494,6 +625,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       slotIndex: index,
                       units: widget.units,
                       firmwareVersion: widget.firmwareVersion,
+                      sectionController: _sectionController,
                     );
                   }).toList(),
                 )
@@ -537,131 +669,107 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               );
             }
           },
-          child: Icon(Icons.add_circle_rounded, semanticLabel: 'Add Algorithm to Preset'),
+          child: Icon(
+            Icons.add_circle_rounded,
+            semanticLabel: 'Add Algorithm to Preset',
+          ),
         );
       },
     );
   }
 
   Widget _buildRoutingCanvas() {
-    return BlocProvider(
-      create: (context) {
-        final cubit = RoutingEditorCubit(context.read<DistingCubit>());
-        cubit.injectLayoutAlgorithm(NodeLayoutAlgorithm());
-        return cubit;
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Header with routing controls
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
-                  builder: (context, state) {
-                    final isMobile = _platformService.isMobilePlatform();
-                    final buttonStyle = isMobile
-                        ? const ButtonStyle(
-                            visualDensity: VisualDensity.compact,
-                            padding: WidgetStatePropertyAll(EdgeInsets.all(8)),
-                          )
-                        : null;
-                    return Row(
-                      children: [
-                        // Zoom controls
-                        if (state is RoutingEditorStateLoaded) ...[
-                          IconButton(
-                            onPressed: () =>
-                                context.read<RoutingEditorCubit>().zoomOut(),
-                            icon: const Icon(Icons.zoom_out, semanticLabel: 'Zoom out'),
-                            tooltip: 'Zoom out (Ctrl/Cmd + -)',
-                            style: buttonStyle,
-                          ),
-                          Container(
-                            constraints: BoxConstraints(
-                              minWidth: isMobile ? 60 : 80,
-                            ),
-                            child: DropdownButton<double>(
-                              value: _findClosestZoomLevel(state.zoomLevel),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  context
-                                      .read<RoutingEditorCubit>()
-                                      .setZoomLevel(value);
-                                }
-                              },
-                              items: RoutingEditorCubit.availableZoomLevels.map(
-                                (zoom) {
-                                  return DropdownMenuItem<double>(
-                                    value: zoom,
-                                    child: Text('${(zoom * 100).round()}%'),
-                                  );
-                                },
-                              ).toList(),
-                              underline: const SizedBox.shrink(),
-                              isDense: true,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () =>
-                                context.read<RoutingEditorCubit>().zoomIn(),
-                            icon: const Icon(Icons.zoom_in, semanticLabel: 'Zoom in'),
-                            tooltip: 'Zoom in (Ctrl/Cmd + +)',
-                            style: buttonStyle,
-                          ),
-                          IconButton(
-                            onPressed: () =>
-                                context.read<RoutingEditorCubit>().resetZoom(),
-                            icon: const Icon(Icons.zoom_out_map, semanticLabel: 'Reset zoom'),
-                            tooltip: 'Reset zoom (100%)',
-                            style: buttonStyle,
-                          ),
-                          SizedBox(width: isMobile ? 4 : 8),
-                          Container(
-                            height: 24,
-                            width: 1,
-                            color: Theme.of(context).dividerColor,
-                          ),
-                          SizedBox(width: isMobile ? 4 : 8),
-                        ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Header with routing controls
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
+                builder: (context, state) {
+                  final isMobile = _platformService.isMobilePlatform();
+                  final buttonStyle = isMobile
+                      ? const ButtonStyle(
+                          visualDensity: VisualDensity.compact,
+                          padding: WidgetStatePropertyAll(EdgeInsets.all(8)),
+                        )
+                      : null;
+                  return Row(
+                    children: [
+                      // Zoom controls
+                      if (state is RoutingEditorStateLoaded) ...[
                         IconButton(
-                          icon: const Icon(Icons.refresh, semanticLabel: 'Refresh Routing'),
-                          style: buttonStyle,
-                          onPressed: state.maybeWhen(
-                            loaded:
-                                (
-                                  physicalInputs,
-                                  physicalOutputs,
-                                  es5Inputs,
-                                  algorithms,
-                                  connections,
-                                  buses,
-                                  portOutputModes,
-                                  nodePositions,
-                                  zoomLevel,
-                                  panOffset,
-                                  isHardwareSynced,
-                                  isPersistenceEnabled,
-                                  lastSyncTime,
-                                  lastPersistTime,
-                                  lastError,
-                                  subState,
-                                  focusedAlgorithmIds,
-                                  cascadeScrollTarget,
-                                  auxBusUsage,
-                                  hasExtendedAuxBuses,
-                                ) => () {
-                                  context
-                                      .read<RoutingEditorCubit>()
-                                      .refreshRouting();
-                                },
-                            orElse: () => null,
+                          onPressed: () =>
+                              context.read<RoutingEditorCubit>().zoomOut(),
+                          icon: const Icon(
+                            Icons.zoom_out,
+                            semanticLabel: 'Zoom out',
                           ),
-                          tooltip: 'Refresh Routing',
+                          tooltip: 'Zoom out (Ctrl/Cmd + -)',
+                          style: buttonStyle,
                         ),
-                        // Layout Algorithm Button
-                        state.maybeWhen(
+                        Container(
+                          constraints: BoxConstraints(
+                            minWidth: isMobile ? 60 : 80,
+                          ),
+                          child: DropdownButton<double>(
+                            value: _findClosestZoomLevel(state.zoomLevel),
+                            onChanged: (value) {
+                              if (value != null) {
+                                context.read<RoutingEditorCubit>().setZoomLevel(
+                                  value,
+                                );
+                              }
+                            },
+                            items: RoutingEditorCubit.availableZoomLevels.map((
+                              zoom,
+                            ) {
+                              return DropdownMenuItem<double>(
+                                value: zoom,
+                                child: Text('${(zoom * 100).round()}%'),
+                              );
+                            }).toList(),
+                            underline: const SizedBox.shrink(),
+                            isDense: true,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () =>
+                              context.read<RoutingEditorCubit>().zoomIn(),
+                          icon: const Icon(
+                            Icons.zoom_in,
+                            semanticLabel: 'Zoom in',
+                          ),
+                          tooltip: 'Zoom in (Ctrl/Cmd + +)',
+                          style: buttonStyle,
+                        ),
+                        IconButton(
+                          onPressed: () =>
+                              context.read<RoutingEditorCubit>().resetZoom(),
+                          icon: const Icon(
+                            Icons.zoom_out_map,
+                            semanticLabel: 'Reset zoom',
+                          ),
+                          tooltip: 'Reset zoom (100%)',
+                          style: buttonStyle,
+                        ),
+                        SizedBox(width: isMobile ? 4 : 8),
+                        Container(
+                          height: 24,
+                          width: 1,
+                          color: Theme.of(context).dividerColor,
+                        ),
+                        SizedBox(width: isMobile ? 4 : 8),
+                      ],
+                      IconButton(
+                        icon: const Icon(
+                          Icons.refresh,
+                          semanticLabel: 'Refresh Routing',
+                        ),
+                        style: buttonStyle,
+                        onPressed: state.maybeWhen(
                           loaded:
                               (
                                 physicalInputs,
@@ -684,145 +792,193 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 cascadeScrollTarget,
                                 auxBusUsage,
                                 hasExtendedAuxBuses,
-                              ) {
-                                // Show loading during layout calculation
-                                if (subState == SubState.syncing) {
-                                  return IconButton(
-                                    icon: const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
+                              ) => () {
+                                context
+                                    .read<RoutingEditorCubit>()
+                                    .refreshRouting();
+                              },
+                          orElse: () => null,
+                        ),
+                        tooltip: 'Refresh Routing',
+                      ),
+                      // Layout Algorithm Button
+                      state.maybeWhen(
+                        loaded:
+                            (
+                              physicalInputs,
+                              physicalOutputs,
+                              es5Inputs,
+                              algorithms,
+                              connections,
+                              buses,
+                              portOutputModes,
+                              nodePositions,
+                              zoomLevel,
+                              panOffset,
+                              isHardwareSynced,
+                              isPersistenceEnabled,
+                              lastSyncTime,
+                              lastPersistTime,
+                              lastError,
+                              subState,
+                              focusedAlgorithmIds,
+                              cascadeScrollTarget,
+                              auxBusUsage,
+                              hasExtendedAuxBuses,
+                            ) {
+                              // Show loading during layout calculation
+                              if (subState == SubState.syncing) {
+                                return IconButton(
+                                  icon: const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
                                     ),
-                                    onPressed: null,
-                                    tooltip: 'Calculating Layout...',
-                                    style: buttonStyle,
-                                  );
-                                }
-
-                                // Show normal layout button
-                                return IconButton(
-                                  icon: const Icon(Icons.auto_fix_high, semanticLabel: 'Apply Layout Algorithm'),
-                                  onPressed: () {
-                                    context
-                                        .read<RoutingEditorCubit>()
-                                        .applyLayoutAlgorithm();
-                                  },
-                                  tooltip: 'Apply Layout Algorithm',
+                                  ),
+                                  onPressed: null,
+                                  tooltip: 'Calculating Layout...',
                                   style: buttonStyle,
                                 );
-                              },
-                          orElse: () => const SizedBox.shrink(),
-                        ),
-                        // Optimize AUX Buses
-                        state.maybeWhen(
-                          loaded:
-                              (
-                                physicalInputs,
-                                physicalOutputs,
-                                es5Inputs,
-                                algorithms,
-                                connections,
-                                buses,
-                                portOutputModes,
-                                nodePositions,
-                                zoomLevel,
-                                panOffset,
-                                isHardwareSynced,
-                                isPersistenceEnabled,
-                                lastSyncTime,
-                                lastPersistTime,
-                                lastError,
-                                subState,
-                                focusedAlgorithmIds,
-                                cascadeScrollTarget,
-                                auxBusUsage,
-                                hasExtendedAuxBuses,
-                              ) {
-                                return IconButton(
-                                  icon: const Icon(Icons.compress, semanticLabel: 'Optimize Buses'),
-                                  onPressed: () async {
-                                    final cubit = context.read<RoutingEditorCubit>();
-                                    final plan = cubit.buildConsolidationPlan();
-                                    if (plan == null) {
-                                      if (context.mounted) {
-                                        _editorController.showError('No AUX buses can be consolidated');
-                                      }
-                                      return;
+                              }
+
+                              // Show normal layout button
+                              return IconButton(
+                                icon: const Icon(
+                                  Icons.auto_fix_high,
+                                  semanticLabel: 'Apply Layout Algorithm',
+                                ),
+                                onPressed: () {
+                                  context
+                                      .read<RoutingEditorCubit>()
+                                      .applyLayoutAlgorithm();
+                                },
+                                tooltip: 'Apply Layout Algorithm',
+                                style: buttonStyle,
+                              );
+                            },
+                        orElse: () => const SizedBox.shrink(),
+                      ),
+                      // Optimize AUX Buses
+                      state.maybeWhen(
+                        loaded:
+                            (
+                              physicalInputs,
+                              physicalOutputs,
+                              es5Inputs,
+                              algorithms,
+                              connections,
+                              buses,
+                              portOutputModes,
+                              nodePositions,
+                              zoomLevel,
+                              panOffset,
+                              isHardwareSynced,
+                              isPersistenceEnabled,
+                              lastSyncTime,
+                              lastPersistTime,
+                              lastError,
+                              subState,
+                              focusedAlgorithmIds,
+                              cascadeScrollTarget,
+                              auxBusUsage,
+                              hasExtendedAuxBuses,
+                            ) {
+                              return IconButton(
+                                icon: const Icon(
+                                  Icons.compress,
+                                  semanticLabel: 'Optimize Buses',
+                                ),
+                                onPressed: () async {
+                                  final cubit = context
+                                      .read<RoutingEditorCubit>();
+                                  final plan = cubit.buildConsolidationPlan();
+                                  if (plan == null) {
+                                    if (context.mounted) {
+                                      _editorController.showError(
+                                        'No AUX buses can be consolidated',
+                                      );
                                     }
-                                    if (!context.mounted) return;
-                                    await showDialog(
-                                      context: context,
-                                      builder: (_) => ConsolidateBusesDialog(plan: plan, cubit: cubit),
-                                    );
-                                  },
-                                  tooltip: 'Optimize AUX Buses',
-                                  style: buttonStyle,
-                                );
-                              },
-                          orElse: () => const SizedBox.shrink(),
+                                    return;
+                                  }
+                                  if (!context.mounted) return;
+                                  await showDialog(
+                                    context: context,
+                                    builder: (_) => ConsolidateBusesDialog(
+                                      plan: plan,
+                                      cubit: cubit,
+                                    ),
+                                  );
+                                },
+                                tooltip: 'Optimize AUX Buses',
+                                style: buttonStyle,
+                              );
+                            },
+                        orElse: () => const SizedBox.shrink(),
+                      ),
+                      // Center View
+                      IconButton(
+                        icon: const Icon(
+                          Icons.center_focus_strong,
+                          semanticLabel: 'Center View',
                         ),
-                        // Center View
-                        IconButton(
-                          icon: const Icon(Icons.center_focus_strong, semanticLabel: 'Center View'),
-                          onPressed: () => _editorController.fitToView(),
-                          tooltip: 'Center View',
-                          style: buttonStyle,
-                        ),
+                        onPressed: () => _editorController.fitToView(),
+                        tooltip: 'Center View',
+                        style: buttonStyle,
+                      ),
 
-                        // Share/Copy Nodes Image (tight bounds, 24px margin)
-                        IconButton(
-                          icon: Icon(
-                            isMobile ? Icons.share : Icons.image_outlined,
-                            semanticLabel: isMobile
-                                ? 'Share Nodes Image'
-                                : 'Copy Nodes Image',
-                          ),
-                          onPressed: () {
-                            if (isMobile) {
-                              _editorController.shareNodesImage();
-                            } else {
-                              _editorController.copyNodesImage();
-                            }
-                          },
-                          tooltip: isMobile
+                      // Share/Copy Nodes Image (tight bounds, 24px margin)
+                      IconButton(
+                        icon: Icon(
+                          isMobile ? Icons.share : Icons.image_outlined,
+                          semanticLabel: isMobile
                               ? 'Share Nodes Image'
                               : 'Copy Nodes Image',
-                          style: buttonStyle,
                         ),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Routing Canvas
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return RoutingEditorWidget(
-                    controller: _editorController,
-                    canvasSize: Size(
-                      constraints.maxWidth,
-                      constraints.maxHeight,
-                    ),
-                    showPhysicalPorts: true,
-                    onConnectionCreated: (source, target) {
-                      context.read<RoutingEditorCubit>().createConnection(
-                        sourcePortId: source,
-                        targetPortId: target,
-                      );
-                    },
+                        onPressed: () {
+                          if (isMobile) {
+                            _editorController.shareNodesImage();
+                          } else {
+                            _editorController.copyNodesImage();
+                          }
+                        },
+                        tooltip: isMobile
+                            ? 'Share Nodes Image'
+                            : 'Copy Nodes Image',
+                        style: buttonStyle,
+                      ),
+                    ],
                   );
                 },
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Routing Canvas
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return RoutingEditorWidget(
+                  controller: _editorController,
+                  canvasSize: Size(constraints.maxWidth, constraints.maxHeight),
+                  showPhysicalPorts: true,
+                  onConnectionCreated: (source, target) {
+                    context.read<RoutingEditorCubit>().createConnection(
+                      sourcePortId: source,
+                      targetPortId: target,
+                    );
+                  },
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+
+  bool _canShowSplitScreen(double width) {
+    return !_platformService.isMobilePlatform() && width > 800;
   }
 
   BottomAppBar _buildBottomAppBar() {
@@ -837,6 +993,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: SegmentedButton<EditMode>(
+              multiSelectionEnabled: true,
+              emptySelectionAllowed: false,
               segments: [
                 ButtonSegment(
                   value: EditMode.parameters,
@@ -847,18 +1005,37 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 ButtonSegment(
                   value: EditMode.routing,
                   label: isWideScreen ? const Text('Routing') : null,
-                  icon: const Icon(Icons.account_tree, semanticLabel: 'Routing'),
+                  icon: const Icon(
+                    Icons.account_tree,
+                    semanticLabel: 'Routing',
+                  ),
                   tooltip: 'Routing mode',
                 ),
               ],
-              selected: {_currentMode},
+              selected: _currentMode == EditMode.both
+                  ? {EditMode.parameters, EditMode.routing}
+                  : {_currentMode},
               onSelectionChanged: (Set<EditMode> modes) {
                 setState(() {
-                  _currentMode = modes.first;
+                  if (modes.length == 2 && _canShowSplitScreen(screenWidth)) {
+                    _currentMode = EditMode.both;
+                  } else if (modes.length == 2) {
+                    // Can't split - keep only the newly clicked one
+                    final newMode = modes.firstWhere(
+                      (m) =>
+                          m !=
+                          (_currentMode == EditMode.both
+                              ? EditMode.parameters
+                              : _currentMode),
+                      orElse: () => modes.first,
+                    );
+                    _currentMode = newMode;
+                  } else if (modes.length == 1) {
+                    _currentMode = modes.first;
+                  }
                 });
               },
               style: const ButtonStyle(
-                // Material 3 styling for prominence
                 visualDensity: VisualDensity.comfortable,
               ),
             ),
@@ -877,7 +1054,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 // Show "Offline Data" button when offline
                 return IconButton(
                   tooltip: "Offline Data",
-                  icon: const Icon(Icons.sync_alt_rounded, semanticLabel: 'Offline Data'),
+                  icon: const Icon(
+                    Icons.sync_alt_rounded,
+                    semanticLabel: 'Offline Data',
+                  ),
                   onPressed: () {
                     final distingCubit = context.read<DistingCubit>();
                     Navigator.push(
@@ -898,7 +1078,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         button: true,
                         child: IconButton(
                           tooltip: "View Options",
-                          icon: const Icon(Icons.view_list, semanticLabel: 'View Options'),
+                          icon: const Icon(
+                            Icons.view_list,
+                            semanticLabel: 'View Options',
+                          ),
                           onPressed: () => _showDisplayModeBottomSheet(context),
                         ),
                       )
@@ -911,7 +1094,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 DisplayMode.parameters,
                               );
                             },
-                            icon: const Icon(Icons.list_alt_rounded, semanticLabel: 'Parameter View'),
+                            icon: const Icon(
+                              Icons.list_alt_rounded,
+                              semanticLabel: 'Parameter View',
+                            ),
                           ),
                           IconButton(
                             tooltip: "Algorithm UI",
@@ -920,7 +1106,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 DisplayMode.algorithmUI,
                               );
                             },
-                            icon: const Icon(Icons.line_axis_rounded, semanticLabel: 'Algorithm UI'),
+                            icon: const Icon(
+                              Icons.line_axis_rounded,
+                              semanticLabel: 'Algorithm UI',
+                            ),
                           ),
                           IconButton(
                             tooltip: "Overview UI",
@@ -929,7 +1118,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 DisplayMode.overview,
                               );
                             },
-                            icon: const Icon(Icons.line_weight_rounded, semanticLabel: 'Overview UI'),
+                            icon: const Icon(
+                              Icons.line_weight_rounded,
+                              semanticLabel: 'Overview UI',
+                            ),
                           ),
                           IconButton(
                             tooltip: "Overview VU Meters",
@@ -938,7 +1130,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 DisplayMode.overviewVUs,
                               );
                             },
-                            icon: const Icon(Icons.leaderboard_rounded, semanticLabel: 'Overview VU Meters'),
+                            icon: const Icon(
+                              Icons.leaderboard_rounded,
+                              semanticLabel: 'Overview VU Meters',
+                            ),
                           ),
                         ],
                       );
@@ -990,7 +1185,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         child: IconButton(
                           icon: Icon(
                             Icons.arrow_circle_up,
-                            semanticLabel: 'Firmware update available: v${updateAvailable.version}',
+                            semanticLabel:
+                                'Firmware update available: v${updateAvailable.version}',
                             color: Theme.of(context).colorScheme.primary,
                             size: 20,
                           ),
@@ -1157,6 +1353,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             slotIndex: index,
             units: widget.units,
             firmwareVersion: widget.firmwareVersion,
+            sectionController: _sectionController,
           );
         }).toList(),
       );
@@ -1232,11 +1429,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
   Widget _buildModeSpecificActions(DistingCubit cubit) {
     return Row(
-      key: ValueKey(_currentMode), // Important for AnimatedSwitcher
+      key: ValueKey(_currentMode),
       mainAxisSize: MainAxisSize.min,
-      children: _currentMode == EditMode.parameters
-          ? _buildParameterModeActions(cubit)
-          : _buildRoutingModeActions(),
+      children: switch (_currentMode) {
+        EditMode.parameters => _buildParameterModeActions(cubit),
+        EditMode.routing => _buildRoutingModeActions(),
+        EditMode.both => [
+          ..._buildParameterModeActions(cubit),
+          ..._buildRoutingModeActions(),
+        ],
+      },
     );
   }
 
@@ -1246,7 +1448,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       Builder(
         builder: (ctx) {
           return IconButton(
-            icon: const Icon(Icons.arrow_upward_rounded, semanticLabel: 'Move Algorithm Up'),
+            icon: const Icon(
+              Icons.arrow_upward_rounded,
+              semanticLabel: 'Move Algorithm Up',
+            ),
             tooltip: 'Move Algorithm Up',
             onPressed: widget.loading
                 ? null
@@ -1266,7 +1471,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       Builder(
         builder: (ctx) {
           return IconButton(
-            icon: const Icon(Icons.arrow_downward_rounded, semanticLabel: 'Move Algorithm Down'),
+            icon: const Icon(
+              Icons.arrow_downward_rounded,
+              semanticLabel: 'Move Algorithm Down',
+            ),
             tooltip: 'Move Algorithm Down',
             onPressed: widget.loading
                 ? null
@@ -1293,7 +1501,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       Builder(
         builder: (ctx) {
           return IconButton(
-            icon: const Icon(Icons.delete_forever_rounded, semanticLabel: 'Remove Algorithm'),
+            icon: const Icon(
+              Icons.delete_forever_rounded,
+              semanticLabel: 'Remove Algorithm',
+            ),
             tooltip: 'Remove Algorithm',
             onPressed: widget.loading
                 ? null
@@ -1555,8 +1766,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     // Get the midi manager and algorithms for RTT stats
                     final cubit = popupCtx.read<DistingCubit>();
                     final state = cubit.state;
-                    final midiManager = state is DistingStateSynchronized &&
-                            !state.offline
+                    final midiManager =
+                        state is DistingStateSynchronized && !state.offline
                         ? cubit.requireDisting()
                         : null;
                     final algorithms = state is DistingStateSynchronized
@@ -1731,16 +1942,22 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         children: [
                           TextSpan(
                             text: 'Preset:\u2007',
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                           TextSpan(
                             text: widget.presetName.trim(),
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ],
                       ),
@@ -1785,7 +2002,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   label: 'Slot ${index + 1}: $displayName',
                   hint: 'Double tap to select. Long press to rename.',
                   customSemanticsActions: {
-                    const CustomSemanticsAction(label: 'Rename algorithm'): () async {
+                    const CustomSemanticsAction(
+                      label: 'Rename algorithm',
+                    ): () async {
                       var cubit = context.read<DistingCubit>();
                       final newName = await showDialog<String>(
                         context: context,
@@ -1796,7 +2015,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         cubit.renameSlot(index, newName);
                       }
                     },
-                    const CustomSemanticsAction(label: 'Focus algorithm UI'): () {
+                    const CustomSemanticsAction(
+                      label: 'Focus algorithm UI',
+                    ): () {
                       var cubit = context.read<DistingCubit>();
                       cubit.disting()?.let((manager) {
                         manager.requestSetFocus(index, 0);
@@ -1822,7 +2043,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         var cubit = context.read<DistingCubit>();
                         cubit.disting()?.let((manager) {
                           manager.requestSetFocus(index, 0);
-                          manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+                          manager.requestSetDisplayMode(
+                            DisplayMode.algorithmUI,
+                          );
                         });
                         if (SettingsService().hapticsEnabled) {
                           Haptics.vibrate(HapticsType.medium);
@@ -1937,13 +2160,14 @@ class _UpdateCheckButtonState extends State<_UpdateCheckButton> {
           onPressed: _checking
               ? null
               : () => _check(
-                    skipVersionCheck: kDebugMode &&
-                        HardwareKeyboard.instance.logicalKeysPressed.any(
-                          (k) =>
-                              k == LogicalKeyboardKey.shiftLeft ||
-                              k == LogicalKeyboardKey.shiftRight,
-                        ),
-                  ),
+                  skipVersionCheck:
+                      kDebugMode &&
+                      HardwareKeyboard.instance.logicalKeysPressed.any(
+                        (k) =>
+                            k == LogicalKeyboardKey.shiftLeft ||
+                            k == LogicalKeyboardKey.shiftRight,
+                      ),
+                ),
           icon: _checking
               ? const SizedBox(
                   width: 16,

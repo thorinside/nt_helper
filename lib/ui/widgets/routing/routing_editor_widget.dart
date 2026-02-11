@@ -96,7 +96,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   late Animation<double> _fadeOutAnimation;
   String? _deletingPortId;
   Port? _deletingPort;
-  bool _isFadingOut = false; // True during the final fade-out phase (not cancellable)
+  bool _isFadingOut =
+      false; // True during the final fade-out phase (not cancellable)
 
   // Accessible list view toggle
   bool _showAccessibleListView = false;
@@ -306,7 +307,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       final cubit = context.read<RoutingEditorCubit>();
       cubit.deleteConnectionsForPort(_deletingPort!.id);
 
-      SemanticsService.sendAnnouncement(View.of(context),
+      SemanticsService.sendAnnouncement(
+        View.of(context),
         'All connections on $portName deleted',
         TextDirection.ltr,
       );
@@ -773,12 +775,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       final platformService = widget.platformService;
       if (platformService?.isMobilePlatform() == true) {
         // Use native sharing on mobile
-        final xFile = XFile.fromData(bytes, mimeType: 'image/png', name: 'routing_diagram.png');
+        final xFile = XFile.fromData(
+          bytes,
+          mimeType: 'image/png',
+          name: 'routing_diagram.png',
+        );
         await SharePlus.instance.share(
-          ShareParams(
-            files: [xFile],
-            text: 'Routing diagram from nt_helper',
-          ),
+          ShareParams(files: [xFile], text: 'Routing diagram from nt_helper'),
         );
         _showFeedback('Routing diagram shared');
       } else {
@@ -799,12 +802,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       final platformService = widget.platformService;
       if (platformService?.isMobilePlatform() == true) {
         // Use native sharing on mobile
-        final xFile = XFile.fromData(bytes, mimeType: 'image/png', name: 'routing_canvas.png');
+        final xFile = XFile.fromData(
+          bytes,
+          mimeType: 'image/png',
+          name: 'routing_canvas.png',
+        );
         await SharePlus.instance.share(
-          ShareParams(
-            files: [xFile],
-            text: 'Routing canvas from nt_helper',
-          ),
+          ShareParams(files: [xFile], text: 'Routing canvas from nt_helper'),
         );
         _showFeedback('Routing canvas shared');
       } else {
@@ -964,7 +968,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       },
       builder: (context, state) {
         // Auto-detect accessible navigation mode
-        final useListView = _showAccessibleListView ||
+        final useListView =
+            _showAccessibleListView ||
             MediaQuery.of(context).accessibleNavigation;
 
         if (useListView) {
@@ -989,7 +994,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 child: IconButton.filledTonal(
                   icon: const Icon(Icons.grid_view),
                   tooltip: 'Switch to canvas view',
-                  onPressed: () => setState(() => _showAccessibleListView = false),
+                  onPressed: () =>
+                      setState(() => _showAccessibleListView = false),
                 ),
               ),
             ],
@@ -1070,8 +1076,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                           miniMapWidth = 120.0;
                           miniMapHeight = 90.0;
                         } else {
-                          final screenWidth =
-                              MediaQuery.of(context).size.width;
+                          final screenWidth = MediaQuery.of(context).size.width;
                           if (screenWidth < 900) {
                             miniMapWidth = 160.0;
                             miniMapHeight = 120.0;
@@ -1085,8 +1090,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                           child: MiniMapWidget(
                             horizontalScrollController:
                                 _horizontalScrollController,
-                            verticalScrollController:
-                                _verticalScrollController,
+                            verticalScrollController: _verticalScrollController,
                             canvasWidth: _canvasWidth,
                             canvasHeight: _canvasHeight,
                             width: miniMapWidth,
@@ -1171,50 +1175,50 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       child: Semantics(
         liveRegion: true,
         child: Container(
-        constraints: const BoxConstraints(maxWidth: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).shadowColor.withValues(alpha: 0.2),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 16,
-              color: Theme.of(context).colorScheme.onErrorContainer,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                _errorMessage!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
+          constraints: const BoxConstraints(maxWidth: 300),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.errorContainer,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).shadowColor.withValues(alpha: 0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: _dismissError,
-              child: Icon(
-                Icons.close,
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
                 size: 16,
                 color: Theme.of(context).colorScheme.onErrorContainer,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  _errorMessage!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _dismissError,
+                child: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1232,7 +1236,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         setState(() {
           _pendingConnectionSourcePortId = null;
         });
-        SemanticsService.sendAnnouncement(View.of(context),
+        SemanticsService.sendAnnouncement(
+          View.of(context),
           'Connection cancelled',
           TextDirection.ltr,
         );
@@ -1257,7 +1262,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         (event.logicalKey == LogicalKeyboardKey.delete ||
             event.logicalKey == LogicalKeyboardKey.backspace)) {
       final highlight = _connectionHighlight;
-      if (highlight != null && highlight.source == _ConnectionHighlightSource.selected) {
+      if (highlight != null &&
+          highlight.source == _ConnectionHighlightSource.selected) {
         _deleteConnection(highlight.id, _latestConnections);
         _clearSelectedConnection();
         return KeyEventResult.handled;
@@ -1271,7 +1277,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         if (_horizontalScrollController.hasClients) {
           _horizontalScrollController.jumpTo(
             (_horizontalScrollController.offset - scrollAmount).clamp(
-              0.0, _horizontalScrollController.position.maxScrollExtent),
+              0.0,
+              _horizontalScrollController.position.maxScrollExtent,
+            ),
           );
         }
         return KeyEventResult.handled;
@@ -1280,7 +1288,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         if (_horizontalScrollController.hasClients) {
           _horizontalScrollController.jumpTo(
             (_horizontalScrollController.offset + scrollAmount).clamp(
-              0.0, _horizontalScrollController.position.maxScrollExtent),
+              0.0,
+              _horizontalScrollController.position.maxScrollExtent,
+            ),
           );
         }
         return KeyEventResult.handled;
@@ -1289,7 +1299,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         if (_verticalScrollController.hasClients) {
           _verticalScrollController.jumpTo(
             (_verticalScrollController.offset - scrollAmount).clamp(
-              0.0, _verticalScrollController.position.maxScrollExtent),
+              0.0,
+              _verticalScrollController.position.maxScrollExtent,
+            ),
           );
         }
         return KeyEventResult.handled;
@@ -1298,7 +1310,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         if (_verticalScrollController.hasClients) {
           _verticalScrollController.jumpTo(
             (_verticalScrollController.offset + scrollAmount).clamp(
-              0.0, _verticalScrollController.position.maxScrollExtent),
+              0.0,
+              _verticalScrollController.position.maxScrollExtent,
+            ),
           );
         }
         return KeyEventResult.handled;
@@ -1316,7 +1330,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         _pendingConnectionSourcePortId = portId;
       });
       final portName = _portById[portId]?.name ?? portId;
-      SemanticsService.sendAnnouncement(View.of(context),
+      SemanticsService.sendAnnouncement(
+        View.of(context),
         'Selected $portName as connection source. Navigate to a destination port and press Space to connect, or press Escape to cancel.',
         TextDirection.ltr,
       );
@@ -1325,7 +1340,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       setState(() {
         _pendingConnectionSourcePortId = null;
       });
-      SemanticsService.sendAnnouncement(View.of(context),
+      SemanticsService.sendAnnouncement(
+        View.of(context),
         'Connection cancelled',
         TextDirection.ltr,
       );
@@ -1386,9 +1402,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     source: _ConnectionHighlightSource.selected,
   );
 
-  void _setConnectionHighlight(String connectionId, _ConnectionHighlightSource source) {
+  void _setConnectionHighlight(
+    String connectionId,
+    _ConnectionHighlightSource source,
+  ) {
     setState(() {
-      _connectionHighlight = _ConnectionHighlight(id: connectionId, source: source);
+      _connectionHighlight = _ConnectionHighlight(
+        id: connectionId,
+        source: source,
+      );
     });
   }
 
@@ -1428,13 +1450,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       // Announce success for screen readers
       final sourceName = _portById[sourcePortId]?.name ?? sourcePortId;
       final destName = _portById[targetPortId]?.name ?? targetPortId;
-      SemanticsService.sendAnnouncement(view,
+      SemanticsService.sendAnnouncement(
+        view,
         'Connection created from $sourceName to $destName',
         TextDirection.ltr,
       );
     } on ArgumentError catch (e) {
       _showError('Invalid connection: ${e.message}');
-      SemanticsService.sendAnnouncement(view,
+      SemanticsService.sendAnnouncement(
+        view,
         'Connection failed: ${e.message}',
         TextDirection.ltr,
       );
@@ -1665,116 +1689,117 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                     color: Theme.of(context).colorScheme.surface,
                   ),
                   child: FocusTraversalGroup(
-                  policy: OrderedTraversalPolicy(),
-                  child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Grid background with gesture detector for empty space (bottom layer)
-                    SizedBox(
-                      width: _canvasWidth,
-                      height: _canvasHeight,
-                      child: GestureDetector(
-                        // Handle taps and panning on empty space
-                        onTapDown: (details) {
-                          _handleCanvasTap(
-                            details.localPosition,
-                            connections,
-                          );
-                        },
-                        onDoubleTap: () {
-                          // Double tap to reset zoom
-                          final routingCubit = context
-                              .read<RoutingEditorCubit>();
-                          routingCubit.resetZoom();
-                        },
-                        onPanStart: _handleCanvasPanStart,
-                        onPanUpdate: _handleCanvasPanUpdate,
-                        onPanEnd: _handleCanvasPanEnd,
-                        behavior: HitTestBehavior
-                            .translucent, // Allow events to pass through to child widgets
-                        child: ExcludeSemantics(
-                          child: CustomPaint(
-                            painter: _CanvasGridPainter(
-                              minorGridColor: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.1),
-                              majorGridColor: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.2),
-                              gridSize: 50.0,
-                              majorEvery: 5,
+                    policy: OrderedTraversalPolicy(),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Grid background with gesture detector for empty space (bottom layer)
+                        SizedBox(
+                          width: _canvasWidth,
+                          height: _canvasHeight,
+                          child: GestureDetector(
+                            // Handle taps and panning on empty space
+                            onTapDown: (details) {
+                              _handleCanvasTap(
+                                details.localPosition,
+                                connections,
+                              );
+                            },
+                            onDoubleTap: () {
+                              // Double tap to reset zoom
+                              final routingCubit = context
+                                  .read<RoutingEditorCubit>();
+                              routingCubit.resetZoom();
+                            },
+                            onPanStart: _handleCanvasPanStart,
+                            onPanUpdate: _handleCanvasPanUpdate,
+                            onPanEnd: _handleCanvasPanEnd,
+                            behavior: HitTestBehavior
+                                .translucent, // Allow events to pass through to child widgets
+                            child: ExcludeSemantics(
+                              child: CustomPaint(
+                                painter: _CanvasGridPainter(
+                                  minorGridColor: Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withValues(alpha: 0.1),
+                                  majorGridColor: Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withValues(alpha: 0.2),
+                                  gridSize: 50.0,
+                                  majorEvery: 5,
+                                ),
+                                size: Size(_canvasWidth, _canvasHeight),
+                              ),
                             ),
-                            size: Size(_canvasWidth, _canvasHeight),
                           ),
                         ),
-                      ),
+
+                        // 1. Background Connections (Full paths, behind everything)
+                        _buildConnections(
+                          connections,
+                          portToNodeIdMap,
+                          nodeBoundsMap,
+                          zIndexByNodeId,
+                        ),
+
+                        // 2. Nodes (Stacked from bottom to top)
+
+                        // Physical Output Nodes (Lowest Z-order)
+                        if (widget.showPhysicalPorts)
+                          ..._buildPhysicalOutputNodes(
+                            physicalOutputs,
+                            connections,
+                            stateNodePositions,
+                          ),
+
+                        // Physical Input Nodes
+                        if (widget.showPhysicalPorts)
+                          ..._buildPhysicalInputNodes(
+                            physicalInputs,
+                            connections,
+                            stateNodePositions,
+                          ),
+
+                        // ES-5 Nodes
+                        if (widget.showPhysicalPorts)
+                          ..._buildEs5Nodes(
+                            es5Inputs,
+                            connections,
+                            stateNodePositions,
+                          ),
+
+                        // Algorithm Nodes (Highest Z-order among nodes)
+                        ..._buildAlgorithmNodes(
+                          algorithms,
+                          connections,
+                          stateNodePositions,
+                        ),
+
+                        // 3. Foreground Connections (Tips only, on top of everything)
+                        _buildConnections(
+                          connections,
+                          portToNodeIdMap,
+                          nodeBoundsMap,
+                          zIndexByNodeId,
+                          drawEndpointsOnly: true,
+                        ),
+
+                        // Temporary connection (dragging)
+                        if (_isDraggingConnection &&
+                            _dragCurrentPosition != null)
+                          _buildTemporaryConnection(),
+
+                        // Connection label overlays (for tap detection)
+                        ..._buildConnectionLabelOverlays(),
+
+                        // Labels for instant-deleted connections fade out here.
+                        ..._buildFadingDeletedConnectionLabelOverlays(),
+
+                        // Semantic-only connection list for screen readers
+                        _buildConnectionSemanticsOverlay(connections),
+                      ],
                     ),
-
-                    // 1. Background Connections (Full paths, behind everything)
-                    _buildConnections(
-                      connections,
-                      portToNodeIdMap,
-                      nodeBoundsMap,
-                      zIndexByNodeId,
-                    ),
-
-                    // 2. Nodes (Stacked from bottom to top)
-                    
-                    // Physical Output Nodes (Lowest Z-order)
-                    if (widget.showPhysicalPorts)
-                      ..._buildPhysicalOutputNodes(
-                        physicalOutputs,
-                        connections,
-                        stateNodePositions,
-                      ),
-
-                    // Physical Input Nodes
-                    if (widget.showPhysicalPorts)
-                      ..._buildPhysicalInputNodes(
-                        physicalInputs,
-                        connections,
-                        stateNodePositions,
-                      ),
-
-                    // ES-5 Nodes
-                    if (widget.showPhysicalPorts)
-                      ..._buildEs5Nodes(
-                        es5Inputs,
-                        connections,
-                        stateNodePositions,
-                      ),
-
-                    // Algorithm Nodes (Highest Z-order among nodes)
-                    ..._buildAlgorithmNodes(
-                      algorithms,
-                      connections,
-                      stateNodePositions,
-                    ),
-
-                    // 3. Foreground Connections (Tips only, on top of everything)
-                    _buildConnections(
-                      connections,
-                      portToNodeIdMap,
-                      nodeBoundsMap,
-                      zIndexByNodeId,
-                      drawEndpointsOnly: true,
-                    ),
-
-                    // Temporary connection (dragging)
-                    if (_isDraggingConnection && _dragCurrentPosition != null)
-                      _buildTemporaryConnection(),
-
-                    // Connection label overlays (for tap detection)
-                    ..._buildConnectionLabelOverlays(),
-
-                    // Labels for instant-deleted connections fade out here.
-                    ..._buildFadingDeletedConnectionLabelOverlays(),
-
-                    // Semantic-only connection list for screen readers
-                    _buildConnectionSemanticsOverlay(connections),
-                  ],
-                ),
-                ),
+                  ),
                 ),
               ),
             ),
@@ -1800,13 +1825,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: connections.map((conn) {
-              final sourceName = _portById[conn.sourcePortId]?.name ?? conn.sourcePortId;
-              final destName = _portById[conn.destinationPortId]?.name ?? conn.destinationPortId;
+              final sourceName =
+                  _portById[conn.sourcePortId]?.name ?? conn.sourcePortId;
+              final destName =
+                  _portById[conn.destinationPortId]?.name ??
+                  conn.destinationPortId;
               final statusPrefix = conn.isGhostConnection
                   ? 'Ghost connection'
                   : conn.isBackwardEdge
-                      ? 'Invalid connection'
-                      : 'Connection';
+                  ? 'Invalid connection'
+                  : 'Connection';
               final busLabel = conn.busLabel ?? '';
               final busText = busLabel.isNotEmpty ? ' via $busLabel' : '';
 
@@ -1840,8 +1868,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       _nodePositions['physical_inputs'] = nodePosition;
     } else {
       nodePosition =
-          _nodePositions['physical_inputs'] ??
-          const Offset(100, centerY);
+          _nodePositions['physical_inputs'] ?? const Offset(100, centerY);
     }
 
     return [
@@ -1852,51 +1879,53 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         child: FocusTraversalOrder(
           order: const NumericFocusOrder(0),
           child: PhysicalInputNode(
-          ports: physicalInputs,
-          connectedPorts: _getConnectedPortIds(connections).toSet(),
-          position: nodePosition,
-          onPositionChanged: (newPosition) {
-            setState(() {
-              _nodePositions['physical_inputs'] = newPosition;
-            });
-            // Save position to preferences
-            context.read<RoutingEditorCubit>().updateNodePosition(
-              'physical_inputs',
-              newPosition.dx,
-              newPosition.dy,
-            );
-          },
-          showLabels: widget.canvasSize.width >= 800,
-          onPortTapped: (port) => _handlePortTap(port),
-          onPortLongPress: (port) => _handlePortLongPress(port),
-          // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
-          onPortLongPressStart: _platformService.isMobilePlatform()
-              ? null
-              : (port) => _handlePortLongPressStart(port),
-          onPortLongPressCancel: _platformService.isMobilePlatform()
-              ? null
-              : _handlePortLongPressCancel,
-          onDragStart: (port) => _handlePortDragStart(port),
-          onDragUpdate: (port, position) =>
-              _handlePortDragUpdate(port, position),
-          onDragEnd: (port, position) => _handlePortDragEnd(port, position),
-          onPortPositionResolved: (port, globalCenter) {
-            // Update port position cache - physical inputs/outputs have opposite directions from algorithm perspective
-            final isInput = port.direction == PortDirection.input;
-            _updatePortAnchor(port.id, globalCenter, isInput);
-          },
-          onRoutingAction: (portId, action) =>
-              _handlePortRoutingAction(portId, action, connections),
-          highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
-          onNodeDragStart: () {
-            // Node drag start handler (could be used for visual feedback)
-          },
-          onNodeDragEnd: () {
-            // Node drag end handler (could be used for cleanup)
-          },
-          onSizeResolved: (size) =>
-              _handleNodeSizeResolved('physical_inputs', size),
-        ),
+            ports: physicalInputs,
+            connectedPorts: _getConnectedPortIds(connections).toSet(),
+            position: nodePosition,
+            onPositionChanged: (newPosition) {
+              setState(() {
+                _nodePositions['physical_inputs'] = newPosition;
+              });
+              // Save position to preferences
+              context.read<RoutingEditorCubit>().updateNodePosition(
+                'physical_inputs',
+                newPosition.dx,
+                newPosition.dy,
+              );
+            },
+            showLabels: widget.canvasSize.width >= 800,
+            onPortTapped: (port) => _handlePortTap(port),
+            onPortLongPress: (port) => _handlePortLongPress(port),
+            // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
+            onPortLongPressStart: _platformService.isMobilePlatform()
+                ? null
+                : (port) => _handlePortLongPressStart(port),
+            onPortLongPressCancel: _platformService.isMobilePlatform()
+                ? null
+                : _handlePortLongPressCancel,
+            onDragStart: (port) => _handlePortDragStart(port),
+            onDragUpdate: (port, position) =>
+                _handlePortDragUpdate(port, position),
+            onDragEnd: (port, position) => _handlePortDragEnd(port, position),
+            onPortPositionResolved: (port, globalCenter) {
+              // Update port position cache - physical inputs/outputs have opposite directions from algorithm perspective
+              final isInput = port.direction == PortDirection.input;
+              _updatePortAnchor(port.id, globalCenter, isInput);
+            },
+            onRoutingAction: (portId, action) =>
+                _handlePortRoutingAction(portId, action, connections),
+            highlightedPortId: _isDraggingConnection
+                ? _highlightedPortId
+                : null,
+            onNodeDragStart: () {
+              // Node drag start handler (could be used for visual feedback)
+            },
+            onNodeDragEnd: () {
+              // Node drag end handler (could be used for cleanup)
+            },
+            onSizeResolved: (size) =>
+                _handleNodeSizeResolved('physical_inputs', size),
+          ),
         ),
       ),
     ];
@@ -1933,51 +1962,53 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         child: FocusTraversalOrder(
           order: const NumericFocusOrder(100),
           child: PhysicalOutputNode(
-          ports: physicalOutputs,
-          connectedPorts: _getConnectedPortIds(connections).toSet(),
-          position: nodePosition,
-          onPositionChanged: (newPosition) {
-            setState(() {
-              _nodePositions['physical_outputs'] = newPosition;
-            });
-            // Save position to preferences
-            context.read<RoutingEditorCubit>().updateNodePosition(
-              'physical_outputs',
-              newPosition.dx,
-              newPosition.dy,
-            );
-          },
-          showLabels: widget.canvasSize.width >= 800,
-          onPortTapped: (port) => _handlePortTap(port),
-          onPortLongPress: (port) => _handlePortLongPress(port),
-          // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
-          onPortLongPressStart: _platformService.isMobilePlatform()
-              ? null
-              : (port) => _handlePortLongPressStart(port),
-          onPortLongPressCancel: _platformService.isMobilePlatform()
-              ? null
-              : _handlePortLongPressCancel,
-          onDragStart: (port) => _handlePortDragStart(port),
-          onDragUpdate: (port, position) =>
-              _handlePortDragUpdate(port, position),
-          onDragEnd: (port, position) => _handlePortDragEnd(port, position),
-          onPortPositionResolved: (port, globalCenter) {
-            // Update port position cache - physical inputs/outputs have opposite directions from algorithm perspective
-            final isInput = port.direction == PortDirection.input;
-            _updatePortAnchor(port.id, globalCenter, isInput);
-          },
-          onRoutingAction: (portId, action) =>
-              _handlePortRoutingAction(portId, action, connections),
-          highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
-          onNodeDragStart: () {
-            // Node drag start handler (could be used for visual feedback)
-          },
-          onNodeDragEnd: () {
-            // Node drag end handler (could be used for cleanup)
-          },
-          onSizeResolved: (size) =>
-              _handleNodeSizeResolved('physical_outputs', size),
-        ),
+            ports: physicalOutputs,
+            connectedPorts: _getConnectedPortIds(connections).toSet(),
+            position: nodePosition,
+            onPositionChanged: (newPosition) {
+              setState(() {
+                _nodePositions['physical_outputs'] = newPosition;
+              });
+              // Save position to preferences
+              context.read<RoutingEditorCubit>().updateNodePosition(
+                'physical_outputs',
+                newPosition.dx,
+                newPosition.dy,
+              );
+            },
+            showLabels: widget.canvasSize.width >= 800,
+            onPortTapped: (port) => _handlePortTap(port),
+            onPortLongPress: (port) => _handlePortLongPress(port),
+            // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
+            onPortLongPressStart: _platformService.isMobilePlatform()
+                ? null
+                : (port) => _handlePortLongPressStart(port),
+            onPortLongPressCancel: _platformService.isMobilePlatform()
+                ? null
+                : _handlePortLongPressCancel,
+            onDragStart: (port) => _handlePortDragStart(port),
+            onDragUpdate: (port, position) =>
+                _handlePortDragUpdate(port, position),
+            onDragEnd: (port, position) => _handlePortDragEnd(port, position),
+            onPortPositionResolved: (port, globalCenter) {
+              // Update port position cache - physical inputs/outputs have opposite directions from algorithm perspective
+              final isInput = port.direction == PortDirection.input;
+              _updatePortAnchor(port.id, globalCenter, isInput);
+            },
+            onRoutingAction: (portId, action) =>
+                _handlePortRoutingAction(portId, action, connections),
+            highlightedPortId: _isDraggingConnection
+                ? _highlightedPortId
+                : null,
+            onNodeDragStart: () {
+              // Node drag start handler (could be used for visual feedback)
+            },
+            onNodeDragEnd: () {
+              // Node drag end handler (could be used for cleanup)
+            },
+            onSizeResolved: (size) =>
+                _handleNodeSizeResolved('physical_outputs', size),
+          ),
         ),
       ),
     ];
@@ -2015,50 +2046,52 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         child: FocusTraversalOrder(
           order: const NumericFocusOrder(50),
           child: ES5Node(
-          ports: es5Inputs,
-          connectedPorts: _getConnectedPortIds(connections).toSet(),
-          position: nodePosition,
-          onPositionChanged: (newPosition) {
-            setState(() {
-              _nodePositions['es5_node'] = newPosition;
-            });
-            // Save position to preferences
-            context.read<RoutingEditorCubit>().updateNodePosition(
-              'es5_node',
-              newPosition.dx,
-              newPosition.dy,
-            );
-          },
-          showLabels: widget.canvasSize.width >= 800,
-          onPortTapped: (port) => _handlePortTap(port),
-          onPortLongPress: (port) => _handlePortLongPress(port),
-          // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
-          onPortLongPressStart: _platformService.isMobilePlatform()
-              ? null
-              : (port) => _handlePortLongPressStart(port),
-          onPortLongPressCancel: _platformService.isMobilePlatform()
-              ? null
-              : _handlePortLongPressCancel,
-          onDragStart: (port) => _handlePortDragStart(port),
-          onDragUpdate: (port, position) =>
-              _handlePortDragUpdate(port, position),
-          onDragEnd: (port, position) => _handlePortDragEnd(port, position),
-          onPortPositionResolved: (port, globalCenter) {
-            // Update port position cache
-            final isInput = port.direction == PortDirection.input;
-            _updatePortAnchor(port.id, globalCenter, isInput);
-          },
-          onRoutingAction: (portId, action) =>
-              _handlePortRoutingAction(portId, action, connections),
-          highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
-          onNodeDragStart: () {
-            // Node drag start handler
-          },
-          onNodeDragEnd: () {
-            // Node drag end handler
-          },
-          onSizeResolved: (size) => _handleNodeSizeResolved('es5_node', size),
-        ),
+            ports: es5Inputs,
+            connectedPorts: _getConnectedPortIds(connections).toSet(),
+            position: nodePosition,
+            onPositionChanged: (newPosition) {
+              setState(() {
+                _nodePositions['es5_node'] = newPosition;
+              });
+              // Save position to preferences
+              context.read<RoutingEditorCubit>().updateNodePosition(
+                'es5_node',
+                newPosition.dx,
+                newPosition.dy,
+              );
+            },
+            showLabels: widget.canvasSize.width >= 800,
+            onPortTapped: (port) => _handlePortTap(port),
+            onPortLongPress: (port) => _handlePortLongPress(port),
+            // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
+            onPortLongPressStart: _platformService.isMobilePlatform()
+                ? null
+                : (port) => _handlePortLongPressStart(port),
+            onPortLongPressCancel: _platformService.isMobilePlatform()
+                ? null
+                : _handlePortLongPressCancel,
+            onDragStart: (port) => _handlePortDragStart(port),
+            onDragUpdate: (port, position) =>
+                _handlePortDragUpdate(port, position),
+            onDragEnd: (port, position) => _handlePortDragEnd(port, position),
+            onPortPositionResolved: (port, globalCenter) {
+              // Update port position cache
+              final isInput = port.direction == PortDirection.input;
+              _updatePortAnchor(port.id, globalCenter, isInput);
+            },
+            onRoutingAction: (portId, action) =>
+                _handlePortRoutingAction(portId, action, connections),
+            highlightedPortId: _isDraggingConnection
+                ? _highlightedPortId
+                : null,
+            onNodeDragStart: () {
+              // Node drag start handler
+            },
+            onNodeDragEnd: () {
+              // Node drag end handler
+            },
+            onSizeResolved: (size) => _handleNodeSizeResolved('es5_node', size),
+          ),
         ),
       ),
     ];
@@ -2109,128 +2142,133 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           child: FocusTraversalOrder(
             order: NumericFocusOrder(algorithm.index + 1.0),
             child: AlgorithmNodeWidget(
-            key: ValueKey(algorithm.id), // Use stable ID for widget key
-            algorithmName: algorithm.algorithm.name,
-            slotNumber: algorithm.index + 1, // 1-indexed for display
-            position: position,
-            isSelected: isSelected,
-            isDimmed: _focusedAlgorithmIds.isNotEmpty && !isSelected,
-            inputLabels: algorithm.inputPorts.map((p) => p.name).toList(),
-            outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
-            inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
-            outputPortIds: algorithm.outputPorts.map((p) => p.id).toList(),
-            outputChannelNumbers: es5Data?.channelNumbers,
-            connectedPorts: _getConnectedPortIds(connections),
-            shadowedPortIds: shadowedOutputPortIds,
-            onPortPositionResolved: (portId, globalCenter, isInput) {
-              _updatePortAnchor(portId, globalCenter, isInput);
-            },
-            onDragStart: () {
-              _clearSelectedConnection();
-              if (!_isDraggingNode) {
-                setState(() {
-                  _isDraggingNode = true;
-                  _isPanning = false;
-                });
-              }
-              // Multi-drag: if dragging a selected node with multiple selections,
-              // capture all selected node positions
-              if (_focusedAlgorithmIds.length > 1 &&
-                  _focusedAlgorithmIds.contains(nodeId)) {
-                _multiDragPrimaryNodeId = nodeId;
-                _multiDragStartPositions = {
-                  for (final id in _focusedAlgorithmIds)
-                    if (_nodePositions.containsKey(id)) id: _nodePositions[id]!,
-                };
-              }
-            },
-            onPositionChanged: (newPosition) {
-              // When a node is being dragged, flag it so canvas doesn't pan
-              if (!_isDraggingNode) {
-                setState(() {
-                  _isDraggingNode = true;
-                  _isPanning = false;
-                });
-              }
-
-              // Multi-drag: move all selected nodes together
-              if (_multiDragStartPositions.isNotEmpty &&
-                  _multiDragPrimaryNodeId == nodeId) {
-                final originalPos = _multiDragStartPositions[nodeId];
-                if (originalPos != null) {
-                  final delta = newPosition - originalPos;
+              key: ValueKey(algorithm.id), // Use stable ID for widget key
+              algorithmName: algorithm.algorithm.name,
+              slotNumber: algorithm.index + 1, // 1-indexed for display
+              position: position,
+              isSelected: isSelected,
+              isDimmed: _focusedAlgorithmIds.isNotEmpty && !isSelected,
+              inputLabels: algorithm.inputPorts.map((p) => p.name).toList(),
+              outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
+              inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
+              outputPortIds: algorithm.outputPorts.map((p) => p.id).toList(),
+              outputChannelNumbers: es5Data?.channelNumbers,
+              connectedPorts: _getConnectedPortIds(connections),
+              shadowedPortIds: shadowedOutputPortIds,
+              onPortPositionResolved: (portId, globalCenter, isInput) {
+                _updatePortAnchor(portId, globalCenter, isInput);
+              },
+              onDragStart: () {
+                _clearSelectedConnection();
+                if (!_isDraggingNode) {
                   setState(() {
-                    for (final entry in _multiDragStartPositions.entries) {
-                      _nodePositions[entry.key] = entry.value + delta;
-                    }
+                    _isDraggingNode = true;
+                    _isPanning = false;
                   });
-                  // Batch update to cubit
-                  final updates = <String, Offset>{};
-                  for (final entry in _multiDragStartPositions.entries) {
-                    final pos = _nodePositions[entry.key];
-                    if (pos != null) updates[entry.key] = pos;
-                  }
-                  context
-                      .read<RoutingEditorCubit>()
-                      .updateMultipleNodePositions(updates);
                 }
-              } else {
-                // Single node drag (existing behavior)
-                setState(() {
-                  _nodePositions[nodeId] = newPosition;
-                });
-                context.read<RoutingEditorCubit>().updateNodePosition(
-                  nodeId,
-                  newPosition.dx,
-                  newPosition.dy,
-                );
-              }
-            },
-            onDragEnd: () {
-              if (_isDraggingNode) {
-                setState(() {
-                  _isDraggingNode = false;
-                });
-              }
-              // Clear multi-drag state
-              _multiDragStartPositions.clear();
-              _multiDragPrimaryNodeId = null;
-            },
-            onMoveUp: algorithm.index > 0
-                ? () => _handleAlgorithmMoveUp(algorithm.index)
-                : null,
-            onMoveDown: algorithm.index < algorithms.length - 1
-                ? () => _handleAlgorithmMoveDown(algorithm.index)
-                : null,
-            // Deletion is performed inside AlgorithmNodeWidget after confirmation.
-            // This callback is used for local UI cleanup only to avoid double-deletes.
-            onDelete: () => _handleAlgorithmDeleted(nodeId),
-            onRoutingAction: (portId, action) =>
-                _handlePortRoutingAction(portId, action, connections),
-            onPortTapped: (portId) => _handlePortTapById(portId),
-            onPortLongPress: (portId) => _handlePortLongPressById(portId),
-            // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
-            onPortLongPressStart: _platformService.isMobilePlatform()
-                ? null
-                : (portId) => _handlePortLongPressStartById(portId),
-            onPortLongPressCancel: _platformService.isMobilePlatform()
-                ? null
-                : _handlePortLongPressCancel,
-            onPortDragStart: _handleAlgorithmPortDragStart,
-            onPortDragUpdate: _handleAlgorithmPortDragUpdate,
-            onPortDragEnd: _handleAlgorithmPortDragEnd,
-            highlightedPortId:
-                _isDraggingConnection ? _highlightedPortId : null,
-            // ES-5 toggle support for Clock/Euclidean algorithms
-            es5ChannelToggles: es5Data?.toggles,
-            es5ExpanderParameterNumbers: es5Data?.parameterNumbers,
-            onEs5ToggleChanged: es5Data != null
-                ? (channel, enabled) =>
-                    _handleEs5ToggleChange(algorithm.index, channel, enabled)
-                : null,
-            onSizeResolved: (size) => _handleNodeSizeResolved(nodeId, size),
-            onTap: () => _handleNodeTap(nodeId),
-          ),
+                // Multi-drag: if dragging a selected node with multiple selections,
+                // capture all selected node positions
+                if (_focusedAlgorithmIds.length > 1 &&
+                    _focusedAlgorithmIds.contains(nodeId)) {
+                  _multiDragPrimaryNodeId = nodeId;
+                  _multiDragStartPositions = {
+                    for (final id in _focusedAlgorithmIds)
+                      if (_nodePositions.containsKey(id))
+                        id: _nodePositions[id]!,
+                  };
+                }
+              },
+              onPositionChanged: (newPosition) {
+                // When a node is being dragged, flag it so canvas doesn't pan
+                if (!_isDraggingNode) {
+                  setState(() {
+                    _isDraggingNode = true;
+                    _isPanning = false;
+                  });
+                }
+
+                // Multi-drag: move all selected nodes together
+                if (_multiDragStartPositions.isNotEmpty &&
+                    _multiDragPrimaryNodeId == nodeId) {
+                  final originalPos = _multiDragStartPositions[nodeId];
+                  if (originalPos != null) {
+                    final delta = newPosition - originalPos;
+                    setState(() {
+                      for (final entry in _multiDragStartPositions.entries) {
+                        _nodePositions[entry.key] = entry.value + delta;
+                      }
+                    });
+                    // Batch update to cubit
+                    final updates = <String, Offset>{};
+                    for (final entry in _multiDragStartPositions.entries) {
+                      final pos = _nodePositions[entry.key];
+                      if (pos != null) updates[entry.key] = pos;
+                    }
+                    context
+                        .read<RoutingEditorCubit>()
+                        .updateMultipleNodePositions(updates);
+                  }
+                } else {
+                  // Single node drag (existing behavior)
+                  setState(() {
+                    _nodePositions[nodeId] = newPosition;
+                  });
+                  context.read<RoutingEditorCubit>().updateNodePosition(
+                    nodeId,
+                    newPosition.dx,
+                    newPosition.dy,
+                  );
+                }
+              },
+              onDragEnd: () {
+                if (_isDraggingNode) {
+                  setState(() {
+                    _isDraggingNode = false;
+                  });
+                }
+                // Clear multi-drag state
+                _multiDragStartPositions.clear();
+                _multiDragPrimaryNodeId = null;
+              },
+              onMoveUp: algorithm.index > 0
+                  ? () => _handleAlgorithmMoveUp(algorithm.index)
+                  : null,
+              onMoveDown: algorithm.index < algorithms.length - 1
+                  ? () => _handleAlgorithmMoveDown(algorithm.index)
+                  : null,
+              // Deletion is performed inside AlgorithmNodeWidget after confirmation.
+              // This callback is used for local UI cleanup only to avoid double-deletes.
+              onDelete: () => _handleAlgorithmDeleted(nodeId),
+              onRoutingAction: (portId, action) =>
+                  _handlePortRoutingAction(portId, action, connections),
+              onPortTapped: (portId) => _handlePortTapById(portId),
+              onPortLongPress: (portId) => _handlePortLongPressById(portId),
+              // Use animated long-press for desktop, skip for mobile (uses confirmation dialog)
+              onPortLongPressStart: _platformService.isMobilePlatform()
+                  ? null
+                  : (portId) => _handlePortLongPressStartById(portId),
+              onPortLongPressCancel: _platformService.isMobilePlatform()
+                  ? null
+                  : _handlePortLongPressCancel,
+              onPortDragStart: _handleAlgorithmPortDragStart,
+              onPortDragUpdate: _handleAlgorithmPortDragUpdate,
+              onPortDragEnd: _handleAlgorithmPortDragEnd,
+              highlightedPortId: _isDraggingConnection
+                  ? _highlightedPortId
+                  : null,
+              // ES-5 toggle support for Clock/Euclidean algorithms
+              es5ChannelToggles: es5Data?.toggles,
+              es5ExpanderParameterNumbers: es5Data?.parameterNumbers,
+              onEs5ToggleChanged: es5Data != null
+                  ? (channel, enabled) => _handleEs5ToggleChange(
+                      algorithm.index,
+                      channel,
+                      enabled,
+                    )
+                  : null,
+              onSizeResolved: (size) => _handleNodeSizeResolved(nodeId, size),
+              onTap: () => _handleNodeTap(nodeId),
+            ),
           ),
         ),
       ];
@@ -2677,7 +2715,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           busNumber: busNumber,
           outputMode: connection.outputMode,
           isSelected:
-              _connectionHighlight?.source == _ConnectionHighlightSource.selected &&
+              _connectionHighlight?.source ==
+                  _ConnectionHighlightSource.selected &&
               highlightedConnectionId == connection.id,
           isHighlighted: highlightedConnectionId == connection.id,
           isPhysicalConnection: isPhysicalConnection,
@@ -2690,7 +2729,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           sourceNodeBounds: nodeBoundsMap[sourceNodeId],
           destinationNodeBounds: nodeBoundsMap[destinationNodeId],
           sourceOccluderBounds: buildOccluderBoundsForNode(sourceNodeId),
-          destinationOccluderBounds: buildOccluderBoundsForNode(destinationNodeId),
+          destinationOccluderBounds: buildOccluderBoundsForNode(
+            destinationNodeId,
+          ),
           isDimmed: isDimmed,
         ),
       );
@@ -2736,7 +2777,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 painter: _ConnectionPainterWithBounds(
                   connections: connectionDataList,
                   theme: Theme.of(context),
-                  showLabels: widget.showBusLabels && drawEndpointsOnly, // Only show labels in foreground pass
+                  showLabels:
+                      widget.showBusLabels &&
+                      drawEndpointsOnly, // Only show labels in foreground pass
                   enableAnimations: true,
                   hoveredConnectionId: _hoveredLabelConnectionId,
                   obstacles: _calculateNodeBounds(),
@@ -2825,14 +2868,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     }
   }
 
-
   List<Rect> _calculateNodeBounds() {
     return _calculateNodeBoundsMap().values.toList();
   }
 
   Map<String, Rect> _calculateNodeBoundsMap() {
     final bounds = <String, Rect>{};
-    
+
     // Access the current state to get algorithm details for accurate sizing
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) return bounds;
@@ -2852,27 +2894,27 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       // We should keep them in the map but maybe filter later for obstacles?
       // Actually, the original code skipped physical nodes: "if (isPhysical) continue;"
       // But for clipping we definitely need physical node bounds.
-      
+
       // Let's calculate bounds for everything, and filter in _calculateNodeBounds for obstacles.
-      
+
       double width = 280.0; // Default width used in layout
       double height = 200.0; // Default height
 
       if (isPhysical) {
-         // Physical node size estimation
-         // They are usually rendered with a specific width/height in PhysicalInputNode/PhysicalOutputNode
-         // Let's assume a reasonable default or use reported size if available
-         if (_nodeSizes.containsKey(id)) {
-            width = _nodeSizes[id]!.width;
-            height = _nodeSizes[id]!.height;
-         } else {
-            width = 180.0; // Approximate
-            height = 320.0; // Approximate
-         }
+        // Physical node size estimation
+        // They are usually rendered with a specific width/height in PhysicalInputNode/PhysicalOutputNode
+        // Let's assume a reasonable default or use reported size if available
+        if (_nodeSizes.containsKey(id)) {
+          width = _nodeSizes[id]!.width;
+          height = _nodeSizes[id]!.height;
+        } else {
+          width = 180.0; // Approximate
+          height = 320.0; // Approximate
+        }
       } else {
         // Find the algorithm corresponding to this node ID
         final algorithm = state.algorithms.firstWhereOrNull((a) => a.id == id);
-        
+
         // Use actual reported size if available
         if (_nodeSizes.containsKey(id)) {
           width = _nodeSizes[id]!.width;
@@ -2882,10 +2924,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
           final inputCount = algorithm.inputPorts.length;
           final outputCount = algorithm.outputPorts.length;
           final maxPorts = math.max(inputCount, outputCount);
-          
+
           // Height = Header + Padding + (Ports * PortHeight)
           height = 50.0 + 24.0 + (maxPorts * 24.0) + 4.0;
-          width = 300.0; 
+          width = 300.0;
         }
       }
 
@@ -2894,9 +2936,30 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     return bounds;
   }
 
-  /// Handle tap on algorithm node to toggle focus mode selection
+  /// Handle tap on algorithm node with shift-awareness
+  ///
+  /// Shift-click: toggle this algorithm in the focus set (multi-select)
+  /// Plain click: select only this algorithm, or clear if already sole selection
   void _handleNodeTap(String nodeId) {
-    context.read<RoutingEditorCubit>().toggleAlgorithmFocus(nodeId);
+    final cubit = context.read<RoutingEditorCubit>();
+    final isShiftHeld = HardwareKeyboard.instance.logicalKeysPressed.any(
+      (k) =>
+          k == LogicalKeyboardKey.shiftLeft ||
+          k == LogicalKeyboardKey.shiftRight,
+    );
+
+    if (isShiftHeld) {
+      cubit.toggleAlgorithmFocus(nodeId);
+    } else {
+      final currentState = cubit.state;
+      if (currentState is RoutingEditorStateLoaded &&
+          currentState.focusedAlgorithmIds.length == 1 &&
+          currentState.focusedAlgorithmIds.contains(nodeId)) {
+        cubit.clearFocus();
+      } else {
+        cubit.setFocusedAlgorithm(nodeId);
+      }
+    }
   }
 
   void _handleNodeSizeResolved(String nodeId, Size size) {
@@ -2958,7 +3021,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     // Tap didn't hit a connection - clear selection/highlights
     _clearSelectedConnection();
     _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
-    _clearConnectionHighlightState(source: _ConnectionHighlightSource.deleteConfirm);
+    _clearConnectionHighlightState(
+      source: _ConnectionHighlightSource.deleteConfirm,
+    );
 
     // Clear focus mode selection when tapping empty canvas
     context.read<RoutingEditorCubit>().clearFocus();
@@ -3054,8 +3119,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   void _deleteConnection(String connectionId, List<Connection> connections) {
     final routingCubit = context.read<RoutingEditorCubit>();
     final conn = connections.firstWhereOrNull((c) => c.id == connectionId);
-    final reason =
-        conn == null ? null : routingCubit.deletionBlockReasonForConnection(conn);
+    final reason = conn == null
+        ? null
+        : routingCubit.deletionBlockReasonForConnection(conn);
     if (reason != null) {
       _showError('This connection cannot be removed ($reason)');
       _clearConnectionHighlight();
@@ -3066,9 +3132,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
     // Announce deletion for screen readers
     if (conn != null) {
-      final sourceName = _portById[conn.sourcePortId]?.name ?? conn.sourcePortId;
-      final destName = _portById[conn.destinationPortId]?.name ?? conn.destinationPortId;
-      SemanticsService.sendAnnouncement(View.of(context),
+      final sourceName =
+          _portById[conn.sourcePortId]?.name ?? conn.sourcePortId;
+      final destName =
+          _portById[conn.destinationPortId]?.name ?? conn.destinationPortId;
+      SemanticsService.sendAnnouncement(
+        View.of(context),
         'Connection deleted from $sourceName to $destName',
         TextDirection.ltr,
       );
@@ -3415,8 +3484,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       if (isValidConnection) {
         // Determine the actual source (output) and destination (input) for the connection
         // Connections always flow from output to input
-        final actualSourcePortId = sourceIsOutput ? sourcePort.id : targetPort.id;
-        final actualTargetPortId = sourceIsOutput ? targetPort.id : sourcePort.id;
+        final actualSourcePortId = sourceIsOutput
+            ? sourcePort.id
+            : targetPort.id;
+        final actualTargetPortId = sourceIsOutput
+            ? targetPort.id
+            : sourcePort.id;
 
         // Check for duplicate connection before attempting to create
         final cubit = context.read<RoutingEditorCubit>();
@@ -3441,7 +3514,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             targetPortId: actualTargetPortId,
           );
         } catch (e) {
-          _showError(e is StateError ? e.message : 'Connection failed: ${e.toString()}');
+          _showError(
+            e is StateError ? e.message : 'Connection failed: ${e.toString()}',
+          );
         }
       }
     } finally {
@@ -3493,8 +3568,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       if (isValidConnection) {
         // Determine the actual source (output) and destination (input) for the connection
         // Connections always flow from output to input
-        final actualSourcePortId = sourceIsOutput ? sourcePort.id : targetPort.id;
-        final actualTargetPortId = sourceIsOutput ? targetPort.id : sourcePort.id;
+        final actualSourcePortId = sourceIsOutput
+            ? sourcePort.id
+            : targetPort.id;
+        final actualTargetPortId = sourceIsOutput
+            ? targetPort.id
+            : sourcePort.id;
 
         // Check for duplicate connection before attempting to create
         final currentState = context.read<RoutingEditorCubit>().state;
@@ -3520,7 +3599,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         );
       }
     } catch (e) {
-      _showError(e is StateError ? e.message : 'Connection failed: ${e.toString()}');
+      _showError(
+        e is StateError ? e.message : 'Connection failed: ${e.toString()}',
+      );
     } finally {
       // Always clear drag state
       setState(() {
@@ -3641,7 +3722,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     );
 
     // Clear highlighting
-    _clearConnectionHighlightState(source: _ConnectionHighlightSource.deleteConfirm);
+    _clearConnectionHighlightState(
+      source: _ConnectionHighlightSource.deleteConfirm,
+    );
 
     // Delete connections if confirmed
     if (shouldDelete == true && mounted) {
@@ -3997,7 +4080,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
           // Auto-deselect after 5 seconds
           _connectionHighlightTimer = Timer(const Duration(seconds: 5), () {
-            _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
+            _clearConnectionHighlightState(
+              source: _ConnectionHighlightSource.hover,
+            );
           });
         }
         break;
@@ -4007,7 +4092,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             _ConnectionHighlightSource.selected) {
           break;
         }
-        _clearConnectionHighlightState(source: _ConnectionHighlightSource.hover);
+        _clearConnectionHighlightState(
+          source: _ConnectionHighlightSource.hover,
+        );
         break;
 
       case 'delete_connections':
@@ -4203,7 +4290,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       portId: connection.sourcePortId,
     );
   }
-
 }
 
 class _FadingDeletedConnectionLabel {
@@ -4250,10 +4336,7 @@ class _FadingLabelOverlay extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            width: 2.0,
-            color: Colors.black,
-          ),
+          border: Border.all(width: 2.0, color: Colors.black),
         ),
         child: Center(
           child: Text(
@@ -4323,10 +4406,13 @@ class _ConnectionPainterWithBounds extends CustomPainter {
   final List<Rect> obstacles;
   final bool drawEndpointsOnly;
   final Function(Map<String, Rect>) onBoundsUpdated;
+
   /// Port ID being long-pressed for deletion animation
   final String? deletingPortId;
+
   /// Progress of delete animation (0.0 to 1.0) - red → orange → white
   final double deleteAnimationProgress;
+
   /// Progress of fade-out animation (0.0 to 1.0) - white → transparent
   final double fadeOutProgress;
 
@@ -4373,7 +4459,6 @@ class _ConnectionPainterWithBounds extends CustomPainter {
     return _delegate.shouldRepaint(oldDelegate._delegate);
   }
 }
-
 
 /// Custom painter for temporary connection preview during drag operations
 class _TemporaryConnectionPainter extends CustomPainter {

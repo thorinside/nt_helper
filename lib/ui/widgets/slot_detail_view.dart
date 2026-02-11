@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
+import 'package:nt_helper/ui/widgets/section_parameter_controller.dart';
 import 'package:nt_helper/ui/widgets/section_parameter_list_view.dart';
 
 class SlotDetailView extends StatefulWidget {
@@ -9,6 +10,7 @@ class SlotDetailView extends StatefulWidget {
   final int slotIndex;
   final List<String> units;
   final FirmwareVersion firmwareVersion;
+  final SectionParameterController? sectionController;
 
   const SlotDetailView({
     super.key,
@@ -16,6 +18,7 @@ class SlotDetailView extends StatefulWidget {
     required this.slotIndex,
     required this.units,
     required this.firmwareVersion,
+    this.sectionController,
   });
 
   @override
@@ -47,6 +50,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
         slot: widget.slot,
         units: widget.units,
         pages: widget.slot.pages,
+        sectionController: widget.sectionController,
       ),
     );
   }

@@ -58,6 +58,10 @@ class NextSlotIntent extends Intent {
   const NextSlotIntent();
 }
 
+class SwitchToBothIntent extends Intent {
+  const SwitchToBothIntent();
+}
+
 /// Abstracts access to the hardware keyboard to facilitate testing and
 /// deterministic modifier checks.
 abstract class HardwareKeyboardAdapter {
@@ -180,6 +184,12 @@ class KeyBindingService {
     const SingleActivator(LogicalKeyboardKey.digit2, meta: true):
         const SwitchToRoutingIntent(),
 
+    // Switch to Both mode: Mod+3
+    const SingleActivator(LogicalKeyboardKey.digit3, control: true):
+        const SwitchToBothIntent(),
+    const SingleActivator(LogicalKeyboardKey.digit3, meta: true):
+        const SwitchToBothIntent(),
+
     // Previous slot: Mod+[
     const SingleActivator(LogicalKeyboardKey.bracketLeft, control: true):
         const PreviousSlotIntent(),
@@ -231,6 +241,7 @@ class KeyBindingService {
     required VoidCallback onShowShortcutHelp,
     required VoidCallback onSwitchToParameters,
     required VoidCallback onSwitchToRouting,
+    required VoidCallback onSwitchToBoth,
     required VoidCallback onPreviousSlot,
     required VoidCallback onNextSlot,
   }) {
@@ -280,6 +291,12 @@ class KeyBindingService {
       SwitchToRoutingIntent: CallbackAction<SwitchToRoutingIntent>(
         onInvoke: (_) {
           onSwitchToRouting();
+          return null;
+        },
+      ),
+      SwitchToBothIntent: CallbackAction<SwitchToBothIntent>(
+        onInvoke: (_) {
+          onSwitchToBoth();
           return null;
         },
       ),
