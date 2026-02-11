@@ -3076,7 +3076,15 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) return;
 
-    emit(currentState.copyWith(focusedAlgorithmIds: {algorithmId}));
+    final nodePos = currentState.nodePositions[algorithmId];
+    final scrollTarget = nodePos != null
+        ? Offset(nodePos.x + nodePos.width / 2, nodePos.y + nodePos.height / 2)
+        : null;
+
+    emit(currentState.copyWith(
+      focusedAlgorithmIds: {algorithmId},
+      cascadeScrollTarget: scrollTarget,
+    ));
   }
 
   /// Set focus by slot index - finds the algorithm at that slot and focuses it
