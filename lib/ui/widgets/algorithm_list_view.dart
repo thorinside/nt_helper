@@ -88,7 +88,6 @@ class _AlgorithmListTile extends StatefulWidget {
 
 class _AlgorithmListTileState extends State<_AlgorithmListTile>
     with SingleTickerProviderStateMixin {
-  bool _isHovered = false;
   late final AnimationController _fadeController;
   Timer? _fadeOutDelay;
 
@@ -124,7 +123,6 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
       _fadeController.duration = const Duration(milliseconds: 100);
       _fadeController.reverse();
     }
-    setState(() => _isHovered = hovered);
   }
 
   Widget _buildActionRow() {
