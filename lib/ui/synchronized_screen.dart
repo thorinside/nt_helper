@@ -172,6 +172,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     if (!_screenFocusNode.hasFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_screenFocusNode.hasFocus) {
+          // Don't steal focus from text fields (e.g. in dialogs/overlays)
+          final primaryFocus = FocusManager.instance.primaryFocus;
+          if (primaryFocus?.context
+                  ?.findAncestorWidgetOfExactType<EditableText>() !=
+              null) {
+            return;
+          }
           _screenFocusNode.requestFocus();
         }
       });
