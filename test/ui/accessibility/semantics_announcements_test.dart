@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/cubit/firmware_update_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_state.dart';
@@ -38,20 +37,22 @@ void main() {
     testWidgets('metadata sync announces progress, success, and failure', (
       tester,
     ) async {
-      final cubit = _TestMetadataSyncCubit(const MetadataSyncState.idle());
+      final wrapper = _TestMetadataSyncCubitWrapper(
+        const MetadataSyncState.idle(),
+      );
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: MetadataSyncAnnouncementListener(
-              bloc: cubit,
+              bloc: wrapper.cubit,
               child: const SizedBox.shrink(),
             ),
           ),
         ),
       );
 
-      cubit.push(
+      wrapper.push(
         const MetadataSyncState.syncingMetadata(
           progress: 0.3,
           mainMessage: 'Syncing algorithms',
@@ -60,10 +61,10 @@ void main() {
       );
       await tester.pump();
 
-      cubit.push(const MetadataSyncState.metadataSyncSuccess('Done'));
+      wrapper.push(const MetadataSyncState.metadataSyncSuccess('Done'));
       await tester.pump();
 
-      cubit.push(
+      wrapper.push(
         const MetadataSyncState.metadataSyncFailure('Network timeout'),
       );
       await tester.pump();
@@ -73,7 +74,7 @@ void main() {
       expect(payload, contains('Metadata sync complete'));
       expect(payload, contains('Metadata sync failed: Network timeout'));
 
-      await cubit.close();
+      await wrapper.close();
     });
 
     testWidgets('firmware update announces progress, success, and error', (
@@ -123,10 +124,27 @@ void main() {
   });
 }
 
-class _TestMetadataSyncCubit extends Cubit<MetadataSyncState> {
-  _TestMetadataSyncCubit(super.initialState);
+class _MockMetadataSyncCubit extends MockCubit<MetadataSyncState>
+    implements MetadataSyncCubit {}
 
-  void push(MetadataSyncState state) => emit(state);
+class _TestMetadataSyncCubitWrapper {
+  final _MockMetadataSyncCubit _mock = _MockMetadataSyncCubit();
+  final _controller = StreamController<MetadataSyncState>.broadcast();
+
+  _TestMetadataSyncCubitWrapper(MetadataSyncState initialState) {
+    whenListen(_mock, _controller.stream, initialState: initialState);
+  }
+
+  MetadataSyncCubit get cubit => _mock;
+
+  void push(MetadataSyncState state) {
+    _controller.add(state);
+  }
+
+  Future<void> close() async {
+    await _controller.close();
+    await _mock.close();
+  }
 }
 
 class _MockFirmwareUpdateCubit extends MockCubit<FirmwareUpdateState>

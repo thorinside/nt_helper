@@ -133,6 +133,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     // Initialize split divider position
     _splitDividerPosition = SettingsService().splitDividerPosition;
 
+    // Re-acquire focus when it drifts outside the screen's subtree
+    // (e.g. after an inline text editor is removed from the tree)
+    _screenFocusNode.addListener(_reclaimFocusIfLost);
+
     // Check for app updates on desktop
     if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
       _checkForAppUpdate();
@@ -164,8 +168,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     _tabController.index = newValidIndex;
   }
 
+  void _reclaimFocusIfLost() {
+    if (!_screenFocusNode.hasFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_screenFocusNode.hasFocus) {
+          _screenFocusNode.requestFocus();
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _screenFocusNode.removeListener(_reclaimFocusIfLost);
     _screenFocusNode.dispose();
     _routingFocusSub?.cancel();
     _tabController.removeListener(_handleTabSelection);

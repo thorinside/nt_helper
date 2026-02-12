@@ -17,7 +17,7 @@ import 'package:nt_helper/ui/widgets/template_preview_dialog.dart';
 
 class MetadataSyncAnnouncementListener extends StatelessWidget {
   final Widget child;
-  final BlocBase<MetadataSyncState>? bloc;
+  final MetadataSyncCubit? bloc;
 
   const MetadataSyncAnnouncementListener({
     super.key,
@@ -27,7 +27,7 @@ class MetadataSyncAnnouncementListener extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<BlocBase<MetadataSyncState>, MetadataSyncState>(
+    return BlocListener<MetadataSyncCubit, MetadataSyncState>(
       bloc: bloc,
       listener: (context, metaState) {
         if (metaState is SyncingMetadata) {

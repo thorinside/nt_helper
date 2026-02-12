@@ -177,26 +177,43 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
     final unitText = widget.unit?.trim();
     final hasSuffix = unitText != null && unitText.isNotEmpty;
 
-    return TextField(
-      controller: _textController,
-      focusNode: _focusNode,
-      textAlign: TextAlign.center,
-      keyboardType: TextInputType.numberWithOptions(
-        signed: allowNegative,
-        decimal: hasDecimal,
+    return Shortcuts(
+      shortcuts: <ShortcutActivator, Intent>{
+        for (final key in [
+          LogicalKeyboardKey.digit0,
+          LogicalKeyboardKey.digit1,
+          LogicalKeyboardKey.digit2,
+          LogicalKeyboardKey.digit3,
+          LogicalKeyboardKey.digit4,
+          LogicalKeyboardKey.digit5,
+          LogicalKeyboardKey.digit6,
+          LogicalKeyboardKey.digit7,
+          LogicalKeyboardKey.digit8,
+          LogicalKeyboardKey.digit9,
+        ])
+          SingleActivator(key): const DoNothingAndStopPropagationTextIntent(),
+      },
+      child: TextField(
+        controller: _textController,
+        focusNode: _focusNode,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.numberWithOptions(
+          signed: allowNegative,
+          decimal: hasDecimal,
+        ),
+        style: textStyle,
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+          suffixText: hasSuffix ? unitText : null,
+        ),
+        onSubmitted: (_) => _submitEdit(),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(pattern)),
+        ],
       ),
-      style: textStyle,
-      decoration: InputDecoration(
-        isDense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-        suffixText: hasSuffix ? unitText : null,
-      ),
-      onSubmitted: (_) => _submitEdit(),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(pattern)),
-      ],
     );
   }
 
