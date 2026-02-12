@@ -702,6 +702,42 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             onHelpTextChanged: _showContextualHelp
                 ? (text) => setState(() => _contextualHelpText = text)
                 : null,
+            onMoveUp: widget.loading
+                ? null
+                : (index) async {
+                    final cubit = context.read<DistingCubit>();
+                    final newIndex = await cubit.moveAlgorithmUp(index);
+                    setState(() {
+                      _selectedIndex = newIndex;
+                    });
+                    _tabController.animateTo(newIndex);
+                    return newIndex;
+                  },
+            onMoveDown: widget.loading
+                ? null
+                : (index) async {
+                    final cubit = context.read<DistingCubit>();
+                    final currentState = cubit.state;
+                    int slotCount = 0;
+                    if (currentState is DistingStateSynchronized) {
+                      slotCount = currentState.slots.length;
+                    }
+                    if (index < slotCount - 1) {
+                      final newIndex = await cubit.moveAlgorithmDown(index);
+                      setState(() {
+                        _selectedIndex = newIndex;
+                      });
+                      _tabController.animateTo(newIndex);
+                      return newIndex;
+                    }
+                    return index;
+                  },
+            onDelete: widget.loading
+                ? null
+                : (index) {
+                    final cubit = context.read<DistingCubit>();
+                    cubit.onRemoveAlgorithm(index);
+                  },
           ),
         ),
         // Right side content

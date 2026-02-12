@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +15,9 @@ class AlgorithmListView extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelectionChanged;
   final ValueChanged<String?>? onHelpTextChanged;
+  final Future<int> Function(int index)? onMoveUp;
+  final Future<int> Function(int index)? onMoveDown;
+  final ValueChanged<int>? onDelete;
 
   const AlgorithmListView({
     super.key,
@@ -20,6 +25,9 @@ class AlgorithmListView extends StatelessWidget {
     required this.selectedIndex,
     required this.onSelectionChanged,
     this.onHelpTextChanged,
+    this.onMoveUp,
+    this.onMoveDown,
+    this.onDelete,
   });
 
   static const String algorithmNameHelpText =
@@ -34,89 +42,268 @@ class AlgorithmListView extends StatelessWidget {
             padding: const EdgeInsets.only(top: 8.0),
             itemCount: slots.length,
             itemBuilder: (context, index) {
-              final slot = slots[index];
-              final displayName = slot.algorithm.name;
-
-              return Semantics(
-                label: 'Slot ${index + 1}: $displayName',
-                hint: 'Double tap to select. Long press to rename.',
-                customSemanticsActions: {
-                  const CustomSemanticsAction(label: 'Rename algorithm'): () async {
-                    var cubit = context.read<DistingCubit>();
-                    final newName = await showDialog<String>(
-                      context: context,
-                      builder: (dialogCtx) =>
-                          RenameSlotDialog(initialName: displayName),
-                    );
-                    if (newName != null && newName != displayName) {
-                      cubit.renameSlot(index, newName);
-                    }
-                  },
-                  const CustomSemanticsAction(label: 'Focus algorithm UI'): () {
-                    var cubit = context.read<DistingCubit>();
-                    cubit.disting()?.let((manager) {
-                      manager.requestSetFocus(index, 0);
-                      manager.requestSetDisplayMode(DisplayMode.algorithmUI);
-                    });
-                  },
-                },
-                child: MouseRegion(
-                  onEnter: (_) => onHelpTextChanged?.call(algorithmNameHelpText),
-                  onExit: (_) => onHelpTextChanged?.call(null),
-                  child: GestureDetector(
-                    onDoubleTap: () async {
-                      var cubit = context.read<DistingCubit>();
-                      cubit.disting()?.let((manager) {
-                        manager.requestSetFocus(index, 0);
-                        manager.requestSetDisplayMode(DisplayMode.algorithmUI);
-                      });
-                      if (SettingsService().hapticsEnabled) {
-                        Haptics.vibrate(HapticsType.medium);
-                      }
-                    },
-                    child: ListTile(
-                      title: ExcludeSemantics(
-                        child: Text(
-                          displayName,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                      ),
-                      selected: index == selectedIndex,
-                      selectedTileColor: Theme.of(
-                        context,
-                      ).colorScheme.secondaryContainer,
-                      selectedColor: Theme.of(
-                        context,
-                      ).colorScheme.onSecondaryContainer,
-                      onTap: () {
-                      onSelectionChanged(index);
-                      SemanticsService.sendAnnouncement(
-                        WidgetsBinding.instance.platformDispatcher.views.first,
-                        'Slot ${index + 1}: $displayName selected',
-                        TextDirection.ltr,
-                      );
-                    },
-                      onLongPress: () async {
-                        var cubit = context.read<DistingCubit>();
-                        final newName = await showDialog<String>(
-                          context: context,
-                          builder: (dialogCtx) =>
-                              RenameSlotDialog(initialName: displayName),
-                        );
-                        if (newName != null && newName != displayName) {
-                          cubit.renameSlot(index, newName);
-                        }
-                      },
-                    ),
-                  ),
-                ),
+              return _AlgorithmListTile(
+                slot: slots[index],
+                index: index,
+                isSelected: index == selectedIndex,
+                onSelectionChanged: onSelectionChanged,
+                onHelpTextChanged: onHelpTextChanged,
+                onMoveUp: onMoveUp,
+                onMoveDown: onMoveDown,
+                onDelete: onDelete,
               );
             },
           ),
           _ => const Center(child: Text("Loading slots...")),
         };
       },
+    );
+  }
+}
+
+class _AlgorithmListTile extends StatefulWidget {
+  final Slot slot;
+  final int index;
+  final bool isSelected;
+  final ValueChanged<int> onSelectionChanged;
+  final ValueChanged<String?>? onHelpTextChanged;
+  final Future<int> Function(int index)? onMoveUp;
+  final Future<int> Function(int index)? onMoveDown;
+  final ValueChanged<int>? onDelete;
+
+  const _AlgorithmListTile({
+    required this.slot,
+    required this.index,
+    required this.isSelected,
+    required this.onSelectionChanged,
+    this.onHelpTextChanged,
+    this.onMoveUp,
+    this.onMoveDown,
+    this.onDelete,
+  });
+
+  @override
+  State<_AlgorithmListTile> createState() => _AlgorithmListTileState();
+}
+
+class _AlgorithmListTileState extends State<_AlgorithmListTile>
+    with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  late final AnimationController _fadeController;
+  Timer? _fadeOutDelay;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _fadeOutDelay?.cancel();
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  void _onHoverChanged(bool hovered) {
+    _fadeOutDelay?.cancel();
+    if (hovered) {
+      _fadeController.duration = const Duration(milliseconds: 100);
+      _fadeController.forward();
+    } else if (widget.isSelected) {
+      _fadeOutDelay = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          _fadeController.duration = const Duration(milliseconds: 300);
+          _fadeController.reverse();
+        }
+      });
+    } else {
+      _fadeController.duration = const Duration(milliseconds: 100);
+      _fadeController.reverse();
+    }
+    setState(() => _isHovered = hovered);
+  }
+
+  Widget _buildActionRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.onMoveUp != null)
+          _buildActionButton(
+            icon: Icons.arrow_upward_rounded,
+            onPressed: () => widget.onMoveUp!(widget.index),
+          ),
+        if (widget.onMoveDown != null)
+          _buildActionButton(
+            icon: Icons.arrow_downward_rounded,
+            onPressed: () => widget.onMoveDown!(widget.index),
+          ),
+        if (widget.onDelete != null)
+          _buildActionButton(
+            icon: Icons.delete_forever_rounded,
+            onPressed: () => widget.onDelete!(widget.index),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          iconSize: 18,
+          icon: Icon(icon),
+          onPressed: onPressed,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = widget.slot.algorithm.name;
+    final hasActions = widget.onMoveUp != null ||
+        widget.onMoveDown != null ||
+        widget.onDelete != null;
+
+    return Semantics(
+      label: 'Slot ${widget.index + 1}: $displayName',
+      hint: 'Double tap to select. Long press to rename.',
+      customSemanticsActions: {
+        const CustomSemanticsAction(label: 'Rename algorithm'): () async {
+          var cubit = context.read<DistingCubit>();
+          final newName = await showDialog<String>(
+            context: context,
+            builder: (dialogCtx) =>
+                RenameSlotDialog(initialName: displayName),
+          );
+          if (newName != null && newName != displayName) {
+            cubit.renameSlot(widget.index, newName);
+          }
+        },
+        const CustomSemanticsAction(label: 'Focus algorithm UI'): () {
+          var cubit = context.read<DistingCubit>();
+          cubit.disting()?.let((manager) {
+            manager.requestSetFocus(widget.index, 0);
+            manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+          });
+        },
+      },
+      child: MouseRegion(
+        onEnter: (_) {
+          widget.onHelpTextChanged
+              ?.call(AlgorithmListView.algorithmNameHelpText);
+          if (hasActions) _onHoverChanged(true);
+        },
+        onExit: (_) {
+          widget.onHelpTextChanged?.call(null);
+          if (hasActions) _onHoverChanged(false);
+        },
+        child: GestureDetector(
+          onDoubleTap: () async {
+            var cubit = context.read<DistingCubit>();
+            cubit.disting()?.let((manager) {
+              manager.requestSetFocus(widget.index, 0);
+              manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+            });
+            if (SettingsService().hapticsEnabled) {
+              Haptics.vibrate(HapticsType.medium);
+            }
+          },
+          child: Stack(
+            children: [
+              ListTile(
+                title: ExcludeSemantics(
+                  child: Text(
+                    displayName,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                selected: widget.isSelected,
+                selectedTileColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
+                selectedColor:
+                    Theme.of(context).colorScheme.onSecondaryContainer,
+                onTap: () {
+                  widget.onSelectionChanged(widget.index);
+                  SemanticsService.sendAnnouncement(
+                    WidgetsBinding.instance.platformDispatcher.views.first,
+                    'Slot ${widget.index + 1}: $displayName selected',
+                    TextDirection.ltr,
+                  );
+                },
+                onLongPress: () async {
+                  var cubit = context.read<DistingCubit>();
+                  final newName = await showDialog<String>(
+                    context: context,
+                    builder: (dialogCtx) =>
+                        RenameSlotDialog(initialName: displayName),
+                  );
+                  if (newName != null && newName != displayName) {
+                    cubit.renameSlot(widget.index, newName);
+                  }
+                },
+              ),
+              if (hasActions)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: AnimatedBuilder(
+                    animation: _fadeController,
+                    builder: (context, child) {
+                      final t = _fadeController.value;
+                      final tileColor = widget.isSelected
+                          ? Theme.of(context).colorScheme.secondaryContainer
+                          : Theme.of(context).colorScheme.surface;
+                      return ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: [
+                            Colors.white.withValues(alpha: t),
+                            Colors.white,
+                          ],
+                          stops: const [0.0, 0.5],
+                        ).createShader(bounds),
+                        blendMode: BlendMode.dstIn,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                tileColor.withValues(alpha: 0),
+                                tileColor.withValues(alpha: t),
+                              ],
+                              stops: const [0.0, 0.3],
+                            ),
+                          ),
+                          padding: const EdgeInsets.only(
+                            left: 24,
+                            right: 8,
+                          ),
+                          child: Opacity(
+                            opacity: widget.isSelected
+                                ? 0.3 + 0.7 * t
+                                : t,
+                            child: child,
+                          ),
+                        ),
+                      );
+                    },
+                    child: _buildActionRow(),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
