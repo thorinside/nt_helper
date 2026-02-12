@@ -50,7 +50,12 @@ class FirmwareVersionService {
 
     try {
       final response = await _httpClient
-          .get(Uri.parse(_firmwarePageUrl))
+          .get(
+            Uri.parse(_firmwarePageUrl),
+            headers: {
+              'User-Agent': 'nt_helper',
+            },
+          )
           .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
@@ -228,7 +233,8 @@ class FirmwareVersionService {
     final filePath = path.join(tempDir.path, fileName);
 
     try {
-      final request = http.Request('GET', Uri.parse(version.downloadUrl));
+      final request = http.Request('GET', Uri.parse(version.downloadUrl))
+        ..headers['User-Agent'] = 'nt_helper';
       final response = await _httpClient.send(request);
 
       if (response.statusCode != 200) {

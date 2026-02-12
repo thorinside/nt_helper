@@ -331,42 +331,22 @@ class _InitialStateView extends StatelessWidget {
       );
     }
 
-    // Error state
+    // Error state – show a quiet empty state with retry
     if (state.fetchError != null) {
-      return Card(
-        color: theme.colorScheme.errorContainer,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: theme.colorScheme.error,
-                size: 40,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Failed to check for updates',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onErrorContainer,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                state.fetchError!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onErrorContainer,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton.tonal(
-                onPressed: () => cubit.loadAvailableVersions(),
-                child: const Text('Retry'),
-              ),
-            ],
+      return Column(
+        children: [
+          const SizedBox(height: 16),
+          Text(
+            'Could not load available firmware versions.',
+            style: theme.textTheme.bodyMedium,
+            textAlign: TextAlign.center,
           ),
-        ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => cubit.loadAvailableVersions(),
+            child: const Text('Retry'),
+          ),
+        ],
       );
     }
 
