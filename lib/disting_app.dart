@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:accessibility_tools/accessibility_tools.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
@@ -109,7 +108,6 @@ class _DistingAppState extends State<DistingApp> {
     );
 
     return MaterialApp(
-      builder: (context, child) => AccessibilityTools(child: child),
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
       darkTheme: darkTheme,

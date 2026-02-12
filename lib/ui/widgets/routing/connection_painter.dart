@@ -200,10 +200,6 @@ class ConnectionPainter extends CustomPainter {
       if (type == ConnectionVisualType.ghost) {
         _drawDashedPath(canvas, path, paint);
 
-        // Draw animated flow effects if enabled
-        if (enableAnimations && animationProgress != null) {
-          _drawAnimatedFlow(canvas, path, conn);
-        }
       } else if (type == ConnectionVisualType.invalid) {
         _drawDashedPath(canvas, path, paint);
       } else if (type == ConnectionVisualType.partial) {
@@ -507,47 +503,6 @@ class ConnectionPainter extends CustomPainter {
 
         distance = endDistance;
         draw = !draw;
-      }
-    }
-  }
-
-  /// Draw animated flow effects for ghost connections
-  void _drawAnimatedFlow(Canvas canvas, Path path, ConnectionData conn) {
-    if (animationProgress == null) return;
-
-    final pathMetrics = path.computeMetrics();
-    if (pathMetrics.isEmpty) return;
-
-    final metric = pathMetrics.first;
-    const dotCount = 3;
-    const dotRadius = 3.0;
-    const flowSpeed = 2.0; // Speed multiplier for animation
-
-    // Create paint for animated dots
-    final dotPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = _getPortColor(
-        conn.connection.sourcePortId,
-      ).withValues(alpha: 0.8);
-
-    // Draw multiple animated dots along the path
-    for (int i = 0; i < dotCount; i++) {
-      // Calculate position for this dot with offset based on animation progress
-      final offset = (i / dotCount) + (animationProgress! * flowSpeed);
-      final normalizedOffset = offset % 1.0;
-      final distance = normalizedOffset * metric.length;
-
-      // Get position along path
-      final tangent = metric.getTangentForOffset(distance);
-      if (tangent != null) {
-        // Draw dot with fade effect based on position
-        final fadeAlpha = (1.0 - (distance / metric.length) * 0.3).clamp(
-          0.0,
-          1.0,
-        );
-        dotPaint.color = dotPaint.color.withValues(alpha: fadeAlpha * 0.8);
-
-        canvas.drawCircle(tangent.position, dotRadius, dotPaint);
       }
     }
   }
@@ -1016,7 +971,6 @@ class ConnectionPainter extends CustomPainter {
         oldDelegate.enableAntiOverlap != enableAntiOverlap ||
         oldDelegate.showLabels != showLabels ||
         oldDelegate.enableAnimations != enableAnimations ||
-        oldDelegate.animationProgress != animationProgress ||
         oldDelegate.hoveredConnectionId != hoveredConnectionId ||
         oldDelegate.theme != theme ||
         oldDelegate.drawEndpointsOnly != drawEndpointsOnly ||
@@ -1053,88 +1007,30 @@ class ConnectionCanvas extends StatefulWidget {
   State<ConnectionCanvas> createState() => _ConnectionCanvasState();
 }
 
-class _ConnectionCanvasState extends State<ConnectionCanvas>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Initialize animation controller for ghost connection flow effects
-    _animationController = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    );
-
-    _animation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(_animationController);
-
-    // Start animation if there are ghost connections and animations are enabled
-    if (widget.enableAnimations && _hasGhostConnections()) {
-      _animationController.repeat();
-    }
-  }
-
-  @override
-  void didUpdateWidget(ConnectionCanvas oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Update animation state based on ghost connections and animation settings
-    if (widget.enableAnimations && _hasGhostConnections()) {
-      if (!_animationController.isAnimating) {
-        _animationController.repeat();
-      }
-    } else {
-      _animationController.stop();
-    }
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  /// Check if any connections are ghost connections
-  bool _hasGhostConnections() {
-    return widget.connections.any((conn) => conn.isGhostConnection);
-  }
-
+class _ConnectionCanvasState extends State<ConnectionCanvas> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Stack(
-          children: [
-            // Main connection rendering
-            CustomPaint(
-              painter: ConnectionPainter(
-                connections: widget.connections,
-                theme: theme,
-                connectionStateManager: widget.connectionStateManager,
-                enableAntiOverlap: widget.enableAntiOverlap,
-                showLabels: widget.showLabels,
-                enableAnimations: widget.enableAnimations,
-                animationProgress: widget.enableAnimations
-                    ? _animation.value
-                    : null,
-              ),
-              child: Container(), // Provides hit test area
-            ),
-            // Invisible tooltip trigger areas for ghost connections
-            ...widget.connections
-                .where((conn) => conn.isGhostConnection)
-                .map((conn) => _buildTooltipTrigger(conn)),
-          ],
-        );
-      },
+    return Stack(
+      children: [
+        // Main connection rendering
+        CustomPaint(
+          painter: ConnectionPainter(
+            connections: widget.connections,
+            theme: theme,
+            connectionStateManager: widget.connectionStateManager,
+            enableAntiOverlap: widget.enableAntiOverlap,
+            showLabels: widget.showLabels,
+            enableAnimations: false,
+          ),
+          child: Container(), // Provides hit test area
+        ),
+        // Invisible tooltip trigger areas for ghost connections
+        ...widget.connections
+            .where((conn) => conn.isGhostConnection)
+            .map((conn) => _buildTooltipTrigger(conn)),
+      ],
     );
   }
 

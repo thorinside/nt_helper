@@ -231,7 +231,7 @@ void main() {
                   connections: connections,
                   theme: ThemeData(),
                   showLabels: true,
-                  enableAnimations: true,
+                  enableAnimations: false,
                 ),
                 child: const SizedBox(width: 400, height: 400),
               ),

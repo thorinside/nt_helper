@@ -2783,7 +2783,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                   showLabels:
                       widget.showBusLabels &&
                       drawEndpointsOnly, // Only show labels in foreground pass
-                  enableAnimations: true,
+                  enableAnimations: false,
                   hoveredConnectionId: _hoveredLabelConnectionId,
                   obstacles: _calculateNodeBounds(),
                   drawEndpointsOnly: true,
@@ -2817,7 +2817,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 connections: connectionDataList,
                 theme: Theme.of(context),
                 showLabels: false, // Labels are drawn in the foreground pass
-                enableAnimations: true,
+                enableAnimations: false,
                 hoveredConnectionId: null,
                 obstacles: _calculateNodeBounds(),
                 drawEndpointsOnly: false,
@@ -2843,7 +2843,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 connections: connectionDataList,
                 theme: Theme.of(context),
                 showLabels: widget.showBusLabels && !drawEndpointsOnly,
-                enableAnimations: true,
+                enableAnimations: false,
                 hoveredConnectionId: _hoveredLabelConnectionId,
                 obstacles: _calculateNodeBounds(),
                 drawEndpointsOnly: drawEndpointsOnly,

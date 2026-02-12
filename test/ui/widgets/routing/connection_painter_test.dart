@@ -567,7 +567,7 @@ void main() {
             connections: [invalidConnection],
             theme: theme,
             enableAntiOverlap: true,
-            enableAnimations: false, // Invalid connections shouldn't animate
+            enableAnimations: false,
             showLabels: true,
           );
 

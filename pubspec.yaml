@@ -96,7 +96,6 @@ dependencies:
       ref: 31bdb66472a0cde05ee6ab3de426661c96f3bb45
       path: flutter
   html: ^0.15.6
-  accessibility_tools: ^2.8.0
   flutter_markdown: ^0.7.6
 
 dev_dependencies:
