@@ -6,6 +6,7 @@ import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
@@ -139,6 +140,14 @@ void main() async {
   _windowEventsChannel.setMethodCallHandler((call) async {
     if (call.method == 'windowWillClose') {
       // Bounds are already saved by _WindowBoundsManager on move/resize
+      if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        try {
+          await McpServerService.instance.stop();
+        } catch (e) {
+          // Intentionally empty
+        }
+      }
+
       try {
         await database.close();
       } catch (e) {

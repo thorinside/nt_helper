@@ -220,11 +220,6 @@ class _DistingPageState extends State<DistingPage> {
 
   @override
   void dispose() {
-    // Stop the MCP server when the widget is disposed
-    if ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) &&
-        McpServerService.instance.isRunning) {
-      McpServerService.instance.stop().catchError((e) {});
-    }
     super.dispose();
   }
 

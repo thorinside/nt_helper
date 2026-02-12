@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nt_helper/cubit/firmware_update_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_state.dart';
 import 'package:nt_helper/models/firmware_release.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
@@ -75,7 +79,7 @@ void main() {
     testWidgets('firmware update announces progress, success, and error', (
       tester,
     ) async {
-      final cubit = _TestFirmwareUpdateCubit(
+      final wrapper = _TestFirmwareUpdateCubitWrapper(
         const FirmwareUpdateState.initial(currentVersion: '1.0.0'),
       );
       final release = FirmwareRelease(
@@ -89,22 +93,24 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: FirmwareUpdateAnnouncementListener(
-              bloc: cubit,
+              bloc: wrapper.cubit,
               child: const SizedBox.shrink(),
             ),
           ),
         ),
       );
 
-      cubit.push(
+      wrapper.push(
         FirmwareUpdateState.downloading(version: release, progress: 0.42),
       );
       await tester.pump();
 
-      cubit.push(const FirmwareUpdateState.success(newVersion: '1.2.0'));
+      wrapper.push(const FirmwareUpdateState.success(newVersion: '1.2.0'));
       await tester.pump();
 
-      cubit.push(const FirmwareUpdateState.error(message: 'Checksum mismatch'));
+      wrapper.push(
+        const FirmwareUpdateState.error(message: 'Checksum mismatch'),
+      );
       await tester.pump();
 
       final payload = accessibilityMessages.map((m) => m.toString()).join('\n');
@@ -112,7 +118,7 @@ void main() {
       expect(payload, contains('Firmware update complete'));
       expect(payload, contains('Firmware update error: Checksum mismatch'));
 
-      await cubit.close();
+      await wrapper.close();
     });
   });
 }
@@ -123,8 +129,25 @@ class _TestMetadataSyncCubit extends Cubit<MetadataSyncState> {
   void push(MetadataSyncState state) => emit(state);
 }
 
-class _TestFirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
-  _TestFirmwareUpdateCubit(super.initialState);
+class _MockFirmwareUpdateCubit extends MockCubit<FirmwareUpdateState>
+    implements FirmwareUpdateCubit {}
 
-  void push(FirmwareUpdateState state) => emit(state);
+class _TestFirmwareUpdateCubitWrapper {
+  final _MockFirmwareUpdateCubit _mock = _MockFirmwareUpdateCubit();
+  final _controller = StreamController<FirmwareUpdateState>.broadcast();
+
+  _TestFirmwareUpdateCubitWrapper(FirmwareUpdateState initialState) {
+    whenListen(_mock, _controller.stream, initialState: initialState);
+  }
+
+  FirmwareUpdateCubit get cubit => _mock;
+
+  void push(FirmwareUpdateState state) {
+    _controller.add(state);
+  }
+
+  Future<void> close() async {
+    await _controller.close();
+    await _mock.close();
+  }
 }

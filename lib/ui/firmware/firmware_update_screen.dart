@@ -89,7 +89,7 @@ class _FirmwareUpdateView extends StatelessWidget {
 
 class FirmwareUpdateAnnouncementListener extends StatelessWidget {
   final Widget child;
-  final BlocBase<FirmwareUpdateState>? bloc;
+  final FirmwareUpdateCubit? bloc;
 
   const FirmwareUpdateAnnouncementListener({
     super.key,
@@ -99,7 +99,7 @@ class FirmwareUpdateAnnouncementListener extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<BlocBase<FirmwareUpdateState>, FirmwareUpdateState>(
+    return BlocListener<FirmwareUpdateCubit, FirmwareUpdateState>(
       bloc: bloc,
       listener: (context, state) {
         if (state is FirmwareUpdateStateDownloading) {
