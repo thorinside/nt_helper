@@ -108,6 +108,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   AppRelease? _availableAppUpdate;
   AppUpdateService? _appUpdateService;
   RoutingEditorCubit? _routingEditorCubit;
+  late final Widget _cachedRoutingCanvas = _buildRoutingCanvas();
   StreamSubscription<RoutingEditorState>? _routingFocusSub;
   bool _isSyncingSelection = false;
   final SectionParameterController _sectionController =
@@ -377,7 +378,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   ? _buildSplitView()
                   : IndexedStack(
                       index: _currentMode == EditMode.routing ? 1 : 0,
-                      children: [_buildWideScreenBody(), _buildRoutingCanvas()],
+                      children: [_buildWideScreenBody(), _cachedRoutingCanvas],
                     ),
             ),
             AppUpdateBanner(
@@ -416,7 +417,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             Expanded(
               child: IndexedStack(
                 index: _currentMode == EditMode.routing ? 1 : 0,
-                children: [_buildBody(), _buildRoutingCanvas()],
+                children: [_buildBody(), _cachedRoutingCanvas],
               ),
             ),
             AppUpdateBanner(
@@ -666,7 +667,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             ),
             Expanded(
               flex: rightFlex,
-              child: _buildRoutingCanvas(),
+              child: _cachedRoutingCanvas,
             ),
           ],
         );
@@ -1133,9 +1134,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
           const SizedBox(width: 24),
 
-          Builder(
-            builder: (context) {
-              final isOffline = switch (context.watch<DistingCubit>().state) {
+          BlocBuilder<DistingCubit, DistingState>(
+            buildWhen: (previous, current) {
+              final prevOffline = previous is DistingStateSynchronized &&
+                  previous.offline;
+              final currOffline = current is DistingStateSynchronized &&
+                  current.offline;
+              return prevOffline != currOffline;
+            },
+            builder: (context, state) {
+              final isOffline = switch (state) {
                 DistingStateSynchronized(offline: final o) => o,
                 _ => false,
               };
@@ -2071,6 +2079,25 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
   Widget _buildTabBar(BuildContext context) {
     return BlocBuilder<DistingCubit, DistingState>(
+      buildWhen: (previous, current) {
+        if (previous.runtimeType != current.runtimeType) {
+          return true;
+        }
+        if (previous is! DistingStateSynchronized ||
+            current is! DistingStateSynchronized) {
+          return true;
+        }
+        if (previous.slots.length != current.slots.length) {
+          return true;
+        }
+        for (int i = 0; i < previous.slots.length; i++) {
+          if (previous.slots[i].algorithm.name !=
+              current.slots[i].algorithm.name) {
+            return true;
+          }
+        }
+        return false;
+      },
       builder: (context, state) {
         return switch (state) {
           DistingStateSynchronized(slots: final syncState) => Padding(

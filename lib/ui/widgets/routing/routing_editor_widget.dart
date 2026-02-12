@@ -408,6 +408,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     // This gives us the position in the canvas's coordinate space
     final canvasPosition = canvasBox.globalToLocal(globalCenter);
 
+    final existing = _portPositions[portId];
+    if (existing == canvasPosition) return;
+
     setState(() {
       _portPositions[portId] = canvasPosition;
     });

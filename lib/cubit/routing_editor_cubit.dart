@@ -16,6 +16,7 @@ import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/core/routing/models/es5_hardware_node.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
+import 'package:nt_helper/core/routing/multi_channel_algorithm_routing.dart';
 
 import 'routing_editor_state.dart';
 
@@ -28,6 +29,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   Future<SharedPreferences>? _prefs;
   StreamSubscription<DistingState>? _distingStateSubscription;
   NodeLayoutAlgorithm? _layoutAlgorithm;
+  List<Slot>? _lastProcessedSlots;
 
   RoutingEditorCubit(
     this._distingCubit, {
@@ -137,12 +139,74 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return false;
   }
 
+  /// Check if routing-relevant data is unchanged between old and new slot lists.
+  ///
+  /// Compares only the data that affects routing: bus assignments, mode parameters,
+  /// channel widths, algorithm GUIDs, and output mode maps. Non-routing parameter
+  /// changes (filter cutoff, delay time, etc.) are ignored.
+  bool _routingDataUnchanged(List<Slot> oldSlots, List<Slot> newSlots) {
+    if (oldSlots.length != newSlots.length) {
+      return false;
+    }
+
+    for (int i = 0; i < oldSlots.length; i++) {
+      final oldSlot = oldSlots[i];
+      final newSlot = newSlots[i];
+
+      // Algorithm identity changed — routing strategy may differ
+      if (oldSlot.algorithm.guid != newSlot.algorithm.guid) {
+        return false;
+      }
+
+      // Bus assignment values changed — connections differ
+      if (!mapEquals(
+        core_routing.AlgorithmRouting.extractIOParameters(oldSlot),
+        core_routing.AlgorithmRouting.extractIOParameters(newSlot),
+      )) {
+        return false;
+      }
+
+      // Add/Replace mode values changed
+      if (!mapEquals(
+        core_routing.AlgorithmRouting.extractModeParameters(oldSlot),
+        core_routing.AlgorithmRouting.extractModeParameters(newSlot),
+      )) {
+        return false;
+      }
+
+      // Channel width changed
+      if (MultiChannelAlgorithmRouting.getWidthFromSlot(oldSlot) !=
+          MultiChannelAlgorithmRouting.getWidthFromSlot(newSlot)) {
+        return false;
+      }
+
+      // Output mode control mapping changed
+      if (!mapEquals(oldSlot.outputModeMap, newSlot.outputModeMap)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /// Extract routing data from synchronized state and build visual representation.
   ///
   /// This method implements performance optimization by only being called when the
   /// DistingCubit's synchronized state changes, ensuring physical connection discovery
   /// only runs when algorithm parameters or slots change, not on every UI rebuild.
   void _processSynchronizedState(List<Slot> slots) {
+    // Level 1: identical reference means non-slot fields changed (loading, screenshot, etc.)
+    if (identical(slots, _lastProcessedSlots)) return;
+
+    // Level 2: routing-relevant data comparison
+    final lastSlots = _lastProcessedSlots;
+    if (lastSlots != null && _routingDataUnchanged(lastSlots, slots)) {
+      _lastProcessedSlots = slots;
+      return;
+    }
+
+    _lastProcessedSlots = slots;
+
     try {
       // Create physical hardware ports
       final physicalInputs = _createPhysicalInputPorts();
@@ -3130,6 +3194,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   @override
   Future<void> close() {
     _distingStateSubscription?.cancel();
+    _lastProcessedSlots = null;
     return super.close();
   }
 }

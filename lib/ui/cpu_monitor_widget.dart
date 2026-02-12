@@ -48,6 +48,15 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
         }
 
         return BlocBuilder<DistingCubit, DistingState>(
+          buildWhen: (previous, current) {
+            final prevShow = previous is DistingStateSynchronized &&
+                !previous.offline &&
+                !previous.demo;
+            final currShow = current is DistingStateSynchronized &&
+                !current.offline &&
+                !current.demo;
+            return prevShow != currShow;
+          },
           builder: (context, state) {
             // Only show CPU monitor when connected to a physical device
             final shouldShow = state is DistingStateSynchronized &&
