@@ -121,9 +121,6 @@ class AppUpdateService {
 
   Future<InstallResult> installUpdate(String zipPath) async {
     try {
-      final zipBytes = await File(zipPath).readAsBytes();
-      final archive = ZipDecoder().decodeBytes(zipBytes);
-
       final tempDir = await _getUpdateDirectory();
       final extractDir = Directory(
         path.join(tempDir.path, 'nt_helper_update_extracted'),
@@ -132,6 +129,26 @@ class AppUpdateService {
         await extractDir.delete(recursive: true);
       }
       await extractDir.create(recursive: true);
+
+      if (Platform.isMacOS) {
+        // Use ditto to extract on macOS — preserves code signatures,
+        // notarization tickets, symlinks, and file permissions.
+        final result = await Process.run(
+          'ditto',
+          ['-x', '-k', zipPath, extractDir.path],
+        );
+        if (result.exitCode != 0) {
+          return InstallResult(
+            outcome: InstallOutcome.error,
+            message: 'Failed to extract update: ${result.stderr}',
+          );
+        }
+        return await _installMacOS(extractDir);
+      }
+
+      // Non-macOS: use Dart archive package
+      final zipBytes = await File(zipPath).readAsBytes();
+      final archive = ZipDecoder().decodeBytes(zipBytes);
 
       for (final file in archive) {
         final filePath = path.join(extractDir.path, file.name);
@@ -144,9 +161,7 @@ class AppUpdateService {
         }
       }
 
-      if (Platform.isMacOS) {
-        return await _installMacOS(extractDir);
-      } else if (Platform.isLinux) {
+      if (Platform.isLinux) {
         return await _installLinux(extractDir);
       } else if (Platform.isWindows) {
         return await _installWindows(extractDir);
@@ -192,8 +207,8 @@ class AppUpdateService {
 
     if (_canWriteTo(targetDir)) {
       final result = await Process.run(
-        'cp',
-        ['-Rf', sourceApp.path, targetDir],
+        'ditto',
+        [sourceApp.path, path.join(targetDir, path.basename(sourceApp.path))],
       );
       if (result.exitCode == 0) {
         await _removeQuarantineAttribute(appBundlePath);
@@ -301,8 +316,10 @@ Start-Process "$exePath"
       await existing.delete(recursive: true);
     }
 
-    final result = await Process.run('cp', ['-Rf', sourcePath, destPath]);
-    if (result.exitCode != 0) {
+    final copyResult = Platform.isMacOS
+        ? await Process.run('ditto', [sourcePath, destPath])
+        : await Process.run('cp', ['-Rf', sourcePath, destPath]);
+    if (copyResult.exitCode != 0) {
       return const InstallResult(
         outcome: InstallOutcome.error,
         message: 'Failed to copy update to Downloads.',
