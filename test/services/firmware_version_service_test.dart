@@ -143,7 +143,7 @@ void main() {
     test('clearCache clears cached data', () async {
       // First make a successful request
       when(
-        () => mockClient.get(any()),
+        () => mockClient.get(any(), headers: any(named: 'headers')),
       ).thenAnswer((_) async => http.Response(_sampleHtml, 200));
 
       final result1 = await service.fetchAvailableVersions();
@@ -154,18 +154,26 @@ void main() {
 
       // Next request should make a new HTTP call
       when(
-        () => mockClient.get(any()),
+        () => mockClient.get(any(), headers: any(named: 'headers')),
       ).thenAnswer((_) async => http.Response(_sampleHtml, 200));
 
       await service.fetchAvailableVersions();
 
       // Verify two HTTP calls were made (not using cache)
-      verify(() => mockClient.get(any())).called(2);
+      verify(
+        () => mockClient.get(
+          any(),
+          headers: any(
+            named: 'headers',
+            that: containsPair('User-Agent', 'nt_helper'),
+          ),
+        ),
+      ).called(2);
     });
 
     test('fetchAvailableVersions caches results', () async {
       when(
-        () => mockClient.get(any()),
+        () => mockClient.get(any(), headers: any(named: 'headers')),
       ).thenAnswer((_) async => http.Response(_sampleHtml, 200));
 
       // Make two calls
@@ -173,12 +181,20 @@ void main() {
       await service.fetchAvailableVersions();
 
       // Only one HTTP call should be made (second uses cache)
-      verify(() => mockClient.get(any())).called(1);
+      verify(
+        () => mockClient.get(
+          any(),
+          headers: any(
+            named: 'headers',
+            that: containsPair('User-Agent', 'nt_helper'),
+          ),
+        ),
+      ).called(1);
     });
 
     test('fetchAvailableVersions handles HTTP errors', () async {
       when(
-        () => mockClient.get(any()),
+        () => mockClient.get(any(), headers: any(named: 'headers')),
       ).thenAnswer((_) async => http.Response('Not Found', 404));
 
       expect(
@@ -189,7 +205,7 @@ void main() {
 
     test('fetchAvailableVersions parses HTML correctly', () async {
       when(
-        () => mockClient.get(any()),
+        () => mockClient.get(any(), headers: any(named: 'headers')),
       ).thenAnswer((_) async => http.Response(_sampleHtml, 200));
 
       final versions = await service.fetchAvailableVersions();
