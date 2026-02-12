@@ -485,8 +485,19 @@ class _PluginDelegate {
     Uint8List fileData, {
     Function(double)? onProgress,
   }) async {
+    // Ensure absolute path for SD card operations
+    final absolutePath =
+        targetPath.startsWith('/') ? targetPath : '/$targetPath';
+
     final disting = _cubit.requireDisting();
     await disting.requestWake();
+
+    // Ensure parent directory exists
+    final parentPath =
+        absolutePath.substring(0, absolutePath.lastIndexOf('/'));
+    if (parentPath.isNotEmpty) {
+      await _ensureDirectoryExists(parentPath, disting);
+    }
 
     // Upload in 512-byte chunks (matching existing implementation)
     const chunkSize = 512;
@@ -500,7 +511,7 @@ class _PluginDelegate {
       final chunk = fileData.sublist(uploadPos, uploadPos + currentChunkSize);
 
       try {
-        await _uploadChunk(targetPath, chunk, uploadPos);
+        await _uploadChunk(absolutePath, chunk, uploadPos);
         uploadPos += currentChunkSize;
 
         // Report progress

@@ -781,8 +781,7 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       final destinationNumber = sendData['destinationNumber'] as int? ?? 0;
       final modeParamNumber = sendData['modeParameterNumber'] as int?;
 
-      if (destination == null || destination == 0) {
-        // Skip sends with no destination
+      if (destination == null) {
         continue;
       }
 
@@ -809,7 +808,7 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
           'type': 'audio',
           'busParam': '$destinationParam R',
           'busValue': destination + 1, // Right channel uses next bus
-          'parameterNumber': destinationNumber,
+          'parameterNumber': null,
           'outputMode': outputMode == 1 ? 'replace' : 'add',
           'modeParameterNumber': modeParamNumber,
           'channel': 'right',
