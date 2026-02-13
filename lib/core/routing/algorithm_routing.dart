@@ -670,7 +670,7 @@ abstract class AlgorithmRouting {
   @protected
   static int getParameterValue(Slot slot, String parameterName) {
     final param = slot.parameters.firstWhere(
-      (p) => p.name == parameterName,
+      (p) => p.name == parameterName || stripPagePrefix(p.name) == parameterName,
       orElse: () => ParameterInfo.filler(),
     );
 
@@ -713,7 +713,16 @@ abstract class AlgorithmRouting {
   /// Returns true if the parameter exists
   @protected
   static bool hasParameter(Slot slot, String parameterName) {
-    return slot.parameters.any((p) => p.name == parameterName);
+    return slot.parameters.any(
+      (p) => p.name == parameterName || stripPagePrefix(p.name) == parameterName,
+    );
+  }
+
+  /// Strips a page prefix (e.g., "1:Gate input 1" → "Gate input 1").
+  /// Returns the original string if no prefix is found.
+  static String stripPagePrefix(String name) {
+    final colonIndex = name.indexOf(':');
+    return colonIndex >= 0 ? name.substring(colonIndex + 1) : name;
   }
 }
 

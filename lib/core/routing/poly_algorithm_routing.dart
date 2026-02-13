@@ -345,6 +345,17 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
     final algId =
         algorithmUuid ??
         'algo_${slot.algorithm.guid}_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Build a lookup that strips page prefixes (e.g., "1:Gate input 1" → "Gate input 1")
+    // so gate detection works regardless of prefix presence.
+    final strippedIoParameters = <String, int>{};
+    for (final entry in ioParameters.entries) {
+      final key = entry.key;
+      final colonIndex = key.indexOf(':');
+      final stripped = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
+      strippedIoParameters[stripped] = entry.value;
+    }
+
     // Extract gate configuration per CV/Gate Setup spec
     final gateInputs = <int>[];
     final gateCvCounts = <int>[];
@@ -352,11 +363,11 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
     // Process all 6 possible gates
     for (int i = 1; i <= 6; i++) {
       // Gate input bus (0 = None, 1-28 = bus assignment)
-      final gateBus = ioParameters['Gate input $i'] ?? 0;
+      final gateBus = strippedIoParameters['Gate input $i'] ?? 0;
       gateInputs.add(gateBus);
 
       // CV count for this gate (only relevant if gate is connected)
-      final cvCount = ioParameters['Gate $i CV count'] ?? 0;
+      final cvCount = strippedIoParameters['Gate $i CV count'] ?? 0;
       gateCvCounts.add(cvCount);
       if (gateBus > 0 || cvCount > 0) {}
     }
@@ -380,15 +391,21 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
       final paramName = entry.key;
       final busValue = entry.value;
 
+      // Strip page prefix for matching (e.g., "1:Gate input 1" → "Gate input 1")
+      final colonIndex = paramName.indexOf(':');
+      final baseName = colonIndex >= 0
+          ? paramName.substring(colonIndex + 1)
+          : paramName;
+
       // Skip gate-specific parameters (handled above)
       // Also skip Poly CV configuration parameters that aren't actual ports
-      if (paramName.startsWith('Gate input ') ||
-          (paramName.startsWith('Gate ') && paramName.contains(' CV count')) ||
-          paramName == 'First output' ||
-          paramName == 'Voices' ||
-          paramName == 'Gate outputs' ||
-          paramName == 'Pitch outputs' ||
-          paramName == 'Velocity outputs') {
+      if (baseName.startsWith('Gate input ') ||
+          (baseName.startsWith('Gate ') && baseName.contains(' CV count')) ||
+          baseName == 'First output' ||
+          baseName == 'Voices' ||
+          baseName == 'Gate outputs' ||
+          baseName == 'Pitch outputs' ||
+          baseName == 'Velocity outputs') {
         continue;
       }
 
@@ -518,7 +535,7 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
       'First output',
     );
     final gateOutputsParam = slot.parameters.firstWhere(
-      (p) => p.name == 'Gate outputs',
+      (p) => p.name == 'Gate outputs' || AlgorithmRouting.stripPagePrefix(p.name) == 'Gate outputs',
       orElse: () => ParameterInfo.filler(),
     );
     final hasPolyCvOutputPattern =
@@ -552,7 +569,7 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
 
       // Get ES-5 Expander parameter number for UI toggle synchronization
       final es5ExpanderParam = slot.parameters.firstWhere(
-        (p) => p.name == 'ES-5 Expander',
+        (p) => p.name == 'ES-5 Expander' || AlgorithmRouting.stripPagePrefix(p.name) == 'ES-5 Expander',
         orElse: () => ParameterInfo.filler(),
       );
       final es5ExpanderParamNumber = es5ExpanderParam.parameterNumber >= 0
