@@ -124,17 +124,23 @@ static FlMethodErrorResponse* event_channel_cancel(FlEventChannel* channel,
 static void stop_capture(UsbVideoCapturePlugin* self) {
   if (self->capturing) {
     self->capturing = false;
-    
+
     if (self->fd >= 0) {
       enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       ioctl(self->fd, VIDIOC_STREAMOFF, &type);
     }
-    
+
     if (self->capture_thread) {
       self->capture_thread->join();
       delete self->capture_thread;
       self->capture_thread = nullptr;
     }
+  }
+
+  // Stop the idle timer when not capturing
+  if (self->idle_source_id != 0) {
+    g_source_remove(self->idle_source_id);
+    self->idle_source_id = 0;
   }
   
   if (self->fd >= 0) {
@@ -413,7 +419,12 @@ static bool start_video_stream(UsbVideoCapturePlugin* self, const char* device_p
   self->capturing = true;
   self->capture_thread = new std::thread(capture_frames, self);
   g_print("[USB Video] Capture thread started\n");
-  
+
+  // Start the idle timer to deliver frames to Flutter (only while capturing)
+  if (self->idle_source_id == 0) {
+    self->idle_source_id = g_timeout_add(16, send_pending_frames, self);
+  }
+
   return true;
 }
 
@@ -456,21 +467,46 @@ static void usb_video_capture_plugin_handle_method_call(
               // Check if it's the Disting NT
               if (strstr(name, "disting") || strstr(name, "NT")) {
                 g_print("[USB Video] Found Disting NT device: %s at /dev/%s\n", name, entry->d_name);
-                
-                // Only add video0 as it's the actual capture device
-                // video1 doesn't support any formats
-                if (strcmp(entry->d_name, "video0") == 0) {
-                  FlValue* camera = fl_value_new_map();
-                  char device_path[32];
-                  snprintf(device_path, sizeof(device_path), "/dev/%s", entry->d_name);
-                  
-                  fl_value_set_string(camera, "deviceId", fl_value_new_string(device_path));
-                  fl_value_set_string(camera, "productName", fl_value_new_string(name));
-                  fl_value_set_string(camera, "vendorId", fl_value_new_int(0x3773));
-                  fl_value_set_string(camera, "productId", fl_value_new_int(0x0001));
-                  fl_value_set_string(camera, "isDistingNT", fl_value_new_bool(TRUE));
-                  
-                  fl_value_append_take(cameras, camera);
+
+                // Each UVC device creates two video nodes — only the one that
+                // supports V4L2_CAP_VIDEO_CAPTURE and YUYV format is usable.
+                char device_path[32];
+                snprintf(device_path, sizeof(device_path), "/dev/%s", entry->d_name);
+                int probe_fd = open(device_path, O_RDWR);
+                if (probe_fd >= 0) {
+                  struct v4l2_capability cap;
+                  memset(&cap, 0, sizeof(cap));
+                  bool usable = false;
+                  if (ioctl(probe_fd, VIDIOC_QUERYCAP, &cap) == 0 &&
+                      (cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) != 0) {
+                    // Also verify YUYV format is supported
+                    struct v4l2_fmtdesc fmtdesc;
+                    memset(&fmtdesc, 0, sizeof(fmtdesc));
+                    fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                    while (ioctl(probe_fd, VIDIOC_ENUM_FMT, &fmtdesc) == 0) {
+                      if (fmtdesc.pixelformat == V4L2_PIX_FMT_YUYV) {
+                        usable = true;
+                        break;
+                      }
+                      fmtdesc.index++;
+                    }
+                  }
+                  close(probe_fd);
+
+                  if (usable) {
+                    g_print("[USB Video] Device %s supports YUYV capture\n", device_path);
+                    FlValue* camera = fl_value_new_map();
+
+                    fl_value_set_string(camera, "deviceId", fl_value_new_string(device_path));
+                    fl_value_set_string(camera, "productName", fl_value_new_string(name));
+                    fl_value_set_string(camera, "vendorId", fl_value_new_int(0x3773));
+                    fl_value_set_string(camera, "productId", fl_value_new_int(0x0001));
+                    fl_value_set_string(camera, "isDistingNT", fl_value_new_bool(TRUE));
+
+                    fl_value_append_take(cameras, camera);
+                  } else {
+                    g_print("[USB Video] Device %s does not support YUYV capture, skipping\n", device_path);
+                  }
                 }
               }
             }
@@ -563,8 +599,7 @@ static void usb_video_capture_plugin_init(UsbVideoCapturePlugin* self) {
 
   self->frame_queue_mutex = new std::mutex();
   self->pending_frames = new std::queue<std::vector<uint8_t>>();
-
-  self->idle_source_id = g_timeout_add(16, send_pending_frames, self);
+  self->idle_source_id = 0;
 }
 
 static void method_call_cb(FlMethodChannel* channel, FlMethodCall* method_call,

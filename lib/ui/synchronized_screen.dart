@@ -619,7 +619,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth - dividerWidth;
         final minFraction = minPaneWidth / availableWidth;
-        final maxFraction = 1.0 - minFraction;
+        final maxFraction = (1.0 - minFraction).clamp(minFraction, 1.0);
         final clampedPosition =
             _splitDividerPosition.clamp(minFraction, maxFraction);
         final leftFlex = (clampedPosition * 1000).round();
@@ -1105,7 +1105,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   bool _canShowSplitScreen(double width) {
-    return !_platformService.isMobilePlatform() && width > 800;
+    return !_platformService.isMobilePlatform() && width >= 1008;
   }
 
   BottomAppBar _buildBottomAppBar() {
