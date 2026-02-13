@@ -3809,9 +3809,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       }
     }
 
-    // Check physical connections for changes
+    // Check focused algorithm IDs for highlight changes
+    if (!_setEquals(previous.focusedAlgorithmIds, current.focusedAlgorithmIds)) {
+      return true;
+    }
 
     return false;
+  }
+
+  static bool _setEquals<T>(Set<T> a, Set<T> b) {
+    if (a.length != b.length) return false;
+    return a.containsAll(b);
   }
 
   /// Check if the routing structure (ports and algorithms) has actually changed
