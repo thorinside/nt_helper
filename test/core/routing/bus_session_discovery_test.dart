@@ -79,8 +79,10 @@ core.Port _outPort(
 
 void main() {
   group('Session-aware discovery', () {
-    test('replace starts a new session and prunes earlier writers', () {
-      // Slots 0..3
+    test('physical input bus uses hw path for algorithm writers', () {
+      // Slots 0..3 on bus 1 (physical input).
+      // When algorithm outputs write to a physical bus, connections route
+      // through the hw_in node instead of direct algo→algo.
       final s0 = _FakeRouting(
         id: 'slot0',
         outputs: [
@@ -105,60 +107,59 @@ void main() {
         s3,
       ]);
 
-      // s1 input sees s0 add (and hardware input), since replace occurs later at slot2
+      // Algorithm outputs write to hw_in_1
       expect(
         conns.any(
           (c) =>
-              c.connectionType == ConnectionType.algorithmToAlgorithm &&
+              c.connectionType == ConnectionType.hardwareOutput &&
               c.sourcePortId == 's0_out_b1' &&
-              c.destinationPortId == 's1_in_b1',
+              c.destinationPortId == 'hw_in_1',
         ),
         isTrue,
       );
       expect(
         conns.any(
           (c) =>
-              c.connectionType == ConnectionType.hardwareInput &&
-              c.busNumber == 1 &&
-              c.destinationPortId == 's1_in_b1',
-        ),
-        isTrue,
-      );
-
-      // s3 input should NOT see s0 (it was replaced at slot2), but should see s2
-      expect(
-        conns.any(
-          (c) =>
-              c.connectionType == ConnectionType.algorithmToAlgorithm &&
-              c.sourcePortId == 's0_out_b1' &&
-              c.destinationPortId == 's3_in_b1',
-        ),
-        isFalse,
-      );
-      expect(
-        conns.any(
-          (c) =>
-              c.connectionType == ConnectionType.algorithmToAlgorithm &&
+              c.connectionType == ConnectionType.hardwareOutput &&
               c.sourcePortId == 's2_out_b1' &&
+              c.destinationPortId == 'hw_in_1',
+        ),
+        isTrue,
+      );
+
+      // Both readers connect from hw_in_1
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareInput &&
+              c.sourcePortId == 'hw_in_1' &&
+              c.destinationPortId == 's1_in_b1',
+        ),
+        isTrue,
+      );
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareInput &&
+              c.sourcePortId == 'hw_in_1' &&
               c.destinationPortId == 's3_in_b1',
         ),
         isTrue,
       );
 
-      // Hardware input should NOT connect to s3, since slot2 replace masks it
+      // No direct algo→algo on physical input buses
       expect(
         conns.any(
-          (c) =>
-              c.connectionType == ConnectionType.hardwareInput &&
-              c.busNumber == 1 &&
-              c.destinationPortId == 's3_in_b1',
+          (c) => c.connectionType == ConnectionType.algorithmToAlgorithm,
         ),
         isFalse,
       );
     });
 
-    test('hardware output uses final contributors only', () {
-      // Bus 18 (hardware output index 6). Final contributors should be s2 (replace) and s3 (add).
+    test('hardware output shows all writers as connected', () {
+      // Bus 18 (hardware output index 6). All writers should get solid
+      // connections because multiple Replace writers can all contribute
+      // in practice (e.g., step sequencers on different clock cycles).
       final s0 = _FakeRouting(
         id: 'slot0',
         outputs: [_outPort('s0_out_b18', 18, mode: core.OutputMode.add)],
@@ -180,17 +181,16 @@ void main() {
         s3,
       ]);
 
-      // No hardware output edge from s0 (replaced later)
+      // All three writers get hardware output connections
       expect(
         conns.any(
           (c) =>
               c.connectionType == ConnectionType.hardwareOutput &&
-              c.sourcePortId == 's0_out_b18',
+              c.sourcePortId == 's0_out_b18' &&
+              c.busNumber == 18,
         ),
-        isFalse,
+        isTrue,
       );
-
-      // Hardware output edges exist from s2 and s3
       expect(
         conns.any(
           (c) =>
@@ -208,6 +208,117 @@ void main() {
               c.busNumber == 18,
         ),
         isTrue,
+      );
+    });
+
+    test('algorithm output to physical input bus creates hw_in write connection', () {
+      // An algorithm output on bus 3 (physical input) should create
+      // a connection to hw_in_3, just like output buses create connections
+      // to hw_out_N.
+      final s0 = _FakeRouting(
+        id: 'slot0',
+        outputs: [_outPort('s0_out_b3', 3, mode: core.OutputMode.replace)],
+      );
+      final s1 = _FakeRouting(id: 'slot1', inputs: [_inPort('s1_in_b3', 3)]);
+
+      final conns = ConnectionDiscoveryService.discoverConnections([s0, s1]);
+
+      // Writer → hw_in_3
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareOutput &&
+              c.sourcePortId == 's0_out_b3' &&
+              c.destinationPortId == 'hw_in_3' &&
+              c.busNumber == 3,
+        ),
+        isTrue,
+      );
+
+      // hw_in_3 → reader
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareInput &&
+              c.sourcePortId == 'hw_in_3' &&
+              c.destinationPortId == 's1_in_b3' &&
+              c.busNumber == 3,
+        ),
+        isTrue,
+      );
+
+      // No direct algo→algo
+      expect(
+        conns.any(
+          (c) => c.connectionType == ConnectionType.algorithmToAlgorithm,
+        ),
+        isFalse,
+      );
+
+      // No partial connections (all ports matched)
+      expect(
+        conns.any((c) => c.isPartial),
+        isFalse,
+      );
+    });
+
+    test('physical input bus with only readers still shows hw_in connection', () {
+      // When there are no algorithm outputs on a physical input bus,
+      // the hardware seed (physical jack) still feeds the reader.
+      final s0 = _FakeRouting(id: 'slot0', inputs: [_inPort('s0_in_b4', 4)]);
+
+      final conns = ConnectionDiscoveryService.discoverConnections([s0]);
+
+      // hw_in_4 → reader (hardware seed contributes)
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareInput &&
+              c.sourcePortId == 'hw_in_4' &&
+              c.destinationPortId == 's0_in_b4',
+        ),
+        isTrue,
+      );
+
+      // No write connections (no outputs)
+      expect(
+        conns.any(
+          (c) => c.connectionType == ConnectionType.hardwareOutput,
+        ),
+        isFalse,
+      );
+    });
+
+    test('aux bus still uses direct algo→algo connections', () {
+      // Auxiliary buses (21+) should still use direct algorithm-to-algorithm
+      // connections, not route through hardware nodes.
+      final s0 = _FakeRouting(
+        id: 'slot0',
+        outputs: [_outPort('s0_out_b25', 25)],
+      );
+      final s1 = _FakeRouting(id: 'slot1', inputs: [_inPort('s1_in_b25', 25)]);
+
+      final conns = ConnectionDiscoveryService.discoverConnections([s0, s1]);
+
+      // Direct algo→algo
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.algorithmToAlgorithm &&
+              c.sourcePortId == 's0_out_b25' &&
+              c.destinationPortId == 's1_in_b25',
+        ),
+        isTrue,
+      );
+
+      // No hardware connections on aux buses
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareInput ||
+              c.connectionType == ConnectionType.hardwareOutput,
+        ),
+        isFalse,
       );
     });
   });

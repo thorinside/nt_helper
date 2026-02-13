@@ -377,7 +377,7 @@ void main() {
       });
 
       test(
-        'should discover algorithm-to-algorithm connections using direct properties',
+        'should discover connections via hw path on physical input bus using direct properties',
         () {
           final routing1 = _MockRouting([
             Port(
@@ -408,22 +408,27 @@ void main() {
             routing2,
           ]);
 
-          // Should discover the algorithm-to-algorithm connection on bus 5
-          final algoConnection = connections.firstWhere(
+          // On physical input bus 5, path goes through hw_in_5:
+          // algo1_out → hw_in_5 (write) and hw_in_5 → algo2_in (read)
+          final writeConnection = connections.firstWhere(
             (c) =>
                 c.sourcePortId == 'algo1_out' &&
+                c.destinationPortId == 'hw_in_5',
+            orElse: () =>
+                throw StateError('Hardware input write connection not found'),
+          );
+          expect(writeConnection.connectionType, equals(ConnectionType.hardwareOutput));
+          expect(writeConnection.busNumber, equals(5));
+
+          final readConnection = connections.firstWhere(
+            (c) =>
+                c.sourcePortId == 'hw_in_5' &&
                 c.destinationPortId == 'algo2_in',
             orElse: () =>
-                throw StateError('Algorithm-to-algorithm connection not found'),
+                throw StateError('Hardware input read connection not found'),
           );
-
-          expect(algoConnection.sourcePortId, equals('algo1_out'));
-          expect(algoConnection.destinationPortId, equals('algo2_in'));
-          expect(
-            algoConnection.connectionType,
-            equals(ConnectionType.algorithmToAlgorithm),
-          );
-          expect(algoConnection.busNumber, equals(5));
+          expect(readConnection.connectionType, equals(ConnectionType.hardwareInput));
+          expect(readConnection.busNumber, equals(5));
         },
       );
     });

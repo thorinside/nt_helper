@@ -77,38 +77,48 @@ core.Port _outPort(
 
 void main() {
   group('ConnectionDiscoveryService', () {
-    test('creates algo→algo and hardware input connections on bus 2', () {
+    test('physical input bus 2 uses hw path instead of direct algo→algo', () {
       final a = _FakeRouting(id: 'algo_A', outputs: [_outPort('A_out_b2', 2)]);
       final b = _FakeRouting(id: 'algo_B', inputs: [_inPort('B_in_b2', 2)]);
 
       final conns = ConnectionDiscoveryService.discoverConnections([a, b]);
 
-      // One hardware input connection on bus 2 (from hw_in_2 to an algo input)
+      // Algorithm output writes to hw_in_2
       expect(
         conns.any(
           (c) =>
-              c.connectionType == ConnectionType.hardwareInput &&
+              c.connectionType == ConnectionType.hardwareOutput &&
+              c.sourcePortId == 'A_out_b2' &&
+              c.destinationPortId == 'hw_in_2' &&
               c.busNumber == 2,
         ),
         isTrue,
       );
 
-      // One algo→algo connection from A_out_b2 to B_in_b2
+      // Hardware input feeds algorithm: hw_in_2 → B_in_b2
       expect(
         conns.any(
           (c) =>
-              c.connectionType == ConnectionType.algorithmToAlgorithm &&
-              c.sourcePortId == 'A_out_b2' &&
+              c.connectionType == ConnectionType.hardwareInput &&
+              c.sourcePortId == 'hw_in_2' &&
               c.destinationPortId == 'B_in_b2' &&
               c.busNumber == 2,
         ),
         isTrue,
       );
 
-      // Hardware input edges go from hw_in_* to algorithm inputs (already verified above)
+      // No direct algo→algo on physical input buses
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.algorithmToAlgorithm &&
+              c.busNumber == 2,
+        ),
+        isFalse,
+      );
     });
 
-    test('creates algo→algo and hardware output connections on bus 18', () {
+    test('physical output bus 18 uses hw path instead of direct algo→algo', () {
       final a = _FakeRouting(
         id: 'algo_A',
         outputs: [_outPort('A_out_b18', 18)],
@@ -117,7 +127,7 @@ void main() {
 
       final conns = ConnectionDiscoveryService.discoverConnections([a, b]);
 
-      // Hardware output connection from A_out_b18 to hw_out_6 (bus 18 ⇒ 18-12 = 6)
+      // Hardware output connection: A_out_b18 → hw_out_6 (bus 18 ⇒ 18-12 = 6)
       expect(
         conns.any(
           (c) =>
@@ -128,16 +138,26 @@ void main() {
         isTrue,
       );
 
-      // Algo→algo connection exists
+      // Physical output as input: hw_out_6 → B_in_b18
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareInput &&
+              c.busNumber == 18 &&
+              c.sourcePortId == 'hw_out_6' &&
+              c.destinationPortId == 'B_in_b18',
+        ),
+        isTrue,
+      );
+
+      // No direct algo→algo on physical output buses
       expect(
         conns.any(
           (c) =>
               c.connectionType == ConnectionType.algorithmToAlgorithm &&
-              c.busNumber == 18 &&
-              c.sourcePortId == 'A_out_b18' &&
-              c.destinationPortId == 'B_in_b18',
+              c.busNumber == 18,
         ),
-        isTrue,
+        isFalse,
       );
     });
 

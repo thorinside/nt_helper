@@ -70,8 +70,14 @@ class ConnectionDiscoveryService {
       final isHardwareOutput =
           BusSpec.isPhysicalOutput(busNumber) || BusSpec.isEs5(busNumber);
 
-      // Algorithm-to-algorithm: connect only from contributing writers for each reader slot
-      if (outputs.isNotEmpty && inputs.isNotEmpty) {
+      // Algorithm-to-algorithm: connect only from contributing writers for each reader slot.
+      // Skip when the bus is a physical bus (inputs 1-12 or outputs 13-20) AND there are
+      // algorithm outputs — those connections are better represented by the physical path
+      // (writer → hw node → reader). ES-5 and AUX buses use direct algo-to-algo.
+      final isPhysicalBusWithOutputs = outputs.isNotEmpty &&
+          (BusSpec.isPhysicalOutput(busNumber) ||
+           (isHardwareInput && outputs.isNotEmpty));
+      if (outputs.isNotEmpty && inputs.isNotEmpty && !isPhysicalBusWithOutputs) {
         for (final input in inputs) {
           final contributingPortIds = resolver.contributorsForReader(
             busNumber,
@@ -109,18 +115,32 @@ class ConnectionDiscoveryService {
         }
       }
 
-      // Hardware input (buses 1-12): only contributes until first replace before reader
+      // Hardware input (buses 1-12): jack contributes until first replace before reader.
+      // When algorithm outputs also write to this bus, algorithm inputs are connected
+      // through the hw_in node (physical path), so the hardware seed connection still
+      // shows the jack's contribution alongside any algorithm writers.
       if (isHardwareInput && inputs.isNotEmpty) {
         for (final input in inputs) {
           final contributes = resolver.hardwareSeedContributes(
             busNumber,
             input.algorithmIndex,
           );
-          if (!contributes) continue;
+          if (!contributes && outputs.isEmpty) continue;
           connections.addAll(
             _createHardwareInputConnections(busNumber, [input]),
           );
           matchedPorts.add(input.portId);
+        }
+      }
+
+      // Hardware input (buses 1-12): algorithm outputs writing to input buses.
+      // This creates the writer → hw_in_N path (symmetric with output buses).
+      if (isHardwareInput && outputs.isNotEmpty) {
+        connections.addAll(
+          _createHardwareInputWriteConnections(busNumber, outputs),
+        );
+        for (final o in outputs) {
+          matchedPorts.add(o.portId);
         }
       }
 
@@ -134,19 +154,15 @@ class ConnectionDiscoveryService {
         }
       }
 
-      // Hardware output (buses 13-20, ES-5): only from final contributors at end of frame
+      // Hardware output (buses 13-20, ES-5): show all writers as connected.
+      // Multiple Replace writers on the same bus can all contribute in practice
+      // (e.g., step sequencers that write on different clock cycles).
       if (isHardwareOutput && outputs.isNotEmpty) {
-        final finalPortIds = resolver.finalContributors(busNumber);
-        if (finalPortIds.isNotEmpty) {
-          final selectedOutputs = outputs
-              .where((o) => finalPortIds.contains(o.portId))
-              .toList();
-          connections.addAll(
-            _createHardwareOutputConnections(busNumber, selectedOutputs),
-          );
-          for (final o in selectedOutputs) {
-            matchedPorts.add(o.portId);
-          }
+        connections.addAll(
+          _createHardwareOutputConnections(busNumber, outputs),
+        );
+        for (final o in outputs) {
+          matchedPorts.add(o.portId);
         }
       }
     }
@@ -226,6 +242,39 @@ class ConnectionDiscoveryService {
           algorithmIndex: input.algorithmIndex,
           parameterNumber: input.parameterNumber,
           signalType: _toSignalType(input.portType),
+        ),
+      );
+    }
+
+    return connections;
+  }
+
+  /// Creates connections for algorithm outputs writing to hardware input buses (1-12).
+  ///
+  /// This is the symmetric counterpart to _createHardwareOutputConnections:
+  /// algorithms can write to input buses just as they write to output buses.
+  /// The signal path is: algorithm output → hw_in_N.
+  static List<Connection> _createHardwareInputWriteConnections(
+    int busNumber,
+    List<_PortAssignment> outputs,
+  ) {
+    final connections = <Connection>[];
+    final hwPortId = 'hw_in_$busNumber';
+
+    for (final output in outputs) {
+      connections.add(
+        Connection(
+          id: 'conn_${output.portId}_to_$hwPortId',
+          sourcePortId: output.portId,
+          destinationPortId: hwPortId,
+          connectionType: ConnectionType.hardwareOutput,
+          busNumber: busNumber,
+          algorithmId: output.algorithmId,
+          algorithmIndex: output.algorithmIndex,
+          parameterNumber: output.parameterNumber,
+          signalType: _toSignalType(output.portType),
+          isOutput: true,
+          outputMode: output.outputMode,
         ),
       );
     }
