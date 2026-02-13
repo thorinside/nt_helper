@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:bloc/bloc.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
