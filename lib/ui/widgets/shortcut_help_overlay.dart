@@ -48,9 +48,9 @@ class ShortcutHelpOverlay extends StatelessWidget {
                   children: [
                     _buildSection(context, 'Global', [
                       _ShortcutEntry('$_mod+S', 'Save Preset'),
-                      _ShortcutEntry('$_mod+N / +', 'Add Algorithm'),
+                      _ShortcutEntry('$_mod+A', 'Add Algorithm'),
                       _ShortcutEntry('$_mod+O', 'Browse Presets'),
-                      _ShortcutEntry('$_mod+Shift+N', 'New Preset'),
+                      _ShortcutEntry('$_mod+N', 'New Preset'),
                       _ShortcutEntry('$_mod+R', 'Refresh'),
                       _ShortcutEntry('$_mod+1', 'Parameters Mode'),
                       _ShortcutEntry('$_mod+2', 'Routing Mode'),

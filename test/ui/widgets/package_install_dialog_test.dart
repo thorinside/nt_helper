@@ -601,7 +601,7 @@ void main() {
 
       // Should now show button is disabled (0 files)
       final installButton = tester.widget<ElevatedButton>(
-        find.byType(ElevatedButton),
+        find.widgetWithText(ElevatedButton, 'Install 0 Files'),
       );
       expect(installButton.onPressed, isNull);
     });

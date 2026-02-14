@@ -139,14 +139,10 @@ class KeyBindingService {
     const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
         const SavePresetIntent(),
 
-    // Add algorithm: Mod+N / +
-    const SingleActivator(LogicalKeyboardKey.keyN, control: true):
+    // Add algorithm: Mod+A
+    const SingleActivator(LogicalKeyboardKey.keyA, control: true):
         const AddAlgorithmIntent(),
-    const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
-        const AddAlgorithmIntent(),
-    const SingleActivator(LogicalKeyboardKey.add):
-        const AddAlgorithmIntent(),
-    const SingleActivator(LogicalKeyboardKey.numpadAdd):
+    const SingleActivator(LogicalKeyboardKey.keyA, meta: true):
         const AddAlgorithmIntent(),
 
     // Browse presets: Mod+O
@@ -155,10 +151,10 @@ class KeyBindingService {
     const SingleActivator(LogicalKeyboardKey.keyO, meta: true):
         const BrowsePresetsIntent(),
 
-    // New preset: Mod+Shift+N
-    const SingleActivator(LogicalKeyboardKey.keyN, control: true, shift: true):
+    // New preset: Mod+N
+    const SingleActivator(LogicalKeyboardKey.keyN, control: true):
         const NewPresetIntent(),
-    const SingleActivator(LogicalKeyboardKey.keyN, meta: true, shift: true):
+    const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
         const NewPresetIntent(),
 
     // Refresh: Mod+R

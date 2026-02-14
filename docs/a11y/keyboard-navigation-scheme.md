@@ -36,7 +36,7 @@ These work on any screen when no text field is focused.
 | `Mod+S` | Save preset | `SavePresetIntent` | Mirrors every DAW |
 | `Mod+N` | New preset | `NewPresetIntent` | Shows confirmation if algorithms exist |
 | `Mod+O` | Browse/open presets | `BrowsePresetsIntent` | Opens preset browser dialog |
-| `Mod+Shift+N` | Add algorithm | `AddAlgorithmIntent` | Same as FAB button |
+| `Mod+A` | Add algorithm | `AddAlgorithmIntent` | Same as FAB button |
 | `Mod+R` | Refresh | `RefreshIntent` | Re-syncs from hardware |
 | `Mod+,` | Settings | `OpenSettingsIntent` | macOS convention |
 | `Mod+/` or `?` | Show shortcut help | `ShowShortcutHelpIntent` | Overlay listing all shortcuts |
@@ -432,7 +432,7 @@ Accessible via `Mod+/` or `?` (when no text field is focused). Displays a modal 
 │   Mod+S        Save Preset              │
 │   Mod+N        New Preset               │
 │   Mod+O        Browse Presets           │
-│   Mod+Shift+N  Add Algorithm            │
+│   Mod+A        Add Algorithm            │
 │   Mod+R        Refresh                  │
 │   Mod+1/2      Parameters / Routing     │
 │   Mod+[/]      Previous / Next Slot     │
