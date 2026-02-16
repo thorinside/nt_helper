@@ -1925,17 +1925,24 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       if (Platform.isMacOS ||
                           Platform.isWindows ||
                           Platform.isLinux) {
+                        final bindAddress = settings.mcpRemoteConnections
+                            ? InternetAddress.anyIPv4
+                            : InternetAddress.loopbackIPv4;
                         if (isMcpEnabledAfterDialog) {
                           if (!isServerStillRunningBeforeAction) {
-                            await mcpInstance.start().catchError((e) {});
-                          } else {}
+                            await mcpInstance.start(bindAddress: bindAddress).catchError((e) {});
+                          } else {
+                            if (mcpInstance.boundAddress?.address != bindAddress.address) {
+                              await mcpInstance.restart(bindAddress: bindAddress).catchError((e) {});
+                            }
+                          }
                         } else {
                           // MCP Setting is OFF
                           if (isServerStillRunningBeforeAction) {
                             await mcpInstance.stop().catchError((e) {});
-                          } else {}
+                          }
                         }
-                      } else {}
+                      }
                     } else {}
                   },
             child: const Row(

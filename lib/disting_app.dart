@@ -159,7 +159,12 @@ class _DistingPageState extends State<DistingPage> {
           if ((Platform.isMacOS || Platform.isWindows || Platform.isLinux) &&
               settings.mcpEnabled) {
             if (!McpServerService.instance.isRunning) {
-              await McpServerService.instance.start().catchError((e) {});
+              final bindAddress = settings.mcpRemoteConnections
+                  ? InternetAddress.anyIPv4
+                  : InternetAddress.loopbackIPv4;
+              await McpServerService.instance
+                  .start(bindAddress: bindAddress)
+                  .catchError((e) {});
             } else {}
           } else {}
         } catch (e) {
@@ -202,9 +207,17 @@ class _DistingPageState extends State<DistingPage> {
           .isRunning; // Check state *before* explicitly starting/stopping
 
       if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        final bindAddress = settings.mcpRemoteConnections
+            ? InternetAddress.anyIPv4
+            : InternetAddress.loopbackIPv4;
         if (isMcpEnabledAfterDialog) {
           if (!isServerStillRunningBeforeAction) {
-            await mcpInstance.start().catchError((e) {});
+            await mcpInstance.start(bindAddress: bindAddress).catchError((e) {});
+          } else {
+            // Server already running — restart if bind address changed
+            if (mcpInstance.boundAddress?.address != bindAddress.address) {
+              await mcpInstance.restart(bindAddress: bindAddress).catchError((e) {});
+            }
           }
         } else {
           // MCP Setting is OFF

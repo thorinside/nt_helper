@@ -74,8 +74,12 @@ class McpStatusIndicator extends StatelessWidget {
             return;
           }
 
+          final bindAddress = settings.mcpRemoteConnections
+              ? InternetAddress.anyIPv4
+              : InternetAddress.loopbackIPv4;
+
           if (mcpInstance.hasError) {
-            await mcpInstance.start();
+            await mcpInstance.start(bindAddress: bindAddress);
             return;
           }
 
@@ -87,7 +91,7 @@ class McpStatusIndicator extends StatelessWidget {
 
           if (newMcpSetting) {
             if (!isServerCurrentlyRunning) {
-              await mcpInstance.start();
+              await mcpInstance.start(bindAddress: bindAddress);
             }
           } else {
             if (isServerCurrentlyRunning) {

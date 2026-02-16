@@ -1046,6 +1046,7 @@ class _SyntheticHttpRequest extends Stream<Uint8List> implements HttpRequest {
   @override
   final String method = 'POST';
 
+  @override
   late final HttpHeaders headers = _SyntheticHeaders(sessionId: sessionId);
 
   @override
