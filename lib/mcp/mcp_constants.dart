@@ -296,4 +296,12 @@ class MCPUtils {
     }
     return value;
   }
+
+  /// Converts a display-scale value back to raw integer using powerOfTen
+  static int scaleToRaw(num displayValue, int? powerOfTen) {
+    if (powerOfTen != null && powerOfTen > 0) {
+      return (displayValue * pow(10, powerOfTen)).round();
+    }
+    return displayValue.toInt();
+  }
 }

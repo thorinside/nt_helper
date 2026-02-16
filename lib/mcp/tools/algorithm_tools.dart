@@ -846,9 +846,9 @@ class MCPAlgorithmTools {
     final paramJson = {
       'parameter_number': parameterNumber,
       'parameter_name': parameter.name,
-      'value': value.value,
-      'min': parameter.min,
-      'max': parameter.max,
+      'value': MCPUtils.scaleForDisplay(value.value, parameter.powerOfTen),
+      'min': MCPUtils.scaleForDisplay(parameter.min, parameter.powerOfTen),
+      'max': MCPUtils.scaleForDisplay(parameter.max, parameter.powerOfTen),
       'unit': parameter.unit,
       'is_disabled': value.isDisabled,
     };

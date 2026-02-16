@@ -468,9 +468,11 @@ class McpServerService extends ChangeNotifier {
       ),
     );
 
-    // Register MCP tools
-    _registerAlgorithmTools(server, mcpAlgorithmTools, distingTools);
-    _registerDistingTools(server, distingTools);
+    // Register MCP tools — split into individual, well-named tools
+    _registerSearchTools(server, mcpAlgorithmTools, distingTools);
+    _registerShowTools(server, mcpAlgorithmTools);
+    _registerEditTools(server, distingTools);
+    _registerPresetTools(server, distingTools);
 
     // Register and immediately disable a dummy resource to initialize the
     // resources/list handler. Without this, clients that call resources/list
@@ -486,140 +488,389 @@ class McpServerService extends ChangeNotifier {
     return server;
   }
 
-  void _registerAlgorithmTools(McpServer server, MCPAlgorithmTools tools, DistingTools distingTools) {
+  void _registerSearchTools(McpServer server, MCPAlgorithmTools algoTools, DistingTools distingTools) {
     server.registerTool(
-      'search',
+      'search_algorithms',
       description:
-          'Search for algorithms by name/category, or search for parameters within preset/slot. Algorithms use fuzzy matching (70% threshold), parameters use exact/partial name matching.',
+          'Search for algorithms by name/category. Uses fuzzy matching (70% threshold). Returns up to 10 results sorted by relevance.',
       inputSchema: _inputSchema(
         properties: {
-          'target': {
-            'type': 'string',
-            'description': 'What to search for: "algorithm" or "parameter"',
-            'enum': ['algorithm', 'parameter'],
-          },
           'query': {
             'type': 'string',
-            'description':
-                'Search query. For algorithms: name, partial name, or category (fuzzy matching). For parameters: parameter name (case-insensitive).',
-          },
-          'scope': {
-            'type': 'string',
-            'description':
-                'Scope for parameter search: "preset" (all slots) or "slot" (specific slot). Required when target="parameter".',
-            'enum': ['preset', 'slot'],
-          },
-          'slot_index': {
-            'type': 'integer',
-            'description':
-                'Slot index (0-31) for parameter search with scope="slot". Required when target="parameter" and scope="slot".',
-          },
-          'partial_match': {
-            'type': 'boolean',
-            'description':
-                'For parameter search: if true, find parameters containing the query. Default: false (exact match).',
+            'description': 'Search query: algorithm name, partial name, or category.',
           },
         },
-        required: ['target', 'query'],
+        required: ['query'],
       ),
       callback: (args, extra) async {
         try {
-          final target = args['target'] as String?;
-
-          late String resultJson;
-          if (target == 'algorithm') {
-            resultJson = await tools.searchAlgorithms(args).timeout(
-                  const Duration(seconds: 5),
-                  onTimeout: () => jsonEncode({
-                    'success': false,
-                    'error': 'Tool execution timed out after 5 seconds',
-                  }),
-                );
-          } else if (target == 'parameter') {
-            resultJson = await distingTools.searchParameters(args).timeout(
-                  const Duration(seconds: 5),
-                  onTimeout: () => jsonEncode({
-                    'success': false,
-                    'error': 'Tool execution timed out after 5 seconds',
-                  }),
-                );
-          } else {
-            resultJson = jsonEncode({
-              'success': false,
-              'error': 'Invalid target. Must be "algorithm" or "parameter".',
-            });
-          }
-
-          return CallToolResult.fromContent(
-            [TextContent(text: resultJson)],
-          );
+          // searchAlgorithms expects target=algorithm in the args
+          final fullArgs = {...args, 'target': 'algorithm'};
+          final resultJson = await algoTools.searchAlgorithms(fullArgs).timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 5 seconds',
+                }),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
-          final errorJson = jsonEncode({
-            'success': false,
-            'error': 'Tool execution failed: ${e.toString()}',
-          });
-          return CallToolResult.fromContent(
-            [TextContent(text: errorJson)],
-          );
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
         }
       },
     );
 
     server.registerTool(
-      'show',
+      'search_parameters',
       description:
-          'Show preset, slot, parameter, screen, routing, or CPU information. Returns mappings for enabled CV/MIDI/i2c/performance page controls. Disabled mappings omitted from output. See docs/mcp-mapping-guide.md for mapping field details.',
+          'Search for parameters by name within the current preset or a specific slot. Uses exact or partial name matching.',
       inputSchema: _inputSchema(
         properties: {
-          'target': {
+          'query': {
             'type': 'string',
-            'description':
-                'What to display: "preset" (all slots/parameters), "slot" (single slot), "parameter" (single parameter), "screen" (device screenshot), "routing" (signal flow), "cpu" (CPU usage)',
-            'enum': ['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu'],
+            'description': 'Parameter name to search for (case-insensitive).',
           },
-          'identifier': {
-            'type': ['string', 'integer'],
-            'description':
-                'Required for slot/parameter targets. For slot: integer index (0-31). For parameter: "slot_index:parameter_number" (e.g., "0:5")',
-          },
-          'display_mode': {
+          'scope': {
             'type': 'string',
-            'description':
-                'Optional display mode for screen target. Changes hardware display mode before capturing screenshot. Options: "parameter" (hardware parameter list), "algorithm" (custom algorithm interface), "overview" (all slots overview), "vu_meters" (VU meter display)',
-            'enum': ['parameter', 'algorithm', 'overview', 'vu_meters'],
+            'description': 'Search scope: "preset" (all slots) or "slot" (specific slot).',
+            'enum': ['preset', 'slot'],
+          },
+          'slot_index': {
+            'type': 'integer',
+            'description': 'Slot index (0-31). Required when scope is "slot".',
+          },
+          'partial_match': {
+            'type': 'boolean',
+            'description': 'If true, find parameters containing the query. Default: false (exact match).',
           },
         },
-        required: ['target'],
+        required: ['query'],
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.show(args).timeout(
-                const Duration(seconds: 10),
+          final resultJson = await distingTools.searchParameters(args).timeout(
+                const Duration(seconds: 5),
                 onTimeout: () => jsonEncode({
                   'success': false,
-                  'error': 'Tool execution timed out after 10 seconds',
+                  'error': 'Tool execution timed out after 5 seconds',
                 }),
               );
-          return CallToolResult.fromContent(
-            [TextContent(text: resultJson)],
-          );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
-          final errorJson = jsonEncode({
-            'success': false,
-            'error': 'Tool execution failed: ${e.toString()}',
-          });
-          return CallToolResult.fromContent(
-            [TextContent(text: errorJson)],
-          );
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
         }
       },
     );
   }
 
-  void _registerDistingTools(McpServer server, DistingTools tools) {
-    // Register new/edit tools
-    _registerPresetTools(server, tools);
-    _registerUtilityTools(server, tools);
+  void _registerShowTools(McpServer server, MCPAlgorithmTools tools) {
+    server.registerTool(
+      'show_preset',
+      description: 'Show the complete preset with all slots, parameters, and enabled mappings.',
+      inputSchema: _inputSchema(properties: {}),
+      callback: (args, extra) async {
+        try {
+          final resultJson = await tools.showPreset().timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
+
+    server.registerTool(
+      'show_slot',
+      description: 'Show a single slot with its algorithm, parameters, and enabled mappings.',
+      inputSchema: _inputSchema(
+        properties: {
+          'slot_index': {
+            'type': 'integer',
+            'minimum': 0,
+            'maximum': 31,
+            'description': 'Slot index (0-31).',
+          },
+        },
+        required: ['slot_index'],
+      ),
+      callback: (args, extra) async {
+        try {
+          final resultJson = await tools.showSlot(args['slot_index']).timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
+
+    server.registerTool(
+      'show_parameter',
+      description: 'Show a single parameter with its value, range, unit, and enabled mappings.',
+      inputSchema: _inputSchema(
+        properties: {
+          'slot_index': {
+            'type': 'integer',
+            'minimum': 0,
+            'maximum': 31,
+            'description': 'Slot index (0-31).',
+          },
+          'parameter': {
+            'type': 'integer',
+            'description': 'Parameter number (0-based index).',
+          },
+        },
+        required: ['slot_index', 'parameter'],
+      ),
+      callback: (args, extra) async {
+        try {
+          final slotIndex = args['slot_index'] as int;
+          final parameter = args['parameter'] as int;
+          final resultJson = await tools.showParameterByIndex(slotIndex, parameter).timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
+
+    server.registerTool(
+      'show_screen',
+      description: 'Capture and return the current device screen as a base64 JPEG image.',
+      inputSchema: _inputSchema(
+        properties: {
+          'display_mode': {
+            'type': 'string',
+            'description': 'Optional display mode to switch to before capturing. Options: "parameter" (hardware parameter list), "algorithm" (custom algorithm interface), "overview" (all slots overview), "vu_meters" (VU meter display)',
+            'enum': ['parameter', 'algorithm', 'overview', 'vu_meters'],
+          },
+        },
+      ),
+      callback: (args, extra) async {
+        try {
+          final resultJson = await tools.showScreen(displayMode: args['display_mode']).timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
+
+    server.registerTool(
+      'show_routing',
+      description: 'Show the current signal routing state with input/output bus assignments for all slots.',
+      inputSchema: _inputSchema(properties: {}),
+      callback: (args, extra) async {
+        try {
+          final resultJson = await tools.showRouting().timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
+
+    server.registerTool(
+      'show_cpu',
+      description: 'Show CPU usage for the device and per-slot usage breakdown.',
+      inputSchema: _inputSchema(properties: {}),
+      callback: (args, extra) async {
+        try {
+          final resultJson = await tools.showCpu().timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
+  }
+
+  void _registerEditTools(McpServer server, DistingTools tools) {
+    server.registerTool(
+      'edit_preset',
+      description: 'Edit the entire preset state including name and all slots. WARNING: Replaces the full preset.',
+      inputSchema: _inputSchema(
+        properties: {
+          'data': {
+            'type': 'object',
+            'description': 'Full preset data with name and slots array.',
+            'properties': {
+              'name': {
+                'type': 'string',
+                'description': 'Preset name',
+              },
+              'slots': {
+                'type': 'array',
+                'description': 'Array of slot objects with algorithm and parameters',
+              },
+            },
+          },
+        },
+        required: ['data'],
+      ),
+      callback: (args, extra) async {
+        try {
+          final fullArgs = {...args, 'target': 'preset'};
+          final resultJson = await tools.editPreset(fullArgs);
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
+
+    server.registerTool(
+      'edit_slot',
+      description: 'Edit a specific slot: change algorithm, set parameters, or rename. Device must be in connected mode.',
+      inputSchema: _inputSchema(
+        properties: {
+          'slot_index': {
+            'type': 'integer',
+            'minimum': 0,
+            'maximum': 31,
+            'description': 'Slot index (0-31).',
+          },
+          'data': {
+            'type': 'object',
+            'description': 'Slot data with optional algorithm, parameters, and name.',
+            'properties': {
+              'algorithm': {
+                'type': 'object',
+                'description': 'Algorithm specification (guid or name, plus optional specifications)',
+                'properties': {
+                  'guid': {'type': 'string', 'description': 'Algorithm GUID'},
+                  'name': {'type': 'string', 'description': 'Algorithm name (fuzzy matching)'},
+                  'specifications': {
+                    'type': 'array',
+                    'description': 'Algorithm-specific specification values',
+                    'items': {'type': 'object'},
+                  },
+                },
+              },
+              'name': {'type': 'string', 'description': 'Custom slot name'},
+              'parameters': {
+                'type': 'array',
+                'description': 'Array of parameter objects with values and/or mappings',
+                'items': {
+                  'type': 'object',
+                  'properties': {
+                    'parameter_number': {'type': 'integer', 'description': 'Parameter index'},
+                    'value': {'type': 'number', 'description': 'Parameter value'},
+                    'mapping': {'type': 'object', 'description': 'Mapping with CV, MIDI, i2c, and performance page fields'},
+                  },
+                },
+              },
+            },
+          },
+        },
+        required: ['slot_index', 'data'],
+      ),
+      callback: (args, extra) async {
+        try {
+          final fullArgs = {...args, 'target': 'slot'};
+          final resultJson = await tools.editSlot(fullArgs);
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
+
+    server.registerTool(
+      'edit_parameter',
+      description: 'Edit a single parameter value and/or mapping. Device must be in connected mode.',
+      inputSchema: _inputSchema(
+        properties: {
+          'slot_index': {
+            'type': 'integer',
+            'minimum': 0,
+            'maximum': 31,
+            'description': 'Slot index (0-31).',
+          },
+          'parameter': {
+            'description': 'Parameter identifier: integer number (0-based) or string name.',
+            'oneOf': [
+              {'type': 'string'},
+              {'type': 'integer'},
+            ],
+          },
+          'value': {
+            'type': 'number',
+            'description': 'Parameter value in display scale (same as returned by show tools). Automatically converted to raw hardware value. If omitted, mapping must be provided.',
+          },
+          'mapping': {
+            'type': 'object',
+            'description': 'Parameter mapping with CV, MIDI, i2c, and performance page controls. Supports partial updates.',
+            'properties': {
+              'cv': {
+                'type': 'object',
+                'description': 'CV mapping: source, cv_input (0-12), is_unipolar, is_gate, volts, delta',
+              },
+              'midi': {
+                'type': 'object',
+                'description': 'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128), midi_type, is_midi_symmetric, is_midi_relative, midi_min, midi_max',
+              },
+              'i2c': {
+                'type': 'object',
+                'description': 'i2c mapping: is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max',
+              },
+              'performance_page': {
+                'type': 'integer',
+                'description': 'Performance page index (0=not assigned, 1-15=page number)',
+              },
+            },
+          },
+        },
+        required: ['slot_index', 'parameter'],
+      ),
+      callback: (args, extra) async {
+        try {
+          // editParameter reads slot_index, parameter, value, mapping directly
+          final resultJson = await tools.editParameter(args);
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
+      },
+    );
   }
 
   void _registerPresetTools(McpServer server, DistingTools tools) {
@@ -737,250 +988,6 @@ class McpServerService extends ChangeNotifier {
         );
       },
     );
-
-    server.registerTool(
-      'edit',
-      description:
-          'Edit preset, slot, or parameter with appropriate granularity. Target "preset": full preset state. Target "slot": specific slot with algorithm/parameters. Target "parameter": individual parameter value/mapping. Device must be in connected mode.',
-      inputSchema: _inputSchema(
-        properties: {
-          'target': {
-            'type': 'string',
-            'enum': ['preset', 'slot', 'parameter'],
-            'description': 'Target type: "preset" for full preset, "slot" for slot-level, "parameter" for parameter-level edits',
-          },
-          'slot_index': {
-            'type': 'integer',
-            'minimum': 0,
-            'maximum': 31,
-            'description': 'Slot index (0-31)',
-          },
-          'parameter': {
-            'description':
-                'For target "parameter": parameter identifier (string name or integer number, 0-based). Required for parameter target.',
-            'oneOf': [
-              {'type': 'string'},
-              {'type': 'integer'},
-            ],
-          },
-          'value': {
-            'type': 'number',
-            'description':
-                'For target "parameter": optional parameter value. If omitted, mapping must be provided.',
-          },
-          'mapping': {
-            'type': 'object',
-            'description':
-                'Parameter mapping with CV, MIDI, i2c, and performance page controls. Supports partial updates (e.g., update only MIDI, preserve CV/i2c). See docs/mcp-mapping-guide.md for complete field documentation and examples.',
-            'properties': {
-              'cv': {
-                'type': 'object',
-                'description': 'CV mapping: source (algorithm output index), cv_input (0-12), is_unipolar (boolean), is_gate (boolean), volts (0-127), delta (sensitivity). See mapping guide.',
-                'properties': {
-                  'source': {
-                    'type': 'integer',
-                    'description': 'Algorithm output index to observe (0=not used)',
-                  },
-                  'cv_input': {
-                    'type': 'integer',
-                    'description': 'Physical CV input (0=disabled, 1-12=inputs)',
-                  },
-                  'is_unipolar': {
-                    'type': 'boolean',
-                    'description': 'Voltage range: true=unipolar (0-10V), false=bipolar (-5V to +5V)',
-                  },
-                  'is_gate': {
-                    'type': 'boolean',
-                    'description': 'Gate/trigger mode for this CV input',
-                  },
-                  'volts': {
-                    'type': 'integer',
-                    'description': 'Voltage scaling factor (0-127)',
-                  },
-                  'delta': {
-                    'type': 'integer',
-                    'description': 'Sensitivity/responsiveness (0-1000+)',
-                  },
-                },
-              },
-              'midi': {
-                'type': 'object',
-                'description': 'MIDI mapping: is_midi_enabled (boolean), midi_channel (0-15), midi_type (cc|note_momentary|note_toggle|cc_14bit_low|cc_14bit_high), midi_cc (0-128), is_midi_symmetric (boolean), is_midi_relative (boolean), midi_min (0), midi_max (127). See mapping guide.',
-                'properties': {
-                  'is_midi_enabled': {
-                    'type': 'boolean',
-                    'description': 'Enable/disable MIDI control',
-                  },
-                  'midi_channel': {
-                    'type': 'integer',
-                    'description': 'MIDI channel (0-15, where 0=channel 1, 15=channel 16)',
-                  },
-                  'midi_type': {
-                    'type': 'string',
-                    'enum': [
-                      'cc',
-                      'note_momentary',
-                      'note_toggle',
-                      'cc_14bit_low',
-                      'cc_14bit_high',
-                    ],
-                    'description': 'Type of MIDI message',
-                  },
-                  'midi_cc': {
-                    'type': 'integer',
-                    'description': 'MIDI CC number (0-127) or 128 for aftertouch',
-                  },
-                  'is_midi_symmetric': {
-                    'type': 'boolean',
-                    'description': 'Symmetric scaling around center value',
-                  },
-                  'is_midi_relative': {
-                    'type': 'boolean',
-                    'description': 'Relative mode for incremental changes',
-                  },
-                  'midi_min': {
-                    'type': 'integer',
-                    'description': 'Minimum value for scaling (typically 0)',
-                  },
-                  'midi_max': {
-                    'type': 'integer',
-                    'description': 'Maximum value for scaling (typically 127)',
-                  },
-                },
-              },
-              'i2c': {
-                'type': 'object',
-                'description': 'i2c mapping: is_i2c_enabled (boolean), i2c_cc (0-255), is_i2c_symmetric (boolean), i2c_min (0+), i2c_max (0+). See mapping guide.',
-                'properties': {
-                  'is_i2c_enabled': {
-                    'type': 'boolean',
-                    'description': 'Enable/disable i2c control',
-                  },
-                  'i2c_cc': {
-                    'type': 'integer',
-                    'description': 'i2c CC number (0-255)',
-                  },
-                  'is_i2c_symmetric': {
-                    'type': 'boolean',
-                    'description': 'Symmetric scaling around center value',
-                  },
-                  'i2c_min': {
-                    'type': 'integer',
-                    'description': 'Minimum value for scaling range',
-                  },
-                  'i2c_max': {
-                    'type': 'integer',
-                    'description': 'Maximum value for scaling range',
-                  },
-                },
-              },
-              'performance_page': {
-                'type': 'integer',
-                'description': 'Performance page index (0=not assigned, 1-15=page number). See mapping guide.',
-              },
-            },
-          },
-          'data': {
-            'type': 'object',
-            'description':
-                'Data payload varies by target. For "preset": full preset with name and slots array. For "slot": slot state with optional algorithm, parameters, and name. For "parameter": omit this field (use value/mapping instead).',
-            'properties': {
-              'algorithm': {
-                'type': 'object',
-                'description':
-                    'Optional algorithm specification (guid or name, plus optional specifications)',
-                'properties': {
-                  'guid': {
-                    'type': 'string',
-                    'description': 'Algorithm GUID',
-                  },
-                  'name': {
-                    'type': 'string',
-                    'description': 'Algorithm name (fuzzy matching)',
-                  },
-                  'specifications': {
-                    'type': 'array',
-                    'description': 'Algorithm-specific specification values',
-                    'items': {'type': 'object'},
-                  },
-                },
-              },
-              'name': {
-                'type': 'string',
-                'description': 'Optional custom slot name',
-              },
-              'parameters': {
-                'type': 'array',
-                'description': 'Array of parameter objects with optional values and mappings',
-                'items': {
-                  'type': 'object',
-                  'properties': {
-                    'parameter_number': {
-                      'type': 'integer',
-                      'description': 'Parameter index',
-                    },
-                    'value': {
-                      'type': 'number',
-                      'description': 'Optional parameter value',
-                    },
-                    'mapping': {
-                      'type': 'object',
-                      'description':
-                          'Optional mapping with CV, MIDI, i2c, and performance page fields. Supports partial updates. See docs/mcp-mapping-guide.md for field details.',
-                      'properties': {
-                        'cv': {
-                          'type': 'object',
-                          'description': 'CV mapping: source, cv_input (0-12), is_unipolar, is_gate, volts, delta',
-                        },
-                        'midi': {
-                          'type': 'object',
-                          'description':
-                              'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128), midi_type (cc|note_momentary|note_toggle|cc_14bit_low|cc_14bit_high), is_midi_symmetric, is_midi_relative, midi_min, midi_max',
-                        },
-                        'i2c': {
-                          'type': 'object',
-                          'description': 'i2c mapping: is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max',
-                        },
-                        'performance_page': {
-                          'type': 'integer',
-                          'description': 'Performance page index (0=not assigned, 1-15=page number)',
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        required: ['target'],
-      ),
-      callback: (args, extra) async {
-        final target = args['target'] as String?;
-        String resultJson;
-
-        if (target == 'preset') {
-          // Edit entire preset
-          resultJson = await tools.editPreset(args);
-        } else if (target == 'slot' || target == 'parameter') {
-          // Edit slot or parameter
-          resultJson = await tools.editSlot(args);
-        } else {
-          resultJson = jsonEncode({
-            'success': false,
-            'error': 'Invalid target. Must be "preset", "slot", or "parameter"',
-          });
-        }
-
-        return CallToolResult.fromContent(
-          [TextContent(text: resultJson)],
-        );
-      },
-    );
-  }
-
-  void _registerUtilityTools(McpServer server, DistingTools tools) {
-    // Utility tools can be added here as needed
   }
 
   /// Create a new transport and connect server following example pattern
@@ -1065,7 +1072,6 @@ class _LoggingTransport implements Transport {
   @override
   String? get sessionId => _inner.sessionId;
 
-  @override
   set sessionId(String? value) => _inner.sessionId = value;
 
   @override

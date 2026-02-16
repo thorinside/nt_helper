@@ -3199,7 +3199,8 @@ class DistingTools {
 
       final ParameterInfo paramInfo = parameters[parameterNumber!];
 
-      // Step 5: Validate value (if provided)
+      // Step 5: Validate value (if provided) — convert display→raw
+      int? rawValue;
       if (value != null) {
         if (value is! num) {
           return jsonEncode(
@@ -3209,12 +3210,14 @@ class DistingTools {
           );
         }
 
-        final numValue = value.toInt();
-        if (numValue < paramInfo.min || numValue > paramInfo.max) {
+        rawValue = MCPUtils.scaleToRaw(value, paramInfo.powerOfTen);
+        if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
+          final displayMin = _scaleForDisplay(paramInfo.min, paramInfo.powerOfTen);
+          final displayMax = _scaleForDisplay(paramInfo.max, paramInfo.powerOfTen);
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
-                'Value $numValue out of range for parameter "$parameterName" (${paramInfo.min}-${paramInfo.max})',
+                'Value $value out of range for parameter "$parameterName" ($displayMin-$displayMax)',
               ),
             ),
           );
@@ -3235,12 +3238,12 @@ class DistingTools {
       }
 
       // Step 7: Apply changes
-      // Update value if provided
-      if (value != null) {
+      // Update value if provided (use raw value converted from display scale)
+      if (value != null && rawValue != null) {
         await _controller.updateParameterValue(
           slotIndex,
           parameterNumber,
-          value.toInt(),
+          rawValue,
         );
       }
 
