@@ -283,11 +283,18 @@ class MCPAlgorithmTools {
     final List<_SearchResult> results = [];
     final lowerQuery = query.toLowerCase();
 
+    // Run BM25 text search once for all algorithms
+    final textScores = _metadataService.searchIndex.search(lowerQuery);
+
     for (final algorithm in algorithms) {
-      double score = _calculateSearchScore(algorithm, lowerQuery);
+      double score = _calculateSearchScore(
+        algorithm,
+        lowerQuery,
+        textScore: textScores[algorithm.guid],
+      );
 
       // Only include results that meet minimum threshold
-      if (score >= 50) {
+      if (score >= 30) {
         results.add(
           _SearchResult(
             algorithm: algorithm,
@@ -340,10 +347,17 @@ class MCPAlgorithmTools {
 
   /// Calculate relevance score for algorithm based on query.
   /// Returns score between 0-100.
-  /// Exact name match = 100
-  /// High similarity (>=70%) = 70-99
-  /// Category match = 50-69
-  double _calculateSearchScore(AlgorithmMetadata algorithm, String lowerQuery) {
+  /// Score ranges:
+  ///   Exact GUID/name = 100
+  ///   Partial name (contains) = 85
+  ///   Fuzzy name (>=70% Levenshtein) = 70-84
+  ///   Text search (BM25) = 30-69
+  ///   Category fuzzy match = 20-29
+  double _calculateSearchScore(
+    AlgorithmMetadata algorithm,
+    String lowerQuery, {
+    double? textScore,
+  }) {
     final lowerName = algorithm.name.toLowerCase();
 
     // Exact GUID match = 100
@@ -361,20 +375,23 @@ class MCPAlgorithmTools {
       return 85.0;
     }
 
-    // Fuzzy name matching >= 70% similarity = 70-99
+    // Fuzzy name matching >= 70% similarity = 70-84
     final similarity = MCPUtils.similarity(algorithm.name, lowerQuery);
     if (similarity >= 0.70) {
-      // Map similarity range [0.70, 1.0] to score range [70, 99]
-      final score = 70.0 + (similarity - 0.70) * (99.0 - 70.0) / (1.0 - 0.70);
+      final score = 70.0 + (similarity - 0.70) * (84.0 - 70.0) / (1.0 - 0.70);
       return score;
     }
 
-    // Category match = 50-69
+    // BM25 text search = 30-69
+    if (textScore != null && textScore > 0) {
+      return 30.0 + textScore * 39.0;
+    }
+
+    // Category fuzzy match = 20-29
     for (final category in algorithm.categories) {
       final catSimilarity = MCPUtils.similarity(category, lowerQuery);
       if (catSimilarity >= 0.70 || category.toLowerCase().contains(lowerQuery)) {
-        // Category match gets lower score than name match
-        return 60.0 + (catSimilarity * 9.0);
+        return 20.0 + (catSimilarity * 9.0);
       }
     }
 
@@ -477,17 +494,17 @@ class MCPAlgorithmTools {
 
       switch (target.toLowerCase()) {
         case 'preset':
-          return _showPreset();
+          return showPreset();
         case 'slot':
-          return _showSlot(identifier);
+          return showSlot(identifier);
         case 'parameter':
-          return _showParameter(identifier);
+          return showParameter(identifier);
         case 'screen':
-          return _showScreen(displayMode: displayMode);
+          return showScreen(displayMode: displayMode);
         case 'routing':
-          return _showRouting();
+          return showRouting();
         case 'cpu':
-          return _showCpu();
+          return showCpu();
         default:
           return jsonEncode(
             convertToSnakeCaseKeys({
@@ -508,7 +525,7 @@ class MCPAlgorithmTools {
   }
 
   /// Show complete preset with all slots, parameters, and enabled mappings.
-  Future<String> _showPreset() async {
+  Future<String> showPreset() async {
     final state = _distingCubit.state;
     if (state is! DistingStateSynchronized) {
       return jsonEncode(
@@ -537,7 +554,7 @@ class MCPAlgorithmTools {
   }
 
   /// Show single slot with all parameters and enabled mappings.
-  Future<String> _showSlot(dynamic identifier) async {
+  Future<String> showSlot(dynamic identifier) async {
     if (identifier == null) {
       return jsonEncode(
         convertToSnakeCaseKeys({
@@ -587,12 +604,14 @@ class MCPAlgorithmTools {
       );
     }
 
-    final slot = state.slots[slotIndex];
+    var slot = state.slots[slotIndex];
+    slot = await _ensureSlotReady(slotIndex, slot);
     return jsonEncode(convertToSnakeCaseKeys(_buildSlotJson(slotIndex, slot)));
   }
 
   /// Show single parameter with value and optional mapping.
-  Future<String> _showParameter(dynamic identifier) async {
+  /// Accepts identifier in "slot_index:parameter_number" format.
+  Future<String> showParameter(dynamic identifier) async {
     if (identifier == null) {
       return jsonEncode(
         convertToSnakeCaseKeys({
@@ -687,8 +706,14 @@ class MCPAlgorithmTools {
     return jsonEncode(convertToSnakeCaseKeys(paramJson));
   }
 
+  /// Show single parameter by separate slot_index and parameter number.
+  /// Used by the split `show_parameter` tool.
+  Future<String> showParameterByIndex(int slotIndex, int parameterNumber) async {
+    return showParameter('$slotIndex:$parameterNumber');
+  }
+
   /// Show current device screen as base64 JPEG image.
-  Future<String> _showScreen({dynamic displayMode}) async {
+  Future<String> showScreen({dynamic displayMode}) async {
     try {
       // Validate display_mode parameter first, before checking device state
       if (displayMode != null && displayMode is String) {
@@ -758,7 +783,7 @@ class MCPAlgorithmTools {
   }
 
   /// Show current routing state using physical names.
-  Future<String> _showRouting() async {
+  Future<String> showRouting() async {
     try {
       // Reuse existing routing implementation
       return await getCurrentRoutingState({});
@@ -770,6 +795,25 @@ class MCPAlgorithmTools {
         }),
       );
     }
+  }
+
+  /// Ensure a slot has real parameter data, not an optimistic placeholder.
+  /// Force-refreshes from hardware/offline data if parameters are empty.
+  Future<Slot> _ensureSlotReady(int slotIndex, Slot slot) async {
+    if (slot.parameters.isNotEmpty) return slot;
+
+    try {
+      await _distingCubit.refreshSlot(slotIndex);
+      final currentState = _distingCubit.state;
+      if (currentState is DistingStateSynchronized &&
+          slotIndex < currentState.slots.length) {
+        return currentState.slots[slotIndex];
+      }
+    } catch (_) {
+      // Slot may genuinely have no parameters
+    }
+
+    return slot;
   }
 
   /// Build JSON representation of a slot with all parameters and enabled mappings.
@@ -895,7 +939,7 @@ class MCPAlgorithmTools {
     }
   }
 
-  Future<String> _showCpu() async {
+  Future<String> showCpu() async {
     try {
       final state = _distingCubit.state;
       if (state is! DistingStateSynchronized) {

@@ -2315,6 +2315,23 @@ class DistingTools {
         }
       }
 
+      // Ensure all slots have real parameter data before responding.
+      // The cubit's addAlgorithm uses optimistic placeholders with empty
+      // parameters, and verification can get cancelled when multiple
+      // algorithms are added in sequence. Force-refresh any incomplete slots.
+      final currentState = _distingCubit.state;
+      if (currentState is DistingStateSynchronized) {
+        for (int i = 0; i < currentState.slots.length; i++) {
+          if (currentState.slots[i].parameters.isEmpty) {
+            try {
+              await _distingCubit.refreshSlot(i);
+            } catch (_) {
+              // Slot may genuinely have no parameters
+            }
+          }
+        }
+      }
+
       // Step 6: Query current preset state
       try {
         final presetName = await _controller.getCurrentPresetName();
@@ -4132,8 +4149,18 @@ class DistingTools {
       for (int i = 0; i < maxSlots; i++) {
         final algorithm = slotAlgorithms[i];
         if (algorithm != null) {
-          final List<ParameterInfo> parameterInfos = await _controller
+          List<ParameterInfo> parameterInfos = await _controller
               .getParametersForSlot(i);
+
+          // Force refresh slot if parameters haven't loaded yet
+          if (parameterInfos.isEmpty) {
+            try {
+              await _distingCubit.refreshSlot(i);
+              parameterInfos = await _controller.getParametersForSlot(i);
+            } catch (_) {
+              // Best effort
+            }
+          }
 
           final matchingParams = _findMatchingParameters(
             parameterInfos,
