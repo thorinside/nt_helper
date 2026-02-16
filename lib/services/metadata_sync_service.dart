@@ -20,10 +20,10 @@ class MetadataSyncService {
 
   MetadataSyncService(this._distingManager, this._database);
 
-  /// Factory GUIDs are strictly lowercase alphanumeric (e.g. `spcn`, `env2`).
-  /// Community plugin GUIDs contain uppercase letters (e.g. `TEST`, `MNPL`).
+  /// Factory GUIDs are lowercase alphanumeric, possibly space-padded to 4 chars
+  /// (e.g. `spcn`, `env2`, `lfo `). Community plugins use uppercase (e.g. `TEST`).
   static bool _isFactoryGuid(String guid) =>
-      RegExp(r'^[a-z0-9]+$').hasMatch(guid);
+      RegExp(r'^[a-z0-9 ]+$').hasMatch(guid);
 
   Future<FirmwareVersion> _requestFirmwareVersionSafe() async {
     try {
