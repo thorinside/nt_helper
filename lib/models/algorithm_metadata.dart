@@ -64,6 +64,9 @@ sealed class AlgorithmMetadata with _$AlgorithmMetadata {
     required String name,
     required List<String> categories,
     required String description,
+    @JsonKey(name: 'short_description') String? shortDescription,
+    @JsonKey(name: 'gui_description') String? guiDescription,
+    @JsonKey(name: 'use_cases') @Default([]) List<String> useCases,
     @Default([]) List<AlgorithmSpecification> specifications,
     @JsonKey(fromJson: _parametersFromJson)
     @Default([])

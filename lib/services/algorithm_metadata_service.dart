@@ -4,6 +4,7 @@ import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/models/algorithm_feature.dart';
 import 'package:nt_helper/models/algorithm_parameter.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/services/algorithm_text_search_index.dart';
 import 'package:nt_helper/services/metadata_import_service.dart';
 import 'package:nt_helper/services/metadata_upgrade_service.dart';
 
@@ -16,6 +17,7 @@ class AlgorithmMetadataService {
 
   final Map<String, AlgorithmMetadata> _algorithms = {};
   final Map<String, AlgorithmFeature> _features = {};
+  AlgorithmTextSearchIndex? _searchIndex;
   bool _isInitialized = false;
 
   // --- Initialization ---
@@ -33,6 +35,8 @@ class AlgorithmMetadataService {
     await _loadAlgorithms();
 
     await _mergeSyncedAlgorithms(database);
+
+    _buildSearchIndex();
 
     _isInitialized = true;
   }
@@ -172,6 +176,18 @@ class AlgorithmMetadataService {
     }
     if (mergedCount > 0) {
     } else {}
+  }
+
+  void _buildSearchIndex() {
+    _searchIndex = AlgorithmTextSearchIndex();
+    _searchIndex!.buildIndex(_algorithms.values.toList());
+  }
+
+  AlgorithmTextSearchIndex get searchIndex {
+    if (_searchIndex == null) {
+      _buildSearchIndex();
+    }
+    return _searchIndex!;
   }
 
   // --- Public Access Methods ---

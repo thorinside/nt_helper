@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AlgorithmMetadata {
 
- String get guid; String get name; List<String> get categories; String get description; List<AlgorithmSpecification> get specifications;@JsonKey(fromJson: _parametersFromJson) List<AlgorithmParameter> get parameters; List<String> get features;// List of feature GUIDs
+ String get guid; String get name; List<String> get categories; String get description;@JsonKey(name: 'short_description') String? get shortDescription;@JsonKey(name: 'gui_description') String? get guiDescription;@JsonKey(name: 'use_cases') List<String> get useCases; List<AlgorithmSpecification> get specifications;@JsonKey(fromJson: _parametersFromJson) List<AlgorithmParameter> get parameters; List<String> get features;// List of feature GUIDs
 @JsonKey(name: 'input_ports', fromJson: _portsFromJson) List<AlgorithmPort> get inputPorts;@JsonKey(name: 'output_ports', fromJson: _portsFromJson) List<AlgorithmPort> get outputPorts;
 /// Create a copy of AlgorithmMetadata
 /// with the given fields replaced by the non-null parameter values.
@@ -29,16 +29,16 @@ $AlgorithmMetadataCopyWith<AlgorithmMetadata> get copyWith => _$AlgorithmMetadat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AlgorithmMetadata&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.categories, categories)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.specifications, specifications)&&const DeepCollectionEquality().equals(other.parameters, parameters)&&const DeepCollectionEquality().equals(other.features, features)&&const DeepCollectionEquality().equals(other.inputPorts, inputPorts)&&const DeepCollectionEquality().equals(other.outputPorts, outputPorts));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AlgorithmMetadata&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.categories, categories)&&(identical(other.description, description) || other.description == description)&&(identical(other.shortDescription, shortDescription) || other.shortDescription == shortDescription)&&(identical(other.guiDescription, guiDescription) || other.guiDescription == guiDescription)&&const DeepCollectionEquality().equals(other.useCases, useCases)&&const DeepCollectionEquality().equals(other.specifications, specifications)&&const DeepCollectionEquality().equals(other.parameters, parameters)&&const DeepCollectionEquality().equals(other.features, features)&&const DeepCollectionEquality().equals(other.inputPorts, inputPorts)&&const DeepCollectionEquality().equals(other.outputPorts, outputPorts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,guid,name,const DeepCollectionEquality().hash(categories),description,const DeepCollectionEquality().hash(specifications),const DeepCollectionEquality().hash(parameters),const DeepCollectionEquality().hash(features),const DeepCollectionEquality().hash(inputPorts),const DeepCollectionEquality().hash(outputPorts));
+int get hashCode => Object.hash(runtimeType,guid,name,const DeepCollectionEquality().hash(categories),description,shortDescription,guiDescription,const DeepCollectionEquality().hash(useCases),const DeepCollectionEquality().hash(specifications),const DeepCollectionEquality().hash(parameters),const DeepCollectionEquality().hash(features),const DeepCollectionEquality().hash(inputPorts),const DeepCollectionEquality().hash(outputPorts));
 
 @override
 String toString() {
-  return 'AlgorithmMetadata(guid: $guid, name: $name, categories: $categories, description: $description, specifications: $specifications, parameters: $parameters, features: $features, inputPorts: $inputPorts, outputPorts: $outputPorts)';
+  return 'AlgorithmMetadata(guid: $guid, name: $name, categories: $categories, description: $description, shortDescription: $shortDescription, guiDescription: $guiDescription, useCases: $useCases, specifications: $specifications, parameters: $parameters, features: $features, inputPorts: $inputPorts, outputPorts: $outputPorts)';
 }
 
 
@@ -49,7 +49,7 @@ abstract mixin class $AlgorithmMetadataCopyWith<$Res>  {
   factory $AlgorithmMetadataCopyWith(AlgorithmMetadata value, $Res Function(AlgorithmMetadata) _then) = _$AlgorithmMetadataCopyWithImpl;
 @useResult
 $Res call({
- String guid, String name, List<String> categories, String description, List<AlgorithmSpecification> specifications,@JsonKey(fromJson: _parametersFromJson) List<AlgorithmParameter> parameters, List<String> features,@JsonKey(name: 'input_ports', fromJson: _portsFromJson) List<AlgorithmPort> inputPorts,@JsonKey(name: 'output_ports', fromJson: _portsFromJson) List<AlgorithmPort> outputPorts
+ String guid, String name, List<String> categories, String description,@JsonKey(name: 'short_description') String? shortDescription,@JsonKey(name: 'gui_description') String? guiDescription,@JsonKey(name: 'use_cases') List<String> useCases, List<AlgorithmSpecification> specifications,@JsonKey(fromJson: _parametersFromJson) List<AlgorithmParameter> parameters, List<String> features,@JsonKey(name: 'input_ports', fromJson: _portsFromJson) List<AlgorithmPort> inputPorts,@JsonKey(name: 'output_ports', fromJson: _portsFromJson) List<AlgorithmPort> outputPorts
 });
 
 
@@ -66,13 +66,16 @@ class _$AlgorithmMetadataCopyWithImpl<$Res>
 
 /// Create a copy of AlgorithmMetadata
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? guid = null,Object? name = null,Object? categories = null,Object? description = null,Object? specifications = null,Object? parameters = null,Object? features = null,Object? inputPorts = null,Object? outputPorts = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? guid = null,Object? name = null,Object? categories = null,Object? description = null,Object? shortDescription = freezed,Object? guiDescription = freezed,Object? useCases = null,Object? specifications = null,Object? parameters = null,Object? features = null,Object? inputPorts = null,Object? outputPorts = null,}) {
   return _then(_self.copyWith(
 guid: null == guid ? _self.guid : guid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,categories: null == categories ? _self.categories : categories // ignore: cast_nullable_to_non_nullable
 as List<String>,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String,specifications: null == specifications ? _self.specifications : specifications // ignore: cast_nullable_to_non_nullable
+as String,shortDescription: freezed == shortDescription ? _self.shortDescription : shortDescription // ignore: cast_nullable_to_non_nullable
+as String?,guiDescription: freezed == guiDescription ? _self.guiDescription : guiDescription // ignore: cast_nullable_to_non_nullable
+as String?,useCases: null == useCases ? _self.useCases : useCases // ignore: cast_nullable_to_non_nullable
+as List<String>,specifications: null == specifications ? _self.specifications : specifications // ignore: cast_nullable_to_non_nullable
 as List<AlgorithmSpecification>,parameters: null == parameters ? _self.parameters : parameters // ignore: cast_nullable_to_non_nullable
 as List<AlgorithmParameter>,features: null == features ? _self.features : features // ignore: cast_nullable_to_non_nullable
 as List<String>,inputPorts: null == inputPorts ? _self.inputPorts : inputPorts // ignore: cast_nullable_to_non_nullable
@@ -159,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String guid,  String name,  List<String> categories,  String description,  List<AlgorithmSpecification> specifications, @JsonKey(fromJson: _parametersFromJson)  List<AlgorithmParameter> parameters,  List<String> features, @JsonKey(name: 'input_ports', fromJson: _portsFromJson)  List<AlgorithmPort> inputPorts, @JsonKey(name: 'output_ports', fromJson: _portsFromJson)  List<AlgorithmPort> outputPorts)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String guid,  String name,  List<String> categories,  String description, @JsonKey(name: 'short_description')  String? shortDescription, @JsonKey(name: 'gui_description')  String? guiDescription, @JsonKey(name: 'use_cases')  List<String> useCases,  List<AlgorithmSpecification> specifications, @JsonKey(fromJson: _parametersFromJson)  List<AlgorithmParameter> parameters,  List<String> features, @JsonKey(name: 'input_ports', fromJson: _portsFromJson)  List<AlgorithmPort> inputPorts, @JsonKey(name: 'output_ports', fromJson: _portsFromJson)  List<AlgorithmPort> outputPorts)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AlgorithmMetadata() when $default != null:
-return $default(_that.guid,_that.name,_that.categories,_that.description,_that.specifications,_that.parameters,_that.features,_that.inputPorts,_that.outputPorts);case _:
+return $default(_that.guid,_that.name,_that.categories,_that.description,_that.shortDescription,_that.guiDescription,_that.useCases,_that.specifications,_that.parameters,_that.features,_that.inputPorts,_that.outputPorts);case _:
   return orElse();
 
 }
@@ -180,10 +183,10 @@ return $default(_that.guid,_that.name,_that.categories,_that.description,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String guid,  String name,  List<String> categories,  String description,  List<AlgorithmSpecification> specifications, @JsonKey(fromJson: _parametersFromJson)  List<AlgorithmParameter> parameters,  List<String> features, @JsonKey(name: 'input_ports', fromJson: _portsFromJson)  List<AlgorithmPort> inputPorts, @JsonKey(name: 'output_ports', fromJson: _portsFromJson)  List<AlgorithmPort> outputPorts)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String guid,  String name,  List<String> categories,  String description, @JsonKey(name: 'short_description')  String? shortDescription, @JsonKey(name: 'gui_description')  String? guiDescription, @JsonKey(name: 'use_cases')  List<String> useCases,  List<AlgorithmSpecification> specifications, @JsonKey(fromJson: _parametersFromJson)  List<AlgorithmParameter> parameters,  List<String> features, @JsonKey(name: 'input_ports', fromJson: _portsFromJson)  List<AlgorithmPort> inputPorts, @JsonKey(name: 'output_ports', fromJson: _portsFromJson)  List<AlgorithmPort> outputPorts)  $default,) {final _that = this;
 switch (_that) {
 case _AlgorithmMetadata():
-return $default(_that.guid,_that.name,_that.categories,_that.description,_that.specifications,_that.parameters,_that.features,_that.inputPorts,_that.outputPorts);}
+return $default(_that.guid,_that.name,_that.categories,_that.description,_that.shortDescription,_that.guiDescription,_that.useCases,_that.specifications,_that.parameters,_that.features,_that.inputPorts,_that.outputPorts);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -197,10 +200,10 @@ return $default(_that.guid,_that.name,_that.categories,_that.description,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String guid,  String name,  List<String> categories,  String description,  List<AlgorithmSpecification> specifications, @JsonKey(fromJson: _parametersFromJson)  List<AlgorithmParameter> parameters,  List<String> features, @JsonKey(name: 'input_ports', fromJson: _portsFromJson)  List<AlgorithmPort> inputPorts, @JsonKey(name: 'output_ports', fromJson: _portsFromJson)  List<AlgorithmPort> outputPorts)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String guid,  String name,  List<String> categories,  String description, @JsonKey(name: 'short_description')  String? shortDescription, @JsonKey(name: 'gui_description')  String? guiDescription, @JsonKey(name: 'use_cases')  List<String> useCases,  List<AlgorithmSpecification> specifications, @JsonKey(fromJson: _parametersFromJson)  List<AlgorithmParameter> parameters,  List<String> features, @JsonKey(name: 'input_ports', fromJson: _portsFromJson)  List<AlgorithmPort> inputPorts, @JsonKey(name: 'output_ports', fromJson: _portsFromJson)  List<AlgorithmPort> outputPorts)?  $default,) {final _that = this;
 switch (_that) {
 case _AlgorithmMetadata() when $default != null:
-return $default(_that.guid,_that.name,_that.categories,_that.description,_that.specifications,_that.parameters,_that.features,_that.inputPorts,_that.outputPorts);case _:
+return $default(_that.guid,_that.name,_that.categories,_that.description,_that.shortDescription,_that.guiDescription,_that.useCases,_that.specifications,_that.parameters,_that.features,_that.inputPorts,_that.outputPorts);case _:
   return null;
 
 }
@@ -212,7 +215,7 @@ return $default(_that.guid,_that.name,_that.categories,_that.description,_that.s
 @JsonSerializable()
 
 class _AlgorithmMetadata implements AlgorithmMetadata {
-  const _AlgorithmMetadata({required this.guid, required this.name, required final  List<String> categories, required this.description, final  List<AlgorithmSpecification> specifications = const [], @JsonKey(fromJson: _parametersFromJson) final  List<AlgorithmParameter> parameters = const [], final  List<String> features = const [], @JsonKey(name: 'input_ports', fromJson: _portsFromJson) final  List<AlgorithmPort> inputPorts = const [], @JsonKey(name: 'output_ports', fromJson: _portsFromJson) final  List<AlgorithmPort> outputPorts = const []}): _categories = categories,_specifications = specifications,_parameters = parameters,_features = features,_inputPorts = inputPorts,_outputPorts = outputPorts;
+  const _AlgorithmMetadata({required this.guid, required this.name, required final  List<String> categories, required this.description, @JsonKey(name: 'short_description') this.shortDescription, @JsonKey(name: 'gui_description') this.guiDescription, @JsonKey(name: 'use_cases') final  List<String> useCases = const [], final  List<AlgorithmSpecification> specifications = const [], @JsonKey(fromJson: _parametersFromJson) final  List<AlgorithmParameter> parameters = const [], final  List<String> features = const [], @JsonKey(name: 'input_ports', fromJson: _portsFromJson) final  List<AlgorithmPort> inputPorts = const [], @JsonKey(name: 'output_ports', fromJson: _portsFromJson) final  List<AlgorithmPort> outputPorts = const []}): _categories = categories,_useCases = useCases,_specifications = specifications,_parameters = parameters,_features = features,_inputPorts = inputPorts,_outputPorts = outputPorts;
   factory _AlgorithmMetadata.fromJson(Map<String, dynamic> json) => _$AlgorithmMetadataFromJson(json);
 
 @override final  String guid;
@@ -225,6 +228,15 @@ class _AlgorithmMetadata implements AlgorithmMetadata {
 }
 
 @override final  String description;
+@override@JsonKey(name: 'short_description') final  String? shortDescription;
+@override@JsonKey(name: 'gui_description') final  String? guiDescription;
+ final  List<String> _useCases;
+@override@JsonKey(name: 'use_cases') List<String> get useCases {
+  if (_useCases is EqualUnmodifiableListView) return _useCases;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_useCases);
+}
+
  final  List<AlgorithmSpecification> _specifications;
 @override@JsonKey() List<AlgorithmSpecification> get specifications {
   if (_specifications is EqualUnmodifiableListView) return _specifications;
@@ -276,16 +288,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AlgorithmMetadata&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._categories, _categories)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._specifications, _specifications)&&const DeepCollectionEquality().equals(other._parameters, _parameters)&&const DeepCollectionEquality().equals(other._features, _features)&&const DeepCollectionEquality().equals(other._inputPorts, _inputPorts)&&const DeepCollectionEquality().equals(other._outputPorts, _outputPorts));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AlgorithmMetadata&&(identical(other.guid, guid) || other.guid == guid)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._categories, _categories)&&(identical(other.description, description) || other.description == description)&&(identical(other.shortDescription, shortDescription) || other.shortDescription == shortDescription)&&(identical(other.guiDescription, guiDescription) || other.guiDescription == guiDescription)&&const DeepCollectionEquality().equals(other._useCases, _useCases)&&const DeepCollectionEquality().equals(other._specifications, _specifications)&&const DeepCollectionEquality().equals(other._parameters, _parameters)&&const DeepCollectionEquality().equals(other._features, _features)&&const DeepCollectionEquality().equals(other._inputPorts, _inputPorts)&&const DeepCollectionEquality().equals(other._outputPorts, _outputPorts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,guid,name,const DeepCollectionEquality().hash(_categories),description,const DeepCollectionEquality().hash(_specifications),const DeepCollectionEquality().hash(_parameters),const DeepCollectionEquality().hash(_features),const DeepCollectionEquality().hash(_inputPorts),const DeepCollectionEquality().hash(_outputPorts));
+int get hashCode => Object.hash(runtimeType,guid,name,const DeepCollectionEquality().hash(_categories),description,shortDescription,guiDescription,const DeepCollectionEquality().hash(_useCases),const DeepCollectionEquality().hash(_specifications),const DeepCollectionEquality().hash(_parameters),const DeepCollectionEquality().hash(_features),const DeepCollectionEquality().hash(_inputPorts),const DeepCollectionEquality().hash(_outputPorts));
 
 @override
 String toString() {
-  return 'AlgorithmMetadata(guid: $guid, name: $name, categories: $categories, description: $description, specifications: $specifications, parameters: $parameters, features: $features, inputPorts: $inputPorts, outputPorts: $outputPorts)';
+  return 'AlgorithmMetadata(guid: $guid, name: $name, categories: $categories, description: $description, shortDescription: $shortDescription, guiDescription: $guiDescription, useCases: $useCases, specifications: $specifications, parameters: $parameters, features: $features, inputPorts: $inputPorts, outputPorts: $outputPorts)';
 }
 
 
@@ -296,7 +308,7 @@ abstract mixin class _$AlgorithmMetadataCopyWith<$Res> implements $AlgorithmMeta
   factory _$AlgorithmMetadataCopyWith(_AlgorithmMetadata value, $Res Function(_AlgorithmMetadata) _then) = __$AlgorithmMetadataCopyWithImpl;
 @override @useResult
 $Res call({
- String guid, String name, List<String> categories, String description, List<AlgorithmSpecification> specifications,@JsonKey(fromJson: _parametersFromJson) List<AlgorithmParameter> parameters, List<String> features,@JsonKey(name: 'input_ports', fromJson: _portsFromJson) List<AlgorithmPort> inputPorts,@JsonKey(name: 'output_ports', fromJson: _portsFromJson) List<AlgorithmPort> outputPorts
+ String guid, String name, List<String> categories, String description,@JsonKey(name: 'short_description') String? shortDescription,@JsonKey(name: 'gui_description') String? guiDescription,@JsonKey(name: 'use_cases') List<String> useCases, List<AlgorithmSpecification> specifications,@JsonKey(fromJson: _parametersFromJson) List<AlgorithmParameter> parameters, List<String> features,@JsonKey(name: 'input_ports', fromJson: _portsFromJson) List<AlgorithmPort> inputPorts,@JsonKey(name: 'output_ports', fromJson: _portsFromJson) List<AlgorithmPort> outputPorts
 });
 
 
@@ -313,13 +325,16 @@ class __$AlgorithmMetadataCopyWithImpl<$Res>
 
 /// Create a copy of AlgorithmMetadata
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? guid = null,Object? name = null,Object? categories = null,Object? description = null,Object? specifications = null,Object? parameters = null,Object? features = null,Object? inputPorts = null,Object? outputPorts = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? guid = null,Object? name = null,Object? categories = null,Object? description = null,Object? shortDescription = freezed,Object? guiDescription = freezed,Object? useCases = null,Object? specifications = null,Object? parameters = null,Object? features = null,Object? inputPorts = null,Object? outputPorts = null,}) {
   return _then(_AlgorithmMetadata(
 guid: null == guid ? _self.guid : guid // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,categories: null == categories ? _self._categories : categories // ignore: cast_nullable_to_non_nullable
 as List<String>,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String,specifications: null == specifications ? _self._specifications : specifications // ignore: cast_nullable_to_non_nullable
+as String,shortDescription: freezed == shortDescription ? _self.shortDescription : shortDescription // ignore: cast_nullable_to_non_nullable
+as String?,guiDescription: freezed == guiDescription ? _self.guiDescription : guiDescription // ignore: cast_nullable_to_non_nullable
+as String?,useCases: null == useCases ? _self._useCases : useCases // ignore: cast_nullable_to_non_nullable
+as List<String>,specifications: null == specifications ? _self._specifications : specifications // ignore: cast_nullable_to_non_nullable
 as List<AlgorithmSpecification>,parameters: null == parameters ? _self._parameters : parameters // ignore: cast_nullable_to_non_nullable
 as List<AlgorithmParameter>,features: null == features ? _self._features : features // ignore: cast_nullable_to_non_nullable
 as List<String>,inputPorts: null == inputPorts ? _self._inputPorts : inputPorts // ignore: cast_nullable_to_non_nullable

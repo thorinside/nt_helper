@@ -383,6 +383,91 @@ void main() {
       });
     });
 
+    group('search - semantic text search', () {
+      test('should find algorithms by description keywords', () async {
+        final result = await tools.searchAlgorithms({
+          'type': 'algorithm',
+          'query': 'reverb',
+        });
+
+        final decoded = jsonDecode(result);
+        expect(decoded['results'], isList);
+        expect(decoded['results'].length, greaterThan(0));
+        // Reverb algorithm should be in results
+        final guids = (decoded['results'] as List).map((r) => r['guid']).toList();
+        expect(guids, contains('revb'));
+      });
+
+      test('should find algorithms by parameter names', () async {
+        final result = await tools.searchAlgorithms({
+          'type': 'algorithm',
+          'query': 'resonance',
+        });
+
+        final decoded = jsonDecode(result);
+        expect(decoded['results'], isList);
+        expect(decoded['results'].length, greaterThan(0));
+      });
+
+      test('should find algorithms by multi-word queries', () async {
+        final result = await tools.searchAlgorithms({
+          'type': 'algorithm',
+          'query': 'clock divider',
+        });
+
+        final decoded = jsonDecode(result);
+        expect(decoded['results'], isList);
+        expect(decoded['results'].length, greaterThan(0));
+      });
+
+      test('should find algorithms via synonym expansion', () async {
+        // "echo" should find delay-related algorithms via synonyms
+        final result = await tools.searchAlgorithms({
+          'type': 'algorithm',
+          'query': 'echo',
+        });
+
+        final decoded = jsonDecode(result);
+        expect(decoded['results'], isList);
+        expect(decoded['results'].length, greaterThan(0));
+      });
+
+      test('should rank name matches above text matches', () async {
+        final result = await tools.searchAlgorithms({
+          'type': 'algorithm',
+          'query': 'Clock',
+        });
+
+        final decoded = jsonDecode(result);
+        expect(decoded['results'], isList);
+        expect(decoded['results'].length, greaterThan(0));
+        // Exact name match should be first
+        expect(decoded['results'][0]['name'], equals('Clock'));
+      });
+
+      test('should find pitch shifting algorithms', () async {
+        final result = await tools.searchAlgorithms({
+          'type': 'algorithm',
+          'query': 'pitch shifting',
+        });
+
+        final decoded = jsonDecode(result);
+        expect(decoded['results'], isList);
+        expect(decoded['results'].length, greaterThan(0));
+      });
+
+      test('should find modulation sources', () async {
+        final result = await tools.searchAlgorithms({
+          'type': 'algorithm',
+          'query': 'modulation',
+        });
+
+        final decoded = jsonDecode(result);
+        expect(decoded['results'], isList);
+        expect(decoded['results'].length, greaterThan(0));
+      });
+    });
+
     group('search - connection mode support', () {
       test('should work in any connection mode', () async {
         // Mock and offline modes are tested implicitly through
