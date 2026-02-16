@@ -47,6 +47,7 @@ class SettingsService {
   static const String _dismissedUpdateVersionKey = 'dismissed_update_version';
   static const String _lastUpdateCheckTimestampKey = 'last_update_check_timestamp';
   static const String _splitDividerPositionKey = 'split_divider_position';
+  static const String _mcpRemoteConnectionsKey = 'mcp_remote_connections';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -69,6 +70,7 @@ class SettingsService {
   static const int defaultAlgorithmCacheDays = 2;
   static const bool defaultCpuMonitorEnabled = true;
   static const double defaultSplitDividerPosition = 0.5;
+  static const bool defaultMcpRemoteConnections = false;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -110,6 +112,15 @@ class SettingsService {
   /// Set whether MCP service is enabled
   Future<bool> setMcpEnabled(bool value) async {
     return await _prefs?.setBool(_mcpEnabledKey, value) ?? false;
+  }
+
+  /// Check if MCP remote connections are allowed
+  bool get mcpRemoteConnections =>
+      _prefs?.getBool(_mcpRemoteConnectionsKey) ?? defaultMcpRemoteConnections;
+
+  /// Set whether MCP remote connections are allowed
+  Future<bool> setMcpRemoteConnections(bool value) async {
+    return await _prefs?.setBool(_mcpRemoteConnectionsKey, value) ?? false;
   }
 
   /// Check if algorithm pages should start collapsed
@@ -253,6 +264,7 @@ class SettingsService {
     await setInterMessageDelay(defaultInterMessageDelay);
     await setHapticsEnabled(defaultHapticsEnabled);
     await setMcpEnabled(defaultMcpEnabled);
+    await setMcpRemoteConnections(defaultMcpRemoteConnections);
     await setStartPagesCollapsed(defaultStartPagesCollapsed);
     await setGalleryUrl(defaultGalleryUrl);
     await setGraphqlEndpoint(defaultGraphqlEndpoint);
@@ -287,6 +299,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   final _algorithmCacheDaysController = TextEditingController();
   late bool _hapticsEnabled;
   late bool _mcpEnabled;
+  late bool _mcpRemoteConnections;
   late bool _startPagesCollapsed;
   late bool _showDebugPanel;
   late bool _showContextualHelp;
@@ -307,6 +320,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     setState(() {
       _hapticsEnabled = settings.hapticsEnabled;
       _mcpEnabled = settings.mcpEnabled;
+      _mcpRemoteConnections = settings.mcpRemoteConnections;
       _startPagesCollapsed = settings.startPagesCollapsed;
       _showDebugPanel = settings.showDebugPanel;
       _showContextualHelp = settings.showContextualHelp;
@@ -329,6 +343,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       );
       await settings.setHapticsEnabled(_hapticsEnabled);
       await settings.setMcpEnabled(_mcpEnabled);
+      await settings.setMcpRemoteConnections(_mcpRemoteConnections);
       await settings.setStartPagesCollapsed(_startPagesCollapsed);
       await settings.setShowDebugPanel(_showDebugPanel);
       await settings.setShowContextualHelp(_showContextualHelp);
@@ -597,7 +612,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     // MCP enabled setting (desktop only)
                     if (Platform.isMacOS ||
                         Platform.isWindows ||
-                        Platform.isLinux)
+                        Platform.isLinux) ...[
                       SwitchListTile(
                         title: Text(
                           'Enable MCP Service',
@@ -614,16 +629,35 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         },
                         contentPadding: EdgeInsets.zero,
                       ),
+                      SwitchListTile(
+                        title: Text(
+                          'Allow Remote MCP Connections',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        subtitle: const Text(
+                          'Allow connections from other devices on the network',
+                        ),
+                        value: _mcpRemoteConnections,
+                        onChanged: _mcpEnabled
+                            ? (value) {
+                                setState(() {
+                                  _mcpRemoteConnections = value;
+                                });
+                              }
+                            : null,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
 
                     // Debug panel visibility setting (debug mode only)
                     if (kDebugMode)
                       SwitchListTile(
                         title: Text(
-                          'Show USB Video Debug Panel',
+                          'Show Debug Log',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         subtitle: const Text(
-                          'Display debug log panel for USB video operations (debug mode only)',
+                          'Display debug log panel (debug mode only)',
                         ),
                         value: _showDebugPanel,
                         onChanged: (value) {

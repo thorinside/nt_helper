@@ -7,6 +7,7 @@ import 'package:mcp_dart/mcp_dart.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
+import 'package:nt_helper/services/debug_service.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
 import 'dart:math' as math;
 import 'package:crypto/crypto.dart';
@@ -151,6 +152,7 @@ class McpServerService extends ChangeNotifier {
         cancelOnError: false,
       );
 
+      DebugService().addLocalMessage('MCP server started on port ${_httpServer!.port}');
       notifyListeners();
     } catch (e) {
       // Capture error for display
@@ -163,6 +165,7 @@ class McpServerService extends ChangeNotifier {
       } else {
         _lastError = e.toString();
       }
+      DebugService().addLocalMessage('MCP server error: $_lastError');
       await stop();
       notifyListeners();
     }
@@ -241,21 +244,94 @@ class McpServerService extends ChangeNotifier {
         _log('POST /mcp: existing session $sessionId');
         transport = _transports[sessionId]!;
       } else {
+        // Read the body to check if this is an init request or a stale session
+        final bodyBytes = await request.fold<List<int>>(
+          <int>[],
+          (previous, element) => previous..addAll(element),
+        );
+        final bodyString = utf8.decode(bodyBytes);
+        final parsedBody = jsonDecode(bodyString);
+
+        DebugService().addLocalMessage('MCP request: $bodyString');
+
+        final isInit = _isInitializeBody(parsedBody);
+
+        if (!isInit && sessionId != null) {
+          // Stale session — auto-reinitialize with the same session ID so
+          // clients that don't handle 404 keep working after hot reload.
+          _log('POST /mcp: stale session $sessionId, auto-reinitializing');
+          DebugService().addLocalMessage('MCP auto-reinit for stale session $sessionId');
+          transport = await _createNewTransport(sessionId: sessionId);
+
+          // Pump a synthetic init through the transport to flip _initialized.
+          // We must wait for the response to complete (the server processes
+          // the init asynchronously via send()).
+          final initBody = jsonDecode(jsonEncode({
+            'jsonrpc': '2.0',
+            'id': '_reinit',
+            'method': 'initialize',
+            'params': {
+              'protocolVersion': '2025-03-26',
+              'capabilities': {},
+              'clientInfo': {'name': 'auto-reinit', 'version': '0.0.0'},
+            },
+          }));
+          final syntheticRequest = _SyntheticHttpRequest(sessionId: null);
+          await transport.handleRequest(syntheticRequest, initBody);
+          // Wait for the transport to finish writing the init response
+          await syntheticRequest.response.done;
+
+          _log('POST /mcp: transport re-initialized, session: ${transport.sessionId}');
+          _log('POST /mcp: delegating real request to transport');
+          await transport.handleRequest(request, parsedBody);
+          _log('POST /mcp: handleRequest completed');
+          return;
+        }
+
         _log('POST /mcp: creating new transport (sessionId: $sessionId)');
         transport = await _createNewTransport(sessionId: sessionId);
         _log('POST /mcp: transport created, session: ${transport.sessionId}');
+
+        _log('POST /mcp: delegating to transport.handleRequest');
+        await transport.handleRequest(request, parsedBody);
+        _log('POST /mcp: handleRequest completed');
+        return;
       }
 
+      // Existing session — read body, log, and delegate
+      final bodyBytes = await request.fold<List<int>>(
+        <int>[],
+        (previous, element) => previous..addAll(element),
+      );
+      final bodyString = utf8.decode(bodyBytes);
+      final parsedBody = jsonDecode(bodyString);
+
       _log('POST /mcp: delegating to transport.handleRequest');
-      await transport.handleRequest(request);
+      DebugService().addLocalMessage('MCP request: $bodyString');
+
+      await transport.handleRequest(request, parsedBody);
       _log('POST /mcp: handleRequest completed');
     } catch (e) {
+      DebugService().addLocalMessage('MCP error: ${e.toString()}');
       _sendErrorResponse(
         request,
         HttpStatus.internalServerError,
         'Internal server error: ${e.toString()}',
       );
     }
+  }
+
+  /// Check if a parsed JSON body contains an initialize request
+  bool _isInitializeBody(dynamic parsedBody) {
+    if (parsedBody is Map<String, dynamic>) {
+      return parsedBody['method'] == 'initialize';
+    }
+    if (parsedBody is List) {
+      return parsedBody.any(
+        (msg) => msg is Map<String, dynamic> && msg['method'] == 'initialize',
+      );
+    }
+    return false;
   }
 
   /// Handle GET requests on /mcp.
@@ -360,6 +436,7 @@ class McpServerService extends ChangeNotifier {
     // Clear error when explicitly stopped
     _lastError = null;
 
+    DebugService().addLocalMessage('MCP server stopped');
     notifyListeners();
   }
 
@@ -930,6 +1007,7 @@ class McpServerService extends ChangeNotifier {
           // Store both transport and server by session ID when session is initialized
           _transports[initializedSessionId] = transport!;
           _servers[initializedSessionId] = server!;
+          DebugService().addLocalMessage('MCP client connected (session: $initializedSessionId)');
         },
       ),
     );
@@ -950,10 +1028,121 @@ class McpServerService extends ChangeNotifier {
 
   /// Clean up a specific session
   void _cleanupSession(String sessionId) {
+    DebugService().addLocalMessage('MCP client disconnected (session: $sessionId)');
     _transports[sessionId]?.close();
     _transports.remove(sessionId);
     _servers.remove(sessionId);
   }
+}
+
+/// Minimal fake [HttpRequest] used to pump a synthetic init through a
+/// [StreamableHTTPServerTransport] so it transitions to the initialized state.
+/// Only the members actually touched by the transport are implemented.
+class _SyntheticHttpRequest extends Stream<Uint8List> implements HttpRequest {
+  _SyntheticHttpRequest({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  final String method = 'POST';
+
+  late final HttpHeaders headers = _SyntheticHeaders(sessionId: sessionId);
+
+  @override
+  late final HttpResponse response = _SyntheticHttpResponse();
+
+  @override
+  Uri get uri => Uri.parse('/mcp');
+
+  @override
+  StreamSubscription<Uint8List> listen(
+    void Function(Uint8List)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return const Stream<Uint8List>.empty().listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  // -- Unused members required by HttpRequest --
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    '${invocation.memberName} not implemented on _SyntheticHttpRequest',
+  );
+}
+
+class _SyntheticHeaders implements HttpHeaders {
+  _SyntheticHeaders({this.sessionId});
+  final String? sessionId;
+
+  @override
+  ContentType? get contentType => ContentType.json;
+
+  @override
+  String? value(String name) {
+    switch (name.toLowerCase()) {
+      case 'accept':
+        return 'application/json, text/event-stream';
+      case 'content-type':
+        return 'application/json';
+      case 'mcp-session-id':
+        return sessionId;
+      default:
+        return null;
+    }
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    '${invocation.memberName} not implemented on _SyntheticHeaders',
+  );
+}
+
+class _SyntheticHttpResponse implements HttpResponse {
+  final Completer<void> _doneCompleter = Completer<void>();
+
+  @override
+  Future get done => _doneCompleter.future;
+
+  @override
+  int statusCode = HttpStatus.ok;
+
+  @override
+  set bufferOutput(bool value) {}
+
+  @override
+  bool get bufferOutput => false;
+
+  @override
+  HttpHeaders get headers => _SyntheticResponseHeaders();
+
+  @override
+  void write(Object? object) {}
+
+  @override
+  Future close() async {
+    if (!_doneCompleter.isCompleted) _doneCompleter.complete();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    '${invocation.memberName} not implemented on _SyntheticHttpResponse',
+  );
+}
+
+class _SyntheticResponseHeaders implements HttpHeaders {
+  @override
+  void set(String name, Object value, {bool preserveHeaderCase = false}) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    '${invocation.memberName} not implemented on _SyntheticResponseHeaders',
+  );
 }
 
 /// Enhanced in-memory event store for MCP message persistence
