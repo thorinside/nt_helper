@@ -1020,8 +1020,15 @@ class McpServerService extends ChangeNotifier {
       }
     };
 
-    // Connect server to transport BEFORE handling requests
-    await server.connect(transport);
+    // Wrap transport to log outgoing responses
+    final loggingTransport = _LoggingTransport(transport);
+
+    // Connect server to the logging wrapper so send() calls are intercepted
+    await server.connect(loggingTransport);
+
+    // Forward onmessage from the real transport to the logging wrapper
+    // so handleRequest triggers the server's handler
+    transport.onmessage = loggingTransport.onmessage;
 
     return transport;
   }
@@ -1033,6 +1040,52 @@ class McpServerService extends ChangeNotifier {
     _transports.remove(sessionId);
     _servers.remove(sessionId);
   }
+}
+
+/// Transport wrapper that logs outgoing JSON-RPC responses via [DebugService].
+/// The [McpServer] is connected to this wrapper so all [send] calls pass
+/// through here before being forwarded to the real transport.
+class _LoggingTransport implements Transport {
+  _LoggingTransport(this._inner);
+
+  final StreamableHTTPServerTransport _inner;
+
+  @override
+  Future<void> send(JsonRpcMessage message, {dynamic relatedRequestId}) async {
+    DebugService().addLocalMessage('MCP response: ${jsonEncode(message.toJson())}');
+    return _inner.send(message, relatedRequestId: relatedRequestId);
+  }
+
+  @override
+  Future<void> start() => _inner.start();
+
+  @override
+  Future<void> close() => _inner.close();
+
+  @override
+  String? get sessionId => _inner.sessionId;
+
+  @override
+  set sessionId(String? value) => _inner.sessionId = value;
+
+  @override
+  void Function()? get onclose => _inner.onclose;
+
+  @override
+  set onclose(void Function()? value) => _inner.onclose = value;
+
+  @override
+  void Function(Error error)? get onerror => _inner.onerror;
+
+  @override
+  set onerror(void Function(Error error)? value) => _inner.onerror = value;
+
+  @override
+  void Function(JsonRpcMessage message)? get onmessage => _inner.onmessage;
+
+  @override
+  set onmessage(void Function(JsonRpcMessage message)? value) =>
+      _inner.onmessage = value;
 }
 
 /// Minimal fake [HttpRequest] used to pump a synthetic init through a
