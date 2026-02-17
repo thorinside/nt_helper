@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/core/routing/algorithm_routing.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show ParameterInfo, ParameterValue, Mapping, DisplayMode;
 import 'package:nt_helper/util/case_converter.dart';
-import 'package:nt_helper/util/routing_analyzer.dart';
 import 'package:nt_helper/mcp/mcp_constants.dart';
 
 /// Class containing methods representing MCP tools.
@@ -16,6 +16,18 @@ class MCPAlgorithmTools {
   final DistingCubit _distingCubit;
 
   MCPAlgorithmTools(this._distingCubit);
+
+  /// Returns all known algorithms by merging metadata DB with device state.
+  List<dynamic> _getAllKnownAlgorithms() {
+    final metadataAlgorithms = _metadataService.getAllAlgorithms();
+    final state = _distingCubit.state;
+    if (state is DistingStateSynchronized) {
+      final metadataGuids = metadataAlgorithms.map((a) => a.guid).toSet();
+      final deviceOnly = state.algorithms.where((a) => !metadataGuids.contains(a.guid));
+      return [...metadataAlgorithms, ...deviceOnly];
+    }
+    return metadataAlgorithms;
+  }
 
   /// MCP Tool: Retrieves full metadata for a specific algorithm.
   /// Parameters:
@@ -29,10 +41,10 @@ class MCPAlgorithmTools {
     final String? algorithmName = params['algorithm_name'];
     final bool expandFeatures = params['expand_features'] ?? false;
 
-    // Use shared algorithm resolver
-    List<AlgorithmMetadata> algorithms;
+    // Use shared algorithm resolver (includes device-only algorithms)
+    List<dynamic> algorithms;
     try {
-      algorithms = _metadataService.getAllAlgorithms();
+      algorithms = _getAllKnownAlgorithms();
     } catch (e) {
       return jsonEncode(
         convertToSnakeCaseKeys({
@@ -193,32 +205,60 @@ class MCPAlgorithmTools {
     return jsonEncode(convertToSnakeCaseKeys(resultList));
   }
 
-  /// MCP Tool: Retrieves the current routing state decoded into RoutingInformation objects.
+  /// MCP Tool: Retrieves the current routing state derived from slot parameters.
+  /// Uses the same parameter-based approach as the routing editor UI,
+  /// which works in connected, offline, and demo modes.
   /// Parameters: None
   /// Returns:
-  ///   A JSON string representing the input and output busses of each slot.
+  ///   A JSON string representing the input and output buses of each slot.
   ///   Returns an empty list '[]' if the state is not synchronized.
   Future<String> getCurrentRoutingState(Map<String, dynamic> params) async {
-    try {
-      // First, actively refresh routing information from hardware
-      await _distingCubit.refreshRouting();
-    } catch (e) {
-      // If hardware refresh fails, continue with cached data
-      // This handles offline/mock modes gracefully
+    final state = _distingCubit.state;
+    if (state is! DistingStateSynchronized) {
+      return jsonEncode([]);
     }
 
-    // Access the injected DistingCubit instance to get updated routing info
-    final routingInfoList = _distingCubit.buildRoutingInformation();
+    final slots = state.slots;
+    final routings = <AlgorithmRouting>[];
 
-    RoutingAnalyzer analyzer = RoutingAnalyzer(
-      routing: routingInfoList,
-      showSignals: true,
-      showMappings: false,
-    );
+    for (final slot in slots) {
+      routings.add(AlgorithmRouting.fromSlot(slot));
+    }
 
-    return jsonEncode(
-      convertToSnakeCaseKeys(analyzer.generateSlotBusUsageJson()),
-    );
+    // Discover connections (not needed for bus lists, but validates the data)
+    // We extract bus usage directly from ports
+    final slotDataList = <Map<String, dynamic>>[];
+
+    for (int i = 0; i < slots.length; i++) {
+      final slot = slots[i];
+      final routing = routings[i];
+
+      final inputBuses = <int>{};
+      final outputBuses = <int>{};
+
+      for (final port in routing.inputPorts) {
+        final busValue = port.busValue;
+        if (busValue != null && busValue > 0) {
+          inputBuses.add(busValue);
+        }
+      }
+
+      for (final port in routing.outputPorts) {
+        final busValue = port.busValue;
+        if (busValue != null && busValue > 0) {
+          outputBuses.add(busValue);
+        }
+      }
+
+      slotDataList.add({
+        'slotIndex': i,
+        'algorithmName': slot.algorithm.name,
+        'inputBuses': inputBuses.toList()..sort(),
+        'outputBuses': outputBuses.toList()..sort(),
+      });
+    }
+
+    return jsonEncode(convertToSnakeCaseKeys(slotDataList));
   }
 
   /// MCP Tool: Search for algorithms by name/category with fuzzy matching.
