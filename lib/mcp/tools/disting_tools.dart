@@ -47,6 +47,11 @@ class DistingTools {
   /// Adds an algorithm and verifies it was actually accepted by the device.
   /// Returns the slot index where the algorithm was added.
   /// Throws [StateError] on failure (device rejected the add, plugin failed to load, etc).
+  /// Whether a GUID belongs to a community plugin (has uppercase letters).
+  /// Factory algorithms use all-lowercase GUIDs and load quickly.
+  /// Community plugins can fail asynchronously (e.g. memory errors).
+  bool _isCommunityPlugin(String guid) => guid.contains(RegExp(r'[A-Z]'));
+
   Future<int> _addAlgorithmAndVerify(Algorithm algorithm) async {
     final state = _distingCubit.state;
     final preAddCount =
@@ -54,39 +59,37 @@ class DistingTools {
 
     await _controller.addAlgorithm(algorithm);
 
-    // The cubit creates an optimistic placeholder immediately, then runs
-    // async verification (700ms + retries over ~2s). But even after the
-    // cubit's verification succeeds, the device can reject the plugin
-    // asynchronously (e.g. memory error) — sometimes taking 5+ seconds.
-    //
-    // We must verify directly against the device hardware via MIDI,
-    // not trust the cubit state which may contain stale placeholders.
     final disting = _distingCubit.requireDisting();
+    final isCommunity = _isCommunityPlugin(algorithm.guid);
 
-    // Wait for the cubit's verification cycle, then poll the device
-    // directly for up to ~10 seconds total.
-    await Future.delayed(const Duration(milliseconds: 3000));
+    // Poll the device every 250ms. Two consecutive identical slot counts
+    // means the device has settled. Factory algorithms (all-lowercase GUIDs)
+    // settle quickly; community plugins can fail asynchronously (e.g. memory
+    // error) so they get more time.
+    final maxPolls = isCommunity ? 40 : 10; // 10s or 2.5s max
+    int? lastDeviceCount;
 
-    for (int i = 0; i < 15; i++) {
+    for (int i = 0; i < maxPolls; i++) {
+      await Future.delayed(const Duration(milliseconds: 250));
+
       final deviceCount =
           await disting.requestNumAlgorithmsInPreset() ?? 0;
 
-      if (deviceCount > preAddCount) {
-        // Device has the new slot — verify it's our algorithm.
-        final addedAlgo =
-            await disting.requestAlgorithmGuid(preAddCount);
-        if (addedAlgo != null && addedAlgo.guid == algorithm.guid) {
-          // Ensure cubit state catches up.
-          try {
-            await _distingCubit.refreshSlot(preAddCount);
-          } catch (_) {}
-          return preAddCount;
+      if (deviceCount == lastDeviceCount) {
+        // Two consecutive identical counts — device has settled.
+        if (deviceCount > preAddCount) {
+          // Verify it's our algorithm.
+          final addedAlgo =
+              await disting.requestAlgorithmGuid(preAddCount);
+          if (addedAlgo != null && addedAlgo.guid == algorithm.guid) {
+            try {
+              await _distingCubit.refreshSlot(preAddCount);
+            } catch (_) {}
+            return preAddCount;
+          }
         }
-      }
 
-      if (deviceCount <= preAddCount) {
-        // Device doesn't have the slot — rejected.
-        // Clean up the cubit's stale placeholder.
+        // Device settled at or below pre-add count — rejected.
         await _distingCubit.refresh();
         throw StateError(
           'Device rejected algorithm "${algorithm.guid}". '
@@ -94,23 +97,27 @@ class DistingTools {
         );
       }
 
-      await Future.delayed(const Duration(milliseconds: 500));
+      lastDeviceCount = deviceCount;
     }
 
-    // Final check after all retries.
+    // Timeout — do a final check.
     final finalCount =
         await disting.requestNumAlgorithmsInPreset() ?? 0;
     if (finalCount > preAddCount) {
-      try {
-        await _distingCubit.refreshSlot(preAddCount);
-      } catch (_) {}
-      return preAddCount;
+      final addedAlgo =
+          await disting.requestAlgorithmGuid(preAddCount);
+      if (addedAlgo != null && addedAlgo.guid == algorithm.guid) {
+        try {
+          await _distingCubit.refreshSlot(preAddCount);
+        } catch (_) {}
+        return preAddCount;
+      }
     }
 
     await _distingCubit.refresh();
     throw StateError(
-      'Device rejected algorithm "${algorithm.guid}". '
-      'The plugin may have failed to load.',
+      'Could not verify algorithm "${algorithm.guid}" was added. '
+      'The device may not be responding.',
     );
   }
 
