@@ -5,7 +5,7 @@ import 'dart:typed_data'; // Added for Uint8List
 import 'package:collection/collection.dart';
 import 'package:image/image.dart' as img; // For image processing
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, Mapping, ParameterValue;
+    show Algorithm, AlgorithmInfo, ParameterInfo, Mapping, ParameterValue, Specification;
 import 'package:nt_helper/models/packed_mapping_data.dart' show MidiMappingType;
 import 'package:nt_helper/cubit/disting_cubit.dart'
     show DistingCubit, DistingStateSynchronized;
@@ -30,6 +30,96 @@ class DistingTools {
   // Use shared utility
   num _scaleForDisplay(int value, int? powerOfTen) =>
       MCPUtils.scaleForDisplay(value, powerOfTen);
+
+  /// Returns all known algorithms by merging metadata DB with device state.
+  /// Device-only algorithms (community/third-party) are appended after metadata.
+  List<dynamic> _getAllKnownAlgorithms() {
+    final metadataAlgorithms = AlgorithmMetadataService().getAllAlgorithms();
+    final state = _distingCubit.state;
+    if (state is DistingStateSynchronized) {
+      final metadataGuids = metadataAlgorithms.map((a) => a.guid).toSet();
+      final deviceOnly = state.algorithms.where((a) => !metadataGuids.contains(a.guid));
+      return [...metadataAlgorithms, ...deviceOnly];
+    }
+    return metadataAlgorithms;
+  }
+
+  /// Adds an algorithm and verifies it was actually accepted by the device.
+  /// Returns the slot index where the algorithm was added.
+  /// Throws [StateError] on failure (device rejected the add, plugin failed to load, etc).
+  Future<int> _addAlgorithmAndVerify(Algorithm algorithm) async {
+    final state = _distingCubit.state;
+    final preAddCount =
+        (state is DistingStateSynchronized) ? state.slots.length : 0;
+
+    await _controller.addAlgorithm(algorithm);
+
+    // Poll cubit state — the cubit's built-in verification (700ms + retries)
+    // will either replace the placeholder with real data or remove it.
+    for (int i = 0; i < 15; i++) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      final current = _distingCubit.state;
+      if (current is! DistingStateSynchronized) continue;
+
+      // Success: new slot has real parameters
+      if (current.slots.length > preAddCount) {
+        final newSlot = current.slots[preAddCount];
+        if (newSlot.parameters.isNotEmpty) return preAddCount;
+      }
+
+      // Failure: placeholder was removed (slot count went back)
+      if (current.slots.length <= preAddCount && i >= 4) {
+        throw StateError(
+          'Device rejected algorithm "${algorithm.guid}". '
+          'The plugin may have failed to load.',
+        );
+      }
+    }
+
+    // Timeout fallback: try refreshSlot, then check
+    final current = _distingCubit.state;
+    if (current is DistingStateSynchronized &&
+        current.slots.length > preAddCount) {
+      try {
+        await _distingCubit.refreshSlot(preAddCount);
+      } catch (_) {}
+      final refreshed = _distingCubit.state;
+      if (refreshed is DistingStateSynchronized &&
+          refreshed.slots.length > preAddCount) {
+        return preAddCount;
+      }
+    }
+
+    throw StateError(
+      'Could not verify algorithm "${algorithm.guid}" was added. '
+      'The device may not be responding.',
+    );
+  }
+
+  /// Looks up AlgorithmInfo from device state for a resolved GUID.
+  AlgorithmInfo? _getDeviceAlgorithmInfo(String guid) {
+    final state = _distingCubit.state;
+    if (state is DistingStateSynchronized) {
+      return state.algorithms.firstWhereOrNull((a) => a.guid == guid);
+    }
+    return null;
+  }
+
+  /// Builds an error response with specification details for algorithms that require specs.
+  Map<String, dynamic> _buildSpecRequiredError(String guid, List<Specification> specs) {
+    return {
+      ...MCPUtils.buildError(
+        'Algorithm "$guid" requires ${specs.length} specification(s). '
+        'Provide "specifications" as a list of integers.',
+      ),
+      'specifications': specs.map((s) => {
+        'name': s.name,
+        'min': s.min,
+        'max': s.max,
+        'default': s.defaultValue,
+      }).toList(),
+    };
+  }
 
   /// Retrieves enum values for a parameter if it's an enum type
   Future<List<String>?> _getParameterEnumValues(
@@ -216,8 +306,8 @@ class DistingTools {
     final String? algorithmGuid = params['algorithm_guid'];
     final String? algorithmName = params['algorithm_name'];
 
-    // Use shared algorithm resolver
-    final algorithms = AlgorithmMetadataService().getAllAlgorithms();
+    // Use shared algorithm resolver (includes device-only algorithms)
+    final algorithms = _getAllKnownAlgorithms();
     final resolution = AlgorithmResolver.resolveAlgorithm(
       guid: algorithmGuid,
       algorithmName: algorithmName,
@@ -235,12 +325,12 @@ class DistingTools {
         name: '',
       );
 
-      await _controller.addAlgorithm(algoStub);
+      final slotIndex = await _addAlgorithmAndVerify(algoStub);
 
       return jsonEncode(
         convertToSnakeCaseKeys(
           MCPUtils.buildSuccess(
-            'Algorithm ${resolution.resolvedGuid!} added to slot',
+            'Algorithm ${resolution.resolvedGuid!} added to slot $slotIndex',
           ),
         ),
       );
@@ -258,6 +348,7 @@ class DistingTools {
   ///   - slot_index (int, optional): Target slot (0-31). If omitted, adds to first empty slot.
   ///   - name (string, optional): Algorithm name (fuzzy matching ≥70%)
   ///   - guid (string, optional): Algorithm GUID (exact match)
+  ///   - specifications (list of ints, optional): Specification values for algorithms that require them
   /// Returns:
   ///   A JSON string with the slot index where the algorithm was added, or an error.
   Future<String> addSimple(Map<String, dynamic> params) async {
@@ -287,6 +378,7 @@ class DistingTools {
     final String? name = params['name'] as String?;
     final String? guid = params['guid'] as String?;
     final int? slotIndex = params['slot_index'] as int?;
+    final List<dynamic>? specifications = params['specifications'] as List<dynamic>?;
 
     // Validate that at least one of name or guid is provided
     if (name == null && guid == null) {
@@ -311,8 +403,8 @@ class DistingTools {
       );
     }
 
-    // Use shared algorithm resolver
-    final algorithms = AlgorithmMetadataService().getAllAlgorithms();
+    // Use shared algorithm resolver (includes device-only algorithms)
+    final algorithms = _getAllKnownAlgorithms();
     final resolution = AlgorithmResolver.resolveAlgorithm(
       guid: guid,
       algorithmName: name,
@@ -328,33 +420,62 @@ class DistingTools {
       final algorithmMetadata =
           AlgorithmMetadataService().getAlgorithmByGuid(resolvedGuid);
 
-      final algoStub = Algorithm(
-        algorithmIndex: -1,
-        guid: resolvedGuid,
-        name: algorithmMetadata?.name ?? '',
-      );
+      // Check specification requirements from device state
+      final deviceAlgoInfo = _getDeviceAlgorithmInfo(resolvedGuid);
+      final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
+      final List<int> specValues = [];
 
-      // Add the algorithm (goes to first empty slot)
-      await _controller.addAlgorithm(algoStub);
+      if (requiredSpecs.isNotEmpty) {
+        if (specifications == null || specifications.isEmpty) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(_buildSpecRequiredError(resolvedGuid, requiredSpecs)),
+          );
+        }
 
-      // Find which slot it was added to
-      var allSlots = await _controller.getAllSlots();
-      int? addedSlotIndex;
-      for (int i = 0; i < maxSlots; i++) {
-        final algo = allSlots[i];
-        if (algo != null && algo.guid == resolvedGuid) {
-          addedSlotIndex = i;
-          break;
+        if (specifications.length != requiredSpecs.length) {
+          return jsonEncode(
+            convertToSnakeCaseKeys({
+              ..._buildSpecRequiredError(resolvedGuid, requiredSpecs),
+              'error': 'Algorithm "$resolvedGuid" requires ${requiredSpecs.length} specification(s), got ${specifications.length}.',
+            }),
+          );
+        }
+
+        // Validate and convert spec values
+        for (int i = 0; i < specifications.length; i++) {
+          final spec = requiredSpecs[i];
+          final value = specifications[i];
+          if (value is! int) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
+                ),
+              ),
+            );
+          }
+          if (value < spec.min || value > spec.max) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+                ),
+              ),
+            );
+          }
+          specValues.add(value);
         }
       }
 
-      if (addedSlotIndex == null) {
-        return jsonEncode(
-          convertToSnakeCaseKeys(
-            MCPUtils.buildError('Algorithm was added but could not find its slot.'),
-          ),
-        );
-      }
+      final algoStub = Algorithm(
+        algorithmIndex: -1,
+        guid: resolvedGuid,
+        name: algorithmMetadata?.name ?? deviceAlgoInfo?.name ?? '',
+        specifications: specValues,
+      );
+
+      // Add the algorithm and verify it was accepted
+      final addedSlotIndex = await _addAlgorithmAndVerify(algoStub);
 
       // If a specific slot was requested and it's different from where it was added,
       // move the algorithm to the target slot (insert semantics - pushes others down)
@@ -1421,7 +1542,7 @@ class DistingTools {
 
     try {
       // Use shared algorithm resolver to get the target GUID
-      final algorithms = AlgorithmMetadataService().getAllAlgorithms();
+      final algorithms = _getAllKnownAlgorithms();
       final resolution = AlgorithmResolver.resolveAlgorithm(
         guid: algorithmGuid,
         algorithmName: algorithmName,
@@ -1800,7 +1921,7 @@ class DistingTools {
               final resolution = AlgorithmResolver.resolveAlgorithm(
                 guid: algorithmGuid,
                 algorithmName: algorithmName,
-                allAlgorithms: [], // We'll need algorithm metadata here
+                allAlgorithms: _getAllKnownAlgorithms(),
               );
 
               if (resolution.isSuccess) {
@@ -2138,21 +2259,8 @@ class DistingTools {
         name: 'Notes',
       );
 
-      await _controller.addAlgorithm(notesAlgorithm);
-
-      // Wait a bit for the algorithm to be added
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Find the newly added Notes algorithm
-      final updatedSlots = await _controller.getAllSlots();
-      for (int i = 0; i < maxSlots; i++) {
-        final algorithm = updatedSlots[i];
-        if (algorithm != null && algorithm.guid == notesGuid) {
-          return i; // Found newly added Notes algorithm
-        }
-      }
-
-      return null; // Failed to find after adding
+      final slotIndex = await _addAlgorithmAndVerify(notesAlgorithm);
+      return slotIndex;
     } catch (e) {
       return null;
     }
@@ -2231,7 +2339,7 @@ class DistingTools {
 
       if (algorithmsArray != null && algorithmsArray.isNotEmpty) {
         final metadataService = AlgorithmMetadataService();
-        final allAlgorithms = metadataService.getAllAlgorithms();
+        final allAlgorithms = _getAllKnownAlgorithms();
 
         for (int i = 0; i < algorithmsArray.length; i++) {
           final algoSpec = algorithmsArray[i];
@@ -2268,25 +2376,74 @@ class DistingTools {
 
           final resolvedGuid = resolution.resolvedGuid!;
 
-          // Validate algorithm exists in metadata
+          // Get name from metadata or device state
           final algorithmMetadata =
               metadataService.getAlgorithmByGuid(resolvedGuid);
-          if (algorithmMetadata == null) {
-            algorithmResults.add({
-              'index': i,
-              'success': false,
-              'error': 'Algorithm with GUID "$resolvedGuid" not found',
-            });
-            continue;
-          }
+          final deviceAlgoInfo = _getDeviceAlgorithmInfo(resolvedGuid);
+          final algoDisplayName = algorithmMetadata?.name ?? deviceAlgoInfo?.name ?? resolvedGuid;
 
-          // Validate specifications if provided
+          // Validate specifications against device state
+          final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
           final List<int> specValues = [];
-          if (specifications != null && specifications.isNotEmpty) {
-            // Convert dynamic list to int list
-            specValues.addAll(
-              specifications.whereType<int>(),
-            );
+
+          if (requiredSpecs.isNotEmpty) {
+            if (specifications == null || specifications.isEmpty) {
+              algorithmResults.add({
+                'index': i,
+                'success': false,
+                'error': 'Algorithm "$algoDisplayName" requires ${requiredSpecs.length} specification(s)',
+                'specifications': requiredSpecs.map((s) => {
+                  'name': s.name,
+                  'min': s.min,
+                  'max': s.max,
+                  'default': s.defaultValue,
+                }).toList(),
+              });
+              continue;
+            }
+
+            if (specifications.length != requiredSpecs.length) {
+              algorithmResults.add({
+                'index': i,
+                'success': false,
+                'error': 'Algorithm "$algoDisplayName" requires ${requiredSpecs.length} specification(s), got ${specifications.length}',
+                'specifications': requiredSpecs.map((s) => {
+                  'name': s.name,
+                  'min': s.min,
+                  'max': s.max,
+                  'default': s.defaultValue,
+                }).toList(),
+              });
+              continue;
+            }
+
+            bool specError = false;
+            for (int j = 0; j < specifications.length; j++) {
+              final spec = requiredSpecs[j];
+              final value = specifications[j];
+              if (value is! int) {
+                algorithmResults.add({
+                  'index': i,
+                  'success': false,
+                  'error': 'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
+                });
+                specError = true;
+                break;
+              }
+              if (value < spec.min || value > spec.max) {
+                algorithmResults.add({
+                  'index': i,
+                  'success': false,
+                  'error': 'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+                });
+                specError = true;
+                break;
+              }
+              specValues.add(value);
+            }
+            if (specError) continue;
+          } else if (specifications != null && specifications.isNotEmpty) {
+            specValues.addAll(specifications.whereType<int>());
           }
 
           // Add algorithm to preset
@@ -2294,16 +2451,16 @@ class DistingTools {
             final algorithm = Algorithm(
               algorithmIndex: -1,
               guid: resolvedGuid,
-              name: algorithmMetadata.name,
+              name: algoDisplayName,
               specifications: specValues,
             );
-            await _controller.addAlgorithm(algorithm);
+            await _addAlgorithmAndVerify(algorithm);
 
             algorithmResults.add({
               'index': i,
               'success': true,
               'guid': resolvedGuid,
-              'name': algorithmMetadata.name,
+              'name': algoDisplayName,
             });
           } catch (e) {
             algorithmResults.add({
@@ -2311,23 +2468,6 @@ class DistingTools {
               'success': false,
               'error': 'Failed to add algorithm: ${e.toString()}',
             });
-          }
-        }
-      }
-
-      // Ensure all slots have real parameter data before responding.
-      // The cubit's addAlgorithm uses optimistic placeholders with empty
-      // parameters, and verification can get cancelled when multiple
-      // algorithms are added in sequence. Force-refresh any incomplete slots.
-      final currentState = _distingCubit.state;
-      if (currentState is DistingStateSynchronized) {
-        for (int i = 0; i < currentState.slots.length; i++) {
-          if (currentState.slots[i].parameters.isEmpty) {
-            try {
-              await _distingCubit.refreshSlot(i);
-            } catch (_) {
-              // Slot may genuinely have no parameters
-            }
           }
         }
       }
@@ -2786,8 +2926,7 @@ class DistingTools {
           );
         }
 
-        final metadataService = AlgorithmMetadataService();
-        final allAlgorithms = metadataService.getAllAlgorithms();
+        final allAlgorithms = _getAllKnownAlgorithms();
 
         final resolution = AlgorithmResolver.resolveAlgorithm(
           guid: algoGuid,
@@ -2801,30 +2940,62 @@ class DistingTools {
 
         resolvedAlgorithmGuid = resolution.resolvedGuid!;
 
-        // Validate algorithm exists in metadata
-        final metadataService2 = AlgorithmMetadataService();
-        final algorithmInfo = metadataService2.getAlgorithmByGuid(
-          resolvedAlgorithmGuid,
-        );
-        if (algorithmInfo == null) {
-          return jsonEncode(
-            convertToSnakeCaseKeys(
-              MCPUtils.buildError(
-                'Algorithm with GUID "$resolvedAlgorithmGuid" not found in metadata',
-              ),
-            ),
-          );
-        }
-
-        // Validate specifications if provided
+        // Validate specifications using device state
+        final deviceAlgoInfo = _getDeviceAlgorithmInfo(resolvedAlgorithmGuid);
         final List<dynamic>? specifications =
             algorithmData['specifications'] as List<dynamic>?;
-        if (specifications != null && specifications.isNotEmpty) {
-          if (specifications.length > algorithmInfo.specifications.length) {
+        final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
+
+        if (requiredSpecs.isNotEmpty) {
+          if (specifications == null || specifications.isEmpty) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                _buildSpecRequiredError(resolvedAlgorithmGuid, requiredSpecs),
+              ),
+            );
+          }
+
+          if (specifications.length != requiredSpecs.length) {
+            return jsonEncode(
+              convertToSnakeCaseKeys({
+                ..._buildSpecRequiredError(resolvedAlgorithmGuid, requiredSpecs),
+                'error': 'Algorithm "$resolvedAlgorithmGuid" requires ${requiredSpecs.length} specification(s), got ${specifications.length}.',
+              }),
+            );
+          }
+
+          for (int j = 0; j < specifications.length; j++) {
+            final spec = requiredSpecs[j];
+            final value = specifications[j];
+            if (value is! int) {
+              return jsonEncode(
+                convertToSnakeCaseKeys(
+                  MCPUtils.buildError(
+                    'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
+                  ),
+                ),
+              );
+            }
+            if (value < spec.min || value > spec.max) {
+              return jsonEncode(
+                convertToSnakeCaseKeys(
+                  MCPUtils.buildError(
+                    'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+                  ),
+                ),
+              );
+            }
+          }
+        } else if (specifications != null && specifications.isNotEmpty) {
+          // Algorithm has no specs but some were provided - validate count from metadata
+          final metadataService = AlgorithmMetadataService();
+          final algorithmMetadata = metadataService.getAlgorithmByGuid(resolvedAlgorithmGuid);
+          if (algorithmMetadata != null &&
+              specifications.length > algorithmMetadata.specifications.length) {
             return jsonEncode(
               convertToSnakeCaseKeys(
                 MCPUtils.buildError(
-                  'Algorithm "$resolvedAlgorithmGuid" expects ${algorithmInfo.specifications.length} specification(s), got ${specifications.length}',
+                  'Algorithm "$resolvedAlgorithmGuid" expects ${algorithmMetadata.specifications.length} specification(s), got ${specifications.length}',
                 ),
               ),
             );
@@ -2920,13 +3091,22 @@ class DistingTools {
       if (resolvedAlgorithmGuid != null &&
           currentAlgorithm?.guid != resolvedAlgorithmGuid) {
         try {
+          // Collect spec values if provided
+          final List<int> specValues = [];
+          final algorithmData2 = data['algorithm'] as Map<String, dynamic>?;
+          final specList = algorithmData2?['specifications'] as List<dynamic>?;
+          if (specList != null) {
+            specValues.addAll(specList.whereType<int>());
+          }
+
           await _controller.clearSlot(slotIndex);
           final newAlgorithm = Algorithm(
             algorithmIndex: -1,
             guid: resolvedAlgorithmGuid,
             name: '',
+            specifications: specValues,
           );
-          await _controller.addAlgorithm(newAlgorithm);
+          await _addAlgorithmAndVerify(newAlgorithm);
         } catch (e) {
           return jsonEncode(
             convertToSnakeCaseKeys(
@@ -3539,7 +3719,7 @@ class DistingTools {
     }
 
     final metadataService = AlgorithmMetadataService();
-    final allAlgorithms = metadataService.getAllAlgorithms();
+    final allAlgorithms = _getAllKnownAlgorithms();
 
     // Validate algorithms in desired slots
     for (final entry in desiredSlots.entries) {
@@ -3746,7 +3926,7 @@ class DistingTools {
       }
 
       // Step 2: Add or update algorithms in desired slots
-      final allAlgorithms = metadataService.getAllAlgorithms();
+      final allAlgorithms = _getAllKnownAlgorithms();
 
       for (final entry in desiredSlots.entries) {
         final slotIndex = entry.key;
@@ -3781,7 +3961,7 @@ class DistingTools {
             guid: resolvedGuid,
             name: algorithmMetadata!.name,
           );
-          await _controller.addAlgorithm(algorithm);
+          await _addAlgorithmAndVerify(algorithm);
         }
 
         // Step 3: Update parameters if provided
