@@ -54,45 +54,63 @@ class DistingTools {
 
     await _controller.addAlgorithm(algorithm);
 
-    // Poll cubit state — the cubit's built-in verification (700ms + retries)
-    // will either replace the placeholder with real data or remove it.
-    for (int i = 0; i < 15; i++) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      final current = _distingCubit.state;
-      if (current is! DistingStateSynchronized) continue;
+    // The cubit creates an optimistic placeholder immediately, then runs
+    // async verification (700ms + retries over ~2s). But even after the
+    // cubit's verification succeeds, the device can reject the plugin
+    // asynchronously (e.g. memory error) — sometimes taking 5+ seconds.
+    //
+    // We must verify directly against the device hardware via MIDI,
+    // not trust the cubit state which may contain stale placeholders.
+    final disting = _distingCubit.requireDisting();
 
-      // Success: new slot has real parameters
-      if (current.slots.length > preAddCount) {
-        final newSlot = current.slots[preAddCount];
-        if (newSlot.parameters.isNotEmpty) return preAddCount;
+    // Wait for the cubit's verification cycle, then poll the device
+    // directly for up to ~10 seconds total.
+    await Future.delayed(const Duration(milliseconds: 3000));
+
+    for (int i = 0; i < 15; i++) {
+      final deviceCount =
+          await disting.requestNumAlgorithmsInPreset() ?? 0;
+
+      if (deviceCount > preAddCount) {
+        // Device has the new slot — verify it's our algorithm.
+        final addedAlgo =
+            await disting.requestAlgorithmGuid(preAddCount);
+        if (addedAlgo != null && addedAlgo.guid == algorithm.guid) {
+          // Ensure cubit state catches up.
+          try {
+            await _distingCubit.refreshSlot(preAddCount);
+          } catch (_) {}
+          return preAddCount;
+        }
       }
 
-      // Failure: placeholder was removed (slot count went back)
-      if (current.slots.length <= preAddCount && i >= 4) {
+      if (deviceCount <= preAddCount) {
+        // Device doesn't have the slot — rejected.
+        // Clean up the cubit's stale placeholder.
+        await _distingCubit.refresh();
         throw StateError(
           'Device rejected algorithm "${algorithm.guid}". '
           'The plugin may have failed to load.',
         );
       }
+
+      await Future.delayed(const Duration(milliseconds: 500));
     }
 
-    // Timeout fallback: try refreshSlot, then check
-    final current = _distingCubit.state;
-    if (current is DistingStateSynchronized &&
-        current.slots.length > preAddCount) {
+    // Final check after all retries.
+    final finalCount =
+        await disting.requestNumAlgorithmsInPreset() ?? 0;
+    if (finalCount > preAddCount) {
       try {
         await _distingCubit.refreshSlot(preAddCount);
       } catch (_) {}
-      final refreshed = _distingCubit.state;
-      if (refreshed is DistingStateSynchronized &&
-          refreshed.slots.length > preAddCount) {
-        return preAddCount;
-      }
+      return preAddCount;
     }
 
+    await _distingCubit.refresh();
     throw StateError(
-      'Could not verify algorithm "${algorithm.guid}" was added. '
-      'The device may not be responding.',
+      'Device rejected algorithm "${algorithm.guid}". '
+      'The plugin may have failed to load.',
     );
   }
 
