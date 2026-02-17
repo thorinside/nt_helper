@@ -950,6 +950,12 @@ class McpServerService extends ChangeNotifier {
             'maximum': 31,
             'description': 'Insert position (0-31). Omit for first empty slot.',
           },
+          'specifications': {
+            'type': 'array',
+            'items': {'type': 'integer'},
+            'description':
+                'Specification values for algorithms that require them (e.g., channel count, max delay time).',
+          },
         },
         required: ['target'],
       ),
