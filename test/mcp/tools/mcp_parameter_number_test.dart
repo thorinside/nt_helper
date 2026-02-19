@@ -903,6 +903,43 @@ void main() {
       // Display-scaled: 10000 / 10^2 = 100.0
       expect(match['max'], equals(100.0));
     });
+
+    test(
+        'searchParametersInPreset exact match ignores surrounding whitespace in parameter names',
+        () async {
+      final whitespaceyParameters = [
+        ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          min: 0,
+          max: 10000,
+          defaultValue: 5000,
+          unit: 0,
+          name: 'Speed ',
+          powerOfTen: 0,
+        ),
+      ];
+
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => whitespaceyParameters);
+      when(() => controller.getParameterValue(0, 0)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 12),
+      );
+
+      final result = await distingTools.searchParametersInPreset('Speed', false);
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isTrue);
+      final results = json['results'] as List<dynamic>;
+      expect(results, hasLength(1));
+
+      final slotResult = results[0] as Map<String, dynamic>;
+      final matches = slotResult['matches'] as List<dynamic>;
+      expect(matches, hasLength(1));
+      final match = matches[0] as Map<String, dynamic>;
+      expect(match['parameter_name'], equals('Speed '));
+    });
   });
 
   group('getMultipleParameters — value extraction', () {

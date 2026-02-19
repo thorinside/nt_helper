@@ -4434,7 +4434,7 @@ class DistingTools {
     final bool partialMatch = params['partial_match'] as bool? ?? false;
 
     // Validate parameters
-    if (query == null || query.isEmpty) {
+    if (query == null || query.trim().isEmpty) {
       return jsonEncode(
         convertToSnakeCaseKeys(
           MCPUtils.buildError(
@@ -4455,7 +4455,7 @@ class DistingTools {
     }
 
     if (scope == 'preset') {
-      return searchParametersInPreset(query, partialMatch);
+      return searchParametersInPreset(query.trim(), partialMatch);
     } else if (scope == 'slot') {
       if (slotIndex == null) {
         return jsonEncode(
@@ -4466,7 +4466,7 @@ class DistingTools {
           ),
         );
       }
-      return searchParametersInSlot(slotIndex, query, partialMatch);
+      return searchParametersInSlot(slotIndex, query.trim(), partialMatch);
     } else {
       return jsonEncode(
         convertToSnakeCaseKeys(
@@ -4485,13 +4485,23 @@ class DistingTools {
     String searchQuery,
     bool partialMatch,
   ) {
+    final normalizedQuery = _normalizeParameterSearchText(searchQuery);
     return parameters.where((p) {
+      final normalizedName = _normalizeParameterSearchText(p.name);
       if (partialMatch) {
-        return p.name.toLowerCase().contains(searchQuery.toLowerCase());
+        return normalizedName.contains(normalizedQuery);
       } else {
-        return p.name.toLowerCase() == searchQuery.toLowerCase();
+        return normalizedName == normalizedQuery;
       }
     }).toList();
+  }
+
+  String _normalizeParameterSearchText(String value) {
+    final withStandardSpaces = value.replaceAll('\u00A0', ' ');
+    return withStandardSpaces
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .toLowerCase();
   }
 
   /// MCP Tool: Search for parameters in the entire preset
@@ -4505,7 +4515,8 @@ class DistingTools {
     bool partialMatch,
   ) async {
     try {
-      if (query.isEmpty) {
+      final normalizedQuery = query.trim();
+      if (normalizedQuery.isEmpty) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError('Search query cannot be empty.'),
@@ -4537,7 +4548,7 @@ class DistingTools {
 
           final matchingParams = _findMatchingParameters(
             parameterInfos,
-            query,
+            normalizedQuery,
             partialMatch,
           );
 
@@ -4578,7 +4589,7 @@ class DistingTools {
             data: {
               'target': 'parameter',
               'scope': 'preset',
-              'query': query,
+              'query': normalizedQuery,
               'partial_match': partialMatch,
               'total_matches': totalMatches,
               'results': results,
@@ -4606,12 +4617,13 @@ class DistingTools {
     bool partialMatch,
   ) async {
     try {
+      final normalizedQuery = query.trim();
       final slotError = MCPUtils.validateSlotIndex(slotIndex);
       if (slotError != null) {
         return jsonEncode(convertToSnakeCaseKeys(slotError));
       }
 
-      if (query.isEmpty) {
+      if (normalizedQuery.isEmpty) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError('Search query cannot be empty.'),
@@ -4633,7 +4645,7 @@ class DistingTools {
 
       final matchingParams = _findMatchingParameters(
         parameterInfos,
-        query,
+        normalizedQuery,
         partialMatch,
       );
 
@@ -4666,7 +4678,7 @@ class DistingTools {
               'slot_index': slotIndex,
               'algorithm_name': algorithm.name,
               'algorithm_guid': algorithm.guid,
-              'query': query,
+              'query': normalizedQuery,
               'partial_match': partialMatch,
               'total_matches': matchingParams.length,
               'matches': matches,
