@@ -723,21 +723,23 @@ class MCPAlgorithmTools {
     }
 
     final slot = state.slots[slotIndex];
-    if (parameterNumber < 0 || parameterNumber >= slot.parameters.length) {
+    final paramIdx = slot.parameters.indexWhere((p) => p.parameterNumber == parameterNumber);
+    if (paramIdx == -1) {
+      final available = slot.parameters.map((p) => p.parameterNumber).toList();
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid parameter number: $parameterNumber. Slot has ${slot.parameters.length} parameters (0-${slot.parameters.length - 1}).',
+          'error': 'Parameter number $parameterNumber not found in slot $slotIndex. Available parameter numbers: $available',
         }),
       );
     }
 
-    final parameter = slot.parameters[parameterNumber];
-    final value = slot.values[parameterNumber];
-    final mapping = slot.mappings[parameterNumber];
+    final parameter = slot.parameters[paramIdx];
+    final value = slot.values[paramIdx];
+    final mapping = slot.mappings[paramIdx];
 
     final paramJson = _buildParameterJson(
-      parameterNumber,
+      parameter.parameterNumber,
       parameter,
       value,
       mapping,
@@ -863,7 +865,7 @@ class MCPAlgorithmTools {
       final param = slot.parameters[i];
       final value = slot.values[i];
       final mapping = slot.mappings[i];
-      parametersJson.add(_buildParameterJson(i, param, value, mapping));
+      parametersJson.add(_buildParameterJson(param.parameterNumber, param, value, mapping));
     }
 
     return {

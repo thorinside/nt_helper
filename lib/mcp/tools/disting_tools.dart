@@ -3058,12 +3058,14 @@ class DistingTools {
           final List<ParameterInfo> parameterInfos =
               await _controller.getParametersForSlot(slotIndex);
 
-          // Validate parameter number
-          if (paramNumber < 0 || paramNumber >= parameterInfos.length) {
+          // Validate parameter number (by hardware parameter number, not array index)
+          final paramIdx = parameterInfos.indexWhere((p) => p.parameterNumber == paramNumber);
+          if (paramIdx == -1) {
+            final available = parameterInfos.map((p) => p.parameterNumber).toList();
             return jsonEncode(
               convertToSnakeCaseKeys(
                 MCPUtils.buildError(
-                  'Parameter number $paramNumber out of range (0-${parameterInfos.length - 1})',
+                  'Parameter number $paramNumber not found. Available parameter numbers: $available',
                 ),
               ),
             );
@@ -3082,7 +3084,7 @@ class DistingTools {
               );
             }
 
-            final pInfo = parameterInfos[paramNumber];
+            final pInfo = parameterInfos[paramIdx];
             final numValue = paramValue.toInt();
 
             // Validate against parameter bounds
@@ -3358,26 +3360,26 @@ class DistingTools {
       String? parameterName;
 
       if (parameterIdent is int) {
-        // Parameter identified by number
-        parameterNumber = parameterIdent;
-        if (parameterNumber < 0 || parameterNumber >= parameters.length) {
-          final availableNames =
-              parameters.map((p) => p.name).toList().join(', ');
+        // Parameter identified by hardware parameter number
+        final idx = parameters.indexWhere((p) => p.parameterNumber == parameterIdent);
+        if (idx == -1) {
+          final available = parameters.map((p) => '${p.parameterNumber}: ${p.name}').toList().join(', ');
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
-                'Parameter number $parameterNumber out of range (0-${parameters.length - 1}). Available parameters: $availableNames',
+                'Parameter number $parameterIdent not found. Available parameters: $available',
               ),
             ),
           );
         }
-        parameterName = parameters[parameterNumber].name;
+        parameterNumber = parameterIdent;
+        parameterName = parameters[idx].name;
       } else if (parameterIdent is String) {
         // Parameter identified by name (exact match)
         bool found = false;
         for (int i = 0; i < parameters.length; i++) {
           if (parameters[i].name == parameterIdent) {
-            parameterNumber = i;
+            parameterNumber = parameters[i].parameterNumber;
             parameterName = parameterIdent;
             found = true;
             break;
@@ -3402,7 +3404,8 @@ class DistingTools {
         );
       }
 
-      final ParameterInfo paramInfo = parameters[parameterNumber!];
+      final int resolvedParameterNumber = parameterNumber!;
+      final ParameterInfo paramInfo = parameters.firstWhere((p) => p.parameterNumber == resolvedParameterNumber);
 
       // Step 5: Validate value (if provided) — convert display→raw
       int? rawValue;
@@ -3432,7 +3435,7 @@ class DistingTools {
       // Step 6: Validate mapping (if provided)
       if (mapping != null && mapping.isNotEmpty) {
         final validationError =
-            await _validateMappingFields(slotIndex, parameterNumber, mapping);
+            await _validateMappingFields(slotIndex, resolvedParameterNumber, mapping);
         if (validationError != null) {
           return jsonEncode(
             convertToSnakeCaseKeys(
@@ -3447,7 +3450,7 @@ class DistingTools {
       if (value != null && rawValue != null) {
         await _controller.updateParameterValue(
           slotIndex,
-          parameterNumber,
+          resolvedParameterNumber,
           rawValue,
         );
       }
@@ -3456,7 +3459,7 @@ class DistingTools {
       if (mapping != null && mapping.isNotEmpty) {
         await _applyMappingUpdates(
           slotIndex,
-          parameterNumber,
+          resolvedParameterNumber,
           mapping,
         );
       }
@@ -3466,13 +3469,13 @@ class DistingTools {
 
       // Step 8: Format return value
       final updatedParamValue =
-          await _controller.getParameterValue(slotIndex, parameterNumber);
+          await _controller.getParameterValue(slotIndex, resolvedParameterNumber);
       final updatedValue = updatedParamValue?.value ?? 0;
       final scaledValue = _scaleForDisplay(updatedValue, paramInfo.powerOfTen);
 
       final Map<String, dynamic> result = {
         'slot_index': slotIndex,
-        'parameter_number': parameterNumber,
+        'parameter_number': resolvedParameterNumber,
         'parameter_name': parameterName,
         'value': scaledValue,
         'is_disabled': updatedParamValue?.isDisabled ?? false,
@@ -3480,7 +3483,7 @@ class DistingTools {
 
       // Include mappings if any are enabled
       final updatedMapping =
-          await _controller.getParameterMapping(slotIndex, parameterNumber);
+          await _controller.getParameterMapping(slotIndex, resolvedParameterNumber);
       final mappingJson = await _buildMappingJson(updatedMapping);
       if (mappingJson != null && (mappingJson as Map).isNotEmpty) {
         result['mapping'] = mappingJson;

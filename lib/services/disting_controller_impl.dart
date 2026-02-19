@@ -45,7 +45,7 @@ class DistingControllerImpl implements DistingController {
     }
   }
 
-  /// Helper to validate a parameter number within a slot.
+  /// Helper to validate a hardware parameter number within a slot.
   void _validateParameterNumber(
     int slotIndex,
     int parameterNumber,
@@ -54,12 +54,26 @@ class DistingControllerImpl implements DistingController {
     _validateSlotIndex(slotIndex);
 
     final Slot slotData = state.slots[slotIndex];
+    final idx = slotData.parameters.indexWhere((p) => p.parameterNumber == parameterNumber);
 
-    if (parameterNumber < 0 || parameterNumber >= slotData.parameters.length) {
+    if (idx == -1) {
+      final available = slotData.parameters.map((p) => p.parameterNumber).toList();
       throw ArgumentError(
-        'Invalid parameter index: $parameterNumber for slot $slotIndex. Algorithm "${slotData.algorithm.name}" has ${slotData.parameters.length} parameters (0 to ${slotData.parameters.length - 1}).',
+        'Parameter number $parameterNumber not found in slot $slotIndex. Available: $available',
       );
     }
+  }
+
+  /// Find the array index for a hardware parameter number within a slot.
+  int _findParameterArrayIndex(Slot slotData, int parameterNumber) {
+    final idx = slotData.parameters.indexWhere((p) => p.parameterNumber == parameterNumber);
+    if (idx == -1) {
+      final available = slotData.parameters.map((p) => p.parameterNumber).toList();
+      throw ArgumentError(
+        'Parameter number $parameterNumber not found. Available: $available',
+      );
+    }
+    return idx;
   }
 
   @override
@@ -140,7 +154,7 @@ class DistingControllerImpl implements DistingController {
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
     final Slot slotData = state.slots[slotIndex];
-    final ParameterInfo paramInfo = slotData.parameters[parameterNumber];
+    final ParameterInfo paramInfo = slotData.parameters.firstWhere((p) => p.parameterNumber == parameterNumber);
 
     final int intValue;
     if (value is int) {
@@ -159,7 +173,7 @@ class DistingControllerImpl implements DistingController {
 
     if (intValue < paramInfo.min || intValue > paramInfo.max) {
       throw ArgumentError(
-        'Value $intValue for parameter "${paramInfo.name}" (index $parameterNumber) in slot $slotIndex is out of range (min: ${paramInfo.min}, max: ${paramInfo.max}).',
+        'Value $intValue for parameter "${paramInfo.name}" (parameter $parameterNumber) in slot $slotIndex is out of range (min: ${paramInfo.min}, max: ${paramInfo.max}).',
       );
     }
 
@@ -229,11 +243,9 @@ class DistingControllerImpl implements DistingController {
     final Slot slotData = state.slots[slotIndex];
 
     try {
-      // Access the parameter string value directly from the slot's valueStrings
-      // This is separate from the parameter value and is used for text-based parameters
-      // like those in the Notes algorithm
-      if (parameterNumber < slotData.valueStrings.length) {
-        return slotData.valueStrings[parameterNumber].value;
+      final idx = _findParameterArrayIndex(slotData, parameterNumber);
+      if (idx < slotData.valueStrings.length) {
+        return slotData.valueStrings[idx].value;
       }
 
       return null;
@@ -344,9 +356,9 @@ class DistingControllerImpl implements DistingController {
 
       final slot = state.slots[slotIndex];
 
-      // Get mapping data for this parameter
-      if (parameterNumber >= 0 && parameterNumber < slot.mappings.length) {
-        return slot.mappings[parameterNumber];
+      final idx = _findParameterArrayIndex(slot, parameterNumber);
+      if (idx < slot.mappings.length) {
+        return slot.mappings[idx];
       }
       return null;
     } catch (e) {
