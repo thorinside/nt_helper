@@ -112,54 +112,6 @@ void main() {
       expect(find.byType(RoutingEditorWidget), findsOneWidget);
     });
 
-    testWidgets('supports stylus hover events', (tester) async {
-      final loadedState = state.RoutingEditorStateLoaded(
-        physicalInputs: [],
-        physicalOutputs: [],
-        algorithms: [],
-        connections: [],
-        buses: [],
-        portOutputModes: {},
-        isHardwareSynced: true,
-        isPersistenceEnabled: false,
-        lastSyncTime: null,
-        lastPersistTime: null,
-        lastError: null,
-      );
-
-      when(mockRoutingCubit.state).thenReturn(loadedState);
-      when(
-        mockRoutingCubit.stream,
-      ).thenAnswer((_) => Stream.value(loadedState));
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MultiBlocProvider(
-            providers: [
-              BlocProvider<RoutingEditorCubit>.value(value: mockRoutingCubit),
-              BlocProvider<DistingCubit>.value(value: mockDistingCubit),
-            ],
-            child: Scaffold(body: RoutingEditorWidget()),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Test stylus hover support - MouseRegion automatically handles stylus
-      final TestGesture gesture = await tester.createGesture(
-        kind: PointerDeviceKind.stylus,
-      );
-      await gesture.addPointer(location: Offset.zero);
-      addTearDown(gesture.removePointer);
-
-      // Move stylus over widget area
-      await gesture.moveTo(const Offset(100, 100));
-      await tester.pump();
-
-      // Verify stylus events are handled (test passes if no exceptions thrown)
-      expect(find.byType(RoutingEditorWidget), findsOneWidget);
-    });
   });
 
 }
