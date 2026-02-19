@@ -1,7 +1,6 @@
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'algorithm_routing.dart';
-import 'bus_spec.dart';
 import 'models/port.dart';
 
 /// Routing implementation for USB Audio (From Host) algorithm.
@@ -75,14 +74,8 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
 
   /// USB-specific extraction of IO parameters.
   ///
-  /// Finds the 8 USB channel "to" parameters using robust heuristics and returns a
+  /// Uses IO flags to find the 8 USB channel output parameters and returns a
   /// map of parameter name -> current value. Includes 0 values (None).
-  ///
-  /// Heuristics and ordering:
-  /// - Prefer enum-style bus params whose name contains 'to' and whose range
-  ///   matches bus-like values (min 0/1, max 27/28/30/31).
-  /// - If fewer than 8 by name, fall back to any bus-like enum params.
-  /// - Sort by parameterNumber and keep the first 8 to define channels 1..8.
   static Map<String, int> extractIOParameters(Slot slot) {
     final result = <String, int>{};
 
@@ -222,26 +215,10 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
   }
 
   static List<ParameterInfo> _findUsbToParams(Slot slot) {
-    // Collect candidate 'to' params: enum-style bus params with names hinting at routing
+    // Use IO flags to find output parameters
     var toParams = [
-      for (final p in slot.parameters)
-        if (p.unit == 1 &&
-            (p.min == 0 || p.min == 1) &&
-            BusSpec.isBusParameterMaxValue(p.max) &&
-            p.name.toLowerCase().contains('to'))
-          p,
+      for (final p in slot.parameters) if (p.isOutput) p,
     ];
-
-    // Fallback: take any bus-like enum params if we didn't find 8
-    if (toParams.length != 8) {
-      toParams = [
-        for (final p in slot.parameters)
-          if (p.unit == 1 &&
-              (p.min == 0 || p.min == 1) &&
-              BusSpec.isBusParameterMaxValue(p.max))
-            p,
-      ];
-    }
 
     // Sort stably by parameter number and keep the first 8
     toParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
@@ -253,9 +230,9 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
   }
 
   static List<ParameterInfo> _findUsbModeParams(Slot slot) {
+    // Use IO flags to find output mode parameters
     var modeParams = [
-      for (final p in slot.parameters)
-        if (p.unit == 1 && p.name.toLowerCase().contains('mode')) p,
+      for (final p in slot.parameters) if (p.isOutputMode) p,
     ];
 
     // Sort by parameter number to keep channel order stable

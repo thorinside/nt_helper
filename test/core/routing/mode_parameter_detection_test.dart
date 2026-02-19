@@ -646,6 +646,7 @@ Slot _createMixedAlgorithmSlot() {
       unit: 1, // enum
       name: 'Input 1',
       powerOfTen: 0,
+      ioFlags: 1, // isInput
     ),
     ParameterInfo(
       algorithmIndex: 0,
@@ -656,6 +657,7 @@ Slot _createMixedAlgorithmSlot() {
       unit: 1, // enum
       name: 'Main Out',
       powerOfTen: 0,
+      ioFlags: 2, // isOutput
     ),
     ParameterInfo(
       algorithmIndex: 0,
@@ -666,6 +668,7 @@ Slot _createMixedAlgorithmSlot() {
       unit: 1, // enum
       name: 'Main Out mode',
       powerOfTen: 0,
+      ioFlags: 8, // isOutputMode
     ),
     ParameterInfo(
       algorithmIndex: 0,
@@ -676,6 +679,7 @@ Slot _createMixedAlgorithmSlot() {
       unit: 1, // enum
       name: 'Aux Out',
       powerOfTen: 0,
+      ioFlags: 2, // isOutput
     ),
   ];
 

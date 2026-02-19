@@ -45,6 +45,7 @@ void main() {
               defaultValue: 1,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 5, // isInput | isAudio
             ),
             ParameterInfo(
               algorithmIndex: 0,
@@ -55,6 +56,7 @@ void main() {
               defaultValue: 0,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 6, // isOutput | isAudio
             ),
           ],
           values: [
@@ -86,6 +88,7 @@ void main() {
               defaultValue: 1,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 5, // isInput | isAudio
             ),
             ParameterInfo(
               algorithmIndex: 0,
@@ -96,6 +99,7 @@ void main() {
               defaultValue: 0,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 6, // isOutput | isAudio
             ),
           ],
           values: [
@@ -252,6 +256,7 @@ void main() {
               defaultValue: 0,
               unit: 1, // Enum type (routing parameter)
               powerOfTen: 0,
+              ioFlags: 5, // isInput | isAudio
             ),
           ],
         );

@@ -57,6 +57,7 @@ void main() {
           defaultValue: 1,
           unit: 1, // bus
           powerOfTen: 0,
+          ioFlags: 5, // isInput | isAudio
         ),
         ParameterInfo(
           algorithmIndex: 0,
@@ -67,6 +68,7 @@ void main() {
           defaultValue: 13,
           unit: 1, // bus
           powerOfTen: 0,
+          ioFlags: 6, // isOutput | isAudio
         ),
         ParameterInfo(
           algorithmIndex: 0,
@@ -77,6 +79,7 @@ void main() {
           defaultValue: 14,
           unit: 1, // bus
           powerOfTen: 0,
+          ioFlags: 6, // isOutput | isAudio
         ),
         // Per-channel parameters
         ParameterInfo(
@@ -124,6 +127,7 @@ void main() {
             defaultValue: 15,
             unit: 1, // bus
             powerOfTen: 0,
+            ioFlags: 6, // isOutput | isAudio
           ),
           ParameterInfo(
             algorithmIndex: 0,
@@ -154,6 +158,7 @@ void main() {
             defaultValue: 0,
             unit: 0,
             powerOfTen: 0,
+            ioFlags: 8, // isOutputMode
           ),
           // Send 2 parameters
           ParameterInfo(
@@ -165,6 +170,7 @@ void main() {
             defaultValue: 17,
             unit: 1, // bus
             powerOfTen: 0,
+            ioFlags: 6, // isOutput | isAudio
           ),
           ParameterInfo(
             algorithmIndex: 0,
@@ -195,6 +201,7 @@ void main() {
             defaultValue: 1,
             unit: 0,
             powerOfTen: 0,
+            ioFlags: 8, // isOutputMode
           ),
         ]);
       }

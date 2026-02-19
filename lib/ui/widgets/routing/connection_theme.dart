@@ -158,7 +158,10 @@ class ConnectionStyle {
   bool get isDashed => dashPattern != null && dashPattern!.isNotEmpty;
 }
 
-/// Port type color mapping for consistent visual language
+/// Port type color mapping for consistent visual language.
+///
+/// Only two signal types: audio (blue) and CV (orange).
+/// The isAudio IO flag determines the type; non-audio signals default to CV.
 class PortTypeColors {
   /// Audio signal color (blue family)
   static const Color audio = Color(0xFF2196F3);
@@ -166,37 +169,16 @@ class PortTypeColors {
   /// CV signal color (orange family)
   static const Color cv = Color(0xFFFF9800);
 
-  /// Gate signal color (red family)
-  static const Color gate = Color(0xFFF44336);
-
-  /// Clock/Trigger signal color (purple family)
-  static const Color clockTrigger = Color(0xFF9C27B0);
-
-  /// Default/unknown signal color (grey)
-  static const Color unknown = Color(0xFF757575);
-
-  /// Get color for a port type
+  /// Get color for a port type string
   static Color getColorForPortType(String portType) {
-    final type = portType.toLowerCase();
-
-    if (type.contains('audio')) return audio;
-    if (type.contains('cv')) return cv;
-    if (type.contains('gate')) return gate;
-    if (type.contains('clock') || type.contains('trigger')) return clockTrigger;
-
-    return unknown;
+    if (portType.toLowerCase().contains('audio')) return audio;
+    return cv;
   }
 
-  /// Get color for a port ID (analyzing the ID string)
+  /// Get color for a port ID
   static Color getColorForPortId(String portId) {
-    final id = portId.toLowerCase();
-
-    if (id.contains('audio')) return audio;
-    if (id.contains('cv')) return cv;
-    if (id.contains('gate')) return gate;
-    if (id.contains('clock') || id.contains('trigger')) return clockTrigger;
-
-    return unknown;
+    if (portId.toLowerCase().contains('audio')) return audio;
+    return cv;
   }
 }
 

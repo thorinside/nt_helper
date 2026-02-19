@@ -27,6 +27,7 @@ void main() {
               defaultValue: 0,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 2, // isOutput
             ),
           for (int i = 1; i <= 8; i++)
             ParameterInfo(
@@ -38,6 +39,7 @@ void main() {
               defaultValue: 0,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 8, // isOutputMode
             ),
         ],
         values: [
@@ -111,10 +113,11 @@ void main() {
               parameterNumber: i - 1,
               name: 'Ch $i to',
               min: 0,
-              max: 31, // Slightly different than 30 to exercise robustness
+              max: 31,
               defaultValue: 0,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 2, // isOutput
             ),
           for (int i = 1; i <= 8; i++)
             ParameterInfo(
@@ -126,6 +129,7 @@ void main() {
               defaultValue: 0,
               unit: 1,
               powerOfTen: 0,
+              ioFlags: 8, // isOutputMode
             ),
         ],
         values: [

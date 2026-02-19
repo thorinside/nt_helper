@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
-import 'bus_spec.dart';
 import 'models/routing_state.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
@@ -460,14 +459,8 @@ abstract class AlgorithmRouting {
 
   /// Helper method to extract routing-related parameters from a slot.
   ///
-  /// Identifies parameters that represent bus assignments for routing.
-  /// These are parameters with:
-  /// - unit == 1 (enum type)
-  /// - min is 0 or 1
-  /// - max is 27 or 28
-  ///
-  /// Additionally, any bus parameter that has a corresponding mode parameter
-  /// (same prefix + " mode" suffix) is definitively an output parameter.
+  /// Uses IO flags (`ParameterInfo.isInput`, `.isOutput`) to identify
+  /// parameters that represent bus assignments for routing.
   ///
   /// Parameters:
   /// - [slot]: The slot to analyze
@@ -475,8 +468,6 @@ abstract class AlgorithmRouting {
   /// Returns a map of parameter names to their bus values
   static Map<String, int> extractIOParameters(Slot slot) {
     // Special case: Notes algorithm (guid: 'note') has no I/O capabilities
-    // Even if it has parameters that look like bus parameters,
-    // they're not for routing audio/CV signals
     if (slot.algorithm.guid == 'note') {
       return {};
     }
@@ -487,79 +478,10 @@ abstract class AlgorithmRouting {
       for (final v in slot.values) v.parameterNumber: v.value,
     };
 
-    // Build enum lookup map for mode detection
-    final enumsByParam = <int, List<String>>{
-      for (final e in slot.enums) e.parameterNumber: e.values,
-    };
-
-    // First pass: identify all mode parameters and extract their prefixes
-    // These prefixes indicate definitive output parameters
-    final outputParameterPrefixes = <String>{};
     for (final param in slot.parameters) {
-      final enumValues = enumsByParam[param.parameterNumber];
-      final isModeParameter =
-          param.name.toLowerCase().endsWith(' mode') &&
-          param.unit == 1 &&
-          enumValues != null &&
-          enumValues.length >= 2 &&
-          enumValues.contains('Add') &&
-          enumValues.contains('Replace');
-
-      if (isModeParameter) {
-        // Extract the prefix by removing " mode" suffix
-        final prefix = param.name.substring(0, param.name.length - 5);
-        outputParameterPrefixes.add(prefix);
-      }
-    }
-
-    // Second pass: identify IO parameters
-    for (final param in slot.parameters) {
-      // Check if this parameter has a corresponding mode parameter
-      // If it does, it's definitively an output parameter
-      final hasMatchingModeParameter = outputParameterPrefixes.contains(
-        param.name,
-      );
-
-      // Bus parameters are identified by:
-      // - unit == 1 (enum type)
-      // - min is 0 or 1
-      // - max is 27 or 28 or 30
-      final isBusParameter =
-          param.unit == 1 &&
-          (param.min == 0 || param.min == 1) &&
-          BusSpec.isBusParameterMaxValue(param.max);
-
-      // CV count parameters are identified by:
-      // - name contains "CV count"
-      // - unit == 0 (numeric type)
-      final isCvCountParameter =
-          param.name.contains('CV count') && param.unit == 0;
-
-      // Boolean parameters for Poly CV outputs:
-      // - unit == 2 (boolean type)
-      // - name contains "outputs" (e.g., "Gate outputs", "Pitch outputs")
-      final isBooleanOutputParameter =
-          param.unit == 2 && param.name.contains('outputs');
-
-      // Include numeric parameters like "Voices" or "First output"
-      // - unit == 0 (numeric type)
-      // - name is exactly "Voices" or "First output"
-      final isPolyCvNumericParameter =
-          param.unit == 0 &&
-          (param.name == 'Voices' || param.name == 'First output');
-
-      // Include if it matches any criteria OR if it has a matching mode parameter
-      if (isBusParameter ||
-          isCvCountParameter ||
-          isBooleanOutputParameter ||
-          isPolyCvNumericParameter ||
-          (hasMatchingModeParameter && isBusParameter)) {
+      if (param.isInput || param.isOutput) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
-        // Include all relevant parameters
-        // The subclass will decide how to handle them
         ioParameters[param.name] = value;
-
-        if (hasMatchingModeParameter) {}
       }
     }
 

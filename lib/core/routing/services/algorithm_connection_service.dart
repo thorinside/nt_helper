@@ -121,7 +121,10 @@ class AlgorithmConnectionService {
           targetAlgorithmIndex: -3, // Special index for physical outputs
           targetPortId: 'physical_output_$busNumber',
           busNumber: busNumber,
-          connectionType: _inferConnectionTypeFromParamName(outputParamName),
+          connectionType: _inferConnectionTypeFromAudioFlag(
+            outputParamName,
+            sourceBusInfo.audioParams,
+          ),
         );
 
         connections.add(connection);
@@ -144,11 +147,16 @@ class AlgorithmConnectionService {
 
     final inputBuses = <String, int>{};
     final outputBuses = <String, int>{};
+    final audioParams = <String>{};
 
     // Extract bus assignments using I/O flags from hardware metadata
     for (final param in slot.parameters) {
       final busValue =
           valueByParam[param.parameterNumber] ?? param.defaultValue;
+
+      if (param.isAudio) {
+        audioParams.add(param.name);
+      }
 
       // Skip "None" bus assignments (typically 0)
       if (busValue < _minBusNumber || busValue > _maxBusNumber) continue;
@@ -160,7 +168,6 @@ class AlgorithmConnectionService {
       } else if (param.isInput) {
         inputBuses[param.name] = busValue;
       }
-      // Parameters without I/O flags are not I/O parameters, skip them
     }
 
     return _SlotBusInfo(
@@ -168,6 +175,7 @@ class AlgorithmConnectionService {
       algorithmName: slot.algorithm.name,
       inputBuses: inputBuses,
       outputBuses: outputBuses,
+      audioParams: audioParams,
     );
   }
 
@@ -188,9 +196,9 @@ class AlgorithmConnectionService {
 
         // Create connection if buses match
         if (sourceBus == targetBus) {
-          final connectionType = _inferConnectionType(
+          final connectionType = _inferConnectionTypeFromAudioFlag(
             sourceOutput.key,
-            targetInput.key,
+            sourceBusInfo.audioParams,
           );
 
           final connection = AlgorithmConnection.withGeneratedId(
@@ -210,67 +218,15 @@ class AlgorithmConnectionService {
     return connections;
   }
 
-  /// Infers connection type from a single parameter name (for algorithm-to-physical connections)
-  AlgorithmConnectionType _inferConnectionTypeFromParamName(String paramName) {
-    final lower = paramName.toLowerCase();
-
-    // Check for CV connections
-    if (lower.contains('cv')) {
-      return AlgorithmConnectionType.controlVoltage;
-    }
-
-    // Check for gate/trigger connections
-    if (lower.contains('gate') || lower.contains('trigger')) {
-      return AlgorithmConnectionType.gateTrigger;
-    }
-
-    // Check for clock connections
-    if (lower.contains('clock')) {
-      return AlgorithmConnectionType.clockTiming;
-    }
-
-    // Default to audio signal for output parameters
-    return AlgorithmConnectionType.audioSignal;
-  }
-
-  /// Infers the connection type based on parameter names.
-  AlgorithmConnectionType _inferConnectionType(
-    String sourceParam,
-    String targetParam,
+  /// Infers connection type from the isAudio flag on the parameter.
+  AlgorithmConnectionType _inferConnectionTypeFromAudioFlag(
+    String paramName,
+    Set<String> audioParams,
   ) {
-    final sourceLower = sourceParam.toLowerCase();
-    final targetLower = targetParam.toLowerCase();
-
-    // Check for CV connections
-    if (sourceLower.contains('cv') || targetLower.contains('cv')) {
-      return AlgorithmConnectionType.controlVoltage;
-    }
-
-    // Check for gate/trigger connections
-    if (sourceLower.contains('gate') ||
-        sourceLower.contains('trigger') ||
-        targetLower.contains('gate') ||
-        targetLower.contains('trigger')) {
-      return AlgorithmConnectionType.gateTrigger;
-    }
-
-    // Check for clock connections
-    if (sourceLower.contains('clock') || targetLower.contains('clock')) {
-      return AlgorithmConnectionType.clockTiming;
-    }
-
-    // Check for audio connections
-    if (sourceLower.contains('audio') ||
-        sourceLower.contains('main') ||
-        sourceLower.contains('left') ||
-        sourceLower.contains('right') ||
-        targetLower.contains('audio') ||
-        targetLower.contains('wave')) {
+    if (audioParams.contains(paramName)) {
       return AlgorithmConnectionType.audioSignal;
     }
-
-    // Default to mixed for unclear cases
-    return AlgorithmConnectionType.mixed;
+    return AlgorithmConnectionType.controlVoltage;
   }
 
   /// Validates that a connection meets requirements.
@@ -343,12 +299,14 @@ class _SlotBusInfo {
   final String algorithmName;
   final Map<String, int> inputBuses;
   final Map<String, int> outputBuses;
+  final Set<String> audioParams;
 
   const _SlotBusInfo({
     required this.algorithmIndex,
     required this.algorithmName,
     required this.inputBuses,
     required this.outputBuses,
+    required this.audioParams,
   });
 
   @override
