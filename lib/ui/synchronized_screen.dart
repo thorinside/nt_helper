@@ -111,6 +111,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   late final Widget _cachedRoutingCanvas = _buildRoutingCanvas();
   StreamSubscription<RoutingEditorState>? _routingFocusSub;
   bool _isSyncingSelection = false;
+  bool _isAddAlgorithmOpen = false;
+  bool _isBrowsePresetsOpen = false;
+  bool _isShortcutHelpOpen = false;
   final SectionParameterController _sectionController =
       SectionParameterController();
 
@@ -474,7 +477,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               );
             }
           },
-          onShowShortcutHelp: () => ShortcutHelpOverlay.show(context),
+          onShowShortcutHelp: () => _handleShowShortcutHelp(),
           onSwitchToParameters: () {
             setState(() => _currentMode = EditMode.parameters);
             SemanticsService.sendAnnouncement(
@@ -544,6 +547,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
   }
 
+  Future<void> _handleShowShortcutHelp() async {
+    if (_isShortcutHelpOpen) return;
+    _isShortcutHelpOpen = true;
+    try {
+      await showDialog(
+        context: context,
+        builder: (_) => const ShortcutHelpOverlay(),
+      );
+    } finally {
+      _isShortcutHelpOpen = false;
+    }
+  }
+
   void _handleNewPresetShortcut(DistingCubit cubit) {
     if (widget.loading) return;
     cubit.newPreset();
@@ -555,59 +571,71 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   Future<void> _handleAddAlgorithmShortcut(DistingCubit cubit) async {
-    final view = View.of(context);
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            BlocProvider.value(value: cubit, child: const AddAlgorithmScreen()),
-      ),
-    );
+    if (_isAddAlgorithmOpen) return;
+    _isAddAlgorithmOpen = true;
+    try {
+      final view = View.of(context);
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BlocProvider.value(
+              value: cubit, child: const AddAlgorithmScreen()),
+        ),
+      );
 
-    if (result != null && result is Map) {
-      await cubit.onAlgorithmSelected(
-        result['algorithm'],
-        result['specValues'],
-      );
-      SemanticsService.sendAnnouncement(
-        view,
-        'Algorithm added',
-        TextDirection.ltr,
-      );
+      if (result != null && result is Map) {
+        await cubit.onAlgorithmSelected(
+          result['algorithm'],
+          result['specValues'],
+        );
+        SemanticsService.sendAnnouncement(
+          view,
+          'Algorithm added',
+          TextDirection.ltr,
+        );
+      }
+    } finally {
+      _isAddAlgorithmOpen = false;
     }
   }
 
   Future<void> _handleBrowsePresets(DistingCubit cubit) async {
-    final currentState = cubit.state;
-    if (currentState is DistingStateSynchronized && context.mounted) {
-      final midiManager = cubit.disting();
-      if (midiManager != null) {
-        final prefs = await SharedPreferences.getInstance();
-        if (!mounted) return;
-        final presetInfo = await showDialog(
-          context: context,
-          builder: (context) => BlocProvider(
-            create: (context) =>
-                PresetBrowserCubit(midiManager: midiManager, prefs: prefs),
-            child: PresetBrowserDialog(distingCubit: cubit),
-          ),
-        );
-        if (presetInfo != null && presetInfo is Map) {
-          final sdCardPath = presetInfo['sdCardPath'];
-          final action = presetInfo['action'] as PresetAction?;
-          if (sdCardPath != null && sdCardPath.isNotEmpty && action != null) {
-            switch (action) {
-              case PresetAction.load:
-                cubit.loadPreset(sdCardPath, false);
-                break;
-              case PresetAction.append:
-                break;
-              case PresetAction.export:
-                break;
+    if (_isBrowsePresetsOpen) return;
+    _isBrowsePresetsOpen = true;
+    try {
+      final currentState = cubit.state;
+      if (currentState is DistingStateSynchronized && context.mounted) {
+        final midiManager = cubit.disting();
+        if (midiManager != null) {
+          final prefs = await SharedPreferences.getInstance();
+          if (!mounted) return;
+          final presetInfo = await showDialog(
+            context: context,
+            builder: (context) => BlocProvider(
+              create: (context) =>
+                  PresetBrowserCubit(midiManager: midiManager, prefs: prefs),
+              child: PresetBrowserDialog(distingCubit: cubit),
+            ),
+          );
+          if (presetInfo != null && presetInfo is Map) {
+            final sdCardPath = presetInfo['sdCardPath'];
+            final action = presetInfo['action'] as PresetAction?;
+            if (sdCardPath != null && sdCardPath.isNotEmpty && action != null) {
+              switch (action) {
+                case PresetAction.load:
+                  cubit.loadPreset(sdCardPath, false);
+                  break;
+                case PresetAction.append:
+                  break;
+                case PresetAction.export:
+                  break;
+              }
             }
           }
         }
       }
+    } finally {
+      _isBrowsePresetsOpen = false;
     }
   }
 
