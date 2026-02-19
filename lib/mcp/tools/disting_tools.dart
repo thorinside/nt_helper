@@ -575,7 +575,7 @@ class DistingTools {
     try {
       // Check if slot is already empty
       final allSlots = await _controller.getAllSlots();
-      final currentAlgorithm = slotIndex < allSlots.length ? allSlots[slotIndex] : null;
+      final currentAlgorithm = allSlots[slotIndex];
 
       if (currentAlgorithm == null) {
         // Slot is already empty - be kind about it
@@ -847,10 +847,12 @@ class DistingTools {
       if (parameterName != null) {
         final List<ParameterInfo> paramInfos = await _controller
             .getParametersForSlot(slotIndex!);
-        final matchingParam = paramInfos.firstWhereOrNull(
-          (p) => p.name.toLowerCase() == parameterName.toLowerCase(),
-        );
-        if (matchingParam == null) {
+        final matchingParams = paramInfos
+            .where(
+              (p) => p.name.toLowerCase() == parameterName.toLowerCase(),
+            )
+            .toList();
+        if (matchingParams.isEmpty) {
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -859,7 +861,17 @@ class DistingTools {
             ),
           );
         }
-        resolvedParameterNumber = matchingParam.parameterNumber;
+        if (matchingParams.length > 1) {
+          final paramNumbers = matchingParams.map((p) => p.parameterNumber).join(', ');
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Parameter name "$parameterName" is ambiguous in slot $slotIndex. Found at parameter numbers: $paramNumbers. Please use parameter_number to disambiguate.',
+              ),
+            ),
+          );
+        }
+        resolvedParameterNumber = matchingParams.first.parameterNumber;
       }
 
       final ParameterValue? paramValue = await _controller.getParameterValue(
@@ -2168,10 +2180,10 @@ class DistingTools {
               'parameter_number': targetParamNumber,
               'parameter_name': paramInfo.name,
               'enum_values': enumValues,
-              'current_value_index': await _controller.getParameterValue(
+              'current_value_index': (await _controller.getParameterValue(
                 slotIndex,
                 targetParamNumber,
-              ),
+              ))?.value,
             },
           ),
         ),

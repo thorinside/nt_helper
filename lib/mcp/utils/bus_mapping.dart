@@ -73,19 +73,13 @@ class BusMapping {
   /// Convert semantic name to bus number
   static int? nameToBus(String name) {
     // Case-insensitive lookup
-    final normalizedName = name.trim();
-    return _nameToBus.entries
-        .firstWhere(
-          (entry) => entry.key.toLowerCase() == normalizedName.toLowerCase(),
-          orElse: () => const MapEntry('', -1),
-        )
-        .value == -1
-        ? null
-        : _nameToBus.entries
-            .firstWhere(
-              (entry) => entry.key.toLowerCase() == normalizedName.toLowerCase(),
-            )
-            .value;
+    final normalizedName = name.trim().toLowerCase();
+    for (final entry in _nameToBus.entries) {
+      if (entry.key.toLowerCase() == normalizedName) {
+        return entry.value;
+      }
+    }
+    return null;
   }
 
   /// Get all available bus names
