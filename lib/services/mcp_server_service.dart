@@ -779,7 +779,7 @@ class McpServerService extends ChangeNotifier {
                   'specifications': {
                     'type': 'array',
                     'description': 'Algorithm-specific specification values',
-                    'items': {'type': 'object'},
+                    'items': {'type': 'integer'},
                   },
                 },
               },
