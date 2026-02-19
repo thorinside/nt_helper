@@ -175,14 +175,7 @@ class McpServerService extends ChangeNotifier {
   }
 
   void _log(String message) {
-    try {
-      stderr.writeln('MCP_LOG: $message');
-      final file = File('/tmp/nt_mcp.log');
-      file.writeAsStringSync(
-        '${DateTime.now()}: $message\n',
-        mode: FileMode.append,
-      );
-    } catch (_) {}
+    DebugService().addLocalMessage('MCP: $message');
   }
 
   Future<void> _handleHttpRequest(HttpRequest request) async {
