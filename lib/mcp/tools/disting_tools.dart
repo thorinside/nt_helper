@@ -222,7 +222,7 @@ class DistingTools {
             // Build base parameter object
             final paramData = {
               'parameter_number': pInfo.parameterNumber,
-              'name': pInfo.name,
+              'parameter_name': pInfo.name,
               'min_value': _scaleForDisplay(
                 pInfo.min,
                 pInfo.powerOfTen,
@@ -562,7 +562,6 @@ class DistingTools {
     }
 
     // Validate slot_index range
-    const maxSlots = 32;
     if (slotIndex < 0 || slotIndex >= maxSlots) {
       return jsonEncode(
         convertToSnakeCaseKeys(
@@ -729,6 +728,19 @@ class DistingTools {
         } else if (value is num) {
           // Use numeric value directly
           rawValue = value.round();
+          final numericEnumValues = await _getParameterEnumValues(
+            slotIndex,
+            targetParameterNumber,
+          );
+          if (numericEnumValues != null && (rawValue < 0 || rawValue >= numericEnumValues.length)) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Enum index $rawValue out of range for parameter ${paramInfo.name}. Valid indices: 0-${numericEnumValues.length - 1}. Valid values: ${numericEnumValues.join(", ")}',
+                ),
+              ),
+            );
+          }
         } else {
           return jsonEncode(
             convertToSnakeCaseKeys(
@@ -785,6 +797,11 @@ class DistingTools {
         convertToSnakeCaseKeys(
           MCPUtils.buildSuccess(
             'Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $value.',
+            data: {
+              'value': value,
+              'parameter_number': targetParameterNumber,
+              'parameter_name': paramInfo.name,
+            },
           ),
         ),
       );
@@ -1716,9 +1733,9 @@ class DistingTools {
 
         if (resultMap['success'] == true) {
           results.add({
-            'parameter_number': parameterNumber,
-            'parameter_name': parameterName,
-            'value': value,
+            'parameter_number': resultMap['parameter_number'] ?? parameterNumber,
+            'parameter_name': resultMap['parameter_name'] ?? parameterName,
+            'value': resultMap['value'] ?? value,
           });
         } else {
           results.add({'error': resultMap['error'] ?? 'Unknown error'});
@@ -1817,6 +1834,7 @@ class DistingTools {
           results.add({
             'parameter_number': paramNum,
             'value': resultMap['value'],
+            'parameter_name': resultMap['parameter_name'],
           });
         } else {
           results.add({
@@ -2521,7 +2539,7 @@ class DistingTools {
 
               final paramData = {
                 'parameter_number': pInfo.parameterNumber,
-                'name': pInfo.name,
+                'parameter_name': pInfo.name,
                 'min_value': _scaleForDisplay(pInfo.min, pInfo.powerOfTen),
                 'max_value': _scaleForDisplay(pInfo.max, pInfo.powerOfTen),
                 'default_value':
@@ -2801,7 +2819,7 @@ class DistingTools {
 
               final paramData = {
                 'parameter_number': pInfo.parameterNumber,
-                'name': pInfo.name,
+                'parameter_name': pInfo.name,
                 'value': liveRawValue != null
                     ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                     : null,
@@ -3083,14 +3101,16 @@ class DistingTools {
             }
 
             final pInfo = parameterInfos[paramIdx];
-            final numValue = paramValue.toInt();
+            final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
 
-            // Validate against parameter bounds
-            if (numValue < pInfo.min || numValue > pInfo.max) {
+            // Validate against parameter bounds (raw)
+            if (rawValue < pInfo.min || rawValue > pInfo.max) {
+              final displayMin = _scaleForDisplay(pInfo.min, pInfo.powerOfTen);
+              final displayMax = _scaleForDisplay(pInfo.max, pInfo.powerOfTen);
               return jsonEncode(
                 convertToSnakeCaseKeys(
                   MCPUtils.buildError(
-                    'Parameter value $numValue out of range for parameter "$paramNumber" (${pInfo.min}-${pInfo.max})',
+                    'Parameter value $paramValue out of range for parameter "$paramNumber" ($displayMin-$displayMax)',
                   ),
                 ),
               );
@@ -3151,10 +3171,13 @@ class DistingTools {
 
         if (paramValue != null) {
           try {
+            final allParams = await _controller.getParametersForSlot(slotIndex);
+            final pInfo = allParams.firstWhere((p) => p.parameterNumber == paramNumber);
+            final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
             await _controller.updateParameterValue(
               slotIndex,
               paramNumber,
-              paramValue.toInt(),
+              rawValue,
             );
           } catch (e) {
             return jsonEncode(
@@ -3171,9 +3194,7 @@ class DistingTools {
         final Map<String, dynamic>? mapping =
             paramData['mapping'] as Map<String, dynamic>?;
         if (mapping != null) {
-          // Note: Mapping updates would require additional controller methods
-          // For now, we validate but don't apply mapping changes
-          // This would be extended in a full implementation
+          await _applyMappingUpdates(slotIndex, paramNumber, mapping);
         }
       }
 
@@ -3232,7 +3253,7 @@ class DistingTools {
 
           final paramData = {
             'parameter_number': pInfo.parameterNumber,
-            'name': pInfo.name,
+            'parameter_name': pInfo.name,
             'value': liveRawValue != null
                 ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                 : null,
@@ -3586,96 +3607,7 @@ class DistingTools {
     int parameterNumber,
     Map<String, dynamic> desiredMapping,
   ) async {
-    // If empty mapping object, preserve all existing mappings
-    if (desiredMapping.isEmpty) {
-      return;
-    }
-
-    // Get the current mapping to use as base for preservation
-    final Mapping? existing =
-        await _controller.getParameterMapping(slotIndex, parameterNumber);
-
-    if (existing == null) {
-      return; // No current mapping to update
-    }
-
-    // Build updated mapping by preserving omitted fields
-    var updatedPacked = existing.packedMappingData;
-
-    // Apply CV mapping updates if provided
-    if (desiredMapping.containsKey('cv')) {
-      final cvData = desiredMapping['cv'] as Map<String, dynamic>?;
-      if (cvData != null) {
-        updatedPacked = updatedPacked.copyWith(
-          source: cvData['source'] as int? ?? updatedPacked.source,
-          cvInput: cvData['cv_input'] as int? ?? updatedPacked.cvInput,
-          isUnipolar: cvData['is_unipolar'] as bool? ?? updatedPacked.isUnipolar,
-          isGate: cvData['is_gate'] as bool? ?? updatedPacked.isGate,
-          volts: cvData['volts'] as int? ?? updatedPacked.volts,
-          delta: cvData['delta'] as int? ?? updatedPacked.delta,
-        );
-      }
-    }
-
-    // Apply MIDI mapping updates if provided
-    if (desiredMapping.containsKey('midi')) {
-      final midiData = desiredMapping['midi'] as Map<String, dynamic>?;
-      if (midiData != null) {
-        updatedPacked = updatedPacked.copyWith(
-          midiChannel: midiData['midi_channel'] as int? ?? updatedPacked.midiChannel,
-          midiCC: midiData['midi_cc'] as int? ?? updatedPacked.midiCC,
-          isMidiEnabled: midiData['is_midi_enabled'] as bool? ?? updatedPacked.isMidiEnabled,
-          isMidiSymmetric: midiData['is_midi_symmetric'] as bool? ?? updatedPacked.isMidiSymmetric,
-          isMidiRelative: midiData['is_midi_relative'] as bool? ?? updatedPacked.isMidiRelative,
-          midiMin: midiData['midi_min'] as int? ?? updatedPacked.midiMin,
-          midiMax: midiData['midi_max'] as int? ?? updatedPacked.midiMax,
-        );
-
-        // Handle midi_type conversion if provided
-        if (midiData.containsKey('midi_type')) {
-          final midiType = midiData['midi_type'] as String?;
-          if (midiType != null) {
-            final mappingTypeValue = _midiTypeStringToValue(midiType);
-            if (mappingTypeValue >= 0) {
-              updatedPacked = updatedPacked.copyWith(
-                midiMappingType: MidiMappingType.values[mappingTypeValue],
-              );
-            }
-          }
-        }
-      }
-    }
-
-    // Apply i2c mapping updates if provided
-    if (desiredMapping.containsKey('i2c')) {
-      final i2cData = desiredMapping['i2c'] as Map<String, dynamic>?;
-      if (i2cData != null) {
-        updatedPacked = updatedPacked.copyWith(
-          i2cCC: i2cData['i2c_cc'] as int? ?? updatedPacked.i2cCC,
-          isI2cEnabled: i2cData['is_i2c_enabled'] as bool? ?? updatedPacked.isI2cEnabled,
-          isI2cSymmetric: i2cData['is_i2c_symmetric'] as bool? ?? updatedPacked.isI2cSymmetric,
-          i2cMin: i2cData['i2c_min'] as int? ?? updatedPacked.i2cMin,
-          i2cMax: i2cData['i2c_max'] as int? ?? updatedPacked.i2cMax,
-        );
-      }
-    }
-
-    // Apply performance page update if provided
-    if (desiredMapping.containsKey('performance_page')) {
-      final perfPage = desiredMapping['performance_page'] as int?;
-      if (perfPage != null) {
-        updatedPacked = updatedPacked.copyWith(
-          perfPageIndex: perfPage,
-        );
-      }
-    }
-
-    // Save the updated mapping via DistingCubit
-    await _controller.saveMapping(
-      existing.algorithmIndex,
-      existing.parameterNumber,
-      updatedPacked,
-    );
+    await _applyMappingUpdate(slotIndex, parameterNumber, desiredMapping, null);
   }
 
   /// Builds mapping JSON object from current mapping state
@@ -3691,7 +3623,7 @@ class DistingTools {
     final packed = mapping.packedMappingData;
 
     // Include CV mapping if enabled
-    if (packed.cvInput >= 0) {
+    if (packed.cvInput > 0 || packed.source > 0) {
       result['cv'] = {
         'source': packed.source,
         'cv_input': packed.cvInput,
@@ -3822,9 +3754,12 @@ class DistingTools {
             }
             if (paramValue != null && paramValue is num) {
               final pInfo = parameterInfos[paramIdx];
-              if (paramValue < pInfo.min || paramValue > pInfo.max) {
+              final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
+              if (rawValue < pInfo.min || rawValue > pInfo.max) {
+                final displayMin = MCPUtils.scaleForDisplay(pInfo.min, pInfo.powerOfTen);
+                final displayMax = MCPUtils.scaleForDisplay(pInfo.max, pInfo.powerOfTen);
                 return MCPUtils.buildError(
-                  'Parameter $paramNumber value $paramValue exceeds bounds (${pInfo.min}-${pInfo.max})',
+                  'Parameter $paramNumber value $paramValue exceeds bounds ($displayMin-$displayMax)',
                 );
               }
             }
@@ -4027,10 +3962,15 @@ class DistingTools {
 
               if (paramNumber != null && paramValue != null) {
                 try {
+                  final paramList = await _controller.getParametersForSlot(slotIndex);
+                  final pInfo = paramList.firstWhere(
+                    (p) => p.parameterNumber == paramNumber,
+                  );
+                  final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
                   await _controller.updateParameterValue(
                     slotIndex,
                     paramNumber,
-                    paramValue,
+                    rawValue,
                   );
                 } catch (e) {
                   return MCPUtils.buildError(
@@ -4040,17 +3980,17 @@ class DistingTools {
               }
 
               // Step 4: Apply mapping updates (AC #6-8, #10)
-              if (mappingData != null) {
+              if (mappingData != null && paramNumber != null) {
                 try {
                   await _applyMappingUpdate(
                     slotIndex,
-                    paramNumber ?? 0,
+                    paramNumber,
                     mappingData,
-                    currentMappings[slotIndex]?[paramNumber ?? 0],
+                    currentMappings[slotIndex]?[paramNumber],
                   );
                 } catch (e) {
                   return MCPUtils.buildError(
-                    'Failed to update mapping for parameter ${paramNumber ?? 0} in slot $slotIndex: ${e.toString()}',
+                    'Failed to update mapping for parameter $paramNumber in slot $slotIndex: ${e.toString()}',
                   );
                 }
               }
@@ -4096,6 +4036,10 @@ class DistingTools {
     Map<String, dynamic> desiredMapping,
     Mapping? currentMapping,
   ) async {
+    if (desiredMapping.isEmpty) {
+      return;
+    }
+
     // Get the current mapping to use as base for preservation
     final Mapping? existing = currentMapping ??
         await _controller.getParameterMapping(slotIndex, paramNumber);
@@ -4135,6 +4079,18 @@ class DistingTools {
           midiMin: midiData['midi_min'] as int? ?? updatedPacked.midiMin,
           midiMax: midiData['midi_max'] as int? ?? updatedPacked.midiMax,
         );
+
+        if (midiData.containsKey('midi_type')) {
+          final midiType = midiData['midi_type'] as String?;
+          if (midiType != null) {
+            final mappingTypeValue = _midiTypeStringToValue(midiType);
+            if (mappingTypeValue >= 0) {
+              updatedPacked = updatedPacked.copyWith(
+                midiMappingType: MidiMappingType.values[mappingTypeValue],
+              );
+            }
+          }
+        }
       }
     }
 
@@ -4413,10 +4369,10 @@ class DistingTools {
               matches.add({
                 'parameter_number': param.parameterNumber,
                 'parameter_name': param.name,
-                'min': param.min,
-                'max': param.max,
+                'min': _scaleForDisplay(param.min, param.powerOfTen),
+                'max': _scaleForDisplay(param.max, param.powerOfTen),
                 'unit': param.unit,
-                'value': paramValue?.value,
+                'value': paramValue != null ? _scaleForDisplay(paramValue.value, param.powerOfTen) : null,
                 'is_disabled': paramValue?.isDisabled ?? false,
               });
             }
@@ -4506,10 +4462,10 @@ class DistingTools {
         matches.add({
           'parameter_number': param.parameterNumber,
           'parameter_name': param.name,
-          'min': param.min,
-          'max': param.max,
+          'min': _scaleForDisplay(param.min, param.powerOfTen),
+          'max': _scaleForDisplay(param.max, param.powerOfTen),
           'unit': param.unit,
-          'value': paramValue?.value,
+          'value': paramValue != null ? _scaleForDisplay(paramValue.value, param.powerOfTen) : null,
           'is_disabled': paramValue?.isDisabled ?? false,
         });
       }

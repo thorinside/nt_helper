@@ -546,7 +546,7 @@ class McpServerService extends ChangeNotifier {
             'description': 'If true, find parameters containing the query. Default: false (exact match).',
           },
         },
-        required: ['query'],
+        required: ['query', 'scope'],
       ),
       callback: (args, extra) async {
         try {
@@ -742,8 +742,10 @@ class McpServerService extends ChangeNotifier {
       ),
       callback: (args, extra) async {
         try {
-          final fullArgs = {...args, 'target': 'preset'};
-          final resultJson = await tools.editPreset(fullArgs);
+          final resultJson = await tools.editPreset({...args, 'target': 'preset'}).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 30 seconds'}),
+          );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
@@ -801,8 +803,10 @@ class McpServerService extends ChangeNotifier {
       ),
       callback: (args, extra) async {
         try {
-          final fullArgs = {...args, 'target': 'slot'};
-          final resultJson = await tools.editSlot(fullArgs);
+          final resultJson = await tools.editSlot({...args, 'target': 'slot'}).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 30 seconds'}),
+          );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
@@ -861,8 +865,10 @@ class McpServerService extends ChangeNotifier {
       ),
       callback: (args, extra) async {
         try {
-          // editParameter reads slot_index, parameter, value, mapping directly
-          final resultJson = await tools.editParameter(args);
+          final resultJson = await tools.editParameter(args).timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 15 seconds'}),
+          );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
@@ -906,10 +912,20 @@ class McpServerService extends ChangeNotifier {
         required: ['name'],
       ),
       callback: (args, extra) async {
-        final resultJson = await tools.newWithAlgorithms(args);
-        return CallToolResult.fromContent(
-          [TextContent(text: resultJson)],
-        );
+        try {
+          final resultJson = await tools.newWithAlgorithms(args).timeout(
+                const Duration(seconds: 30),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 30 seconds',
+                }),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
       },
     );
 
@@ -918,10 +934,20 @@ class McpServerService extends ChangeNotifier {
       description: 'Save the current preset to the device.',
       inputSchema: _inputSchema(properties: {}),
       callback: (args, extra) async {
-        final resultJson = await tools.savePreset(args);
-        return CallToolResult.fromContent(
-          [TextContent(text: resultJson)],
-        );
+        try {
+          final resultJson = await tools.savePreset(args).timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 10 seconds',
+                }),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
       },
     );
 
@@ -960,10 +986,19 @@ class McpServerService extends ChangeNotifier {
         required: ['target'],
       ),
       callback: (args, extra) async {
-        final resultJson = await tools.addSimple(args);
-        return CallToolResult.fromContent(
-          [TextContent(text: resultJson)],
-        );
+        try {
+          final resultJson = await tools.addSimple(args).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 30 seconds'}),
+          );
+          return CallToolResult.fromContent(
+            [TextContent(text: resultJson)],
+          );
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
       },
     );
 
@@ -988,10 +1023,19 @@ class McpServerService extends ChangeNotifier {
         required: ['target', 'slot_index'],
       ),
       callback: (args, extra) async {
-        final resultJson = await tools.removeSlot(args);
-        return CallToolResult.fromContent(
-          [TextContent(text: resultJson)],
-        );
+        try {
+          final resultJson = await tools.removeSlot(args).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+          );
+          return CallToolResult.fromContent(
+            [TextContent(text: resultJson)],
+          );
+        } catch (e) {
+          return CallToolResult.fromContent([
+            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+          ]);
+        }
       },
     );
   }

@@ -470,6 +470,49 @@ void main() {
       ]);
     });
 
+    test('editSlot applies mapping updates via _applyMappingUpdates', () async {
+      when(() => controller.updateParameterValue(0, 5, 80))
+          .thenAnswer((_) async {});
+      when(() => controller.getParameterValue(0, any(that: isA<int>())))
+          .thenAnswer((inv) async {
+        final paramNum = inv.positionalArguments[1] as int;
+        final idx = testParameters.indexWhere((p) => p.parameterNumber == paramNum);
+        return ParameterValue(
+          algorithmIndex: 0,
+          parameterNumber: paramNum,
+          value: paramNum == 5 ? 80 : testValues[idx].value,
+        );
+      });
+      when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
+
+      // Stub getParameterMapping to return existing mapping for param 5
+      when(() => controller.getParameterMapping(0, 5))
+          .thenAnswer((_) async => testMappings[1]);
+
+      // Stub saveMapping to accept the update
+      when(() => controller.saveMapping(0, 5, any()))
+          .thenAnswer((_) async {});
+
+      await distingTools.editSlot({
+        'target': 'slot',
+        'slot_index': 0,
+        'data': {
+          'parameters': [
+            {
+              'parameter_number': 5,
+              'value': 80,
+              'mapping': {
+                'cv': {'source': 1},
+              },
+            },
+          ],
+        },
+      });
+
+      // Verify that saveMapping was called — mapping was applied
+      verify(() => controller.saveMapping(0, 5, any())).called(1);
+    });
+
     test('editSlot read-back returns post-write values', () async {
       when(() => controller.updateParameterValue(0, 5, 80))
           .thenAnswer((_) async {});
@@ -792,6 +835,115 @@ void main() {
     });
   });
 
+  group('searchParameters — display-scaled values', () {
+    // Parameters with powerOfTen: 2 so raw values differ from display values
+    final scaledParameters = [
+      ParameterInfo(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        min: 0,
+        max: 10000,
+        defaultValue: 5000,
+        unit: 0,
+        name: 'Frequency',
+        powerOfTen: 2,
+      ),
+    ];
+
+    test('searchParametersInSlot returns display-scaled values', () async {
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => scaledParameters);
+      when(() => controller.getParameterValue(0, 0)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 150),
+      );
+
+      final result = await distingTools.searchParametersInSlot(0, 'Frequency', false);
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isTrue);
+      final matches = json['matches'] as List<dynamic>;
+      expect(matches, hasLength(1));
+
+      final match = matches[0] as Map<String, dynamic>;
+      expect(match['parameter_name'], equals('Frequency'));
+      // Display-scaled: 150 / 10^2 = 1.5
+      expect(match['value'], equals(1.5));
+      // Display-scaled: 0 / 10^2 = 0
+      expect(match['min'], equals(0));
+      // Display-scaled: 10000 / 10^2 = 100.0
+      expect(match['max'], equals(100.0));
+    });
+
+    test('searchParametersInPreset returns display-scaled values', () async {
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => scaledParameters);
+      when(() => controller.getParameterValue(0, 0)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 150),
+      );
+
+      final result = await distingTools.searchParametersInPreset('Frequency', false);
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isTrue);
+      final results = json['results'] as List<dynamic>;
+      expect(results, hasLength(1));
+
+      final slotResult = results[0] as Map<String, dynamic>;
+      final matches = slotResult['matches'] as List<dynamic>;
+      expect(matches, hasLength(1));
+
+      final match = matches[0] as Map<String, dynamic>;
+      expect(match['parameter_name'], equals('Frequency'));
+      // Display-scaled: 150 / 10^2 = 1.5
+      expect(match['value'], equals(1.5));
+      // Display-scaled: 0 / 10^2 = 0
+      expect(match['min'], equals(0));
+      // Display-scaled: 10000 / 10^2 = 100.0
+      expect(match['max'], equals(100.0));
+    });
+  });
+
+  group('getMultipleParameters — value extraction', () {
+    test('returns actual values from nested data, not null', () async {
+      // Stub getParameterValue and getParameterMapping for params 0 and 5
+      when(() => controller.getParameterValue(0, 0)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
+      );
+      when(() => controller.getParameterValue(0, 5)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 75),
+      );
+      when(() => controller.getParameterMapping(0, 0))
+          .thenAnswer((_) async => testMappings[0]);
+      when(() => controller.getParameterMapping(0, 5))
+          .thenAnswer((_) async => testMappings[1]);
+
+      final result = await distingTools.getMultipleParameters({
+        'slot_index': 0,
+        'parameter_numbers': [0, 5],
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isTrue);
+      // buildSuccess flattens data into top-level map
+      final results = json['results'] as List<dynamic>;
+
+      // Values should NOT be null — they should be the actual parameter values
+      final param0 = results[0] as Map<String, dynamic>;
+      final param5 = results[1] as Map<String, dynamic>;
+      expect(param0['value'], isNotNull, reason: 'param 0 value should not be null');
+      expect(param0['value'], equals(50));
+      expect(param5['value'], isNotNull, reason: 'param 5 value should not be null');
+      expect(param5['value'], equals(75));
+      // Should also include parameter_name from nested data
+      expect(param0['parameter_name'], equals('Level'));
+      expect(param5['parameter_name'], equals('Mix'));
+    });
+  });
+
   group('editPreset _validateDiff — hardware parameter number validation', () {
     const realGuid = 'attn';
     final realAlgorithm = Algorithm(
@@ -890,6 +1042,600 @@ void main() {
       expect(json['success'], isFalse);
       expect(json['error'], contains('bounds'));
       expect(json['error'], contains('5000'));
+    });
+  });
+
+  group('powerOfTen scaling — editSlot and _applyDiff', () {
+    final scaledParameters = [
+      ParameterInfo(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        min: 0,
+        max: 10000,
+        defaultValue: 5000,
+        unit: 0,
+        name: 'ScaledParam',
+        powerOfTen: 2,
+      ),
+    ];
+
+    final scaledValues = [
+      ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 5000),
+    ];
+
+    final scaledMappings = [
+      Mapping(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        packedMappingData: PackedMappingData.filler(),
+      ),
+    ];
+
+    const realGuid = 'attn';
+    final realAlgorithm = Algorithm(
+      algorithmIndex: 0,
+      guid: realGuid,
+      name: 'Attenuator',
+    );
+
+    test('editSlot with powerOfTen parameter scales display to raw', () async {
+      when(() => controller.getAlgorithmInSlot(0))
+          .thenAnswer((_) async => realAlgorithm);
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => scaledParameters);
+      when(() => controller.getValuesForSlot(0))
+          .thenAnswer((_) async => scaledValues);
+      when(() => controller.getMappingsForSlot(0))
+          .thenAnswer((_) async => scaledMappings);
+      when(() => controller.updateParameterValue(0, 0, 150))
+          .thenAnswer((_) async {});
+      when(() => controller.getParameterValue(0, 0)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 150),
+      );
+      when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
+
+      await distingTools.editSlot({
+        'target': 'slot',
+        'slot_index': 0,
+        'data': {
+          'parameters': [
+            {'parameter_number': 0, 'value': 1.5},
+          ],
+        },
+      });
+
+      verify(() => controller.updateParameterValue(0, 0, 150)).called(1);
+    });
+
+    test('editPreset _applyDiff with powerOfTen parameter scales display to raw',
+        () async {
+      when(() => controller.getAllSlots()).thenAnswer((_) async => {
+            0: realAlgorithm,
+          });
+      when(() => controller.getAlgorithmInSlot(0))
+          .thenAnswer((_) async => realAlgorithm);
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => scaledParameters);
+      when(() => controller.getCurrentPresetName())
+          .thenAnswer((_) async => 'TestPreset');
+      when(() => controller.getParameterMapping(0, 0))
+          .thenAnswer((_) async => scaledMappings[0]);
+      when(() => controller.updateParameterValue(0, 0, 150))
+          .thenAnswer((_) async {});
+      when(() => controller.getParameterValue(0, 0)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 150),
+      );
+      when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
+
+      await distingTools.editPreset({
+        'target': 'preset',
+        'data': {
+          'name': 'TestPreset',
+          'slots': [
+            {
+              'algorithm': {'guid': realGuid},
+              'parameters': [
+                {'parameter_number': 0, 'value': 1.5},
+              ],
+            },
+          ],
+        },
+      });
+
+      verify(() => controller.updateParameterValue(0, 0, 150)).called(1);
+    });
+  });
+
+  group('_buildMappingJson — CV threshold bug', () {
+    PackedMappingData makeMappingData({
+      int cvInput = 0,
+      int source = 0,
+      bool isMidiEnabled = false,
+      int midiChannel = 0,
+      int midiCC = 1,
+    }) {
+      return PackedMappingData(
+        source: source,
+        cvInput: cvInput,
+        isUnipolar: false,
+        isGate: false,
+        volts: 5,
+        delta: 0,
+        midiChannel: midiChannel,
+        midiMappingType: MidiMappingType.cc,
+        midiCC: midiCC,
+        isMidiEnabled: isMidiEnabled,
+        isMidiSymmetric: false,
+        isMidiRelative: false,
+        midiMin: 0,
+        midiMax: 127,
+        i2cCC: 0,
+        isI2cEnabled: false,
+        isI2cSymmetric: false,
+        i2cMin: 0,
+        i2cMax: 127,
+        perfPageIndex: 0,
+        version: 5,
+      );
+    }
+
+    test('mapping omits CV when cvInput=0 and source=0', () async {
+      final midiOnlyMapping = Mapping(
+        algorithmIndex: 0,
+        parameterNumber: 5,
+        packedMappingData: makeMappingData(
+          cvInput: 0,
+          source: 0,
+          isMidiEnabled: true,
+        ),
+      );
+
+      when(() => controller.updateParameterValue(0, 5, 80))
+          .thenAnswer((_) async {});
+      when(() => controller.getParameterValue(0, 5)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 80),
+      );
+      when(() => controller.getParameterMapping(0, 5))
+          .thenAnswer((_) async => midiOnlyMapping);
+
+      final result = await distingTools.editParameter({
+        'target': 'parameter',
+        'slot_index': 0,
+        'parameter': 5,
+        'value': 80,
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+      final mapping = json['mapping'] as Map<String, dynamic>;
+
+      expect(mapping.containsKey('cv'), isFalse,
+          reason: 'CV section should be omitted when cvInput=0 and source=0');
+      expect(mapping.containsKey('midi'), isTrue);
+    });
+
+    test('mapping includes CV when cvInput > 0', () async {
+      final cvMapping = Mapping(
+        algorithmIndex: 0,
+        parameterNumber: 5,
+        packedMappingData: makeMappingData(cvInput: 1, source: 0),
+      );
+
+      when(() => controller.updateParameterValue(0, 5, 80))
+          .thenAnswer((_) async {});
+      when(() => controller.getParameterValue(0, 5)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 80),
+      );
+      when(() => controller.getParameterMapping(0, 5))
+          .thenAnswer((_) async => cvMapping);
+
+      final result = await distingTools.editParameter({
+        'target': 'parameter',
+        'slot_index': 0,
+        'parameter': 5,
+        'value': 80,
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+      final mapping = json['mapping'] as Map<String, dynamic>;
+
+      expect(mapping.containsKey('cv'), isTrue,
+          reason: 'CV section should be present when cvInput > 0');
+    });
+
+    test('mapping includes CV when source > 0 even if cvInput=0', () async {
+      final sourceMapping = Mapping(
+        algorithmIndex: 0,
+        parameterNumber: 5,
+        packedMappingData: makeMappingData(cvInput: 0, source: 1),
+      );
+
+      when(() => controller.updateParameterValue(0, 5, 80))
+          .thenAnswer((_) async {});
+      when(() => controller.getParameterValue(0, 5)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 80),
+      );
+      when(() => controller.getParameterMapping(0, 5))
+          .thenAnswer((_) async => sourceMapping);
+
+      final result = await distingTools.editParameter({
+        'target': 'parameter',
+        'slot_index': 0,
+        'parameter': 5,
+        'value': 80,
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+      final mapping = json['mapping'] as Map<String, dynamic>;
+
+      expect(mapping.containsKey('cv'), isTrue,
+          reason: 'CV section should be present when source > 0');
+    });
+  });
+
+  group('Bug 1: _validateDiff scales display values to raw before bounds check', () {
+    // Parameter with powerOfTen: 2, raw bounds 0-10000, display bounds 0-100
+    final scaledParameters = [
+      ParameterInfo(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        min: 0,
+        max: 10000,
+        defaultValue: 5000,
+        unit: 0,
+        name: 'ScaledParam',
+        powerOfTen: 2,
+      ),
+    ];
+
+    const realGuid = 'attn';
+    final realAlgorithm = Algorithm(
+      algorithmIndex: 0,
+      guid: realGuid,
+      name: 'Attenuator',
+    );
+
+    setUp(() {
+      when(() => controller.getAllSlots()).thenAnswer((_) async => {
+            0: realAlgorithm,
+          });
+      when(() => controller.getAlgorithmInSlot(0))
+          .thenAnswer((_) async => realAlgorithm);
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => scaledParameters);
+      when(() => controller.getCurrentPresetName())
+          .thenAnswer((_) async => 'TestPreset');
+    });
+
+    test('rejects display value 150 (exceeds display max 100) for existing algorithm',
+        () async {
+      // Display value 150 with powerOfTen=2 => raw 15000, exceeds raw max 10000
+      // Without the fix, 150 < 10000 (raw max) would PASS validation incorrectly
+      final result = await distingTools.editPreset({
+        'target': 'preset',
+        'data': {
+          'name': 'TestPreset',
+          'slots': [
+            {
+              'algorithm': {'guid': realGuid},
+              'parameters': [
+                {'parameter_number': 0, 'value': 150},
+              ],
+            },
+          ],
+        },
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isFalse);
+      expect(json['error'], contains('bounds'));
+    });
+
+    test('accepts display value 50 (within display bounds 0-100) for existing algorithm',
+        () async {
+      // Display value 50 with powerOfTen=2 => raw 5000, within raw bounds 0-10000
+      when(() => controller.updateParameterValue(0, 0, 5000))
+          .thenAnswer((_) async {});
+      when(() => controller.getParameterValue(0, 0)).thenAnswer(
+        (_) async =>
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 5000),
+      );
+      when(() => controller.getParameterMapping(0, 0))
+          .thenAnswer((_) async => null);
+      when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
+
+      final result = await distingTools.editPreset({
+        'target': 'preset',
+        'data': {
+          'name': 'TestPreset',
+          'slots': [
+            {
+              'algorithm': {'guid': realGuid},
+              'parameters': [
+                {'parameter_number': 0, 'value': 50},
+              ],
+            },
+          ],
+        },
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isTrue);
+    });
+  });
+
+  group('Bug 2: setMultipleParameters returns confirmed value', () {
+    test('returns device-confirmed value, not input value', () async {
+      // Set up: input value 80, but device confirms 79 (e.g., clamped)
+      when(() => controller.getAlgorithmInSlot(0))
+          .thenAnswer((_) async => testAlgorithm);
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => testParameters);
+      when(() => controller.getValuesForSlot(0))
+          .thenAnswer((_) async => testValues);
+      when(() => controller.getMappingsForSlot(0))
+          .thenAnswer((_) async => testMappings);
+      when(() => controller.updateParameterValue(0, 5, 80))
+          .thenAnswer((_) async {});
+
+      final result = await distingTools.setMultipleParameters({
+        'slot_index': 0,
+        'parameters': [
+          {'parameter_number': 5, 'value': 80},
+        ],
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isTrue);
+      final results = json['results'] as List<dynamic>;
+      final param = results[0] as Map<String, dynamic>;
+      // setParameterValue returns the message string as success text,
+      // and the value field in setMultipleParameters should come from
+      // the confirmed response, not the input
+      expect(param['value'], isNotNull);
+      // The value should match what setParameterValue confirmed (80 in this case)
+      expect(param['value'], equals(80));
+    });
+  });
+
+  group('Bug 4: setParameterValue enum bounds validation', () {
+    // Use enum parameter: unit=1, max=3 (4 enum options: 0,1,2,3)
+    final enumParameters = [
+      ParameterInfo(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        min: 0,
+        max: 3,
+        defaultValue: 0,
+        unit: 1,
+        name: 'Mode',
+        powerOfTen: 0,
+      ),
+    ];
+
+    final enumValues = [
+      ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0),
+    ];
+
+    final enumMappings = [
+      Mapping(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        packedMappingData: PackedMappingData.filler(),
+      ),
+    ];
+
+    test('rejects numeric enum index exceeding enum length', () async {
+      when(() => controller.getAlgorithmInSlot(0)).thenAnswer(
+        (_) async => Algorithm(algorithmIndex: 0, guid: 'test', name: 'TestAlgo'),
+      );
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => enumParameters);
+      when(() => controller.getValuesForSlot(0))
+          .thenAnswer((_) async => enumValues);
+      when(() => controller.getMappingsForSlot(0))
+          .thenAnswer((_) async => enumMappings);
+      when(() => controller.getParameterEnumStrings(0, 0)).thenAnswer(
+        (_) async => ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          values: ['Off', 'Low', 'Mid', 'High'],
+        ),
+      );
+
+      final result = await distingTools.setParameterValue({
+        'slot_index': 0,
+        'parameter_number': 0,
+        'value': 10,
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isFalse);
+      expect(json['error'], contains('10'));
+    });
+
+    test('rejects negative numeric enum index', () async {
+      when(() => controller.getAlgorithmInSlot(0)).thenAnswer(
+        (_) async => Algorithm(algorithmIndex: 0, guid: 'test', name: 'TestAlgo'),
+      );
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => enumParameters);
+      when(() => controller.getValuesForSlot(0))
+          .thenAnswer((_) async => enumValues);
+      when(() => controller.getMappingsForSlot(0))
+          .thenAnswer((_) async => enumMappings);
+      when(() => controller.getParameterEnumStrings(0, 0)).thenAnswer(
+        (_) async => ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          values: ['Off', 'Low', 'Mid', 'High'],
+        ),
+      );
+
+      final result = await distingTools.setParameterValue({
+        'slot_index': 0,
+        'parameter_number': 0,
+        'value': -1,
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isFalse);
+    });
+
+    test('accepts valid numeric enum index', () async {
+      when(() => controller.getAlgorithmInSlot(0)).thenAnswer(
+        (_) async => Algorithm(algorithmIndex: 0, guid: 'test', name: 'TestAlgo'),
+      );
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => enumParameters);
+      when(() => controller.getValuesForSlot(0))
+          .thenAnswer((_) async => enumValues);
+      when(() => controller.getMappingsForSlot(0))
+          .thenAnswer((_) async => enumMappings);
+      when(() => controller.getParameterEnumStrings(0, 0)).thenAnswer(
+        (_) async => ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          values: ['Off', 'Low', 'Mid', 'High'],
+        ),
+      );
+      when(() => controller.updateParameterValue(0, 0, 2))
+          .thenAnswer((_) async {});
+
+      final result = await distingTools.setParameterValue({
+        'slot_index': 0,
+        'parameter_number': 0,
+        'value': 2,
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+
+      expect(json['success'], isTrue);
+    });
+  });
+
+  group('response key consistency — parameter_name not name', () {
+    test('editSlot response uses parameter_name key', () async {
+      when(() => controller.updateParameterValue(0, 5, 80))
+          .thenAnswer((_) async {});
+      when(() => controller.getParameterValue(0, any(that: isA<int>())))
+          .thenAnswer((inv) async {
+        final paramNum = inv.positionalArguments[1] as int;
+        final idx =
+            testParameters.indexWhere((p) => p.parameterNumber == paramNum);
+        return ParameterValue(
+          algorithmIndex: 0,
+          parameterNumber: paramNum,
+          value: paramNum == 5 ? 80 : testValues[idx].value,
+        );
+      });
+      when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
+
+      final result = await distingTools.editSlot({
+        'target': 'slot',
+        'slot_index': 0,
+        'data': {
+          'parameters': [
+            {'parameter_number': 5, 'value': 80},
+          ],
+        },
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+      final params = json['parameters'] as List<dynamic>;
+
+      for (final p in params) {
+        final param = p as Map<String, dynamic>;
+        expect(param.containsKey('parameter_name'), isTrue,
+            reason: 'editSlot response should use parameter_name, not name');
+        expect(param.containsKey('name'), isFalse,
+            reason: 'editSlot response should not use bare name key');
+      }
+    });
+
+    test('getCurrentPreset response uses parameter_name key', () async {
+      when(() => controller.getParameterValue(0, any(that: isA<int>())))
+          .thenAnswer((inv) async {
+        final paramNum = inv.positionalArguments[1] as int;
+        final idx =
+            testParameters.indexWhere((p) => p.parameterNumber == paramNum);
+        return testValues[idx];
+      });
+      when(() => controller.getParameterEnumStrings(
+              any(that: isA<int>()), any(that: isA<int>())))
+          .thenAnswer((_) async => null);
+
+      final result =
+          await distingTools.getCurrentPreset({'target': 'preset'});
+      final json = jsonDecode(result) as Map<String, dynamic>;
+      final slots = json['slots'] as List<dynamic>;
+      final slot = (slots.firstWhere((s) => s != null)) as Map<String, dynamic>;
+      final params = slot['parameters'] as List<dynamic>;
+
+      for (final p in params) {
+        final param = p as Map<String, dynamic>;
+        expect(param.containsKey('parameter_name'), isTrue,
+            reason:
+                'getCurrentPreset response should use parameter_name, not name');
+        expect(param.containsKey('name'), isFalse,
+            reason:
+                'getCurrentPreset response should not use bare name key');
+      }
+    });
+
+    test('editPreset response uses parameter_name key', () async {
+      const realGuid = 'attn';
+      final realAlgorithm = Algorithm(
+        algorithmIndex: 0,
+        guid: realGuid,
+        name: 'Attenuator',
+      );
+
+      when(() => controller.getAllSlots())
+          .thenAnswer((_) async => {0: realAlgorithm});
+      when(() => controller.getAlgorithmInSlot(0))
+          .thenAnswer((_) async => realAlgorithm);
+      when(() => controller.getParametersForSlot(0))
+          .thenAnswer((_) async => testParameters);
+      when(() => controller.getParameterValue(0, any(that: isA<int>())))
+          .thenAnswer((inv) async {
+        final paramNum = inv.positionalArguments[1] as int;
+        return ParameterValue(
+          algorithmIndex: 0,
+          parameterNumber: paramNum,
+          value: 50,
+        );
+      });
+      when(() => controller.getCurrentPresetName())
+          .thenAnswer((_) async => 'TestPreset');
+      when(() => controller.getParameterMapping(0, any(that: isA<int>())))
+          .thenAnswer((_) async => null);
+
+      final result = await distingTools.editPreset({
+        'target': 'preset',
+        'data': {
+          'name': 'TestPreset',
+          'slots': [
+            {
+              'algorithm': {'guid': realGuid},
+            },
+          ],
+        },
+      });
+      final json = jsonDecode(result) as Map<String, dynamic>;
+      final slots = json['slots'] as List<dynamic>;
+      final slot =
+          (slots.firstWhere((s) => s != null)) as Map<String, dynamic>;
+      final params = slot['parameters'] as List<dynamic>;
+      expect(params, isNotEmpty);
+
+      for (final p in params) {
+        final param = p as Map<String, dynamic>;
+        expect(param.containsKey('parameter_name'), isTrue,
+            reason:
+                'editPreset response should use parameter_name, not name');
+        expect(param.containsKey('name'), isFalse,
+            reason: 'editPreset response should not use bare name key');
+      }
     });
   });
 }

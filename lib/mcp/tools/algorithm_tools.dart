@@ -618,16 +618,16 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid identifier format: identifier must be an integer (0-31).',
+          'error': 'Invalid identifier format: identifier must be an integer (0-${MCPConstants.maxSlots - 1}).',
         }),
       );
     }
 
-    if (slotIndex < 0 || slotIndex >= 32) {
+    if (slotIndex < 0 || slotIndex >= MCPConstants.maxSlots) {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid slot index: $slotIndex. Must be 0-31.',
+          'error': 'Invalid slot index: $slotIndex. Must be 0-${MCPConstants.maxSlots - 1}.',
         }),
       );
     }
@@ -709,11 +709,11 @@ class MCPAlgorithmTools {
       );
     }
 
-    if (slotIndex < 0 || slotIndex >= 32) {
+    if (slotIndex < 0 || slotIndex >= MCPConstants.maxSlots) {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid slot index: $slotIndex. Must be 0-31.',
+          'error': 'Invalid slot index: $slotIndex. Must be 0-${MCPConstants.maxSlots - 1}.',
         }),
       );
     }
