@@ -20,6 +20,11 @@ class FirmwareVersion {
     }
   }
 
+  /// Firmware 1.15+ supports entering bootloader mode via SysEx.
+  bool get hasBootloaderSysEx {
+    return major > 1 || (major == 1 && minor >= 15);
+  }
+
   /// Firmware 1.15 expanded AUX buses from 8 (21-28) to 44 (21-64).
   bool get hasExtendedAuxBuses {
     return major > 1 || (major == 1 && minor >= 15);

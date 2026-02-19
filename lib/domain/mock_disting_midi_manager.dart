@@ -1180,9 +1180,10 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<void> requestReboot() async {
-    // No-op in mock mode
-  }
+  Future<void> requestReboot() async {}
+
+  @override
+  Future<void> requestEnterBootloader() async {}
 
   @override
   Future<void> setParameterValue(

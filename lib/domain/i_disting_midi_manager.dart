@@ -54,6 +54,7 @@ abstract class IDistingMidiManager {
   // Actions (may return Future<void> or void)
   Future<void> requestWake();
   Future<void> requestReboot();
+  Future<void> requestEnterBootloader();
   Future<void> setParameterValue(
     int algorithmIndex,
     int parameterNumber,

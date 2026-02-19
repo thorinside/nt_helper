@@ -45,6 +45,7 @@ import 'package:nt_helper/domain/sysex/requests/set_performance_page_message.dar
 import 'package:nt_helper/domain/sysex/requests/set_preset_name.dart';
 import 'package:nt_helper/domain/sysex/requests/set_real_time_clock.dart';
 import 'package:nt_helper/domain/sysex/requests/set_slot_name.dart';
+import 'package:nt_helper/domain/sysex/requests/enter_bootloader.dart';
 import 'package:nt_helper/domain/sysex/requests/request_reboot.dart';
 import 'package:nt_helper/domain/sysex/requests/take_screenshot.dart';
 import 'package:nt_helper/domain/sysex/requests/wake.dart';
@@ -546,6 +547,17 @@ class DistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestReboot() {
     final message = RebootMessage(sysExId: sysExId);
+    final packet = message.encode();
+    return _scheduler.sendRequest<void>(
+      packet,
+      RequestKey(sysExId: sysExId),
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  @override
+  Future<void> requestEnterBootloader() {
+    final message = EnterBootloaderMessage(sysExId: sysExId);
     final packet = message.encode();
     return _scheduler.sendRequest<void>(
       packet,

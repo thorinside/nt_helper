@@ -735,6 +735,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestReboot() async {}
 
+  @override
+  Future<void> requestEnterBootloader() async {}
+
   Stream<MidiPacket> get midiDataStream => Stream.empty();
 
   Future<MidiDevice?> get inputDevice async => null;

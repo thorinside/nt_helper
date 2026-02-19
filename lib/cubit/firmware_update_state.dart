@@ -56,6 +56,12 @@ sealed class FirmwareUpdateState with _$FirmwareUpdateState {
     required String targetVersion,
   }) = FirmwareUpdateStateWaitingForBootloader;
 
+  /// Auto-entering bootloader mode via SysEx (firmware 1.15+)
+  const factory FirmwareUpdateState.enteringBootloader({
+    required String firmwarePath,
+    required String targetVersion,
+  }) = FirmwareUpdateStateEnteringBootloader;
+
   /// Flashing firmware to device
   const factory FirmwareUpdateState.flashing({
     required String targetVersion,

@@ -44,15 +44,12 @@ class FirmwareUpdateScreen extends StatelessWidget {
 
     // Get current state info
     final distingState = distingCubit.state;
-    final currentVersion = distingState is DistingStateSynchronized
-        ? distingState.firmwareVersion.versionString
-        : 'Unknown';
-    final isDemo = distingState is DistingStateSynchronized
-        ? distingState.demo
-        : false;
-    final isOffline = distingState is DistingStateSynchronized
-        ? distingState.offline
-        : false;
+    final syncState = distingState is DistingStateSynchronized
+        ? distingState
+        : null;
+    final currentVersion = syncState?.firmwareVersion.versionString ?? 'Unknown';
+    final isDemo = syncState?.demo ?? false;
+    final isOffline = syncState?.offline ?? false;
 
     // Create services
     final firmwareVersionService = FirmwareVersionService();
@@ -69,6 +66,8 @@ class FirmwareUpdateScreen extends StatelessWidget {
           currentVersion: currentVersion,
           isDemo: isDemo,
           isOffline: isOffline,
+          firmwareVersion: syncState?.firmwareVersion,
+          midiManager: syncState != null ? distingCubit.disting() : null,
         )..loadAvailableVersions(),
         child: const _FirmwareUpdateView(),
       ),
@@ -124,6 +123,12 @@ class FirmwareUpdateAnnouncementListener extends StatelessWidget {
           SemanticsService.sendAnnouncement(
             View.of(context),
             'Firmware update error: ${state.message}',
+            TextDirection.ltr,
+          );
+        } else if (state is FirmwareUpdateStateEnteringBootloader) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Entering bootloader mode',
             TextDirection.ltr,
           );
         } else if (state is FirmwareUpdateStateWaitingForBootloader) {
@@ -187,8 +192,9 @@ class _FirmwareUpdateScaffold extends StatelessWidget {
   }
 
   Widget? _buildBackButton(BuildContext context, FirmwareUpdateState state) {
-    // During flashing, show a disabled back button to prevent accidental exit
-    if (state is FirmwareUpdateStateFlashing) {
+    // During bootloader entry or flashing, show a disabled back button
+    if (state is FirmwareUpdateStateEnteringBootloader ||
+        state is FirmwareUpdateStateFlashing) {
       return IconButton(
         icon: const Icon(
           Icons.arrow_back,
@@ -206,6 +212,7 @@ class _FirmwareUpdateScaffold extends StatelessWidget {
       initial: (s) => _InitialStateView(state: s),
       downloading: (s) => _DownloadingStateView(state: s),
       waitingForBootloader: (s) => _BootloaderInstructionsView(state: s),
+      enteringBootloader: (s) => _EnteringBootloaderView(state: s),
       flashing: (s) => _FlashingStateView(state: s),
       success: (s) => _SuccessStateView(state: s),
       error: (s) => _ErrorView(state: s),
@@ -633,6 +640,33 @@ class _BootloaderInstructionsView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Entering bootloader state - auto-entering via SysEx
+class _EnteringBootloaderView extends StatelessWidget {
+  final FirmwareUpdateStateEnteringBootloader state;
+
+  const _EnteringBootloaderView({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 48, width: 48, child: CircularProgressIndicator()),
+        const SizedBox(height: 24),
+        Text('Entering Bootloader Mode', style: theme.textTheme.headlineSmall),
+        const SizedBox(height: 8),
+        Text(
+          'Sending command to device...',
+          style: theme.textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

@@ -8,6 +8,8 @@ import 'package:nt_helper/models/firmware_release.dart';
 import 'package:nt_helper/models/flash_progress.dart';
 import 'package:nt_helper/models/flash_stage.dart';
 import 'package:nt_helper/services/firmware_version_service.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/flash_tool_bridge.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
 
@@ -19,6 +21,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
   final bool _isDemo;
   final bool _isOffline;
   final String _initialCurrentVersion;
+  final FirmwareVersion? _firmwareVersion;
+  final IDistingMidiManager? _midiManager;
 
   StreamSubscription<FlashProgress>? _flashSubscription;
   String? _currentFirmwarePath;
@@ -31,13 +35,20 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     required String currentVersion,
     required bool isDemo,
     required bool isOffline,
+    FirmwareVersion? firmwareVersion,
+    IDistingMidiManager? midiManager,
   }) : _firmwareVersionService = firmwareVersionService,
        _flashToolManager = flashToolManager,
        _flashToolBridge = flashToolBridge,
        _isDemo = isDemo,
        _isOffline = isOffline,
        _initialCurrentVersion = currentVersion,
+       _firmwareVersion = firmwareVersion,
+       _midiManager = midiManager,
        super(FirmwareUpdateState.initial(currentVersion: currentVersion));
+
+  bool get _canAutoEnterBootloader =>
+      _firmwareVersion?.hasBootloaderSysEx == true && _midiManager != null;
 
   /// Whether firmware update is available (desktop only, not demo/offline)
   bool get isUpdateAvailable {
@@ -109,12 +120,17 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
 
       _currentFirmwarePath = firmwarePath;
       _currentTargetVersion = version.version;
-      emit(
-        FirmwareUpdateState.waitingForBootloader(
-          firmwarePath: firmwarePath,
-          targetVersion: version.version,
-        ),
-      );
+
+      if (_canAutoEnterBootloader) {
+        await _autoEnterBootloaderAndFlash(firmwarePath, version.version);
+      } else {
+        emit(
+          FirmwareUpdateState.waitingForBootloader(
+            firmwarePath: firmwarePath,
+            targetVersion: version.version,
+          ),
+        );
+      }
     } on FirmwareDownloadException catch (e) {
       emit(
         FirmwareUpdateState.error(
@@ -183,12 +199,17 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
 
       _currentFirmwarePath = path;
       _currentTargetVersion = 'local';
-      emit(
-        FirmwareUpdateState.waitingForBootloader(
-          firmwarePath: path,
-          targetVersion: 'local',
-        ),
-      );
+
+      if (_canAutoEnterBootloader) {
+        await _autoEnterBootloaderAndFlash(path, 'local');
+      } else {
+        emit(
+          FirmwareUpdateState.waitingForBootloader(
+            firmwarePath: path,
+            targetVersion: 'local',
+          ),
+        );
+      }
     } catch (e) {
       emit(
         FirmwareUpdateState.error(
@@ -202,7 +223,18 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
   /// Start the flash process after user confirms bootloader mode
   Future<void> startFlashing() async {
     final currentState = state;
-    if (currentState is! FirmwareUpdateStateWaitingForBootloader) return;
+    final String firmwarePath;
+    final String targetVersion;
+
+    if (currentState is FirmwareUpdateStateWaitingForBootloader) {
+      firmwarePath = currentState.firmwarePath;
+      targetVersion = currentState.targetVersion;
+    } else if (currentState is FirmwareUpdateStateEnteringBootloader) {
+      firmwarePath = currentState.firmwarePath;
+      targetVersion = currentState.targetVersion;
+    } else {
+      return;
+    }
 
     // On Linux, automatically install udev rules if missing
     if (Platform.isLinux) {
@@ -216,8 +248,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
                   'USB access rules are required for firmware updates. '
                   'Please authorize the installation when prompted.',
               errorType: FirmwareErrorType.udevMissing,
-              firmwarePath: currentState.firmwarePath,
-              targetVersion: currentState.targetVersion,
+              firmwarePath: firmwarePath,
+              targetVersion: targetVersion,
             ),
           );
           return;
@@ -233,8 +265,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
         FirmwareUpdateState.error(
           message: 'Failed to prepare flash tool: $e',
           errorType: FirmwareErrorType.general,
-          firmwarePath: currentState.firmwarePath,
-          targetVersion: currentState.targetVersion,
+          firmwarePath: firmwarePath,
+          targetVersion: targetVersion,
         ),
       );
       return;
@@ -244,7 +276,7 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
 
     emit(
       FirmwareUpdateState.flashing(
-        targetVersion: currentState.targetVersion,
+        targetVersion: targetVersion,
         progress: const FlashProgress(
           stage: FlashStage.sdpConnect,
           percent: 0,
@@ -254,7 +286,7 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     );
 
     try {
-      final stream = _flashToolBridge.flash(currentState.firmwarePath);
+      final stream = _flashToolBridge.flash(firmwarePath);
 
       _flashSubscription = stream.listen(
         (progress) {
@@ -267,8 +299,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
                     ? FirmwareErrorType.sandboxRestriction
                     : _getErrorTypeForStage(currentStage),
                 failedStage: currentStage,
-                firmwarePath: currentState.firmwarePath,
-                targetVersion: currentState.targetVersion,
+                firmwarePath: firmwarePath,
+                targetVersion: targetVersion,
               ),
             );
           } else if (progress.stage == FlashStage.complete &&
@@ -276,13 +308,13 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
             _cleanupTempFiles();
             emit(
               FirmwareUpdateState.success(
-                newVersion: currentState.targetVersion,
+                newVersion: targetVersion,
               ),
             );
           } else {
             emit(
               FirmwareUpdateState.flashing(
-                targetVersion: currentState.targetVersion,
+                targetVersion: targetVersion,
                 progress: progress,
               ),
             );
@@ -294,8 +326,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
               message: 'Flash error: $error',
               errorType: _getErrorTypeForStage(currentStage),
               failedStage: currentStage,
-              firmwarePath: currentState.firmwarePath,
-              targetVersion: currentState.targetVersion,
+              firmwarePath: firmwarePath,
+              targetVersion: targetVersion,
             ),
           );
         },
@@ -308,8 +340,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
                 message: 'Flash process ended unexpectedly',
                 errorType: _getErrorTypeForStage(currentStage),
                 failedStage: currentStage,
-                firmwarePath: currentState.firmwarePath,
-                targetVersion: currentState.targetVersion,
+                firmwarePath: firmwarePath,
+                targetVersion: targetVersion,
               ),
             );
           }
@@ -320,11 +352,26 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
         FirmwareUpdateState.error(
           message: 'Failed to start flash: $e',
           errorType: FirmwareErrorType.general,
-          firmwarePath: currentState.firmwarePath,
-          targetVersion: currentState.targetVersion,
+          firmwarePath: firmwarePath,
+          targetVersion: targetVersion,
         ),
       );
     }
+  }
+
+  /// Send the enter-bootloader SysEx and proceed directly to flashing.
+  Future<void> _autoEnterBootloaderAndFlash(
+    String firmwarePath,
+    String targetVersion,
+  ) async {
+    emit(
+      FirmwareUpdateState.enteringBootloader(
+        firmwarePath: firmwarePath,
+        targetVersion: targetVersion,
+      ),
+    );
+    await _midiManager!.requestEnterBootloader();
+    await startFlashing();
   }
 
   /// Get the error type based on which stage failed
@@ -388,12 +435,16 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     targetVersion ??= _currentTargetVersion;
 
     if (firmwarePath != null && targetVersion != null) {
-      emit(
-        FirmwareUpdateState.waitingForBootloader(
-          firmwarePath: firmwarePath,
-          targetVersion: targetVersion,
-        ),
-      );
+      if (_canAutoEnterBootloader) {
+        _autoEnterBootloaderAndFlash(firmwarePath, targetVersion);
+      } else {
+        emit(
+          FirmwareUpdateState.waitingForBootloader(
+            firmwarePath: firmwarePath,
+            targetVersion: targetVersion,
+          ),
+        );
+      }
     } else {
       // Can't return to bootloader without firmware path, reset instead
       emit(FirmwareUpdateState.initial(currentVersion: _getCurrentVersion()));
@@ -417,15 +468,19 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     targetVersion ??= _currentTargetVersion;
 
     if (firmwarePath != null && targetVersion != null) {
-      // Go to bootloader waiting state first
-      emit(
-        FirmwareUpdateState.waitingForBootloader(
-          firmwarePath: firmwarePath,
-          targetVersion: targetVersion,
-        ),
-      );
-      // Then immediately start flashing
-      await startFlashing();
+      if (_canAutoEnterBootloader) {
+        await _autoEnterBootloaderAndFlash(firmwarePath, targetVersion);
+      } else {
+        // Go to bootloader waiting state first
+        emit(
+          FirmwareUpdateState.waitingForBootloader(
+            firmwarePath: firmwarePath,
+            targetVersion: targetVersion,
+          ),
+        );
+        // Then immediately start flashing
+        await startFlashing();
+      }
     } else {
       // Can't retry without firmware path, reset instead
       emit(FirmwareUpdateState.initial(currentVersion: _getCurrentVersion()));

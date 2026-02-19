@@ -7,7 +7,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/firmware_update_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_state.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_release.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/flash_progress.dart';
 import 'package:nt_helper/models/flash_stage.dart';
 import 'package:nt_helper/services/firmware_version_service.dart';
@@ -21,6 +23,8 @@ class MockFirmwareVersionService extends Mock
 class MockFlashToolManager extends Mock implements FlashToolManager {}
 
 class MockFlashToolBridge extends Mock implements FlashToolBridge {}
+
+class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
 void main() {
   late MockFirmwareVersionService mockFirmwareVersionService;
@@ -46,6 +50,8 @@ void main() {
     String currentVersion = '1.11.0',
     bool isDemo = false,
     bool isOffline = false,
+    FirmwareVersion? firmwareVersion,
+    IDistingMidiManager? midiManager,
   }) {
     return FirmwareUpdateCubit(
       firmwareVersionService: mockFirmwareVersionService,
@@ -54,6 +60,8 @@ void main() {
       currentVersion: currentVersion,
       isDemo: isDemo,
       isOffline: isOffline,
+      firmwareVersion: firmwareVersion,
+      midiManager: midiManager,
     );
   }
 
@@ -547,6 +555,107 @@ void main() {
         ],
       );
     });
+
+    group('auto-bootloader (firmware >= 1.15)', () {
+      late MockDistingMidiManager mockMidiManager;
+
+      setUp(() {
+        mockMidiManager = MockDistingMidiManager();
+        when(() => mockMidiManager.requestEnterBootloader())
+            .thenAnswer((_) async {});
+      });
+
+      final testVersion = FirmwareRelease(
+        version: '1.16.0',
+        releaseDate: DateTime(2024, 6, 1),
+        changelog: ['Bootloader SysEx support'],
+        downloadUrl: 'https://example.com/firmware.zip',
+      );
+
+      blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
+        'firmware >= 1.15 skips waitingForBootloader, emits enteringBootloader then flashing',
+        build: () {
+          when(() => mockFirmwareVersionService.downloadFirmware(
+                any(),
+                onProgress: any(named: 'onProgress'),
+              )).thenAnswer((invocation) async {
+            return '/tmp/firmware.zip';
+          });
+          when(() => mockFlashToolManager.getToolPath())
+              .thenAnswer((_) async => '/path/to/tool');
+          when(() => mockFlashToolBridge.flash(any())).thenAnswer(
+            (_) => Stream.fromIterable([
+              const FlashProgress(
+                stage: FlashStage.complete,
+                percent: 100,
+                message: 'Done',
+              ),
+            ]),
+          );
+          return createCubit(
+            currentVersion: '1.15.0',
+            firmwareVersion: FirmwareVersion('1.15.0'),
+            midiManager: mockMidiManager,
+          );
+        },
+        act: (cubit) => cubit.startUpdate(testVersion),
+        expect: () => [
+          isA<FirmwareUpdateStateDownloading>(),
+          isA<FirmwareUpdateStateEnteringBootloader>()
+              .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
+              .having((s) => s.targetVersion, 'targetVersion', '1.16.0'),
+          isA<FirmwareUpdateStateFlashing>(),
+          isA<FirmwareUpdateStateSuccess>(),
+        ],
+        verify: (_) {
+          verify(() => mockMidiManager.requestEnterBootloader()).called(1);
+        },
+      );
+
+      blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
+        'firmware < 1.15 still shows waitingForBootloader',
+        build: () {
+          when(() => mockFirmwareVersionService.downloadFirmware(
+                any(),
+                onProgress: any(named: 'onProgress'),
+              )).thenAnswer((_) async => '/tmp/firmware.zip');
+          return createCubit(
+            currentVersion: '1.14.0',
+            firmwareVersion: FirmwareVersion('1.14.0'),
+            midiManager: mockMidiManager,
+          );
+        },
+        act: (cubit) => cubit.startUpdate(testVersion),
+        expect: () => [
+          isA<FirmwareUpdateStateDownloading>(),
+          isA<FirmwareUpdateStateWaitingForBootloader>()
+              .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
+              .having((s) => s.targetVersion, 'targetVersion', '1.16.0'),
+        ],
+        verify: (_) {
+          verifyNever(() => mockMidiManager.requestEnterBootloader());
+        },
+      );
+
+      blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
+        'no midiManager falls back to waitingForBootloader even on 1.15+',
+        build: () {
+          when(() => mockFirmwareVersionService.downloadFirmware(
+                any(),
+                onProgress: any(named: 'onProgress'),
+              )).thenAnswer((_) async => '/tmp/firmware.zip');
+          return createCubit(
+            currentVersion: '1.15.0',
+            firmwareVersion: FirmwareVersion('1.15.0'),
+          );
+        },
+        act: (cubit) => cubit.startUpdate(testVersion),
+        expect: () => [
+          isA<FirmwareUpdateStateDownloading>(),
+          isA<FirmwareUpdateStateWaitingForBootloader>(),
+        ],
+      );
+    });
   });
 
   group('FirmwareUpdateState', () {
@@ -619,6 +728,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
+          enteringBootloader: (_, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -631,6 +741,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
+          enteringBootloader: (_, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -643,6 +754,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
+          enteringBootloader: (_, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -655,6 +767,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
+          enteringBootloader: (_, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -667,6 +780,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
+          enteringBootloader: (_, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -679,6 +793,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
+          enteringBootloader: (_, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
