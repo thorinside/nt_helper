@@ -195,9 +195,10 @@ class DistingTools {
     return paramInfo.unit == 1;
   }
 
-  /// Converts enum string to integer index
+  /// Converts enum string to integer index (case-insensitive)
   int? _enumStringToIndex(List<String> enumValues, String value) {
-    final index = enumValues.indexOf(value);
+    final lowerValue = value.toLowerCase();
+    final index = enumValues.indexWhere((e) => e.toLowerCase() == lowerValue);
     return index >= 0 ? index : null;
   }
 
@@ -933,7 +934,7 @@ class DistingTools {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'Could not retrieve value for parameter $parameterNumber in slot $slotIndex.',
+              'Could not retrieve value for parameter $resolvedParameterNumber in slot $slotIndex.',
             ),
           ),
         );
@@ -1528,16 +1529,22 @@ class DistingTools {
       }
 
       // Get the notes content from parameters 1-7
-      final List<String> lines = [];
+      // Collect all 7 lines, then trim trailing empty lines
+      final List<String> allLines = [];
       for (int i = 1; i <= 7; i++) {
         final String? lineContent = await _controller.getParameterStringValue(
           notesSlotIndex,
           i,
         );
-        if (lineContent != null && lineContent.isNotEmpty) {
-          lines.add(lineContent);
-        }
+        allLines.add(lineContent ?? '');
       }
+
+      // Remove trailing empty lines but preserve intermediate empty lines
+      while (allLines.isNotEmpty && allLines.last.isEmpty) {
+        allLines.removeLast();
+      }
+
+      final List<String> lines = allLines;
 
       // Join lines with newline characters
       final String notesText = lines.join('\n');
@@ -2182,6 +2189,17 @@ class DistingTools {
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
                 'Parameter name "$parameterName" not found in slot $slotIndex',
+              ),
+            ),
+          );
+        }
+
+        if (matchingParams.length > 1) {
+          final paramNumbers = matchingParams.map((p) => p.parameterNumber).join(', ');
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Parameter name "$parameterName" is ambiguous in slot $slotIndex. Found at parameter numbers: $paramNumbers. Please use parameter_number to disambiguate.',
               ),
             ),
           );

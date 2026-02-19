@@ -143,10 +143,12 @@ class MCPUtils {
     String message, {
     Map<String, dynamic>? data,
   }) {
-    final result = <String, dynamic>{'success': true, 'message': message};
+    final result = <String, dynamic>{};
     if (data != null) {
       result.addAll(data);
     }
+    result['success'] = true;
+    result['message'] = message;
     return result;
   }
 

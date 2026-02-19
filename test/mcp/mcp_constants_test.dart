@@ -116,6 +116,17 @@ void main() {
         // Negative powerOfTen does not scale (condition is > 0)
         expect(MCPUtils.scaleToRaw(123.7, -1), 123);
       });
+
+      test('handles floating point precision correctly', () {
+        // Classic FP issues: 1.23 * 100 = 122.99999... in IEEE 754
+        expect(MCPUtils.scaleToRaw(1.23, 2), 123);
+        // 0.1 * 10 = 1.0000000000000002
+        expect(MCPUtils.scaleToRaw(0.1, 1), 1);
+        // 0.3 * 10 = 2.9999999999999996
+        expect(MCPUtils.scaleToRaw(0.3, 1), 3);
+        // 19.99 * 100 = 1998.9999999999998
+        expect(MCPUtils.scaleToRaw(19.99, 2), 1999);
+      });
     });
 
     group('levenshteinDistance', () {
@@ -380,6 +391,24 @@ void main() {
         );
         expect(result, isNull);
       });
+
+      test('returns error when all three of three params provided', () {
+        final result = MCPUtils.validateMutuallyExclusive(
+          {'a': 'v1', 'b': 'v2', 'c': 'v3'},
+          ['a', 'b', 'c'],
+        );
+        expect(result, isNotNull);
+        expect(result!['error'], contains('only one'));
+      });
+
+      test('handles params not present in map as missing', () {
+        final result = MCPUtils.validateMutuallyExclusive(
+          {'other': 'value'},
+          ['param_a', 'param_b'],
+        );
+        expect(result, isNotNull);
+        expect(result!['error'], contains('required'));
+      });
     });
 
     group('validateExactlyOne', () {
@@ -417,6 +446,15 @@ void main() {
         );
         expect(result, isNotNull);
         expect(result!['help_command'], 'search tool');
+      });
+
+      test('returns error when all three of three params provided', () {
+        final result = MCPUtils.validateExactlyOne(
+          {'a': 'v1', 'b': 'v2', 'c': 'v3'},
+          ['a', 'b', 'c'],
+        );
+        expect(result, isNotNull);
+        expect(result!['success'], false);
       });
     });
 
@@ -474,6 +512,20 @@ void main() {
         final result = MCPUtils.buildSuccess('done');
         expect(result.keys, containsAll(['success', 'message']));
         expect(result.length, 2);
+      });
+
+      test('data cannot overwrite success field', () {
+        final result =
+            MCPUtils.buildSuccess('done', data: {'success': false});
+        // success should remain true regardless of data contents
+        expect(result['success'], true);
+      });
+
+      test('data cannot overwrite message field', () {
+        final result =
+            MCPUtils.buildSuccess('done', data: {'message': 'hijacked'});
+        // message should remain 'done' regardless of data contents
+        expect(result['message'], 'done');
       });
     });
   });
@@ -635,6 +687,16 @@ void main() {
         );
         expect(result.isSuccess, true);
         expect(result.resolvedGuid, 'direct-guid');
+      });
+
+      test('whitespace-only algorithmName does not match', () {
+        final result = AlgorithmResolver.resolveAlgorithm(
+          guid: null,
+          algorithmName: '   ',
+          allAlgorithms: algorithms,
+        );
+        // Whitespace-only name should not match any algorithm
+        expect(result.isSuccess, false);
       });
     });
   });

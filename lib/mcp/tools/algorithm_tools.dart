@@ -463,7 +463,7 @@ class MCPAlgorithmTools {
     }
     if (paramNames.any((name) =>
         name.contains('resonance') ||
-        name.contains('q') ||
+        name == 'q' ||
         name.contains('filter'))) {
       paramCategories.add('resonance/filter emphasis controls');
     }
@@ -766,7 +766,16 @@ class MCPAlgorithmTools {
   Future<String> showScreen({dynamic displayMode}) async {
     try {
       // Validate display_mode parameter first, before checking device state
-      if (displayMode != null && displayMode is String) {
+      if (displayMode != null) {
+        if (displayMode is! String) {
+          return jsonEncode(
+            convertToSnakeCaseKeys({
+              'success': false,
+              'error': 'Invalid display_mode: expected a string, got ${displayMode.runtimeType}',
+              'valid_modes': ['parameter', 'algorithm', 'overview', 'vu_meters'],
+            }),
+          );
+        }
         final modeEnum = _stringToDisplayMode(displayMode);
         if (modeEnum == null) {
           return jsonEncode(
