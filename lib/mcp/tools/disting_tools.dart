@@ -1013,9 +1013,7 @@ class DistingTools {
   /// Returns: A JSON string confirming the action or an error.
   Future<String> savePreset(Map<String, dynamic> params) async {
     try {
-      // Check preset name from cubit state
-      final state = _distingCubit.state;
-      if (state is! DistingStateSynchronized) {
+      if (!_controller.isSynchronized) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError('Device not synchronized. Cannot save preset.'),
@@ -1023,7 +1021,7 @@ class DistingTools {
         );
       }
 
-      final presetName = state.presetName;
+      final presetName = await _controller.getCurrentPresetName();
       if (presetName.isEmpty || presetName == 'Init') {
         return jsonEncode(
           convertToSnakeCaseKeys(
@@ -2538,7 +2536,7 @@ class DistingTools {
               // Add enum metadata if applicable
               if (_isEnumParameter(pInfo)) {
                 final enumValues =
-                    await _getParameterEnumValues(i, paramIndex);
+                    await _getParameterEnumValues(i, pInfo.parameterNumber);
                 if (enumValues != null) {
                   paramData['is_enum'] = true;
                   paramData['enum_values'] = enumValues;
@@ -2552,7 +2550,7 @@ class DistingTools {
               // Add mapping information
               try {
                 final mapping =
-                    await _controller.getParameterMapping(i, paramIndex);
+                    await _controller.getParameterMapping(i, pInfo.parameterNumber);
                 if (mapping != null) {
                   final perfPageIndex =
                       mapping.packedMappingData.perfPageIndex;
@@ -2674,14 +2672,13 @@ class DistingTools {
       final bool isNameOnlyChange = desiredSlotsData == null || desiredSlotsData.isEmpty;
 
       // Step 2.6: Validate connection mode (AC #16) - after basic parameter checks
-      final state = _distingCubit.state;
-      if (state is! DistingStateSynchronized) {
+      if (!_controller.isSynchronized) {
         // Allow name-only changes even when not fully synchronized
         if (!isNameOnlyChange) {
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
-                'Device is not in a synchronized state, cannot edit preset slots. Current state: ${state.runtimeType}',
+                'Device is not in a synchronized state, cannot edit preset slots.',
               ),
             ),
           );
@@ -2765,8 +2762,9 @@ class DistingTools {
         return jsonEncode(convertToSnakeCaseKeys(applyError));
       }
 
-      // Step 7: Save preset
+      // Step 7: Flush queued writes then save
       try {
+        await _controller.flushParameterQueue();
         await _controller.savePreset();
       } catch (e) {
         return jsonEncode(
@@ -2778,6 +2776,7 @@ class DistingTools {
 
       // Step 8: Get updated state and return
       try {
+
         final presetName = await _controller.getCurrentPresetName();
         final Map<int, Algorithm?> slotAlgorithms =
             await _controller.getAllSlots();
@@ -2797,11 +2796,11 @@ class DistingTools {
                 paramIndex++) {
               final pInfo = parameterInfos[paramIndex];
               final ParameterValue? paramValue =
-                  await _controller.getParameterValue(i, paramIndex);
+                  await _controller.getParameterValue(i, pInfo.parameterNumber);
               final int? liveRawValue = paramValue?.value;
 
               final paramData = {
-                'parameter_number': paramIndex,
+                'parameter_number': pInfo.parameterNumber,
                 'name': pInfo.name,
                 'value': liveRawValue != null
                     ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
@@ -2914,12 +2913,11 @@ class DistingTools {
       }
 
       // Step 2: Validate connection mode
-      final state = _distingCubit.state;
-      if (state is! DistingStateSynchronized) {
+      if (!_controller.isSynchronized) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'Device is not in a synchronized state, cannot edit slot. Current state: ${state.runtimeType}',
+              'Device is not in a synchronized state, cannot edit slot.',
             ),
           ),
         );
@@ -3194,8 +3192,9 @@ class DistingTools {
         }
       }
 
-      // Step 8: Save preset
+      // Step 8: Flush queued writes then save
       try {
+        await _controller.flushParameterQueue();
         await _controller.savePreset();
       } catch (e) {
         return jsonEncode(
@@ -3207,6 +3206,7 @@ class DistingTools {
 
       // Step 9: Get updated slot state and return
       try {
+
         final updatedAlgorithm =
             await _controller.getAlgorithmInSlot(slotIndex);
         final updatedParameterInfos =
@@ -3227,11 +3227,11 @@ class DistingTools {
         for (int i = 0; i < updatedParameterInfos.length; i++) {
           final pInfo = updatedParameterInfos[i];
           final ParameterValue? paramValue =
-              await _controller.getParameterValue(slotIndex, i);
+              await _controller.getParameterValue(slotIndex, pInfo.parameterNumber);
           final int? liveRawValue = paramValue?.value;
 
           final paramData = {
-            'parameter_number': i,
+            'parameter_number': pInfo.parameterNumber,
             'name': pInfo.name,
             'value': liveRawValue != null
                 ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
@@ -3328,12 +3328,11 @@ class DistingTools {
       }
 
       // Step 2: Validate connection mode
-      final state = _distingCubit.state;
-      if (state is! DistingStateSynchronized) {
+      if (!_controller.isSynchronized) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'Device is not in a synchronized state, cannot edit parameter. Current state: ${state.runtimeType}',
+              'Device is not in a synchronized state, cannot edit parameter.',
             ),
           ),
         );
@@ -3464,7 +3463,8 @@ class DistingTools {
         );
       }
 
-      // Auto-save preset
+      // Flush queued parameter writes, then save so the preset includes them.
+      await _controller.flushParameterQueue();
       await _controller.savePreset();
 
       // Step 8: Format return value
@@ -3671,7 +3671,7 @@ class DistingTools {
     }
 
     // Save the updated mapping via DistingCubit
-    await _distingCubit.saveMapping(
+    await _controller.saveMapping(
       existing.algorithmIndex,
       existing.parameterNumber,
       updatedPacked,
@@ -3805,30 +3805,51 @@ class DistingTools {
             );
           }
 
-          // Get algorithm parameters for validation
-          final algorithmParameters =
-              metadataService.getExpandedParameters(resolvedGuid);
-          if (paramNumber >= algorithmParameters.length) {
-            final algorithmName = algorithmMetadata.name;
-            return MCPUtils.buildError(
-              'Parameter number $paramNumber exceeds algorithm parameter count',
-              details: {
-                'algorithm': algorithmName,
-                'valid_range': '0-${algorithmParameters.length - 1}',
-                'attempted': paramNumber,
-                'total_parameters': algorithmParameters.length,
-              },
-            );
-          }
-
-          final paramInfo = algorithmParameters[paramNumber];
-
-          // Validate parameter value bounds
-          if (paramValue != null && paramValue is num) {
-            if (paramValue < paramInfo.min || paramValue > paramInfo.max) {
+          // Validate parameter number and bounds
+          final currentAlgo = currentSlots[slotIndex];
+          if (currentAlgo != null && currentAlgo.guid == resolvedGuid) {
+            // Same algorithm — validate using hardware parameter numbers
+            final parameterInfos =
+                await _controller.getParametersForSlot(slotIndex);
+            final paramIdx = parameterInfos
+                .indexWhere((p) => p.parameterNumber == paramNumber);
+            if (paramIdx == -1) {
+              final available =
+                  parameterInfos.map((p) => p.parameterNumber).toList();
               return MCPUtils.buildError(
-                'Parameter $paramNumber value $paramValue exceeds bounds (${paramInfo.min}-${paramInfo.max})',
+                'Parameter number $paramNumber not found. Available parameter numbers: $available',
               );
+            }
+            if (paramValue != null && paramValue is num) {
+              final pInfo = parameterInfos[paramIdx];
+              if (paramValue < pInfo.min || paramValue > pInfo.max) {
+                return MCPUtils.buildError(
+                  'Parameter $paramNumber value $paramValue exceeds bounds (${pInfo.min}-${pInfo.max})',
+                );
+              }
+            }
+          } else {
+            // New algorithm — validate against metadata (best-effort length check)
+            final algorithmParameters =
+                metadataService.getExpandedParameters(resolvedGuid);
+            if (paramNumber >= algorithmParameters.length) {
+              return MCPUtils.buildError(
+                'Parameter number $paramNumber exceeds algorithm parameter count',
+                details: {
+                  'algorithm': algorithmMetadata.name,
+                  'valid_range': '0-${algorithmParameters.length - 1}',
+                  'attempted': paramNumber,
+                  'total_parameters': algorithmParameters.length,
+                },
+              );
+            }
+            final paramInfo = algorithmParameters[paramNumber];
+            if (paramValue != null && paramValue is num) {
+              if (paramValue < paramInfo.min || paramValue > paramInfo.max) {
+                return MCPUtils.buildError(
+                  'Parameter $paramNumber value $paramValue exceeds bounds (${paramInfo.min}-${paramInfo.max})',
+                );
+              }
             }
           }
 
@@ -3938,9 +3959,10 @@ class DistingTools {
         if (algorithm != null) {
           final mappings = <int, Mapping?>{};
           final paramList = await _controller.getParametersForSlot(slotIndex);
-          for (int paramNum = 0; paramNum < paramList.length; paramNum++) {
-            final mapping = await _controller.getParameterMapping(slotIndex, paramNum);
-            mappings[paramNum] = mapping;
+          for (int i = 0; i < paramList.length; i++) {
+            final paramNumber = paramList[i].parameterNumber;
+            final mapping = await _controller.getParameterMapping(slotIndex, paramNumber);
+            mappings[paramNumber] = mapping;
           }
           currentMappings[slotIndex] = mappings;
         }
@@ -4141,7 +4163,7 @@ class DistingTools {
     }
 
     // Save the updated mapping via DistingCubit
-    await _distingCubit.saveMapping(
+    await _controller.saveMapping(
       existing.algorithmIndex,
       existing.parameterNumber,
       updatedPacked,
@@ -4366,7 +4388,7 @@ class DistingTools {
           // Force refresh slot if parameters haven't loaded yet
           if (parameterInfos.isEmpty) {
             try {
-              await _distingCubit.refreshSlot(i);
+              await _controller.refreshSlot(i);
               parameterInfos = await _controller.getParametersForSlot(i);
             } catch (_) {
               // Best effort

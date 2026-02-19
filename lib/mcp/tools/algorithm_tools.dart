@@ -1,21 +1,24 @@
 import 'dart:convert';
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show ParameterInfo, ParameterValue, Mapping, DisplayMode;
+    show Algorithm, ParameterInfo, ParameterValue, Mapping, DisplayMode;
 import 'package:nt_helper/util/case_converter.dart';
 import 'package:nt_helper/mcp/mcp_constants.dart';
 
 /// Class containing methods representing MCP tools.
-/// Requires DistingCubit for accessing application state.
+/// Requires DistingController for accessing state and DistingCubit for
+/// operations not yet migrated to the controller (routing, screen, CPU).
 class MCPAlgorithmTools {
   // Make service instance-based if needed, or keep static if stateless
   static final _metadataService = AlgorithmMetadataService();
+  final DistingController _controller;
   final DistingCubit _distingCubit;
 
-  MCPAlgorithmTools(this._distingCubit);
+  MCPAlgorithmTools(this._controller, this._distingCubit);
 
   /// Returns all known algorithms by merging metadata DB with device state.
   List<dynamic> _getAllKnownAlgorithms() {
@@ -566,8 +569,7 @@ class MCPAlgorithmTools {
 
   /// Show complete preset with all slots, parameters, and enabled mappings.
   Future<String> showPreset() async {
-    final state = _distingCubit.state;
-    if (state is! DistingStateSynchronized) {
+    if (!_controller.isSynchronized) {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
@@ -576,18 +578,23 @@ class MCPAlgorithmTools {
       );
     }
 
-    final slots = state.slots;
+    final presetName = await _controller.getCurrentPresetName();
+    final allSlots = await _controller.getAllSlots();
     final slotsJson = <Map<String, dynamic>>[];
 
-    for (int i = 0; i < slots.length; i++) {
-      final slot = slots[i];
-      final slotJson = _buildSlotJson(i, slot);
+    for (int i = 0; i < allSlots.length; i++) {
+      final algorithm = allSlots[i];
+      if (algorithm == null) continue;
+      final parameters = await _controller.getParametersForSlot(i);
+      final values = await _controller.getValuesForSlot(i);
+      final mappings = await _controller.getMappingsForSlot(i);
+      final slotJson = _buildSlotJson(i, algorithm, parameters, values, mappings);
       slotsJson.add(slotJson);
     }
 
     return jsonEncode(
       convertToSnakeCaseKeys({
-        'name': state.presetName,
+        'name': presetName,
         'slots': slotsJson,
       }),
     );
@@ -625,8 +632,7 @@ class MCPAlgorithmTools {
       );
     }
 
-    final state = _distingCubit.state;
-    if (state is! DistingStateSynchronized) {
+    if (!_controller.isSynchronized) {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
@@ -635,18 +641,27 @@ class MCPAlgorithmTools {
       );
     }
 
-    if (slotIndex >= state.slots.length) {
-      return jsonEncode(
-        convertToSnakeCaseKeys({
-          'success': false,
-          'error': 'Slot index $slotIndex out of range',
-        }),
-      );
+    final algorithm = await _controller.getAlgorithmInSlot(slotIndex);
+    if (algorithm == null) {
+      return jsonEncode(convertToSnakeCaseKeys(_buildSlotJson(
+        slotIndex,
+        Algorithm(algorithmIndex: -1, guid: '', name: '', specifications: []),
+        [],
+        [],
+        [],
+      )));
     }
 
-    var slot = state.slots[slotIndex];
-    slot = await _ensureSlotReady(slotIndex, slot);
-    return jsonEncode(convertToSnakeCaseKeys(_buildSlotJson(slotIndex, slot)));
+    var parameters = await _controller.getParametersForSlot(slotIndex);
+    if (parameters.isEmpty) {
+      await _ensureSlotReady(slotIndex);
+      parameters = await _controller.getParametersForSlot(slotIndex);
+    }
+    final values = await _controller.getValuesForSlot(slotIndex);
+    final mappings = await _controller.getMappingsForSlot(slotIndex);
+    return jsonEncode(convertToSnakeCaseKeys(
+      _buildSlotJson(slotIndex, algorithm, parameters, values, mappings),
+    ));
   }
 
   /// Show single parameter with value and optional mapping.
@@ -703,8 +718,7 @@ class MCPAlgorithmTools {
       );
     }
 
-    final state = _distingCubit.state;
-    if (state is! DistingStateSynchronized) {
+    if (!_controller.isSynchronized) {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
@@ -713,19 +727,10 @@ class MCPAlgorithmTools {
       );
     }
 
-    if (slotIndex >= state.slots.length) {
-      return jsonEncode(
-        convertToSnakeCaseKeys({
-          'success': false,
-          'error': 'Slot index $slotIndex out of range',
-        }),
-      );
-    }
-
-    final slot = state.slots[slotIndex];
-    final paramIdx = slot.parameters.indexWhere((p) => p.parameterNumber == parameterNumber);
+    final parameters = await _controller.getParametersForSlot(slotIndex);
+    final paramIdx = parameters.indexWhere((p) => p.parameterNumber == parameterNumber);
     if (paramIdx == -1) {
-      final available = slot.parameters.map((p) => p.parameterNumber).toList();
+      final available = parameters.map((p) => p.parameterNumber).toList();
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
@@ -734,9 +739,12 @@ class MCPAlgorithmTools {
       );
     }
 
-    final parameter = slot.parameters[paramIdx];
-    final value = slot.values[paramIdx];
-    final mapping = slot.mappings[paramIdx];
+    final values = await _controller.getValuesForSlot(slotIndex);
+    final mappings = await _controller.getMappingsForSlot(slotIndex);
+
+    final parameter = parameters[paramIdx];
+    final value = values[paramIdx];
+    final mapping = mappings[paramIdx];
 
     final paramJson = _buildParameterJson(
       parameter.parameterNumber,
@@ -841,38 +849,35 @@ class MCPAlgorithmTools {
 
   /// Ensure a slot has real parameter data, not an optimistic placeholder.
   /// Force-refreshes from hardware/offline data if parameters are empty.
-  Future<Slot> _ensureSlotReady(int slotIndex, Slot slot) async {
-    if (slot.parameters.isNotEmpty) return slot;
-
+  Future<void> _ensureSlotReady(int slotIndex) async {
     try {
-      await _distingCubit.refreshSlot(slotIndex);
-      final currentState = _distingCubit.state;
-      if (currentState is DistingStateSynchronized &&
-          slotIndex < currentState.slots.length) {
-        return currentState.slots[slotIndex];
-      }
+      await _controller.refreshSlot(slotIndex);
     } catch (_) {
       // Slot may genuinely have no parameters
     }
-
-    return slot;
   }
 
   /// Build JSON representation of a slot with all parameters and enabled mappings.
-  Map<String, dynamic> _buildSlotJson(int slotIndex, Slot slot) {
+  Map<String, dynamic> _buildSlotJson(
+    int slotIndex,
+    Algorithm algorithm,
+    List<ParameterInfo> parameters,
+    List<ParameterValue> values,
+    List<Mapping> mappings,
+  ) {
     final parametersJson = <Map<String, dynamic>>[];
-    for (int i = 0; i < slot.parameters.length; i++) {
-      final param = slot.parameters[i];
-      final value = slot.values[i];
-      final mapping = slot.mappings[i];
+    for (int i = 0; i < parameters.length; i++) {
+      final param = parameters[i];
+      final value = values[i];
+      final mapping = mappings[i];
       parametersJson.add(_buildParameterJson(param.parameterNumber, param, value, mapping));
     }
 
     return {
       'slot_index': slotIndex,
       'algorithm': {
-        'guid': slot.algorithm.guid,
-        'name': slot.algorithm.name,
+        'guid': algorithm.guid,
+        'name': algorithm.name,
       },
       'parameters': parametersJson,
     };

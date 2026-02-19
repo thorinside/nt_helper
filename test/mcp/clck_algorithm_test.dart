@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/metadata_import_service.dart';
+import 'package:nt_helper/services/disting_controller_impl.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
@@ -103,7 +104,7 @@ void main() {
         await AlgorithmMetadataService().initialize(database);
 
         final cubit = DistingCubit(database, midiCommand: MockMidiCommand());
-        final tools = MCPAlgorithmTools(cubit);
+        final tools = MCPAlgorithmTools(DistingControllerImpl(cubit), cubit);
 
         // Test with timeout to catch any hanging
         final resultFuture = tools

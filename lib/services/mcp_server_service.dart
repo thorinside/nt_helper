@@ -456,7 +456,7 @@ class McpServerService extends ChangeNotifier {
 
   McpServer _buildServer() {
     final distingControllerForTools = DistingControllerImpl(_distingCubit);
-    final mcpAlgorithmTools = MCPAlgorithmTools(_distingCubit);
+    final mcpAlgorithmTools = MCPAlgorithmTools(distingControllerForTools, _distingCubit);
     final distingTools = DistingTools(distingControllerForTools, _distingCubit);
 
     final server = McpServer(

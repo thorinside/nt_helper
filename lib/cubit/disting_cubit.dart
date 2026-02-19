@@ -146,6 +146,11 @@ class DistingCubit extends _DistingCubitBase
   // Parameter update queue for consolidated parameter changes
   ParameterUpdateQueue? _parameterQueue;
 
+  /// Wait for all queued parameter updates to be sent to hardware.
+  Future<void> flushParameterQueue() async {
+    await _parameterQueue?.flush();
+  }
+
   /// Stream of CPU usage updates that polls every 10 seconds when listeners are active
   Stream<CpuUsage> get cpuUsageStream => _monitoringDelegate.cpuUsageStream;
 

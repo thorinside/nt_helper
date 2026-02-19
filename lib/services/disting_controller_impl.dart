@@ -11,6 +11,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart' show PackedMappingData;
 
 class DistingControllerImpl implements DistingController {
   final DistingCubit _distingCubit;
@@ -296,6 +297,11 @@ class DistingControllerImpl implements DistingController {
   }
 
   @override
+  Future<void> flushParameterQueue() async {
+    await _distingCubit.flushParameterQueue();
+  }
+
+  @override
   Future<Uint8List?> getModuleScreenshot() async {
     // Assuming DistingCubit has a method like getHardwareScreenshot
     // that handles connection checks and returns null if unavailable.
@@ -364,5 +370,36 @@ class DistingControllerImpl implements DistingController {
     } catch (e) {
       return null;
     }
+  }
+
+  @override
+  bool get isSynchronized => _distingCubit.state is DistingStateSynchronized;
+
+  @override
+  Future<List<ParameterValue>> getValuesForSlot(int slotIndex) async {
+    _validateSlotIndex(slotIndex);
+    final state = _getSynchronizedState();
+    return state.slots[slotIndex].values;
+  }
+
+  @override
+  Future<List<Mapping>> getMappingsForSlot(int slotIndex) async {
+    _validateSlotIndex(slotIndex);
+    final state = _getSynchronizedState();
+    return state.slots[slotIndex].mappings;
+  }
+
+  @override
+  Future<void> saveMapping(
+    int algorithmIndex,
+    int parameterNumber,
+    PackedMappingData mapping,
+  ) async {
+    await _distingCubit.saveMapping(algorithmIndex, parameterNumber, mapping);
+  }
+
+  @override
+  Future<void> refresh() async {
+    await _distingCubit.refresh();
   }
 }

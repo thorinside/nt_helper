@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/metadata_import_service.dart';
+import 'package:nt_helper/services/disting_controller_impl.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:drift/native.dart';
@@ -50,7 +51,7 @@ void main() {
 
     setUp(() {
       distingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
-      tools = MCPAlgorithmTools(distingCubit);
+      tools = MCPAlgorithmTools(DistingControllerImpl(distingCubit), distingCubit);
     });
 
     tearDown(() {

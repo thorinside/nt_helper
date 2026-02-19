@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show Algorithm, ParameterInfo, ParameterEnumStrings, Mapping, ParameterValue;
 import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart' show PackedMappingData;
 
 /// Abstract interface defining operations to control the Disting state,
 /// intended for use by MCP tools or other services.
@@ -105,6 +106,9 @@ abstract class DistingController {
   /// Throws StateError if the Disting is not in a synchronized state.
   Future<void> savePreset();
 
+  /// Waits for all queued parameter updates to be sent to hardware.
+  Future<void> flushParameterQueue();
+
   /// Retrieves the current module screenshot as byte data.
   /// Returns null if not connected, screenshot unavailable, or an error occurs.
   /// Throws StateError if the Disting is not in a synchronized state (if applicable for this operation).
@@ -136,4 +140,27 @@ abstract class DistingController {
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index or parameterNumber is invalid.
   Future<Mapping?> getParameterMapping(int slotIndex, int parameterNumber);
+
+  /// Whether the Disting is currently in a synchronized state.
+  bool get isSynchronized;
+
+  /// Retrieves all parameter values for the algorithm in the specified slot.
+  /// Returns values in the same order as getParametersForSlot.
+  /// Throws StateError if the Disting is not in a synchronized state.
+  /// Throws ArgumentError if the slot index is invalid.
+  Future<List<ParameterValue>> getValuesForSlot(int slotIndex);
+
+  /// Retrieves all mappings for the algorithm in the specified slot.
+  /// Returns mappings in the same order as getParametersForSlot.
+  /// Throws StateError if the Disting is not in a synchronized state.
+  /// Throws ArgumentError if the slot index is invalid.
+  Future<List<Mapping>> getMappingsForSlot(int slotIndex);
+
+  /// Saves a mapping for a specific parameter.
+  /// Throws StateError if the Disting is not in a synchronized state.
+  Future<void> saveMapping(int algorithmIndex, int parameterNumber, PackedMappingData mapping);
+
+  /// Refreshes the device state (re-reads preset from hardware).
+  /// Throws StateError if the Disting is not in a synchronized state.
+  Future<void> refresh();
 }

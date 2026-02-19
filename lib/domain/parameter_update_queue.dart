@@ -119,6 +119,13 @@ class ParameterUpdateQueue {
     'pending': _pendingUpdates.length,
   };
 
+  /// Wait for all pending updates to be sent to hardware.
+  Future<void> flush() async {
+    while (_pendingUpdates.isNotEmpty || _isProcessing) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+  }
+
   /// Clear all pending updates
   void clear() {
     _pendingUpdates.clear();
