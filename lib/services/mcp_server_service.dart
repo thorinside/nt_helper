@@ -152,12 +152,15 @@ class McpServerService extends ChangeNotifier {
         cancelOnError: false,
       );
 
-      DebugService().addLocalMessage('MCP server started on port ${_httpServer!.port}');
+      DebugService().addLocalMessage(
+        'MCP server started on port ${_httpServer!.port}',
+      );
       notifyListeners();
     } catch (e) {
       // Capture error for display
       if (e is SocketException) {
-        if (e.osError?.errorCode == 48 || e.message.contains('Address already in use')) {
+        if (e.osError?.errorCode == 48 ||
+            e.message.contains('Address already in use')) {
           _lastError = 'Port $port is already in use';
         } else {
           _lastError = e.message;
@@ -175,7 +178,10 @@ class McpServerService extends ChangeNotifier {
     try {
       stderr.writeln('MCP_LOG: $message');
       final file = File('/tmp/nt_mcp.log');
-      file.writeAsStringSync('${DateTime.now()}: $message\n', mode: FileMode.append);
+      file.writeAsStringSync(
+        '${DateTime.now()}: $message\n',
+        mode: FileMode.append,
+      );
     } catch (_) {}
   }
 
@@ -232,7 +238,6 @@ class McpServerService extends ChangeNotifier {
     response.headers.set('Access-Control-Expose-Headers', 'mcp-session-id');
   }
 
-
   /// Handle POST requests for JSON-RPC calls (Streamable HTTP).
   /// The transport validates Accept headers and handles the protocol per spec.
   Future<void> _handlePostRequest(HttpRequest request) async {
@@ -260,28 +265,34 @@ class McpServerService extends ChangeNotifier {
           // Stale session — auto-reinitialize with the same session ID so
           // clients that don't handle 404 keep working after hot reload.
           _log('POST /mcp: stale session $sessionId, auto-reinitializing');
-          DebugService().addLocalMessage('MCP auto-reinit for stale session $sessionId');
+          DebugService().addLocalMessage(
+            'MCP auto-reinit for stale session $sessionId',
+          );
           transport = await _createNewTransport(sessionId: sessionId);
 
           // Pump a synthetic init through the transport to flip _initialized.
           // We must wait for the response to complete (the server processes
           // the init asynchronously via send()).
-          final initBody = jsonDecode(jsonEncode({
-            'jsonrpc': '2.0',
-            'id': '_reinit',
-            'method': 'initialize',
-            'params': {
-              'protocolVersion': '2025-03-26',
-              'capabilities': {},
-              'clientInfo': {'name': 'auto-reinit', 'version': '0.0.0'},
-            },
-          }));
+          final initBody = jsonDecode(
+            jsonEncode({
+              'jsonrpc': '2.0',
+              'id': '_reinit',
+              'method': 'initialize',
+              'params': {
+                'protocolVersion': '2025-03-26',
+                'capabilities': {},
+                'clientInfo': {'name': 'auto-reinit', 'version': '0.0.0'},
+              },
+            }),
+          );
           final syntheticRequest = _SyntheticHttpRequest(sessionId: null);
           await transport.handleRequest(syntheticRequest, initBody);
           // Wait for the transport to finish writing the init response
           await syntheticRequest.response.done;
 
-          _log('POST /mcp: transport re-initialized, session: ${transport.sessionId}');
+          _log(
+            'POST /mcp: transport re-initialized, session: ${transport.sessionId}',
+          );
           _log('POST /mcp: delegating real request to transport');
           await transport.handleRequest(request, parsedBody);
           _log('POST /mcp: handleRequest completed');
@@ -414,7 +425,6 @@ class McpServerService extends ChangeNotifier {
     }
   }
 
-
   Future<void> stop() async {
     if (!isRunning && _lastError == null) {
       return;
@@ -456,15 +466,16 @@ class McpServerService extends ChangeNotifier {
 
   McpServer _buildServer() {
     final distingControllerForTools = DistingControllerImpl(_distingCubit);
-    final mcpAlgorithmTools = MCPAlgorithmTools(distingControllerForTools, _distingCubit);
+    final mcpAlgorithmTools = MCPAlgorithmTools(
+      distingControllerForTools,
+      _distingCubit,
+    );
     final distingTools = DistingTools(distingControllerForTools, _distingCubit);
 
     final server = McpServer(
       Implementation(name: 'nt-helper-flutter', version: '1.39.0'),
       options: McpServerOptions(
-        capabilities: ServerCapabilities(
-          tools: ServerCapabilitiesTools(),
-        ),
+        capabilities: ServerCapabilities(tools: ServerCapabilitiesTools()),
       ),
     );
 
@@ -478,17 +489,23 @@ class McpServerService extends ChangeNotifier {
     // resources/list handler. Without this, clients that call resources/list
     // get a "method not found" error that the transport never writes back
     // (mcp_dart bug with enableJsonResponse + error responses).
-    server.registerResource(
-      '_init',
-      'nt://init',
-      null,
-      (uri, extra) => ReadResourceResult(contents: []),
-    ).disable();
+    server
+        .registerResource(
+          '_init',
+          'nt://init',
+          null,
+          (uri, extra) => ReadResourceResult(contents: []),
+        )
+        .disable();
 
     return server;
   }
 
-  void _registerSearchTools(McpServer server, MCPAlgorithmTools algoTools, DistingTools distingTools) {
+  void _registerSearchTools(
+    McpServer server,
+    MCPAlgorithmTools algoTools,
+    DistingTools distingTools,
+  ) {
     server.registerTool(
       'search_algorithms',
       description:
@@ -497,7 +514,8 @@ class McpServerService extends ChangeNotifier {
         properties: {
           'query': {
             'type': 'string',
-            'description': 'Search query: algorithm name, partial name, or category.',
+            'description':
+                'Search query: algorithm name, partial name, or category.',
           },
         },
         required: ['query'],
@@ -506,7 +524,9 @@ class McpServerService extends ChangeNotifier {
         try {
           // searchAlgorithms expects target=algorithm in the args
           final fullArgs = {...args, 'target': 'algorithm'};
-          final resultJson = await algoTools.searchAlgorithms(fullArgs).timeout(
+          final resultJson = await algoTools
+              .searchAlgorithms(fullArgs)
+              .timeout(
                 const Duration(seconds: 5),
                 onTimeout: () => jsonEncode({
                   'success': false,
@@ -516,7 +536,12 @@ class McpServerService extends ChangeNotifier {
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -534,7 +559,8 @@ class McpServerService extends ChangeNotifier {
           },
           'scope': {
             'type': 'string',
-            'description': 'Search scope: "preset" (all slots) or "slot" (specific slot).',
+            'description':
+                'Search scope: "preset" (all slots) or "slot" (specific slot).',
             'enum': ['preset', 'slot'],
           },
           'slot_index': {
@@ -543,14 +569,17 @@ class McpServerService extends ChangeNotifier {
           },
           'partial_match': {
             'type': 'boolean',
-            'description': 'If true, find parameters containing the query. Default: false (exact match).',
+            'description':
+                'If true, find parameters containing the query. Default: false (exact match).',
           },
         },
         required: ['query', 'scope'],
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await distingTools.searchParameters(args).timeout(
+          final resultJson = await distingTools
+              .searchParameters(args)
+              .timeout(
                 const Duration(seconds: 5),
                 onTimeout: () => jsonEncode({
                   'success': false,
@@ -560,7 +589,12 @@ class McpServerService extends ChangeNotifier {
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -570,18 +604,27 @@ class McpServerService extends ChangeNotifier {
   void _registerShowTools(McpServer server, MCPAlgorithmTools tools) {
     server.registerTool(
       'show_preset',
-      description: 'Show the complete preset with all slots, parameters, and enabled mappings.',
+      description:
+          'Show the complete preset with all slots, parameters, and enabled mappings.',
       inputSchema: _inputSchema(properties: {}),
       callback: (args, extra) async {
         try {
           final resultJson = await tools.showPreset().timeout(
-                const Duration(seconds: 10),
-                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
-              );
+            const Duration(seconds: 10),
+            onTimeout: () => jsonEncode({
+              'success': false,
+              'error': 'Tool execution timed out after 10 seconds',
+            }),
+          );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -589,7 +632,8 @@ class McpServerService extends ChangeNotifier {
 
     server.registerTool(
       'show_slot',
-      description: 'Show a single slot with its algorithm, parameters, and enabled mappings.',
+      description:
+          'Show a single slot with its algorithm, parameters, and enabled mappings.',
       inputSchema: _inputSchema(
         properties: {
           'slot_index': {
@@ -603,14 +647,24 @@ class McpServerService extends ChangeNotifier {
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.showSlot(args['slot_index']).timeout(
+          final resultJson = await tools
+              .showSlot(args['slot_index'])
+              .timeout(
                 const Duration(seconds: 10),
-                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 10 seconds',
+                }),
               );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -618,7 +672,8 @@ class McpServerService extends ChangeNotifier {
 
     server.registerTool(
       'show_parameter',
-      description: 'Show a single parameter with its value, range, unit, and enabled mappings.',
+      description:
+          'Show a single parameter with its value, range, unit, and enabled mappings.',
       inputSchema: _inputSchema(
         properties: {
           'slot_index': {
@@ -638,14 +693,24 @@ class McpServerService extends ChangeNotifier {
         try {
           final slotIndex = args['slot_index'] as int;
           final parameter = args['parameter'] as int;
-          final resultJson = await tools.showParameterByIndex(slotIndex, parameter).timeout(
+          final resultJson = await tools
+              .showParameterByIndex(slotIndex, parameter)
+              .timeout(
                 const Duration(seconds: 10),
-                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 10 seconds',
+                }),
               );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -653,26 +718,38 @@ class McpServerService extends ChangeNotifier {
 
     server.registerTool(
       'show_screen',
-      description: 'Capture and return the current device screen as a base64 JPEG image.',
+      description:
+          'Capture and return the current device screen as a base64 JPEG image.',
       inputSchema: _inputSchema(
         properties: {
           'display_mode': {
             'type': 'string',
-            'description': 'Optional display mode to switch to before capturing. Options: "parameter" (hardware parameter list), "algorithm" (custom algorithm interface), "overview" (all slots overview), "vu_meters" (VU meter display)',
+            'description':
+                'Optional display mode to switch to before capturing. Options: "parameter" (hardware parameter list), "algorithm" (custom algorithm interface), "overview" (all slots overview), "vu_meters" (VU meter display)',
             'enum': ['parameter', 'algorithm', 'overview', 'vu_meters'],
           },
         },
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.showScreen(displayMode: args['display_mode']).timeout(
+          final resultJson = await tools
+              .showScreen(displayMode: args['display_mode'])
+              .timeout(
                 const Duration(seconds: 10),
-                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 10 seconds',
+                }),
               );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -680,18 +757,27 @@ class McpServerService extends ChangeNotifier {
 
     server.registerTool(
       'show_routing',
-      description: 'Show the current signal routing state with input/output bus assignments for all slots.',
+      description:
+          'Show the current signal routing state with input/output bus assignments for all slots.',
       inputSchema: _inputSchema(properties: {}),
       callback: (args, extra) async {
         try {
           final resultJson = await tools.showRouting().timeout(
-                const Duration(seconds: 10),
-                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
-              );
+            const Duration(seconds: 10),
+            onTimeout: () => jsonEncode({
+              'success': false,
+              'error': 'Tool execution timed out after 10 seconds',
+            }),
+          );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -699,18 +785,27 @@ class McpServerService extends ChangeNotifier {
 
     server.registerTool(
       'show_cpu',
-      description: 'Show CPU usage for the device and per-slot usage breakdown.',
+      description:
+          'Show CPU usage for the device and per-slot usage breakdown.',
       inputSchema: _inputSchema(properties: {}),
       callback: (args, extra) async {
         try {
           final resultJson = await tools.showCpu().timeout(
-                const Duration(seconds: 10),
-                onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
-              );
+            const Duration(seconds: 10),
+            onTimeout: () => jsonEncode({
+              'success': false,
+              'error': 'Tool execution timed out after 10 seconds',
+            }),
+          );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -720,20 +815,19 @@ class McpServerService extends ChangeNotifier {
   void _registerEditTools(McpServer server, DistingTools tools) {
     server.registerTool(
       'edit_preset',
-      description: 'Edit the entire preset state including name and all slots. WARNING: Replaces the full preset.',
+      description:
+          'Edit the entire preset state including name and all slots. WARNING: Replaces the full preset.',
       inputSchema: _inputSchema(
         properties: {
           'data': {
             'type': 'object',
             'description': 'Full preset data with name and slots array.',
             'properties': {
-              'name': {
-                'type': 'string',
-                'description': 'Preset name',
-              },
+              'name': {'type': 'string', 'description': 'Preset name'},
               'slots': {
                 'type': 'array',
-                'description': 'Array of slot objects with algorithm and parameters',
+                'description':
+                    'Array of slot objects with algorithm and parameters',
               },
             },
           },
@@ -742,14 +836,24 @@ class McpServerService extends ChangeNotifier {
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.editPreset({...args, 'target': 'preset'}).timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 30 seconds'}),
-          );
+          final resultJson = await tools
+              .editPreset({...args, 'target': 'preset'})
+              .timeout(
+                const Duration(seconds: 30),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 30 seconds',
+                }),
+              );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -757,7 +861,8 @@ class McpServerService extends ChangeNotifier {
 
     server.registerTool(
       'edit_slot',
-      description: 'Edit a specific slot: change algorithm, set parameters, or rename. Device must be in connected mode.',
+      description:
+          'Edit a specific slot: change algorithm, set parameters, or rename. Device must be in connected mode.',
       inputSchema: _inputSchema(
         properties: {
           'slot_index': {
@@ -768,14 +873,19 @@ class McpServerService extends ChangeNotifier {
           },
           'data': {
             'type': 'object',
-            'description': 'Slot data with optional algorithm, parameters, and name.',
+            'description':
+                'Slot data with optional algorithm, parameters, and name.',
             'properties': {
               'algorithm': {
                 'type': 'object',
-                'description': 'Algorithm specification (guid or name, plus optional specifications)',
+                'description':
+                    'Algorithm specification (guid or name, plus optional specifications)',
                 'properties': {
                   'guid': {'type': 'string', 'description': 'Algorithm GUID'},
-                  'name': {'type': 'string', 'description': 'Algorithm name (fuzzy matching)'},
+                  'name': {
+                    'type': 'string',
+                    'description': 'Algorithm name (fuzzy matching)',
+                  },
                   'specifications': {
                     'type': 'array',
                     'description': 'Algorithm-specific specification values',
@@ -786,13 +896,24 @@ class McpServerService extends ChangeNotifier {
               'name': {'type': 'string', 'description': 'Custom slot name'},
               'parameters': {
                 'type': 'array',
-                'description': 'Array of parameter objects with values and/or mappings',
+                'description':
+                    'Array of parameter objects with values and/or mappings',
                 'items': {
                   'type': 'object',
                   'properties': {
-                    'parameter_number': {'type': 'integer', 'description': 'Parameter index'},
-                    'value': {'type': 'number', 'description': 'Parameter value'},
-                    'mapping': {'type': 'object', 'description': 'Mapping with CV, MIDI, i2c, and performance page fields'},
+                    'parameter_number': {
+                      'type': 'integer',
+                      'description': 'Parameter index',
+                    },
+                    'value': {
+                      'type': 'number',
+                      'description': 'Parameter value',
+                    },
+                    'mapping': {
+                      'type': 'object',
+                      'description':
+                          'Mapping with CV, MIDI, i2c, and performance page fields',
+                    },
                   },
                 },
               },
@@ -803,14 +924,24 @@ class McpServerService extends ChangeNotifier {
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.editSlot({...args, 'target': 'slot'}).timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 30 seconds'}),
-          );
+          final resultJson = await tools
+              .editSlot({...args, 'target': 'slot'})
+              .timeout(
+                const Duration(seconds: 30),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 30 seconds',
+                }),
+              );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -818,7 +949,8 @@ class McpServerService extends ChangeNotifier {
 
     server.registerTool(
       'edit_parameter',
-      description: 'Edit a single parameter value and/or mapping. Device must be in connected mode.',
+      description:
+          'Edit a single parameter value and/or mapping. Device must be in connected mode.',
       inputSchema: _inputSchema(
         properties: {
           'slot_index': {
@@ -828,7 +960,8 @@ class McpServerService extends ChangeNotifier {
             'description': 'Slot index (0-31).',
           },
           'parameter': {
-            'description': 'Parameter identifier: integer number (0-based) or string name.',
+            'description':
+                'Parameter identifier: integer number (0-based) or string name.',
             'oneOf': [
               {'type': 'string'},
               {'type': 'integer'},
@@ -836,27 +969,33 @@ class McpServerService extends ChangeNotifier {
           },
           'value': {
             'type': 'number',
-            'description': 'Parameter value in display scale (same as returned by show tools). Automatically converted to raw hardware value. If omitted, mapping must be provided.',
+            'description':
+                'Parameter value in display scale (same as returned by show tools). Automatically converted to raw hardware value. If omitted, mapping must be provided.',
           },
           'mapping': {
             'type': 'object',
-            'description': 'Parameter mapping with CV, MIDI, i2c, and performance page controls. Supports partial updates.',
+            'description':
+                'Parameter mapping with CV, MIDI, i2c, and performance page controls. Supports partial updates.',
             'properties': {
               'cv': {
                 'type': 'object',
-                'description': 'CV mapping: source, cv_input (0-12), is_unipolar, is_gate, volts, delta',
+                'description':
+                    'CV mapping: source, cv_input (0-12), is_unipolar, is_gate, volts, delta',
               },
               'midi': {
                 'type': 'object',
-                'description': 'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128), midi_type, is_midi_symmetric, is_midi_relative, midi_min, midi_max',
+                'description':
+                    'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128), midi_type, is_midi_symmetric, is_midi_relative, midi_min, midi_max',
               },
               'i2c': {
                 'type': 'object',
-                'description': 'i2c mapping: is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max',
+                'description':
+                    'i2c mapping: is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max',
               },
               'performance_page': {
                 'type': 'integer',
-                'description': 'Performance page index (0=not assigned, 1-15=page number)',
+                'description':
+                    'Performance page index (0=not assigned, 1-15=page number)',
               },
             },
           },
@@ -865,14 +1004,24 @@ class McpServerService extends ChangeNotifier {
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.editParameter(args).timeout(
-            const Duration(seconds: 15),
-            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 15 seconds'}),
-          );
+          final resultJson = await tools
+              .editParameter(args)
+              .timeout(
+                const Duration(seconds: 15),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 15 seconds',
+                }),
+              );
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -886,10 +1035,7 @@ class McpServerService extends ChangeNotifier {
           'Create new blank preset or preset with initial algorithms. WARNING: Clears current preset.',
       inputSchema: _inputSchema(
         properties: {
-          'name': {
-            'type': 'string',
-            'description': 'Name for the new preset.',
-          },
+          'name': {'type': 'string', 'description': 'Name for the new preset.'},
           'algorithms': {
             'type': 'array',
             'description':
@@ -918,7 +1064,9 @@ class McpServerService extends ChangeNotifier {
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.newWithAlgorithms(args).timeout(
+          final resultJson = await tools
+              .newWithAlgorithms(args)
+              .timeout(
                 const Duration(seconds: 30),
                 onTimeout: () => jsonEncode({
                   'success': false,
@@ -928,7 +1076,12 @@ class McpServerService extends ChangeNotifier {
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -940,7 +1093,9 @@ class McpServerService extends ChangeNotifier {
       inputSchema: _inputSchema(properties: {}),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.savePreset(args).timeout(
+          final resultJson = await tools
+              .savePreset(args)
+              .timeout(
                 const Duration(seconds: 10),
                 onTimeout: () => jsonEncode({
                   'success': false,
@@ -950,7 +1105,12 @@ class McpServerService extends ChangeNotifier {
           return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -969,7 +1129,8 @@ class McpServerService extends ChangeNotifier {
           },
           'name': {
             'type': 'string',
-            'description': 'Algorithm name (fuzzy matching). Required if no guid.',
+            'description':
+                'Algorithm name (fuzzy matching). Required if no guid.',
           },
           'guid': {
             'type': 'string',
@@ -988,20 +1149,27 @@ class McpServerService extends ChangeNotifier {
                 'Specification values for algorithms that require them (e.g., channel count, max delay time).',
           },
         },
-        required: ['target'],
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.addSimple(args).timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 30 seconds'}),
-          );
-          return CallToolResult.fromContent(
-            [TextContent(text: resultJson)],
-          );
+          final resultJson = await tools
+              .addSimple({...args, 'target': 'algorithm'})
+              .timeout(
+                const Duration(seconds: 30),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 30 seconds',
+                }),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -1025,20 +1193,28 @@ class McpServerService extends ChangeNotifier {
             'description': 'Slot index to clear (0-31).',
           },
         },
-        required: ['target', 'slot_index'],
+        required: ['slot_index'],
       ),
       callback: (args, extra) async {
         try {
-          final resultJson = await tools.removeSlot(args).timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => jsonEncode({'success': false, 'error': 'Tool execution timed out after 10 seconds'}),
-          );
-          return CallToolResult.fromContent(
-            [TextContent(text: resultJson)],
-          );
+          final resultJson = await tools
+              .removeSlot({...args, 'target': 'slot'})
+              .timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 10 seconds',
+                }),
+              );
+          return CallToolResult.fromContent([TextContent(text: resultJson)]);
         } catch (e) {
           return CallToolResult.fromContent([
-            TextContent(text: jsonEncode({'success': false, 'error': 'Tool execution failed: ${e.toString()}'})),
+            TextContent(
+              text: jsonEncode({
+                'success': false,
+                'error': 'Tool execution failed: ${e.toString()}',
+              }),
+            ),
           ]);
         }
       },
@@ -1069,7 +1245,9 @@ class McpServerService extends ChangeNotifier {
           // Store both transport and server by session ID when session is initialized
           _transports[initializedSessionId] = transport!;
           _servers[initializedSessionId] = server!;
-          DebugService().addLocalMessage('MCP client connected (session: $initializedSessionId)');
+          DebugService().addLocalMessage(
+            'MCP client connected (session: $initializedSessionId)',
+          );
         },
       ),
     );
@@ -1097,7 +1275,9 @@ class McpServerService extends ChangeNotifier {
 
   /// Clean up a specific session
   void _cleanupSession(String sessionId) {
-    DebugService().addLocalMessage('MCP client disconnected (session: $sessionId)');
+    DebugService().addLocalMessage(
+      'MCP client disconnected (session: $sessionId)',
+    );
     _transports[sessionId]?.close();
     _transports.remove(sessionId);
     _servers.remove(sessionId);
@@ -1114,7 +1294,9 @@ class _LoggingTransport implements Transport {
 
   @override
   Future<void> send(JsonRpcMessage message, {dynamic relatedRequestId}) async {
-    DebugService().addLocalMessage('MCP response: ${jsonEncode(message.toJson())}');
+    DebugService().addLocalMessage(
+      'MCP response: ${jsonEncode(message.toJson())}',
+    );
     return _inner.send(message, relatedRequestId: relatedRequestId);
   }
 

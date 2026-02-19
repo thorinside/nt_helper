@@ -141,7 +141,13 @@ class DistingControllerImpl implements DistingController {
   Future<void> clearSlot(int slotIndex) async {
     _validateSlotIndex(slotIndex);
     final state = _getSynchronizedState();
+    if (slotIndex >= state.slots.length) {
+      return;
+    }
     final slot = state.slots[slotIndex];
+    if (slot.algorithm.guid.isEmpty) {
+      return;
+    }
 
     await _distingCubit.onRemoveAlgorithm(slot.algorithm.algorithmIndex);
   }
@@ -277,8 +283,14 @@ class DistingControllerImpl implements DistingController {
   Future<void> setSlotName(int slotIndex, String name) async {
     final state = _getSynchronizedState();
     _validateSlotIndex(slotIndex);
+    if (slotIndex >= state.slots.length) {
+      throw ArgumentError('Slot $slotIndex is empty.');
+    }
 
     final Slot slotData = state.slots[slotIndex];
+    if (slotData.algorithm.guid.isEmpty) {
+      throw ArgumentError('Slot $slotIndex is empty.');
+    }
 
     final int actualAlgorithmIndex = slotData.algorithm.algorithmIndex;
 
@@ -289,6 +301,9 @@ class DistingControllerImpl implements DistingController {
   Future<String?> getSlotName(int slotIndex) async {
     final state = _getSynchronizedState();
     _validateSlotIndex(slotIndex);
+    if (slotIndex >= state.slots.length) {
+      return null;
+    }
 
     final Slot slotData = state.slots[slotIndex];
 
