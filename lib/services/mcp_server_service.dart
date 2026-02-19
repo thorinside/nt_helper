@@ -905,6 +905,11 @@ class McpServerService extends ChangeNotifier {
                   'type': 'string',
                   'description': 'Algorithm name (fuzzy matching)',
                 },
+                'specifications': {
+                  'type': 'array',
+                  'description': 'Algorithm-specific specification values',
+                  'items': {'type': 'integer'},
+                },
               },
             },
           },
