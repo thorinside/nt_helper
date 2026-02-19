@@ -36,6 +36,11 @@ class BusSpec {
       n >= auxMin && n <= auxMaxExtended && !isEs5(n);
   static bool isEs5(int n) => n >= es5Min && n <= es5Max;
 
+  /// Whether a parameter max value indicates a bus assignment parameter.
+  /// Accepts all known bus ceilings: 27, 28, 30 (old firmware), 64 (1.15+).
+  static bool isBusParameterMaxValue(int max) =>
+      max >= inputMax && max <= extendedMax;
+
   /// Returns the AUX bus ceiling based on firmware capability.
   static int auxMaxForFirmware({required bool hasExtendedAuxBuses}) =>
       hasExtendedAuxBuses ? auxMaxExtended : auxMax;

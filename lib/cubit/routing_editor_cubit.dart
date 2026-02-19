@@ -279,8 +279,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Load saved node positions for this preset
       loadNodePositions();
-    } catch (e) {
-      // Intentionally empty
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('Routing processing error: $e\n$stackTrace');
+      }
     }
   }
 
@@ -1455,7 +1457,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final isBusParameter =
           param.unit == 1 &&
           (param.min == 0 || param.min == 1) &&
-          (param.max == 27 || param.max == 28 || param.max == 30);
+          BusSpec.isBusParameterMaxValue(param.max);
 
       if (!isBusParameter) continue;
       if (param.min > 0) continue;

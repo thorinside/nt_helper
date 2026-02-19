@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/algorithm_connection.dart';
 
@@ -15,7 +16,7 @@ import 'package:nt_helper/models/algorithm_connection.dart';
 /// slot data hasn't changed, and ensures deterministic ordering of results
 /// for consistent UI updates.
 class AlgorithmConnectionService {
-  static const int _maxBusNumber = 28;
+  static const int _maxBusNumber = BusSpec.extendedMax;
   static const int _minBusNumber = 1;
 
   // Simple caching based on slots data hash

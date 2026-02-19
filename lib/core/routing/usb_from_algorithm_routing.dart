@@ -1,6 +1,7 @@
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'algorithm_routing.dart';
+import 'bus_spec.dart';
 import 'models/port.dart';
 
 /// Routing implementation for USB Audio (From Host) algorithm.
@@ -226,7 +227,7 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
       for (final p in slot.parameters)
         if (p.unit == 1 &&
             (p.min == 0 || p.min == 1) &&
-            (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31) &&
+            BusSpec.isBusParameterMaxValue(p.max) &&
             p.name.toLowerCase().contains('to'))
           p,
     ];
@@ -237,7 +238,7 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
         for (final p in slot.parameters)
           if (p.unit == 1 &&
               (p.min == 0 || p.min == 1) &&
-              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31))
+              BusSpec.isBusParameterMaxValue(p.max))
             p,
       ];
     }

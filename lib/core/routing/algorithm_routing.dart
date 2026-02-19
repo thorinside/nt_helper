@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'bus_spec.dart';
 import 'models/routing_state.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
@@ -526,7 +527,7 @@ abstract class AlgorithmRouting {
       final isBusParameter =
           param.unit == 1 &&
           (param.min == 0 || param.min == 1) &&
-          (param.max == 27 || param.max == 28 || param.max == 30);
+          BusSpec.isBusParameterMaxValue(param.max);
 
       // CV count parameters are identified by:
       // - name contains "CV count"

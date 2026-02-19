@@ -139,7 +139,7 @@ class _SlotMaintenanceDelegate {
           (p) =>
               p.name.toLowerCase().contains("output") &&
               p.min == 0 &&
-              p.max == 28,
+              BusSpec.isBusParameterMaxValue(p.max),
         )
         .forEach(
           (p) => disting.setParameterValue(

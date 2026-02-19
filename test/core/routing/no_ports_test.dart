@@ -27,6 +27,89 @@ void main() {
     }
 
     group('AlgorithmRouting', () {
+      test('should detect bus parameters with firmware 1.15 max == 64', () {
+        // Firmware 1.15 reports max == 64 for bus assignment parameters
+        final slot = createSlot(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'vcam',
+            name: 'VCA Mono',
+          ),
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              name: 'Audio input',
+              min: 1,
+              max: 64,
+              defaultValue: 1,
+              unit: 1,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Audio output',
+              min: 0,
+              max: 64,
+              defaultValue: 0,
+              unit: 1,
+              powerOfTen: 0,
+            ),
+          ],
+          values: [
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 1),
+            ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 13),
+          ],
+        );
+
+        final routing = AlgorithmRouting.fromSlot(slot);
+
+        expect(routing.inputPorts, isNotEmpty);
+        expect(routing.outputPorts, isNotEmpty);
+      });
+
+      test('should detect bus parameters with old firmware max == 28', () {
+        final slot = createSlot(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'vcam',
+            name: 'VCA Mono',
+          ),
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              name: 'Audio input',
+              min: 1,
+              max: 28,
+              defaultValue: 1,
+              unit: 1,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Audio output',
+              min: 0,
+              max: 28,
+              defaultValue: 0,
+              unit: 1,
+              powerOfTen: 0,
+            ),
+          ],
+          values: [
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 1),
+            ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 13),
+          ],
+        );
+
+        final routing = AlgorithmRouting.fromSlot(slot);
+
+        expect(routing.inputPorts, isNotEmpty);
+        expect(routing.outputPorts, isNotEmpty);
+      });
+
       test('should allow algorithms with no ports to return empty lists', () {
         // Create a slot with no routing parameters (like the 'note' algorithm)
         final slot = createSlot(
