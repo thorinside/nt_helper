@@ -5,7 +5,13 @@ import 'dart:typed_data'; // Added for Uint8List
 import 'package:collection/collection.dart';
 import 'package:image/image.dart' as img; // For image processing
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, AlgorithmInfo, ParameterInfo, Mapping, ParameterValue, Specification;
+    show
+        Algorithm,
+        AlgorithmInfo,
+        ParameterInfo,
+        Mapping,
+        ParameterValue,
+        Specification;
 import 'package:nt_helper/models/packed_mapping_data.dart' show MidiMappingType;
 import 'package:nt_helper/cubit/disting_cubit.dart'
     show DistingCubit, DistingStateSynchronized;
@@ -38,7 +44,9 @@ class DistingTools {
     final state = _distingCubit.state;
     if (state is DistingStateSynchronized) {
       final metadataGuids = metadataAlgorithms.map((a) => a.guid).toSet();
-      final deviceOnly = state.algorithms.where((a) => !metadataGuids.contains(a.guid));
+      final deviceOnly = state.algorithms.where(
+        (a) => !metadataGuids.contains(a.guid),
+      );
       return [...metadataAlgorithms, ...deviceOnly];
     }
     return metadataAlgorithms;
@@ -54,8 +62,9 @@ class DistingTools {
 
   Future<int> _addAlgorithmAndVerify(Algorithm algorithm) async {
     final state = _distingCubit.state;
-    final preAddCount =
-        (state is DistingStateSynchronized) ? state.slots.length : 0;
+    final preAddCount = (state is DistingStateSynchronized)
+        ? state.slots.length
+        : 0;
 
     await _controller.addAlgorithm(algorithm);
 
@@ -72,15 +81,13 @@ class DistingTools {
     for (int i = 0; i < maxPolls; i++) {
       await Future.delayed(const Duration(milliseconds: 250));
 
-      final deviceCount =
-          await disting.requestNumAlgorithmsInPreset() ?? 0;
+      final deviceCount = await disting.requestNumAlgorithmsInPreset() ?? 0;
 
       if (deviceCount == lastDeviceCount) {
         // Two consecutive identical counts — device has settled.
         if (deviceCount > preAddCount) {
           // Verify it's our algorithm.
-          final addedAlgo =
-              await disting.requestAlgorithmGuid(preAddCount);
+          final addedAlgo = await disting.requestAlgorithmGuid(preAddCount);
           if (addedAlgo != null && addedAlgo.guid == algorithm.guid) {
             try {
               await _distingCubit.refreshSlot(preAddCount);
@@ -101,11 +108,9 @@ class DistingTools {
     }
 
     // Timeout — do a final check.
-    final finalCount =
-        await disting.requestNumAlgorithmsInPreset() ?? 0;
+    final finalCount = await disting.requestNumAlgorithmsInPreset() ?? 0;
     if (finalCount > preAddCount) {
-      final addedAlgo =
-          await disting.requestAlgorithmGuid(preAddCount);
+      final addedAlgo = await disting.requestAlgorithmGuid(preAddCount);
       if (addedAlgo != null && addedAlgo.guid == algorithm.guid) {
         try {
           await _distingCubit.refreshSlot(preAddCount);
@@ -130,19 +135,37 @@ class DistingTools {
     return null;
   }
 
+  bool _isOfflineMode() {
+    final state = _distingCubit.state;
+    return state is DistingStateSynchronized && state.offline;
+  }
+
+  String _buildOfflineSpecsLimitation(String guid, List<Specification> specs) {
+    final defaults = specs.map((s) => '${s.name}=${s.defaultValue}').join(', ');
+    return 'Offline mode limitation: specifications for "$guid" are fixed to '
+        'default values ($defaults). Any provided specifications are ignored.';
+  }
+
   /// Builds an error response with specification details for algorithms that require specs.
-  Map<String, dynamic> _buildSpecRequiredError(String guid, List<Specification> specs) {
+  Map<String, dynamic> _buildSpecRequiredError(
+    String guid,
+    List<Specification> specs,
+  ) {
     return {
       ...MCPUtils.buildError(
         'Algorithm "$guid" requires ${specs.length} specification(s). '
         'Provide "specifications" as a list of integers.',
       ),
-      'specifications': specs.map((s) => {
-        'name': s.name,
-        'min': s.min,
-        'max': s.max,
-        'default': s.defaultValue,
-      }).toList(),
+      'specifications': specs
+          .map(
+            (s) => {
+              'name': s.name,
+              'min': s.min,
+              'max': s.max,
+              'default': s.defaultValue,
+            },
+          )
+          .toList(),
     };
   }
 
@@ -213,10 +236,8 @@ class DistingTools {
             paramIndex++
           ) {
             final pInfo = parameterInfos[paramIndex];
-            final ParameterValue? paramValue = await _controller.getParameterValue(
-              i,
-              pInfo.parameterNumber,
-            );
+            final ParameterValue? paramValue = await _controller
+                .getParameterValue(i, pInfo.parameterNumber);
             final int? liveRawValue = paramValue?.value;
 
             // Build base parameter object
@@ -248,7 +269,10 @@ class DistingTools {
 
             // Add enum metadata if this is an enum parameter
             if (_isEnumParameter(pInfo)) {
-              final enumValues = await _getParameterEnumValues(i, pInfo.parameterNumber);
+              final enumValues = await _getParameterEnumValues(
+                i,
+                pInfo.parameterNumber,
+              );
               if (enumValues != null) {
                 paramData['is_enum'] = true;
                 paramData['enum_values'] = enumValues;
@@ -403,7 +427,8 @@ class DistingTools {
     final String? name = params['name'] as String?;
     final String? guid = params['guid'] as String?;
     final int? slotIndex = params['slot_index'] as int?;
-    final List<dynamic>? specifications = params['specifications'] as List<dynamic>?;
+    final List<dynamic>? specifications =
+        params['specifications'] as List<dynamic>?;
 
     // Validate that at least one of name or guid is provided
     if (name == null && guid == null) {
@@ -442,53 +467,67 @@ class DistingTools {
 
     try {
       final resolvedGuid = resolution.resolvedGuid!;
-      final algorithmMetadata =
-          AlgorithmMetadataService().getAlgorithmByGuid(resolvedGuid);
+      final algorithmMetadata = AlgorithmMetadataService().getAlgorithmByGuid(
+        resolvedGuid,
+      );
 
       // Check specification requirements from device state
       final deviceAlgoInfo = _getDeviceAlgorithmInfo(resolvedGuid);
       final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
       final List<int> specValues = [];
+      final offlineMode = _isOfflineMode();
+      String? limitationMessage;
 
       if (requiredSpecs.isNotEmpty) {
-        if (specifications == null || specifications.isEmpty) {
-          return jsonEncode(
-            convertToSnakeCaseKeys(_buildSpecRequiredError(resolvedGuid, requiredSpecs)),
+        if (offlineMode) {
+          specValues.addAll(requiredSpecs.map((s) => s.defaultValue));
+          limitationMessage = _buildOfflineSpecsLimitation(
+            resolvedGuid,
+            requiredSpecs,
           );
-        }
-
-        if (specifications.length != requiredSpecs.length) {
-          return jsonEncode(
-            convertToSnakeCaseKeys({
-              ..._buildSpecRequiredError(resolvedGuid, requiredSpecs),
-              'error': 'Algorithm "$resolvedGuid" requires ${requiredSpecs.length} specification(s), got ${specifications.length}.',
-            }),
-          );
-        }
-
-        // Validate and convert spec values
-        for (int i = 0; i < specifications.length; i++) {
-          final spec = requiredSpecs[i];
-          final value = specifications[i];
-          if (value is! int) {
+        } else {
+          if (specifications == null || specifications.isEmpty) {
             return jsonEncode(
               convertToSnakeCaseKeys(
-                MCPUtils.buildError(
-                  'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
-                ),
+                _buildSpecRequiredError(resolvedGuid, requiredSpecs),
               ),
             );
           }
-          if (value < spec.min || value > spec.max) {
+
+          if (specifications.length != requiredSpecs.length) {
             return jsonEncode(
-              convertToSnakeCaseKeys(
-                MCPUtils.buildError(
-                  'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
-                ),
-              ),
+              convertToSnakeCaseKeys({
+                ..._buildSpecRequiredError(resolvedGuid, requiredSpecs),
+                'error':
+                    'Algorithm "$resolvedGuid" requires ${requiredSpecs.length} specification(s), got ${specifications.length}.',
+              }),
             );
           }
-          specValues.add(value);
+
+          // Validate and convert spec values
+          for (int i = 0; i < specifications.length; i++) {
+            final spec = requiredSpecs[i];
+            final value = specifications[i];
+            if (value is! int) {
+              return jsonEncode(
+                convertToSnakeCaseKeys(
+                  MCPUtils.buildError(
+                    'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
+                  ),
+                ),
+              );
+            }
+            if (value < spec.min || value > spec.max) {
+              return jsonEncode(
+                convertToSnakeCaseKeys(
+                  MCPUtils.buildError(
+                    'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+                  ),
+                ),
+              );
+            }
+            specValues.add(value);
+          }
         }
       }
 
@@ -508,7 +547,11 @@ class DistingTools {
       if (slotIndex != null && slotIndex < addedSlotIndex) {
         // Move up from addedSlotIndex to slotIndex
         // Each moveAlgorithmUp swaps with the slot above, pushing others down
-        for (int currentPos = addedSlotIndex; currentPos > slotIndex; currentPos--) {
+        for (
+          int currentPos = addedSlotIndex;
+          currentPos > slotIndex;
+          currentPos--
+        ) {
           await _controller.moveAlgorithmUp(currentPos);
         }
         finalSlotIndex = slotIndex;
@@ -522,9 +565,15 @@ class DistingTools {
         'algorithm_name': algorithmMetadata?.name ?? '',
         'algorithm_guid': resolvedGuid,
       };
+      if (limitationMessage != null) {
+        responseData['limitation'] = limitationMessage;
+        responseData['effective_specifications'] = specValues;
+      }
 
       return jsonEncode(
-        convertToSnakeCaseKeys(MCPUtils.buildSuccess(message, data: responseData)),
+        convertToSnakeCaseKeys(
+          MCPUtils.buildSuccess(message, data: responseData),
+        ),
       );
     } catch (e) {
       return jsonEncode(
@@ -546,9 +595,7 @@ class DistingTools {
     // Validate target
     if (target == null || target != 'slot') {
       return jsonEncode(
-        convertToSnakeCaseKeys(
-          MCPUtils.buildError('Target must be "slot"'),
-        ),
+        convertToSnakeCaseKeys(MCPUtils.buildError('Target must be "slot"')),
       );
     }
 
@@ -672,7 +719,9 @@ class DistingTools {
 
         if (matchingParams.length > 1) {
           // Ambiguous parameter name - show all matching parameter numbers
-          final paramNumbers = matchingParams.map((p) => p.parameterNumber).join(', ');
+          final paramNumbers = matchingParams
+              .map((p) => p.parameterNumber)
+              .join(', ');
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -732,7 +781,8 @@ class DistingTools {
             slotIndex,
             targetParameterNumber,
           );
-          if (numericEnumValues != null && (rawValue < 0 || rawValue >= numericEnumValues.length)) {
+          if (numericEnumValues != null &&
+              (rawValue < 0 || rawValue >= numericEnumValues.length)) {
             return jsonEncode(
               convertToSnakeCaseKeys(
                 MCPUtils.buildError(
@@ -848,9 +898,7 @@ class DistingTools {
         final List<ParameterInfo> paramInfos = await _controller
             .getParametersForSlot(slotIndex!);
         final matchingParams = paramInfos
-            .where(
-              (p) => p.name.toLowerCase() == parameterName.toLowerCase(),
-            )
+            .where((p) => p.name.toLowerCase() == parameterName.toLowerCase())
             .toList();
         if (matchingParams.isEmpty) {
           return jsonEncode(
@@ -862,7 +910,9 @@ class DistingTools {
           );
         }
         if (matchingParams.length > 1) {
-          final paramNumbers = matchingParams.map((p) => p.parameterNumber).join(', ');
+          final paramNumbers = matchingParams
+              .map((p) => p.parameterNumber)
+              .join(', ');
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -1745,7 +1795,8 @@ class DistingTools {
 
         if (resultMap['success'] == true) {
           results.add({
-            'parameter_number': resultMap['parameter_number'] ?? parameterNumber,
+            'parameter_number':
+                resultMap['parameter_number'] ?? parameterNumber,
             'parameter_name': resultMap['parameter_name'] ?? parameterName,
             'value': resultMap['value'] ?? value,
           });
@@ -2114,22 +2165,24 @@ class DistingTools {
         } catch (e) {
           return jsonEncode(
             convertToSnakeCaseKeys(
-              MCPUtils.buildError('Parameter number $parameterNumber not found in slot $slotIndex'),
+              MCPUtils.buildError(
+                'Parameter number $parameterNumber not found in slot $slotIndex',
+              ),
             ),
           );
         }
       } else if (parameterName != null) {
         // Find by name
         final matchingParams = paramInfos
-            .where(
-              (p) => p.name.toLowerCase() == parameterName.toLowerCase(),
-            )
+            .where((p) => p.name.toLowerCase() == parameterName.toLowerCase())
             .toList();
 
         if (matchingParams.isEmpty) {
           return jsonEncode(
             convertToSnakeCaseKeys(
-              MCPUtils.buildError('Parameter name "$parameterName" not found in slot $slotIndex'),
+              MCPUtils.buildError(
+                'Parameter name "$parameterName" not found in slot $slotIndex',
+              ),
             ),
           );
         }
@@ -2345,6 +2398,7 @@ class DistingTools {
 
       final List<dynamic>? algorithmsArray =
           params['algorithms'] as List<dynamic>?;
+      final offlineMode = _isOfflineMode();
 
       // Step 2: Verify device is in connected mode (SynchronizedState)
       // This check would normally be done by the DistingCubit state,
@@ -2380,9 +2434,7 @@ class DistingTools {
       } catch (e) {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError(
-              'Failed to set preset name: ${e.toString()}',
-            ),
+            MCPUtils.buildError('Failed to set preset name: ${e.toString()}'),
           ),
         );
       }
@@ -2422,7 +2474,8 @@ class DistingTools {
             algorithmResults.add({
               'index': i,
               'success': false,
-              'error': resolution.error!['error'] ?? 'Failed to resolve algorithm',
+              'error':
+                  resolution.error!['error'] ?? 'Failed to resolve algorithm',
             });
             continue;
           }
@@ -2430,71 +2483,94 @@ class DistingTools {
           final resolvedGuid = resolution.resolvedGuid!;
 
           // Get name from metadata or device state
-          final algorithmMetadata =
-              metadataService.getAlgorithmByGuid(resolvedGuid);
+          final algorithmMetadata = metadataService.getAlgorithmByGuid(
+            resolvedGuid,
+          );
           final deviceAlgoInfo = _getDeviceAlgorithmInfo(resolvedGuid);
-          final algoDisplayName = algorithmMetadata?.name ?? deviceAlgoInfo?.name ?? resolvedGuid;
+          final algoDisplayName =
+              algorithmMetadata?.name ?? deviceAlgoInfo?.name ?? resolvedGuid;
 
           // Validate specifications against device state
           final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
           final List<int> specValues = [];
+          String? limitationMessage;
 
           if (requiredSpecs.isNotEmpty) {
-            if (specifications == null || specifications.isEmpty) {
-              algorithmResults.add({
-                'index': i,
-                'success': false,
-                'error': 'Algorithm "$algoDisplayName" requires ${requiredSpecs.length} specification(s)',
-                'specifications': requiredSpecs.map((s) => {
-                  'name': s.name,
-                  'min': s.min,
-                  'max': s.max,
-                  'default': s.defaultValue,
-                }).toList(),
-              });
-              continue;
-            }
-
-            if (specifications.length != requiredSpecs.length) {
-              algorithmResults.add({
-                'index': i,
-                'success': false,
-                'error': 'Algorithm "$algoDisplayName" requires ${requiredSpecs.length} specification(s), got ${specifications.length}',
-                'specifications': requiredSpecs.map((s) => {
-                  'name': s.name,
-                  'min': s.min,
-                  'max': s.max,
-                  'default': s.defaultValue,
-                }).toList(),
-              });
-              continue;
-            }
-
-            bool specError = false;
-            for (int j = 0; j < specifications.length; j++) {
-              final spec = requiredSpecs[j];
-              final value = specifications[j];
-              if (value is! int) {
+            if (offlineMode) {
+              specValues.addAll(requiredSpecs.map((s) => s.defaultValue));
+              limitationMessage = _buildOfflineSpecsLimitation(
+                resolvedGuid,
+                requiredSpecs,
+              );
+            } else {
+              if (specifications == null || specifications.isEmpty) {
                 algorithmResults.add({
                   'index': i,
                   'success': false,
-                  'error': 'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
+                  'error':
+                      'Algorithm "$algoDisplayName" requires ${requiredSpecs.length} specification(s)',
+                  'specifications': requiredSpecs
+                      .map(
+                        (s) => {
+                          'name': s.name,
+                          'min': s.min,
+                          'max': s.max,
+                          'default': s.defaultValue,
+                        },
+                      )
+                      .toList(),
                 });
-                specError = true;
-                break;
+                continue;
               }
-              if (value < spec.min || value > spec.max) {
+
+              if (specifications.length != requiredSpecs.length) {
                 algorithmResults.add({
                   'index': i,
                   'success': false,
-                  'error': 'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+                  'error':
+                      'Algorithm "$algoDisplayName" requires ${requiredSpecs.length} specification(s), got ${specifications.length}',
+                  'specifications': requiredSpecs
+                      .map(
+                        (s) => {
+                          'name': s.name,
+                          'min': s.min,
+                          'max': s.max,
+                          'default': s.defaultValue,
+                        },
+                      )
+                      .toList(),
                 });
-                specError = true;
-                break;
+                continue;
               }
-              specValues.add(value);
+
+              bool specError = false;
+              for (int j = 0; j < specifications.length; j++) {
+                final spec = requiredSpecs[j];
+                final value = specifications[j];
+                if (value is! int) {
+                  algorithmResults.add({
+                    'index': i,
+                    'success': false,
+                    'error':
+                        'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
+                  });
+                  specError = true;
+                  break;
+                }
+                if (value < spec.min || value > spec.max) {
+                  algorithmResults.add({
+                    'index': i,
+                    'success': false,
+                    'error':
+                        'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+                  });
+                  specError = true;
+                  break;
+                }
+                specValues.add(value);
+              }
+              if (specError) continue;
             }
-            if (specError) continue;
           } else if (specifications != null && specifications.isNotEmpty) {
             specValues.addAll(specifications.whereType<int>());
           }
@@ -2514,6 +2590,9 @@ class DistingTools {
               'success': true,
               'guid': resolvedGuid,
               'name': algoDisplayName,
+              if (limitationMessage != null) 'limitation': limitationMessage,
+              if (limitationMessage != null)
+                'effective_specifications': specValues,
             });
           } catch (e) {
             algorithmResults.add({
@@ -2528,25 +2607,26 @@ class DistingTools {
       // Step 6: Query current preset state
       try {
         final presetName = await _controller.getCurrentPresetName();
-        final Map<int, Algorithm?> slotAlgorithms =
-            await _controller.getAllSlots();
+        final Map<int, Algorithm?> slotAlgorithms = await _controller
+            .getAllSlots();
 
-        List<Map<String, dynamic>?> slotsJsonList =
-            List.filled(maxSlots, null);
+        List<Map<String, dynamic>?> slotsJsonList = List.filled(maxSlots, null);
 
         for (int i = 0; i < maxSlots; i++) {
           final algorithm = slotAlgorithms[i];
           if (algorithm != null) {
-            final List<ParameterInfo> parameterInfos =
-                await _controller.getParametersForSlot(i);
+            final List<ParameterInfo> parameterInfos = await _controller
+                .getParametersForSlot(i);
 
             List<Map<String, dynamic>> parametersJsonList = [];
-            for (int paramIndex = 0;
-                paramIndex < parameterInfos.length;
-                paramIndex++) {
+            for (
+              int paramIndex = 0;
+              paramIndex < parameterInfos.length;
+              paramIndex++
+            ) {
               final pInfo = parameterInfos[paramIndex];
-              final ParameterValue? paramValue =
-                  await _controller.getParameterValue(i, pInfo.parameterNumber);
+              final ParameterValue? paramValue = await _controller
+                  .getParameterValue(i, pInfo.parameterNumber);
               final int? liveRawValue = paramValue?.value;
 
               final paramData = {
@@ -2554,8 +2634,10 @@ class DistingTools {
                 'parameter_name': pInfo.name,
                 'min_value': _scaleForDisplay(pInfo.min, pInfo.powerOfTen),
                 'max_value': _scaleForDisplay(pInfo.max, pInfo.powerOfTen),
-                'default_value':
-                    _scaleForDisplay(pInfo.defaultValue, pInfo.powerOfTen),
+                'default_value': _scaleForDisplay(
+                  pInfo.defaultValue,
+                  pInfo.powerOfTen,
+                ),
                 'unit': pInfo.unit,
                 'value': liveRawValue != null
                     ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
@@ -2565,25 +2647,30 @@ class DistingTools {
 
               // Add enum metadata if applicable
               if (_isEnumParameter(pInfo)) {
-                final enumValues =
-                    await _getParameterEnumValues(i, pInfo.parameterNumber);
+                final enumValues = await _getParameterEnumValues(
+                  i,
+                  pInfo.parameterNumber,
+                );
                 if (enumValues != null) {
                   paramData['is_enum'] = true;
                   paramData['enum_values'] = enumValues;
                   if (liveRawValue != null) {
-                    paramData['enum_value'] =
-                        _enumIndexToString(enumValues, liveRawValue);
+                    paramData['enum_value'] = _enumIndexToString(
+                      enumValues,
+                      liveRawValue,
+                    );
                   }
                 }
               }
 
               // Add mapping information
               try {
-                final mapping =
-                    await _controller.getParameterMapping(i, pInfo.parameterNumber);
+                final mapping = await _controller.getParameterMapping(
+                  i,
+                  pInfo.parameterNumber,
+                );
                 if (mapping != null) {
-                  final perfPageIndex =
-                      mapping.packedMappingData.perfPageIndex;
+                  final perfPageIndex = mapping.packedMappingData.perfPageIndex;
                   if (perfPageIndex > 0) {
                     paramData['performance_page'] = perfPageIndex;
                   }
@@ -2610,8 +2697,12 @@ class DistingTools {
         final Map<String, dynamic> responseData = {
           'preset_name': presetName,
           'slots': slotsJsonList,
-          'algorithms_added': algorithmResults.where((r) => r['success'] == true).length,
-          'algorithms_failed': algorithmResults.where((r) => r['success'] == false).length,
+          'algorithms_added': algorithmResults
+              .where((r) => r['success'] == true)
+              .length,
+          'algorithms_failed': algorithmResults
+              .where((r) => r['success'] == false)
+              .length,
         };
 
         // Only include algorithm_results if there were algorithms to add
@@ -2639,9 +2730,7 @@ class DistingTools {
     } catch (e) {
       return jsonEncode(
         convertToSnakeCaseKeys(
-          MCPUtils.buildError(
-            'Error in new tool: ${e.toString()}',
-          ),
+          MCPUtils.buildError('Error in new tool: ${e.toString()}'),
         ),
       );
     }
@@ -2699,7 +2788,8 @@ class DistingTools {
       }
 
       // Step 2.5: Check if we're only changing the name
-      final bool isNameOnlyChange = desiredSlotsData == null || desiredSlotsData.isEmpty;
+      final bool isNameOnlyChange =
+          desiredSlotsData == null || desiredSlotsData.isEmpty;
 
       // Step 2.6: Validate connection mode (AC #16) - after basic parameter checks
       if (!_controller.isSynchronized) {
@@ -2716,10 +2806,9 @@ class DistingTools {
       }
 
       // Step 3: Get current preset state (requires device connection)
-      final Map<int, Algorithm?> currentSlotAlgorithms =
-          await _controller.getAllSlots();
-      final String currentPresetName =
-          await _controller.getCurrentPresetName();
+      final Map<int, Algorithm?> currentSlotAlgorithms = await _controller
+          .getAllSlots();
+      final String currentPresetName = await _controller.getCurrentPresetName();
 
       // Step 4: Build desired slots map from input data
       // If no slots provided, we're only updating the name
@@ -2730,9 +2819,7 @@ class DistingTools {
           if (slotData is! Map<String, dynamic>) {
             return jsonEncode(
               convertToSnakeCaseKeys(
-                MCPUtils.buildError(
-                  'Slot at index $i must be an object',
-                ),
+                MCPUtils.buildError('Slot at index $i must be an object'),
               ),
             );
           }
@@ -2806,27 +2893,27 @@ class DistingTools {
 
       // Step 8: Get updated state and return
       try {
-
         final presetName = await _controller.getCurrentPresetName();
-        final Map<int, Algorithm?> slotAlgorithms =
-            await _controller.getAllSlots();
+        final Map<int, Algorithm?> slotAlgorithms = await _controller
+            .getAllSlots();
 
-        List<Map<String, dynamic>?> slotsJsonList =
-            List.filled(maxSlots, null);
+        List<Map<String, dynamic>?> slotsJsonList = List.filled(maxSlots, null);
 
         for (int i = 0; i < maxSlots; i++) {
           final algorithm = slotAlgorithms[i];
           if (algorithm != null) {
-            final List<ParameterInfo> parameterInfos =
-                await _controller.getParametersForSlot(i);
+            final List<ParameterInfo> parameterInfos = await _controller
+                .getParametersForSlot(i);
 
             List<Map<String, dynamic>> parametersJsonList = [];
-            for (int paramIndex = 0;
-                paramIndex < parameterInfos.length;
-                paramIndex++) {
+            for (
+              int paramIndex = 0;
+              paramIndex < parameterInfos.length;
+              paramIndex++
+            ) {
               final pInfo = parameterInfos[paramIndex];
-              final ParameterValue? paramValue =
-                  await _controller.getParameterValue(i, pInfo.parameterNumber);
+              final ParameterValue? paramValue = await _controller
+                  .getParameterValue(i, pInfo.parameterNumber);
               final int? liveRawValue = paramValue?.value;
 
               final paramData = {
@@ -2843,10 +2930,7 @@ class DistingTools {
 
             slotsJsonList[i] = {
               'slot_index': i,
-              'algorithm': {
-                'guid': algorithm.guid,
-                'name': algorithm.name,
-              },
+              'algorithm': {'guid': algorithm.guid, 'name': algorithm.name},
               'parameters': parametersJsonList,
             };
           }
@@ -2954,17 +3038,21 @@ class DistingTools {
       }
 
       // Step 3: Get current slot state
-      final Algorithm? currentAlgorithm =
-          await _controller.getAlgorithmInSlot(slotIndex);
+      final Algorithm? currentAlgorithm = await _controller.getAlgorithmInSlot(
+        slotIndex,
+      );
 
       // Step 4: Parse desired slot data
       final Map<String, dynamic>? algorithmData =
           data['algorithm'] as Map<String, dynamic>?;
       final String? desiredName = data['name'] as String?;
-      final List<dynamic>? parametersData = data['parameters'] as List<dynamic>?;
+      final List<dynamic>? parametersData =
+          data['parameters'] as List<dynamic>?;
 
       // Step 5: Validate algorithm (if specified)
       String? resolvedAlgorithmGuid;
+      String? limitationMessage;
+      List<int>? effectiveOfflineSpecifications;
       if (algorithmData != null) {
         final String? algoGuid = algorithmData['guid'] as String?;
         final String? algoName = algorithmData['name'] as String?;
@@ -2972,9 +3060,7 @@ class DistingTools {
         if (algoGuid == null && algoName == null) {
           return jsonEncode(
             convertToSnakeCaseKeys(
-              MCPUtils.buildError(
-                'Algorithm must have either guid or name',
-              ),
+              MCPUtils.buildError('Algorithm must have either guid or name'),
             ),
           );
         }
@@ -2998,51 +3084,70 @@ class DistingTools {
         final List<dynamic>? specifications =
             algorithmData['specifications'] as List<dynamic>?;
         final requiredSpecs = deviceAlgoInfo?.specifications ?? [];
+        final offlineMode = _isOfflineMode();
 
         if (requiredSpecs.isNotEmpty) {
-          if (specifications == null || specifications.isEmpty) {
-            return jsonEncode(
-              convertToSnakeCaseKeys(
-                _buildSpecRequiredError(resolvedAlgorithmGuid, requiredSpecs),
-              ),
+          if (offlineMode) {
+            effectiveOfflineSpecifications = requiredSpecs
+                .map((s) => s.defaultValue)
+                .toList();
+            limitationMessage = _buildOfflineSpecsLimitation(
+              resolvedAlgorithmGuid,
+              requiredSpecs,
             );
-          }
-
-          if (specifications.length != requiredSpecs.length) {
-            return jsonEncode(
-              convertToSnakeCaseKeys({
-                ..._buildSpecRequiredError(resolvedAlgorithmGuid, requiredSpecs),
-                'error': 'Algorithm "$resolvedAlgorithmGuid" requires ${requiredSpecs.length} specification(s), got ${specifications.length}.',
-              }),
-            );
-          }
-
-          for (int j = 0; j < specifications.length; j++) {
-            final spec = requiredSpecs[j];
-            final value = specifications[j];
-            if (value is! int) {
+          } else {
+            if (specifications == null || specifications.isEmpty) {
               return jsonEncode(
                 convertToSnakeCaseKeys(
-                  MCPUtils.buildError(
-                    'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
-                  ),
+                  _buildSpecRequiredError(resolvedAlgorithmGuid, requiredSpecs),
                 ),
               );
             }
-            if (value < spec.min || value > spec.max) {
+
+            if (specifications.length != requiredSpecs.length) {
               return jsonEncode(
-                convertToSnakeCaseKeys(
-                  MCPUtils.buildError(
-                    'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+                convertToSnakeCaseKeys({
+                  ..._buildSpecRequiredError(
+                    resolvedAlgorithmGuid,
+                    requiredSpecs,
                   ),
-                ),
+                  'error':
+                      'Algorithm "$resolvedAlgorithmGuid" requires ${requiredSpecs.length} specification(s), got ${specifications.length}.',
+                }),
               );
             }
+
+            for (int j = 0; j < specifications.length; j++) {
+              final spec = requiredSpecs[j];
+              final value = specifications[j];
+              if (value is! int) {
+                return jsonEncode(
+                  convertToSnakeCaseKeys(
+                    MCPUtils.buildError(
+                      'Specification "${spec.name}" must be an integer, got ${value.runtimeType}',
+                    ),
+                  ),
+                );
+              }
+              if (value < spec.min || value > spec.max) {
+                return jsonEncode(
+                  convertToSnakeCaseKeys(
+                    MCPUtils.buildError(
+                      'Specification "${spec.name}" value $value out of range (${spec.min}-${spec.max})',
+                    ),
+                  ),
+                );
+              }
+            }
           }
-        } else if (specifications != null && specifications.isNotEmpty) {
+        } else if (!offlineMode &&
+            specifications != null &&
+            specifications.isNotEmpty) {
           // Algorithm has no specs but some were provided - validate count from metadata
           final metadataService = AlgorithmMetadataService();
-          final algorithmMetadata = metadataService.getAlgorithmByGuid(resolvedAlgorithmGuid);
+          final algorithmMetadata = metadataService.getAlgorithmByGuid(
+            resolvedAlgorithmGuid,
+          );
           if (algorithmMetadata != null &&
               specifications.length > algorithmMetadata.specifications.length) {
             return jsonEncode(
@@ -3064,9 +3169,7 @@ class DistingTools {
           if (paramData is! Map<String, dynamic>) {
             return jsonEncode(
               convertToSnakeCaseKeys(
-                MCPUtils.buildError(
-                  'Parameter at index $i must be an object',
-                ),
+                MCPUtils.buildError('Parameter at index $i must be an object'),
               ),
             );
           }
@@ -3083,13 +3186,17 @@ class DistingTools {
           }
 
           // Get parameter infos for validation
-          final List<ParameterInfo> parameterInfos =
-              await _controller.getParametersForSlot(slotIndex);
+          final List<ParameterInfo> parameterInfos = await _controller
+              .getParametersForSlot(slotIndex);
 
           // Validate parameter number (by hardware parameter number, not array index)
-          final paramIdx = parameterInfos.indexWhere((p) => p.parameterNumber == paramNumber);
+          final paramIdx = parameterInfos.indexWhere(
+            (p) => p.parameterNumber == paramNumber,
+          );
           if (paramIdx == -1) {
-            final available = parameterInfos.map((p) => p.parameterNumber).toList();
+            final available = parameterInfos
+                .map((p) => p.parameterNumber)
+                .toList();
             return jsonEncode(
               convertToSnakeCaseKeys(
                 MCPUtils.buildError(
@@ -3133,7 +3240,11 @@ class DistingTools {
           final Map<String, dynamic>? mapping =
               paramData['mapping'] as Map<String, dynamic>?;
           if (mapping != null) {
-            final mappingError = _validateMapping(mapping, slotIndex, paramNumber);
+            final mappingError = _validateMapping(
+              mapping,
+              slotIndex,
+              paramNumber,
+            );
             if (mappingError != null) {
               return jsonEncode(convertToSnakeCaseKeys(mappingError));
             }
@@ -3150,10 +3261,15 @@ class DistingTools {
         try {
           // Collect spec values if provided
           final List<int> specValues = [];
-          final algorithmData2 = data['algorithm'] as Map<String, dynamic>?;
-          final specList = algorithmData2?['specifications'] as List<dynamic>?;
-          if (specList != null) {
-            specValues.addAll(specList.whereType<int>());
+          if (effectiveOfflineSpecifications != null) {
+            specValues.addAll(effectiveOfflineSpecifications);
+          } else {
+            final algorithmData2 = data['algorithm'] as Map<String, dynamic>?;
+            final specList =
+                algorithmData2?['specifications'] as List<dynamic>?;
+            if (specList != null) {
+              specValues.addAll(specList.whereType<int>());
+            }
           }
 
           await _controller.clearSlot(slotIndex);
@@ -3184,7 +3300,9 @@ class DistingTools {
         if (paramValue != null) {
           try {
             final allParams = await _controller.getParametersForSlot(slotIndex);
-            final pInfo = allParams.firstWhere((p) => p.parameterNumber == paramNumber);
+            final pInfo = allParams.firstWhere(
+              (p) => p.parameterNumber == paramNumber,
+            );
             final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
             await _controller.updateParameterValue(
               slotIndex,
@@ -3239,11 +3357,12 @@ class DistingTools {
 
       // Step 9: Get updated slot state and return
       try {
-
-        final updatedAlgorithm =
-            await _controller.getAlgorithmInSlot(slotIndex);
-        final updatedParameterInfos =
-            await _controller.getParametersForSlot(slotIndex);
+        final updatedAlgorithm = await _controller.getAlgorithmInSlot(
+          slotIndex,
+        );
+        final updatedParameterInfos = await _controller.getParametersForSlot(
+          slotIndex,
+        );
 
         if (updatedAlgorithm == null) {
           return jsonEncode(
@@ -3259,8 +3378,8 @@ class DistingTools {
         List<Map<String, dynamic>> parametersJsonList = [];
         for (int i = 0; i < updatedParameterInfos.length; i++) {
           final pInfo = updatedParameterInfos[i];
-          final ParameterValue? paramValue =
-              await _controller.getParameterValue(slotIndex, pInfo.parameterNumber);
+          final ParameterValue? paramValue = await _controller
+              .getParameterValue(slotIndex, pInfo.parameterNumber);
           final int? liveRawValue = paramValue?.value;
 
           final paramData = {
@@ -3277,18 +3396,22 @@ class DistingTools {
 
         final slotName = await _controller.getSlotName(slotIndex);
 
-        return jsonEncode(
-          convertToSnakeCaseKeys({
-            'success': true,
-            'slot_index': slotIndex,
-            'algorithm': {
-              'guid': updatedAlgorithm.guid,
-              'name': updatedAlgorithm.name,
-            },
-            'name': slotName,
-            'parameters': parametersJsonList,
-          }),
-        );
+        final response = <String, dynamic>{
+          'success': true,
+          'slot_index': slotIndex,
+          'algorithm': {
+            'guid': updatedAlgorithm.guid,
+            'name': updatedAlgorithm.name,
+          },
+          'name': slotName,
+          'parameters': parametersJsonList,
+        };
+        if (limitationMessage != null) {
+          response['limitation'] = limitationMessage;
+          response['effective_specifications'] = effectiveOfflineSpecifications;
+        }
+
+        return jsonEncode(convertToSnakeCaseKeys(response));
       } catch (e) {
         return jsonEncode(
           convertToSnakeCaseKeys(
@@ -3348,7 +3471,8 @@ class DistingTools {
 
       // Get value and mapping (at least one must be provided)
       final dynamic value = params['value'];
-      final Map<String, dynamic>? mapping = params['mapping'] as Map<String, dynamic>?;
+      final Map<String, dynamic>? mapping =
+          params['mapping'] as Map<String, dynamic>?;
 
       if (value == null && (mapping == null || mapping.isEmpty)) {
         return jsonEncode(
@@ -3372,7 +3496,9 @@ class DistingTools {
       }
 
       // Step 3: Get current slot state and parameter info
-      final Algorithm? algorithm = await _controller.getAlgorithmInSlot(slotIndex);
+      final Algorithm? algorithm = await _controller.getAlgorithmInSlot(
+        slotIndex,
+      );
       if (algorithm == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
@@ -3385,17 +3511,22 @@ class DistingTools {
       }
 
       // Step 4: Resolve parameter identifier (by number or by name)
-      final List<ParameterInfo> parameters =
-          await _controller.getParametersForSlot(slotIndex);
+      final List<ParameterInfo> parameters = await _controller
+          .getParametersForSlot(slotIndex);
 
       int? parameterNumber;
       String? parameterName;
 
       if (parameterIdent is int) {
         // Parameter identified by hardware parameter number
-        final idx = parameters.indexWhere((p) => p.parameterNumber == parameterIdent);
+        final idx = parameters.indexWhere(
+          (p) => p.parameterNumber == parameterIdent,
+        );
         if (idx == -1) {
-          final available = parameters.map((p) => '${p.parameterNumber}: ${p.name}').toList().join(', ');
+          final available = parameters
+              .map((p) => '${p.parameterNumber}: ${p.name}')
+              .toList()
+              .join(', ');
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -3418,8 +3549,10 @@ class DistingTools {
           }
         }
         if (!found) {
-          final availableNames =
-              parameters.map((p) => p.name).toList().join(', ');
+          final availableNames = parameters
+              .map((p) => p.name)
+              .toList()
+              .join(', ');
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -3431,13 +3564,17 @@ class DistingTools {
       } else {
         return jsonEncode(
           convertToSnakeCaseKeys(
-            MCPUtils.buildError('Parameter must be a string name or integer number'),
+            MCPUtils.buildError(
+              'Parameter must be a string name or integer number',
+            ),
           ),
         );
       }
 
       final int resolvedParameterNumber = parameterNumber!;
-      final ParameterInfo paramInfo = parameters.firstWhere((p) => p.parameterNumber == resolvedParameterNumber);
+      final ParameterInfo paramInfo = parameters.firstWhere(
+        (p) => p.parameterNumber == resolvedParameterNumber,
+      );
 
       // Step 5: Validate value (if provided) — convert display→raw
       int? rawValue;
@@ -3452,8 +3589,14 @@ class DistingTools {
 
         rawValue = MCPUtils.scaleToRaw(value, paramInfo.powerOfTen);
         if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
-          final displayMin = _scaleForDisplay(paramInfo.min, paramInfo.powerOfTen);
-          final displayMax = _scaleForDisplay(paramInfo.max, paramInfo.powerOfTen);
+          final displayMin = _scaleForDisplay(
+            paramInfo.min,
+            paramInfo.powerOfTen,
+          );
+          final displayMax = _scaleForDisplay(
+            paramInfo.max,
+            paramInfo.powerOfTen,
+          );
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -3466,14 +3609,13 @@ class DistingTools {
 
       // Step 6: Validate mapping (if provided)
       if (mapping != null && mapping.isNotEmpty) {
-        final validationError =
-            await _validateMappingFields(slotIndex, resolvedParameterNumber, mapping);
+        final validationError = await _validateMappingFields(
+          slotIndex,
+          resolvedParameterNumber,
+          mapping,
+        );
         if (validationError != null) {
-          return jsonEncode(
-            convertToSnakeCaseKeys(
-              validationError,
-            ),
-          );
+          return jsonEncode(convertToSnakeCaseKeys(validationError));
         }
       }
 
@@ -3489,11 +3631,7 @@ class DistingTools {
 
       // Update mappings if provided
       if (mapping != null && mapping.isNotEmpty) {
-        await _applyMappingUpdates(
-          slotIndex,
-          resolvedParameterNumber,
-          mapping,
-        );
+        await _applyMappingUpdates(slotIndex, resolvedParameterNumber, mapping);
       }
 
       // Flush queued parameter writes, then save so the preset includes them.
@@ -3501,8 +3639,10 @@ class DistingTools {
       await _controller.savePreset();
 
       // Step 8: Format return value
-      final updatedParamValue =
-          await _controller.getParameterValue(slotIndex, resolvedParameterNumber);
+      final updatedParamValue = await _controller.getParameterValue(
+        slotIndex,
+        resolvedParameterNumber,
+      );
       final updatedValue = updatedParamValue?.value ?? 0;
       final scaledValue = _scaleForDisplay(updatedValue, paramInfo.powerOfTen);
 
@@ -3515,8 +3655,10 @@ class DistingTools {
       };
 
       // Include mappings if any are enabled
-      final updatedMapping =
-          await _controller.getParameterMapping(slotIndex, resolvedParameterNumber);
+      final updatedMapping = await _controller.getParameterMapping(
+        slotIndex,
+        resolvedParameterNumber,
+      );
       final mappingJson = await _buildMappingJson(updatedMapping);
       if (mappingJson != null && (mappingJson as Map).isNotEmpty) {
         result['mapping'] = mappingJson;
@@ -3585,7 +3727,7 @@ class DistingTools {
             'note_momentary',
             'note_toggle',
             'cc_14bit_low',
-            'cc_14bit_high'
+            'cc_14bit_high',
           ];
           if (!validTypes.contains(midiType)) {
             return MCPUtils.buildError(
@@ -3597,9 +3739,7 @@ class DistingTools {
         final i2cCc = value['i2c_cc'];
         if (i2cCc != null) {
           if (i2cCc is! int || i2cCc < 0 || i2cCc > 255) {
-            return MCPUtils.buildError(
-              'i2c CC must be 0-255, got $i2cCc',
-            );
+            return MCPUtils.buildError('i2c CC must be 0-255, got $i2cCc');
           }
         }
       } else if (key == 'performance_page' && value != null) {
@@ -3624,9 +3764,7 @@ class DistingTools {
 
   /// Builds mapping JSON object from current mapping state
   /// Only includes enabled mappings (disabled mappings omitted per AC #16)
-  Future<Map<String, dynamic>?> _buildMappingJson(
-    Mapping? mapping,
-  ) async {
+  Future<Map<String, dynamic>?> _buildMappingJson(Mapping? mapping) async {
     if (mapping == null) {
       return null;
     }
@@ -3718,8 +3856,9 @@ class DistingTools {
       final resolvedGuid = resolution.resolvedGuid!;
 
       // Validate algorithm exists in metadata
-      final algorithmMetadata =
-          metadataService.getAlgorithmByGuid(resolvedGuid);
+      final algorithmMetadata = metadataService.getAlgorithmByGuid(
+        resolvedGuid,
+      );
       if (algorithmMetadata == null) {
         return MCPUtils.buildError(
           'Algorithm with GUID "$resolvedGuid" not found in metadata',
@@ -3737,8 +3876,7 @@ class DistingTools {
             );
           }
 
-          final int? paramNumber =
-              paramData['parameter_number'] as int?;
+          final int? paramNumber = paramData['parameter_number'] as int?;
           final dynamic paramValue = paramData['value'];
           final Map<String, dynamic>? mappingData =
               paramData['mapping'] as Map<String, dynamic>?;
@@ -3753,23 +3891,35 @@ class DistingTools {
           final currentAlgo = currentSlots[slotIndex];
           if (currentAlgo != null && currentAlgo.guid == resolvedGuid) {
             // Same algorithm — validate using hardware parameter numbers
-            final parameterInfos =
-                await _controller.getParametersForSlot(slotIndex);
-            final paramIdx = parameterInfos
-                .indexWhere((p) => p.parameterNumber == paramNumber);
+            final parameterInfos = await _controller.getParametersForSlot(
+              slotIndex,
+            );
+            final paramIdx = parameterInfos.indexWhere(
+              (p) => p.parameterNumber == paramNumber,
+            );
             if (paramIdx == -1) {
-              final available =
-                  parameterInfos.map((p) => p.parameterNumber).toList();
+              final available = parameterInfos
+                  .map((p) => p.parameterNumber)
+                  .toList();
               return MCPUtils.buildError(
                 'Parameter number $paramNumber not found. Available parameter numbers: $available',
               );
             }
             if (paramValue != null && paramValue is num) {
               final pInfo = parameterInfos[paramIdx];
-              final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
+              final rawValue = MCPUtils.scaleToRaw(
+                paramValue,
+                pInfo.powerOfTen,
+              );
               if (rawValue < pInfo.min || rawValue > pInfo.max) {
-                final displayMin = MCPUtils.scaleForDisplay(pInfo.min, pInfo.powerOfTen);
-                final displayMax = MCPUtils.scaleForDisplay(pInfo.max, pInfo.powerOfTen);
+                final displayMin = MCPUtils.scaleForDisplay(
+                  pInfo.min,
+                  pInfo.powerOfTen,
+                );
+                final displayMax = MCPUtils.scaleForDisplay(
+                  pInfo.max,
+                  pInfo.powerOfTen,
+                );
                 return MCPUtils.buildError(
                   'Parameter $paramNumber value $paramValue exceeds bounds ($displayMin-$displayMax)',
                 );
@@ -3777,8 +3927,9 @@ class DistingTools {
             }
           } else {
             // New algorithm — validate against metadata (best-effort length check)
-            final algorithmParameters =
-                metadataService.getExpandedParameters(resolvedGuid);
+            final algorithmParameters = metadataService.getExpandedParameters(
+              resolvedGuid,
+            );
             if (paramNumber >= algorithmParameters.length) {
               return MCPUtils.buildError(
                 'Parameter number $paramNumber exceeds algorithm parameter count',
@@ -3802,8 +3953,11 @@ class DistingTools {
 
           // Validate mapping if provided
           if (mappingData != null) {
-            final mappingError =
-                _validateMapping(mappingData, slotIndex, paramNumber);
+            final mappingError = _validateMapping(
+              mappingData,
+              slotIndex,
+              paramNumber,
+            );
             if (mappingError != null) {
               return mappingError;
             }
@@ -3908,7 +4062,10 @@ class DistingTools {
           final paramList = await _controller.getParametersForSlot(slotIndex);
           for (int i = 0; i < paramList.length; i++) {
             final paramNumber = paramList[i].parameterNumber;
-            final mapping = await _controller.getParameterMapping(slotIndex, paramNumber);
+            final mapping = await _controller.getParameterMapping(
+              slotIndex,
+              paramNumber,
+            );
             mappings[paramNumber] = mapping;
           }
           currentMappings[slotIndex] = mappings;
@@ -3941,8 +4098,9 @@ class DistingTools {
         }
 
         final resolvedGuid = resolution.resolvedGuid!;
-        final algorithmMetadata =
-            metadataService.getAlgorithmByGuid(resolvedGuid);
+        final algorithmMetadata = metadataService.getAlgorithmByGuid(
+          resolvedGuid,
+        );
 
         // Check if we need to add this algorithm
         final currentAlgo = currentSlots[slotIndex];
@@ -3966,19 +4124,23 @@ class DistingTools {
             desiredSlot.parameters!.isNotEmpty) {
           for (final paramData in desiredSlot.parameters!) {
             if (paramData is Map<String, dynamic>) {
-              final int? paramNumber =
-                  paramData['parameter_number'] as int?;
+              final int? paramNumber = paramData['parameter_number'] as int?;
               final dynamic paramValue = paramData['value'];
               final Map<String, dynamic>? mappingData =
                   paramData['mapping'] as Map<String, dynamic>?;
 
               if (paramNumber != null && paramValue != null) {
                 try {
-                  final paramList = await _controller.getParametersForSlot(slotIndex);
+                  final paramList = await _controller.getParametersForSlot(
+                    slotIndex,
+                  );
                   final pInfo = paramList.firstWhere(
                     (p) => p.parameterNumber == paramNumber,
                   );
-                  final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
+                  final rawValue = MCPUtils.scaleToRaw(
+                    paramValue,
+                    pInfo.powerOfTen,
+                  );
                   await _controller.updateParameterValue(
                     slotIndex,
                     paramNumber,
@@ -4053,7 +4215,8 @@ class DistingTools {
     }
 
     // Get the current mapping to use as base for preservation
-    final Mapping? existing = currentMapping ??
+    final Mapping? existing =
+        currentMapping ??
         await _controller.getParameterMapping(slotIndex, paramNumber);
 
     if (existing == null) {
@@ -4070,7 +4233,8 @@ class DistingTools {
         updatedPacked = updatedPacked.copyWith(
           source: cvData['source'] as int? ?? updatedPacked.source,
           cvInput: cvData['cv_input'] as int? ?? updatedPacked.cvInput,
-          isUnipolar: cvData['is_unipolar'] as bool? ?? updatedPacked.isUnipolar,
+          isUnipolar:
+              cvData['is_unipolar'] as bool? ?? updatedPacked.isUnipolar,
           isGate: cvData['is_gate'] as bool? ?? updatedPacked.isGate,
           volts: cvData['volts'] as int? ?? updatedPacked.volts,
           delta: cvData['delta'] as int? ?? updatedPacked.delta,
@@ -4083,11 +4247,18 @@ class DistingTools {
       final midiData = desiredMapping['midi'] as Map<String, dynamic>?;
       if (midiData != null) {
         updatedPacked = updatedPacked.copyWith(
-          midiChannel: midiData['midi_channel'] as int? ?? updatedPacked.midiChannel,
+          midiChannel:
+              midiData['midi_channel'] as int? ?? updatedPacked.midiChannel,
           midiCC: midiData['midi_cc'] as int? ?? updatedPacked.midiCC,
-          isMidiEnabled: midiData['is_midi_enabled'] as bool? ?? updatedPacked.isMidiEnabled,
-          isMidiSymmetric: midiData['is_midi_symmetric'] as bool? ?? updatedPacked.isMidiSymmetric,
-          isMidiRelative: midiData['is_midi_relative'] as bool? ?? updatedPacked.isMidiRelative,
+          isMidiEnabled:
+              midiData['is_midi_enabled'] as bool? ??
+              updatedPacked.isMidiEnabled,
+          isMidiSymmetric:
+              midiData['is_midi_symmetric'] as bool? ??
+              updatedPacked.isMidiSymmetric,
+          isMidiRelative:
+              midiData['is_midi_relative'] as bool? ??
+              updatedPacked.isMidiRelative,
           midiMin: midiData['midi_min'] as int? ?? updatedPacked.midiMin,
           midiMax: midiData['midi_max'] as int? ?? updatedPacked.midiMax,
         );
@@ -4112,8 +4283,11 @@ class DistingTools {
       if (i2cData != null) {
         updatedPacked = updatedPacked.copyWith(
           i2cCC: i2cData['i2c_cc'] as int? ?? updatedPacked.i2cCC,
-          isI2cEnabled: i2cData['is_i2c_enabled'] as bool? ?? updatedPacked.isI2cEnabled,
-          isI2cSymmetric: i2cData['is_i2c_symmetric'] as bool? ?? updatedPacked.isI2cSymmetric,
+          isI2cEnabled:
+              i2cData['is_i2c_enabled'] as bool? ?? updatedPacked.isI2cEnabled,
+          isI2cSymmetric:
+              i2cData['is_i2c_symmetric'] as bool? ??
+              updatedPacked.isI2cSymmetric,
           i2cMin: i2cData['i2c_min'] as int? ?? updatedPacked.i2cMin,
           i2cMax: i2cData['i2c_max'] as int? ?? updatedPacked.i2cMax,
         );
@@ -4124,9 +4298,7 @@ class DistingTools {
     if (desiredMapping.containsKey('performance_page')) {
       final perfPage = desiredMapping['performance_page'] as int?;
       if (perfPage != null) {
-        updatedPacked = updatedPacked.copyWith(
-          perfPageIndex: perfPage,
-        );
+        updatedPacked = updatedPacked.copyWith(perfPageIndex: perfPage);
       }
     }
 
@@ -4211,9 +4383,7 @@ class DistingTools {
       }
 
       final resolvedGuid = resolution.resolvedGuid!;
-      desiredPositions
-          .putIfAbsent(resolvedGuid, () => [])
-          .add(entry.key);
+      desiredPositions.putIfAbsent(resolvedGuid, () => []).add(entry.key);
       guidMap[desiredSlot.name ?? ''] = resolvedGuid;
     }
 
@@ -4267,7 +4437,9 @@ class DistingTools {
     if (query == null || query.isEmpty) {
       return jsonEncode(
         convertToSnakeCaseKeys(
-          MCPUtils.buildError('Parameter "query" is required and cannot be empty.'),
+          MCPUtils.buildError(
+            'Parameter "query" is required and cannot be empty.',
+          ),
         ),
       );
     }
@@ -4374,17 +4546,17 @@ class DistingTools {
 
             List<Map<String, dynamic>> matches = [];
             for (final param in matchingParams) {
-              final ParameterValue? paramValue = await _controller.getParameterValue(
-                i,
-                param.parameterNumber,
-              );
+              final ParameterValue? paramValue = await _controller
+                  .getParameterValue(i, param.parameterNumber);
               matches.add({
                 'parameter_number': param.parameterNumber,
                 'parameter_name': param.name,
                 'min': _scaleForDisplay(param.min, param.powerOfTen),
                 'max': _scaleForDisplay(param.max, param.powerOfTen),
                 'unit': param.unit,
-                'value': paramValue != null ? _scaleForDisplay(paramValue.value, param.powerOfTen) : null,
+                'value': paramValue != null
+                    ? _scaleForDisplay(paramValue.value, param.powerOfTen)
+                    : null,
                 'is_disabled': paramValue?.isDisabled ?? false,
               });
             }
@@ -4477,7 +4649,9 @@ class DistingTools {
           'min': _scaleForDisplay(param.min, param.powerOfTen),
           'max': _scaleForDisplay(param.max, param.powerOfTen),
           'unit': param.unit,
-          'value': paramValue != null ? _scaleForDisplay(paramValue.value, param.powerOfTen) : null,
+          'value': paramValue != null
+              ? _scaleForDisplay(paramValue.value, param.powerOfTen)
+              : null,
           'is_disabled': paramValue?.isDisabled ?? false,
         });
       }
@@ -4515,10 +4689,5 @@ class DesiredSlot {
   final List<dynamic>? parameters;
   final Map<String, dynamic>? mapping;
 
-  DesiredSlot({
-    this.guid,
-    this.name,
-    this.parameters,
-    this.mapping,
-  });
+  DesiredSlot({this.guid, this.name, this.parameters, this.mapping});
 }
