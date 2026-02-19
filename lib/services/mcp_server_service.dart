@@ -1138,8 +1138,6 @@ class McpServerService extends ChangeNotifier {
           },
           'slot_index': {
             'type': 'integer',
-            'minimum': 0,
-            'maximum': 31,
             'description': 'Insert position (0-31). Omit for first empty slot.',
           },
           'specifications': {
@@ -1188,8 +1186,6 @@ class McpServerService extends ChangeNotifier {
           },
           'slot_index': {
             'type': 'integer',
-            'minimum': 0,
-            'maximum': 31,
             'description': 'Slot index to clear (0-31).',
           },
         },
