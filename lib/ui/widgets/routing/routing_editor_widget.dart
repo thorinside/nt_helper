@@ -1068,6 +1068,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                       focusedBusNumber: _deriveFocusedBusNumber(state),
                       onBusTapped: (bus) =>
                           context.read<RoutingEditorCubit>().focusAuxBus(bus),
+                      onBusMoved: (source, dest) =>
+                          context.read<RoutingEditorCubit>().moveAuxBus(source, dest),
                     ),
                     const SizedBox(height: 8),
                     LayoutBuilder(

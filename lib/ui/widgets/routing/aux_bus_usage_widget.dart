@@ -8,6 +8,7 @@ class AuxBusUsageWidget extends StatelessWidget {
   final bool hasExtendedAuxBuses;
   final int? focusedBusNumber;
   final ValueChanged<int> onBusTapped;
+  final Future<void> Function(int sourceBus, int destinationBus)? onBusMoved;
 
   const AuxBusUsageWidget({
     super.key,
@@ -15,6 +16,7 @@ class AuxBusUsageWidget extends StatelessWidget {
     required this.hasExtendedAuxBuses,
     required this.focusedBusNumber,
     required this.onBusTapped,
+    this.onBusMoved,
   });
 
   @override
@@ -57,6 +59,7 @@ class AuxBusUsageWidget extends StatelessWidget {
                     Padding(
                       padding: EdgeInsets.only(left: col > 0 ? 2.0 : 0),
                       child: _BusSquare(
+                        key: ValueKey('bus_${busList[row * columns + col]}_${(auxBusUsage[busList[row * columns + col]]?.sessionCount ?? 0) > 0}'),
                         busNumber: busList[row * columns + col],
                         info: auxBusUsage[busList[row * columns + col]],
                         isFocused:
@@ -64,6 +67,7 @@ class AuxBusUsageWidget extends StatelessWidget {
                         colorScheme: colorScheme,
                         brightness: brightness,
                         onTap: onBusTapped,
+                        onBusMoved: onBusMoved,
                       ),
                     ),
                 ],
@@ -82,14 +86,17 @@ class _BusSquare extends StatelessWidget {
   final ColorScheme colorScheme;
   final Brightness brightness;
   final ValueChanged<int> onTap;
+  final Future<void> Function(int sourceBus, int destinationBus)? onBusMoved;
 
   const _BusSquare({
+    super.key,
     required this.busNumber,
     required this.info,
     required this.isFocused,
     required this.colorScheme,
     required this.brightness,
     required this.onTap,
+    this.onBusMoved,
   });
 
   @override
@@ -117,21 +124,97 @@ class _BusSquare extends StatelessWidget {
     final label = BusLabelFormatter.formatBusValue(busNumber);
     final tooltip = _buildTooltip(label);
 
+    Widget squareWidget = Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: fillColor,
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: borderColor, width: borderWidth),
+      ),
+    );
+
+    Widget child;
+
+    if (!isEmpty && onBusMoved != null) {
+      // Occupied squares: draggable via long-press, tappable via GestureDetector inside
+      child = Draggable<int>(
+        data: busNumber,
+        feedback: Opacity(
+          opacity: 0.4,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: colorScheme.primary, width: 2),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onPrimary,
+                ),
+              ),
+            ),
+          ),
+        ),
+        childWhenDragging: Opacity(
+          opacity: 0.5,
+          child: squareWidget,
+        ),
+        child: GestureDetector(
+          onTap: () => onTap(busNumber),
+          child: squareWidget,
+        ),
+      );
+    } else if (isEmpty && onBusMoved != null) {
+      // Empty squares: drop target only (not draggable)
+      child = DragTarget<int>(
+        onWillAcceptWithDetails: (details) => true,
+        onAcceptWithDetails: (details) {
+          onBusMoved?.call(details.data, busNumber);
+        },
+        builder: (context, candidateData, rejectedData) {
+          if (candidateData.isNotEmpty) {
+            return Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(2),
+                border: Border.all(color: colorScheme.primary, width: 2),
+              ),
+            );
+          }
+          return squareWidget;
+        },
+      );
+    } else {
+      child = squareWidget;
+    }
+
+    // Wrap non-draggable squares with tap handler (draggable squares handle tap internally)
+    if (isEmpty || onBusMoved == null) {
+      child = GestureDetector(
+        onTap: () => onTap(busNumber),
+        child: child,
+      );
+    }
+
     return Tooltip(
       message: tooltip,
       waitDuration: const Duration(milliseconds: 400),
-      child: GestureDetector(
-        onTap: () => onTap(busNumber),
-        child: Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: fillColor,
-            borderRadius: BorderRadius.circular(2),
-            border: Border.all(color: borderColor, width: borderWidth),
-          ),
-        ),
-      ),
+      triggerMode: (!isEmpty && onBusMoved != null)
+          ? TooltipTriggerMode.tap
+          : TooltipTriggerMode.longPress,
+      child: child,
     );
   }
 

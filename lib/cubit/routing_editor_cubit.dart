@@ -1481,6 +1481,59 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return resetCount;
   }
 
+  /// Move all bus parameter references from [sourceBus] to [destinationBus].
+  ///
+  /// Iterates every slot's parameters, finds bus parameters currently set to
+  /// [sourceBus], and rewrites them to [destinationBus]. The destination must
+  /// be an empty (unused) AUX bus. Returns the number of parameters rewritten.
+  Future<int> moveAuxBus(int sourceBus, int destinationBus) async {
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized) return -1;
+
+    // Guard: destination must be empty
+    final currentState = state;
+    if (currentState is RoutingEditorStateLoaded) {
+      final destInfo = currentState.auxBusUsage[destinationBus];
+      if (destInfo != null && destInfo.sessionCount > 0) return -1;
+    }
+
+    const paceDelay = Duration(milliseconds: 150);
+    var writeCount = 0;
+
+    for (int slotIdx = 0; slotIdx < distingState.slots.length; slotIdx++) {
+      final slot = distingState.slots[slotIdx];
+
+      for (final param in slot.parameters) {
+        final isBusParameter =
+            param.unit == 1 &&
+            (param.min == 0 || param.min == 1) &&
+            BusSpec.isBusParameterMaxValue(param.max);
+        if (!isBusParameter) continue;
+
+        final currentValue = slot.values
+            .where((v) => v.parameterNumber == param.parameterNumber)
+            .firstOrNull
+            ?.value;
+        if (currentValue != sourceBus) continue;
+
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: slotIdx,
+          parameterNumber: param.parameterNumber,
+          value: destinationBus,
+          userIsChangingTheValue: false,
+        );
+        writeCount++;
+        await Future.delayed(paceDelay);
+      }
+    }
+
+    if (writeCount > 0) {
+      await _autoSyncToHardware();
+    }
+
+    return writeCount;
+  }
+
   /// Returns a user-facing reason if the connection cannot be deleted, otherwise null.
   ///
   /// Some parameters (notably certain bus inputs/outputs) have `min > 0` and do not
