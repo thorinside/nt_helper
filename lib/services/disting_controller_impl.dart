@@ -11,7 +11,8 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
-import 'package:nt_helper/models/packed_mapping_data.dart' show PackedMappingData;
+import 'package:nt_helper/models/packed_mapping_data.dart'
+    show PackedMappingData;
 
 class DistingControllerImpl implements DistingController {
   final DistingCubit _distingCubit;
@@ -55,10 +56,14 @@ class DistingControllerImpl implements DistingController {
     _validateSlotIndex(slotIndex);
 
     final Slot slotData = state.slots[slotIndex];
-    final idx = slotData.parameters.indexWhere((p) => p.parameterNumber == parameterNumber);
+    final idx = slotData.parameters.indexWhere(
+      (p) => p.parameterNumber == parameterNumber,
+    );
 
     if (idx == -1) {
-      final available = slotData.parameters.map((p) => p.parameterNumber).toList();
+      final available = slotData.parameters
+          .map((p) => p.parameterNumber)
+          .toList();
       throw ArgumentError(
         'Parameter number $parameterNumber not found in slot $slotIndex. Available: $available',
       );
@@ -67,9 +72,13 @@ class DistingControllerImpl implements DistingController {
 
   /// Find the array index for a hardware parameter number within a slot.
   int _findParameterArrayIndex(Slot slotData, int parameterNumber) {
-    final idx = slotData.parameters.indexWhere((p) => p.parameterNumber == parameterNumber);
+    final idx = slotData.parameters.indexWhere(
+      (p) => p.parameterNumber == parameterNumber,
+    );
     if (idx == -1) {
-      final available = slotData.parameters.map((p) => p.parameterNumber).toList();
+      final available = slotData.parameters
+          .map((p) => p.parameterNumber)
+          .toList();
       throw ArgumentError(
         'Parameter number $parameterNumber not found. Available: $available',
       );
@@ -92,6 +101,9 @@ class DistingControllerImpl implements DistingController {
   Future<Algorithm?> getAlgorithmInSlot(int slotIndex) async {
     _validateSlotIndex(slotIndex);
     final state = _getSynchronizedState();
+    if (slotIndex >= state.slots.length) {
+      return null;
+    }
     return state.slots[slotIndex].algorithm;
   }
 
@@ -99,6 +111,9 @@ class DistingControllerImpl implements DistingController {
   Future<List<ParameterInfo>> getParametersForSlot(int slotIndex) async {
     _validateSlotIndex(slotIndex);
     final state = _getSynchronizedState();
+    if (slotIndex >= state.slots.length) {
+      return const <ParameterInfo>[];
+    }
     final Slot slot = state.slots[slotIndex];
     return slot.parameters;
   }
@@ -118,9 +133,7 @@ class DistingControllerImpl implements DistingController {
     // Use specifications from Algorithm if provided, otherwise use defaults
     final specs = algorithm.specifications.isNotEmpty
         ? algorithm.specifications
-        : algorithmInfo.specifications
-            .map((s) => s.defaultValue)
-            .toList();
+        : algorithmInfo.specifications.map((s) => s.defaultValue).toList();
     await _distingCubit.onAlgorithmSelected(algorithmInfo, specs);
   }
 
@@ -155,7 +168,9 @@ class DistingControllerImpl implements DistingController {
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
     final Slot slotData = state.slots[slotIndex];
-    final ParameterInfo paramInfo = slotData.parameters.firstWhere((p) => p.parameterNumber == parameterNumber);
+    final ParameterInfo paramInfo = slotData.parameters.firstWhere(
+      (p) => p.parameterNumber == parameterNumber,
+    );
 
     final int intValue;
     if (value is int) {
@@ -215,7 +230,10 @@ class DistingControllerImpl implements DistingController {
   }
 
   @override
-  Future<ParameterValue?> getParameterValue(int slotIndex, int parameterNumber) async {
+  Future<ParameterValue?> getParameterValue(
+    int slotIndex,
+    int parameterNumber,
+  ) async {
     final state = _getSynchronizedState();
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
@@ -379,6 +397,9 @@ class DistingControllerImpl implements DistingController {
   Future<List<ParameterValue>> getValuesForSlot(int slotIndex) async {
     _validateSlotIndex(slotIndex);
     final state = _getSynchronizedState();
+    if (slotIndex >= state.slots.length) {
+      return const <ParameterValue>[];
+    }
     return state.slots[slotIndex].values;
   }
 
@@ -386,6 +407,9 @@ class DistingControllerImpl implements DistingController {
   Future<List<Mapping>> getMappingsForSlot(int slotIndex) async {
     _validateSlotIndex(slotIndex);
     final state = _getSynchronizedState();
+    if (slotIndex >= state.slots.length) {
+      return const <Mapping>[];
+    }
     return state.slots[slotIndex].mappings;
   }
 
