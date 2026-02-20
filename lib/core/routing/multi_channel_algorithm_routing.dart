@@ -651,7 +651,9 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       // I/O flags come from firmware SysEx messages (Story 7.3)
       // Bit 0: isInput, Bit 1: isOutput, Bit 2: isAudio, Bit 3: isOutputMode
       final bool isOutputFlag = paramInfo?.isOutput ?? false;
-      final bool isInputFlag = paramInfo?.isInput ?? false;
+      final bool isInputFlag = (paramInfo?.isInput ?? false) ||
+          AlgorithmRouting.isHardcodedInput(
+            slot.algorithm.guid, paramName);
 
       // Fallback logic for offline/mock mode (ioFlags = 0)
       // When no flags are set, infer direction from bus range:

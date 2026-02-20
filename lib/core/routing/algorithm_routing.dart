@@ -479,13 +479,26 @@ abstract class AlgorithmRouting {
     };
 
     for (final param in slot.parameters) {
-      if (param.isInput || param.isOutput) {
+      if (param.isInput || param.isOutput ||
+          isHardcodedInput(slot.algorithm.guid, param.name)) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
         ioParameters[param.name] = value;
       }
     }
 
     return ioParameters;
+  }
+
+  /// Hardcoded input parameters that firmware doesn't flag with isInput.
+  /// Remove once OS fixes ioFlags for these algorithms.
+  static final _hardcodedInputs = <String, RegExp>{
+    'logi': RegExp(r'^\d+:Input [XY]$'),
+    'musw': RegExp(r'^\d+:(In control source|Out control source|Reset source)$'),
+  };
+
+  static bool isHardcodedInput(String guid, String paramName) {
+    final pattern = _hardcodedInputs[guid];
+    return pattern != null && pattern.hasMatch(paramName);
   }
 
   /// Helper method to extract mode-related parameters from a slot.
