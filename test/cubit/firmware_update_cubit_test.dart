@@ -601,9 +601,15 @@ void main() {
         act: (cubit) => cubit.startUpdate(testVersion),
         expect: () => [
           isA<FirmwareUpdateStateDownloading>(),
+          // First enteringBootloader with progress 0
           isA<FirmwareUpdateStateEnteringBootloader>()
               .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
-              .having((s) => s.targetVersion, 'targetVersion', '1.16.0'),
+              .having((s) => s.targetVersion, 'targetVersion', '1.16.0')
+              .having((s) => s.progress, 'progress', 0.0),
+          // 50 progress ticks (0.02 to 1.0) - match them all
+          for (var i = 1; i <= 50; i++)
+            isA<FirmwareUpdateStateEnteringBootloader>()
+                .having((s) => s.progress, 'progress', i / 50),
           isA<FirmwareUpdateStateFlashing>(),
           isA<FirmwareUpdateStateSuccess>(),
         ],
@@ -728,7 +734,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
-          enteringBootloader: (_, _) => 'entering',
+          enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -741,7 +747,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
-          enteringBootloader: (_, _) => 'entering',
+          enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -754,7 +760,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
-          enteringBootloader: (_, _) => 'entering',
+          enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -767,7 +773,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
-          enteringBootloader: (_, _) => 'entering',
+          enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -780,7 +786,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
-          enteringBootloader: (_, _) => 'entering',
+          enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',
@@ -793,7 +799,7 @@ void main() {
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
           waitingForBootloader: (_, _) => 'waiting',
-          enteringBootloader: (_, _) => 'entering',
+          enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
           error: (_, _, _, _, _) => 'error',

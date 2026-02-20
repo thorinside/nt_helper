@@ -134,13 +134,13 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult Function( FirmwareRelease version,  double progress)?  downloading,TResult Function( String firmwarePath,  String targetVersion)?  waitingForBootloader,TResult Function( String firmwarePath,  String targetVersion)?  enteringBootloader,TResult Function( String targetVersion,  FlashProgress progress)?  flashing,TResult Function( String newVersion)?  success,TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult Function( FirmwareRelease version,  double progress)?  downloading,TResult Function( String firmwarePath,  String targetVersion)?  waitingForBootloader,TResult Function( String firmwarePath,  String targetVersion,  double progress)?  enteringBootloader,TResult Function( String targetVersion,  FlashProgress progress)?  flashing,TResult Function( String newVersion)?  success,TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading() when downloading != null:
 return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaitingForBootloader() when waitingForBootloader != null:
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateEnteringBootloader() when enteringBootloader != null:
-return enteringBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateFlashing() when flashing != null:
+return enteringBootloader(_that.firmwarePath,_that.targetVersion,_that.progress);case FirmwareUpdateStateFlashing() when flashing != null:
 return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that.newVersion);case FirmwareUpdateStateError() when error != null:
 return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case _:
@@ -161,13 +161,13 @@ return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)  initial,required TResult Function( FirmwareRelease version,  double progress)  downloading,required TResult Function( String firmwarePath,  String targetVersion)  waitingForBootloader,required TResult Function( String firmwarePath,  String targetVersion)  enteringBootloader,required TResult Function( String targetVersion,  FlashProgress progress)  flashing,required TResult Function( String newVersion)  success,required TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)  initial,required TResult Function( FirmwareRelease version,  double progress)  downloading,required TResult Function( String firmwarePath,  String targetVersion)  waitingForBootloader,required TResult Function( String firmwarePath,  String targetVersion,  double progress)  enteringBootloader,required TResult Function( String targetVersion,  FlashProgress progress)  flashing,required TResult Function( String newVersion)  success,required TResult Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)  error,}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial():
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading():
 return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaitingForBootloader():
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateEnteringBootloader():
-return enteringBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateFlashing():
+return enteringBootloader(_that.firmwarePath,_that.targetVersion,_that.progress);case FirmwareUpdateStateFlashing():
 return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess():
 return success(_that.newVersion);case FirmwareUpdateStateError():
 return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);}
@@ -184,13 +184,13 @@ return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult? Function( FirmwareRelease version,  double progress)?  downloading,TResult? Function( String firmwarePath,  String targetVersion)?  waitingForBootloader,TResult? Function( String firmwarePath,  String targetVersion)?  enteringBootloader,TResult? Function( String targetVersion,  FlashProgress progress)?  flashing,TResult? Function( String newVersion)?  success,TResult? Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String currentVersion,  List<FirmwareRelease>? availableVersions,  bool isLoadingVersions,  String? fetchError)?  initial,TResult? Function( FirmwareRelease version,  double progress)?  downloading,TResult? Function( String firmwarePath,  String targetVersion)?  waitingForBootloader,TResult? Function( String firmwarePath,  String targetVersion,  double progress)?  enteringBootloader,TResult? Function( String targetVersion,  FlashProgress progress)?  flashing,TResult? Function( String newVersion)?  success,TResult? Function( String message,  FirmwareErrorType errorType,  FlashStage? failedStage,  String? firmwarePath,  String? targetVersion)?  error,}) {final _that = this;
 switch (_that) {
 case FirmwareUpdateStateInitial() when initial != null:
 return initial(_that.currentVersion,_that.availableVersions,_that.isLoadingVersions,_that.fetchError);case FirmwareUpdateStateDownloading() when downloading != null:
 return downloading(_that.version,_that.progress);case FirmwareUpdateStateWaitingForBootloader() when waitingForBootloader != null:
 return waitingForBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateEnteringBootloader() when enteringBootloader != null:
-return enteringBootloader(_that.firmwarePath,_that.targetVersion);case FirmwareUpdateStateFlashing() when flashing != null:
+return enteringBootloader(_that.firmwarePath,_that.targetVersion,_that.progress);case FirmwareUpdateStateFlashing() when flashing != null:
 return flashing(_that.targetVersion,_that.progress);case FirmwareUpdateStateSuccess() when success != null:
 return success(_that.newVersion);case FirmwareUpdateStateError() when error != null:
 return error(_that.message,_that.errorType,_that.failedStage,_that.firmwarePath,_that.targetVersion);case _:
@@ -435,11 +435,13 @@ as String,
 
 
 class FirmwareUpdateStateEnteringBootloader implements FirmwareUpdateState {
-  const FirmwareUpdateStateEnteringBootloader({required this.firmwarePath, required this.targetVersion});
+  const FirmwareUpdateStateEnteringBootloader({required this.firmwarePath, required this.targetVersion, this.progress = 0});
   
 
  final  String firmwarePath;
  final  String targetVersion;
+/// Progress 0.0 to 1.0 of the bootloader switch wait period
+@JsonKey() final  double progress;
 
 /// Create a copy of FirmwareUpdateState
 /// with the given fields replaced by the non-null parameter values.
@@ -451,16 +453,16 @@ $FirmwareUpdateStateEnteringBootloaderCopyWith<FirmwareUpdateStateEnteringBootlo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FirmwareUpdateStateEnteringBootloader&&(identical(other.firmwarePath, firmwarePath) || other.firmwarePath == firmwarePath)&&(identical(other.targetVersion, targetVersion) || other.targetVersion == targetVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FirmwareUpdateStateEnteringBootloader&&(identical(other.firmwarePath, firmwarePath) || other.firmwarePath == firmwarePath)&&(identical(other.targetVersion, targetVersion) || other.targetVersion == targetVersion)&&(identical(other.progress, progress) || other.progress == progress));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,firmwarePath,targetVersion);
+int get hashCode => Object.hash(runtimeType,firmwarePath,targetVersion,progress);
 
 @override
 String toString() {
-  return 'FirmwareUpdateState.enteringBootloader(firmwarePath: $firmwarePath, targetVersion: $targetVersion)';
+  return 'FirmwareUpdateState.enteringBootloader(firmwarePath: $firmwarePath, targetVersion: $targetVersion, progress: $progress)';
 }
 
 
@@ -471,7 +473,7 @@ abstract mixin class $FirmwareUpdateStateEnteringBootloaderCopyWith<$Res> implem
   factory $FirmwareUpdateStateEnteringBootloaderCopyWith(FirmwareUpdateStateEnteringBootloader value, $Res Function(FirmwareUpdateStateEnteringBootloader) _then) = _$FirmwareUpdateStateEnteringBootloaderCopyWithImpl;
 @useResult
 $Res call({
- String firmwarePath, String targetVersion
+ String firmwarePath, String targetVersion, double progress
 });
 
 
@@ -488,11 +490,12 @@ class _$FirmwareUpdateStateEnteringBootloaderCopyWithImpl<$Res>
 
 /// Create a copy of FirmwareUpdateState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? firmwarePath = null,Object? targetVersion = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? firmwarePath = null,Object? targetVersion = null,Object? progress = null,}) {
   return _then(FirmwareUpdateStateEnteringBootloader(
 firmwarePath: null == firmwarePath ? _self.firmwarePath : firmwarePath // ignore: cast_nullable_to_non_nullable
 as String,targetVersion: null == targetVersion ? _self.targetVersion : targetVersion // ignore: cast_nullable_to_non_nullable
-as String,
+as String,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 

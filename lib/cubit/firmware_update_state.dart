@@ -60,6 +60,9 @@ sealed class FirmwareUpdateState with _$FirmwareUpdateState {
   const factory FirmwareUpdateState.enteringBootloader({
     required String firmwarePath,
     required String targetVersion,
+
+    /// Progress 0.0 to 1.0 of the bootloader switch wait period
+    @Default(0) double progress,
   }) = FirmwareUpdateStateEnteringBootloader;
 
   /// Flashing firmware to device

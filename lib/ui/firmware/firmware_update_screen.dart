@@ -653,19 +653,25 @@ class _EnteringBootloaderView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final secondsLeft =
+        ((1.0 - state.progress) * 5).ceil().clamp(0, 5);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const SizedBox(height: 48, width: 48, child: CircularProgressIndicator()),
+        const Icon(Icons.restart_alt, size: 64),
         const SizedBox(height: 24),
         Text('Entering Bootloader Mode', style: theme.textTheme.headlineSmall),
         const SizedBox(height: 8),
         Text(
-          'Sending command to device...',
+          state.progress == 0
+              ? 'Sending command to device...'
+              : 'Waiting for device to switch ($secondsLeft s)',
           style: theme.textTheme.bodyMedium,
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 24),
+        LinearProgressIndicator(value: state.progress),
       ],
     );
   }

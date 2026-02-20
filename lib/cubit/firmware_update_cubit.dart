@@ -359,7 +359,10 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     }
   }
 
-  /// Send the enter-bootloader SysEx and proceed directly to flashing.
+  static const _bootloaderWaitDuration = Duration(seconds: 5);
+  static const _bootloaderWaitTickInterval = Duration(milliseconds: 100);
+
+  /// Send the enter-bootloader SysEx and wait for device to switch modes.
   Future<void> _autoEnterBootloaderAndFlash(
     String firmwarePath,
     String targetVersion,
@@ -371,7 +374,26 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
       ),
     );
     await _midiManager!.requestEnterBootloader();
-    await startFlashing();
+
+    // Wait for the device to switch to bootloader mode, updating progress.
+    final totalTicks =
+        _bootloaderWaitDuration.inMilliseconds ~/
+        _bootloaderWaitTickInterval.inMilliseconds;
+    for (var tick = 1; tick <= totalTicks; tick++) {
+      await Future<void>.delayed(_bootloaderWaitTickInterval);
+      if (state is! FirmwareUpdateStateEnteringBootloader) return;
+      emit(
+        FirmwareUpdateState.enteringBootloader(
+          firmwarePath: firmwarePath,
+          targetVersion: targetVersion,
+          progress: tick / totalTicks,
+        ),
+      );
+    }
+
+    if (state is FirmwareUpdateStateEnteringBootloader) {
+      await startFlashing();
+    }
   }
 
   /// Get the error type based on which stage failed
