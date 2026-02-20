@@ -176,7 +176,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     if (!_screenFocusNode.hasFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_screenFocusNode.hasFocus) {
-          // Don't steal focus from text fields (e.g. in dialogs/overlays)
+          // Don't steal focus when a dialog/bottom sheet/pushed screen is active
+          final route = ModalRoute.of(context);
+          if (route != null && !route.isCurrent) return;
+
+          // Don't steal focus from text fields (e.g. in non-route overlays)
           final primaryFocus = FocusManager.instance.primaryFocus;
           if (primaryFocus?.context
                   ?.findAncestorWidgetOfExactType<EditableText>() !=
