@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,8 +9,6 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
-import 'package:nt_helper/ui/add_algorithm_screen.dart';
-import 'package:nt_helper/ui/widgets/preset_browser_dialog.dart';
 import 'package:nt_helper/ui/widgets/shortcut_help_overlay.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}

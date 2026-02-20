@@ -3,14 +3,13 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, AlgorithmInfo, ParameterInfo, ParameterValue, Specification;
+    show Algorithm;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
-import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart'
-    show DistingCubit, DistingState, DistingStateInitial;
+    show DistingCubit, DistingStateInitial;
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/metadata_import_service.dart';
 import 'package:nt_helper/db/database.dart';
@@ -19,7 +18,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:nt_helper/models/cpu_usage.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart' show Mapping;
 
 class MockDistingController extends Mock implements DistingController {}
 
@@ -186,7 +184,6 @@ void main() {
     test('empty text passes validation', () async {
       // Empty text should produce empty lines array, which passes validation
       // but the method should still work
-      final manager = MockDistingMidiManager();
       when(() => cubit.state).thenReturn(const DistingStateInitial());
 
       // Notes doesn't exist, so _findOrAddNotesAlgorithm tries to add one
