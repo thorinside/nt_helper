@@ -108,11 +108,16 @@ class FlashToolBridge {
       _logSink = null;
 
       if (exitCode != 0 && !controller.isClosed) {
+        String message = 'Flash failed with exit code $exitCode';
+        if (exitCode == 6 && Platform.isMacOS) {
+          message += '. This may indicate the nt-flash binary is incompatible '
+              'with your macOS version.';
+        }
         controller.add(
           FlashProgress(
             stage: FlashStage.complete,
             percent: 0,
-            message: 'Flash failed with exit code $exitCode',
+            message: message,
             isError: true,
           ),
         );
