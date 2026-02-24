@@ -988,7 +988,7 @@ class McpServerService extends ChangeNotifier {
               'performance_page': {
                 'type': 'integer',
                 'description':
-                    'Performance page index (0=not assigned, 1-15=page number)',
+                    'Performance page index (0=not assigned, 1-30=page number)',
               },
             },
           },

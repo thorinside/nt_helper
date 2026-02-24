@@ -962,7 +962,7 @@ class MCPAlgorithmTools {
       };
     }
 
-    // Check performance page assigned: perfPageIndex > 0 (1-15)
+    // Check performance page assigned: perfPageIndex > 0 (1-30)
     if (data.perfPageIndex > 0) {
       result['performance_page'] = data.perfPageIndex;
     }

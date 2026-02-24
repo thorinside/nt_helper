@@ -88,7 +88,7 @@ abstract class IDistingMidiManager {
   ///
   /// - [slotIndex]: Slot index (0-31)
   /// - [parameterNumber]: Parameter number within the algorithm
-  /// - [perfPageIndex]: Performance page index (0-15, where 0 = not assigned)
+  /// - [perfPageIndex]: Performance page index (0-30, where 0 = not assigned)
   Future<void> setPerformancePageMapping(
     int slotIndex,
     int parameterNumber,

@@ -434,7 +434,7 @@ class DistingCubit extends _DistingCubitBase
   ///
   /// - [slotIndex]: Slot index (0-31)
   /// - [parameterNumber]: Parameter number within the algorithm
-  /// - [perfPageIndex]: Performance page index (0-15, where 0 = not assigned)
+  /// - [perfPageIndex]: Performance page index (0-30, where 0 = not assigned)
   ///
   /// Uses optimistic update pattern:
   /// 1. Update local state immediately for instant UI feedback

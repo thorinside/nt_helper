@@ -786,7 +786,7 @@ F0 00 21 27 6D <id> 54 <slot> <param as 21-bit short> <mappingVersion> <index> F
 | Field | Description |
 |-------|-------------|
 | `mappingVersion` | Current mapping data version (currently `5`) |
-| `index` | Performance page position (0–15) |
+| `index` | Performance page position (0–30) |
 
 ---
 

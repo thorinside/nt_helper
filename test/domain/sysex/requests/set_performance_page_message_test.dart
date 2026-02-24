@@ -52,7 +52,7 @@ void main() {
         sysExId: 1,
         slotIndex: 10,
         parameterNumber: 1000,
-        perfPageIndex: 15,
+        perfPageIndex: 30,
       );
 
       final encoded = message.encode();
@@ -72,7 +72,7 @@ void main() {
         sysExId: 127,
         slotIndex: 31,
         parameterNumber: 16383,
-        perfPageIndex: 15,
+        perfPageIndex: 30,
       );
 
       final encoded = message.encode();
@@ -113,16 +113,16 @@ void main() {
         sysExId: 0,
         slotIndex: 0,
         parameterNumber: 0,
-        perfPageIndex: 15,
+        perfPageIndex: 30,
       );
 
       final encoded = message.encode();
 
-      // Verify perfPageIndex = 15
-      expect(encoded[12], equals(0x0F));
+      // Verify perfPageIndex = 30
+      expect(encoded[12], equals(30));
     });
 
-    test('clamps perfPageIndex above valid range to 15', () {
+    test('clamps perfPageIndex above valid range to 30', () {
       final message = SetPerformancePageMessage(
         sysExId: 0,
         slotIndex: 0,
@@ -132,8 +132,8 @@ void main() {
 
       final encoded = message.encode();
 
-      // Verify perfPageIndex clamped to 15
-      expect(encoded[12], equals(0x0F));
+      // Verify perfPageIndex clamped to 30
+      expect(encoded[12], equals(30));
     });
 
     test('clamps negative perfPageIndex to 0', () {

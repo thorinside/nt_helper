@@ -357,14 +357,14 @@ void main() {
         expect(decoded.containsKey('error'), isTrue);
       });
 
-      test('should return error when performance_page exceeds 15', () async {
+      test('should return error when performance_page exceeds 30', () async {
         final result = await tools.editSlot({
           'target': 'parameter',
           'slot_index': 0,
           'parameter': 0,
           'value': 50,
           'mapping': {
-            'performance_page': 16,
+            'performance_page': 31,
           },
         });
 

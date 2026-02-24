@@ -347,7 +347,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 },
                 items: [
                   const DropdownMenuItem(value: 0, child: Text('Not Assigned')),
-                  ...List.generate(15, (i) {
+                  ...List.generate(30, (i) {
                     return DropdownMenuItem(
                       value: i + 1,
                       child: Text('Page ${i + 1}'),

@@ -3761,9 +3761,9 @@ class DistingTools {
           }
         }
       } else if (key == 'performance_page' && value != null) {
-        if (value is! int || value < 0 || value > 15) {
+        if (value is! int || value < 0 || value > 30) {
           return MCPUtils.buildError(
-            'Performance page must be 0-15, got $value',
+            'Performance page must be 0-30, got $value',
           );
         }
       }
@@ -4049,9 +4049,9 @@ class DistingTools {
     // Validate performance_page
     if (mappingData.containsKey('performance_page')) {
       final perfPage = mappingData['performance_page'] as int?;
-      if (perfPage != null && (perfPage < 0 || perfPage > 15)) {
+      if (perfPage != null && (perfPage < 0 || perfPage > 30)) {
         return MCPUtils.buildError(
-          'Performance page must be 0-15, got $perfPage at slot $slotIndex parameter $paramNumber',
+          'Performance page must be 0-30, got $perfPage at slot $slotIndex parameter $paramNumber',
         );
       }
     }

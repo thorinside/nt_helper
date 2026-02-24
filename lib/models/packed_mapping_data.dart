@@ -44,7 +44,7 @@ class PackedMappingData {
 
   // Performance Page (used for sort order only, not navigation)
   final int
-  perfPageIndex; // Performance page index (0 = not assigned, 1-15 = valid pages)
+  perfPageIndex; // Performance page index (0 = not assigned, 1-30 = valid pages)
 
   // Constructor
   PackedMappingData({
@@ -312,8 +312,8 @@ class PackedMappingData {
 
     // Add performance page index for version 5+
     if (version >= 5) {
-      // Validate and clamp perfPageIndex to valid range (0-15)
-      final clampedIndex = perfPageIndex.clamp(0, 15);
+      // Validate and clamp perfPageIndex to valid range (0-30)
+      final clampedIndex = perfPageIndex.clamp(0, 30);
       if (clampedIndex != perfPageIndex) {}
       allBytes.add(clampedIndex & 0x7F);
     }

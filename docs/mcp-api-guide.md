@@ -477,7 +477,7 @@ Fields:
 
 ### Performance Page
 
-Assign parameters to hardware performance pages (1-15, 0=not assigned).
+Assign parameters to hardware performance pages (1-30, 0=not assigned).
 
 ```json
 {"mapping": {"performance_page": 1}}

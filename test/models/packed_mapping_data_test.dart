@@ -220,8 +220,8 @@ void main() {
       expect(mapping.perfPageIndex, equals(0));
     });
 
-    test('perfPageIndex supports range 1-15', () {
-      for (int i = 1; i <= 15; i++) {
+    test('perfPageIndex supports range 1-30', () {
+      for (int i = 1; i <= 30; i++) {
         final mapping = PackedMappingData(
           source: 1,
           cvInput: 2,

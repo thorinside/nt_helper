@@ -399,7 +399,7 @@ void main() {
         );
       });
 
-      test('should validate performance_page is 0-15', () async {
+      test('should validate performance_page is 0-30', () async {
         final result = await tools.editPreset({
           'target': 'preset',
           'data': {
@@ -412,7 +412,7 @@ void main() {
                     'parameter_number': 0,
                     'value': 50,
                     'mapping': {
-                      'performance_page': 16, // Invalid: > 15
+                      'performance_page': 31, // Invalid: > 30
                     },
                   },
                 ],

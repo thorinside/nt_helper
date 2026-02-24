@@ -218,7 +218,7 @@ This example maps the resonance parameter to i2c CC 50 with full range scaling.
 
 ## Performance Pages
 
-Performance pages are used to organize related parameters for live performance. You can assign parameters to pages 1-15, with page 0 meaning "not assigned".
+Performance pages are used to organize related parameters for live performance. You can assign parameters to pages 1-30, with page 0 meaning "not assigned".
 
 ### Performance Page Field
 
@@ -402,9 +402,9 @@ Existing CV and i2c mappings are preserved. Only the specified mapping section i
 **Problem**: MIDI CC numbers have a limited range.
 **Solution**: Use values 0-128 only. 128 = channel aftertouch.
 
-#### "Performance page must be 0-15, got 16"
-**Problem**: Only 15 performance pages available (1-15), plus 0 for "not assigned".
-**Solution**: Use values 0-15 only.
+#### "Performance page must be 0-30, got 31"
+**Problem**: Only 30 performance pages available (1-30), plus 0 for "not assigned".
+**Solution**: Use values 0-30 only.
 
 #### "i2c CC must be 0-255, got 256"
 **Problem**: i2c CC range is smaller than expected.

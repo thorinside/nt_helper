@@ -12,7 +12,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 /// - slot: Slot index (0-31)
 /// - p_high, p_mid, p_low: Parameter number encoded as 3 bytes (7-bit each)
 /// - version: Mapping version (5)
-/// - index: Performance page index (0-15, where 0 = not assigned)
+/// - index: Performance page index (0-30, where 0 = not assigned)
 class SetPerformancePageMessage extends SysexMessage {
   final int slotIndex;
   final int parameterNumber;
@@ -27,8 +27,8 @@ class SetPerformancePageMessage extends SysexMessage {
 
   @override
   Uint8List encode() {
-    // Clamp perfPageIndex to valid range (0-15)
-    final clampedPerfPageIndex = perfPageIndex.clamp(0, 15);
+    // Clamp perfPageIndex to valid range (0-30)
+    final clampedPerfPageIndex = perfPageIndex.clamp(0, 30);
 
     final bytes = <int>[
       ...buildHeader(sysExId),
