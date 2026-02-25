@@ -168,23 +168,29 @@ class MobileDrillDownNavigator extends StatelessWidget {
                           ? 'Folder: $displayName'
                           : 'File: $displayName, $fileInfo';
 
-                      Widget tile = Semantics(
-                        label: semanticLabel,
-                        child: ListTile(
-                          leading: Icon(icon, size: 28, color: iconColor),
-                          title: Text(
-                            displayName,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                      Widget tile = ListTile(
+                          leading: ExcludeSemantics(
+                            child: Icon(icon, size: 28, color: iconColor),
+                          ),
+                          title: Semantics(
+                            label: semanticLabel,
+                            excludeSemantics: true,
+                            child: Text(
+                              displayName,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                             ),
                           ),
                           subtitle: fileInfo != null
-                              ? Text(
-                                  fileInfo,
-                                  style: const TextStyle(fontSize: 13),
+                              ? ExcludeSemantics(
+                                  child: Text(
+                                    fileInfo,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
                                 )
                               : null,
                           trailing: item.isDirectory
@@ -207,7 +213,6 @@ class MobileDrillDownNavigator extends StatelessWidget {
                             vertical: 4.0,
                           ),
                           minVerticalPadding: 8.0,
-                        ),
                       );
 
                       if (!isParentDir && onLongPress != null) {

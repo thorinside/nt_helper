@@ -117,6 +117,11 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                     );
                   },
                 ),
+                IconButton(
+                  icon: const Icon(Icons.close, semanticLabel: 'Close'),
+                  onPressed: () => Navigator.of(context).pop(),
+                  tooltip: 'Close',
+                ),
               ],
             ),
             content: SizedBox(
@@ -973,7 +978,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     final cubit = context.read<PresetBrowserCubit>();
     final bytes = await file.readAsBytes();
     final fileName = file.path.split('/').last.split('\\').last;
-    final targetDir = cubit.getCurrentDirectory();
+    final targetDir = cubit.getSelectedDirectoryPath();
 
     try {
       setState(() => _uploadProgress = 0);
@@ -1165,7 +1170,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   }
 }
 
-class ThreePanelNavigator extends StatelessWidget {
+class ThreePanelNavigator extends StatefulWidget {
   final List<DirectoryEntry> leftPanelItems;
   final List<DirectoryEntry> centerPanelItems;
   final List<DirectoryEntry> rightPanelItems;
@@ -1189,6 +1194,23 @@ class ThreePanelNavigator extends StatelessWidget {
     this.onContextMenu,
   });
 
+  @override
+  State<ThreePanelNavigator> createState() => _ThreePanelNavigatorState();
+}
+
+class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
+  final FocusNode _leftFocusNode = FocusNode();
+  final FocusNode _centerFocusNode = FocusNode();
+  final FocusNode _rightFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _leftFocusNode.dispose();
+    _centerFocusNode.dispose();
+    _rightFocusNode.dispose();
+    super.dispose();
+  }
+
   String _cleanName(String name) {
     return name.endsWith('/') ? name.substring(0, name.length - 1) : name;
   }
@@ -1200,50 +1222,55 @@ class ThreePanelNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final leftPath = currentPath;
+    final leftPath = widget.currentPath;
 
-    String centerPath = currentPath;
-    if (selectedLeftItem != null && selectedLeftItem!.isDirectory) {
-      centerPath = _joinPath(currentPath, _cleanName(selectedLeftItem!.name));
+    String centerPath = widget.currentPath;
+    if (widget.selectedLeftItem != null && widget.selectedLeftItem!.isDirectory) {
+      centerPath = _joinPath(widget.currentPath, _cleanName(widget.selectedLeftItem!.name));
     }
 
     String rightPath = centerPath;
-    if (selectedCenterItem != null && selectedCenterItem!.isDirectory) {
-      rightPath = _joinPath(centerPath, _cleanName(selectedCenterItem!.name));
+    if (widget.selectedCenterItem != null && widget.selectedCenterItem!.isDirectory) {
+      rightPath = _joinPath(centerPath, _cleanName(widget.selectedCenterItem!.name));
     }
 
     return Row(
       children: [
         Expanded(
           child: DirectoryPanel(
-            items: leftPanelItems,
-            selectedItem: selectedLeftItem,
-            onItemTap: (item) => onItemSelected(item, PanelPosition.left),
+            items: widget.leftPanelItems,
+            selectedItem: widget.selectedLeftItem,
+            onItemTap: (item) => widget.onItemSelected(item, PanelPosition.left),
             position: PanelPosition.left,
             currentPath: leftPath,
-            onContextMenu: onContextMenu,
+            onContextMenu: widget.onContextMenu,
+            focusNode: _leftFocusNode,
+            nextPanelFocusNode: _centerFocusNode,
           ),
         ),
         const VerticalDivider(width: 1),
         Expanded(
           child: DirectoryPanel(
-            items: centerPanelItems,
-            selectedItem: selectedCenterItem,
-            onItemTap: (item) => onItemSelected(item, PanelPosition.center),
+            items: widget.centerPanelItems,
+            selectedItem: widget.selectedCenterItem,
+            onItemTap: (item) => widget.onItemSelected(item, PanelPosition.center),
             position: PanelPosition.center,
             currentPath: centerPath,
-            onContextMenu: onContextMenu,
+            onContextMenu: widget.onContextMenu,
+            focusNode: _centerFocusNode,
+            nextPanelFocusNode: _rightFocusNode,
           ),
         ),
         const VerticalDivider(width: 1),
         Expanded(
           child: DirectoryPanel(
-            items: rightPanelItems,
-            selectedItem: selectedRightItem,
-            onItemTap: (item) => onItemSelected(item, PanelPosition.right),
+            items: widget.rightPanelItems,
+            selectedItem: widget.selectedRightItem,
+            onItemTap: (item) => widget.onItemSelected(item, PanelPosition.right),
             position: PanelPosition.right,
             currentPath: rightPath,
-            onContextMenu: onContextMenu,
+            onContextMenu: widget.onContextMenu,
+            focusNode: _rightFocusNode,
           ),
         ),
       ],
@@ -1265,13 +1292,15 @@ IconData _getFileIcon(String name) {
   return Icons.insert_drive_file;
 }
 
-class DirectoryPanel extends StatelessWidget {
+class DirectoryPanel extends StatefulWidget {
   final List<DirectoryEntry> items;
   final DirectoryEntry? selectedItem;
   final Function(DirectoryEntry) onItemTap;
   final PanelPosition position;
   final String currentPath;
   final Function(DirectoryEntry, Offset, String panelPath)? onContextMenu;
+  final FocusNode? focusNode;
+  final FocusNode? nextPanelFocusNode;
 
   const DirectoryPanel({
     super.key,
@@ -1281,112 +1310,304 @@ class DirectoryPanel extends StatelessWidget {
     required this.position,
     required this.currentPath,
     this.onContextMenu,
+    this.focusNode,
+    this.nextPanelFocusNode,
   });
 
   @override
+  State<DirectoryPanel> createState() => _DirectoryPanelState();
+}
+
+class _DirectoryPanelState extends State<DirectoryPanel> {
+  FocusNode? _ownedFocusNode;
+  FocusNode get _focusNode => widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
+  final ScrollController _scrollController = ScrollController();
+  int _focusedIndex = 0;
+  bool _showKeyboardFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _ownedFocusNode?.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(DirectoryPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      oldWidget.focusNode?.removeListener(_onFocusChange);
+      _focusNode.addListener(_onFocusChange);
+    }
+    if (widget.items != oldWidget.items) {
+      _focusedIndex = 0;
+    }
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus) {
+      setState(() => _showKeyboardFocus = true);
+      _announceCurrentItem();
+    } else {
+      setState(() => _showKeyboardFocus = false);
+    }
+  }
+
+  void _announceCurrentItem() {
+    if (_focusedIndex < 0 || _focusedIndex >= widget.items.length) return;
+    final item = widget.items[_focusedIndex];
+    final label = _semanticLabel(item);
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      label,
+      TextDirection.ltr,
+    );
+  }
+
+  String _semanticLabel(DirectoryEntry item) {
+    String displayName = item.name;
+    if (displayName.endsWith('/')) {
+      displayName = displayName.substring(0, displayName.length - 1);
+    }
+    if (item.isDirectory) return 'Folder: $displayName';
+    final fileInfo = _formatFileInfo(item);
+    return 'File: $displayName, $fileInfo';
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (widget.items.isEmpty) return KeyEventResult.ignored;
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      if (_focusedIndex < widget.items.length - 1) {
+        setState(() {
+          _focusedIndex++;
+          _showKeyboardFocus = true;
+        });
+        _scrollToFocused();
+        _announceCurrentItem();
+      }
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      if (_focusedIndex > 0) {
+        setState(() {
+          _focusedIndex--;
+          _showKeyboardFocus = true;
+        });
+        _scrollToFocused();
+        _announceCurrentItem();
+      }
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.space) {
+      if (_focusedIndex >= 0 && _focusedIndex < widget.items.length) {
+        final item = widget.items[_focusedIndex];
+        widget.onItemTap(item);
+        if (item.isDirectory && widget.nextPanelFocusNode != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            widget.nextPanelFocusNode!.requestFocus();
+          });
+        }
+      }
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.home) {
+      setState(() {
+        _focusedIndex = 0;
+        _showKeyboardFocus = true;
+      });
+      _scrollToFocused();
+      _announceCurrentItem();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.end) {
+      setState(() {
+        _focusedIndex = widget.items.length - 1;
+        _showKeyboardFocus = true;
+      });
+      _scrollToFocused();
+      _announceCurrentItem();
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _scrollToFocused() {
+    if (!_scrollController.hasClients) return;
+    // Use approximate item height for smooth scrolling
+    const itemHeight = 52.0;
+    final targetOffset = _focusedIndex * itemHeight;
+    final viewportHeight = _scrollController.position.viewportDimension;
+    final currentOffset = _scrollController.offset;
+
+    if (targetOffset < currentOffset) {
+      _scrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeInOut,
+      );
+    } else if (targetOffset + itemHeight > currentOffset + viewportHeight) {
+      _scrollController.animateTo(
+        targetOffset + itemHeight - viewportHeight,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
-        ),
-        child: const Center(
-          child: Text(
-            'Empty',
-            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+    final panelLabel = switch (widget.position) {
+      PanelPosition.left => 'Left panel',
+      PanelPosition.center => 'Center panel',
+      PanelPosition.right => 'Right panel',
+    };
+
+    if (widget.items.isEmpty) {
+      return Semantics(
+        label: '$panelLabel, empty',
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
+          ),
+          child: const Center(
+            child: Text(
+              'Empty',
+              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+            ),
           ),
         ),
       );
     }
 
-    return Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
-      ),
-      child: Material(
-        color: Theme.of(context).colorScheme.surface,
-        child: ListView.builder(
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final item = items[index];
-          final isSelected = item == selectedItem;
-
-          String displayName = item.name;
-          if (displayName.endsWith('/')) {
-            displayName = displayName.substring(0, displayName.length - 1);
-          }
-
-          final isParentDir = item.name == '..';
-
-          final icon = isParentDir
-              ? Icons.folder_open
-              : item.isDirectory
-              ? Icons.folder
-              : _getFileIcon(item.name);
-
-          final isJsonPreset =
-              !item.isDirectory && item.name.toLowerCase().endsWith('.json');
-
-          final iconColor = isParentDir
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
-              : item.isDirectory
-              ? Theme.of(context).colorScheme.primary
-              : isJsonPreset
-              ? Theme.of(context).colorScheme.tertiary
-              : Theme.of(context).colorScheme.secondary;
-
-          final fileInfo = !item.isDirectory ? _formatFileInfo(item) : null;
-
-          final semanticLabel = item.isDirectory
-              ? 'Folder: $displayName'
-              : 'File: $displayName, $fileInfo';
-
-          Widget tile = Semantics(
-            label: semanticLabel,
-            child: ListTile(
-              leading: Icon(icon, color: iconColor),
-              title: Text(
-                displayName,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
+    return Semantics(
+      label: '$panelLabel, ${widget.items.length} items',
+      child: Focus(
+        focusNode: _focusNode,
+        onKeyEvent: _handleKeyEvent,
+        child: FocusTraversalGroup(
+          descendantsAreTraversable: false,
+          child: Container(
+            clipBehavior: Clip.hardEdge,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: _showKeyboardFocus && _focusNode.hasFocus
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).dividerColor,
+                width: _showKeyboardFocus && _focusNode.hasFocus ? 2.0 : 0.5,
               ),
-              subtitle: fileInfo != null
-                  ? Text(
-                      fileInfo,
-                      style: const TextStyle(fontSize: 12),
-                    )
-                  : null,
-              selected: isSelected,
-              selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-              onTap: () => onItemTap(item),
-              dense: true,
             ),
-          );
-
-          if (!isParentDir && onContextMenu != null) {
-            tile = GestureDetector(
-              onSecondaryTapUp: (details) {
-                onContextMenu!(item, details.globalPosition, currentPath);
-              },
-              onLongPressEnd: (details) {
-                onContextMenu!(item, details.globalPosition, currentPath);
-              },
-              child: tile,
-            );
-          }
-
-          return tile;
-        },
-      ),
+            child: Material(
+              color: Theme.of(context).colorScheme.surface,
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: widget.items.length,
+                itemBuilder: (context, index) =>
+                    _buildItem(context, index),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  String _formatFileInfo(DirectoryEntry entry) {
+  Widget _buildItem(BuildContext context, int index) {
+    final item = widget.items[index];
+    final isSelected = item == widget.selectedItem;
+    final isKeyboardFocused =
+        _showKeyboardFocus && _focusNode.hasFocus && index == _focusedIndex;
+
+    String displayName = item.name;
+    if (displayName.endsWith('/')) {
+      displayName = displayName.substring(0, displayName.length - 1);
+    }
+
+    final isParentDir = item.name == '..';
+
+    final icon = isParentDir
+        ? Icons.folder_open
+        : item.isDirectory
+        ? Icons.folder
+        : _getFileIcon(item.name);
+
+    final isJsonPreset =
+        !item.isDirectory && item.name.toLowerCase().endsWith('.json');
+
+    final iconColor = isParentDir
+        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
+        : item.isDirectory
+        ? Theme.of(context).colorScheme.primary
+        : isJsonPreset
+        ? Theme.of(context).colorScheme.tertiary
+        : Theme.of(context).colorScheme.secondary;
+
+    final fileInfo = !item.isDirectory ? _formatFileInfo(item) : null;
+
+    Widget tile = Container(
+      decoration: isKeyboardFocused
+          ? BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            )
+          : null,
+      child: ListTile(
+        leading: Icon(icon, color: iconColor),
+        title: Text(
+          displayName,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        subtitle: fileInfo != null
+            ? Text(fileInfo, style: const TextStyle(fontSize: 12))
+            : null,
+        selected: isSelected,
+        selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+        onTap: () {
+          setState(() {
+            _focusedIndex = index;
+            _showKeyboardFocus = false;
+          });
+          widget.onItemTap(item);
+        },
+        dense: true,
+      ),
+    );
+
+    if (!isParentDir && widget.onContextMenu != null) {
+      tile = GestureDetector(
+        onSecondaryTapUp: (details) {
+          widget.onContextMenu!(item, details.globalPosition, widget.currentPath);
+        },
+        onLongPressEnd: (details) {
+          widget.onContextMenu!(item, details.globalPosition, widget.currentPath);
+        },
+        child: tile,
+      );
+    }
+
+    return tile;
+  }
+
+  static String _formatFileInfo(DirectoryEntry entry) {
     final size = _formatFileSize(entry.size);
     final dateTime = _formatFatDateTime(entry.date, entry.time);
     if (dateTime != null) return '$size · $dateTime';

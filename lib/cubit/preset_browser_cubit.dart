@@ -434,42 +434,81 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
   // File operation methods
 
-  Future<void> deleteEntry(String fullPath) async {
-    final result = await midiManager.requestFileDelete(fullPath);
-    if (result == null) {
-      throw Exception('Failed to delete: $fullPath');
+  /// Retries [operation] with exponential backoff up to ~30 seconds total.
+  /// Captures errors silently and only throws after all retries are exhausted.
+  static const _maxRetryDuration = Duration(seconds: 30);
+
+  Future<T> _retryOperation<T>(
+    Future<T> Function() operation,
+    String description,
+  ) async {
+    final stopwatch = Stopwatch()..start();
+    var delay = const Duration(milliseconds: 500);
+    Object? lastError;
+
+    while (stopwatch.elapsed < _maxRetryDuration) {
+      try {
+        return await operation();
+      } catch (e) {
+        lastError = e;
+        if (stopwatch.elapsed + delay >= _maxRetryDuration) break;
+        await Future.delayed(delay);
+        delay *= 2;
+        if (delay > const Duration(seconds: 4)) {
+          delay = const Duration(seconds: 4);
+        }
+      }
     }
+
+    throw Exception('$description failed after ${stopwatch.elapsed.inSeconds}s: $lastError');
+  }
+
+  Future<void> deleteEntry(String fullPath) async {
+    await _retryOperation(() async {
+      final result = await midiManager.requestFileDelete(fullPath);
+      if (result == null) throw Exception('No response');
+      return result;
+    }, 'Delete $fullPath');
 
     final parentDir = _getParentPath(fullPath) ?? '/';
     _directoryCache.remove(parentDir);
+    await Future.delayed(const Duration(milliseconds: 200));
     await _refreshDirectory(parentDir);
   }
 
   Future<void> createDirectory(String parentPath, String name) async {
     final fullPath = _joinPath(parentPath, name);
-    final result = await midiManager.requestDirectoryCreate(fullPath);
-    if (result == null) {
-      throw Exception('Failed to create directory: $fullPath');
-    }
+    await _retryOperation(() async {
+      final result = await midiManager.requestDirectoryCreate(fullPath);
+      if (result == null) throw Exception('No response');
+      return result;
+    }, 'Create directory $fullPath');
 
     _directoryCache.remove(parentPath);
+    await Future.delayed(const Duration(milliseconds: 200));
     await _refreshDirectory(parentPath);
   }
 
   Future<void> renameEntry(String fullPath, String newName) async {
     final parentDir = _getParentPath(fullPath) ?? '/';
     final newPath = _joinPath(parentDir, newName);
-    final result = await midiManager.requestFileRename(fullPath, newPath);
-    if (result == null) {
-      throw Exception('Failed to rename: $fullPath');
-    }
+    await _retryOperation(() async {
+      final result = await midiManager.requestFileRename(fullPath, newPath);
+      if (result == null) throw Exception('No response');
+      return result;
+    }, 'Rename $fullPath');
 
     _directoryCache.remove(parentDir);
+    await Future.delayed(const Duration(milliseconds: 200));
     await _refreshDirectory(parentDir);
   }
 
   Future<Uint8List?> downloadFile(String fullPath) async {
-    return await midiManager.requestFileDownload(fullPath);
+    return await _retryOperation(() async {
+      final result = await midiManager.requestFileDownload(fullPath);
+      if (result == null) throw Exception('No response');
+      return result;
+    }, 'Download $fullPath');
   }
 
   Future<void> uploadFile(
@@ -490,16 +529,16 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
           remainingBytes < chunkSize ? remainingBytes : chunkSize;
       final chunk = data.sublist(uploadPos, uploadPos + currentChunkSize);
 
-      final result = await midiManager.requestFileUploadChunk(
-        targetPath,
-        chunk,
-        uploadPos,
-        createAlways: uploadPos == 0,
-      );
-
-      if (result == null) {
-        throw Exception('Upload failed at position $uploadPos');
-      }
+      await _retryOperation(() async {
+        final result = await midiManager.requestFileUploadChunk(
+          targetPath,
+          chunk,
+          uploadPos,
+          createAlways: uploadPos == 0,
+        );
+        if (result == null) throw Exception('No response');
+        return result;
+      }, 'Upload chunk at $uploadPos');
 
       uploadPos += currentChunkSize;
       onProgress?.call(uploadPos / data.length);
@@ -510,6 +549,7 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
     }
 
     _directoryCache.remove(targetDirectory);
+    await Future.delayed(const Duration(milliseconds: 200));
     await _refreshDirectory(targetDirectory);
   }
 
@@ -616,17 +656,28 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   Future<void> _refreshDirectory(String dirPath) async {
     await state.maybeMap(
       loaded: (currentState) async {
-        // Fetch fresh listing
-        final listing = await midiManager.requestDirectoryListing(dirPath);
-        final entries = listing != null
-            ? _sortEntries(
-                listing.entries,
-                currentState.sortByDate,
-                currentPath: dirPath,
-                addParentEntry: dirPath != '/' &&
-                    dirPath == currentState.currentPath,
-              )
-            : <DirectoryEntry>[];
+        // Fetch fresh listing with retry
+        final DirectoryListing listing;
+        try {
+          listing = await _retryOperation(
+            () async {
+              final result = await midiManager.requestDirectoryListing(dirPath);
+              if (result == null) throw Exception('No response');
+              return result;
+            },
+            'List directory $dirPath',
+          );
+        } catch (_) {
+          // If all retries fail, leave current state unchanged
+          return;
+        }
+        final entries = _sortEntries(
+          listing.entries,
+          currentState.sortByDate,
+          currentPath: dirPath,
+          addParentEntry: dirPath != '/' &&
+              dirPath == currentState.currentPath,
+        );
         _directoryCache[dirPath] = entries;
 
         // Determine which panel(s) this directory corresponds to
