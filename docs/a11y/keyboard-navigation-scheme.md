@@ -431,7 +431,7 @@ Accessible via `Mod+/` or `?` (when no text field is focused). Displays a modal 
 │ Global                                  │
 │   Mod+S        Save Preset              │
 │   Mod+N        New Preset               │
-│   Mod+O        Browse Presets           │
+│   Mod+O        File Browser             │
 │   Mod+A        Add Algorithm            │
 │   Mod+R        Refresh                  │
 │   Mod+1/2      Parameters / Routing     │

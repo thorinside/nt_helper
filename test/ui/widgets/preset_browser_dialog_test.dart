@@ -50,7 +50,7 @@ void main() {
     testWidgets('displays three panels in row layout', (tester) async {
       when(() => mockCubit.state).thenReturn(
         PresetBrowserState.loaded(
-          currentPath: '/presets',
+          currentPath: '/',
           leftPanelItems: const [],
           centerPanelItems: const [],
           rightPanelItems: const [],
@@ -115,7 +115,7 @@ void main() {
     testWidgets('displays back button and sort toggle', (tester) async {
       when(() => mockCubit.state).thenReturn(
         PresetBrowserState.loaded(
-          currentPath: '/presets',
+          currentPath: '/',
           leftPanelItems: const [],
           centerPanelItems: const [],
           rightPanelItems: const [],
@@ -156,7 +156,7 @@ void main() {
 
       when(() => mockCubit.state).thenReturn(
         PresetBrowserState.loaded(
-          currentPath: '/presets',
+          currentPath: '/',
           leftPanelItems: [testEntry],
           centerPanelItems: const [],
           rightPanelItems: const [],
@@ -182,6 +182,7 @@ void main() {
               selectedLeftItem: null,
               selectedCenterItem: null,
               selectedRightItem: null,
+              currentPath: '/',
               onItemSelected: (item, position) {
                 mockCubit.selectDirectory(item, position);
               },
@@ -210,7 +211,7 @@ void main() {
 
       when(() => mockCubit.state).thenReturn(
         PresetBrowserState.loaded(
-          currentPath: '/presets',
+          currentPath: '/',
           leftPanelItems: [testFile],
           centerPanelItems: const [],
           rightPanelItems: const [],
@@ -237,6 +238,7 @@ void main() {
               selectedLeftItem: null,
               selectedCenterItem: null,
               selectedRightItem: null,
+              currentPath: '/',
               onItemSelected: (item, position) {
                 mockCubit.selectFile(item, position);
               },
@@ -273,6 +275,7 @@ void main() {
               selectedItem: null,
               onItemTap: (_) {},
               position: PanelPosition.left,
+              currentPath: '/',
             ),
           ),
         ),
@@ -306,6 +309,7 @@ void main() {
               selectedItem: null,
               onItemTap: (_) {},
               position: PanelPosition.left,
+              currentPath: '/',
             ),
           ),
         ),
@@ -334,6 +338,7 @@ void main() {
               selectedItem: testItem,
               onItemTap: (_) {},
               position: PanelPosition.left,
+              currentPath: '/',
             ),
           ),
         ),
@@ -350,7 +355,7 @@ void main() {
       // This test verifies that the state structure exists for E3.4
       when(() => mockCubit.state).thenReturn(
         PresetBrowserState.loaded(
-          currentPath: '/presets',
+          currentPath: '/',
           leftPanelItems: const [],
           centerPanelItems: const [],
           rightPanelItems: const [],
@@ -377,7 +382,7 @@ void main() {
       // This test verifies the import is present by checking compilation
       when(() => mockCubit.state).thenReturn(
         PresetBrowserState.loaded(
-          currentPath: '/presets',
+          currentPath: '/',
           leftPanelItems: const [],
           centerPanelItems: const [],
           rightPanelItems: const [],

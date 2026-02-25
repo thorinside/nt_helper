@@ -1,10 +1,15 @@
-import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
@@ -19,6 +24,12 @@ import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
 import 'package:nt_helper/utils/responsive.dart';
 import 'package:nt_helper/services/preset_analyzer.dart';
 
+enum _FileAction { download, upload, newFolder, rename, delete, view }
+
+class _DeleteSelectedIntent extends Intent {
+  const _DeleteSelectedIntent();
+}
+
 class PresetBrowserDialog extends StatefulWidget {
   final DistingCubit distingCubit;
 
@@ -29,18 +40,15 @@ class PresetBrowserDialog extends StatefulWidget {
 }
 
 class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
-  // Drag and drop state
   bool _isDragOver = false;
   bool _isInstallingPackage = false;
 
-  // Package analysis state (used for conflict detection and installation)
   PackageAnalysis? _currentAnalysis;
   Uint8List? _currentPackageData;
 
   @override
   void initState() {
     super.initState();
-    // Load root directory when dialog opens
     context.read<PresetBrowserCubit>().loadRootDirectory();
   }
 
@@ -48,214 +56,243 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
 
-    // Build the main content first
-    Widget content = AlertDialog(
-      title: Row(
-        children: [
-          const Text('Browse Presets'),
-          const Spacer(),
-          // Navigation controls
-          BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
-            builder: (context, state) {
-              return Row(
-                children: [
-                  // Back button
-                  state.maybeMap(
-                    loaded: (loaded) => loaded.navigationHistory.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.arrow_back, semanticLabel: 'Back'),
-                            onPressed: () {
-                              context.read<PresetBrowserCubit>().navigateBack();
-                            },
-                            tooltip: 'Back',
-                          )
-                        : const SizedBox.shrink(),
-                    orElse: () => const SizedBox.shrink(),
-                  ),
-                  // Sort toggle
-                  state.maybeMap(
-                    loaded: (loaded) => IconButton(
-                      icon: Icon(
-                        loaded.sortByDate
-                            ? Icons.date_range
-                            : Icons.sort_by_alpha,
-                        semanticLabel: loaded.sortByDate
-                            ? 'Sort by date'
-                            : 'Sort alphabetically',
-                      ),
-                      onPressed: () {
-                        context.read<PresetBrowserCubit>().toggleSortMode();
-                      },
-                      tooltip: loaded.sortByDate
-                          ? 'Sort by date'
-                          : 'Sort alphabetically',
-                    ),
-                    orElse: () => const SizedBox.shrink(),
-                  ),
-                ],
-              );
+    Widget content = Shortcuts(
+      shortcuts: <ShortcutActivator, Intent>{
+        const SingleActivator(LogicalKeyboardKey.delete): const _DeleteSelectedIntent(),
+        const SingleActivator(LogicalKeyboardKey.backspace): const _DeleteSelectedIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _DeleteSelectedIntent: CallbackAction<_DeleteSelectedIntent>(
+            onInvoke: (_) {
+              _deleteSelectedItem();
+              return null;
             },
           ),
-        ],
-      ),
-      content: SizedBox(
-        width: isMobile
-            ? MediaQuery.of(context).size.width * 0.95
-            : MediaQuery.of(context).size.width * 0.8,
-        height: isMobile
-            ? MediaQuery.of(context).size.height * 0.7
-            : MediaQuery.of(context).size.height * 0.6,
-        child: Column(
-          children: [
-            // Main content area
-            Expanded(
-              child: BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
-                builder: (context, state) {
-                  return state.map(
-                    initial: (_) =>
-                        const Center(child: CircularProgressIndicator()),
-                    loading: (_) =>
-                        const Center(child: CircularProgressIndicator()),
-                    loaded: (loaded) => isMobile
-                        ? MobileDrillDownNavigator(
-                            items:
-                                loaded.currentDrillItems ??
-                                loaded.leftPanelItems,
-                            selectedItem: loaded.selectedDrillItem,
-                            breadcrumbs: loaded.breadcrumbs ?? [],
-                            onItemTap: _handleMobileItemTap,
-                            onBreadcrumbTap: _handleBreadcrumbTap,
-                            onRefresh: _handleRefresh,
-                          )
-                        : ThreePanelNavigator(
-                            leftPanelItems: loaded.leftPanelItems,
-                            centerPanelItems: loaded.centerPanelItems,
-                            rightPanelItems: loaded.rightPanelItems,
-                            selectedLeftItem: loaded.selectedLeftItem,
-                            selectedCenterItem: loaded.selectedCenterItem,
-                            selectedRightItem: loaded.selectedRightItem,
-                            onItemSelected: _handleItemSelected,
-                          ),
-                    error: (error) => Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: Colors.red,
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(error.message, textAlign: TextAlign.center),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
+        },
+        child: Focus(
+          autofocus: true,
+          child: AlertDialog(
+            title: Row(
+              children: [
+                const Text('File Browser'),
+                const Spacer(),
+                BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
+                  builder: (context, state) {
+                    return Row(
+                      children: [
+                        state.maybeMap(
+                          loaded: (loaded) => loaded.navigationHistory.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.arrow_back, semanticLabel: 'Back'),
+                                  onPressed: () {
+                                    context.read<PresetBrowserCubit>().navigateBack();
+                                  },
+                                  tooltip: 'Back',
+                                )
+                              : const SizedBox.shrink(),
+                          orElse: () => const SizedBox.shrink(),
+                        ),
+                        state.maybeMap(
+                          loaded: (loaded) => IconButton(
+                            icon: Icon(
+                              loaded.sortByDate
+                                  ? Icons.date_range
+                                  : Icons.sort_by_alpha,
+                              semanticLabel: loaded.sortByDate
+                                  ? 'Sort by date'
+                                  : 'Sort alphabetically',
+                            ),
                             onPressed: () {
-                              context
-                                  .read<PresetBrowserCubit>()
-                                  .loadRootDirectory();
+                              context.read<PresetBrowserCubit>().toggleSortMode();
                             },
-                            child: const Text('Retry'),
+                            tooltip: loaded.sortByDate
+                                ? 'Sort by date'
+                                : 'Sort alphabetically',
                           ),
-                        ],
-                      ),
+                          orElse: () => const SizedBox.shrink(),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: isMobile
+                  ? MediaQuery.of(context).size.width * 0.95
+                  : MediaQuery.of(context).size.width * 0.8,
+              height: isMobile
+                  ? MediaQuery.of(context).size.height * 0.7
+                  : MediaQuery.of(context).size.height * 0.6,
+              child: Column(
+                children: [
+                  // Desktop breadcrumb bar
+                  if (!isMobile)
+                    BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
+                      builder: (context, state) {
+                        return state.maybeMap(
+                          loaded: (loaded) =>
+                              _buildDesktopBreadcrumbs(context, loaded),
+                          orElse: () => const SizedBox.shrink(),
+                        );
+                      },
                     ),
+                  Expanded(
+                    child: ClipRect(
+                    child: BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
+                      builder: (context, state) {
+                        return state.map(
+                          initial: (_) =>
+                              const Center(child: CircularProgressIndicator()),
+                          loading: (_) =>
+                              const Center(child: CircularProgressIndicator()),
+                          loaded: (loaded) => isMobile
+                              ? MobileDrillDownNavigator(
+                                  items:
+                                      loaded.currentDrillItems ??
+                                      loaded.leftPanelItems,
+                                  selectedItem: loaded.selectedDrillItem,
+                                  breadcrumbs: loaded.breadcrumbs ?? [],
+                                  onItemTap: _handleMobileItemTap,
+                                  onBreadcrumbTap: _handleBreadcrumbTap,
+                                  onRefresh: _handleRefresh,
+                                  onLongPress: (entry) {
+                                    final drillPath =
+                                        loaded.drillPath ?? loaded.currentPath;
+                                    _showContextMenuAtCenter(entry, drillPath);
+                                  },
+                                )
+                              : ThreePanelNavigator(
+                                  leftPanelItems: loaded.leftPanelItems,
+                                  centerPanelItems: loaded.centerPanelItems,
+                                  rightPanelItems: loaded.rightPanelItems,
+                                  selectedLeftItem: loaded.selectedLeftItem,
+                                  selectedCenterItem: loaded.selectedCenterItem,
+                                  selectedRightItem: loaded.selectedRightItem,
+                                  onItemSelected: _handleItemSelected,
+                                  currentPath: loaded.currentPath,
+                                  onContextMenu: _handleContextMenu,
+                                ),
+                          error: (error) => Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 48,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(error.message, textAlign: TextAlign.center),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    context
+                                        .read<PresetBrowserCubit>()
+                                        .loadRootDirectory();
+                                  },
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  ),
+                  BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
+                    builder: (context, state) {
+                      return state.maybeMap(
+                        loading: (_) => const SizedBox(
+                          height: 8,
+                          child: LinearProgressIndicator(),
+                        ),
+                        orElse: () => const SizedBox(height: 8),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancel'),
+              ),
+              BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
+                builder: (context, state) {
+                  final selectedPath = context
+                      .read<PresetBrowserCubit>()
+                      .getSelectedPath();
+                  final isPresetFile =
+                      selectedPath.isNotEmpty &&
+                      selectedPath.toLowerCase().endsWith('.json');
+                  final isMobile = Responsive.isMobile(context);
+
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isPresetFile && !isMobile) ...[
+                        OutlinedButton(
+                          onPressed: () async {
+                            Navigator.of(context).pop();
+
+                            Map<String, String>? pluginPaths;
+                            final state = widget.distingCubit.state;
+                            if (state is DistingStateSynchronized) {
+                              final slotAlgorithmIndices = state.slots
+                                  .map((s) => s.algorithm.algorithmIndex)
+                                  .toSet();
+                              final slotAlgorithms = state.algorithms
+                                  .where((a) =>
+                                      slotAlgorithmIndices.contains(a.algorithmIndex))
+                                  .toList();
+                              pluginPaths =
+                                  PresetAnalyzer.extractPluginPaths(slotAlgorithms);
+                            }
+
+                            await showDialog<void>(
+                              context: context,
+                              builder: (dialogContext) => PresetPackageDialog(
+                                presetFilePath: selectedPath,
+                                fileSystem: PresetFileSystemImpl(
+                                  widget.distingCubit.requireDisting(),
+                                ),
+                                database: widget.distingCubit.database,
+                                pluginPaths: pluginPaths,
+                              ),
+                            );
+                          },
+                          child: const Text('Export'),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      ElevatedButton(
+                        onPressed: isPresetFile
+                            ? () {
+                                Navigator.of(context).pop({
+                                  'sdCardPath': selectedPath,
+                                  'action': PresetAction.load,
+                                  'displayName': selectedPath.split('/').last,
+                                });
+                              }
+                            : null,
+                        child: const Text('Load'),
+                      ),
+                    ],
                   );
                 },
               ),
-            ),
-            // Progress indicator bar
-            BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
-              builder: (context, state) {
-                return state.maybeMap(
-                  loading: (_) => const SizedBox(
-                    height: 8,
-                    child: LinearProgressIndicator(),
-                  ),
-                  orElse: () => const SizedBox(height: 8),
-                );
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: const Text('Cancel'),
-        ),
-        BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
-          builder: (context, state) {
-            final selectedPath = context
-                .read<PresetBrowserCubit>()
-                .getSelectedPath();
-            final isPresetFile =
-                selectedPath.isNotEmpty &&
-                selectedPath.toLowerCase().endsWith('.json');
-            final isMobile = Responsive.isMobile(context);
-
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isPresetFile && !isMobile) ...[
-                  OutlinedButton(
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-
-                      // Extract plugin paths from AlgorithmInfo for slots in the preset
-                      Map<String, String>? pluginPaths;
-                      final state = widget.distingCubit.state;
-                      if (state is DistingStateSynchronized) {
-                        // Get algorithm indices from current preset's slots
-                        final slotAlgorithmIndices = state.slots
-                            .map((s) => s.algorithm.algorithmIndex)
-                            .toSet();
-                        // Filter to only AlgorithmInfos used in slots
-                        final slotAlgorithms = state.algorithms
-                            .where((a) =>
-                                slotAlgorithmIndices.contains(a.algorithmIndex))
-                            .toList();
-                        pluginPaths =
-                            PresetAnalyzer.extractPluginPaths(slotAlgorithms);
-                      }
-
-                      await showDialog<void>(
-                        context: context,
-                        builder: (dialogContext) => PresetPackageDialog(
-                          presetFilePath: selectedPath,
-                          fileSystem: PresetFileSystemImpl(
-                            widget.distingCubit.requireDisting(),
-                          ),
-                          database: widget.distingCubit.database,
-                          pluginPaths: pluginPaths,
-                        ),
-                      );
-                    },
-                    child: const Text('Export'),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                ElevatedButton(
-                  onPressed: isPresetFile
-                      ? () {
-                          Navigator.of(context).pop({
-                            'sdCardPath': selectedPath,
-                            'action': PresetAction.load,
-                            'displayName': selectedPath.split('/').last,
-                          });
-                        }
-                      : null,
-                  child: const Text('Load'),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
     );
 
-    // Only add drag and drop on desktop platforms
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.windows ||
             defaultTargetPlatform == TargetPlatform.macOS ||
@@ -275,6 +312,104 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     }
 
     return content;
+  }
+
+  Widget _buildDesktopBreadcrumbs(BuildContext context, dynamic loaded) {
+    final currentPath = loaded.currentPath as String;
+    final breadcrumbs = _getBreadcrumbsFromPath(currentPath);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            Semantics(
+              label: 'Navigate to root',
+              button: true,
+              child: InkWell(
+                onTap: () {
+                  context.read<PresetBrowserCubit>().navigateToAbsolutePath('/');
+                },
+                child: Tooltip(
+                  message: 'Go to root',
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Icon(
+                      Icons.home,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            ...breadcrumbs.asMap().entries.map((entry) {
+              final index = entry.key;
+              final segment = entry.value;
+              final isLast = index == breadcrumbs.length - 1;
+              final pathUpTo = '/${breadcrumbs.take(index + 1).join('/')}';
+
+              return Row(
+                children: [
+                  ExcludeSemantics(
+                    child: Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Tooltip(
+                    message: pathUpTo,
+                    child: InkWell(
+                      onTap: isLast
+                          ? null
+                          : () {
+                              context
+                                  .read<PresetBrowserCubit>()
+                                  .navigateToAbsolutePath(pathUpTo);
+                            },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0,
+                          vertical: 8.0,
+                        ),
+                        child: Text(
+                          segment,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight:
+                                isLast ? FontWeight.bold : FontWeight.normal,
+                            color: isLast
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<String> _getBreadcrumbsFromPath(String path) {
+    if (path == '/' || path.isEmpty) return [];
+    return path.split('/').where((s) => s.isNotEmpty).toList();
   }
 
   void _handleItemSelected(DirectoryEntry item, PanelPosition position) {
@@ -301,7 +436,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     final cubit = context.read<PresetBrowserCubit>();
 
     if (index == -1) {
-      // Go to root
       cubit.loadRootDirectory();
     } else {
       cubit.navigateToPathSegment(index);
@@ -312,12 +446,10 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     final cubit = context.read<PresetBrowserCubit>();
     cubit.clearCache();
 
-    // Refresh current directory
     final state = cubit.state;
     state.maybeMap(
       loaded: (loaded) {
         if (loaded.drillPath != null && loaded.drillPath!.isNotEmpty) {
-          // Reload current drill path
           cubit.navigateToPathSegment((loaded.breadcrumbs?.length ?? 1) - 1);
         } else {
           cubit.loadRootDirectory();
@@ -325,6 +457,467 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       },
       orElse: () => cubit.loadRootDirectory(),
     );
+  }
+
+  void _handleContextMenu(
+    DirectoryEntry entry,
+    Offset position,
+    String panelPath,
+  ) {
+    if (entry.name == '..') return;
+    _showContextMenu(entry, position, panelPath);
+  }
+
+  void _showContextMenuAtCenter(DirectoryEntry entry, String panelPath) {
+    if (entry.name == '..') return;
+    final box = context.findRenderObject() as RenderBox;
+    final center = box.localToGlobal(
+      Offset(box.size.width / 2, box.size.height / 2),
+    );
+    _showContextMenu(entry, center, panelPath);
+  }
+
+  void _showContextMenu(
+    DirectoryEntry entry,
+    Offset position,
+    String panelPath,
+  ) {
+    final cubit = context.read<PresetBrowserCubit>();
+    final entryPath = cubit.getEntryPath(entry, panelPath);
+    final isFile = !entry.isDirectory;
+    final isTextFile = _isTextFile(entry.name);
+
+    final items = <PopupMenuEntry<_FileAction>>[];
+
+    if (isTextFile) {
+      items.add(const PopupMenuItem(
+        value: _FileAction.view,
+        child: ListTile(
+          leading: Icon(Icons.visibility),
+          title: Text('View'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ));
+    }
+
+    if (isFile) {
+      items.add(const PopupMenuItem(
+        value: _FileAction.download,
+        child: ListTile(
+          leading: Icon(Icons.download),
+          title: Text('Download'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ));
+    }
+
+    items.addAll([
+      const PopupMenuItem(
+        value: _FileAction.upload,
+        child: ListTile(
+          leading: Icon(Icons.upload),
+          title: Text('Upload Here'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+      const PopupMenuItem(
+        value: _FileAction.newFolder,
+        child: ListTile(
+          leading: Icon(Icons.create_new_folder),
+          title: Text('New Folder'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+      const PopupMenuItem(
+        value: _FileAction.rename,
+        child: ListTile(
+          leading: Icon(Icons.edit),
+          title: Text('Rename'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+      const PopupMenuItem(
+        value: _FileAction.delete,
+        child: ListTile(
+          leading: Icon(Icons.delete),
+          title: Text('Delete'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+    ]);
+
+    showMenu<_FileAction>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      items: items,
+    ).then((action) {
+      if (action == null) return;
+      switch (action) {
+        case _FileAction.download:
+          _downloadFile(entryPath, entry.name);
+        case _FileAction.upload:
+          final targetDir =
+              entry.isDirectory ? entryPath : panelPath;
+          _uploadFileAction(targetDir);
+        case _FileAction.newFolder:
+          final targetDir =
+              entry.isDirectory ? entryPath : panelPath;
+          _createFolderAction(targetDir);
+        case _FileAction.rename:
+          _renameAction(entryPath, entry.name);
+        case _FileAction.delete:
+          _deleteAction(entryPath, entry.name);
+        case _FileAction.view:
+          _viewTextFile(entryPath, entry.name);
+      }
+    });
+  }
+
+  bool _isTextFile(String name) {
+    final lower = name.toLowerCase();
+    return lower.endsWith('.txt') || lower.endsWith('.md');
+  }
+
+  Future<void> _downloadFile(String path, String fileName) async {
+    final cubit = context.read<PresetBrowserCubit>();
+
+    try {
+      final data = await cubit.downloadFile(path);
+      if (data == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to download file'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save $fileName',
+        fileName: fileName,
+        bytes: data,
+      );
+
+      if (result != null && mounted) {
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          'Downloaded $fileName',
+          TextDirection.ltr,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Downloaded $fileName')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadFileAction(String targetDirectory) async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    if (file.bytes == null && file.path == null) return;
+
+    final Uint8List bytes;
+    if (file.bytes != null) {
+      bytes = file.bytes!;
+    } else {
+      final xfile = XFile(file.path!);
+      bytes = await xfile.readAsBytes();
+    }
+
+    final cubit = context.read<PresetBrowserCubit>();
+
+    try {
+      await cubit.uploadFile(targetDirectory, file.name, bytes);
+      if (mounted) {
+        SemanticsService.sendAnnouncement(View.of(context),
+          'Uploaded ${file.name}',
+          TextDirection.ltr,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Uploaded ${file.name}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _createFolderAction(String parentDirectory) async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Semantics(
+          header: true,
+          child: const Text('New Folder'),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Folder name',
+            hintText: 'Enter folder name',
+          ),
+          onSubmitted: (value) => Navigator.of(context).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null || name.trim().isEmpty) return;
+
+    final cubit = context.read<PresetBrowserCubit>();
+
+    try {
+      await cubit.createDirectory(parentDirectory, name.trim());
+      if (mounted) {
+        SemanticsService.sendAnnouncement(View.of(context),
+          'Created folder ${name.trim()}',
+          TextDirection.ltr,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Created folder ${name.trim()}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create folder: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _renameAction(String fullPath, String currentName) async {
+    final cleanName = currentName.endsWith('/')
+        ? currentName.substring(0, currentName.length - 1)
+        : currentName;
+    final controller = TextEditingController(text: cleanName);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Semantics(
+          header: true,
+          child: const Text('Rename'),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'New name',
+          ),
+          onSubmitted: (value) => Navigator.of(context).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName == null || newName.trim().isEmpty || newName.trim() == cleanName) {
+      return;
+    }
+
+    final cubit = context.read<PresetBrowserCubit>();
+
+    try {
+      await cubit.renameEntry(fullPath, newName.trim());
+      if (mounted) {
+        SemanticsService.sendAnnouncement(View.of(context),
+          'Renamed to ${newName.trim()}',
+          TextDirection.ltr,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Renamed to ${newName.trim()}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Rename failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAction(String fullPath, String name) async {
+    final cleanName = name.endsWith('/')
+        ? name.substring(0, name.length - 1)
+        : name;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Semantics(
+          header: true,
+          child: const Text('Delete'),
+        ),
+        content: Text('Delete "$cleanName"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final cubit = context.read<PresetBrowserCubit>();
+
+    try {
+      await cubit.deleteEntry(fullPath);
+      if (mounted) {
+        SemanticsService.sendAnnouncement(View.of(context),
+          'Deleted $cleanName',
+          TextDirection.ltr,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Deleted $cleanName')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Delete failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _deleteSelectedItem() {
+    final cubit = context.read<PresetBrowserCubit>();
+    final selectedPath = cubit.getSelectedPath();
+    if (selectedPath.isEmpty) return;
+
+    final name = selectedPath.split('/').last;
+    _deleteAction(selectedPath, name);
+  }
+
+  Future<void> _viewTextFile(String path, String fileName) async {
+    final cubit = context.read<PresetBrowserCubit>();
+
+    try {
+      final data = await cubit.downloadFile(path);
+      if (data == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to download file for preview'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final text = utf8.decode(data, allowMalformed: true);
+      final isMarkdown = fileName.toLowerCase().endsWith('.md');
+
+      if (!mounted) return;
+
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Semantics(
+            header: true,
+            child: Text(fileName),
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.6,
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: isMarkdown
+                ? Markdown(data: text)
+                : SingleChildScrollView(
+                    child: SelectableText(
+                      text,
+                      style: const TextStyle(fontFamily: 'monospace'),
+                    ),
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to view file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   // Drag and drop handlers
@@ -345,23 +938,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       _isDragOver = false;
     });
 
-    // Filter for supported files (zip packages only for E3.2)
-    final supportedFiles = details.files.where((file) {
-      final lowerPath = file.path.toLowerCase();
-      return lowerPath.endsWith('.zip');
-    }).toList();
+    if (details.files.isEmpty) return;
 
-    if (supportedFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please drop a preset package (.zip)'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    if (supportedFiles.length > 1) {
+    if (details.files.length > 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please drop only one file at a time'),
@@ -371,8 +950,43 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       return;
     }
 
-    final file = supportedFiles.first;
-    _processPackageFile(file);
+    final file = details.files.first;
+    final lowerPath = file.path.toLowerCase();
+
+    if (lowerPath.endsWith('.zip')) {
+      _processPackageFile(file);
+    } else {
+      _uploadDroppedFile(file);
+    }
+  }
+
+  Future<void> _uploadDroppedFile(XFile file) async {
+    final bytes = await file.readAsBytes();
+    final fileName = file.path.split('/').last.split('\\').last;
+    final cubit = context.read<PresetBrowserCubit>();
+    final targetDir = cubit.getSelectedDirectoryPath();
+
+    try {
+      await cubit.uploadFile(targetDir, fileName, bytes);
+      if (mounted) {
+        SemanticsService.sendAnnouncement(View.of(context),
+          'Uploaded $fileName',
+          TextDirection.ltr,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Uploaded $fileName')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _processPackageFile(XFile file) async {
@@ -381,10 +995,8 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     });
 
     try {
-      // Read file data
       final fileBytes = await file.readAsBytes();
 
-      // Validate and analyze the package
       final isValid = await PresetPackageAnalyzer.isValidPackage(fileBytes);
       if (!isValid) {
         setState(() {
@@ -397,7 +1009,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         return;
       }
 
-      // Analyze the package
       final analysis = await PresetPackageAnalyzer.analyzePackage(fileBytes);
       if (!analysis.isValid) {
         setState(() {
@@ -410,13 +1021,11 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         return;
       }
 
-      // Store analysis results and package data
       setState(() {
         _currentAnalysis = analysis;
         _currentPackageData = fileBytes;
       });
 
-      // Story E3.3: Detect file conflicts with SD card
       final conflictDetector = FileConflictDetector(widget.distingCubit);
       final analysisWithConflicts = await conflictDetector.detectConflicts(
         analysis,
@@ -426,7 +1035,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         _currentAnalysis = analysisWithConflicts;
       });
 
-      // Story E3.4: Show the install dialog
       if (!mounted) return;
 
       await showDialog(
@@ -437,8 +1045,8 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
           packageData: _currentPackageData!,
           distingCubit: widget.distingCubit,
           onInstall: () {
-            Navigator.of(dialogContext).pop(); // Close PackageInstallDialog
-            Navigator.of(context).pop(); // Close PresetBrowserDialog
+            Navigator.of(dialogContext).pop();
+            Navigator.of(context).pop();
           },
           onCancel: () {
             Navigator.of(dialogContext).pop();
@@ -446,7 +1054,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ),
       );
 
-      // Clear state after dialog closes
       setState(() {
         _currentAnalysis = null;
         _currentPackageData = null;
@@ -521,7 +1128,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Drop preset package here',
+                  'Drop file to upload',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
@@ -550,6 +1157,8 @@ class ThreePanelNavigator extends StatelessWidget {
   final DirectoryEntry? selectedCenterItem;
   final DirectoryEntry? selectedRightItem;
   final Function(DirectoryEntry, PanelPosition) onItemSelected;
+  final String currentPath;
+  final Function(DirectoryEntry, Offset, String panelPath)? onContextMenu;
 
   const ThreePanelNavigator({
     super.key,
@@ -560,10 +1169,33 @@ class ThreePanelNavigator extends StatelessWidget {
     this.selectedCenterItem,
     this.selectedRightItem,
     required this.onItemSelected,
+    required this.currentPath,
+    this.onContextMenu,
   });
+
+  String _cleanName(String name) {
+    return name.endsWith('/') ? name.substring(0, name.length - 1) : name;
+  }
+
+  String _joinPath(String base, String child) {
+    if (base.endsWith('/')) return '$base$child';
+    return '$base/$child';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final leftPath = currentPath;
+
+    String centerPath = currentPath;
+    if (selectedLeftItem != null && selectedLeftItem!.isDirectory) {
+      centerPath = _joinPath(currentPath, _cleanName(selectedLeftItem!.name));
+    }
+
+    String rightPath = centerPath;
+    if (selectedCenterItem != null && selectedCenterItem!.isDirectory) {
+      rightPath = _joinPath(centerPath, _cleanName(selectedCenterItem!.name));
+    }
+
     return Row(
       children: [
         Expanded(
@@ -572,6 +1204,8 @@ class ThreePanelNavigator extends StatelessWidget {
             selectedItem: selectedLeftItem,
             onItemTap: (item) => onItemSelected(item, PanelPosition.left),
             position: PanelPosition.left,
+            currentPath: leftPath,
+            onContextMenu: onContextMenu,
           ),
         ),
         const VerticalDivider(width: 1),
@@ -581,6 +1215,8 @@ class ThreePanelNavigator extends StatelessWidget {
             selectedItem: selectedCenterItem,
             onItemTap: (item) => onItemSelected(item, PanelPosition.center),
             position: PanelPosition.center,
+            currentPath: centerPath,
+            onContextMenu: onContextMenu,
           ),
         ),
         const VerticalDivider(width: 1),
@@ -590,6 +1226,8 @@ class ThreePanelNavigator extends StatelessWidget {
             selectedItem: selectedRightItem,
             onItemTap: (item) => onItemSelected(item, PanelPosition.right),
             position: PanelPosition.right,
+            currentPath: rightPath,
+            onContextMenu: onContextMenu,
           ),
         ),
       ],
@@ -597,11 +1235,27 @@ class ThreePanelNavigator extends StatelessWidget {
   }
 }
 
+IconData _getFileIcon(String name) {
+  final lower = name.toLowerCase();
+  if (lower.endsWith('.scl') || lower.endsWith('.kbm')) return Icons.tune;
+  if (lower.endsWith('.wav') || lower.endsWith('.aif')) return Icons.graphic_eq;
+  if (lower.endsWith('.lua') ||
+      lower.endsWith('.3pot') ||
+      lower.endsWith('.o')) {
+    return Icons.code;
+  }
+  if (lower.endsWith('.zip')) return Icons.folder_zip;
+  if (lower.endsWith('.json')) return Icons.music_note;
+  return Icons.insert_drive_file;
+}
+
 class DirectoryPanel extends StatelessWidget {
   final List<DirectoryEntry> items;
   final DirectoryEntry? selectedItem;
   final Function(DirectoryEntry) onItemTap;
   final PanelPosition position;
+  final String currentPath;
+  final Function(DirectoryEntry, Offset, String panelPath)? onContextMenu;
 
   const DirectoryPanel({
     super.key,
@@ -609,6 +1263,8 @@ class DirectoryPanel extends StatelessWidget {
     required this.selectedItem,
     required this.onItemTap,
     required this.position,
+    required this.currentPath,
+    this.onContextMenu,
   });
 
   @override
@@ -629,72 +1285,116 @@ class DirectoryPanel extends StatelessWidget {
     }
 
     return Container(
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
         border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
       ),
-      child: ListView.builder(
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: ListView.builder(
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
           final isSelected = item == selectedItem;
 
-          // Clean up the display name
           String displayName = item.name;
           if (displayName.endsWith('/')) {
             displayName = displayName.substring(0, displayName.length - 1);
           }
 
-          final isJsonPreset =
-              !item.isDirectory && item.name.toLowerCase().endsWith('.json');
           final isParentDir = item.name == '..';
 
-          return ListTile(
-            leading: Icon(
-              isParentDir
-                  ? Icons.folder_open
-                  : item.isDirectory
-                  ? Icons.folder
-                  : isJsonPreset
-                  ? Icons.music_note
-                  : Icons.insert_drive_file,
-              color: isParentDir
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
-                  : item.isDirectory
-                  ? Theme.of(context).colorScheme.primary
-                  : isJsonPreset
-                  ? Theme.of(context).colorScheme.tertiary
-                  : Theme.of(context).colorScheme.secondary,
-            ),
-            title: Text(
-              displayName,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          final icon = isParentDir
+              ? Icons.folder_open
+              : item.isDirectory
+              ? Icons.folder
+              : _getFileIcon(item.name);
+
+          final isJsonPreset =
+              !item.isDirectory && item.name.toLowerCase().endsWith('.json');
+
+          final iconColor = isParentDir
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
+              : item.isDirectory
+              ? Theme.of(context).colorScheme.primary
+              : isJsonPreset
+              ? Theme.of(context).colorScheme.tertiary
+              : Theme.of(context).colorScheme.secondary;
+
+          final fileInfo = !item.isDirectory ? _formatFileInfo(item) : null;
+
+          final semanticLabel = item.isDirectory
+              ? 'Folder: $displayName'
+              : 'File: $displayName, $fileInfo';
+
+          Widget tile = Semantics(
+            label: semanticLabel,
+            child: ListTile(
+              leading: Icon(icon, color: iconColor),
+              title: Text(
+                displayName,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
+              subtitle: fileInfo != null
+                  ? Text(
+                      fileInfo,
+                      style: const TextStyle(fontSize: 12),
+                    )
+                  : null,
+              selected: isSelected,
+              selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+              onTap: () => onItemTap(item),
+              dense: true,
             ),
-            subtitle: !item.isDirectory
-                ? Text(
-                    _formatFileSize(item.size),
-                    style: const TextStyle(fontSize: 12),
-                  )
-                : null,
-            selected: isSelected,
-            selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-            onTap: () => onItemTap(item),
-            dense: true,
           );
+
+          if (!isParentDir && onContextMenu != null) {
+            tile = GestureDetector(
+              onSecondaryTapUp: (details) {
+                onContextMenu!(item, details.globalPosition, currentPath);
+              },
+              onLongPressEnd: (details) {
+                onContextMenu!(item, details.globalPosition, currentPath);
+              },
+              child: tile,
+            );
+          }
+
+          return tile;
         },
+      ),
       ),
     );
   }
 
-  String _formatFileSize(int bytes) {
+  String _formatFileInfo(DirectoryEntry entry) {
+    final size = _formatFileSize(entry.size);
+    final dateTime = _formatFatDateTime(entry.date, entry.time);
+    if (dateTime != null) return '$size · $dateTime';
+    return size;
+  }
+
+  static String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  static String? _formatFatDateTime(int fatDate, int fatTime) {
+    if (fatDate == 0) return null;
+    final day = fatDate & 0x1F;
+    final month = (fatDate >> 5) & 0x0F;
+    final year = ((fatDate >> 9) & 0x7F) + 1980;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    final hour = (fatTime >> 11) & 0x1F;
+    final minute = (fatTime >> 5) & 0x3F;
+    final dt = DateTime(year, month, day, hour, minute);
+    return DateFormat.yMMMd().add_jm().format(dt);
   }
 }

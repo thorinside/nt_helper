@@ -32,58 +32,21 @@ void main() {
 
     group('loadRootDirectory', () {
       blocTest<PresetBrowserCubit, PresetBrowserState>(
-        'emits loading then loaded with presets directory when it exists',
+        'emits loading then loaded with root directory',
         build: () {
-          when(
-            () => mockMidiManager.requestDirectoryListing('/presets'),
-          ).thenAnswer(
-            (_) async => DirectoryListing(
-              entries: [
-                DirectoryEntry(
-                  name: 'Factory/',
-                  attributes: 0x10, // Directory attribute
-                  date: 0,
-                  time: 0,
-                  size: 0,
-                ),
-                DirectoryEntry(
-                  name: 'User/',
-                  attributes: 0x10, // Directory attribute
-                  date: 0,
-                  time: 0,
-                  size: 0,
-                ),
-              ],
-            ),
-          );
-          return cubit;
-        },
-        act: (cubit) => cubit.loadRootDirectory(),
-        expect: () => [
-          const PresetBrowserState.loading(),
-          isA<PresetBrowserState>().having(
-            (s) => s.maybeMap(
-              loaded: (loaded) => loaded.currentPath,
-              orElse: () => null,
-            ),
-            'currentPath',
-            '/presets',
-          ),
-        ],
-      );
-
-      blocTest<PresetBrowserCubit, PresetBrowserState>(
-        'emits loading then loaded with root directory when presets does not exist',
-        build: () {
-          when(
-            () => mockMidiManager.requestDirectoryListing('/presets'),
-          ).thenAnswer((_) async => null);
           when(() => mockMidiManager.requestDirectoryListing('/')).thenAnswer(
             (_) async => DirectoryListing(
               entries: [
                 DirectoryEntry(
+                  name: 'presets/',
+                  attributes: 0x10,
+                  date: 0,
+                  time: 0,
+                  size: 0,
+                ),
+                DirectoryEntry(
                   name: 'System/',
-                  attributes: 0x10, // Directory attribute
+                  attributes: 0x10,
                   date: 0,
                   time: 0,
                   size: 0,

@@ -1760,7 +1760,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   },
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text('Browse Presets'), Icon(Icons.folder_open)],
+              children: [Text('File Browser'), Icon(Icons.folder_open)],
             ),
           ),
 

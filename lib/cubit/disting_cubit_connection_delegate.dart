@@ -341,13 +341,17 @@ class _ConnectionDelegate {
       _cubit._lastOnlineOutputDevice = outputDevice;
       _cubit._lastOnlineSysExId = sysExId; // Use the parameter passed to this method
 
-      // Synchronize device clock with system time
+      // Synchronize device clock with local time
+      // The device has no timezone info — it stamps FAT files directly from
+      // the value we send, so we must send local time, not UTC.
       try {
-        // Use local time for RTC since the device filesystem expects local timestamps
         final now = DateTime.now();
-        final localUnixTime =
-            now.millisecondsSinceEpoch ~/ 1000 - now.timeZoneOffset.inSeconds;
-        await newDistingManager.requestSetRealTimeClock(localUnixTime);
+        final localAsUtc = DateTime.utc(
+          now.year, now.month, now.day,
+          now.hour, now.minute, now.second,
+        );
+        final localEpoch = localAsUtc.millisecondsSinceEpoch ~/ 1000;
+        await newDistingManager.requestSetRealTimeClock(localEpoch);
       } catch (e) {
         // Continue with connection even if clock sync fails
       }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:nt_helper/models/sd_card_file_system.dart';
 
 class MobileDrillDownNavigator extends StatelessWidget {
@@ -8,6 +9,7 @@ class MobileDrillDownNavigator extends StatelessWidget {
   final Function(DirectoryEntry) onItemTap;
   final Function(int) onBreadcrumbTap;
   final VoidCallback onRefresh;
+  final Function(DirectoryEntry)? onLongPress;
 
   const MobileDrillDownNavigator({
     super.key,
@@ -17,6 +19,7 @@ class MobileDrillDownNavigator extends StatelessWidget {
     required this.onItemTap,
     required this.onBreadcrumbTap,
     required this.onRefresh,
+    this.onLongPress,
   });
 
   @override
@@ -105,6 +108,7 @@ class MobileDrillDownNavigator extends StatelessWidget {
 
         // Directory listing
         Expanded(
+          child: ClipRect(
           child: RefreshIndicator(
             onRefresh: () async => onRefresh(),
             child: items.isEmpty
@@ -128,7 +132,6 @@ class MobileDrillDownNavigator extends StatelessWidget {
                       final item = items[index];
                       final isSelected = item == selectedItem;
 
-                      // Clean up the display name
                       String displayName = item.name;
                       if (displayName.endsWith('/')) {
                         displayName = displayName.substring(
@@ -142,71 +145,122 @@ class MobileDrillDownNavigator extends StatelessWidget {
                           item.name.toLowerCase().endsWith('.json');
                       final isParentDir = item.name == '..';
 
-                      return ListTile(
-                        leading: Icon(
-                          isParentDir
-                              ? Icons.folder_open
-                              : item.isDirectory
-                              ? Icons.folder
-                              : isJsonPreset
-                              ? Icons.music_note
-                              : Icons.insert_drive_file,
-                          size: 28,
-                          color: isParentDir
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.7)
-                              : item.isDirectory
-                              ? Theme.of(context).colorScheme.primary
-                              : isJsonPreset
-                              ? Theme.of(context).colorScheme.tertiary
-                              : Theme.of(context).colorScheme.secondary,
-                        ),
-                        title: Text(
-                          displayName,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                      final icon = isParentDir
+                          ? Icons.folder_open
+                          : item.isDirectory
+                          ? Icons.folder
+                          : _getFileIcon(item.name);
+
+                      final iconColor = isParentDir
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.7)
+                          : item.isDirectory
+                          ? Theme.of(context).colorScheme.primary
+                          : isJsonPreset
+                          ? Theme.of(context).colorScheme.tertiary
+                          : Theme.of(context).colorScheme.secondary;
+
+                      final fileInfo =
+                          !item.isDirectory ? _formatFileInfo(item) : null;
+
+                      final semanticLabel = item.isDirectory
+                          ? 'Folder: $displayName'
+                          : 'File: $displayName, $fileInfo';
+
+                      Widget tile = Semantics(
+                        label: semanticLabel,
+                        child: ListTile(
+                          leading: Icon(icon, size: 28, color: iconColor),
+                          title: Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
                           ),
+                          subtitle: fileInfo != null
+                              ? Text(
+                                  fileInfo,
+                                  style: const TextStyle(fontSize: 13),
+                                )
+                              : null,
+                          trailing: item.isDirectory
+                              ? ExcludeSemantics(
+                                  child: Icon(
+                                    Icons.chevron_right,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                )
+                              : null,
+                          selected: isSelected,
+                          selectedTileColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          onTap: () => onItemTap(item),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 4.0,
+                          ),
+                          minVerticalPadding: 8.0,
                         ),
-                        subtitle: !item.isDirectory
-                            ? Text(
-                                _formatFileSize(item.size),
-                                style: const TextStyle(fontSize: 13),
-                              )
-                            : null,
-                        trailing: item.isDirectory
-                            ? ExcludeSemantics(
-                                child: Icon(
-                                  Icons.chevron_right,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              )
-                            : null,
-                        selected: isSelected,
-                        selectedTileColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        onTap: () => onItemTap(item),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 4.0,
-                        ),
-                        minVerticalPadding: 8.0,
                       );
+
+                      if (!isParentDir && onLongPress != null) {
+                        tile = GestureDetector(
+                          onLongPress: () => onLongPress!(item),
+                          child: tile,
+                        );
+                      }
+
+                      return tile;
                     },
                   ),
           ),
+        ),
         ),
       ],
     );
   }
 
-  String _formatFileSize(int bytes) {
+  static String _formatFileInfo(DirectoryEntry entry) {
+    final size = _formatFileSize(entry.size);
+    final dateTime = _formatFatDateTime(entry.date, entry.time);
+    if (dateTime != null) return '$size · $dateTime';
+    return size;
+  }
+
+  static String? _formatFatDateTime(int fatDate, int fatTime) {
+    if (fatDate == 0) return null;
+    final day = fatDate & 0x1F;
+    final month = (fatDate >> 5) & 0x0F;
+    final year = ((fatDate >> 9) & 0x7F) + 1980;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    final hour = (fatTime >> 11) & 0x1F;
+    final minute = (fatTime >> 5) & 0x3F;
+    final dt = DateTime(year, month, day, hour, minute);
+    return DateFormat.yMMMd().add_jm().format(dt);
+  }
+
+  static IconData _getFileIcon(String name) {
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.scl') || lower.endsWith('.kbm')) return Icons.tune;
+    if (lower.endsWith('.wav') || lower.endsWith('.aif')) return Icons.graphic_eq;
+    if (lower.endsWith('.lua') ||
+        lower.endsWith('.3pot') ||
+        lower.endsWith('.o')) {
+      return Icons.code;
+    }
+    if (lower.endsWith('.zip')) return Icons.folder_zip;
+    if (lower.endsWith('.json')) return Icons.music_note;
+    return Icons.insert_drive_file;
+  }
+
+  static String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     if (bytes < 1024 * 1024 * 1024) {
