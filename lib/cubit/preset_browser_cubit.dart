@@ -15,6 +15,8 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   final Map<String, List<DirectoryEntry>> _directoryCache = {};
 
   static const String _historyKey = 'presetHistory';
+  static const String _lastPathKey = 'fileBrowserLastPath';
+  static const String _sortByDateKey = 'fileBrowserSortByDate';
   static const int _maxHistoryItems = 20;
 
   PresetBrowserCubit({required this.midiManager, required this.prefs})
@@ -23,13 +25,16 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   Future<void> loadRootDirectory() async {
     emit(const PresetBrowserState.loading());
 
+    final savedSortByDate = prefs.getBool(_sortByDateKey) ?? false;
+    final savedPath = prefs.getString(_lastPathKey);
+
     try {
       final listing = await midiManager.requestDirectoryListing('/');
 
       if (listing != null) {
         final sortedEntries = _sortEntries(
           listing.entries,
-          false,
+          savedSortByDate,
           currentPath: '/',
           addParentEntry: false,
         );
@@ -45,7 +50,7 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             selectedCenterItem: null,
             selectedRightItem: null,
             navigationHistory: [],
-            sortByDate: false,
+            sortByDate: savedSortByDate,
             directoryCache: Map.from(_directoryCache),
             drillPath: '/',
             breadcrumbs: const [],
@@ -53,6 +58,11 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             selectedDrillItem: null,
           ),
         );
+
+        // Restore saved path if available and not root
+        if (savedPath != null && savedPath != '/' && savedPath.isNotEmpty) {
+          await _restoreSavedPath(savedPath);
+        }
       } else {
         emit(
           const PresetBrowserState.error(
@@ -62,6 +72,49 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       }
     } catch (e) {
       emit(PresetBrowserState.error(message: 'Error loading directory: $e'));
+    }
+  }
+
+  /// Attempts to restore navigation to a previously saved path.
+  /// Falls back silently to root if the path no longer exists.
+  Future<void> _restoreSavedPath(String targetPath) async {
+    try {
+      final listing = await midiManager.requestDirectoryListing(targetPath);
+      if (listing == null) return;
+
+      final sortByDate = state.maybeMap(
+        loaded: (s) => s.sortByDate,
+        orElse: () => false,
+      );
+
+      final entries = _sortEntries(
+        listing.entries,
+        sortByDate,
+        currentPath: targetPath,
+        addParentEntry: targetPath != '/',
+      );
+      _directoryCache[targetPath] = entries;
+
+      emit(
+        PresetBrowserState.loaded(
+          currentPath: targetPath,
+          leftPanelItems: entries,
+          centerPanelItems: const [],
+          rightPanelItems: const [],
+          selectedLeftItem: null,
+          selectedCenterItem: null,
+          selectedRightItem: null,
+          navigationHistory: [],
+          sortByDate: sortByDate,
+          directoryCache: Map.from(_directoryCache),
+          drillPath: targetPath,
+          breadcrumbs: _getBreadcrumbsFromPath(targetPath),
+          currentDrillItems: entries,
+          selectedDrillItem: null,
+        ),
+      );
+    } catch (_) {
+      // Path no longer exists — stay at root
     }
   }
 
@@ -198,6 +251,8 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       }
     }
 
+    _saveLastPath(newCurrentPath);
+
     emit(
       PresetBrowserState.loaded(
         currentPath: newCurrentPath,
@@ -251,6 +306,7 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
     state.maybeMap(
       loaded: (currentState) {
         final newSortByDate = !currentState.sortByDate;
+        prefs.setBool(_sortByDateKey, newSortByDate);
 
         final leftFiltered = currentState.leftPanelItems
             .where((e) => e.name != '..')
@@ -316,6 +372,8 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
               entries = [];
             }
           }
+
+          _saveLastPath(previousPath);
 
           emit(
             PresetBrowserState.loaded(
@@ -417,8 +475,9 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   Future<void> uploadFile(
     String targetDirectory,
     String fileName,
-    Uint8List data,
-  ) async {
+    Uint8List data, {
+    void Function(double progress)? onProgress,
+  }) async {
     final targetPath = _joinPath(targetDirectory, fileName);
 
     // Upload in 512-byte chunks
@@ -443,6 +502,7 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       }
 
       uploadPos += currentChunkSize;
+      onProgress?.call(uploadPos / data.length);
 
       if (uploadPos < data.length) {
         await Future.delayed(const Duration(milliseconds: 50));
@@ -457,9 +517,11 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   String getSelectedDirectoryPath() {
     return state.maybeMap(
       loaded: (currentState) {
-        // For mobile drill-down
+        // For mobile drill-down: use drillPath only if it differs from
+        // currentPath (meaning we've navigated deeper on mobile)
         if (currentState.drillPath != null &&
-            currentState.drillPath!.isNotEmpty) {
+            currentState.drillPath!.isNotEmpty &&
+            currentState.drillPath != currentState.currentPath) {
           return currentState.drillPath!;
         }
 
@@ -492,6 +554,16 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
         return dirPath;
       },
+      orElse: () => '/',
+    );
+  }
+
+  /// Returns the current navigated directory (for drag-and-drop uploads).
+  /// On mobile this is drillPath; on desktop this is currentPath.
+  String getCurrentDirectory() {
+    return state.maybeMap(
+      loaded: (currentState) =>
+          currentState.drillPath ?? currentState.currentPath,
       orElse: () => '/',
     );
   }
@@ -872,6 +944,8 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             }
           }
 
+          _saveLastPath(newPath);
+
           emit(
             currentState.copyWith(
               drillPath: newPath,
@@ -922,6 +996,8 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             }
           }
 
+          _saveLastPath(newPath);
+
           emit(
             currentState.copyWith(
               drillPath: newPath,
@@ -963,6 +1039,10 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
     return path.split('/').where((s) => s.isNotEmpty).toList();
   }
 
+  void _saveLastPath(String path) {
+    prefs.setString(_lastPathKey, path);
+  }
+
   String? _getParentPath(String currentPath) {
     if (currentPath == '/') return null;
 
@@ -1001,6 +1081,8 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
           entries = [];
         }
       }
+
+      _saveLastPath(path);
 
       emit(
         PresetBrowserState.loaded(

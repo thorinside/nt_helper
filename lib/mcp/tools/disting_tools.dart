@@ -2608,6 +2608,7 @@ class DistingTools {
               'success': true,
               'guid': resolvedGuid,
               'name': algoDisplayName,
+              // ignore: use_null_aware_elements
               if (limitationMessage != null) 'limitation': limitationMessage,
               if (limitationMessage != null)
                 'effective_specifications': specValues,

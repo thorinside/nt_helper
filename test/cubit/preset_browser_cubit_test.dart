@@ -18,6 +18,10 @@ void main() {
   setUp(() {
     mockMidiManager = MockDistingMidiManager();
     mockPrefs = MockSharedPreferences();
+    when(() => mockPrefs.getBool('fileBrowserSortByDate')).thenReturn(null);
+    when(() => mockPrefs.getString('fileBrowserLastPath')).thenReturn(null);
+    when(() => mockPrefs.setBool('fileBrowserSortByDate', any())).thenAnswer((_) async => true);
+    when(() => mockPrefs.setString('fileBrowserLastPath', any())).thenAnswer((_) async => true);
     cubit = PresetBrowserCubit(midiManager: mockMidiManager, prefs: mockPrefs);
   });
 

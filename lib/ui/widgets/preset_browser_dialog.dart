@@ -42,6 +42,7 @@ class PresetBrowserDialog extends StatefulWidget {
 class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   bool _isDragOver = false;
   bool _isInstallingPackage = false;
+  double? _uploadProgress;
 
   PackageAnalysis? _currentAnalysis;
   Uint8List? _currentPackageData;
@@ -137,6 +138,11 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                           orElse: () => const SizedBox.shrink(),
                         );
                       },
+                    ),
+                  if (_uploadProgress != null)
+                    LinearProgressIndicator(
+                      value: _uploadProgress,
+                      minHeight: 2,
                     ),
                   Expanded(
                     child: ClipRect(
@@ -635,6 +641,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   }
 
   Future<void> _uploadFileAction(String targetDirectory) async {
+    final cubit = context.read<PresetBrowserCubit>();
     final result = await FilePicker.platform.pickFiles();
     if (result == null || result.files.isEmpty) return;
 
@@ -649,11 +656,15 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       bytes = await xfile.readAsBytes();
     }
 
-    final cubit = context.read<PresetBrowserCubit>();
-
     try {
-      await cubit.uploadFile(targetDirectory, file.name, bytes);
+      setState(() => _uploadProgress = 0);
+      await cubit.uploadFile(targetDirectory, file.name, bytes,
+        onProgress: (progress) {
+          if (mounted) setState(() => _uploadProgress = progress);
+        },
+      );
       if (mounted) {
+        setState(() => _uploadProgress = null);
         SemanticsService.sendAnnouncement(View.of(context),
           'Uploaded ${file.name}',
           TextDirection.ltr,
@@ -664,6 +675,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _uploadProgress = null);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Upload failed: $e'),
@@ -675,6 +687,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   }
 
   Future<void> _createFolderAction(String parentDirectory) async {
+    final cubit = context.read<PresetBrowserCubit>();
     final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
@@ -707,8 +720,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
     if (name == null || name.trim().isEmpty) return;
 
-    final cubit = context.read<PresetBrowserCubit>();
-
     try {
       await cubit.createDirectory(parentDirectory, name.trim());
       if (mounted) {
@@ -733,6 +744,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   }
 
   Future<void> _renameAction(String fullPath, String currentName) async {
+    final cubit = context.read<PresetBrowserCubit>();
     final cleanName = currentName.endsWith('/')
         ? currentName.substring(0, currentName.length - 1)
         : currentName;
@@ -769,8 +781,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       return;
     }
 
-    final cubit = context.read<PresetBrowserCubit>();
-
     try {
       await cubit.renameEntry(fullPath, newName.trim());
       if (mounted) {
@@ -795,6 +805,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   }
 
   Future<void> _deleteAction(String fullPath, String name) async {
+    final cubit = context.read<PresetBrowserCubit>();
     final cleanName = name.endsWith('/')
         ? name.substring(0, name.length - 1)
         : name;
@@ -824,8 +835,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     );
 
     if (confirmed != true) return;
-
-    final cubit = context.read<PresetBrowserCubit>();
 
     try {
       await cubit.deleteEntry(fullPath);
@@ -961,14 +970,20 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
   }
 
   Future<void> _uploadDroppedFile(XFile file) async {
+    final cubit = context.read<PresetBrowserCubit>();
     final bytes = await file.readAsBytes();
     final fileName = file.path.split('/').last.split('\\').last;
-    final cubit = context.read<PresetBrowserCubit>();
-    final targetDir = cubit.getSelectedDirectoryPath();
+    final targetDir = cubit.getCurrentDirectory();
 
     try {
-      await cubit.uploadFile(targetDir, fileName, bytes);
+      setState(() => _uploadProgress = 0);
+      await cubit.uploadFile(targetDir, fileName, bytes,
+        onProgress: (progress) {
+          if (mounted) setState(() => _uploadProgress = progress);
+        },
+      );
       if (mounted) {
+        setState(() => _uploadProgress = null);
         SemanticsService.sendAnnouncement(View.of(context),
           'Uploaded $fileName',
           TextDirection.ltr,
@@ -979,6 +994,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _uploadProgress = null);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Upload failed: $e'),
