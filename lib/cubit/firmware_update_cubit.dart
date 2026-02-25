@@ -121,16 +121,13 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
       _currentFirmwarePath = firmwarePath;
       _currentTargetVersion = version.version;
 
-      if (_canAutoEnterBootloader) {
-        await _autoEnterBootloaderAndFlash(firmwarePath, version.version);
-      } else {
-        emit(
-          FirmwareUpdateState.waitingForBootloader(
-            firmwarePath: firmwarePath,
-            targetVersion: version.version,
-          ),
-        );
-      }
+      emit(
+        FirmwareUpdateState.waitingForBootloader(
+          firmwarePath: firmwarePath,
+          targetVersion: version.version,
+          canAutoEnter: _canAutoEnterBootloader,
+        ),
+      );
     } on FirmwareDownloadException catch (e) {
       emit(
         FirmwareUpdateState.error(
@@ -200,16 +197,13 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
       _currentFirmwarePath = path;
       _currentTargetVersion = 'local';
 
-      if (_canAutoEnterBootloader) {
-        await _autoEnterBootloaderAndFlash(path, 'local');
-      } else {
-        emit(
-          FirmwareUpdateState.waitingForBootloader(
-            firmwarePath: path,
-            targetVersion: 'local',
-          ),
-        );
-      }
+      emit(
+        FirmwareUpdateState.waitingForBootloader(
+          firmwarePath: path,
+          targetVersion: 'local',
+          canAutoEnter: _canAutoEnterBootloader,
+        ),
+      );
     } catch (e) {
       emit(
         FirmwareUpdateState.error(
@@ -217,6 +211,23 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
           errorType: FirmwareErrorType.download,
         ),
       );
+    }
+  }
+
+  /// User confirmed they want to proceed with the firmware update.
+  /// If auto-enter is available, enters bootloader automatically; otherwise
+  /// starts flashing directly (user already in bootloader mode).
+  Future<void> confirmAndFlash() async {
+    final currentState = state;
+    if (currentState is! FirmwareUpdateStateWaitingForBootloader) return;
+
+    if (currentState.canAutoEnter) {
+      await _autoEnterBootloaderAndFlash(
+        currentState.firmwarePath,
+        currentState.targetVersion,
+      );
+    } else {
+      await startFlashing();
     }
   }
 
@@ -457,16 +468,13 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     targetVersion ??= _currentTargetVersion;
 
     if (firmwarePath != null && targetVersion != null) {
-      if (_canAutoEnterBootloader) {
-        _autoEnterBootloaderAndFlash(firmwarePath, targetVersion);
-      } else {
-        emit(
-          FirmwareUpdateState.waitingForBootloader(
-            firmwarePath: firmwarePath,
-            targetVersion: targetVersion,
-          ),
-        );
-      }
+      emit(
+        FirmwareUpdateState.waitingForBootloader(
+          firmwarePath: firmwarePath,
+          targetVersion: targetVersion,
+          canAutoEnter: _canAutoEnterBootloader,
+        ),
+      );
     } else {
       // Can't return to bootloader without firmware path, reset instead
       emit(FirmwareUpdateState.initial(currentVersion: _getCurrentVersion()));
@@ -490,19 +498,13 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     targetVersion ??= _currentTargetVersion;
 
     if (firmwarePath != null && targetVersion != null) {
-      if (_canAutoEnterBootloader) {
-        await _autoEnterBootloaderAndFlash(firmwarePath, targetVersion);
-      } else {
-        // Go to bootloader waiting state first
-        emit(
-          FirmwareUpdateState.waitingForBootloader(
-            firmwarePath: firmwarePath,
-            targetVersion: targetVersion,
-          ),
-        );
-        // Then immediately start flashing
-        await startFlashing();
-      }
+      emit(
+        FirmwareUpdateState.waitingForBootloader(
+          firmwarePath: firmwarePath,
+          targetVersion: targetVersion,
+          canAutoEnter: _canAutoEnterBootloader,
+        ),
+      );
     } else {
       // Can't retry without firmware path, reset instead
       emit(FirmwareUpdateState.initial(currentVersion: _getCurrentVersion()));

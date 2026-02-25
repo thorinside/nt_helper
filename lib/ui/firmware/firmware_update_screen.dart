@@ -552,50 +552,81 @@ class _BootloaderInstructionsView extends StatelessWidget {
           Icon(Icons.info_outline, size: 64, color: theme.colorScheme.primary),
           const SizedBox(height: 24),
           Text(
-            'Enter Bootloader Mode',
+            state.canAutoEnter ? 'Ready to Update' : 'Enter Bootloader Mode',
             style: theme.textTheme.headlineSmall,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Follow these steps on your Disting NT:',
+            state.canAutoEnter
+                ? 'Your Disting NT will be rebooted into bootloader mode '
+                    'automatically and the firmware will be flashed.'
+                : 'Follow these steps on your Disting NT:',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
 
-          // Step 1
-          _buildStep(
-            context,
-            number: 1,
-            title: 'Enter Bootloader Mode',
-            description: 'Menu > Misc > Enter bootloader mode, then confirm',
-          ),
-          const SizedBox(height: 16),
+          if (!state.canAutoEnter) ...[
+            // Manual bootloader steps
+            _buildStep(
+              context,
+              number: 1,
+              title: 'Enter Bootloader Mode',
+              description:
+                  'Menu > Misc > Enter bootloader mode, then confirm',
+            ),
+            const SizedBox(height: 16),
+            _buildStep(
+              context,
+              number: 2,
+              title: 'Screen Shows Message',
+              description: 'The display shows "Entering serial downloader"',
+            ),
+            const SizedBox(height: 16),
+            _buildStep(
+              context,
+              number: 3,
+              title: 'Ready to Flash',
+              description: 'Click the button below when ready',
+            ),
+            const SizedBox(height: 32),
+          ],
 
-          // Step 2
-          _buildStep(
-            context,
-            number: 2,
-            title: 'Screen Shows Message',
-            description: 'The display shows "Entering serial downloader"',
-          ),
-          const SizedBox(height: 16),
-
-          // Step 3
-          _buildStep(
-            context,
-            number: 3,
-            title: 'Ready to Flash',
-            description: 'Click the button below when ready',
-          ),
-
-          const SizedBox(height: 32),
+          if (state.canAutoEnter) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'The module will be unavailable during the update. '
+                        'Do not disconnect USB or power until the update is '
+                        'complete.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
 
           FilledButton.icon(
-            onPressed: () => cubit.startFlashing(),
+            onPressed: () => cubit.confirmAndFlash(),
             icon: const Icon(Icons.flash_on),
-            label: const Text("I'm in bootloader mode - Flash Now"),
+            label: Text(
+              state.canAutoEnter
+                  ? 'Update Firmware'
+                  : "I'm in bootloader mode - Flash Now",
+            ),
           ),
           const SizedBox(height: 16),
           Center(

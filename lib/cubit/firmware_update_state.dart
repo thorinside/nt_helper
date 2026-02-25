@@ -50,10 +50,13 @@ sealed class FirmwareUpdateState with _$FirmwareUpdateState {
     required double progress,
   }) = FirmwareUpdateStateDownloading;
 
-  /// Waiting for user to enter bootloader mode
+  /// Waiting for user to confirm before entering bootloader mode
   const factory FirmwareUpdateState.waitingForBootloader({
     required String firmwarePath,
     required String targetVersion,
+
+    /// Whether the device supports automatic bootloader entry via SysEx
+    @Default(false) bool canAutoEnter,
   }) = FirmwareUpdateStateWaitingForBootloader;
 
   /// Auto-entering bootloader mode via SysEx (firmware 1.15+)

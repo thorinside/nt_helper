@@ -573,7 +573,7 @@ void main() {
       );
 
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
-        'firmware >= 1.15 skips waitingForBootloader, emits enteringBootloader then flashing',
+        'firmware >= 1.15 shows waitingForBootloader with canAutoEnter, then confirmAndFlash enters bootloader',
         build: () {
           when(() => mockFirmwareVersionService.downloadFirmware(
                 any(),
@@ -598,9 +598,16 @@ void main() {
             midiManager: mockMidiManager,
           );
         },
-        act: (cubit) => cubit.startUpdate(testVersion),
+        act: (cubit) async {
+          await cubit.startUpdate(testVersion);
+          await cubit.confirmAndFlash();
+        },
         expect: () => [
           isA<FirmwareUpdateStateDownloading>(),
+          isA<FirmwareUpdateStateWaitingForBootloader>()
+              .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
+              .having((s) => s.targetVersion, 'targetVersion', '1.16.0')
+              .having((s) => s.canAutoEnter, 'canAutoEnter', true),
           // First enteringBootloader with progress 0
           isA<FirmwareUpdateStateEnteringBootloader>()
               .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
@@ -636,7 +643,8 @@ void main() {
           isA<FirmwareUpdateStateDownloading>(),
           isA<FirmwareUpdateStateWaitingForBootloader>()
               .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
-              .having((s) => s.targetVersion, 'targetVersion', '1.16.0'),
+              .having((s) => s.targetVersion, 'targetVersion', '1.16.0')
+              .having((s) => s.canAutoEnter, 'canAutoEnter', false),
         ],
         verify: (_) {
           verifyNever(() => mockMidiManager.requestEnterBootloader());
@@ -733,7 +741,7 @@ void main() {
         initialState.when(
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
-          waitingForBootloader: (_, _) => 'waiting',
+          waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
@@ -746,7 +754,7 @@ void main() {
         downloadingState.when(
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
-          waitingForBootloader: (_, _) => 'waiting',
+          waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
@@ -759,7 +767,7 @@ void main() {
         waitingState.when(
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
-          waitingForBootloader: (_, _) => 'waiting',
+          waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
@@ -772,7 +780,7 @@ void main() {
         flashingState.when(
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
-          waitingForBootloader: (_, _) => 'waiting',
+          waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
@@ -785,7 +793,7 @@ void main() {
         successState.when(
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
-          waitingForBootloader: (_, _) => 'waiting',
+          waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
@@ -798,7 +806,7 @@ void main() {
         errorState.when(
           initial: (_, _, _, _) => 'initial',
           downloading: (_, _) => 'downloading',
-          waitingForBootloader: (_, _) => 'waiting',
+          waitingForBootloader: (_, _, _) => 'waiting',
           enteringBootloader: (_, _, _) => 'entering',
           flashing: (_, _) => 'flashing',
           success: (_) => 'success',
