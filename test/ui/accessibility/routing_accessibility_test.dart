@@ -179,7 +179,7 @@ void main() {
         );
         expect(
           find.bySemanticsLabel(
-            RegExp(r'Bassline: Audio Out to Bassline: CV In on Bus A1'),
+            RegExp(r'Bassline: Audio Out to Bassline: CV In via Aux 1'),
           ),
           findsOneWidget,
         );
@@ -244,6 +244,7 @@ RoutingEditorState _loadedState({List<Connection>? connections}) {
       sourcePortId: 'algo_1_out',
       destinationPortId: 'algo_1_in',
       connectionType: ConnectionType.algorithmToAlgorithm,
+      busNumber: 21,
       busLabel: 'Bus A1',
     ),
   ];

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/ui/widgets/routing/bus_label_formatter.dart';
 
 part 'algorithm_connection.freezed.dart';
@@ -184,8 +185,8 @@ extension AlgorithmConnectionHelpers on AlgorithmConnection {
   /// Check if this connection uses an output bus (13-20)
   bool get usesOutputBus => busNumber >= 13 && busNumber <= 20;
 
-  /// Check if this connection uses an audio bus (21-28)
-  bool get usesAudioBus => busNumber >= 21 && busNumber <= 28;
+  /// Check if this connection uses an audio bus (21-64, excluding ES-5)
+  bool get usesAudioBus => BusSpec.isAux(busNumber);
 
   /// Validate the connection and return validation result
   AlgorithmConnectionValidation validate() {
@@ -198,8 +199,8 @@ extension AlgorithmConnectionHelpers on AlgorithmConnection {
     }
 
     // Check bus number validity
-    if (busNumber < 1 || busNumber > 28) {
-      errors.add('Bus number $busNumber is outside valid range (1-28)');
+    if (!BusSpec.isValid(busNumber)) {
+      errors.add('Bus number $busNumber is outside valid range (${BusSpec.min}-${BusSpec.extendedMax})');
     }
 
     // Check algorithm index validity

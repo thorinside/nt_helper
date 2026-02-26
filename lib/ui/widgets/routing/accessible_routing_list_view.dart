@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
@@ -275,9 +276,11 @@ class AccessibleRoutingListView extends StatelessWidget {
     if (busNumber == null) return 'Unknown bus';
     if (busNumber >= 1 && busNumber <= 12) return 'Input $busNumber';
     if (busNumber >= 13 && busNumber <= 20) return 'Output ${busNumber - 12}';
-    if (busNumber >= 21 && busNumber <= 28) return 'Aux ${busNumber - 20}';
-    if (busNumber == 29) return 'ES-5 Left';
-    if (busNumber == 30) return 'ES-5 Right';
+    if (BusSpec.isEs5(busNumber) || BusSpec.isEs5Extended(busNumber)) {
+      final local = BusSpec.toLocalNumber(busNumber);
+      return local == 1 ? 'ES-5 Left' : 'ES-5 Right';
+    }
+    if (BusSpec.isAux(busNumber)) return 'Aux ${BusSpec.toLocalNumber(busNumber)}';
     return 'Bus $busNumber';
   }
 
