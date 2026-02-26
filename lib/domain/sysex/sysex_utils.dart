@@ -80,6 +80,14 @@ int decode32(List<int> bytes, int offset) {
       ((b4 & 0x0F) << 28);
 }
 
+int decode35(List<int> bytes, int offset) {
+  return (bytes[offset + 0] & 0x7F) |
+      ((bytes[offset + 1] & 0x7F) << 7) |
+      ((bytes[offset + 2] & 0x7F) << 14) |
+      ((bytes[offset + 3] & 0x7F) << 21) |
+      ((bytes[offset + 4] & 0x7F) << 28);
+}
+
 int decode8(Uint8List payload) {
   return payload[0].toInt();
 }

@@ -9,10 +9,19 @@ class RoutingInformationResponse extends SysexResponse {
   RoutingInfo parse() {
     final algorithmIndex = data[0];
     final routing = <int>[];
+    final isLongFormat = data.length > 31;
     var offset = 1;
+
     for (var i = 0; i < 6; i++) {
-      routing.add(decode32(data, offset));
+      var d = decode35(data, offset);
+      if (isLongFormat) {
+        offset += 5;
+        d |= decode35(data, offset) << 35;
+      } else {
+        d >>= 1;
+      }
       offset += 5;
+      routing.add(d);
     }
 
     return RoutingInfo(algorithmIndex: algorithmIndex, routingInfo: routing);
