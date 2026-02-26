@@ -3368,13 +3368,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       }
 
       final targetPort = _findPortAtPosition(localPosition);
-      // Validate using ConnectionValidator which handles physical port
-      // bi-directionality and ghost connections correctly
       String? newHighlight;
       if (targetPort != null &&
           _dragSourcePort != null &&
-          (ConnectionValidator.isValidConnection(_dragSourcePort!, targetPort) ||
-              ConnectionValidator.isValidConnection(targetPort, _dragSourcePort!))) {
+          ConnectionValidator.isValidConnection(_dragSourcePort!, targetPort)) {
         newHighlight = targetPort.id;
       }
 
@@ -3436,13 +3433,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       }
 
       final targetPort = _findPortAtPosition(localPosition);
-      // Validate using ConnectionValidator which handles physical port
-      // bi-directionality and ghost connections correctly
       String? newHighlight;
       if (targetPort != null &&
           _dragSourcePort != null &&
-          (ConnectionValidator.isValidConnection(_dragSourcePort!, targetPort) ||
-              ConnectionValidator.isValidConnection(targetPort, _dragSourcePort!))) {
+          ConnectionValidator.isValidConnection(_dragSourcePort!, targetPort)) {
         newHighlight = targetPort.id;
       }
 
@@ -3483,27 +3477,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         return;
       }
 
-      // Validate using ConnectionValidator which handles physical port
-      // bi-directionality and ghost connections correctly.
-      // Try both orderings since the user can drag from either end.
-      final forwardValid =
-          ConnectionValidator.isValidConnection(sourcePort, targetPort);
-      final reverseValid =
-          ConnectionValidator.isValidConnection(targetPort, sourcePort);
-
-      if (forwardValid || reverseValid) {
-        // Determine the actual source (output) and destination (input).
-        // Use the ordering that ConnectionValidator accepted.
-        // If both are valid, prefer forward (drag source as connection source).
-        final String actualSourcePortId;
-        final String actualTargetPortId;
-        if (forwardValid) {
-          actualSourcePortId = sourcePort.id;
-          actualTargetPortId = targetPort.id;
-        } else {
-          actualSourcePortId = targetPort.id;
-          actualTargetPortId = sourcePort.id;
-        }
+      if (ConnectionValidator.isValidConnection(sourcePort, targetPort)) {
+        final resolved = ConnectionValidator.resolveConnectionDirection(
+          sourcePort,
+          targetPort,
+        );
+        if (resolved == null) return;
+        final (actualSourcePortId, actualTargetPortId) = resolved;
 
         // Check for duplicate connection before attempting to create
         final cubit = context.read<RoutingEditorCubit>();
@@ -3571,27 +3551,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         return;
       }
 
-      // Validate using ConnectionValidator which handles physical port
-      // bi-directionality and ghost connections correctly.
-      // Try both orderings since the user can drag from either end.
-      final forwardValid =
-          ConnectionValidator.isValidConnection(sourcePort, targetPort);
-      final reverseValid =
-          ConnectionValidator.isValidConnection(targetPort, sourcePort);
-
-      if (forwardValid || reverseValid) {
-        // Determine the actual source (output) and destination (input).
-        // Use the ordering that ConnectionValidator accepted.
-        // If both are valid, prefer forward (drag source as connection source).
-        final String actualSourcePortId;
-        final String actualTargetPortId;
-        if (forwardValid) {
-          actualSourcePortId = sourcePort.id;
-          actualTargetPortId = targetPort.id;
-        } else {
-          actualSourcePortId = targetPort.id;
-          actualTargetPortId = sourcePort.id;
-        }
+      // Validate using symmetric ConnectionValidator
+      if (ConnectionValidator.isValidConnection(sourcePort, targetPort)) {
+        // Resolve which port is source vs target based on roles
+        final resolved = ConnectionValidator.resolveConnectionDirection(
+          sourcePort,
+          targetPort,
+        );
+        if (resolved == null) return;
+        final (actualSourcePortId, actualTargetPortId) = resolved;
 
         // Check for duplicate connection before attempting to create
         final currentState = context.read<RoutingEditorCubit>().state;

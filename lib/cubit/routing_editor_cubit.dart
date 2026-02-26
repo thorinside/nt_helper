@@ -350,14 +350,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     try {
-      // Validate ports exist
-
-      // Debug: List all available ports
-      for (final algo in currentState.algorithms) {
-        for (final _ in algo.inputPorts) {}
-        for (final _ in algo.outputPorts) {}
-      }
-
       final sourcePort = _findPortById(currentState, sourcePortId);
       final targetPort = _findPortById(currentState, targetPortId);
 
@@ -369,7 +361,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         throw ArgumentError('Target port not found: $targetPortId');
       }
 
-      // Validate connection using ConnectionValidator (supports ghost connections)
+      // Validate connection using symmetric ConnectionValidator
       if (!ui_validator.ConnectionValidator.isValidConnection(
         sourcePort,
         targetPort,
@@ -389,66 +381,120 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         throw StateError('Connection already exists between these ports');
       }
 
-      // Determine connection type and assign bus number
-      final connectionType = _determineConnectionType(
-        sourcePortId,
-        targetPortId,
-      );
+      // Dispatch bus assignment based on port roles.
+      // The ConnectionValidator has already ensured one port is an algorithm
+      // port and the other is either a bus or a complementary algorithm port.
       int? busNumber;
 
-      // Ghost connections (algorithm output -> physical input) also return
-      // hardwareInput type but need different handling since the source is
-      // an algorithm output, not a hardware input port.
-      final isGhostConnection = connectionType == ConnectionType.hardwareInput &&
-          targetPortId.startsWith('hw_in_') &&
-          !sourcePortId.startsWith('hw_in_');
+      final sourceRole = sourcePort.effectiveRole;
+      final targetRole = targetPort.effectiveRole;
 
-      // Assign bus numbers based on connection type
-      switch (connectionType) {
-        case ConnectionType.hardwareInput:
-          if (isGhostConnection) {
-            // Ghost: algorithm output -> physical input, uses buses 1-12
-            busNumber = await _assignBusForGhostConnection(
-              sourcePort,
-              targetPortId,
-              currentState,
-            );
-          } else {
-            // Normal: hardware input -> algorithm, uses buses 1-12
-            busNumber = await _assignBusForHardwareInput(
-              sourcePortId,
-              targetPort,
-              currentState,
-            );
-          }
-          break;
-        case ConnectionType.hardwareOutput:
-          if (sourcePortId.startsWith('hw_out_')) {
-            // Physical output -> algorithm input: algorithm reads from output bus
-            busNumber = await _assignBusForPhysicalOutputToAlgorithmInput(
-              sourcePortId,
-              targetPort,
-              currentState,
-            );
-          } else {
-            // Algorithm to hardware output: use buses 13-20
-            busNumber = await _assignBusForHardwareOutput(
-              sourcePort,
-              targetPortId,
-              currentState,
-            );
-          }
-          break;
-        case ConnectionType.algorithmToAlgorithm:
-          // Algorithm to algorithm: use aux buses 21-28
-          busNumber = await _assignBusForAlgorithmConnection(
-            sourcePort,
+      if (sourcePort.isBus && targetPort.isBusReader) {
+        // Bus -> algorithm input: assign bus number to the reader
+        if (sourceRole == PortRole.physicalBus &&
+            sourcePort.jackType == 'input') {
+          // Physical input jack (bus 1-12) -> algorithm input
+          busNumber = await _assignBusForHardwareInput(
+            sourcePortId,
             targetPort,
             currentState,
           );
-          break;
-        default:
-          return;
+        } else if (sourceRole == PortRole.physicalBus &&
+            sourcePort.jackType == 'output') {
+          // Physical output jack (bus 13-20) -> algorithm input
+          busNumber = await _assignBusForPhysicalOutputToAlgorithmInput(
+            sourcePortId,
+            targetPort,
+            currentState,
+          );
+        } else {
+          // ES-5 bus -> algorithm input
+          busNumber = await _assignBusForHardwareOutput(
+            targetPort,
+            sourcePortId,
+            currentState,
+          );
+        }
+      } else if (targetPort.isBus && sourcePort.isBusWriter) {
+        // Algorithm output -> bus: assign bus number to the writer
+        if (ui_validator.ConnectionValidator.isGhostConnection(
+          sourcePort,
+          targetPort,
+        )) {
+          busNumber = await _assignBusForGhostConnection(
+            sourcePort,
+            targetPortId,
+            currentState,
+          );
+        } else {
+          busNumber = await _assignBusForHardwareOutput(
+            sourcePort,
+            targetPortId,
+            currentState,
+          );
+        }
+      } else if (sourcePort.isBus && targetPort.isBusWriter) {
+        // Physical bus -> algorithm output (ghost in reverse drag direction)
+        if (ui_validator.ConnectionValidator.isGhostConnection(
+          sourcePort,
+          targetPort,
+        )) {
+          busNumber = await _assignBusForGhostConnection(
+            targetPort,
+            sourcePortId,
+            currentState,
+          );
+        } else {
+          busNumber = await _assignBusForHardwareOutput(
+            targetPort,
+            sourcePortId,
+            currentState,
+          );
+        }
+      } else if (targetPort.isBus && sourcePort.isBusReader) {
+        // Algorithm input -> bus: assign bus number to the reader
+        if (targetRole == PortRole.physicalBus &&
+            targetPort.jackType == 'input') {
+          // Algorithm input -> physical input jack (bus 1-12)
+          busNumber = await _assignBusForHardwareInput(
+            targetPortId,
+            sourcePort,
+            currentState,
+          );
+        } else if (targetRole == PortRole.physicalBus &&
+            targetPort.jackType == 'output') {
+          // Algorithm input -> physical output jack (bus 13-20)
+          busNumber = await _assignBusForPhysicalOutputToAlgorithmInput(
+            targetPortId,
+            sourcePort,
+            currentState,
+          );
+        } else {
+          // Algorithm input -> ES-5 bus
+          busNumber = await _assignBusForHardwareOutput(
+            sourcePort,
+            targetPortId,
+            currentState,
+          );
+        }
+      } else if (sourceRole == PortRole.busWriter &&
+          targetRole == PortRole.busReader) {
+        // Algorithm output -> algorithm input: aux buses
+        busNumber = await _assignBusForAlgorithmConnection(
+          sourcePort,
+          targetPort,
+          currentState,
+        );
+      } else if (sourceRole == PortRole.busReader &&
+          targetRole == PortRole.busWriter) {
+        // Algorithm input -> algorithm output (reverse drag): aux buses
+        busNumber = await _assignBusForAlgorithmConnection(
+          targetPort,
+          sourcePort,
+          currentState,
+        );
+      } else {
+        return;
       }
 
       if (busNumber == null) {

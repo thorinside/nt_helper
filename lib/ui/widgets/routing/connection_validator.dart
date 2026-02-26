@@ -2,263 +2,138 @@ import 'package:nt_helper/core/routing/models/port.dart';
 
 /// Validates connections between ports in the routing system.
 ///
-/// This class enforces hardware constraints for the Disting NT module,
-/// preventing invalid connections and identifying special connection types
-/// like ghost connections.
+/// Uses the bus-assignment model: ports have roles (busReader, busWriter,
+/// physicalBus, es5Bus) and validation is symmetric — the order of
+/// arguments does not matter.
 class ConnectionValidator {
   /// Validates whether a connection between two ports is allowed.
   ///
-  /// Returns true if the connection is valid according to hardware constraints.
+  /// This method is symmetric: `isValidConnection(a, b)` returns the same
+  /// result as `isValidConnection(b, a)`.
   ///
-  /// Valid connections include:
-  /// - Physical Input → Algorithm Input
-  /// - Algorithm Output → Physical Output
-  /// - Algorithm Output → Algorithm Input
-  /// - Algorithm Output → Physical Input/Output (Ghost Connection)
-  ///
-  /// Invalid connections include:
-  /// - Physical Input → Physical Output (hardware limitation)
-  /// - Physical Output → Physical Input
-  /// - Same node internal connections (would create feedback loops)
-  static bool isValidConnection(Port source, Port target) {
-    // Check basic port direction compatibility first
-    if (!_arePortDirectionsCompatible(source, target)) {
+  /// Valid connections require:
+  /// - At least one port must be an algorithm port (busReader or busWriter)
+  /// - The two ports must not belong to the same node
+  /// - Two bus ports (physical/ES-5) cannot connect directly
+  /// - Two busReaders or two busWriters cannot connect directly
+  static bool isValidConnection(Port portA, Port portB) {
+    // Prevent same-node connections
+    if (_isSameNode(portA, portB)) return false;
+
+    final roleA = portA.effectiveRole;
+    final roleB = portB.effectiveRole;
+
+    // Two bus ports cannot connect directly
+    if (portA.isBus && portB.isBus) return false;
+
+    // Two readers cannot connect
+    if (roleA == PortRole.busReader && roleB == PortRole.busReader) {
       return false;
     }
 
-    final sourceIsPhysical = source.isPhysical;
-    final targetIsPhysical = target.isPhysical;
-    final sourceIsAlgorithm = !sourceIsPhysical;
-    final targetIsAlgorithm = !targetIsPhysical;
-
-    // Prevent same-node connections (feedback loops)
-    if (_isSameNodeConnection(source, target)) {
+    // Two writers cannot connect
+    if (roleA == PortRole.busWriter && roleB == PortRole.busWriter) {
       return false;
     }
 
-    // Handle bidirectional ports specially
-    if (source.direction == PortDirection.bidirectional ||
-        target.direction == PortDirection.bidirectional) {
-      // Bidirectional algorithm ports can connect to other algorithm ports
-      if (sourceIsAlgorithm && targetIsAlgorithm) {
-        return true;
-      }
-      // Bidirectional algorithm ports can connect to physical ports
-      if ((sourceIsAlgorithm && targetIsPhysical) ||
-          (sourceIsPhysical && targetIsAlgorithm)) {
-        return true;
-      }
-      // But still prevent physical-to-physical
-      if (sourceIsPhysical && targetIsPhysical) {
-        return false;
-      }
-    }
+    // At least one must be an algorithm port
+    if (portA.isBus && portB.isBus) return false;
 
-    // Valid: Physical Input → Algorithm Input
-    if (sourceIsPhysical &&
-        targetIsAlgorithm &&
-        source.direction == PortDirection.output &&
-        target.direction == PortDirection.input) {
-      return true;
-    }
-
-    // Valid: Algorithm Output → Physical Output (direct connection)
-    if (sourceIsAlgorithm &&
-        targetIsPhysical &&
-        source.direction == PortDirection.output &&
-        target.direction == PortDirection.input) {
-      return true;
-    }
-
-    // Valid: Algorithm Output → Algorithm Input
-    if (sourceIsAlgorithm &&
-        targetIsAlgorithm &&
-        source.direction == PortDirection.output &&
-        target.direction == PortDirection.input) {
-      return true;
-    }
-
-    // Valid: Algorithm Output → Physical Input (Ghost Connection)
-    // Note: Physical inputs have PortDirection.output because they are sources
-    if (sourceIsAlgorithm &&
-        targetIsPhysical &&
-        source.direction == PortDirection.output &&
-        target.direction == PortDirection.output &&
-        target.jackType == 'input') {
-      return true;
-    }
-
-    // Valid: Physical Output → Algorithm Input
-    // Algorithm reads from the output bus (13-20)
-    // Note: Physical outputs have PortDirection.input because they are sinks
-    if (sourceIsPhysical &&
-        targetIsAlgorithm &&
-        source.direction == PortDirection.input &&
-        target.direction == PortDirection.input &&
-        source.jackType == 'output') {
-      return true;
-    }
-
-    // Invalid: Physical to Physical connections
-    if (sourceIsPhysical && targetIsPhysical) {
-      return false;
-    }
-
-    // All other combinations are invalid
-    return false;
-  }
-
-  /// Checks if two ports have compatible directions for connection.
-  static bool _arePortDirectionsCompatible(Port source, Port target) {
-    // Standard connection: output to input
-    if (source.direction == PortDirection.output &&
-        target.direction == PortDirection.input) {
-      return true;
-    }
-
-    // Ghost connection special case: algorithm output to physical input
-    // Physical inputs have output direction (they are sources)
-    if (source.direction == PortDirection.output &&
-        target.direction == PortDirection.output &&
-        target.isPhysical &&
-        target.jackType == 'input') {
-      return true;
-    }
-
-    // Physical output to algorithm input special case
-    // Physical outputs have input direction (they are sinks)
-    if (source.direction == PortDirection.input &&
-        target.direction == PortDirection.input &&
-        source.isPhysical &&
-        source.jackType == 'output') {
-      return true;
-    }
-
-    // Bidirectional ports can connect to anything
-    if (source.direction == PortDirection.bidirectional ||
-        target.direction == PortDirection.bidirectional) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /// Checks if two ports belong to the same node (would create a feedback loop).
-  static bool _isSameNodeConnection(Port source, Port target) {
-    // Extract node ID from port ID
-    // Port IDs follow patterns like "node_1_in_1" or "hw_in_1"
-    final sourceNodeId = _extractNodeId(source.id);
-    final targetNodeId = _extractNodeId(target.id);
-
-    if (sourceNodeId == null || targetNodeId == null) {
-      return false;
-    }
-
-    return sourceNodeId == targetNodeId;
-  }
-
-  /// Extracts the node ID from a port ID.
-  static String? _extractNodeId(String portId) {
-    // Handle hardware ports (hw_in_1, hw_out_1)
-    if (portId.startsWith('hw_')) {
-      // Hardware inputs and outputs are different nodes
-      if (portId.startsWith('hw_in')) return 'hw_inputs';
-      if (portId.startsWith('hw_out')) return 'hw_outputs';
-      return null;
-    }
-
-    // Handle algorithm node ports (node_1_in_1, node_1_out_1)
-    final parts = portId.split('_');
-    if (parts.length >= 3) {
-      // Return the node identifier (e.g., "node_1")
-      return '${parts[0]}_${parts[1]}';
-    }
-
-    return null;
+    // Valid: busReader + busWriter (algorithm to algorithm)
+    // Valid: busReader + physicalBus/es5Bus
+    // Valid: busWriter + physicalBus/es5Bus
+    return true;
   }
 
   /// Returns a human-readable error message for invalid connection attempts.
-  static String getValidationError(Port source, Port target) {
-    final sourceIsPhysical = source.isPhysical;
-    final targetIsPhysical = target.isPhysical;
-
-    // Physical to physical connections
-    if (sourceIsPhysical && targetIsPhysical) {
+  static String getValidationError(Port portA, Port portB) {
+    if (portA.isBus && portB.isBus) {
       return 'Direct physical-to-physical connections are not supported. '
           'Signals must be routed through algorithms.';
     }
 
-    // Same node connections
-    if (_isSameNodeConnection(source, target)) {
-      return 'Cannot connect a node to itself - this would create a feedback loop.';
+    if (_isSameNode(portA, portB)) {
+      return 'Cannot connect a node to itself.';
     }
 
-    // Direction mismatch
-    if (!_arePortDirectionsCompatible(source, target)) {
-      return 'Port directions are incompatible. You can only connect outputs to inputs.';
+    final roleA = portA.effectiveRole;
+    final roleB = portB.effectiveRole;
+
+    if (roleA == PortRole.busReader && roleB == PortRole.busReader) {
+      return 'Cannot connect two inputs directly.';
     }
 
-    // No type validation needed - all Eurorack connections are voltage
+    if (roleA == PortRole.busWriter && roleB == PortRole.busWriter) {
+      return 'Cannot connect two outputs directly.';
+    }
 
-    return 'These ports cannot be connected. Check port directions and types.';
+    return 'These ports cannot be connected.';
   }
 
-  /// Determines if a connection represents a ghost connection.
+  /// Determines if a connection represents a ghost connection
+  /// (algorithm writer assigned to a physical input bus 1-12).
+  static bool isGhostConnection(Port portA, Port portB) {
+    return (_isWriterToPhysicalInput(portA, portB) ||
+        _isWriterToPhysicalInput(portB, portA));
+  }
+
+  static bool _isWriterToPhysicalInput(Port writer, Port bus) {
+    if (writer.effectiveRole != PortRole.busWriter) return false;
+    if (bus.effectiveRole != PortRole.physicalBus) return false;
+    // Physical input jacks are buses 1-12
+    final index = bus.hardwareIndex;
+    if (index == null) return false;
+    return bus.jackType == 'input' && index <= 12;
+  }
+
+  /// Given two valid ports, determines which is the "writer" (source) and
+  /// which is the "reader" (target) for connection creation.
   ///
-  /// Ghost connections occur when an algorithm output connects to a physical I/O,
-  /// making the signal available to other algorithms through that physical port.
-  static bool isGhostConnection(Port source, Port target) {
-    final sourceIsAlgorithm = !source.isPhysical;
-    final targetIsPhysical = target.isPhysical;
+  /// Returns (sourcePortId, targetPortId) or null if the connection is invalid.
+  static (String source, String target)? resolveConnectionDirection(
+    Port portA,
+    Port portB,
+  ) {
+    if (!isValidConnection(portA, portB)) return null;
 
-    // Ghost connection: Algorithm output → Physical input
-    if (sourceIsAlgorithm &&
-        targetIsPhysical &&
-        source.direction == PortDirection.output &&
-        target.jackType == 'input') {
-      return true;
+    final roleA = portA.effectiveRole;
+    final roleB = portB.effectiveRole;
+
+    // busWriter is always the source
+    if (roleA == PortRole.busWriter) return (portA.id, portB.id);
+    if (roleB == PortRole.busWriter) return (portB.id, portA.id);
+
+    // Physical bus connected to busReader: physical bus is the source
+    if (portA.isBus && roleB == PortRole.busReader) {
+      return (portA.id, portB.id);
+    }
+    if (portB.isBus && roleA == PortRole.busReader) {
+      return (portB.id, portA.id);
     }
 
-    // Note: Algorithm output → Physical output is a direct connection, not ghost
-    // The physical output receives the signal directly
-
-    return false;
+    // Fallback (shouldn't reach here for valid connections)
+    return (portA.id, portB.id);
   }
 
-  /// Returns a description of the connection type.
-  static String getConnectionDescription(Port source, Port target) {
-    if (!isValidConnection(source, target)) {
-      return 'Invalid connection';
-    }
-
-    if (isGhostConnection(source, target)) {
-      final targetType = target.jackType ?? 'port';
-      final targetIndex = target.hardwareIndex ?? '';
-      return 'Ghost signal on physical $targetType $targetIndex - available to other algorithms';
-    }
-
-    final sourceIsPhysical = source.isPhysical;
-    final targetIsPhysical = target.isPhysical;
-
-    if (sourceIsPhysical && !targetIsPhysical) {
-      return 'Hardware input to algorithm';
-    }
-
-    if (!sourceIsPhysical && targetIsPhysical) {
-      return 'Algorithm output to hardware';
-    }
-
-    if (!sourceIsPhysical && !targetIsPhysical) {
-      return 'Algorithm to algorithm routing';
-    }
-
-    return 'Direct signal routing';
+  /// Checks if two ports belong to the same node.
+  static bool _isSameNode(Port portA, Port portB) {
+    final nodeA = _extractNodeId(portA.id);
+    final nodeB = _extractNodeId(portB.id);
+    if (nodeA == null || nodeB == null) return false;
+    return nodeA == nodeB;
   }
 
-  /// Validates port type compatibility.
-  /// All types are compatible in Eurorack since everything is voltage.
-  static bool arePortTypesCompatible(Port source, Port target) {
-    // All port types are compatible in Eurorack
-    return true;
+  /// Extracts the node ID from a port ID.
+  static String? _extractNodeId(String portId) {
+    if (portId.startsWith('hw_in')) return 'hw_inputs';
+    if (portId.startsWith('hw_out')) return 'hw_outputs';
+    if (portId.startsWith('es5_')) return 'es5';
+
+    final parts = portId.split('_');
+    if (parts.length >= 3) {
+      return '${parts[0]}_${parts[1]}';
+    }
+
+    return null;
   }
 }

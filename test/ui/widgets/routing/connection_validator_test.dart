@@ -89,10 +89,11 @@ void main() {
       );
     });
 
-    test('algorithm input -> algorithm output is invalid', () {
+    test('algorithm input -> algorithm output is valid (busReader + busWriter)',
+        () {
       expect(
         ConnectionValidator.isValidConnection(algorithmInput, algorithmOutput),
-        isFalse,
+        isTrue,
       );
     });
 
