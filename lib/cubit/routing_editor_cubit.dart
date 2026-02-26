@@ -12,6 +12,8 @@ import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/services/algorithm_connection_service.dart';
 import 'package:nt_helper/core/routing/connection_discovery_service.dart';
 import 'package:nt_helper/core/routing/services/connection_validator.dart';
+import 'package:nt_helper/ui/widgets/routing/connection_validator.dart'
+    as ui_validator;
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/core/routing/models/es5_hardware_node.dart';
@@ -300,134 +302,34 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Create the 12 physical input ports of the Disting NT
   List<Port> _createPhysicalInputPorts() {
-    return [
-      const Port(
-        id: 'hw_in_1',
-        name: 'I1',
+    return List.generate(12, (i) {
+      final n = i + 1;
+      return Port(
+        id: 'hw_in_$n',
+        name: 'I$n',
         type: PortType.cv,
         direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_2',
-        name: 'I2',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_3',
-        name: 'I3',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_4',
-        name: 'I4',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_5',
-        name: 'I5',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_6',
-        name: 'I6',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_7',
-        name: 'I7',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_8',
-        name: 'I8',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_9',
-        name: 'I9',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_10',
-        name: 'I10',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_11',
-        name: 'I11',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-      const Port(
-        id: 'hw_in_12',
-        name: 'I12',
-        type: PortType.cv,
-        direction: PortDirection.output,
-      ),
-    ];
+        isPhysical: true,
+        hardwareIndex: n,
+        jackType: 'input',
+      );
+    });
   }
 
   /// Create the 8 physical output ports of the Disting NT
   List<Port> _createPhysicalOutputPorts() {
-    return [
-      const Port(
-        id: 'hw_out_1',
-        name: 'O1',
+    return List.generate(8, (i) {
+      final n = i + 1;
+      return Port(
+        id: 'hw_out_$n',
+        name: 'O$n',
         type: PortType.audio,
         direction: PortDirection.input,
-      ),
-      const Port(
-        id: 'hw_out_2',
-        name: 'O2',
-        type: PortType.audio,
-        direction: PortDirection.input,
-      ),
-      const Port(
-        id: 'hw_out_3',
-        name: 'O3',
-        type: PortType.audio,
-        direction: PortDirection.input,
-      ),
-      const Port(
-        id: 'hw_out_4',
-        name: 'O4',
-        type: PortType.audio,
-        direction: PortDirection.input,
-      ),
-      const Port(
-        id: 'hw_out_5',
-        name: 'O5',
-        type: PortType.audio,
-        direction: PortDirection.input,
-      ),
-      const Port(
-        id: 'hw_out_6',
-        name: 'O6',
-        type: PortType.audio,
-        direction: PortDirection.input,
-      ),
-      const Port(
-        id: 'hw_out_7',
-        name: 'O7',
-        type: PortType.audio,
-        direction: PortDirection.input,
-      ),
-      const Port(
-        id: 'hw_out_8',
-        name: 'O8',
-        type: PortType.audio,
-        direction: PortDirection.input,
-      ),
-    ];
+        isPhysical: true,
+        hardwareIndex: n,
+        jackType: 'output',
+      );
+    });
   }
 
   /// Create a new connection between source and target ports with automatic bus assignment
@@ -467,12 +369,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         throw ArgumentError('Target port not found: $targetPortId');
       }
 
-      // Validate connection is valid (output -> input)
-
-      if (sourcePort.direction != PortDirection.output ||
-          targetPort.direction != PortDirection.input) {
+      // Validate connection using ConnectionValidator (supports ghost connections)
+      if (!ui_validator.ConnectionValidator.isValidConnection(
+        sourcePort,
+        targetPort,
+      )) {
         throw ArgumentError(
-          'Invalid connection: source must be output, target must be input',
+          'Invalid connection: ${ui_validator.ConnectionValidator.getValidationError(sourcePort, targetPort)}',
         );
       }
 
@@ -493,23 +396,48 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
       int? busNumber;
 
+      // Ghost connections (algorithm output -> physical input) also return
+      // hardwareInput type but need different handling since the source is
+      // an algorithm output, not a hardware input port.
+      final isGhostConnection = connectionType == ConnectionType.hardwareInput &&
+          targetPortId.startsWith('hw_in_') &&
+          !sourcePortId.startsWith('hw_in_');
+
       // Assign bus numbers based on connection type
       switch (connectionType) {
         case ConnectionType.hardwareInput:
-          // Hardware input to algorithm: use buses 1-12
-          busNumber = await _assignBusForHardwareInput(
-            sourcePortId,
-            targetPort,
-            currentState,
-          );
+          if (isGhostConnection) {
+            // Ghost: algorithm output -> physical input, uses buses 1-12
+            busNumber = await _assignBusForGhostConnection(
+              sourcePort,
+              targetPortId,
+              currentState,
+            );
+          } else {
+            // Normal: hardware input -> algorithm, uses buses 1-12
+            busNumber = await _assignBusForHardwareInput(
+              sourcePortId,
+              targetPort,
+              currentState,
+            );
+          }
           break;
         case ConnectionType.hardwareOutput:
-          // Algorithm to hardware output: use buses 13-20
-          busNumber = await _assignBusForHardwareOutput(
-            sourcePort,
-            targetPortId,
-            currentState,
-          );
+          if (sourcePortId.startsWith('hw_out_')) {
+            // Physical output -> algorithm input: algorithm reads from output bus
+            busNumber = await _assignBusForPhysicalOutputToAlgorithmInput(
+              sourcePortId,
+              targetPort,
+              currentState,
+            );
+          } else {
+            // Algorithm to hardware output: use buses 13-20
+            busNumber = await _assignBusForHardwareOutput(
+              sourcePort,
+              targetPortId,
+              currentState,
+            );
+          }
           break;
         case ConnectionType.algorithmToAlgorithm:
           // Algorithm to algorithm: use aux buses 21-28
@@ -556,6 +484,83 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final busNumber = hardwareInputNumber; // Bus 1 for hw_in_1, etc.
 
     // Find the algorithm that owns this input port and update its parameter
+    if (algorithmInputPort.parameterNumber != null) {
+      final algorithmIndex = _findAlgorithmIndexForPort(
+        state,
+        algorithmInputPort.id,
+      );
+      if (algorithmIndex != null) {
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: algorithmInputPort.parameterNumber!,
+          value: busNumber,
+          userIsChangingTheValue: false,
+        );
+        return busNumber;
+      }
+    }
+
+    return null;
+  }
+
+  /// Assign bus for ghost connection (algorithm output -> physical input)
+  ///
+  /// Ghost connections route an algorithm's output to a physical input bus (1-12),
+  /// making the signal available to other algorithms reading from that input.
+  Future<int?> _assignBusForGhostConnection(
+    Port algorithmOutputPort,
+    String hardwareInputPortId,
+    RoutingEditorStateLoaded state,
+  ) async {
+    final hardwareInputNumber = int.tryParse(
+      hardwareInputPortId.replaceAll('hw_in_', ''),
+    );
+    if (hardwareInputNumber == null ||
+        hardwareInputNumber < 1 ||
+        hardwareInputNumber > 12) {
+      return null;
+    }
+
+    final busNumber = hardwareInputNumber;
+
+    if (algorithmOutputPort.parameterNumber != null) {
+      final algorithmIndex = _findAlgorithmIndexForPort(
+        state,
+        algorithmOutputPort.id,
+      );
+      if (algorithmIndex != null) {
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: algorithmOutputPort.parameterNumber!,
+          value: busNumber,
+          userIsChangingTheValue: false,
+        );
+        return busNumber;
+      }
+    }
+
+    return null;
+  }
+
+  /// Assign bus for physical output -> algorithm input connection
+  ///
+  /// The algorithm input reads from the output bus (13-20).
+  Future<int?> _assignBusForPhysicalOutputToAlgorithmInput(
+    String hardwareOutputPortId,
+    Port algorithmInputPort,
+    RoutingEditorStateLoaded state,
+  ) async {
+    final hardwareOutputNumber = int.tryParse(
+      hardwareOutputPortId.replaceAll('hw_out_', ''),
+    );
+    if (hardwareOutputNumber == null ||
+        hardwareOutputNumber < 1 ||
+        hardwareOutputNumber > 8) {
+      return null;
+    }
+
+    final busNumber = 12 + hardwareOutputNumber; // Bus 13 for hw_out_1, etc.
+
     if (algorithmInputPort.parameterNumber != null) {
       final algorithmIndex = _findAlgorithmIndexForPort(
         state,
@@ -1713,14 +1718,22 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     String sourcePortId,
     String targetPortId,
   ) {
-    final isSourceHardware = sourcePortId.startsWith('hw_in_');
-    final isTargetHardware = targetPortId.startsWith('hw_out_');
+    final isSourceHardwareInput = sourcePortId.startsWith('hw_in_');
+    final isSourceHardwareOutput = sourcePortId.startsWith('hw_out_');
+    final isTargetHardwareOutput = targetPortId.startsWith('hw_out_');
+    final isTargetHardwareInput = targetPortId.startsWith('hw_in_');
     final isTargetEs5 = targetPortId.startsWith('es5_');
 
-    if (isSourceHardware) {
+    if (isSourceHardwareInput) {
       return ConnectionType.hardwareInput;
-    } else if (isTargetHardware || isTargetEs5) {
+    } else if (isSourceHardwareOutput) {
+      // Physical output -> algorithm input: algorithm reads from output bus
       return ConnectionType.hardwareOutput;
+    } else if (isTargetHardwareOutput || isTargetEs5) {
+      return ConnectionType.hardwareOutput;
+    } else if (isTargetHardwareInput) {
+      // Ghost connection: algorithm output -> physical input
+      return ConnectionType.hardwareInput;
     } else {
       return ConnectionType.algorithmToAlgorithm;
     }

@@ -88,6 +88,17 @@ class ConnectionValidator {
       return true;
     }
 
+    // Valid: Physical Output → Algorithm Input
+    // Algorithm reads from the output bus (13-20)
+    // Note: Physical outputs have PortDirection.input because they are sinks
+    if (sourceIsPhysical &&
+        targetIsAlgorithm &&
+        source.direction == PortDirection.input &&
+        target.direction == PortDirection.input &&
+        source.jackType == 'output') {
+      return true;
+    }
+
     // Invalid: Physical to Physical connections
     if (sourceIsPhysical && targetIsPhysical) {
       return false;
@@ -111,6 +122,15 @@ class ConnectionValidator {
         target.direction == PortDirection.output &&
         target.isPhysical &&
         target.jackType == 'input') {
+      return true;
+    }
+
+    // Physical output to algorithm input special case
+    // Physical outputs have input direction (they are sinks)
+    if (source.direction == PortDirection.input &&
+        target.direction == PortDirection.input &&
+        source.isPhysical &&
+        source.jackType == 'output') {
       return true;
     }
 
