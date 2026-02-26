@@ -15,7 +15,7 @@ import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 
 /// View modes for displaying algorithms in the Add Algorithm screen
-enum AlgorithmViewMode { chipGrid, list, column }
+enum AlgorithmViewMode { chipGrid, list }
 
 class AddAlgorithmScreen extends StatefulWidget {
   const AddAlgorithmScreen({super.key});
@@ -58,7 +58,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   // Scroll controllers for algorithm views
   final ScrollController _chipScrollController = ScrollController();
   final ScrollController _listScrollController = ScrollController();
-  final ScrollController _columnScrollController = ScrollController();
 
   // Cached metadata service instance
   final _metadataService = AlgorithmMetadataService();
@@ -101,7 +100,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     _debounce?.cancel();
     _chipScrollController.dispose();
     _listScrollController.dispose();
-    _columnScrollController.dispose();
     _viewFocusNode.dispose();
     super.dispose();
   }
@@ -129,7 +127,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       _favoriteGuids = favs.toSet();
       _showFavoritesOnly = showOnlyFavs;
       _selectedPluginType = pluginType;
-      _selectedViewMode = AlgorithmViewMode.values[modeIndex.clamp(0, 2)];
+      _selectedViewMode = AlgorithmViewMode.values[modeIndex.clamp(0, 1)];
       // Re-filter after loading settings
       _filterAlgorithms();
     });
@@ -820,40 +818,22 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   // --- View Mode Selector ---
   Widget _buildViewModeSelector() {
-    final isMobile =
-        defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.android;
-
-    // On mobile, if column mode was previously selected, fall back to list
-    final effectiveMode =
-        isMobile && _selectedViewMode == AlgorithmViewMode.column
-        ? AlgorithmViewMode.list
-        : _selectedViewMode;
-
     return SegmentedButton<AlgorithmViewMode>(
-      segments: [
-        const ButtonSegment(
+      segments: const [
+        ButtonSegment(
           value: AlgorithmViewMode.chipGrid,
           icon: Icon(Icons.grid_view, size: 18),
           label: Text('Chips'),
           tooltip: 'Chip Grid',
         ),
-        const ButtonSegment(
+        ButtonSegment(
           value: AlgorithmViewMode.list,
           icon: Icon(Icons.view_list, size: 18),
           label: Text('List'),
           tooltip: 'List',
         ),
-        // Only show column mode on desktop/tablet
-        if (!isMobile)
-          const ButtonSegment(
-            value: AlgorithmViewMode.column,
-            icon: Icon(Icons.view_column, size: 18),
-            label: Text('Columns'),
-            tooltip: 'Column',
-          ),
       ],
-      selected: {effectiveMode},
+      selected: {_selectedViewMode},
       onSelectionChanged: (selected) {
         setState(() => _selectedViewMode = selected.first);
         _saveViewModeState();
@@ -871,23 +851,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   // --- Algorithm View (Conditional Rendering) ---
   Widget _buildAlgorithmView() {
-    final isMobile =
-        defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.android;
-
-    // On mobile, column mode falls back to list
-    final effectiveMode =
-        isMobile && _selectedViewMode == AlgorithmViewMode.column
-        ? AlgorithmViewMode.list
-        : _selectedViewMode;
-
     return Focus(
       focusNode: _viewFocusNode,
       onKeyEvent: _handleKeyEvent,
-      child: switch (effectiveMode) {
+      child: switch (_selectedViewMode) {
         AlgorithmViewMode.chipGrid => _buildChipGridView(),
         AlgorithmViewMode.list => _buildListView(),
-        AlgorithmViewMode.column => _buildColumnView(),
       },
     );
   }
@@ -944,7 +913,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final ScrollController controller = switch (_selectedViewMode) {
       AlgorithmViewMode.chipGrid => _chipScrollController,
       AlgorithmViewMode.list => _listScrollController,
-      AlgorithmViewMode.column => _columnScrollController,
     };
 
     if (!controller.hasClients) return;
@@ -952,31 +920,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final viewportHeight = controller.position.viewportDimension;
     final maxScroll = controller.position.maxScrollExtent;
 
-    double targetOffset;
-
-    if (_selectedViewMode == AlgorithmViewMode.column) {
-      // Grid view: calculate row index based on column count
-      // Get actual width from MediaQuery
-      final screenWidth =
-          MediaQuery.of(context).size.width - 32; // Account for padding
-      final columnCount = screenWidth < 600 ? 2 : 3;
-      final rowIndex = index ~/ columnCount;
-      // Item height in grid (aspect ratio 1.5 means height = width / 1.5)
-      // With spacing of 8, estimate row height
-      final itemWidth = (screenWidth - (columnCount - 1) * 8) / columnCount;
-      final rowHeight = itemWidth / 1.5 + 8;
-      targetOffset =
-          (rowIndex * rowHeight) - (viewportHeight / 2) + (rowHeight / 2);
-    } else {
-      // List views: simple index * height
-      final double itemHeight = switch (_selectedViewMode) {
-        AlgorithmViewMode.chipGrid => 48.0,
-        AlgorithmViewMode.list => 120.0,
-        AlgorithmViewMode.column => 150.0, // Won't reach here
-      };
-      targetOffset =
-          (index * itemHeight) - (viewportHeight / 2) + (itemHeight / 2);
-    }
+    final double itemHeight = switch (_selectedViewMode) {
+      AlgorithmViewMode.chipGrid => 48.0,
+      AlgorithmViewMode.list => 120.0,
+    };
+    final targetOffset =
+        (index * itemHeight) - (viewportHeight / 2) + (itemHeight / 2);
 
     final scrollTo = targetOffset.clamp(0.0, maxScroll);
 
@@ -994,13 +943,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final double estimatedItemHeight = switch (_selectedViewMode) {
       AlgorithmViewMode.chipGrid => 40.0,
       AlgorithmViewMode.list => 72.0,
-      AlgorithmViewMode.column => 120.0,
     };
 
     final ScrollController controller = switch (_selectedViewMode) {
       AlgorithmViewMode.chipGrid => _chipScrollController,
       AlgorithmViewMode.list => _listScrollController,
-      AlgorithmViewMode.column => _columnScrollController,
     };
 
     if (!controller.hasClients) return;
@@ -1008,24 +955,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     // For list view, we can calculate exact position
     if (_selectedViewMode == AlgorithmViewMode.list) {
       final targetOffset = index * estimatedItemHeight;
-      final viewportHeight = controller.position.viewportDimension;
-      final maxScroll = controller.position.maxScrollExtent;
-      final scrollTo =
-          (targetOffset - viewportHeight / 2 + estimatedItemHeight / 2).clamp(
-            0.0,
-            maxScroll,
-          );
-      controller.animateTo(
-        scrollTo,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-      );
-    }
-    // For column view, we need to account for columns
-    else if (_selectedViewMode == AlgorithmViewMode.column) {
-      final columnCount = controller.position.viewportDimension < 600 ? 2 : 3;
-      final rowIndex = index ~/ columnCount;
-      final targetOffset = rowIndex * (estimatedItemHeight + 8);
       final viewportHeight = controller.position.viewportDimension;
       final maxScroll = controller.position.maxScrollExtent;
       final scrollTo =
@@ -1272,150 +1201,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             ),
           ),
       ],
-    );
-  }
-
-  // --- Column View ---
-  Widget _buildColumnView() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 600px breakpoint follows Material 3 compact/medium guidelines
-        final columnCount = constraints.maxWidth < 600 ? 2 : 3;
-
-        return Scrollbar(
-          controller: _columnScrollController,
-          child: GridView.builder(
-            controller: _columnScrollController,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columnCount,
-              childAspectRatio: 1.5,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
-            itemCount: _filteredAlgorithms.length,
-            itemBuilder: (context, index) =>
-                _buildAlgorithmCard(context, _filteredAlgorithms[index]),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAlgorithmCard(BuildContext context, AlgorithmInfo algo) {
-    final isSelected = algo.guid == selectedAlgorithmGuid;
-    final isFavorite = _favoriteGuids.contains(algo.guid);
-    final isCommunityPlugin = _isPlugin(algo.guid);
-    final metadata = _metadataService.getAlgorithmByGuid(
-      algo.guid.toLowerCase(),
-    );
-    // For community plugins, show simplified metadata
-    final categories = isCommunityPlugin
-        ? ['Community Plugin']
-        : (metadata?.categories ?? <String>[]);
-    final description = isCommunityPlugin
-        ? 'Manually installed community plugin.'
-        : (metadata?.description ?? '');
-    final theme = Theme.of(context);
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: '${algo.name}${isFavorite ? ', favorite' : ''}${isCommunityPlugin ? ', community plugin' : ''}',
-      hint: 'Double tap to ${isSelected ? 'deselect' : 'select'}',
-      customSemanticsActions: {
-        CustomSemanticsAction(label: isFavorite ? 'Remove from favorites' : 'Add to favorites'):
-            () => _toggleFavorite(algo.guid),
-      },
-      child: Card(
-        elevation: isSelected ? 4 : 1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: isSelected
-              ? BorderSide(color: theme.colorScheme.primary, width: 2)
-              : BorderSide.none,
-        ),
-        child: InkWell(
-          onTap: () => _selectAlgorithm(isSelected ? null : algo.guid),
-          onLongPress: () => _toggleFavorite(algo.guid),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      algo.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (isFavorite)
-                    const Icon(Icons.star, color: Colors.amber, size: 18),
-                  if (isCommunityPlugin)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        Icons.extension,
-                        color: theme.colorScheme.secondary,
-                        size: 18,
-                      ),
-                    ),
-                ],
-              ),
-              if (categories.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                _buildCategoryChips(categories),
-              ],
-              if (description.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final style = theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      );
-                      // Estimate line height (fontSize * height factor, default ~1.2)
-                      final lineHeight = (style?.fontSize ?? 12) * 1.4;
-                      final maxLines = (constraints.maxHeight / lineHeight)
-                          .floor()
-                          .clamp(1, 100);
-                      return Text(
-                        description,
-                        maxLines: maxLines,
-                        overflow: TextOverflow.ellipsis,
-                        style: style,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ],
-          ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryChips(List<String> categories) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: categories
-          .map(
-            (cat) => Chip(
-              label: Text(cat, style: const TextStyle(fontSize: 10)),
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          )
-          .toList(),
     );
   }
 
