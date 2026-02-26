@@ -2614,80 +2614,61 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         return;
       }
 
-      // Use the input-only deletion pattern:
-      // 1. If target is a physical output: Clear the SOURCE output bus (physical outputs don't have parameters)
-      // 2. Otherwise: Clear only the TARGET input bus (preserves multi-connections from outputs)
-
-      if (connection.destinationPortId.startsWith('hw_out_') ||
-          connection.destinationPortId.startsWith('es5_')) {
-        // Target is physical output (hardware or ES-5) - clear the SOURCE output bus
-        if (sourcePort.parameterNumber != null &&
-            !connection.sourcePortId.startsWith('hw_')) {
-          // Find which algorithm this port belongs to
-          for (final algorithm in state.algorithms) {
-            for (final port in algorithm.outputPorts) {
-              if (port.id == sourcePort.id && port.parameterNumber != null) {
-                if (!_canClearBusAssignment(
-                  algorithmIndex: algorithm.index,
-                  parameterNumber: port.parameterNumber!,
-                )) {
-                  // Some outputs have no "None" (min > 0). In that case, "disconnect"
-                  // from physical outputs by moving the output to an unused
-                  // non-physical-output bus (aux preferred).
-                  final newBus = await _findFirstAvailableNonPhysicalOutputBus(
-                    state,
-                    algorithmIndex: algorithm.index,
-                    parameterNumber: port.parameterNumber!,
-                  );
-                  if (newBus == null) return;
-
-                  await _distingCubit.updateParameterValue(
-                    algorithmIndex: algorithm.index,
-                    parameterNumber: port.parameterNumber!,
-                    value: newBus,
-                    userIsChangingTheValue: false,
-                  );
-                  return;
-                }
-                await _distingCubit.updateParameterValue(
-                  algorithmIndex: algorithm.index,
-                  parameterNumber: port.parameterNumber!,
-                  value: 0, // 0 means "None" for bus assignments
-                  userIsChangingTheValue: false,
-                );
-                break;
-              }
-            }
-          }
-        }
-      } else {
-        // Target is algorithm input - clear only the TARGET input bus
-        if (targetPort.parameterNumber != null &&
-            !connection.destinationPortId.startsWith('hw_')) {
-          // Find which algorithm this port belongs to
-          for (final algorithm in state.algorithms) {
-            for (final port in algorithm.inputPorts) {
-              if (port.id == targetPort.id && port.parameterNumber != null) {
-                if (!_canClearBusAssignment(
-                  algorithmIndex: algorithm.index,
-                  parameterNumber: port.parameterNumber!,
-                )) {
-                  return;
-                }
-                await _distingCubit.updateParameterValue(
-                  algorithmIndex: algorithm.index,
-                  parameterNumber: port.parameterNumber!,
-                  value: 0, // 0 means "None" for bus assignments
-                  userIsChangingTheValue: false,
-                );
-                break;
-              }
-            }
-          }
-        }
-      }
+      // Clear both sides of the connection if possible.
+      // Physical ports (hw_in/hw_out/es5) don't have parameters to clear.
+      await _clearAlgorithmPortBus(sourcePort, state);
+      await _clearAlgorithmPortBus(targetPort, state);
     } catch (e) {
       // Don't rethrow - we still want to delete the connection from UI
+    }
+  }
+
+  /// Clear the bus assignment for an algorithm port, setting it to 0 (None)
+  /// if the parameter supports it. Skips physical/ES-5 ports.
+  Future<void> _clearAlgorithmPortBus(
+    Port port,
+    RoutingEditorStateLoaded state,
+  ) async {
+    if (_distingCubit == null) return;
+    if (port.parameterNumber == null) return;
+    if (port.isBus) return; // Physical/ES-5 ports don't have parameters
+
+    for (final algorithm in state.algorithms) {
+      final match = [...algorithm.inputPorts, ...algorithm.outputPorts]
+          .where((p) => p.id == port.id && p.parameterNumber != null)
+          .firstOrNull;
+      if (match == null) continue;
+
+      if (!_canClearBusAssignment(
+        algorithmIndex: algorithm.index,
+        parameterNumber: match.parameterNumber!,
+      )) {
+        // Output can't be set to None — move to an unused non-physical bus
+        if (port.isBusWriter) {
+          final newBus = await _findFirstAvailableNonPhysicalOutputBus(
+            state,
+            algorithmIndex: algorithm.index,
+            parameterNumber: match.parameterNumber!,
+          );
+          if (newBus != null) {
+            await _distingCubit.updateParameterValue(
+              algorithmIndex: algorithm.index,
+              parameterNumber: match.parameterNumber!,
+              value: newBus,
+              userIsChangingTheValue: false,
+            );
+          }
+        }
+        return;
+      }
+
+      await _distingCubit.updateParameterValue(
+        algorithmIndex: algorithm.index,
+        parameterNumber: match.parameterNumber!,
+        value: 0,
+        userIsChangingTheValue: false,
+      );
+      return;
     }
   }
 

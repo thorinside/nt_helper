@@ -4267,6 +4267,25 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         }
       }
     }
+
+    // For partial bus-to-input connections, the destination is the input port
+    if (connection.connectionType == ConnectionType.partialBusToInput) {
+      final destPortId = connection.destinationPortId;
+
+      for (final algorithm in routingState.algorithms) {
+        for (final port in algorithm.inputPorts) {
+          if (port.id == destPortId && port.parameterNumber != null) {
+            context.read<DistingCubit>().updateParameterValue(
+              algorithmIndex: algorithm.index,
+              parameterNumber: port.parameterNumber!,
+              value: 0,
+              userIsChangingTheValue: true,
+            );
+            return;
+          }
+        }
+      }
+    }
   }
 
   void _toggleConnectionOutputMode(String connectionId) {

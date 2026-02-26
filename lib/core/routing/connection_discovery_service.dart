@@ -87,34 +87,56 @@ class ConnectionDiscoveryService {
             busNumber,
             input.algorithmIndex,
           );
-          if (contributingPortIds.isEmpty) continue;
 
           for (final output in outputs) {
-            if (!contributingPortIds.contains(output.portId)) continue;
             if (output.algorithmId == input.algorithmId) continue; // no self
 
-            // Ensure forward order (contributors always have lower slot)
-            if (output.algorithmIndex >= input.algorithmIndex) continue;
+            final isForward = output.algorithmIndex < input.algorithmIndex;
+            final isContributing = contributingPortIds.contains(output.portId);
 
-            connections.add(
-              Connection(
-                id: 'conn_${output.portId}_to_${input.portId}',
-                sourcePortId: output.portId,
-                destinationPortId: input.portId,
-                connectionType: ConnectionType.algorithmToAlgorithm,
-                busNumber: busNumber,
-                algorithmId: output.algorithmId,
-                algorithmIndex: output.algorithmIndex,
-                parameterNumber: output.parameterNumber,
-                signalType: _toSignalType(output.portType),
-                isBackwardEdge: false,
-                isOutput: true,
-                outputMode: output.outputMode,
-              ),
-            );
+            if (isForward && isContributing) {
+              // Normal forward connection
+              connections.add(
+                Connection(
+                  id: 'conn_${output.portId}_to_${input.portId}',
+                  sourcePortId: output.portId,
+                  destinationPortId: input.portId,
+                  connectionType: ConnectionType.algorithmToAlgorithm,
+                  busNumber: busNumber,
+                  algorithmId: output.algorithmId,
+                  algorithmIndex: output.algorithmIndex,
+                  parameterNumber: output.parameterNumber,
+                  signalType: _toSignalType(output.portType),
+                  isBackwardEdge: false,
+                  isOutput: true,
+                  outputMode: output.outputMode,
+                ),
+              );
 
-            matchedPorts.add(output.portId);
-            matchedPorts.add(input.portId);
+              matchedPorts.add(output.portId);
+              matchedPorts.add(input.portId);
+            } else if (!isForward) {
+              // Backward connection: writer is in a higher slot than reader
+              connections.add(
+                Connection(
+                  id: 'conn_${output.portId}_to_${input.portId}_backward',
+                  sourcePortId: output.portId,
+                  destinationPortId: input.portId,
+                  connectionType: ConnectionType.algorithmToAlgorithm,
+                  busNumber: busNumber,
+                  algorithmId: output.algorithmId,
+                  algorithmIndex: output.algorithmIndex,
+                  parameterNumber: output.parameterNumber,
+                  signalType: _toSignalType(output.portType),
+                  isBackwardEdge: true,
+                  isOutput: true,
+                  outputMode: output.outputMode,
+                ),
+              );
+
+              matchedPorts.add(output.portId);
+              matchedPorts.add(input.portId);
+            }
           }
         }
       }

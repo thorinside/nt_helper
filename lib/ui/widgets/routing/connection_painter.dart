@@ -118,7 +118,6 @@ class ConnectionPainter extends CustomPainter {
     final invalidConnections = <ConnectionData>[];
     final selectedConnections = <ConnectionData>[];
     final partialConnections = <ConnectionData>[];
-
     for (final conn in connections) {
       if (conn.isSelected) {
         selectedConnections.add(conn);
@@ -133,7 +132,7 @@ class ConnectionPainter extends CustomPainter {
       }
     }
 
-    // Draw in order: regular -> ghost -> invalid -> partial -> selected (for proper layering)
+    // Draw in order: regular -> ghost -> invalid -> partial -> backward partial -> selected
     _drawConnectionBatch(
       canvas,
       regularConnections,
@@ -373,11 +372,11 @@ class ConnectionPainter extends CustomPainter {
     ConnectionData conn,
     ConnectionVisualType type,
   ) {
-    // Handle invalid connections with error color
+    // Handle backward connections (wrong slot order) with tertiary color
     if (type == ConnectionVisualType.invalid) {
       paint
         ..strokeWidth = 2.0
-        ..color = theme.colorScheme.error;
+        ..color = theme.colorScheme.tertiary;
       return;
     }
 
