@@ -79,11 +79,7 @@ class ConnectionValidator {
 
   static bool _isWriterToPhysicalInput(Port writer, Port bus) {
     if (writer.effectiveRole != PortRole.busWriter) return false;
-    if (bus.effectiveRole != PortRole.physicalBus) return false;
-    // Physical input jacks are buses 1-12
-    final index = bus.hardwareIndex;
-    if (index == null) return false;
-    return bus.jackType == 'input' && index <= 12;
+    return bus.isPhysicalInput;
   }
 
   /// Given two valid ports, determines which is the "writer" (source) and

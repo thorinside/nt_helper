@@ -10,9 +10,8 @@ void main() {
       name: 'Input 1',
       type: PortType.cv,
       direction: PortDirection.output,
-      isPhysical: true,
       hardwareIndex: 1,
-      jackType: 'input',
+      role: PortRole.physicalInputBus,
     );
 
     // Physical output ports have PortDirection.input because they are signal sinks
@@ -21,9 +20,8 @@ void main() {
       name: 'Output 1',
       type: PortType.cv,
       direction: PortDirection.input,
-      isPhysical: true,
       hardwareIndex: 1,
-      jackType: 'output',
+      role: PortRole.physicalOutputBus,
     );
 
     final algorithmInput = Port(
@@ -122,9 +120,8 @@ void main() {
       name: 'Input 1',
       type: PortType.cv,
       direction: PortDirection.output,
-      isPhysical: true,
       hardwareIndex: 1,
-      jackType: 'input',
+      role: PortRole.physicalInputBus,
     );
 
     final physicalOutput = Port(
@@ -132,9 +129,8 @@ void main() {
       name: 'Output 1',
       type: PortType.cv,
       direction: PortDirection.input,
-      isPhysical: true,
       hardwareIndex: 1,
-      jackType: 'output',
+      role: PortRole.physicalOutputBus,
     );
 
     final algorithmInput = Port(

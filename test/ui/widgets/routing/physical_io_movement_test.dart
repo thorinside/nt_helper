@@ -14,7 +14,7 @@ List<Port> _createTestInputPorts() {
       type: PortType.audio,
       direction:
           PortDirection.output, // Physical inputs act as outputs to algorithms
-      isPhysical: true,
+      role: PortRole.physicalInputBus,
       busValue: portNum,
     );
   });
@@ -30,7 +30,7 @@ List<Port> _createTestOutputPorts() {
       type: PortType.audio,
       direction:
           PortDirection.input, // Physical outputs act as inputs from algorithms
-      isPhysical: true,
+      role: PortRole.physicalOutputBus,
       busValue: portNum + 12,
     );
   });

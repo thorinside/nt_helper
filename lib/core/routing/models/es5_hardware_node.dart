@@ -54,8 +54,8 @@ class ES5HardwareNode {
         direction: PortDirection.input,
         description: 'ES-5 Left (Silent Way)',
         busValue: leftAudioBus,
-        isPhysical: true,
         nodeId: id,
+        role: PortRole.es5Bus,
       ),
     );
 
@@ -68,8 +68,8 @@ class ES5HardwareNode {
         direction: PortDirection.input,
         description: 'ES-5 Right (Silent Way)',
         busValue: rightAudioBus,
-        isPhysical: true,
         nodeId: id,
+        role: PortRole.es5Bus,
       ),
     );
 
@@ -82,8 +82,8 @@ class ES5HardwareNode {
           type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
           direction: PortDirection.input,
           description: 'ES-5 Output $i',
-          isPhysical: true,
           nodeId: id,
+          role: PortRole.es5Bus,
         ),
       );
     }
@@ -115,8 +115,8 @@ class ES5HardwareNode {
       direction: PortDirection.input,
       description: 'ES-5 Left (Silent Way)',
       busValue: leftAudioBus,
-      isPhysical: true,
       nodeId: id,
+      role: PortRole.es5Bus,
     );
   }
 
@@ -129,8 +129,8 @@ class ES5HardwareNode {
       direction: PortDirection.input,
       description: 'ES-5 Right (Silent Way)',
       busValue: rightAudioBus,
-      isPhysical: true,
       nodeId: id,
+      role: PortRole.es5Bus,
     );
   }
 
@@ -151,8 +151,8 @@ class ES5HardwareNode {
       type: PortType.cv, // All gate/trigger signals are CV (Story 7.5)
       direction: PortDirection.input,
       description: 'ES-5 Output $portNumber',
-      isPhysical: true,
       nodeId: id,
+      role: PortRole.es5Bus,
     );
   }
 }

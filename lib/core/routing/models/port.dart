@@ -62,9 +62,11 @@ enum PortRole {
   /// Algorithm parameter that writes a value to a bus each evaluation pass.
   busWriter,
 
-  /// Physical hardware jack that IS a bus.
-  /// Input jacks = bus 1-12, output jacks = bus 13-20.
-  physicalBus,
+  /// Physical input jack that IS a bus (bus 1-12).
+  physicalInputBus,
+
+  /// Physical output jack that IS a bus (bus 13-20).
+  physicalOutputBus,
 
   /// ES-5 expansion port that IS a bus.
   /// L = bus 29, R = bus 30, direct outputs 1-8.
@@ -151,21 +153,16 @@ sealed class Port with _$Port {
     /// The mode parameter number for this port's output mode (Add/Replace)
     int? modeParameterNumber,
 
-    // Direct properties for physical ports
-    /// Whether this port represents a physical hardware port
-    @Default(false) bool isPhysical,
-
-    /// The hardware index for physical ports (1-based)
+    /// The hardware index for physical/ES-5 ports (1-based).
+    /// For physical ports this equals the bus number for inputs (1-12)
+    /// or the jack number for outputs (1-8, mapped to buses 13-20).
     int? hardwareIndex,
-
-    /// The jack type for physical ports ('input' or 'output')
-    String? jackType,
 
     /// The node identifier for grouping related ports
     String? nodeId,
 
     /// The role this port plays in the bus-assignment routing model.
-    /// If not set, derived from [direction], [isPhysical], and port ID conventions.
+    /// If not set, derived from [direction] and port ID conventions.
     PortRole? role,
   }) = _Port;
 
@@ -216,13 +213,11 @@ sealed class Port with _$Port {
   PortRole get effectiveRole {
     if (role != null) return role!;
 
-    // Derive from legacy fields
-    if (isPhysical) {
-      return PortRole.physicalBus;
-    }
-    if (id.startsWith('es5_')) {
-      return PortRole.es5Bus;
-    }
+    // Derive from port ID conventions
+    if (id.startsWith('hw_in_')) return PortRole.physicalInputBus;
+    if (id.startsWith('hw_out_')) return PortRole.physicalOutputBus;
+    if (id.startsWith('es5_')) return PortRole.es5Bus;
+
     if (direction == PortDirection.output ||
         direction == PortDirection.bidirectional) {
       return PortRole.busWriter;
@@ -232,7 +227,8 @@ sealed class Port with _$Port {
 
   /// Whether this port represents a hardware bus (physical jack or ES-5).
   bool get isBus =>
-      effectiveRole == PortRole.physicalBus ||
+      effectiveRole == PortRole.physicalInputBus ||
+      effectiveRole == PortRole.physicalOutputBus ||
       effectiveRole == PortRole.es5Bus;
 
   /// Whether this port is an algorithm parameter that reads from a bus.
@@ -240,4 +236,10 @@ sealed class Port with _$Port {
 
   /// Whether this port is an algorithm parameter that writes to a bus.
   bool get isBusWriter => effectiveRole == PortRole.busWriter;
+
+  /// Whether this is a physical input jack (bus 1-12).
+  bool get isPhysicalInput => effectiveRole == PortRole.physicalInputBus;
+
+  /// Whether this is a physical output jack (bus 13-20).
+  bool get isPhysicalOutput => effectiveRole == PortRole.physicalOutputBus;
 }

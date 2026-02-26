@@ -600,10 +600,11 @@ void main() {
 
   group('PortRole Tests', () {
     test('PortRole enum has expected values', () {
-      expect(PortRole.values, hasLength(4));
+      expect(PortRole.values, hasLength(5));
       expect(PortRole.values, contains(PortRole.busReader));
       expect(PortRole.values, contains(PortRole.busWriter));
-      expect(PortRole.values, contains(PortRole.physicalBus));
+      expect(PortRole.values, contains(PortRole.physicalInputBus));
+      expect(PortRole.values, contains(PortRole.physicalOutputBus));
       expect(PortRole.values, contains(PortRole.es5Bus));
     });
 
@@ -628,30 +629,28 @@ void main() {
         expect(port.effectiveRole, PortRole.busWriter);
       });
 
-      test('physical input derives to physicalBus', () {
+      test('physical input derives to physicalInputBus', () {
         const port = Port(
           id: 'hw_in_1',
           name: 'I1',
           type: PortType.cv,
           direction: PortDirection.output,
-          isPhysical: true,
           hardwareIndex: 1,
-          jackType: 'input',
+          role: PortRole.physicalInputBus,
         );
-        expect(port.effectiveRole, PortRole.physicalBus);
+        expect(port.effectiveRole, PortRole.physicalInputBus);
       });
 
-      test('physical output derives to physicalBus', () {
+      test('physical output derives to physicalOutputBus', () {
         const port = Port(
           id: 'hw_out_1',
           name: 'O1',
           type: PortType.audio,
           direction: PortDirection.input,
-          isPhysical: true,
           hardwareIndex: 1,
-          jackType: 'output',
+          role: PortRole.physicalOutputBus,
         );
-        expect(port.effectiveRole, PortRole.physicalBus);
+        expect(port.effectiveRole, PortRole.physicalOutputBus);
       });
 
       test('ES-5 port derives to es5Bus', () {
@@ -689,13 +688,13 @@ void main() {
     });
 
     group('role-based convenience getters', () {
-      test('isBus is true for physicalBus', () {
+      test('isBus is true for physicalInputBus', () {
         const port = Port(
           id: 'hw_in_1',
           name: 'I1',
           type: PortType.cv,
           direction: PortDirection.output,
-          isPhysical: true,
+          role: PortRole.physicalInputBus,
         );
         expect(port.isBus, isTrue);
         expect(port.isBusReader, isFalse);
@@ -744,13 +743,13 @@ void main() {
           name: 'Test',
           type: PortType.cv,
           direction: PortDirection.input,
-          role: PortRole.physicalBus,
+          role: PortRole.physicalInputBus,
         );
 
         final json = port.toJson();
         final deserialized = Port.fromJson(json);
-        expect(deserialized.role, PortRole.physicalBus);
-        expect(deserialized.effectiveRole, PortRole.physicalBus);
+        expect(deserialized.role, PortRole.physicalInputBus);
+        expect(deserialized.effectiveRole, PortRole.physicalInputBus);
       });
 
       test('null role round-trips through JSON', () {

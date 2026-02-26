@@ -45,7 +45,7 @@ void main() {
         expect(lPort.direction, equals(PortDirection.input));
         expect(lPort.description, equals('ES-5 Left (Silent Way)'));
         expect(lPort.busValue, equals(29));
-        expect(lPort.isPhysical, isTrue);
+        expect(lPort.isBus, isTrue);
         expect(lPort.nodeId, equals('es5_hardware_node'));
       });
 
@@ -56,7 +56,7 @@ void main() {
         expect(rPort.direction, equals(PortDirection.input));
         expect(rPort.description, equals('ES-5 Right (Silent Way)'));
         expect(rPort.busValue, equals(30));
-        expect(rPort.isPhysical, isTrue);
+        expect(rPort.isBus, isTrue);
         expect(rPort.nodeId, equals('es5_hardware_node'));
       });
 
@@ -68,7 +68,7 @@ void main() {
           expect(port.direction, equals(PortDirection.input));
           expect(port.description, equals('ES-5 Output $i'));
           expect(port.busValue, isNull);
-          expect(port.isPhysical, isTrue);
+          expect(port.isBus, isTrue);
           expect(port.nodeId, equals('es5_hardware_node'));
         }
       });
@@ -87,7 +87,7 @@ void main() {
       });
 
       test('all ports are physical', () {
-        expect(ports.every((p) => p.isPhysical), isTrue);
+        expect(ports.every((p) => p.isBus), isTrue);
       });
 
       test('all ports are inputs', () {
@@ -148,7 +148,7 @@ void main() {
         expect(port.type, equals(PortType.audio));
         expect(port.direction, equals(PortDirection.input));
         expect(port.busValue, equals(29));
-        expect(port.isPhysical, isTrue);
+        expect(port.isBus, isTrue);
       });
     });
 
@@ -160,7 +160,7 @@ void main() {
         expect(port.type, equals(PortType.audio));
         expect(port.direction, equals(PortDirection.input));
         expect(port.busValue, equals(30));
-        expect(port.isPhysical, isTrue);
+        expect(port.isBus, isTrue);
       });
     });
 
@@ -173,7 +173,7 @@ void main() {
           expect(port.type, equals(PortType.cv));
           expect(port.direction, equals(PortDirection.input));
           expect(port.busValue, isNull);
-          expect(port.isPhysical, isTrue);
+          expect(port.isBus, isTrue);
         }
       });
 

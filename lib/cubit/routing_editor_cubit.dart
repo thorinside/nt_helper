@@ -309,9 +309,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         name: 'I$n',
         type: PortType.cv,
         direction: PortDirection.output,
-        isPhysical: true,
         hardwareIndex: n,
-        jackType: 'input',
+        role: PortRole.physicalInputBus,
       );
     });
   }
@@ -325,9 +324,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         name: 'O$n',
         type: PortType.audio,
         direction: PortDirection.input,
-        isPhysical: true,
         hardwareIndex: n,
-        jackType: 'output',
+        role: PortRole.physicalOutputBus,
       );
     });
   }
@@ -391,17 +389,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (sourcePort.isBus && targetPort.isBusReader) {
         // Bus -> algorithm input: assign bus number to the reader
-        if (sourceRole == PortRole.physicalBus &&
-            sourcePort.jackType == 'input') {
-          // Physical input jack (bus 1-12) -> algorithm input
+        if (sourceRole == PortRole.physicalInputBus) {
           busNumber = await _assignBusForHardwareInput(
             sourcePortId,
             targetPort,
             currentState,
           );
-        } else if (sourceRole == PortRole.physicalBus &&
-            sourcePort.jackType == 'output') {
-          // Physical output jack (bus 13-20) -> algorithm input
+        } else if (sourceRole == PortRole.physicalOutputBus) {
           busNumber = await _assignBusForPhysicalOutputToAlgorithmInput(
             sourcePortId,
             targetPort,
@@ -453,17 +447,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         }
       } else if (targetPort.isBus && sourcePort.isBusReader) {
         // Algorithm input -> bus: assign bus number to the reader
-        if (targetRole == PortRole.physicalBus &&
-            targetPort.jackType == 'input') {
-          // Algorithm input -> physical input jack (bus 1-12)
+        if (targetRole == PortRole.physicalInputBus) {
           busNumber = await _assignBusForHardwareInput(
             targetPortId,
             sourcePort,
             currentState,
           );
-        } else if (targetRole == PortRole.physicalBus &&
-            targetPort.jackType == 'output') {
-          // Algorithm input -> physical output jack (bus 13-20)
+        } else if (targetRole == PortRole.physicalOutputBus) {
           busNumber = await _assignBusForPhysicalOutputToAlgorithmInput(
             targetPortId,
             sourcePort,
