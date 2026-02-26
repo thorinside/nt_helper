@@ -30,11 +30,15 @@ class ConnectionDiscoveryService {
       final routing = routings[i];
       final algorithmId = _extractAlgorithmId(routing);
 
-      // Register input ports
-      _registerPorts(routing.inputPorts, algorithmId, i, false, busRegistry);
+      // Register input ports (bus readers)
+      _registerPorts(
+        routing.inputPorts, algorithmId, i, PortRole.busReader, busRegistry,
+      );
 
-      // Register output ports
-      _registerPorts(routing.outputPorts, algorithmId, i, true, busRegistry);
+      // Register output ports (bus writers)
+      _registerPorts(
+        routing.outputPorts, algorithmId, i, PortRole.busWriter, busRegistry,
+      );
     }
 
     // Debug: Print bus registry summary
@@ -83,34 +87,56 @@ class ConnectionDiscoveryService {
             busNumber,
             input.algorithmIndex,
           );
-          if (contributingPortIds.isEmpty) continue;
 
           for (final output in outputs) {
-            if (!contributingPortIds.contains(output.portId)) continue;
             if (output.algorithmId == input.algorithmId) continue; // no self
 
-            // Ensure forward order (contributors always have lower slot)
-            if (output.algorithmIndex >= input.algorithmIndex) continue;
+            final isForward = output.algorithmIndex < input.algorithmIndex;
+            final isContributing = contributingPortIds.contains(output.portId);
 
-            connections.add(
-              Connection(
-                id: 'conn_${output.portId}_to_${input.portId}',
-                sourcePortId: output.portId,
-                destinationPortId: input.portId,
-                connectionType: ConnectionType.algorithmToAlgorithm,
-                busNumber: busNumber,
-                algorithmId: output.algorithmId,
-                algorithmIndex: output.algorithmIndex,
-                parameterNumber: output.parameterNumber,
-                signalType: _toSignalType(output.portType),
-                isBackwardEdge: false,
-                isOutput: true,
-                outputMode: output.outputMode,
-              ),
-            );
+            if (isForward && isContributing) {
+              // Normal forward connection
+              connections.add(
+                Connection(
+                  id: 'conn_${output.portId}_to_${input.portId}',
+                  sourcePortId: output.portId,
+                  destinationPortId: input.portId,
+                  connectionType: ConnectionType.algorithmToAlgorithm,
+                  busNumber: busNumber,
+                  algorithmId: output.algorithmId,
+                  algorithmIndex: output.algorithmIndex,
+                  parameterNumber: output.parameterNumber,
+                  signalType: _toSignalType(output.portType),
+                  isBackwardEdge: false,
+                  isOutput: true,
+                  outputMode: output.outputMode,
+                ),
+              );
 
-            matchedPorts.add(output.portId);
-            matchedPorts.add(input.portId);
+              matchedPorts.add(output.portId);
+              matchedPorts.add(input.portId);
+            } else if (!isForward) {
+              // Backward connection: writer is in a higher slot than reader
+              connections.add(
+                Connection(
+                  id: 'conn_${output.portId}_to_${input.portId}_backward',
+                  sourcePortId: output.portId,
+                  destinationPortId: input.portId,
+                  connectionType: ConnectionType.algorithmToAlgorithm,
+                  busNumber: busNumber,
+                  algorithmId: output.algorithmId,
+                  algorithmIndex: output.algorithmIndex,
+                  parameterNumber: output.parameterNumber,
+                  signalType: _toSignalType(output.portType),
+                  isBackwardEdge: true,
+                  isOutput: true,
+                  outputMode: output.outputMode,
+                ),
+              );
+
+              matchedPorts.add(output.portId);
+              matchedPorts.add(input.portId);
+            }
           }
         }
       }
@@ -196,7 +222,7 @@ class ConnectionDiscoveryService {
     List<Port> ports,
     String algorithmId,
     int algorithmIndex,
-    bool isOutput,
+    PortRole role,
     Map<int, List<_PortAssignment>> busRegistry,
   ) {
     for (final port in ports) {
@@ -212,7 +238,7 @@ class ConnectionDiscoveryService {
                 portName: port.name,
                 parameterName: port.busParam ?? '',
                 parameterNumber: port.parameterNumber ?? 0,
-                isOutput: isOutput,
+                role: role,
                 portType: port.type,
                 busValue: busValue,
                 outputMode: port.outputMode,
@@ -586,7 +612,7 @@ class _PortAssignment {
   final String portName;
   final String parameterName;
   final int parameterNumber;
-  final bool isOutput;
+  final PortRole role;
   final PortType portType;
   final int busValue;
   final OutputMode? outputMode;
@@ -598,9 +624,12 @@ class _PortAssignment {
     required this.portName,
     required this.parameterName,
     required this.parameterNumber,
-    required this.isOutput,
+    required this.role,
     required this.portType,
     required this.busValue,
     this.outputMode,
   });
+
+  /// Whether this port writes to the bus (legacy compatibility).
+  bool get isOutput => role == PortRole.busWriter;
 }

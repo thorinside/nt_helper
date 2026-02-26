@@ -17,7 +17,7 @@ List<Port> _createTestInputPorts() {
       type: PortType.audio,
       direction:
           PortDirection.output, // Physical inputs act as outputs to algorithms
-      isPhysical: true,
+      role: PortRole.physicalInputBus,
       busValue: portNum,
     );
   });
@@ -33,7 +33,7 @@ List<Port> _createTestOutputPorts() {
       type: PortType.audio,
       direction:
           PortDirection.input, // Physical outputs act as inputs from algorithms
-      isPhysical: true,
+      role: PortRole.physicalOutputBus,
       busValue: portNum + 12,
     );
   });
@@ -215,14 +215,14 @@ void main() {
         final port = inputPorts[i];
         expect(port.id, equals('hw_in_${i + 1}'));
         expect(port.direction, equals(PortDirection.output));
-        expect(port.isPhysical, isTrue);
+        expect(port.isPhysicalInput, isTrue);
       }
 
       for (int i = 0; i < outputPorts.length; i++) {
         final port = outputPorts[i];
         expect(port.id, equals('hw_out_${i + 1}'));
         expect(port.direction, equals(PortDirection.input));
-        expect(port.isPhysical, isTrue);
+        expect(port.isPhysicalOutput, isTrue);
       }
 
       // Test the ports work in actual widgets

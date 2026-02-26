@@ -17,7 +17,7 @@ List<core_port.Port> _createTestInputPorts() {
       direction: core_port
           .PortDirection
           .output, // Physical inputs act as outputs to algorithms
-      isPhysical: true,
+      role: core_port.PortRole.physicalInputBus,
       busValue: portNum,
     );
   });
@@ -34,7 +34,7 @@ List<core_port.Port> _createTestOutputPorts() {
       direction: core_port
           .PortDirection
           .input, // Physical outputs act as inputs from algorithms
-      isPhysical: true,
+      role: core_port.PortRole.physicalOutputBus,
       busValue: portNum + 12,
     );
   });

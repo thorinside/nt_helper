@@ -27,6 +27,7 @@ import 'package:nt_helper/ui/widgets/routing/accessible_routing_list_view.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
     as painter;
+import 'package:nt_helper/ui/widgets/routing/connection_validator.dart';
 import 'package:nt_helper/ui/widgets/routing/aux_bus_usage_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/mini_map_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
@@ -3367,14 +3368,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       }
 
       final targetPort = _findPortAtPosition(localPosition);
-      // Highlight valid targets: opposite direction from source
-      // - Dragging from output: highlight inputs
-      // - Dragging from input: highlight outputs
-      final sourceIsOutput = _dragSourcePort?.isOutput ?? false;
-      final isValidTarget = sourceIsOutput
-          ? targetPort?.isInput == true
-          : targetPort?.isOutput == true;
-      final newHighlight = isValidTarget ? targetPort?.id : null;
+      String? newHighlight;
+      if (targetPort != null &&
+          _dragSourcePort != null &&
+          ConnectionValidator.isValidConnection(_dragSourcePort!, targetPort)) {
+        newHighlight = targetPort.id;
+      }
 
       // Only setState if highlight actually changed
       if (newHighlight != _highlightedPortId) {
@@ -3434,12 +3433,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       }
 
       final targetPort = _findPortAtPosition(localPosition);
-      // Highlight valid targets: opposite direction from source
-      final sourceIsOutput = _dragSourcePort?.isOutput ?? false;
-      final isValidTarget = sourceIsOutput
-          ? targetPort?.isInput == true
-          : targetPort?.isOutput == true;
-      final newHighlight = isValidTarget ? targetPort?.id : null;
+      String? newHighlight;
+      if (targetPort != null &&
+          _dragSourcePort != null &&
+          ConnectionValidator.isValidConnection(_dragSourcePort!, targetPort)) {
+        newHighlight = targetPort.id;
+      }
 
       // Only setState if highlight actually changed
       if (newHighlight != _highlightedPortId) {
@@ -3478,23 +3477,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         return;
       }
 
-      // Determine valid connection based on source direction
-      // - From output: target must be input
-      // - From input: target must be output
-      final sourceIsOutput = sourcePort.isOutput;
-      final isValidConnection = sourceIsOutput
-          ? targetPort.isInput
-          : targetPort.isOutput;
-
-      if (isValidConnection) {
-        // Determine the actual source (output) and destination (input) for the connection
-        // Connections always flow from output to input
-        final actualSourcePortId = sourceIsOutput
-            ? sourcePort.id
-            : targetPort.id;
-        final actualTargetPortId = sourceIsOutput
-            ? targetPort.id
-            : sourcePort.id;
+      if (ConnectionValidator.isValidConnection(sourcePort, targetPort)) {
+        final resolved = ConnectionValidator.resolveConnectionDirection(
+          sourcePort,
+          targetPort,
+        );
+        if (resolved == null) return;
+        final (actualSourcePortId, actualTargetPortId) = resolved;
 
         // Check for duplicate connection before attempting to create
         final cubit = context.read<RoutingEditorCubit>();
@@ -3562,23 +3551,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         return;
       }
 
-      // Determine valid connection based on source direction
-      // - From output: target must be input
-      // - From input: target must be output
-      final sourceIsOutput = sourcePort.isOutput;
-      final isValidConnection = sourceIsOutput
-          ? targetPort.isInput
-          : targetPort.isOutput;
-
-      if (isValidConnection) {
-        // Determine the actual source (output) and destination (input) for the connection
-        // Connections always flow from output to input
-        final actualSourcePortId = sourceIsOutput
-            ? sourcePort.id
-            : targetPort.id;
-        final actualTargetPortId = sourceIsOutput
-            ? targetPort.id
-            : sourcePort.id;
+      // Validate using symmetric ConnectionValidator
+      if (ConnectionValidator.isValidConnection(sourcePort, targetPort)) {
+        // Resolve which port is source vs target based on roles
+        final resolved = ConnectionValidator.resolveConnectionDirection(
+          sourcePort,
+          targetPort,
+        );
+        if (resolved == null) return;
+        final (actualSourcePortId, actualTargetPortId) = resolved;
 
         // Check for duplicate connection before attempting to create
         final currentState = context.read<RoutingEditorCubit>().state;
@@ -4279,6 +4260,25 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
               algorithmIndex: algorithm.index,
               parameterNumber: port.parameterNumber!,
               value: 0, // 0 means "None" for bus assignments
+              userIsChangingTheValue: true,
+            );
+            return;
+          }
+        }
+      }
+    }
+
+    // For partial bus-to-input connections, the destination is the input port
+    if (connection.connectionType == ConnectionType.partialBusToInput) {
+      final destPortId = connection.destinationPortId;
+
+      for (final algorithm in routingState.algorithms) {
+        for (final port in algorithm.inputPorts) {
+          if (port.id == destPortId && port.parameterNumber != null) {
+            context.read<DistingCubit>().updateParameterValue(
+              algorithmIndex: algorithm.index,
+              parameterNumber: port.parameterNumber!,
+              value: 0,
               userIsChangingTheValue: true,
             );
             return;

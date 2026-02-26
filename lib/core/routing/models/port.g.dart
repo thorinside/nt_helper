@@ -27,10 +27,9 @@ _Port _$PortFromJson(Map<String, dynamic> json) => _Port(
   busParam: json['busParam'] as String?,
   parameterNumber: (json['parameterNumber'] as num?)?.toInt(),
   modeParameterNumber: (json['modeParameterNumber'] as num?)?.toInt(),
-  isPhysical: json['isPhysical'] as bool? ?? false,
   hardwareIndex: (json['hardwareIndex'] as num?)?.toInt(),
-  jackType: json['jackType'] as String?,
   nodeId: json['nodeId'] as String?,
+  role: $enumDecodeNullable(_$PortRoleEnumMap, json['role']),
 );
 
 Map<String, dynamic> _$PortToJson(_Port instance) => <String, dynamic>{
@@ -54,10 +53,9 @@ Map<String, dynamic> _$PortToJson(_Port instance) => <String, dynamic>{
   'busParam': instance.busParam,
   'parameterNumber': instance.parameterNumber,
   'modeParameterNumber': instance.modeParameterNumber,
-  'isPhysical': instance.isPhysical,
   'hardwareIndex': instance.hardwareIndex,
-  'jackType': instance.jackType,
   'nodeId': instance.nodeId,
+  'role': _$PortRoleEnumMap[instance.role],
 };
 
 const _$PortTypeEnumMap = {PortType.audio: 'audio', PortType.cv: 'cv'};
@@ -71,4 +69,12 @@ const _$PortDirectionEnumMap = {
 const _$OutputModeEnumMap = {
   OutputMode.add: 'add',
   OutputMode.replace: 'replace',
+};
+
+const _$PortRoleEnumMap = {
+  PortRole.busReader: 'busReader',
+  PortRole.busWriter: 'busWriter',
+  PortRole.physicalInputBus: 'physicalInputBus',
+  PortRole.physicalOutputBus: 'physicalOutputBus',
+  PortRole.es5Bus: 'es5Bus',
 };
