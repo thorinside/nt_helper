@@ -231,18 +231,24 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         algorithms.add(routingAlgorithm);
       }
 
+      // Compute firmware capability early — needed for connection discovery and AUX bus usage
+      final distingState = _distingCubit?.state;
+      final hasExtended =
+          distingState is DistingStateSynchronized &&
+          distingState.firmwareVersion.hasExtendedAuxBuses;
+
       // Use the ConnectionDiscoveryService to discover connections from AlgorithmRouting instances
       final discoveredConnections =
-          ConnectionDiscoveryService.discoverConnections(routings);
+          ConnectionDiscoveryService.discoverConnections(
+        routings,
+        hasExtendedAuxBuses: hasExtended,
+      );
 
       // Validate connections for slot ordering violations
       final connections = ConnectionValidator.validateConnections(
         discoveredConnections,
         algorithms,
       );
-
-      // For backward compatibility, keep empty lists for now
-      // These will be removed in the next refactoring step
 
       // Preserve zoom level and pan offset from current state if it exists
       final currentState = state;
@@ -252,12 +258,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final panOffset = currentState is RoutingEditorStateLoaded
           ? currentState.panOffset
           : Offset.zero;
-
-      // Compute AUX bus usage info
-      final distingState = _distingCubit?.state;
-      final hasExtended =
-          distingState is DistingStateSynchronized &&
-          distingState.firmwareVersion.hasExtendedAuxBuses;
       final auxBusUsage = _computeAuxBusUsage(algorithms, slots, hasExtended);
 
       emit(
@@ -488,7 +488,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       if (busNumber == null) {
-        throw StateError('Failed to assign bus - all buses may be in use');
+        throw StateError('Failed to assign bus');
       }
 
       // The connection will appear automatically via ConnectionDiscoveryService
@@ -624,11 +624,22 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   ) async {
     int? busNumber;
 
-    // Check for ES-5 L/R ports first
-    if (hardwareOutputPortId == 'es5_L') {
-      busNumber = 29; // ES-5 L
-    } else if (hardwareOutputPortId == 'es5_R') {
-      busNumber = 30; // ES-5 R
+    // ES-5 L/R ports — only UsbAudioFromHost ('usbf') can connect to these
+    if (hardwareOutputPortId == 'es5_L' || hardwareOutputPortId == 'es5_R') {
+      final algorithmIndex = _findAlgorithmIndexForPort(state, algorithmOutputPort.id);
+      if (algorithmIndex == null) return null;
+      final distingState = _distingCubit?.state;
+      if (distingState is! DistingStateSynchronized) return null;
+      if (algorithmIndex >= distingState.slots.length) return null;
+      final guid = distingState.slots[algorithmIndex].algorithm.guid;
+      if (guid != 'usbf') return null;
+
+      final isExtended = distingState.firmwareVersion.hasExtendedAuxBuses;
+      if (hardwareOutputPortId == 'es5_L') {
+        busNumber = isExtended ? BusSpec.es5MinExtended : BusSpec.es5Min;
+      } else {
+        busNumber = isExtended ? BusSpec.es5MaxExtended : BusSpec.es5Max;
+      }
     } else if (hardwareOutputPortId.startsWith('es5_') &&
         hardwareOutputPortId.length == 5) {
       // ES-5 direct output ports (es5_1 through es5_8)
@@ -922,6 +933,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         state,
         sourceAlgorithmIndex,
         allowReuse: canReplace,
+        needsStereoPartner: sourceOutputPort.isStereoChannel &&
+            sourceOutputPort.stereoSide == 'left',
       );
       if (availableBus == null) {
         throw StateError('No free AUX busses');
@@ -1026,41 +1039,51 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final algoName = slot.algorithm.name;
 
       for (final port in algorithm.outputPorts) {
-        if (port.parameterNumber == null) continue;
-        try {
-          final paramValue = slot.values
-              .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
-              .value;
-          if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
-          if (!BusSpec.isAux(paramValue)) continue;
-          final info = result.putIfAbsent(
-            paramValue,
-            () => AuxBusUsageInfo(busNumber: paramValue),
-          );
-          info.algorithmIds.add(algorithm.id);
-          info.sourceNames.add(algoName);
-        } catch (_) {}
+        final busValue = _resolvePortBusValue(port, slot);
+        if (busValue == null) continue;
+        if (busValue < BusSpec.auxMin || busValue > auxCeiling) continue;
+        if (!BusSpec.isAux(busValue)) continue;
+        final info = result.putIfAbsent(
+          busValue,
+          () => AuxBusUsageInfo(busNumber: busValue),
+        );
+        info.algorithmIds.add(algorithm.id);
+        info.sourceNames.add(algoName);
       }
 
       for (final port in algorithm.inputPorts) {
-        if (port.parameterNumber == null) continue;
-        try {
-          final paramValue = slot.values
-              .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
-              .value;
-          if (paramValue < BusSpec.auxMin || paramValue > auxCeiling) continue;
-          if (!BusSpec.isAux(paramValue)) continue;
-          final info = result.putIfAbsent(
-            paramValue,
-            () => AuxBusUsageInfo(busNumber: paramValue),
-          );
-          info.algorithmIds.add(algorithm.id);
-          info.destNames.add(algoName);
-        } catch (_) {}
+        final busValue = _resolvePortBusValue(port, slot);
+        if (busValue == null) continue;
+        if (busValue < BusSpec.auxMin || busValue > auxCeiling) continue;
+        if (!BusSpec.isAux(busValue)) continue;
+        final info = result.putIfAbsent(
+          busValue,
+          () => AuxBusUsageInfo(busNumber: busValue),
+        );
+        info.algorithmIds.add(algorithm.id);
+        info.destNames.add(algoName);
       }
     }
 
     return result;
+  }
+
+  /// Resolves the effective bus value for a port.
+  /// For ports with a real hardware parameter, reads the live value from the slot.
+  /// For virtual ports (no parameter or negative parameterNumber), falls back
+  /// to the port's declared busValue.
+  static int? _resolvePortBusValue(Port port, Slot slot) {
+    final paramNumber = port.parameterNumber;
+    if (paramNumber != null && paramNumber >= 0) {
+      try {
+        return slot.values
+            .firstWhere((v) => v.parameterNumber == paramNumber)
+            .value;
+      } catch (_) {
+        return null;
+      }
+    }
+    return port.busValue;
   }
 
   /// Focus algorithms using a specific AUX bus (toggle behavior).
@@ -1091,6 +1114,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     RoutingEditorStateLoaded state,
     int sourceSlot, {
     bool allowReuse = true,
+    bool needsStereoPartner = false,
   }) async {
     final distingState = _distingCubit?.state;
     if (distingState is! DistingStateSynchronized) return null;
@@ -1121,8 +1145,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
     }
 
+    // Stereo L ports need b+1 to also be a valid aux bus
+    final effectiveCeiling = needsStereoPartner ? auxCeiling - 1 : auxCeiling;
+
     // Prefer a completely unused AUX bus first
-    for (int b = BusSpec.auxMin; b <= auxCeiling; b++) {
+    for (int b = BusSpec.auxMin; b <= effectiveCeiling; b++) {
       if (!BusSpec.isAux(b)) continue;
       if (!maxSlotPerBus.containsKey(b)) {
         return _AvailableAuxBus(bus: b, isReused: false);
@@ -1131,7 +1158,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // Fall back to a reusable AUX bus whose users are all at lower slots
     if (allowReuse) {
-      for (int b = BusSpec.auxMin; b <= auxCeiling; b++) {
+      for (int b = BusSpec.auxMin; b <= effectiveCeiling; b++) {
         if (!BusSpec.isAux(b)) continue;
         if (maxSlotPerBus[b]! < sourceSlot) {
           return _AvailableAuxBus(bus: b, isReused: true);
@@ -2649,6 +2676,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             state,
             algorithmIndex: algorithm.index,
             parameterNumber: match.parameterNumber!,
+            needsStereoPartner: port.isStereoChannel &&
+                port.stereoSide == 'left',
           );
           if (newBus != null) {
             await _distingCubit.updateParameterValue(
@@ -2717,6 +2746,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     RoutingEditorStateLoaded state, {
     required int algorithmIndex,
     required int parameterNumber,
+    bool needsStereoPartner = false,
   }) async {
     final range = _getBusParameterRange(
       algorithmIndex: algorithmIndex,
@@ -2771,9 +2801,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     bool inRange(int b) => b >= range.min && b <= range.max;
     bool isPhysicalOutputBus(int b) => b >= 13 && b <= 20;
 
-    // Prefer auxiliary buses (21–28), then fall back to input buses (1–12),
+    // Stereo L ports need b+1 to also be valid — avoid the last aux bus
+    final auxCeiling = needsStereoPartner
+        ? BusSpec.auxMaxExtended - 1
+        : BusSpec.auxMaxExtended;
+
+    // Prefer auxiliary buses (21–64), then fall back to input buses (1–12),
     // always avoiding physical output buses (13–20).
-    for (int b = 21; b <= 28; b++) {
+    for (int b = BusSpec.auxMin; b <= auxCeiling; b++) {
       if (inRange(b) && !usedBuses.contains(b)) return b;
     }
     for (int b = 1; b <= 12; b++) {
