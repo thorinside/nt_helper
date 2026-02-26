@@ -213,20 +213,26 @@ class AccessibleRoutingListView extends StatelessWidget {
     final theme = Theme.of(context);
     final sourceName = _findPortName(conn.sourcePortId, algorithms);
     final destName = _findPortName(conn.destinationPortId, algorithms);
-    final busLabel = conn.busLabel ?? 'Unknown bus';
+    final isAlgoToAlgo =
+        conn.connectionType == ConnectionType.algorithmToAlgorithm;
+    final auxLabel = isAlgoToAlgo ? _formatBusLabel(conn.busNumber) : null;
 
     final reason = cubit.deletionBlockReasonForConnection(conn);
     final canDelete = reason == null;
 
+    final semanticLabel = auxLabel != null
+        ? '$sourceName to $destName via $auxLabel'
+        : '$sourceName to $destName';
+
     return Semantics(
-      label: '$sourceName to $destName on $busLabel',
+      label: semanticLabel,
       child: ListTile(
         leading: Icon(
           Icons.link,
           color: theme.colorScheme.primary,
         ),
         title: Text('$sourceName \u2192 $destName'),
-        subtitle: Text('Bus: $busLabel'),
+        subtitle: auxLabel != null ? Text('via $auxLabel') : null,
         trailing: canDelete
             ? IconButton(
                 icon: const Icon(Icons.delete_outline),
@@ -251,6 +257,16 @@ class AccessibleRoutingListView extends StatelessWidget {
     );
   }
 
+  String _formatBusLabel(int? busNumber) {
+    if (busNumber == null) return 'Unknown bus';
+    if (busNumber >= 1 && busNumber <= 12) return 'Input $busNumber';
+    if (busNumber >= 13 && busNumber <= 20) return 'Output ${busNumber - 12}';
+    if (busNumber >= 21 && busNumber <= 28) return 'Aux ${busNumber - 20}';
+    if (busNumber == 29) return 'ES-5 Left';
+    if (busNumber == 30) return 'ES-5 Right';
+    return 'Bus $busNumber';
+  }
+
   String _findPortName(String portId, List<RoutingAlgorithm> algorithms) {
     for (final algo in algorithms) {
       for (final port in [...algo.inputPorts, ...algo.outputPorts]) {
@@ -260,13 +276,17 @@ class AccessibleRoutingListView extends StatelessWidget {
       }
     }
     // Check if it's a physical port
-    if (portId.startsWith('physical_input_')) {
-      final num = portId.replaceFirst('physical_input_', '');
+    if (portId.startsWith('hw_in_')) {
+      final num = portId.replaceFirst('hw_in_', '');
       return 'Input $num';
     }
-    if (portId.startsWith('physical_output_')) {
-      final num = portId.replaceFirst('physical_output_', '');
+    if (portId.startsWith('hw_out_')) {
+      final num = portId.replaceFirst('hw_out_', '');
       return 'Output $num';
+    }
+    if (portId.startsWith('es5_')) {
+      final suffix = portId.replaceFirst('es5_', '');
+      return 'ES-5 $suffix';
     }
     return portId;
   }
