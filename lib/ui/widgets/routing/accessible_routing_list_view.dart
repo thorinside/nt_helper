@@ -77,7 +77,7 @@ class AccessibleRoutingListView extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ...algorithms.map(
-          (algo) => _buildAlgorithmTile(context, algo, connections),
+          (algo) => _buildAlgorithmTile(context, algo, connections, algorithms),
         ),
 
         const Divider(height: 32),
@@ -113,6 +113,7 @@ class AccessibleRoutingListView extends StatelessWidget {
     BuildContext context,
     RoutingAlgorithm algo,
     List<Connection> connections,
+    List<RoutingAlgorithm> algorithms,
   ) {
     final theme = Theme.of(context);
     final inputCount = algo.inputPorts.length;
@@ -132,6 +133,8 @@ class AccessibleRoutingListView extends StatelessWidget {
             '$inputCount inputs, $outputCount outputs, '
             '$connectedPorts active connections',
         child: ExpansionTile(
+          shape: const Border(),
+          collapsedShape: const Border(),
           leading: CircleAvatar(
             backgroundColor: theme.colorScheme.primaryContainer,
             child: Text(
@@ -153,7 +156,8 @@ class AccessibleRoutingListView extends StatelessWidget {
                 ),
               ),
               ...algo.inputPorts.map(
-                (port) => _buildPortListItem(context, port, connections, true),
+                (port) => _buildPortListItem(
+                    context, port, connections, true, algorithms),
               ),
             ],
             if (algo.outputPorts.isNotEmpty) ...[
@@ -165,7 +169,8 @@ class AccessibleRoutingListView extends StatelessWidget {
                 ),
               ),
               ...algo.outputPorts.map(
-                (port) => _buildPortListItem(context, port, connections, false),
+                (port) => _buildPortListItem(
+                    context, port, connections, false, algorithms),
               ),
             ],
             const SizedBox(height: 8),
@@ -180,6 +185,7 @@ class AccessibleRoutingListView extends StatelessWidget {
     Port port,
     List<Connection> connections,
     bool isInput,
+    List<RoutingAlgorithm> algorithms,
   ) {
     final connectedTo = connections.where(
       (c) =>
@@ -187,9 +193,17 @@ class AccessibleRoutingListView extends StatelessWidget {
           (!isInput && c.sourcePortId == port.id),
     );
 
-    final connectionInfo = connectedTo.isEmpty
-        ? 'Not connected'
-        : 'Connected to ${connectedTo.length} port${connectedTo.length > 1 ? 's' : ''}';
+    String connectionInfo;
+    if (connectedTo.isEmpty) {
+      connectionInfo = 'Not connected';
+    } else {
+      final names = connectedTo.map((c) {
+        final otherPortId =
+            isInput ? c.sourcePortId : c.destinationPortId;
+        return _findPortName(otherPortId, algorithms);
+      });
+      connectionInfo = names.join(', ');
+    }
 
     return ListTile(
       dense: true,
