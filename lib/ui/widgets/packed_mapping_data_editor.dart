@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
@@ -355,8 +356,14 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// CV Editor
   /// ---------------------
   Widget _buildCvEditor() {
-    // Safely clamp the current CV input to 0..12 for display
-    final cvInputValue = (_data.cvInput >= 0 && _data.cvInput <= 29)
+    final state = context.read<DistingCubit>().state;
+    final hasExtendedAuxBuses = state is DistingStateSynchronized
+        ? state.firmwareVersion.hasExtendedAuxBuses
+        : false;
+    final auxMax = BusSpec.auxMaxForFirmware(hasExtendedAuxBuses: hasExtendedAuxBuses);
+
+    // Safely clamp the current CV input to valid range for display
+    final cvInputValue = (_data.cvInput >= 0 && _data.cvInput <= auxMax)
         ? _data.cvInput
         : 0;
 
@@ -427,26 +434,26 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   });
                   _triggerOptimisticSave();
                 },
-                dropdownMenuEntries: List.generate(29, (index) {
+                dropdownMenuEntries: List.generate(auxMax + 1, (index) {
                   if (index == 0) {
                     return const DropdownMenuEntry<int>(
                       value: 0,
                       label: 'None',
                     );
-                  } else if (index >= 1 && index <= 12) {
+                  } else if (index <= BusSpec.inputMax) {
                     return DropdownMenuEntry<int>(
                       value: index,
                       label: 'Input $index',
                     );
-                  } else if (index >= 13 && index <= 20) {
+                  } else if (index <= BusSpec.outputMax) {
                     return DropdownMenuEntry<int>(
                       value: index,
-                      label: 'Output ${index - 12}',
+                      label: 'Output ${index - BusSpec.inputMax}',
                     );
                   } else {
                     return DropdownMenuEntry<int>(
                       value: index,
-                      label: 'Aux ${index - 20}',
+                      label: 'Aux ${index - BusSpec.outputMax}',
                     );
                   }
                 }),

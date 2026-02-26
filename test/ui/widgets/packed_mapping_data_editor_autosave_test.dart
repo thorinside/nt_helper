@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
 
+class MockDistingCubit extends Mock implements DistingCubit {}
+
 void main() {
+  late MockDistingCubit mockCubit;
+
+  setUp(() {
+    mockCubit = MockDistingCubit();
+    when(() => mockCubit.state).thenReturn(DistingStateInitial());
+    when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+  });
   group('PackedMappingDataEditor - TextField Autosave', () {
     late PackedMappingData testData;
     late List<Slot> mockSlots;
@@ -19,16 +30,19 @@ void main() {
       PackedMappingData? initialData,
     }) {
       return MaterialApp(
-        home: Scaffold(
-          body: PackedMappingDataEditor(
-            initialData: initialData ?? testData,
-            onSave: onSave,
-            slots: mockSlots,
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            parameterMin: 0,
-            parameterMax: 100,
-            powerOfTen: 0,
+        home: BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: Scaffold(
+            body: PackedMappingDataEditor(
+              initialData: initialData ?? testData,
+              onSave: onSave,
+              slots: mockSlots,
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              parameterMin: 0,
+              parameterMax: 100,
+              powerOfTen: 0,
+            ),
           ),
         ),
       );
@@ -265,16 +279,19 @@ void main() {
       PackedMappingData? initialData,
     }) {
       return MaterialApp(
-        home: Scaffold(
-          body: PackedMappingDataEditor(
-            initialData: initialData ?? testData,
-            onSave: onSave,
-            slots: mockSlots,
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            parameterMin: 0,
-            parameterMax: 100,
-            powerOfTen: 0,
+        home: BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: Scaffold(
+            body: PackedMappingDataEditor(
+              initialData: initialData ?? testData,
+              onSave: onSave,
+              slots: mockSlots,
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              parameterMin: 0,
+              parameterMax: 100,
+              powerOfTen: 0,
+            ),
           ),
         ),
       );
@@ -692,16 +709,19 @@ void main() {
       PackedMappingData? initialData,
     }) {
       return MaterialApp(
-        home: Scaffold(
-          body: PackedMappingDataEditor(
-            initialData: initialData ?? testData,
-            onSave: onSave,
-            slots: mockSlots,
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            parameterMin: 0,
-            parameterMax: 100,
-            powerOfTen: 0,
+        home: BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: Scaffold(
+            body: PackedMappingDataEditor(
+              initialData: initialData ?? testData,
+              onSave: onSave,
+              slots: mockSlots,
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              parameterMin: 0,
+              parameterMax: 100,
+              powerOfTen: 0,
+            ),
           ),
         ),
       );
@@ -767,28 +787,34 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (context) => PackedMappingDataEditor(
-                      initialData: testData,
-                      onSave: (data) async {
-                        saveCount++;
-                        lastSavedData = data;
-                      },
-                      slots: mockSlots,
-                      algorithmIndex: 0,
-                      parameterNumber: 0,
-                      parameterMin: 0,
-                      parameterMax: 100,
-                      powerOfTen: 0,
-                    ),
-                  );
-                },
-                child: const Text('Show Editor'),
+          home: BlocProvider<DistingCubit>.value(
+            value: mockCubit,
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => BlocProvider<DistingCubit>.value(
+                        value: mockCubit,
+                        child: PackedMappingDataEditor(
+                          initialData: testData,
+                          onSave: (data) async {
+                            saveCount++;
+                            lastSavedData = data;
+                          },
+                          slots: mockSlots,
+                          algorithmIndex: 0,
+                          parameterNumber: 0,
+                          parameterMin: 0,
+                          parameterMax: 100,
+                          powerOfTen: 0,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Show Editor'),
+                ),
               ),
             ),
           ),
@@ -835,16 +861,19 @@ void main() {
       PackedMappingData? initialData,
     }) {
       return MaterialApp(
-        home: Scaffold(
-          body: PackedMappingDataEditor(
-            initialData: initialData ?? testData,
-            onSave: onSave,
-            slots: mockSlots,
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            parameterMin: 0,
-            parameterMax: 100,
-            powerOfTen: 0,
+        home: BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: Scaffold(
+            body: PackedMappingDataEditor(
+              initialData: initialData ?? testData,
+              onSave: onSave,
+              slots: mockSlots,
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              parameterMin: 0,
+              parameterMax: 100,
+              powerOfTen: 0,
+            ),
           ),
         ),
       );
@@ -1144,16 +1173,19 @@ void main() {
       PackedMappingData? initialData,
     }) {
       return MaterialApp(
-        home: Scaffold(
-          body: PackedMappingDataEditor(
-            initialData: initialData ?? testData,
-            onSave: onSave,
-            slots: mockSlots,
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            parameterMin: 0,
-            parameterMax: 100,
-            powerOfTen: 0,
+        home: BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: Scaffold(
+            body: PackedMappingDataEditor(
+              initialData: initialData ?? testData,
+              onSave: onSave,
+              slots: mockSlots,
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              parameterMin: 0,
+              parameterMax: 100,
+              powerOfTen: 0,
+            ),
           ),
         ),
       );
