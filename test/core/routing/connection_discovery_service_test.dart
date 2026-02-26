@@ -306,6 +306,93 @@ void main() {
       },
     );
 
+    test('firmware 1.15+: bus 65 creates ES-5 L, bus 29 becomes aux', () {
+      final usbFromHost = _FakeRouting(
+        id: 'usb_from_host',
+        outputs: [
+          _outPort('usb_ch1', 65), // ES-5 L on 1.15+
+          _outPort('usb_ch2', 66), // ES-5 R on 1.15+
+        ],
+      );
+      final auxAlgo = _FakeRouting(
+        id: 'algo_A',
+        outputs: [_outPort('A_out_b29', 29)], // Aux 9 on 1.15+
+      );
+
+      final conns = ConnectionDiscoveryService.discoverConnections(
+        [auxAlgo, usbFromHost],
+        hasExtendedAuxBuses: true,
+      );
+
+      // Bus 65 should create ES-5 L hardware output connection
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareOutput &&
+              c.busNumber == 65 &&
+              c.destinationPortId == 'es5_L' &&
+              c.signalType == SignalType.audio,
+        ),
+        isTrue,
+      );
+
+      // Bus 66 should create ES-5 R hardware output connection
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareOutput &&
+              c.busNumber == 66 &&
+              c.destinationPortId == 'es5_R' &&
+              c.signalType == SignalType.audio,
+        ),
+        isTrue,
+      );
+
+      // Bus 29 should NOT create ES-5 connection on 1.15+ (it's aux now)
+      expect(
+        conns.any(
+          (c) =>
+              c.destinationPortId == 'es5_L' &&
+              c.busNumber == 29,
+        ),
+        isFalse,
+      );
+
+      // Bus 29 should be treated as aux (partial connection, not hardware output)
+      expect(
+        conns.any(
+          (c) =>
+              c.busNumber == 29 &&
+              c.connectionType == ConnectionType.hardwareOutput &&
+              c.destinationPortId.startsWith('es5_'),
+        ),
+        isFalse,
+      );
+    });
+
+    test('legacy firmware: bus 29 creates ES-5 L, bus 65 is not ES-5', () {
+      final a = _FakeRouting(
+        id: 'algo_A',
+        outputs: [_outPort('A_out_b29', 29)],
+      );
+
+      final conns = ConnectionDiscoveryService.discoverConnections(
+        [a],
+        hasExtendedAuxBuses: false,
+      );
+
+      // Bus 29 should create ES-5 L connection on legacy firmware
+      expect(
+        conns.any(
+          (c) =>
+              c.connectionType == ConnectionType.hardwareOutput &&
+              c.busNumber == 29 &&
+              c.destinationPortId == 'es5_L',
+        ),
+        isTrue,
+      );
+    });
+
     test('ES-5 connections do not affect standard output routing', () {
       final a = _FakeRouting(
         id: 'algo_A',

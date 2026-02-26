@@ -19,7 +19,10 @@ class ConnectionDiscoveryService {
   /// - [routings]: List of AlgorithmRouting instances to analyze
   ///
   /// Returns a list of Connection objects representing discovered connections
-  static List<Connection> discoverConnections(List<AlgorithmRouting> routings) {
+  static List<Connection> discoverConnections(
+    List<AlgorithmRouting> routings, {
+    bool hasExtendedAuxBuses = false,
+  }) {
     final connections = <Connection>[];
 
     // Build a bus registry mapping bus numbers to ports
@@ -72,7 +75,8 @@ class ConnectionDiscoveryService {
 
       final isHardwareInput = BusSpec.isPhysicalInput(busNumber);
       final isHardwareOutput =
-          BusSpec.isPhysicalOutput(busNumber) || BusSpec.isEs5(busNumber);
+          BusSpec.isPhysicalOutput(busNumber) ||
+          BusSpec.isEs5ForFirmware(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses);
 
       // Algorithm-to-algorithm: connect only from contributing writers for each reader slot.
       // Skip when the bus is a physical bus (inputs 1-12 or outputs 13-20) AND there are
@@ -115,8 +119,11 @@ class ConnectionDiscoveryService {
 
               matchedPorts.add(output.portId);
               matchedPorts.add(input.portId);
-            } else if (!isForward) {
-              // Backward connection: writer is in a higher slot than reader
+            } else if (!isForward &&
+                       output.outputMode != OutputMode.replace) {
+              // Backward connection: writer is in a higher slot than reader.
+              // Skip when the writer uses Replace — the replaced value won't
+              // propagate upward, so the backward edge is irrelevant.
               connections.add(
                 Connection(
                   id: 'conn_${output.portId}_to_${input.portId}_backward',
@@ -185,7 +192,10 @@ class ConnectionDiscoveryService {
       // (e.g., step sequencers that write on different clock cycles).
       if (isHardwareOutput && outputs.isNotEmpty) {
         connections.addAll(
-          _createHardwareOutputConnections(busNumber, outputs),
+          _createHardwareOutputConnections(
+            busNumber, outputs,
+            hasExtendedAuxBuses: hasExtendedAuxBuses,
+          ),
         );
         for (final o in outputs) {
           matchedPorts.add(o.portId);
@@ -343,13 +353,18 @@ class ConnectionDiscoveryService {
   /// Creates hardware output connections (algorithm outputs to physical hardware)
   static List<Connection> _createHardwareOutputConnections(
     int busNumber,
-    List<_PortAssignment> outputs,
-  ) {
+    List<_PortAssignment> outputs, {
+    bool hasExtendedAuxBuses = false,
+  }) {
     final connections = <Connection>[];
 
-    // Check for ES-5 buses first (29-30)
-    if (BusSpec.isEs5(busNumber)) {
-      final es5PortId = busNumber == 29 ? 'es5_L' : 'es5_R';
+    // Check for ES-5 buses (29-30 on legacy, 65-66 on 1.15+)
+    if (BusSpec.isEs5ForFirmware(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+      final es5LocalNumber = BusSpec.toLocalNumberForFirmware(
+        busNumber,
+        hasExtendedAuxBuses: hasExtendedAuxBuses,
+      );
+      final es5PortId = es5LocalNumber == 1 ? 'es5_L' : 'es5_R';
 
       for (final output in outputs) {
         connections.add(
