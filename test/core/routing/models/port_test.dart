@@ -597,4 +597,175 @@ void main() {
       });
     });
   });
+
+  group('PortRole Tests', () {
+    test('PortRole enum has expected values', () {
+      expect(PortRole.values, hasLength(4));
+      expect(PortRole.values, contains(PortRole.busReader));
+      expect(PortRole.values, contains(PortRole.busWriter));
+      expect(PortRole.values, contains(PortRole.physicalBus));
+      expect(PortRole.values, contains(PortRole.es5Bus));
+    });
+
+    group('effectiveRole derivation from legacy fields', () {
+      test('algorithm input derives to busReader', () {
+        const port = Port(
+          id: 'node_1_in_1',
+          name: 'Input 1',
+          type: PortType.cv,
+          direction: PortDirection.input,
+        );
+        expect(port.effectiveRole, PortRole.busReader);
+      });
+
+      test('algorithm output derives to busWriter', () {
+        const port = Port(
+          id: 'node_1_out_1',
+          name: 'Output 1',
+          type: PortType.cv,
+          direction: PortDirection.output,
+        );
+        expect(port.effectiveRole, PortRole.busWriter);
+      });
+
+      test('physical input derives to physicalBus', () {
+        const port = Port(
+          id: 'hw_in_1',
+          name: 'I1',
+          type: PortType.cv,
+          direction: PortDirection.output,
+          isPhysical: true,
+          hardwareIndex: 1,
+          jackType: 'input',
+        );
+        expect(port.effectiveRole, PortRole.physicalBus);
+      });
+
+      test('physical output derives to physicalBus', () {
+        const port = Port(
+          id: 'hw_out_1',
+          name: 'O1',
+          type: PortType.audio,
+          direction: PortDirection.input,
+          isPhysical: true,
+          hardwareIndex: 1,
+          jackType: 'output',
+        );
+        expect(port.effectiveRole, PortRole.physicalBus);
+      });
+
+      test('ES-5 port derives to es5Bus', () {
+        const port = Port(
+          id: 'es5_L',
+          name: 'ES-5 L',
+          type: PortType.audio,
+          direction: PortDirection.input,
+        );
+        expect(port.effectiveRole, PortRole.es5Bus);
+      });
+
+      test('bidirectional derives to busWriter', () {
+        const port = Port(
+          id: 'node_1_out_1',
+          name: 'Bidir',
+          type: PortType.cv,
+          direction: PortDirection.bidirectional,
+        );
+        expect(port.effectiveRole, PortRole.busWriter);
+      });
+    });
+
+    group('explicit role overrides derivation', () {
+      test('explicit role takes precedence over direction', () {
+        const port = Port(
+          id: 'node_1_in_1',
+          name: 'Input 1',
+          type: PortType.cv,
+          direction: PortDirection.input,
+          role: PortRole.busWriter,
+        );
+        expect(port.effectiveRole, PortRole.busWriter);
+      });
+    });
+
+    group('role-based convenience getters', () {
+      test('isBus is true for physicalBus', () {
+        const port = Port(
+          id: 'hw_in_1',
+          name: 'I1',
+          type: PortType.cv,
+          direction: PortDirection.output,
+          isPhysical: true,
+        );
+        expect(port.isBus, isTrue);
+        expect(port.isBusReader, isFalse);
+        expect(port.isBusWriter, isFalse);
+      });
+
+      test('isBus is true for es5Bus', () {
+        const port = Port(
+          id: 'es5_L',
+          name: 'ES-5 L',
+          type: PortType.audio,
+          direction: PortDirection.input,
+        );
+        expect(port.isBus, isTrue);
+      });
+
+      test('isBusReader for algorithm input', () {
+        const port = Port(
+          id: 'node_1_in_1',
+          name: 'Input 1',
+          type: PortType.cv,
+          direction: PortDirection.input,
+        );
+        expect(port.isBusReader, isTrue);
+        expect(port.isBusWriter, isFalse);
+        expect(port.isBus, isFalse);
+      });
+
+      test('isBusWriter for algorithm output', () {
+        const port = Port(
+          id: 'node_1_out_1',
+          name: 'Output 1',
+          type: PortType.cv,
+          direction: PortDirection.output,
+        );
+        expect(port.isBusWriter, isTrue);
+        expect(port.isBusReader, isFalse);
+        expect(port.isBus, isFalse);
+      });
+    });
+
+    group('PortRole serialization', () {
+      test('explicit role round-trips through JSON', () {
+        const port = Port(
+          id: 'test',
+          name: 'Test',
+          type: PortType.cv,
+          direction: PortDirection.input,
+          role: PortRole.physicalBus,
+        );
+
+        final json = port.toJson();
+        final deserialized = Port.fromJson(json);
+        expect(deserialized.role, PortRole.physicalBus);
+        expect(deserialized.effectiveRole, PortRole.physicalBus);
+      });
+
+      test('null role round-trips through JSON', () {
+        const port = Port(
+          id: 'test',
+          name: 'Test',
+          type: PortType.cv,
+          direction: PortDirection.input,
+        );
+
+        final json = port.toJson();
+        final deserialized = Port.fromJson(json);
+        expect(deserialized.role, isNull);
+        expect(deserialized.effectiveRole, PortRole.busReader);
+      });
+    });
+  });
 }

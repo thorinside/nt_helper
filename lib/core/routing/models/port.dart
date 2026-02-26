@@ -31,6 +31,10 @@ enum OutputMode {
 }
 
 /// Enum representing the direction of a port
+///
+/// Deprecated: Use [PortRole] instead. PortDirection conflates signal direction
+/// with hardware topology. Physical input jacks are "output" (sources) and
+/// physical output jacks are "input" (sinks), which inverts the natural meaning.
 @JsonEnum()
 enum PortDirection {
   /// Input port - receives signals
@@ -41,6 +45,30 @@ enum PortDirection {
 
   /// Bidirectional port - can send and receive
   bidirectional,
+}
+
+/// The role a port plays in the bus-assignment routing model.
+///
+/// The Disting NT routing system is fundamentally bus-based:
+/// - Physical jacks ARE buses (inputs = bus 1-12, outputs = bus 13-20)
+/// - Algorithm parameters are assigned to bus numbers
+/// - A "connection" is just a bus number shared between ports
+/// - Evaluation order (slot index) determines signal flow, not port direction
+@JsonEnum()
+enum PortRole {
+  /// Algorithm parameter that reads a value from a bus each evaluation pass.
+  busReader,
+
+  /// Algorithm parameter that writes a value to a bus each evaluation pass.
+  busWriter,
+
+  /// Physical hardware jack that IS a bus.
+  /// Input jacks = bus 1-12, output jacks = bus 13-20.
+  physicalBus,
+
+  /// ES-5 expansion port that IS a bus.
+  /// L = bus 29, R = bus 30, direct outputs 1-8.
+  es5Bus,
 }
 
 /// Immutable data class representing a port in the routing system.
@@ -135,6 +163,10 @@ sealed class Port with _$Port {
 
     /// The node identifier for grouping related ports
     String? nodeId,
+
+    /// The role this port plays in the bus-assignment routing model.
+    /// If not set, derived from [direction], [isPhysical], and port ID conventions.
+    PortRole? role,
   }) = _Port;
 
   /// Creates a Port from JSON
@@ -176,4 +208,36 @@ sealed class Port with _$Port {
     // All port types are compatible since everything is voltage in Eurorack
     return true;
   }
+
+  // --- Bus-assignment model (PortRole) ---
+
+  /// The effective role of this port in the bus-assignment model.
+  /// Uses the explicit [role] field if set, otherwise derives from legacy fields.
+  PortRole get effectiveRole {
+    if (role != null) return role!;
+
+    // Derive from legacy fields
+    if (isPhysical) {
+      return PortRole.physicalBus;
+    }
+    if (id.startsWith('es5_')) {
+      return PortRole.es5Bus;
+    }
+    if (direction == PortDirection.output ||
+        direction == PortDirection.bidirectional) {
+      return PortRole.busWriter;
+    }
+    return PortRole.busReader;
+  }
+
+  /// Whether this port represents a hardware bus (physical jack or ES-5).
+  bool get isBus =>
+      effectiveRole == PortRole.physicalBus ||
+      effectiveRole == PortRole.es5Bus;
+
+  /// Whether this port is an algorithm parameter that reads from a bus.
+  bool get isBusReader => effectiveRole == PortRole.busReader;
+
+  /// Whether this port is an algorithm parameter that writes to a bus.
+  bool get isBusWriter => effectiveRole == PortRole.busWriter;
 }
