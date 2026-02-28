@@ -46,6 +46,7 @@ class _ChatPanelState extends State<ChatPanel> {
       openaiApiKey: settings.openaiApiKey,
       anthropicModel: settings.anthropicModel,
       openaiModel: settings.openaiModel,
+      openaiBaseUrl: settings.openaiBaseUrl,
       chatEnabled: settings.chatEnabled,
     );
   }

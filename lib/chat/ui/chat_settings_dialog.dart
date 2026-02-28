@@ -16,6 +16,10 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   late final TextEditingController _openaiKeyController;
   late final TextEditingController _anthropicModelController;
   late final TextEditingController _openaiModelController;
+  late final TextEditingController _openaiBaseUrlController;
+  bool _showAdvanced = false;
+
+  bool get _isOpenAI => _provider == LlmProviderType.openai;
 
   @override
   void initState() {
@@ -29,6 +33,10 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
         TextEditingController(text: _settings.anthropicModel);
     _openaiModelController =
         TextEditingController(text: _settings.openaiModel);
+    _openaiBaseUrlController =
+        TextEditingController(text: _settings.openaiBaseUrl);
+    _showAdvanced = _settings.openaiBaseUrl != null &&
+        _settings.openaiBaseUrl!.isNotEmpty;
   }
 
   @override
@@ -37,6 +45,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     _openaiKeyController.dispose();
     _anthropicModelController.dispose();
     _openaiModelController.dispose();
+    _openaiBaseUrlController.dispose();
     super.dispose();
   }
 
@@ -46,6 +55,8 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     await _settings.setOpenaiApiKey(_openaiKeyController.text.trim());
     await _settings.setAnthropicModel(_anthropicModelController.text.trim());
     await _settings.setOpenaiModel(_openaiModelController.text.trim());
+    await _settings.setOpenaiBaseUrl(
+        _showAdvanced ? _openaiBaseUrlController.text.trim() : '');
     if (mounted) Navigator.of(context).pop(true);
   }
 
@@ -57,8 +68,9 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
         header: true,
         child: const Text('Chat Settings'),
       ),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+      content: SizedBox(
+        width: 400,
+        height: 420,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -82,52 +94,81 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                     setState(() => _provider = s.first),
               ),
               const SizedBox(height: 24),
-              if (_provider == LlmProviderType.anthropic) ...[
-                Text('Anthropic API Key', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _anthropicKeyController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'sk-ant-...',
-                    isDense: true,
-                  ),
-                  obscureText: true,
+              Text('API Key', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 8),
+              TextField(
+                key: ValueKey('apikey_${_provider.name}'),
+                controller: _isOpenAI
+                    ? _openaiKeyController
+                    : _anthropicKeyController,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: _isOpenAI ? 'sk-...' : 'sk-ant-...',
+                  isDense: true,
                 ),
-                const SizedBox(height: 16),
-                Text('Model', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _anthropicModelController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'claude-sonnet-4-20250514',
-                    isDense: true,
+                obscureText: true,
+              ),
+              const SizedBox(height: 16),
+              Text('Model', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 8),
+              TextField(
+                key: ValueKey('model_${_provider.name}'),
+                controller: _isOpenAI
+                    ? _openaiModelController
+                    : _anthropicModelController,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: _isOpenAI
+                      ? 'gpt-5-nano'
+                      : 'claude-haiku-4-5-20251001',
+                  isDense: true,
+                ),
+              ),
+              if (_isOpenAI) ...[
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () => setState(() => _showAdvanced = !_showAdvanced),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showAdvanced
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        size: 20,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Advanced',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ] else ...[
-                Text('OpenAI API Key', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _openaiKeyController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'sk-...',
-                    isDense: true,
+                if (_showAdvanced) ...[
+                  const SizedBox(height: 12),
+                  Text('Base URL', style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _openaiBaseUrlController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText:
+                          'https://api.openai.com/v1/chat/completions',
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.url,
                   ),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 16),
-                Text('Model', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _openaiModelController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'gpt-4o',
-                    isDense: true,
+                  const SizedBox(height: 4),
+                  Text(
+                    'For LM Studio, OpenRouter, or other OpenAI-compatible APIs.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
+                ],
               ],
               const SizedBox(height: 16),
               Text(

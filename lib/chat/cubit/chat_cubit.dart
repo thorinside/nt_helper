@@ -145,6 +145,7 @@ class ChatCubit extends Cubit<ChatState> {
         return OpenAIProvider(
           apiKey: settings.openaiApiKey!,
           model: settings.openaiModel,
+          baseUrl: settings.openaiBaseUrl,
         );
     }
   }

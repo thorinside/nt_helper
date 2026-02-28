@@ -10,15 +10,18 @@ import 'package:nt_helper/chat/providers/anthropic_provider.dart'
 class OpenAIProvider implements LlmProvider {
   final String apiKey;
   final String model;
+  final String baseUrl;
   final http.Client _client;
 
-  static const _baseUrl = 'https://api.openai.com/v1/chat/completions';
+  static const _defaultBaseUrl = 'https://api.openai.com/v1/chat/completions';
 
   OpenAIProvider({
     required this.apiKey,
     required this.model,
+    String? baseUrl,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  })  : baseUrl = baseUrl ?? _defaultBaseUrl,
+        _client = client ?? http.Client();
 
   @override
   String get displayName => 'OpenAI ($model)';
@@ -59,7 +62,7 @@ class OpenAIProvider implements LlmProvider {
     }
 
     final response = await _client.post(
-      Uri.parse(_baseUrl),
+      Uri.parse(baseUrl),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $apiKey',

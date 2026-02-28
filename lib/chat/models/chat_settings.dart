@@ -10,6 +10,7 @@ class ChatSettings {
   final String? openaiApiKey;
   final String anthropicModel;
   final String openaiModel;
+  final String? openaiBaseUrl;
   final bool chatEnabled;
   final VoiceInputMethod voiceInputMethod;
   final String? elevenlabsApiKey;
@@ -18,8 +19,9 @@ class ChatSettings {
     this.provider = LlmProviderType.anthropic,
     this.anthropicApiKey,
     this.openaiApiKey,
-    this.anthropicModel = 'claude-sonnet-4-20250514',
-    this.openaiModel = 'gpt-4o',
+    this.anthropicModel = 'claude-haiku-4-5-20251001',
+    this.openaiModel = 'gpt-5-nano',
+    this.openaiBaseUrl,
     this.chatEnabled = false,
     this.voiceInputMethod = VoiceInputMethod.platform,
     this.elevenlabsApiKey,
@@ -40,6 +42,7 @@ class ChatSettings {
     String? openaiApiKey,
     String? anthropicModel,
     String? openaiModel,
+    String? openaiBaseUrl,
     bool? chatEnabled,
     VoiceInputMethod? voiceInputMethod,
     String? elevenlabsApiKey,
@@ -50,6 +53,7 @@ class ChatSettings {
       openaiApiKey: openaiApiKey ?? this.openaiApiKey,
       anthropicModel: anthropicModel ?? this.anthropicModel,
       openaiModel: openaiModel ?? this.openaiModel,
+      openaiBaseUrl: openaiBaseUrl ?? this.openaiBaseUrl,
       chatEnabled: chatEnabled ?? this.chatEnabled,
       voiceInputMethod: voiceInputMethod ?? this.voiceInputMethod,
       elevenlabsApiKey: elevenlabsApiKey ?? this.elevenlabsApiKey,

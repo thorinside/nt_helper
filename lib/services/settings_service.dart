@@ -55,6 +55,7 @@ class SettingsService {
   static const String _openaiApiKeyKey = 'openai_api_key';
   static const String _anthropicModelKey = 'anthropic_model';
   static const String _openaiModelKey = 'openai_model';
+  static const String _openaiBaseUrlKey = 'openai_base_url';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -79,8 +80,8 @@ class SettingsService {
   static const double defaultSplitDividerPosition = 0.5;
   static const bool defaultMcpRemoteConnections = false;
   static const bool defaultChatEnabled = false;
-  static const String defaultAnthropicModel = 'claude-sonnet-4-20250514';
-  static const String defaultOpenaiModel = 'gpt-4o';
+  static const String defaultAnthropicModel = 'claude-haiku-4-5-20251001';
+  static const String defaultOpenaiModel = 'gpt-5-nano';
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -314,6 +315,17 @@ class SettingsService {
       return await _prefs?.remove(_openaiModelKey) ?? false;
     }
     return await _prefs?.setString(_openaiModelKey, value) ?? false;
+  }
+
+  /// Get the OpenAI base URL (for LM Studio, OpenRouter, etc.)
+  String? get openaiBaseUrl => _prefs?.getString(_openaiBaseUrlKey);
+
+  /// Set the OpenAI base URL
+  Future<bool> setOpenaiBaseUrl(String value) async {
+    if (value.isEmpty) {
+      return await _prefs?.remove(_openaiBaseUrlKey) ?? false;
+    }
+    return await _prefs?.setString(_openaiBaseUrlKey, value) ?? false;
   }
 
   /// Get the dismissed update version (user chose to skip this version)
