@@ -219,6 +219,7 @@ class ConnectionDiscoveryService {
     final partialConnections = _createPartialConnections(
       busRegistry,
       matchedPorts,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
     );
     connections.addAll(partialConnections);
 
@@ -534,8 +535,9 @@ class ConnectionDiscoveryService {
   /// Creates partial connections for unmatched ports with non-zero bus values
   static List<Connection> _createPartialConnections(
     Map<int, List<_PortAssignment>> busRegistry,
-    Set<String> matchedPorts,
-  ) {
+    Set<String> matchedPorts, {
+    bool hasExtendedAuxBuses = false,
+  }) {
     final partialConnections = <Connection>[];
 
     // Process each bus to find unmatched ports
@@ -558,9 +560,12 @@ class ConnectionDiscoveryService {
             ? (BusLabelFormatter.formatBusLabelWithMode(
                     busNumber,
                     port.outputMode,
+                    hasExtendedAuxBuses: hasExtendedAuxBuses,
                   ) ??
                   'Bus$busNumber')
-            : (BusLabelFormatter.formatBusNumber(busNumber) ?? 'Bus$busNumber');
+            : (BusLabelFormatter.formatBusNumber(busNumber,
+                    hasExtendedAuxBuses: hasExtendedAuxBuses) ??
+                'Bus$busNumber');
 
         final partialConnection = _createPartialConnection(
           port,

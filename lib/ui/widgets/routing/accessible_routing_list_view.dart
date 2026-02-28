@@ -49,6 +49,7 @@ class AccessibleRoutingListView extends StatelessWidget {
             connections,
             physicalInputs,
             physicalOutputs,
+            hasExtendedAuxBuses: hasExtendedAuxBuses,
           ),
         );
       },
@@ -60,8 +61,9 @@ class AccessibleRoutingListView extends StatelessWidget {
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
     List<Port> physicalInputs,
-    List<Port> physicalOutputs,
-  ) {
+    List<Port> physicalOutputs, {
+    bool hasExtendedAuxBuses = false,
+  }) {
     final theme = Theme.of(context);
     final cubit = context.read<RoutingEditorCubit>();
 
@@ -104,7 +106,8 @@ class AccessibleRoutingListView extends StatelessWidget {
           )
         else
           ...connections.map(
-            (conn) => _buildConnectionTile(context, conn, algorithms, cubit),
+            (conn) => _buildConnectionTile(context, conn, algorithms, cubit,
+                hasExtendedAuxBuses: hasExtendedAuxBuses),
           ),
       ],
     );
@@ -223,14 +226,18 @@ class AccessibleRoutingListView extends StatelessWidget {
     BuildContext context,
     Connection conn,
     List<RoutingAlgorithm> algorithms,
-    RoutingEditorCubit cubit,
-  ) {
+    RoutingEditorCubit cubit, {
+    bool hasExtendedAuxBuses = false,
+  }) {
     final theme = Theme.of(context);
     final sourceName = _findPortName(conn.sourcePortId, algorithms);
     final destName = _findPortName(conn.destinationPortId, algorithms);
     final isAlgoToAlgo =
         conn.connectionType == ConnectionType.algorithmToAlgorithm;
-    final auxLabel = isAlgoToAlgo ? _formatBusLabel(conn.busNumber) : null;
+    final auxLabel = isAlgoToAlgo
+        ? _formatBusLabel(conn.busNumber,
+            hasExtendedAuxBuses: hasExtendedAuxBuses)
+        : null;
 
     final reason = cubit.deletionBlockReasonForConnection(conn);
     final canDelete = reason == null;
@@ -272,15 +279,21 @@ class AccessibleRoutingListView extends StatelessWidget {
     );
   }
 
-  String _formatBusLabel(int? busNumber) {
+  String _formatBusLabel(int? busNumber,
+      {bool hasExtendedAuxBuses = false}) {
     if (busNumber == null) return 'Unknown bus';
     if (busNumber >= 1 && busNumber <= 12) return 'Input $busNumber';
     if (busNumber >= 13 && busNumber <= 20) return 'Output ${busNumber - 12}';
-    if (BusSpec.isEs5(busNumber) || BusSpec.isEs5Extended(busNumber)) {
-      final local = BusSpec.toLocalNumber(busNumber);
+    if (BusSpec.isEs5ForFirmware(busNumber,
+        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+      final local = BusSpec.toLocalNumberForFirmware(busNumber,
+          hasExtendedAuxBuses: hasExtendedAuxBuses);
       return local == 1 ? 'ES-5 Left' : 'ES-5 Right';
     }
-    if (BusSpec.isAux(busNumber)) return 'Aux ${BusSpec.toLocalNumber(busNumber)}';
+    if (BusSpec.isAuxForFirmware(busNumber,
+        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+      return 'Aux ${BusSpec.toLocalNumberForFirmware(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses)}';
+    }
     return 'Bus $busNumber';
   }
 

@@ -25,8 +25,14 @@ void main() {
       });
 
       test('formats extended ES-5 buses (65-66)', () {
-        expect(BusLabelFormatter.formatBusNumber(65), 'ES-5 L');
-        expect(BusLabelFormatter.formatBusNumber(66), 'ES-5 R');
+        expect(
+          BusLabelFormatter.formatBusNumber(65, hasExtendedAuxBuses: true),
+          'ES-5 L',
+        );
+        expect(
+          BusLabelFormatter.formatBusNumber(66, hasExtendedAuxBuses: true),
+          'ES-5 R',
+        );
       });
 
       test('returns null for invalid bus numbers', () {
@@ -38,8 +44,14 @@ void main() {
 
     group('getBusType', () {
       test('classifies extended ES-5 buses as es5', () {
-        expect(BusLabelFormatter.getBusType(65), BusType.es5);
-        expect(BusLabelFormatter.getBusType(66), BusType.es5);
+        expect(
+          BusLabelFormatter.getBusType(65, hasExtendedAuxBuses: true),
+          BusType.es5,
+        );
+        expect(
+          BusLabelFormatter.getBusType(66, hasExtendedAuxBuses: true),
+          BusType.es5,
+        );
       });
 
       test('classifies legacy ES-5 buses as es5', () {
@@ -56,8 +68,14 @@ void main() {
 
     group('getLocalBusNumber', () {
       test('returns correct local number for extended ES-5', () {
-        expect(BusLabelFormatter.getLocalBusNumber(65), 1);
-        expect(BusLabelFormatter.getLocalBusNumber(66), 2);
+        expect(
+          BusLabelFormatter.getLocalBusNumber(65, hasExtendedAuxBuses: true),
+          1,
+        );
+        expect(
+          BusLabelFormatter.getLocalBusNumber(66, hasExtendedAuxBuses: true),
+          2,
+        );
       });
 
       test('returns correct local number for legacy ES-5', () {
@@ -69,6 +87,76 @@ void main() {
         expect(BusLabelFormatter.getLocalBusNumber(31), 11);
         expect(BusLabelFormatter.getLocalBusNumber(42), 22);
         expect(BusLabelFormatter.getLocalBusNumber(64), 44);
+      });
+    });
+
+    group('firmware-aware formatting (1.15+)', () {
+      test('buses 29-30 are aux on extended firmware', () {
+        expect(
+          BusLabelFormatter.formatBusNumber(29,
+              hasExtendedAuxBuses: true),
+          'A9',
+        );
+        expect(
+          BusLabelFormatter.formatBusNumber(30,
+              hasExtendedAuxBuses: true),
+          'A10',
+        );
+      });
+
+      test('buses 65-66 are ES-5 on extended firmware', () {
+        expect(
+          BusLabelFormatter.formatBusNumber(65,
+              hasExtendedAuxBuses: true),
+          'ES-5 L',
+        );
+        expect(
+          BusLabelFormatter.formatBusNumber(66,
+              hasExtendedAuxBuses: true),
+          'ES-5 R',
+        );
+      });
+
+      test('getBusType classifies 29-30 as auxiliary on extended firmware', () {
+        expect(
+          BusLabelFormatter.getBusType(29, hasExtendedAuxBuses: true),
+          BusType.auxiliary,
+        );
+        expect(
+          BusLabelFormatter.getBusType(30, hasExtendedAuxBuses: true),
+          BusType.auxiliary,
+        );
+      });
+
+      test('getLocalBusNumber returns 9-10 for buses 29-30 on extended firmware',
+          () {
+        expect(
+          BusLabelFormatter.getLocalBusNumber(29,
+              hasExtendedAuxBuses: true),
+          9,
+        );
+        expect(
+          BusLabelFormatter.getLocalBusNumber(30,
+              hasExtendedAuxBuses: true),
+          10,
+        );
+      });
+
+      test('all 44 aux buses labeled A1-A44 on extended firmware', () {
+        // Buses 21-64, all aux (no ES-5 gap at 29-30)
+        for (int b = 21; b <= 64; b++) {
+          final label = BusLabelFormatter.formatBusNumber(b,
+              hasExtendedAuxBuses: true);
+          expect(label, startsWith('A'), reason: 'Bus $b should be aux');
+        }
+        expect(
+          BusLabelFormatter.formatBusNumber(21, hasExtendedAuxBuses: true),
+          'A1',
+        );
+        expect(
+          BusLabelFormatter.formatBusNumber(64, hasExtendedAuxBuses: true),
+          'A44',
+        );
       });
     });
 

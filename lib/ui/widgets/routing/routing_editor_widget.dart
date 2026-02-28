@@ -3172,9 +3172,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     }
     if (conn == null) return;
 
+    final editorState = context.read<RoutingEditorCubit>().state;
+    final hasExtended = editorState is RoutingEditorStateLoaded &&
+        editorState.hasExtendedAuxBuses;
     final label = painter.ConnectionPainter.formatBusLabelWithMode(
       conn.busNumber,
       conn.outputMode,
+      hasExtended,
     );
     if (label.isEmpty) return;
 

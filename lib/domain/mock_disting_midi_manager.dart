@@ -25,7 +25,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
   // List<Slot> _presetSlots = [];
   // List<String> _unitStrings = [];
   // String _presetName = "Demo Preset";
-  // String _versionString = "Demo v1.0";
+  // String _versionString = "Demo v1.15";
   // Store IO enum values for reuse
   static final List<String> _ioEnumValues = [
     ...List.generate(12, (i) => "Input ${i + 1}"),
@@ -794,7 +794,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
     ];
     _state.unitStrings = ["", "%", "Hz", "dB", "°", "V/Oct"]; // Example units
     _state.presetName = "Berlin School Pluck";
-    _state.versionString = "Demo v1.0";
+    _state.versionString = "Demo v1.15";
 
     // Debug print lengths
   }
@@ -1363,5 +1363,5 @@ class _MockState {
   List<Slot> presetSlots = [];
   List<String> unitStrings = [];
   String presetName = "Demo Preset";
-  String versionString = "Demo v1.0";
+  String versionString = "Demo v1.15";
 }

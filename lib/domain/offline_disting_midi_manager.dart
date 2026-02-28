@@ -462,7 +462,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<String?> requestVersionString() async {
-    return "Offline Mode v0.1";
+    return "Offline Mode";
   }
 
   @override

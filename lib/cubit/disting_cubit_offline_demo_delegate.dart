@@ -86,7 +86,8 @@ class _OfflineDemoDelegate {
       await _cubit._offlineManager!.initializeFromDb(null);
       final version = await _cubit._offlineManager!.requestVersionString() ??
           "Offline";
-      final firmwareVersion = FirmwareVersion(version);
+      final firmwareVersion =
+          _cubit._lastKnownFirmwareVersion ?? FirmwareVersion("1.15");
       _cubit._lastKnownFirmwareVersion = firmwareVersion;
       final units = await _cubit._offlineManager!.requestUnitStrings() ?? [];
       final availableAlgorithmsInfo = await _cubit._fetchOfflineAlgorithms();
@@ -181,11 +182,13 @@ class _OfflineDemoDelegate {
       final version =
           await _cubit._offlineManager!.requestVersionString() ?? "Offline";
 
+      final firmwareVersion =
+          _cubit._lastKnownFirmwareVersion ?? FirmwareVersion("1.15");
       _cubit._emitState(
         DistingState.synchronized(
           disting: _cubit._offlineManager!,
           distingVersion: version,
-          firmwareVersion: FirmwareVersion(version),
+          firmwareVersion: firmwareVersion,
           presetName: presetName,
           algorithms: availableAlgorithmsInfo,
           slots: slots,

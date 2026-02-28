@@ -85,6 +85,7 @@ class ConnectionPainter extends CustomPainter {
   final double deleteAnimationProgress;
   /// Progress of fade-out animation (0.0 to 1.0) - white → transparent
   final double fadeOutProgress;
+  final bool hasExtendedAuxBuses;
 
   /// Map storing label bounds for hit testing
   final Map<String, Rect> _labelBounds = {};
@@ -103,6 +104,7 @@ class ConnectionPainter extends CustomPainter {
     this.deletingPortId,
     this.deleteAnimationProgress = 0.0,
     this.fadeOutProgress = 0.0,
+    this.hasExtendedAuxBuses = false,
   });
 
   @override
@@ -655,7 +657,8 @@ class ConnectionPainter extends CustomPainter {
     }
 
     // Use BusLabelFormatter to get the label with mode-aware formatting
-    final label = formatBusLabelWithMode(conn.busNumber, conn.outputMode);
+    final label = formatBusLabelWithMode(
+        conn.busNumber, conn.outputMode, hasExtendedAuxBuses);
     if (label.isEmpty) {
       return;
     }
@@ -896,13 +899,18 @@ class ConnectionPainter extends CustomPainter {
   }
 
   /// Format bus number into label string using BusLabelFormatter
-  static String formatBusLabel(int? busNumber) {
-    return BusLabelFormatter.formatBusNumber(busNumber) ?? '';
+  static String formatBusLabel(int? busNumber,
+      [bool hasExtendedAuxBuses = false]) {
+    return BusLabelFormatter.formatBusNumber(busNumber,
+            hasExtendedAuxBuses: hasExtendedAuxBuses) ??
+        '';
   }
 
   /// Format bus number into label string with mode-aware formatting using BusLabelFormatter
-  static String formatBusLabelWithMode(int? busNumber, OutputMode? outputMode) {
-    return BusLabelFormatter.formatBusLabelWithMode(busNumber, outputMode) ??
+  static String formatBusLabelWithMode(
+      int? busNumber, OutputMode? outputMode, bool hasExtendedAuxBuses) {
+    return BusLabelFormatter.formatBusLabelWithMode(busNumber, outputMode,
+            hasExtendedAuxBuses: hasExtendedAuxBuses) ??
         '';
   }
 

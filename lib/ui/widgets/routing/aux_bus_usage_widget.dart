@@ -30,7 +30,9 @@ class AuxBusUsageWidget extends StatelessWidget {
     // Collect all valid AUX bus numbers
     final busList = <int>[];
     for (int b = BusSpec.auxMin; b <= auxCeiling; b++) {
-      if (BusSpec.isAux(b)) busList.add(b);
+      if (BusSpec.isAuxForFirmware(b, hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+        busList.add(b);
+      }
     }
 
     // Layout: single row for 8, 4 rows of 11 for extended
@@ -61,6 +63,7 @@ class AuxBusUsageWidget extends StatelessWidget {
                       child: _BusSquare(
                         key: ValueKey('bus_${busList[row * columns + col]}_${(auxBusUsage[busList[row * columns + col]]?.sessionCount ?? 0) > 0}'),
                         busNumber: busList[row * columns + col],
+                        hasExtendedAuxBuses: hasExtendedAuxBuses,
                         info: auxBusUsage[busList[row * columns + col]],
                         isFocused:
                             focusedBusNumber == busList[row * columns + col],
@@ -81,6 +84,7 @@ class AuxBusUsageWidget extends StatelessWidget {
 
 class _BusSquare extends StatelessWidget {
   final int busNumber;
+  final bool hasExtendedAuxBuses;
   final AuxBusUsageInfo? info;
   final bool isFocused;
   final ColorScheme colorScheme;
@@ -91,6 +95,7 @@ class _BusSquare extends StatelessWidget {
   const _BusSquare({
     super.key,
     required this.busNumber,
+    required this.hasExtendedAuxBuses,
     required this.info,
     required this.isFocused,
     required this.colorScheme,
@@ -121,7 +126,8 @@ class _BusSquare extends StatelessWidget {
         isFocused ? colorScheme.primary : colorScheme.outlineVariant;
     final borderWidth = isFocused ? 2.0 : 1.0;
 
-    final label = BusLabelFormatter.formatBusValue(busNumber);
+    final label = BusLabelFormatter.formatBusValue(busNumber,
+        hasExtendedAuxBuses: hasExtendedAuxBuses);
     final tooltip = _buildTooltip(label);
 
     Widget squareWidget = Container(
