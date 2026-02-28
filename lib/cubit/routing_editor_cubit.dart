@@ -153,13 +153,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     _lastProcessedSlots = slots;
 
     try {
+      // Compute firmware capability early — needed for ES-5 ports and connection discovery
+      final distingState = _distingCubit?.state;
+      final hasExtended =
+          distingState is DistingStateSynchronized &&
+          distingState.firmwareVersion.hasExtendedAuxBuses;
+
       // Create physical hardware ports
       final physicalInputs = _createPhysicalInputPorts();
       final physicalOutputs = _createPhysicalOutputPorts();
 
       // Conditionally create ES-5 ports based on algorithm presence
       final es5Inputs = shouldShowEs5Node(slots)
-          ? ES5HardwareNode.createInputPorts()
+          ? ES5HardwareNode.createInputPorts(
+              hasExtendedAuxBuses: hasExtended)
           : <Port>[];
 
       // Build algorithm representations with ports determined by AlgorithmRouting
@@ -230,12 +237,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         );
         algorithms.add(routingAlgorithm);
       }
-
-      // Compute firmware capability early — needed for connection discovery and AUX bus usage
-      final distingState = _distingCubit?.state;
-      final hasExtended =
-          distingState is DistingStateSynchronized &&
-          distingState.firmwareVersion.hasExtendedAuxBuses;
 
       // Use the ConnectionDiscoveryService to discover connections from AlgorithmRouting instances
       final discoveredConnections =
@@ -921,7 +922,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     int busToUse;
-    if (sourceBusValue != null && BusSpec.isAux(sourceBusValue)) {
+    final hasExtended = distingState.firmwareVersion.hasExtendedAuxBuses;
+    if (sourceBusValue != null &&
+        BusSpec.isAuxForFirmware(sourceBusValue,
+            hasExtendedAuxBuses: hasExtended)) {
       // Source already on an AUX bus — reuse for fan-out
       busToUse = sourceBusValue;
     } else {
@@ -1042,7 +1046,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final busValue = _resolvePortBusValue(port, slot);
         if (busValue == null) continue;
         if (busValue < BusSpec.auxMin || busValue > auxCeiling) continue;
-        if (!BusSpec.isAux(busValue)) continue;
+        if (!BusSpec.isAuxForFirmware(busValue,
+            hasExtendedAuxBuses: hasExtended)) {
+          continue;
+        }
         final info = result.putIfAbsent(
           busValue,
           () => AuxBusUsageInfo(busNumber: busValue),
@@ -1055,7 +1062,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final busValue = _resolvePortBusValue(port, slot);
         if (busValue == null) continue;
         if (busValue < BusSpec.auxMin || busValue > auxCeiling) continue;
-        if (!BusSpec.isAux(busValue)) continue;
+        if (!BusSpec.isAuxForFirmware(busValue,
+            hasExtendedAuxBuses: hasExtended)) {
+          continue;
+        }
         final info = result.putIfAbsent(
           busValue,
           () => AuxBusUsageInfo(busNumber: busValue),
@@ -1119,8 +1129,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final distingState = _distingCubit?.state;
     if (distingState is! DistingStateSynchronized) return null;
 
+    final hasExtended = distingState.firmwareVersion.hasExtendedAuxBuses;
     final auxCeiling = BusSpec.auxMaxForFirmware(
-      hasExtendedAuxBuses: distingState.firmwareVersion.hasExtendedAuxBuses,
+      hasExtendedAuxBuses: hasExtended,
     );
 
     // Map each AUX bus to the highest slot number that uses it
@@ -1134,7 +1145,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             final paramValue = slot.values
                 .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
                 .value;
-            if (BusSpec.isAux(paramValue)) {
+            if (BusSpec.isAuxForFirmware(paramValue,
+                hasExtendedAuxBuses: hasExtended)) {
               final current = maxSlotPerBus[paramValue];
               if (current == null || algorithm.index > current) {
                 maxSlotPerBus[paramValue] = algorithm.index;
@@ -1150,7 +1162,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // Prefer a completely unused AUX bus first
     for (int b = BusSpec.auxMin; b <= effectiveCeiling; b++) {
-      if (!BusSpec.isAux(b)) continue;
+      if (!BusSpec.isAuxForFirmware(b, hasExtendedAuxBuses: hasExtended)) {
+        continue;
+      }
       if (!maxSlotPerBus.containsKey(b)) {
         return _AvailableAuxBus(bus: b, isReused: false);
       }
@@ -1159,7 +1173,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     // Fall back to a reusable AUX bus whose users are all at lower slots
     if (allowReuse) {
       for (int b = BusSpec.auxMin; b <= effectiveCeiling; b++) {
-        if (!BusSpec.isAux(b)) continue;
+        if (!BusSpec.isAuxForFirmware(b, hasExtendedAuxBuses: hasExtended)) {
+          continue;
+        }
         if (maxSlotPerBus[b]! < sourceSlot) {
           return _AvailableAuxBus(bus: b, isReused: true);
         }

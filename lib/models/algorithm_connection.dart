@@ -169,14 +169,16 @@ extension AlgorithmConnectionHelpers on AlgorithmConnection {
   }
 
   /// Generate a bus label based on the bus number and connection type
-  String get busLabel {
-    // Use the centralized BusLabelFormatter for consistent labeling
-    return BusLabelFormatter.formatBusNumber(busNumber) ?? 'Bus$busNumber';
+  String busLabelForFirmware({bool hasExtendedAuxBuses = false}) {
+    return BusLabelFormatter.formatBusNumber(busNumber,
+            hasExtendedAuxBuses: hasExtendedAuxBuses) ??
+        'Bus$busNumber';
   }
 
   /// Get the edge label for display on the connection line
-  String getEdgeLabel() {
-    return edgeLabel ?? busLabel;
+  String getEdgeLabel({bool hasExtendedAuxBuses = false}) {
+    return edgeLabel ??
+        busLabelForFirmware(hasExtendedAuxBuses: hasExtendedAuxBuses);
   }
 
   /// Check if this connection uses an input/CV bus (1-12)

@@ -1,4 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/ui/widgets/routing/bus_label_formatter.dart';
 
 part 'connection.freezed.dart';
 part 'connection.g.dart';
@@ -23,20 +25,13 @@ sealed class Connection with _$Connection {
 
 extension ConnectionHelpers on Connection {
   // Helper to generate edge label
-  String getEdgeLabel() {
-    final busType = assignedBus <= 12
-        ? 'I'
-        : assignedBus <= 20
-        ? 'O'
-        : 'A';
-    final busNum = assignedBus <= 12
-        ? assignedBus
-        : assignedBus <= 20
-        ? assignedBus - 12
-        : assignedBus - 20;
-    // Only show R suffix for Replace mode, no suffix for Add mode
-    final modeSuffix = replaceMode ? ' R' : '';
-    return '$busType$busNum$modeSuffix';
+  String getEdgeLabel({bool hasExtendedAuxBuses = false}) {
+    final label = BusLabelFormatter.formatBusLabelWithMode(
+      assignedBus,
+      replaceMode ? OutputMode.replace : OutputMode.add,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
+    return label ?? 'Bus$assignedBus';
   }
 
   /// Check if this connection violates execution order
