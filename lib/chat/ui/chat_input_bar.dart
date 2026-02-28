@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nt_helper/services/key_binding_service.dart';
 
 class ChatInputBar extends StatefulWidget {
   final bool isProcessing;
   final ValueChanged<String> onSend;
   final VoidCallback onCancel;
   final VoidCallback onSettings;
+  final FocusNode? focusNode;
 
   const ChatInputBar({
     super.key,
@@ -13,6 +15,7 @@ class ChatInputBar extends StatefulWidget {
     required this.onSend,
     required this.onCancel,
     required this.onSettings,
+    this.focusNode,
   });
 
   @override
@@ -21,7 +24,9 @@ class ChatInputBar extends StatefulWidget {
 
 class _ChatInputBarState extends State<ChatInputBar> {
   final _controller = TextEditingController();
-  final _focusNode = FocusNode();
+  FocusNode? _ownedFocusNode;
+
+  FocusNode get _focusNode => widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
 
   void _handleSend() {
     final text = _controller.text.trim();
@@ -34,7 +39,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
+    _ownedFocusNode?.dispose();
     super.dispose();
   }
 
@@ -67,6 +72,13 @@ class _ChatInputBarState extends State<ChatInputBar> {
               child: Shortcuts(
                 shortcuts: {
                   LogicalKeySet(LogicalKeyboardKey.enter): const _SendIntent(),
+                  // Block bare digit keys from triggering page jumps
+                  for (final key in _digitKeys)
+                    SingleActivator(key):
+                        const DoNothingAndStopPropagationTextIntent(),
+                  // Block global shortcuts from firing while typing
+                  for (final activator in KeyBindingService().globalShortcuts.keys)
+                    activator: const DoNothingAndStopPropagationTextIntent(),
                 },
                 child: Actions(
                   actions: {
@@ -140,3 +152,16 @@ class _ChatInputBarState extends State<ChatInputBar> {
 class _SendIntent extends Intent {
   const _SendIntent();
 }
+
+const _digitKeys = [
+  LogicalKeyboardKey.digit0,
+  LogicalKeyboardKey.digit1,
+  LogicalKeyboardKey.digit2,
+  LogicalKeyboardKey.digit3,
+  LogicalKeyboardKey.digit4,
+  LogicalKeyboardKey.digit5,
+  LogicalKeyboardKey.digit6,
+  LogicalKeyboardKey.digit7,
+  LogicalKeyboardKey.digit8,
+  LogicalKeyboardKey.digit9,
+];

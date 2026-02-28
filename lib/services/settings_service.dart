@@ -50,6 +50,7 @@ class SettingsService {
   static const String _splitDividerPositionKey = 'split_divider_position';
   static const String _mcpRemoteConnectionsKey = 'mcp_remote_connections';
   static const String _chatEnabledKey = 'chat_enabled';
+  static const String _chatPanelWidthKey = 'chat_panel_width';
   static const String _chatLlmProviderKey = 'chat_llm_provider';
   static const String _anthropicApiKeyKey = 'anthropic_api_key';
   static const String _openaiApiKeyKey = 'openai_api_key';
@@ -80,6 +81,7 @@ class SettingsService {
   static const double defaultSplitDividerPosition = 0.5;
   static const bool defaultMcpRemoteConnections = false;
   static const bool defaultChatEnabled = false;
+  static const double defaultChatPanelWidth = 360;
   static const String defaultAnthropicModel = 'claude-haiku-4-5-20251001';
   static const String defaultOpenaiModel = 'gpt-5-nano';
 
@@ -255,6 +257,15 @@ class SettingsService {
   /// Set whether chat is enabled
   Future<bool> setChatEnabled(bool value) async {
     return await _prefs?.setBool(_chatEnabledKey, value) ?? false;
+  }
+
+  /// Get the chat panel width
+  double get chatPanelWidth =>
+      _prefs?.getDouble(_chatPanelWidthKey) ?? defaultChatPanelWidth;
+
+  /// Set the chat panel width
+  Future<bool> setChatPanelWidth(double value) async {
+    return await _prefs?.setDouble(_chatPanelWidthKey, value) ?? false;
   }
 
   /// Get the configured LLM provider

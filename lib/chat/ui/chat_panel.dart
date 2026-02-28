@@ -10,7 +10,9 @@ import 'package:nt_helper/chat/ui/chat_settings_dialog.dart';
 import 'package:nt_helper/services/settings_service.dart';
 
 class ChatPanel extends StatefulWidget {
-  const ChatPanel({super.key});
+  final bool requestInputFocus;
+
+  const ChatPanel({super.key, this.requestInputFocus = false});
 
   @override
   State<ChatPanel> createState() => _ChatPanelState();
@@ -18,12 +20,34 @@ class ChatPanel extends StatefulWidget {
 
 class _ChatPanelState extends State<ChatPanel> {
   final _scrollController = ScrollController();
+  final _inputFocusNode = FocusNode();
   int _previousMessageCount = 0;
   bool _previousIsProcessing = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.requestInputFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _inputFocusNode.requestFocus();
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(ChatPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.requestInputFocus && !oldWidget.requestInputFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _inputFocusNode.requestFocus();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
@@ -87,6 +111,7 @@ class _ChatPanelState extends State<ChatPanel> {
           onSend: (text) => _send(context, text),
           onCancel: () {},
           onSettings: () => _openSettings(context),
+          focusNode: _inputFocusNode,
         ),
       ],
     );
@@ -141,28 +166,30 @@ class _ChatPanelState extends State<ChatPanel> {
       children: [
         _buildHeader(context),
         Expanded(
-          child: messages.isEmpty
-              ? const _EmptyState()
-              : ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: messages.length +
-                      (state.isProcessing && state.currentToolName == null
-                          ? 1
-                          : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= messages.length) {
+          child: ExcludeFocus(
+            child: messages.isEmpty
+                ? const _EmptyState()
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: messages.length +
+                        (state.isProcessing && state.currentToolName == null
+                            ? 1
+                            : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= messages.length) {
+                        return ChatMessageBubble(
+                          message:
+                              ChatMessage.thinking(),
+                        );
+                      }
                       return ChatMessageBubble(
-                        message:
-                            ChatMessage.thinking(),
+                        message: messages[index],
+                        isNew: index == messages.length - 1,
                       );
-                    }
-                    return ChatMessageBubble(
-                      message: messages[index],
-                      isNew: index == messages.length - 1,
-                    );
-                  },
-                ),
+                    },
+                  ),
+          ),
         ),
         if (state.totalInputTokens > 0 || state.totalOutputTokens > 0)
           _TokenUsageBar(
@@ -174,6 +201,7 @@ class _ChatPanelState extends State<ChatPanel> {
           onSend: (text) => _send(context, text),
           onCancel: () => context.read<ChatCubit>().cancelProcessing(),
           onSettings: () => _openSettings(context),
+          focusNode: _inputFocusNode,
         ),
       ],
     );

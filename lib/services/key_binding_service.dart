@@ -62,6 +62,10 @@ class SwitchToBothIntent extends Intent {
   const SwitchToBothIntent();
 }
 
+class ToggleChatIntent extends Intent {
+  const ToggleChatIntent();
+}
+
 /// Abstracts access to the hardware keyboard to facilitate testing and
 /// deterministic modifier checks.
 abstract class HardwareKeyboardAdapter {
@@ -201,6 +205,12 @@ class KeyBindingService {
         const NextSlotIntent(),
     const SingleActivator(LogicalKeyboardKey.bracketRight, meta: true):
         const NextSlotIntent(),
+
+    // Toggle chat panel: Mod+L
+    const SingleActivator(LogicalKeyboardKey.keyL, control: true):
+        const ToggleChatIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyL, meta: true):
+        const ToggleChatIntent(),
   };
 
   /// Creates the actions map for zoom in/out/reset callbacks.
@@ -244,6 +254,7 @@ class KeyBindingService {
     required VoidCallback onSwitchToBoth,
     required VoidCallback onPreviousSlot,
     required VoidCallback onNextSlot,
+    required VoidCallback onToggleChat,
   }) {
     return {
       SavePresetIntent: CallbackAction<SavePresetIntent>(
@@ -309,6 +320,12 @@ class KeyBindingService {
       NextSlotIntent: CallbackAction<NextSlotIntent>(
         onInvoke: (_) {
           onNextSlot();
+          return null;
+        },
+      ),
+      ToggleChatIntent: CallbackAction<ToggleChatIntent>(
+        onInvoke: (_) {
+          onToggleChat();
           return null;
         },
       ),

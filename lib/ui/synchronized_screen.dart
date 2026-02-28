@@ -118,6 +118,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   bool _isBrowsePresetsOpen = false;
   bool _isShortcutHelpOpen = false;
   bool _showChatPanel = false;
+  bool _chatFocusRequested = false;
+  double _chatPanelWidth = 360;
   final SectionParameterController _sectionController =
       SectionParameterController();
 
@@ -140,6 +142,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
     // Initialize split divider position
     _splitDividerPosition = SettingsService().splitDividerPosition;
+
+    // Initialize chat panel width
+    _chatPanelWidth = SettingsService().chatPanelWidth;
 
     // Re-acquire focus when it drifts outside the screen's subtree
     // (e.g. after an inline text editor is removed from the tree)
@@ -544,6 +549,22 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               );
             }
           },
+          onToggleChat: () {
+            setState(() {
+              _showChatPanel = !_showChatPanel;
+              _chatFocusRequested = _showChatPanel;
+            });
+            SemanticsService.sendAnnouncement(
+              View.of(context),
+              _showChatPanel ? 'Chat panel opened' : 'Chat panel closed',
+              TextDirection.ltr,
+            );
+            if (_chatFocusRequested) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _chatFocusRequested = false);
+              });
+            }
+          },
         ),
         child: Focus(
           focusNode: _screenFocusNode,
@@ -558,14 +579,55 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         context.read<DistingCubit>(),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(child: scaffold),
-                        SizedBox(
-                          width: 360,
-                          child: const ChatPanel(),
-                        ),
-                      ],
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final maxChatWidth =
+                            (constraints.maxWidth * 0.5).clamp(280.0, 800.0);
+                        final clampedWidth =
+                            _chatPanelWidth.clamp(280.0, maxChatWidth);
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: FocusTraversalGroup(
+                                child: scaffold,
+                              ),
+                            ),
+                            Semantics(
+                              label: 'Chat panel resize handle',
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.resizeColumn,
+                                child: GestureDetector(
+                                  onHorizontalDragUpdate: (details) {
+                                    setState(() {
+                                      _chatPanelWidth = (_chatPanelWidth -
+                                              details.delta.dx)
+                                          .clamp(280.0, maxChatWidth);
+                                    });
+                                  },
+                                  onHorizontalDragEnd: (_) {
+                                    SettingsService()
+                                        .setChatPanelWidth(_chatPanelWidth);
+                                  },
+                                  child: Container(
+                                    width: 4,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: clampedWidth,
+                              child: FocusTraversalGroup(
+                                child: ChatPanel(
+                                  requestInputFocus: _chatFocusRequested,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   )
                 : scaffold,
