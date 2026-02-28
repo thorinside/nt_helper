@@ -71,9 +71,14 @@ class OpenAIProvider implements LlmProvider {
     );
 
     if (response.statusCode != 200) {
-      final errorBody = jsonDecode(response.body);
-      final errorMessage =
-          errorBody['error']?['message'] ?? 'Unknown API error';
+      String errorMessage;
+      try {
+        final errorBody = jsonDecode(response.body);
+        errorMessage =
+            errorBody['error']?['message'] as String? ?? 'Unknown API error';
+      } on FormatException {
+        errorMessage = response.body;
+      }
       throw LlmApiException(
         'OpenAI API error (${response.statusCode}): $errorMessage',
       );

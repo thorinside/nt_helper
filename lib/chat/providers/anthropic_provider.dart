@@ -62,9 +62,14 @@ class AnthropicProvider implements LlmProvider {
     );
 
     if (response.statusCode != 200) {
-      final errorBody = jsonDecode(response.body);
-      final errorMessage =
-          errorBody['error']?['message'] ?? 'Unknown API error';
+      String errorMessage;
+      try {
+        final errorBody = jsonDecode(response.body);
+        errorMessage =
+            errorBody['error']?['message'] as String? ?? 'Unknown API error';
+      } on FormatException {
+        errorMessage = response.body;
+      }
       throw LlmApiException(
         'Anthropic API error (${response.statusCode}): $errorMessage',
       );
@@ -99,15 +104,21 @@ class AnthropicProvider implements LlmProvider {
             result.add({'role': 'assistant', 'content': msg.content ?? ''});
           }
         case LlmRole.tool:
+          final toolResultBlock = {
+            'type': 'tool_result',
+            'tool_use_id': msg.toolCallId!,
+            'content': msg.content!,
+          };
+          if (result.isNotEmpty && result.last['role'] == 'user') {
+            final lastContent = result.last['content'];
+            if (lastContent is List<dynamic>) {
+              lastContent.add(toolResultBlock);
+              continue;
+            }
+          }
           result.add({
             'role': 'user',
-            'content': [
-              {
-                'type': 'tool_result',
-                'tool_use_id': msg.toolCallId!,
-                'content': msg.content!,
-              },
-            ],
+            'content': <dynamic>[toolResultBlock],
           });
       }
     }

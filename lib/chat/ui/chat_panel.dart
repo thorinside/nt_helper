@@ -282,6 +282,7 @@ class _TokenUsageBar extends StatelessWidget {
         style: theme.textTheme.labelSmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

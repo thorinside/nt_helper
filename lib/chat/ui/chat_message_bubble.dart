@@ -167,16 +167,19 @@ class _ToolCallCardState extends State<_ToolCallCard> {
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
+                      constraints: const BoxConstraints(maxHeight: 200),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: SelectableText(
-                        _formatJson(widget.message.toolArguments!),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                          fontSize: 11,
+                      child: SingleChildScrollView(
+                        child: SelectableText(
+                          _formatJson(widget.message.toolArguments!),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ),

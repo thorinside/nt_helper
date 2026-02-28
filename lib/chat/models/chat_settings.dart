@@ -30,9 +30,9 @@ class ChatSettings {
   bool get hasApiKey {
     switch (provider) {
       case LlmProviderType.anthropic:
-        return anthropicApiKey != null && anthropicApiKey!.isNotEmpty;
+        return anthropicApiKey != null && anthropicApiKey!.trim().isNotEmpty;
       case LlmProviderType.openai:
-        return openaiApiKey != null && openaiApiKey!.isNotEmpty;
+        return openaiApiKey != null && openaiApiKey!.trim().isNotEmpty;
     }
   }
 

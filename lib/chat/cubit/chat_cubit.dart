@@ -21,6 +21,10 @@ class ChatCubit extends Cubit<ChatState> {
   // Accumulated LLM message history for the agentic loop
   final List<LlmMessage> _llmHistory = [];
 
+  // Length of _llmHistory before the current loop started, used to restore
+  // clean state if the loop is cancelled mid-execution.
+  int _historyLengthBeforeLoop = 0;
+
   ChatCubit({required ToolRegistry toolRegistry})
       : _toolRegistry = toolRegistry,
         super(const ChatReady());
@@ -42,6 +46,7 @@ class ChatCubit extends Cubit<ChatState> {
     emit(currentState.copyWith(messages: messages, isProcessing: true));
 
     // Add to LLM history
+    _historyLengthBeforeLoop = _llmHistory.length;
     _llmHistory.add(LlmMessage.user(text.trim()));
 
     // Create provider (disposing the previous one first)
@@ -116,6 +121,7 @@ class ChatCubit extends Cubit<ChatState> {
               currentState.totalOutputTokens + (usage?.outputTokens ?? 0),
         ));
       case ChatLoopError(message: final message):
+        _llmHistory.removeRange(_historyLengthBeforeLoop, _llmHistory.length);
         final msg = ChatMessage.assistant('Error: $message');
         emit(currentState.copyWith(
           messages: [...currentState.messages, msg],
@@ -133,6 +139,7 @@ class ChatCubit extends Cubit<ChatState> {
 
   void cancelProcessing() {
     _loopSubscription?.cancel();
+    _llmHistory.removeRange(_historyLengthBeforeLoop, _llmHistory.length);
     final currentState = state;
     if (currentState is ChatReady) {
       emit(currentState.copyWith(
@@ -143,6 +150,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void dismissError() {
+    _llmHistory.clear();
     emit(const ChatReady());
   }
 
