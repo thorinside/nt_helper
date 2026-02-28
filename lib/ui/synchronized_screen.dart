@@ -7,6 +7,9 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
+import 'package:nt_helper/chat/cubit/chat_cubit.dart';
+import 'package:nt_helper/chat/ui/chat_panel.dart';
+import 'package:nt_helper/mcp/tool_registry.dart';
 import 'package:nt_helper/ui/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
@@ -114,6 +117,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   bool _isAddAlgorithmOpen = false;
   bool _isBrowsePresetsOpen = false;
   bool _isShortcutHelpOpen = false;
+  bool _showChatPanel = false;
   final SectionParameterController _sectionController =
       SectionParameterController();
 
@@ -545,7 +549,27 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           focusNode: _screenFocusNode,
           autofocus: true,
           onKeyEvent: _handleKeyEvent,
-          child: BlocProvider.value(value: routingCubit, child: scaffold),
+          child: BlocProvider.value(
+            value: routingCubit,
+            child: _showChatPanel
+                ? BlocProvider(
+                    create: (_) => ChatCubit(
+                      toolRegistry: ToolRegistry(
+                        context.read<DistingCubit>(),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(child: scaffold),
+                        SizedBox(
+                          width: 360,
+                          child: const ChatPanel(),
+                        ),
+                      ],
+                    ),
+                  )
+                : scaffold,
+          ),
         ),
       ),
     );
@@ -1587,6 +1611,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 100),
         child: _buildModeSpecificActions(cubit),
+      ),
+      // Chat panel toggle
+      IconButton(
+        icon: Icon(
+          _showChatPanel ? Icons.chat_bubble : Icons.chat_bubble_outline,
+          semanticLabel: _showChatPanel ? 'Hide chat panel' : 'Show chat panel',
+        ),
+        tooltip: _showChatPanel ? 'Hide chat' : 'Show chat',
+        onPressed: () => setState(() => _showChatPanel = !_showChatPanel),
       ),
       // Overflow menu
       _buildOverflowMenu(cubit),

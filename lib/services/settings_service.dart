@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/ui/widgets/rtt_stats_dialog.dart';
@@ -48,6 +49,12 @@ class SettingsService {
   static const String _lastUpdateCheckTimestampKey = 'last_update_check_timestamp';
   static const String _splitDividerPositionKey = 'split_divider_position';
   static const String _mcpRemoteConnectionsKey = 'mcp_remote_connections';
+  static const String _chatEnabledKey = 'chat_enabled';
+  static const String _chatLlmProviderKey = 'chat_llm_provider';
+  static const String _anthropicApiKeyKey = 'anthropic_api_key';
+  static const String _openaiApiKeyKey = 'openai_api_key';
+  static const String _anthropicModelKey = 'anthropic_model';
+  static const String _openaiModelKey = 'openai_model';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -71,6 +78,9 @@ class SettingsService {
   static const bool defaultCpuMonitorEnabled = true;
   static const double defaultSplitDividerPosition = 0.5;
   static const bool defaultMcpRemoteConnections = false;
+  static const bool defaultChatEnabled = false;
+  static const String defaultAnthropicModel = 'claude-sonnet-4-20250514';
+  static const String defaultOpenaiModel = 'gpt-4o';
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -235,6 +245,75 @@ class SettingsService {
   /// Set the split-screen divider position
   Future<bool> setSplitDividerPosition(double value) async {
     return await _prefs?.setDouble(_splitDividerPositionKey, value) ?? false;
+  }
+
+  /// Check if chat is enabled
+  bool get chatEnabled =>
+      _prefs?.getBool(_chatEnabledKey) ?? defaultChatEnabled;
+
+  /// Set whether chat is enabled
+  Future<bool> setChatEnabled(bool value) async {
+    return await _prefs?.setBool(_chatEnabledKey, value) ?? false;
+  }
+
+  /// Get the configured LLM provider
+  LlmProviderType get chatLlmProvider {
+    final value = _prefs?.getString(_chatLlmProviderKey);
+    if (value == 'openai') return LlmProviderType.openai;
+    return LlmProviderType.anthropic;
+  }
+
+  /// Set the LLM provider
+  Future<bool> setChatLlmProvider(LlmProviderType provider) async {
+    return await _prefs?.setString(
+            _chatLlmProviderKey, provider == LlmProviderType.openai ? 'openai' : 'anthropic') ??
+        false;
+  }
+
+  /// Get the Anthropic API key
+  String? get anthropicApiKey => _prefs?.getString(_anthropicApiKeyKey);
+
+  /// Set the Anthropic API key
+  Future<bool> setAnthropicApiKey(String value) async {
+    if (value.isEmpty) {
+      return await _prefs?.remove(_anthropicApiKeyKey) ?? false;
+    }
+    return await _prefs?.setString(_anthropicApiKeyKey, value) ?? false;
+  }
+
+  /// Get the OpenAI API key
+  String? get openaiApiKey => _prefs?.getString(_openaiApiKeyKey);
+
+  /// Set the OpenAI API key
+  Future<bool> setOpenaiApiKey(String value) async {
+    if (value.isEmpty) {
+      return await _prefs?.remove(_openaiApiKeyKey) ?? false;
+    }
+    return await _prefs?.setString(_openaiApiKeyKey, value) ?? false;
+  }
+
+  /// Get the Anthropic model name
+  String get anthropicModel =>
+      _prefs?.getString(_anthropicModelKey) ?? defaultAnthropicModel;
+
+  /// Set the Anthropic model name
+  Future<bool> setAnthropicModel(String value) async {
+    if (value.isEmpty) {
+      return await _prefs?.remove(_anthropicModelKey) ?? false;
+    }
+    return await _prefs?.setString(_anthropicModelKey, value) ?? false;
+  }
+
+  /// Get the OpenAI model name
+  String get openaiModel =>
+      _prefs?.getString(_openaiModelKey) ?? defaultOpenaiModel;
+
+  /// Set the OpenAI model name
+  Future<bool> setOpenaiModel(String value) async {
+    if (value.isEmpty) {
+      return await _prefs?.remove(_openaiModelKey) ?? false;
+    }
+    return await _prefs?.setString(_openaiModelKey, value) ?? false;
   }
 
   /// Get the dismissed update version (user chose to skip this version)
