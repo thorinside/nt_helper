@@ -149,6 +149,7 @@ class AnthropicProvider implements LlmProvider {
     );
   }
 
+  @override
   void dispose() {
     _client.close();
   }

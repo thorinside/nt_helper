@@ -18,4 +18,7 @@ abstract class LlmProvider {
 
   /// The provider name for display purposes.
   String get displayName;
+
+  /// Release HTTP client resources.
+  void dispose();
 }

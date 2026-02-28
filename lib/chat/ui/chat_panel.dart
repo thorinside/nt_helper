@@ -19,6 +19,7 @@ class ChatPanel extends StatefulWidget {
 class _ChatPanelState extends State<ChatPanel> {
   final _scrollController = ScrollController();
   int _previousMessageCount = 0;
+  bool _previousIsProcessing = false;
 
   @override
   void dispose() {
@@ -127,11 +128,14 @@ class _ChatPanelState extends State<ChatPanel> {
   Widget _buildChat(BuildContext context, ChatReady state) {
     final messages = state.messages;
     final messageCount = messages.length;
+    final isProcessing = state.isProcessing && state.currentToolName == null;
 
-    if (messageCount > _previousMessageCount) {
+    if (messageCount > _previousMessageCount ||
+        (isProcessing && !_previousIsProcessing)) {
       _scrollToBottom();
     }
     _previousMessageCount = messageCount;
+    _previousIsProcessing = isProcessing;
 
     return Column(
       children: [

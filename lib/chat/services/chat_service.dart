@@ -24,7 +24,8 @@ class ChatLoopToolResult extends ChatLoopEvent {
 class ChatLoopAssistantMessage extends ChatLoopEvent {
   final String content;
   final LlmUsage? usage;
-  ChatLoopAssistantMessage(this.content, {this.usage});
+  final bool isFinal;
+  ChatLoopAssistantMessage(this.content, {this.usage, this.isFinal = false});
 }
 
 class ChatLoopError extends ChatLoopEvent {
@@ -58,7 +59,7 @@ class ChatService {
   /// The stream yields events as the loop progresses and completes when the
   /// LLM produces a final response with no tool calls.
   Stream<ChatLoopEvent> runAgenticLoop(List<LlmMessage> messages) async* {
-    var currentMessages = List<LlmMessage>.from(messages);
+    final currentMessages = messages;
     final tools = _toolBridge.toolDefinitions;
 
     for (int i = 0; i < _maxIterations; i++) {
@@ -109,10 +110,11 @@ class ChatService {
       }
 
       // No tool calls — final response
-      final content = response.content ?? '';
-      if (content.isNotEmpty) {
-        yield ChatLoopAssistantMessage(content, usage: response.usage);
-      }
+      yield ChatLoopAssistantMessage(
+        response.content ?? '',
+        usage: response.usage,
+        isFinal: true,
+      );
       return;
     }
 

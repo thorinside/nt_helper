@@ -16,6 +16,7 @@ import 'package:nt_helper/mcp/tool_registry.dart';
 class ChatCubit extends Cubit<ChatState> {
   final ToolRegistry _toolRegistry;
   StreamSubscription<dynamic>? _loopSubscription;
+  LlmProvider? _activeProvider;
 
   // Accumulated LLM message history for the agentic loop
   final List<LlmMessage> _llmHistory = [];
@@ -43,11 +44,12 @@ class ChatCubit extends Cubit<ChatState> {
     // Add to LLM history
     _llmHistory.add(LlmMessage.user(text.trim()));
 
-    // Create provider
-    final provider = _createProvider(settings);
+    // Create provider (disposing the previous one first)
+    _activeProvider?.dispose();
+    _activeProvider = _createProvider(settings);
     final toolBridge = ToolBridgeService(_toolRegistry);
     final chatService = ChatService(
-      provider: provider,
+      provider: _activeProvider!,
       toolBridge: toolBridge,
       systemPrompt: distingNtSystemPrompt,
     );
@@ -90,14 +92,24 @@ class ChatCubit extends Cubit<ChatState> {
           messages: [...currentState.messages, msg],
           clearToolName: true,
         ));
-      case ChatLoopAssistantMessage(content: final content, usage: final usage):
-        final msg = ChatMessage.assistant(content);
-        // Add to LLM history
-        _llmHistory.add(LlmMessage.assistant(content));
+      case ChatLoopAssistantMessage(
+          content: final content,
+          usage: final usage,
+          isFinal: final isFinal,
+        ):
+        final messages = content.isNotEmpty
+            ? [...currentState.messages, ChatMessage.assistant(content)]
+            : currentState.messages;
+        // Only add to LLM history for the final message — intermediate
+        // assistant messages (with tool calls) are already added by the
+        // chat service as assistantWithToolCalls.
+        if (isFinal) {
+          _llmHistory.add(LlmMessage.assistant(content));
+        }
         emit(currentState.copyWith(
-          messages: [...currentState.messages, msg],
-          isProcessing: false,
-          clearToolName: true,
+          messages: messages,
+          isProcessing: isFinal ? false : null,
+          clearToolName: isFinal,
           totalInputTokens:
               currentState.totalInputTokens + (usage?.inputTokens ?? 0),
           totalOutputTokens:
@@ -153,6 +165,7 @@ class ChatCubit extends Cubit<ChatState> {
   @override
   Future<void> close() {
     _loopSubscription?.cancel();
+    _activeProvider?.dispose();
     return super.close();
   }
 }
