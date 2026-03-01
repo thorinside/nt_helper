@@ -101,15 +101,18 @@ class ChatCubit extends Cubit<ChatState> {
           content: final content,
           usage: final usage,
           isFinal: final isFinal,
+          finalHistory: final finalHistory,
         ):
         final messages = content.isNotEmpty
             ? [...currentState.messages, ChatMessage.assistant(content)]
             : currentState.messages;
-        // Only add to LLM history for the final message — intermediate
-        // assistant messages (with tool calls) are already added by the
-        // chat service as assistantWithToolCalls.
+        // On final message, replace history atomically with the complete
+        // snapshot from the service (includes all tool calls/results and the
+        // final assistant message).
         if (isFinal) {
-          _llmHistory.add(LlmMessage.assistant(content));
+          final newHistory = finalHistory ?? [LlmMessage.assistant(content)];
+          _llmHistory.clear();
+          _llmHistory.addAll(newHistory);
         }
         emit(currentState.copyWith(
           messages: messages,

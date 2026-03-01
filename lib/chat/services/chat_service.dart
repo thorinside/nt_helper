@@ -25,7 +25,12 @@ class ChatLoopAssistantMessage extends ChatLoopEvent {
   final String content;
   final LlmUsage? usage;
   final bool isFinal;
-  ChatLoopAssistantMessage(this.content, {this.usage, this.isFinal = false});
+  /// When [isFinal] is true, contains the full updated LLM history including
+  /// all tool calls/results and the final assistant message, ready to replace
+  /// the cubit's [_llmHistory].
+  final List<LlmMessage>? finalHistory;
+  ChatLoopAssistantMessage(this.content,
+      {this.usage, this.isFinal = false, this.finalHistory});
 }
 
 class ChatLoopError extends ChatLoopEvent {
@@ -59,7 +64,9 @@ class ChatService {
   /// The stream yields events as the loop progresses and completes when the
   /// LLM produces a final response with no tool calls.
   Stream<ChatLoopEvent> runAgenticLoop(List<LlmMessage> messages) async* {
-    final currentMessages = messages;
+    // Work on a private copy so that cancellation or external mutation of the
+    // caller's history list cannot corrupt the loop's in-flight state.
+    final currentMessages = List<LlmMessage>.of(messages);
     final tools = _toolBridge.toolDefinitions;
 
     for (int i = 0; i < _maxIterations; i++) {
@@ -110,10 +117,13 @@ class ChatService {
       }
 
       // No tool calls — final response
+      final finalContent = response.content ?? '';
+      currentMessages.add(LlmMessage.assistant(finalContent));
       yield ChatLoopAssistantMessage(
-        response.content ?? '',
+        finalContent,
         usage: response.usage,
         isFinal: true,
+        finalHistory: List.unmodifiable(currentMessages),
       );
       return;
     }
