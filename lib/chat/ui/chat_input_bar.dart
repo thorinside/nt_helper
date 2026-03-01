@@ -25,8 +25,58 @@ class ChatInputBar extends StatefulWidget {
 class _ChatInputBarState extends State<ChatInputBar> {
   final _controller = TextEditingController();
   FocusNode? _ownedFocusNode;
+  bool _isExpanded = false;
+  bool _hasTyped = false;
+  double _availableWidth = 0;
 
-  FocusNode get _focusNode => widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
+  FocusNode get _focusNode =>
+      widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_checkExpansion);
+    _controller.addListener(_checkHasTyped);
+  }
+
+  void _checkHasTyped() {
+    if (!_hasTyped && _controller.text.isNotEmpty) {
+      setState(() => _hasTyped = true);
+      _controller.removeListener(_checkHasTyped);
+    }
+  }
+
+  void _checkExpansion() {
+    if (_availableWidth <= 0) return;
+
+    final text = _controller.text;
+    bool shouldExpand = false;
+
+    if (text.contains('\n')) {
+      shouldExpand = true;
+    } else {
+      // Approximate the width available to text inside the TextField
+      // (subtract padding: 16 horizontal on each side)
+      const textFieldPadding = 32.0;
+      final textWidth = _availableWidth - textFieldPadding;
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+        maxLines: 1,
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: double.infinity);
+
+      shouldExpand = textPainter.width > textWidth;
+      textPainter.dispose();
+    }
+
+    if (shouldExpand != _isExpanded) {
+      setState(() => _isExpanded = shouldExpand);
+    }
+  }
 
   void _handleSend() {
     final text = _controller.text.trim();
@@ -38,6 +88,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   @override
   void dispose() {
+    _controller.removeListener(_checkExpansion);
     _controller.dispose();
     _ownedFocusNode?.dispose();
     super.dispose();
@@ -56,93 +107,118 @@ class _ChatInputBarState extends State<ChatInputBar> {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            Semantics(
-              label: 'Chat settings',
-              button: true,
-              child: IconButton(
-                icon: const Icon(Icons.settings_outlined, size: 20),
-                tooltip: 'Chat settings',
-                onPressed: widget.onSettings,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-            Expanded(
-              child: Shortcuts(
-                shortcuts: {
-                  LogicalKeySet(LogicalKeyboardKey.enter): const _SendIntent(),
-                  // Block bare digit keys from triggering page jumps
-                  for (final key in _digitKeys)
-                    SingleActivator(key):
-                        const DoNothingAndStopPropagationTextIntent(),
-                  // Block global shortcuts from firing while typing
-                  for (final activator in KeyBindingService().globalShortcuts.keys)
-                    activator: const DoNothingAndStopPropagationTextIntent(),
-                },
-                child: Actions(
-                  actions: {
-                    _SendIntent: CallbackAction<_SendIntent>(
-                      onInvoke: (_) {
-                        if (!widget.isProcessing) _handleSend();
-                        return null;
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            _availableWidth =
+                constraints.maxWidth -
+                4 // SizedBox before send button
+                -
+                48; // send/cancel IconButton width
+            if (!_isExpanded) {
+              _availableWidth -= 40; // settings IconButton width
+            }
+            return Row(
+              children: [
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: _isExpanded
+                      ? const SizedBox.shrink()
+                      : Semantics(
+                          label: 'Chat settings',
+                          button: true,
+                          child: IconButton(
+                            icon: const Icon(Icons.settings_outlined, size: 20),
+                            tooltip: 'Chat settings',
+                            onPressed: widget.onSettings,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                ),
+                Expanded(
+                  child: Shortcuts(
+                    shortcuts: {
+                      LogicalKeySet(LogicalKeyboardKey.enter):
+                          const _SendIntent(),
+                      for (final key
+                          in _digitKeys) ...<SingleActivator, Intent>{
+                        SingleActivator(key):
+                            const DoNothingAndStopPropagationTextIntent(),
+                        SingleActivator(key, shift: true):
+                            const DoNothingAndStopPropagationTextIntent(),
                       },
-                    ),
-                  },
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    decoration: InputDecoration(
-                      hintText: 'Ask about your preset...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
+                      for (final activator
+                          in KeyBindingService().globalShortcuts.keys)
+                        activator:
+                            const DoNothingAndStopPropagationTextIntent(),
+                    },
+                    child: Actions(
+                      actions: {
+                        _SendIntent: CallbackAction<_SendIntent>(
+                          onInvoke: (_) {
+                            if (!widget.isProcessing) _handleSend();
+                            return null;
+                          },
+                        ),
+                      },
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        decoration: InputDecoration(
+                          hintText: _hasTyped ? null : 'Ask about your preset...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerHighest,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          isDense: true,
+                        ),
+                        enabled: !widget.isProcessing,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: widget.isProcessing
+                            ? null
+                            : (_) => _handleSend(),
+                        maxLines: 3,
+                        minLines: 1,
                       ),
-                      filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      isDense: true,
                     ),
-                    enabled: !widget.isProcessing,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: widget.isProcessing ? null : (_) => _handleSend(),
-                    maxLines: 3,
-                    minLines: 1,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            if (widget.isProcessing)
-              Semantics(
-                label: 'Cancel',
-                button: true,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.stop_circle_outlined,
-                    color: theme.colorScheme.error,
+                const SizedBox(width: 4),
+                if (widget.isProcessing)
+                  Semantics(
+                    label: 'Cancel',
+                    button: true,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.stop_circle_outlined,
+                        color: theme.colorScheme.error,
+                      ),
+                      tooltip: 'Cancel',
+                      onPressed: widget.onCancel,
+                    ),
+                  )
+                else
+                  Semantics(
+                    label: 'Send message',
+                    button: true,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.send_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
+                      tooltip: 'Send',
+                      onPressed: _handleSend,
+                    ),
                   ),
-                  tooltip: 'Cancel',
-                  onPressed: widget.onCancel,
-                ),
-              )
-            else
-              Semantics(
-                label: 'Send message',
-                button: true,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.send_rounded,
-                    color: theme.colorScheme.primary,
-                  ),
-                  tooltip: 'Send',
-                  onPressed: _handleSend,
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

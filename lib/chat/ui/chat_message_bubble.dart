@@ -20,11 +20,11 @@ class ChatMessageBubble extends StatelessWidget {
     return switch (message.role) {
       ChatMessageRole.user => _UserBubble(message: message),
       ChatMessageRole.assistant => _AssistantBubble(
-          message: message,
-          isNew: isNew,
-        ),
-      ChatMessageRole.toolCall => _ToolCallCard(message: message),
-      ChatMessageRole.toolResult => _ToolResultCard(message: message),
+        message: message,
+        isNew: isNew,
+      ),
+      ChatMessageRole.toolCall ||
+      ChatMessageRole.toolResult => const SizedBox.shrink(),
       ChatMessageRole.thinking => _ThinkingIndicator(),
     };
   }
@@ -54,10 +54,10 @@ class _UserBubbleState extends State<_UserBubble> {
           children: [
             Container(
               constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.8),
+                maxWidth: MediaQuery.of(context).size.width * 0.8,
+              ),
               margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(16),
@@ -110,10 +110,10 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
           children: [
             Container(
               constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.8),
+                maxWidth: MediaQuery.of(context).size.width * 0.8,
+              ),
               margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16),
@@ -149,207 +149,254 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
   }
 }
 
-class _ToolCallCard extends StatefulWidget {
-  final ChatMessage message;
+/// Renders a group of consecutive tool call/result messages as compact icons
+/// in a Wrap layout. Each icon can be tapped to expand details.
+class ToolGroupBubble extends StatelessWidget {
+  final List<ChatMessage> messages;
 
-  const _ToolCallCard({required this.message});
-
-  @override
-  State<_ToolCallCard> createState() => _ToolCallCardState();
-}
-
-class _ToolCallCardState extends State<_ToolCallCard> {
-  bool _expanded = false;
+  const ToolGroupBubble({super.key, required this.messages});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final pairs = _pairToolMessages(messages);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-      child: Semantics(
-        label: 'Tool call: ${widget.message.toolName}',
-        expanded: _expanded,
-        child: Card(
-          elevation: 0,
-          color: theme.colorScheme.surfaceContainerLow,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.build_rounded,
-                        size: 16,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          widget.message.toolName ?? 'Tool',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        _expanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                  if (_expanded && widget.message.toolArguments != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: SingleChildScrollView(
-                        child: SelectableText(
-                          _formatJson(widget.message.toolArguments!),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ToolResultCard extends StatefulWidget {
-  final ChatMessage message;
-
-  const _ToolResultCard({required this.message});
-
-  @override
-  State<_ToolResultCard> createState() => _ToolResultCardState();
-}
-
-class _ToolResultCardState extends State<_ToolResultCard> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isSuccess = _isSuccessResult(widget.message.content);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-      child: Semantics(
-        label:
-            'Tool result from ${widget.message.toolName}: ${isSuccess ? 'success' : 'error'}',
-        expanded: _expanded,
-        child: Card(
-          elevation: 0,
-          color: theme.colorScheme.surfaceContainerLow,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: BorderSide(
-              color: isSuccess
-                  ? theme.colorScheme.outlineVariant
-                  : theme.colorScheme.error.withValues(alpha: 0.5),
-            ),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        isSuccess
-                            ? Icons.check_circle_outline
-                            : Icons.error_outline,
-                        size: 16,
-                        color: isSuccess
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.error,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '${widget.message.toolName} result',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        _expanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                  if (_expanded) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: SingleChildScrollView(
-                        child: SelectableText(
-                          _formatJsonString(widget.message.content),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: pairs.map((pair) => _ToolChip(pair: pair)).toList(),
       ),
     );
   }
 
-  bool _isSuccessResult(String content) {
-    try {
-      final json = jsonDecode(content);
-      if (json is Map) {
-        return json['success'] != false;
+  static List<_ToolPair> _pairToolMessages(List<ChatMessage> messages) {
+    final calls = <String, ChatMessage>{};
+    final results = <String, ChatMessage>{};
+
+    for (final msg in messages) {
+      final id = msg.toolCallId;
+      if (id == null) continue;
+      if (msg.role == ChatMessageRole.toolCall) {
+        calls[id] = msg;
+      } else if (msg.role == ChatMessageRole.toolResult) {
+        results[id] = msg;
       }
+    }
+
+    final pairs = <_ToolPair>[];
+    final seen = <String>{};
+
+    // Preserve original order based on first appearance
+    for (final msg in messages) {
+      final id = msg.toolCallId;
+      if (id == null || seen.contains(id)) continue;
+      seen.add(id);
+      pairs.add(_ToolPair(call: calls[id], result: results[id]));
+    }
+
+    return pairs;
+  }
+}
+
+class _ToolPair {
+  final ChatMessage? call;
+  final ChatMessage? result;
+
+  const _ToolPair({this.call, this.result});
+
+  String get toolName => call?.toolName ?? result?.toolName ?? 'Tool';
+
+  bool get isPending => result == null;
+
+  bool get isSuccess {
+    if (result == null) return false;
+    try {
+      final json = jsonDecode(result!.content);
+      if (json is Map) return json['success'] != false;
     } catch (_) {}
     return true;
+  }
+}
+
+class _ToolChip extends StatefulWidget {
+  final _ToolPair pair;
+
+  const _ToolChip({required this.pair});
+
+  @override
+  State<_ToolChip> createState() => _ToolChipState();
+}
+
+class _ToolChipState extends State<_ToolChip> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final pair = widget.pair;
+
+    if (!_expanded) {
+      return Semantics(
+        label:
+            '${pair.toolName}: ${pair.isPending
+                ? 'running'
+                : pair.isSuccess
+                ? 'success'
+                : 'error'}',
+        button: true,
+        child: Tooltip(
+          message: pair.toolName,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => setState(() => _expanded = true),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: _buildIcon(theme, pair),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _ToolExpandedCard(
+      pair: pair,
+      onCollapse: () => setState(() => _expanded = false),
+    );
+  }
+
+  Widget _buildIcon(ThemeData theme, _ToolPair pair) {
+    if (pair.isPending) {
+      return SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+    if (pair.isSuccess) {
+      return Icon(Icons.check_circle, size: 16, color: Colors.green.shade400);
+    }
+    return Icon(Icons.cancel, size: 16, color: theme.colorScheme.error);
+  }
+}
+
+class _ToolExpandedCard extends StatelessWidget {
+  final _ToolPair pair;
+  final VoidCallback onCollapse;
+
+  const _ToolExpandedCard({required this.pair, required this.onCollapse});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        elevation: 0,
+        color: theme.colorScheme.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onCollapse,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.build_rounded,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        pair.toolName,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.expand_less,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+                if (pair.call?.toolArguments != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Arguments',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        _formatJson(pair.call!.toolArguments!),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                if (pair.result != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Result',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        _formatJsonString(pair.result!.content),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

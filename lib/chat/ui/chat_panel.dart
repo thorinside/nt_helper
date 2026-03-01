@@ -23,6 +23,7 @@ class _ChatPanelState extends State<ChatPanel> {
   final _inputFocusNode = FocusNode();
   int _previousMessageCount = 0;
   bool _previousIsProcessing = false;
+  bool _wasProcessing = false;
 
   @override
   void initState() {
@@ -91,8 +92,7 @@ class _ChatPanelState extends State<ChatPanel> {
           builder: (context, state) {
             return switch (state) {
               ChatInitial() => _buildEmpty(context),
-              ChatError(message: final msg) =>
-                _buildError(context, msg),
+              ChatError(message: final msg) => _buildError(context, msg),
               ChatReady() => _buildChat(context, state),
             };
           },
@@ -129,8 +129,11 @@ class _ChatPanelState extends State<ChatPanel> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline,
-                      color: theme.colorScheme.error, size: 48),
+                  Icon(
+                    Icons.error_outline,
+                    color: theme.colorScheme.error,
+                    size: 48,
+                  ),
                   const SizedBox(height: 12),
                   Text(message, textAlign: TextAlign.center),
                   const SizedBox(height: 12),
@@ -161,9 +164,19 @@ class _ChatPanelState extends State<ChatPanel> {
           (isProcessing && !_previousIsProcessing)) {
         _scrollToBottom();
       }
+      if (_wasProcessing && !state.isProcessing) {
+        _inputFocusNode.requestFocus();
+      }
       _previousMessageCount = messageCount;
       _previousIsProcessing = isProcessing;
+      _wasProcessing = state.isProcessing;
     });
+
+    final displayItems = _groupMessages(
+      messages,
+      state.isProcessing,
+      state.currentToolName,
+    );
 
     return Column(
       children: [
@@ -175,23 +188,19 @@ class _ChatPanelState extends State<ChatPanel> {
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: messages.length +
-                        (state.isProcessing && state.currentToolName == null
-                            ? 1
-                            : 0),
+                    itemCount: displayItems.length,
                     itemBuilder: (context, index) {
-                      final hasThinking =
-                          state.isProcessing && state.currentToolName == null;
-                      if (index >= messages.length) {
-                        return ChatMessageBubble(
+                      final item = displayItems[index];
+                      return switch (item) {
+                        _SingleMessage(:final message, :final isNew) =>
+                          ChatMessageBubble(message: message, isNew: isNew),
+                        _ToolGroup(:final messages) => ToolGroupBubble(
+                          messages: messages,
+                        ),
+                        _Thinking() => ChatMessageBubble(
                           message: ChatMessage.thinking(),
-                        );
-                      }
-                      return ChatMessageBubble(
-                        message: messages[index],
-                        isNew: !hasThinking &&
-                            index == messages.length - 1,
-                      );
+                        ),
+                      };
                     },
                   ),
           ),
@@ -223,8 +232,11 @@ class _ChatPanelState extends State<ChatPanel> {
       ),
       child: Row(
         children: [
-          Icon(Icons.chat_bubble_outline,
-              size: 18, color: theme.colorScheme.primary),
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
           const SizedBox(width: 8),
           Text('Chat', style: theme.textTheme.titleSmall),
           const Spacer(),
@@ -281,7 +293,9 @@ class _EmptyState extends StatelessWidget {
               'I can search algorithms, show routing,\nedit parameters, and more.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.7,
+                ),
               ),
             ),
           ],
@@ -295,10 +309,7 @@ class _TokenUsageBar extends StatelessWidget {
   final int inputTokens;
   final int outputTokens;
 
-  const _TokenUsageBar({
-    required this.inputTokens,
-    required this.outputTokens,
-  });
+  const _TokenUsageBar({required this.inputTokens, required this.outputTokens});
 
   @override
   Widget build(BuildContext context) {
@@ -324,4 +335,52 @@ class _TokenUsageBar extends StatelessWidget {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
     return n.toString();
   }
+}
+
+// Display item types for grouping tool messages
+sealed class _DisplayItem {}
+
+class _SingleMessage extends _DisplayItem {
+  final ChatMessage message;
+  final bool isNew;
+  _SingleMessage(this.message, {this.isNew = false});
+}
+
+class _ToolGroup extends _DisplayItem {
+  final List<ChatMessage> messages;
+  _ToolGroup(this.messages);
+}
+
+class _Thinking extends _DisplayItem {}
+
+List<_DisplayItem> _groupMessages(
+  List<ChatMessage> messages,
+  bool isProcessing,
+  String? currentToolName,
+) {
+  final items = <_DisplayItem>[];
+  int i = 0;
+  while (i < messages.length) {
+    final msg = messages[i];
+    if (msg.role == ChatMessageRole.toolCall ||
+        msg.role == ChatMessageRole.toolResult) {
+      final toolMessages = <ChatMessage>[];
+      while (i < messages.length &&
+          (messages[i].role == ChatMessageRole.toolCall ||
+              messages[i].role == ChatMessageRole.toolResult)) {
+        toolMessages.add(messages[i]);
+        i++;
+      }
+      items.add(_ToolGroup(toolMessages));
+    } else {
+      final isLast = i == messages.length - 1;
+      final hasThinking = isProcessing && currentToolName == null;
+      items.add(_SingleMessage(msg, isNew: isLast && !hasThinking));
+      i++;
+    }
+  }
+  if (isProcessing && currentToolName == null) {
+    items.add(_Thinking());
+  }
+  return items;
 }
