@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:nt_helper/chat/models/chat_message.dart';
 
@@ -29,73 +30,119 @@ class ChatMessageBubble extends StatelessWidget {
   }
 }
 
-class _UserBubble extends StatelessWidget {
+class _UserBubble extends StatefulWidget {
   final ChatMessage message;
 
   const _UserBubble({required this.message});
+
+  @override
+  State<_UserBubble> createState() => _UserBubbleState();
+}
+
+class _UserBubbleState extends State<_UserBubble> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Align(
       alignment: Alignment.centerRight,
-      child: Container(
-        constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Semantics(
-          label: 'You said: ${message.content}',
-          child: Text(
-            message.content,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onPrimaryContainer,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Stack(
+          children: [
+            Container(
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.8),
+              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Semantics(
+                label: 'You said: ${widget.message.content}',
+                child: Text(
+                  widget.message.content,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
             ),
-          ),
+            if (_hovered)
+              Positioned(
+                top: 0,
+                left: 12,
+                child: _CopyButton(text: widget.message.content),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _AssistantBubble extends StatelessWidget {
+class _AssistantBubble extends StatefulWidget {
   final ChatMessage message;
   final bool isNew;
 
   const _AssistantBubble({required this.message, required this.isNew});
 
   @override
+  State<_AssistantBubble> createState() => _AssistantBubbleState();
+}
+
+class _AssistantBubbleState extends State<_AssistantBubble> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Align(
       alignment: Alignment.centerLeft,
-      child: Container(
-        constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Semantics(
-          liveRegion: isNew,
-          label: isNew ? 'Assistant: ${message.content}' : null,
-          child: MarkdownBody(
-            data: message.content,
-            selectable: true,
-            styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-              p: theme.textTheme.bodyMedium,
-              code: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
-                backgroundColor: theme.colorScheme.surfaceContainerLow,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Stack(
+          children: [
+            Container(
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.8),
+              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Semantics(
+                liveRegion: widget.isNew,
+                label: widget.isNew
+                    ? 'Assistant: ${widget.message.content}'
+                    : null,
+                child: MarkdownBody(
+                  data: widget.message.content,
+                  selectable: true,
+                  styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                    p: theme.textTheme.bodyMedium,
+                    code: theme.textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                      backgroundColor: theme.colorScheme.surfaceContainerLow,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+            if (_hovered)
+              Positioned(
+                top: 0,
+                right: 12,
+                child: _CopyButton(text: widget.message.content),
+              ),
+          ],
         ),
       ),
     );
@@ -330,6 +377,55 @@ class _ThinkingIndicator extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CopyButton extends StatefulWidget {
+  final String text;
+
+  const _CopyButton({required this.text});
+
+  @override
+  State<_CopyButton> createState() => _CopyButtonState();
+}
+
+class _CopyButtonState extends State<_CopyButton> {
+  bool _copied = false;
+
+  void _copy() {
+    Clipboard.setData(ClipboardData(text: widget.text));
+    setState(() => _copied = true);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _copied = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: _copied ? 'Copied' : 'Copy message',
+      button: true,
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest,
+        shape: const CircleBorder(),
+        elevation: 1,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: _copy,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(
+              _copied ? Icons.check : Icons.copy,
+              size: 14,
+              color: _copied
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
       ),
     );
   }
