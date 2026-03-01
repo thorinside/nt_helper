@@ -128,6 +128,9 @@ class GalleryService {
   final AppDatabase? _database;
   PluginUpdateChecker? _updateChecker;
   Gallery? _cachedGallery;
+
+  /// Returns the cached gallery if available, without triggering a fetch.
+  Gallery? get cachedGallery => _cachedGallery;
   DateTime? _lastFetch;
   DateTime? _persistedCacheTimestamp;
   final Duration _cacheTimeout = const Duration(hours: 1);
@@ -1510,9 +1513,12 @@ class GalleryService {
 
         if (matchingInstalled.isNotEmpty) {
           // Use database version info for comparison
-          final latestInstalled = matchingInstalled.reduce(
-            (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b,
-          );
+          final latestInstalled = matchingInstalled.reduce((a, b) {
+            final cmp = _tryCompareVersions(a.pluginVersion, b.pluginVersion);
+            if (cmp != null) return cmp > 0 ? a : b;
+            // Fall back to installation date if versions aren't comparable
+            return a.installedAt.isAfter(b.installedAt) ? a : b;
+          });
 
           // Compare versions, with date fallback for plugins without versions
           final hasUpdate = _hasUpdateAvailable(
@@ -1535,13 +1541,14 @@ class GalleryService {
           // Note: Database recording is now handled by DistingCubit.installPlugin()
           // using path-based tracking. GUID matching only works for C++ plugins.
 
-          // Show as installed with unknown version
+          // Show as installed with unknown version, suggest update since we
+          // can't verify the installed version matches the gallery version
           updateInfo[galleryPlugin.id] = PluginUpdateInfo(
             pluginId: galleryPlugin.id,
             pluginName: galleryPlugin.name,
             installedVersion: 'unknown',
             availableVersion: availableVersion,
-            updateAvailable: false, // Can't determine update status without version
+            updateAvailable: true,
             lastChecked: DateTime.now(),
           );
         }
@@ -1571,18 +1578,21 @@ class GalleryService {
   /// Determine if an update is available using version comparison with date fallback
   ///
   /// Handles cases where:
-  /// 1. Both versions are valid semver - uses version comparison
-  /// 2. Versions are missing or invalid - falls back to date comparison
-  /// 3. Dates are missing - returns false (conservative approach)
+  /// 1. Untracked versions (unknown, user-installed, device-detected) - always true
+  /// 2. Both versions are valid semver - uses version comparison
+  /// 3. Versions are invalid - falls back to date comparison
+  /// 4. Dates are missing - returns false (conservative approach)
   bool _hasUpdateAvailable({
     required String installedVersion,
     required String availableVersion,
     required DateTime installedAt,
     DateTime? galleryUpdatedAt,
   }) {
-    // Skip comparison for unknown versions without dates
-    if (installedVersion == 'unknown' && galleryUpdatedAt == null) {
-      return false;
+    // Versions that can't be compared should always suggest an update
+    if (installedVersion == 'unknown' ||
+        installedVersion == 'user-installed' ||
+        installedVersion == 'device-detected') {
+      return true;
     }
 
     // Try version comparison first

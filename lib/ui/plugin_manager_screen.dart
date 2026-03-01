@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/models/plugin_info.dart';
 import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -89,7 +90,12 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       ]);
 
       // Cleanup: remove DB records for files no longer on device
-      await _cleanupStaleRecords([...results[0], ...results[1], ...results[2]]);
+      final allDevicePlugins = [...results[0], ...results[1], ...results[2]];
+      await _cleanupStaleRecords(allDevicePlugins);
+
+      // Reconcile: create DB records for C++ plugins detected on device
+      // that match gallery plugins but have no DB record yet
+      await _reconcileDeviceCppPlugins(results[2]);
 
       if (mounted) {
         setState(() {
@@ -133,6 +139,68 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       }
     } catch (e) {
       // Best-effort cleanup - don't fail the load
+    }
+  }
+
+  /// Reconcile C++ plugins found on the device with gallery data.
+  /// For plugins that exist on device but have no DB record, try to match
+  /// their path to a device algorithm GUID, then to a gallery plugin.
+  Future<void> _reconcileDeviceCppPlugins(List<PluginInfo> cppPlugins) async {
+    final state = widget.distingCubit.state;
+    if (state is! DistingStateSynchronized || state.offline) return;
+
+    try {
+      final dao = widget.database.pluginInstallationsDao;
+
+      // Build a map from C++ plugin filename to algorithm GUID using device algorithms
+      final guidByFilename = <String, String>{};
+      for (final algo in state.algorithms) {
+        if (algo.filename != null && algo.filename!.isNotEmpty) {
+          guidByFilename[algo.filename!] = algo.guid;
+        }
+      }
+
+      // Use cached gallery data only — don't trigger a network fetch
+      // just for reconciliation during an installed-plugins load
+      final gallery = _galleryService.cachedGallery;
+      if (gallery == null) return;
+
+      // Build a map from normalized GUID to gallery plugin
+      final galleryByGuid = <String, GalleryPlugin>{};
+      for (final plugin in gallery.plugins) {
+        if (plugin.guid != null) {
+          galleryByGuid[plugin.guid!.toUpperCase()] = plugin;
+        }
+        for (final guid in plugin.collectionGuids) {
+          galleryByGuid[guid.toUpperCase()] = plugin;
+        }
+      }
+
+      for (final cppPlugin in cppPlugins) {
+        // Check if this plugin already has a DB record
+        final existing = await dao.getByInstallationPath(cppPlugin.path);
+        if (existing != null) continue;
+
+        // Try to find a matching GUID via the algorithm list
+        final guid = guidByFilename[cppPlugin.path];
+        if (guid == null) continue;
+
+        // Try to match GUID to a gallery plugin
+        final galleryPlugin = galleryByGuid[guid.toUpperCase()];
+        if (galleryPlugin == null) continue;
+
+        // Create a gallery-linked DB record
+        await dao.recordPluginByPath(
+          installationPath: cppPlugin.path,
+          pluginName: cppPlugin.name,
+          pluginType: 'cpp',
+          totalBytes: cppPlugin.sizeBytes,
+          pluginId: galleryPlugin.id,
+          pluginVersion: 'device-detected',
+        );
+      }
+    } catch (_) {
+      // Best-effort reconciliation - don't fail the load
     }
   }
 

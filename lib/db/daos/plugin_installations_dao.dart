@@ -112,15 +112,28 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
     String? pluginId,
     String? pluginVersion,
   }) async {
-    // Use path directly for local installs (not hashCode which is unstable across sessions).
-    // For gallery installs, pluginId is provided by the caller.
+    // When no pluginId is provided (local install), check if the existing record
+    // at this path has a gallery pluginId. If so, preserve it but mark the version
+    // as 'user-installed' so we know it's no longer gallery-tracked.
+    var effectivePluginId = pluginId ?? 'local:$installationPath';
+    var effectiveVersion = pluginVersion ?? 'unknown';
+    var effectiveAuthor = pluginId != null ? '' : 'Local Install';
+
+    if (pluginId == null) {
+      final existing = await getByInstallationPath(installationPath);
+      if (existing != null && !existing.pluginId.startsWith('local:')) {
+        effectivePluginId = existing.pluginId;
+        effectiveVersion = 'user-installed';
+        effectiveAuthor = existing.pluginAuthor;
+      }
+    }
+
     final companion = PluginInstallationsCompanion.insert(
-      pluginId: pluginId ?? 'local:$installationPath',
+      pluginId: effectivePluginId,
       pluginName: pluginName,
-      pluginVersion: pluginVersion ?? 'unknown',
+      pluginVersion: effectiveVersion,
       pluginType: pluginType,
-      // Gallery installs get author from GalleryPlugin; local installs are marked as such
-      pluginAuthor: pluginId != null ? '' : 'Local Install',
+      pluginAuthor: effectiveAuthor,
       installationPath: installationPath,
       installationStatus: const Value('completed'),
       totalBytes: Value(totalBytes),
@@ -136,6 +149,14 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
       return into(pluginInstallations).insert(companion);
     });
   }
+
+  /// Get a plugin installation record by its installation path
+  Future<PluginInstallationEntry?> getByInstallationPath(
+    String installationPath,
+  ) =>
+      (select(pluginInstallations)
+            ..where((tbl) => tbl.installationPath.equals(installationPath)))
+          .getSingleOrNull();
 
   /// Record a failed plugin installation
   Future<int> recordPluginInstallationFailure({

@@ -10,6 +10,7 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:nt_helper/ui/widgets/plugin_selection_dialog.dart';
 import 'package:nt_helper/ui/widgets/linkified_text.dart';
@@ -1153,6 +1154,11 @@ class _GalleryViewState extends State<_GalleryView>
                       ),
                     ),
                   ],
+                  // Version status badge
+                  if (updateInfo != null) ...[
+                    const SizedBox(width: 6),
+                    _buildVersionBadge(updateInfo, context),
+                  ],
                 ],
               ),
               const SizedBox(height: 4),
@@ -1387,6 +1393,10 @@ class _GalleryViewState extends State<_GalleryView>
                                   style: Theme.of(context).textTheme.labelSmall,
                                 ),
                               ),
+                            ],
+                            if (updateInfo != null) ...[
+                              const SizedBox(width: 6),
+                              _buildVersionBadge(updateInfo, context),
                             ],
                           ],
                         ),
@@ -1741,6 +1751,32 @@ class _GalleryViewState extends State<_GalleryView>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildVersionBadge(PluginUpdateInfo info, BuildContext context) {
+    final isUntracked = info.installedVersion == 'unknown' ||
+        info.installedVersion == 'user-installed' ||
+        info.installedVersion == 'device-detected';
+
+    final label = isUntracked
+        ? 'Installed (untracked)'
+        : 'Installed ${info.installedVersion}';
+
+    final color = info.hasUpdate
+        ? Colors.orange
+        : Theme.of(context).colorScheme.secondary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+      ),
     );
   }
 

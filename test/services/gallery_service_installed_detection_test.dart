@@ -147,7 +147,7 @@ void main() {
     });
 
     group('Device GUID-based detection', () {
-      test('detects manually installed plugin via device GUID', () async {
+      test('detects manually installed plugin via device GUID with update available', () async {
         final plugin = createTestPlugin(
           id: 'manual-plugin',
           name: 'Manual Plugin',
@@ -168,7 +168,8 @@ void main() {
           updateInfo['manual-plugin']!.installedVersion,
           equals('unknown'),
         );
-        expect(updateInfo['manual-plugin']!.updateAvailable, isFalse);
+        // Unknown version should suggest update available
+        expect(updateInfo['manual-plugin']!.updateAvailable, isTrue);
       });
 
       test('does not auto-cache manually installed plugin in database', () async {
@@ -217,6 +218,7 @@ void main() {
 
         expect(updateInfo, contains('detected-plugin'));
         expect(updateInfo['detected-plugin']!.installedVersion, equals('unknown'));
+        expect(updateInfo['detected-plugin']!.updateAvailable, isTrue);
 
         // Verify no database record was created
         final cached = await database.pluginInstallationsDao
@@ -328,9 +330,10 @@ void main() {
         expect(updateInfo, contains('gallery-plugin'));
         expect(updateInfo['gallery-plugin']!.installedVersion, equals('v1.0.0'));
 
-        // Manual plugin detected via device GUID
+        // Manual plugin detected via device GUID (update available for unknown version)
         expect(updateInfo, contains('manual-plugin'));
         expect(updateInfo['manual-plugin']!.installedVersion, equals('unknown'));
+        expect(updateInfo['manual-plugin']!.updateAvailable, isTrue);
 
         // Unknown plugin not detected
         expect(updateInfo, isNot(contains('unknown-plugin')));
@@ -491,9 +494,59 @@ void main() {
           gallery,
         );
 
-        // Should not detect update - conservative approach
+        // Unknown version should always suggest update available
         expect(updateInfo, contains('no-date-plugin'));
-        expect(updateInfo['no-date-plugin']!.updateAvailable, isFalse);
+        expect(updateInfo['no-date-plugin']!.updateAvailable, isTrue);
+      });
+
+      test('user-installed version always shows update available', () async {
+        final plugin = createTestPlugin(
+          id: 'user-installed-plugin',
+          name: 'User Installed Plugin',
+          guid: 'USRI',
+        );
+
+        // Simulate a user-installed record (gallery association preserved)
+        await database.pluginInstallationsDao.recordPluginByPath(
+          installationPath: '/programs/plug-ins/synth.o',
+          pluginName: 'synth.o',
+          pluginType: 'cpp',
+          pluginId: 'user-installed-plugin',
+          pluginVersion: 'user-installed',
+        );
+
+        final gallery = createTestGallery([plugin]);
+        final updateInfo = await galleryService.compareWithInstalledVersions(
+          gallery,
+        );
+
+        expect(updateInfo, contains('user-installed-plugin'));
+        expect(updateInfo['user-installed-plugin']!.updateAvailable, isTrue);
+      });
+
+      test('device-detected version always shows update available', () async {
+        final plugin = createTestPlugin(
+          id: 'device-detected-plugin',
+          name: 'Device Detected Plugin',
+          guid: 'DVCD',
+        );
+
+        // Simulate a device-detected record (reconciliation result)
+        await database.pluginInstallationsDao.recordPluginByPath(
+          installationPath: '/programs/plug-ins/detected.o',
+          pluginName: 'detected.o',
+          pluginType: 'cpp',
+          pluginId: 'device-detected-plugin',
+          pluginVersion: 'device-detected',
+        );
+
+        final gallery = createTestGallery([plugin]);
+        final updateInfo = await galleryService.compareWithInstalledVersions(
+          gallery,
+        );
+
+        expect(updateInfo, contains('device-detected-plugin'));
+        expect(updateInfo['device-detected-plugin']!.updateAvailable, isTrue);
       });
 
       test('prefers version comparison over date comparison', () async {
