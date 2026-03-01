@@ -48,8 +48,6 @@ class ChatService {
   final ToolBridgeService _toolBridge;
   final String _systemPrompt;
 
-  static const _maxIterations = 10;
-
   ChatService({
     required LlmProvider provider,
     required ToolBridgeService toolBridge,
@@ -69,7 +67,7 @@ class ChatService {
     final currentMessages = List<LlmMessage>.of(messages);
     final tools = _toolBridge.toolDefinitions;
 
-    for (int i = 0; i < _maxIterations; i++) {
+    while (true) {
       yield ChatLoopThinking();
 
       LlmResponse response;
@@ -127,10 +125,5 @@ class ChatService {
       );
       return;
     }
-
-    yield ChatLoopError(
-      'Reached maximum number of tool iterations ($_maxIterations). '
-      'The assistant may need a simpler request.',
-    );
   }
 }
