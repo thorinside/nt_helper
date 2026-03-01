@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
+import 'package:nt_helper/services/debug_service.dart';
 
 /// Anthropic Claude Messages API provider.
 class AnthropicProvider implements LlmProvider {
@@ -61,6 +62,11 @@ class AnthropicProvider implements LlmProvider {
       body: jsonEncode(body),
     );
 
+    DebugService().addLocalMessage(
+      'Anthropic API response: ${response.statusCode} '
+      '(${response.body.length} bytes)',
+    );
+
     if (response.statusCode != 200) {
       String errorMessage;
       try {
@@ -70,12 +76,25 @@ class AnthropicProvider implements LlmProvider {
       } on FormatException {
         errorMessage = response.body;
       }
+      DebugService().addLocalMessage('Anthropic API error: $errorMessage');
       throw LlmApiException(
         'Anthropic API error (${response.statusCode}): $errorMessage',
       );
     }
 
-    return _parseResponse(jsonDecode(response.body));
+    try {
+      return _parseResponse(jsonDecode(response.body));
+    } on FormatException catch (e) {
+      final preview = response.body.length > 200
+          ? '${response.body.substring(0, 200)}...'
+          : response.body;
+      DebugService().addLocalMessage(
+        'Anthropic response parse error: $e\nBody: $preview',
+      );
+      throw LlmApiException(
+        'Failed to parse Anthropic response. Check Debug Log for details.',
+      );
+    }
   }
 
   List<Map<String, dynamic>> _convertMessages(List<LlmMessage> messages) {

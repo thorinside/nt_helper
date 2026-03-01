@@ -5,6 +5,7 @@ import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart'
     show LlmApiException;
+import 'package:nt_helper/services/debug_service.dart';
 
 /// OpenAI Chat Completions API provider.
 class OpenAIProvider implements LlmProvider {
@@ -70,6 +71,11 @@ class OpenAIProvider implements LlmProvider {
       body: jsonEncode(body),
     );
 
+    DebugService().addLocalMessage(
+      'OpenAI API response: ${response.statusCode} '
+      '(${response.body.length} bytes) from $baseUrl',
+    );
+
     if (response.statusCode != 200) {
       String errorMessage;
       try {
@@ -79,12 +85,25 @@ class OpenAIProvider implements LlmProvider {
       } on FormatException {
         errorMessage = response.body;
       }
+      DebugService().addLocalMessage('OpenAI API error: $errorMessage');
       throw LlmApiException(
         'OpenAI API error (${response.statusCode}): $errorMessage',
       );
     }
 
-    return _parseResponse(jsonDecode(response.body));
+    try {
+      return _parseResponse(jsonDecode(response.body));
+    } on FormatException catch (e) {
+      final preview = response.body.length > 200
+          ? '${response.body.substring(0, 200)}...'
+          : response.body;
+      DebugService().addLocalMessage(
+        'OpenAI response parse error: $e\nBody: $preview',
+      );
+      throw LlmApiException(
+        'Failed to parse OpenAI response. Check Debug Log for details.',
+      );
+    }
   }
 
   List<Map<String, dynamic>> _convertMessages(List<LlmMessage> messages) {
