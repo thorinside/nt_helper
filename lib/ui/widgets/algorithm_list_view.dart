@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show DisplayMode;
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
@@ -166,6 +167,22 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
     );
   }
 
+  Widget? _buildOriginalNameSubtitle(BuildContext context) {
+    final guid = widget.slot.algorithm.guid;
+    final originalName =
+        AlgorithmMetadataService().getAlgorithmByGuid(guid)?.name;
+    if (originalName == null || originalName == widget.slot.algorithm.name) {
+      return null;
+    }
+    return Text(
+      originalName,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+          ),
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayName = widget.slot.algorithm.name;
@@ -226,6 +243,7 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                subtitle: _buildOriginalNameSubtitle(context),
                 selected: widget.isSelected,
                 selectedTileColor:
                     Theme.of(context).colorScheme.secondaryContainer,

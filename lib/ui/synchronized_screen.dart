@@ -10,6 +10,7 @@ import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:nt_helper/chat/cubit/chat_cubit.dart';
 import 'package:nt_helper/chat/ui/chat_panel.dart';
 import 'package:nt_helper/mcp/tool_registry.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
@@ -2355,7 +2356,38 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           cubit.renameSlot(index, newName);
                         }
                       },
-                      child: Tab(text: displayName),
+                      child: Builder(
+                        builder: (context) {
+                          final originalName = AlgorithmMetadataService()
+                              .getAlgorithmByGuid(slot.algorithm.guid)
+                              ?.name;
+                          final isRenamed = originalName != null &&
+                              originalName != displayName;
+                          if (!isRenamed) {
+                            return Tab(text: displayName);
+                          }
+                          return Tab(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(displayName),
+                                Text(
+                                  originalName,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withAlpha(153),
+                                      ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 );

@@ -2150,6 +2150,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
             child: AlgorithmNodeWidget(
               key: ValueKey(algorithm.id), // Use stable ID for widget key
               algorithmName: algorithm.algorithm.name,
+              algorithmGuid: algorithm.algorithm.guid,
               slotNumber: algorithm.index + 1, // 1-indexed for display
               position: position,
               isSelected: isSelected,

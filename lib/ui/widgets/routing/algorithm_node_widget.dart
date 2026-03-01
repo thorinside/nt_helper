@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/ui/widgets/mapping_editor_bottom_sheet.dart';
@@ -21,6 +22,7 @@ import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 /// - Theme-aware styling
 class AlgorithmNodeWidget extends StatefulWidget {
   final String algorithmName;
+  final String? algorithmGuid;
   final int slotNumber;
   // Position is now handled by parent Positioned widget
   final Offset position;
@@ -89,6 +91,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
   const AlgorithmNodeWidget({
     super.key,
     required this.algorithmName,
+    this.algorithmGuid,
     required this.slotNumber,
     required this.position,
     this.leadingIcon,
@@ -411,16 +414,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
               padding: const EdgeInsets.only(
                 right: 12.0,
               ), // Add space after title per Material 3 specs
-              child: Text(
-                '#${widget.slotNumber} ${_truncateWithEllipsis(widget.algorithmName, 25)}',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: foregroundColor,
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
-                softWrap: false,
-              ),
+              child: _buildTitleText(theme, foregroundColor),
             ),
           ),
           // Up/Down actions always present; disabled when not applicable
@@ -778,6 +772,53 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     }
 
     return portWidget;
+  }
+
+  String? _originalAlgorithmName() {
+    final guid = widget.algorithmGuid;
+    if (guid == null) return null;
+    final original = AlgorithmMetadataService().getAlgorithmByGuid(guid)?.name;
+    if (original == null || original == widget.algorithmName) return null;
+    return original;
+  }
+
+  Widget _buildTitleText(ThemeData theme, Color foregroundColor) {
+    final originalName = _originalAlgorithmName();
+    if (originalName == null) {
+      return Text(
+        '#${widget.slotNumber} ${_truncateWithEllipsis(widget.algorithmName, 25)}',
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: foregroundColor,
+          fontWeight: FontWeight.w600,
+        ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 2,
+        softWrap: false,
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '#${widget.slotNumber} ${_truncateWithEllipsis(widget.algorithmName, 25)}',
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: foregroundColor,
+            fontWeight: FontWeight.w600,
+          ),
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+        ),
+        Text(
+          originalName,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: foregroundColor.withAlpha(153),
+          ),
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+        ),
+      ],
+    );
   }
 
   String _truncateWithEllipsis(String text, int maxChars) {
