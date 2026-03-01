@@ -4259,7 +4259,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       // Find the port and its algorithm
       for (final algorithm in routingState.algorithms) {
         for (final port in algorithm.outputPorts) {
-          if (port.id == sourcePortId && port.parameterNumber != null) {
+          if (port.id == sourcePortId &&
+              port.parameterNumber != null &&
+              port.parameterNumber! >= 0) {
             // Clear the bus assignment by setting parameter to 0
             context.read<DistingCubit>().updateParameterValue(
               algorithmIndex: algorithm.index,
@@ -4279,7 +4281,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
       for (final algorithm in routingState.algorithms) {
         for (final port in algorithm.inputPorts) {
-          if (port.id == destPortId && port.parameterNumber != null) {
+          if (port.id == destPortId &&
+              port.parameterNumber != null &&
+              port.parameterNumber! >= 0) {
             context.read<DistingCubit>().updateParameterValue(
               algorithmIndex: algorithm.index,
               parameterNumber: port.parameterNumber!,

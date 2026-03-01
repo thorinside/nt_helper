@@ -520,6 +520,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     final busNumber = hardwareInputNumber; // Bus 1 for hw_in_1, etc.
 
+    // Virtual ports (negative parameterNumber) have firmware-implicit bus values
+    // that can't be reassigned to a hardware input bus.
+    if (algorithmInputPort.parameterNumber != null &&
+        algorithmInputPort.parameterNumber! < 0) {
+      return null;
+    }
+
     // Find the algorithm that owns this input port and update its parameter
     if (algorithmInputPort.parameterNumber != null) {
       final algorithmIndex = _findAlgorithmIndexForPort(
@@ -597,6 +604,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     final busNumber = 12 + hardwareOutputNumber; // Bus 13 for hw_out_1, etc.
+
+    // Virtual ports (negative parameterNumber) have firmware-implicit bus values
+    // that can't be reassigned to an output bus.
+    if (algorithmInputPort.parameterNumber != null &&
+        algorithmInputPort.parameterNumber! < 0) {
+      return null;
+    }
 
     if (algorithmInputPort.parameterNumber != null) {
       final algorithmIndex = _findAlgorithmIndexForPort(
@@ -897,6 +911,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return null;
     }
 
+    // Detect virtual ports (negative parameterNumber = firmware-implicit bus)
+    final targetIsVirtual = targetInputPort.parameterNumber != null &&
+        targetInputPort.parameterNumber! < 0;
+
     // Get actual parameter values from slots
     int? sourceBusValue;
     int? targetBusValue;
@@ -911,7 +929,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       sourceBusValue = sourceParam.value;
     }
 
-    if (targetInputPort.parameterNumber != null &&
+    if (targetIsVirtual) {
+      // Virtual ports have no real parameter in the slot — use the
+      // firmware-implicit bus value carried on the Port object.
+      targetBusValue = targetInputPort.busValue;
+    } else if (targetInputPort.parameterNumber != null &&
         targetAlgorithmIndex < distingState.slots.length) {
       final targetSlot = distingState.slots[targetAlgorithmIndex];
       final targetParam = targetSlot.values.firstWhere(
@@ -923,7 +945,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     int busToUse;
     final hasExtended = distingState.firmwareVersion.hasExtendedAuxBuses;
-    if (sourceBusValue != null &&
+    if (targetIsVirtual && targetBusValue != null) {
+      // Virtual port's bus is fixed by firmware — route source to match it.
+      busToUse = targetBusValue;
+    } else if (sourceBusValue != null &&
         BusSpec.isAuxForFirmware(sourceBusValue,
             hasExtendedAuxBuses: hasExtended)) {
       // Source already on an AUX bus — reuse for fan-out
@@ -975,7 +1000,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     // Update target input port (if it doesn't already have this bus based on actual hardware value)
-    if (targetInputPort.parameterNumber != null && targetBusValue != busToUse) {
+    if (targetIsVirtual) {
+      // Virtual ports have firmware-implicit bus values — no parameter to update.
+      targetUpdated = true;
+    } else if (targetInputPort.parameterNumber != null &&
+        targetBusValue != busToUse) {
       try {
         await _distingCubit!.updateParameterValue(
           algorithmIndex: targetAlgorithmIndex,
