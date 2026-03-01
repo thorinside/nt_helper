@@ -75,7 +75,7 @@ class _UserBubbleState extends State<_UserBubble> {
             if (_hovered)
               Positioned(
                 top: 0,
-                left: 12,
+                right: 12,
                 child: _CopyButton(text: widget.message.content),
               ),
           ],

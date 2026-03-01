@@ -155,12 +155,15 @@ class _ChatPanelState extends State<ChatPanel> {
     final messageCount = messages.length;
     final isProcessing = state.isProcessing && state.currentToolName == null;
 
-    if (messageCount > _previousMessageCount ||
-        (isProcessing && !_previousIsProcessing)) {
-      _scrollToBottom();
-    }
-    _previousMessageCount = messageCount;
-    _previousIsProcessing = isProcessing;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (messageCount > _previousMessageCount ||
+          (isProcessing && !_previousIsProcessing)) {
+        _scrollToBottom();
+      }
+      _previousMessageCount = messageCount;
+      _previousIsProcessing = isProcessing;
+    });
 
     return Column(
       children: [
@@ -177,15 +180,17 @@ class _ChatPanelState extends State<ChatPanel> {
                             ? 1
                             : 0),
                     itemBuilder: (context, index) {
+                      final hasThinking =
+                          state.isProcessing && state.currentToolName == null;
                       if (index >= messages.length) {
                         return ChatMessageBubble(
-                          message:
-                              ChatMessage.thinking(),
+                          message: ChatMessage.thinking(),
                         );
                       }
                       return ChatMessageBubble(
                         message: messages[index],
-                        isNew: index == messages.length - 1,
+                        isNew: !hasThinking &&
+                            index == messages.length - 1,
                       );
                     },
                   ),

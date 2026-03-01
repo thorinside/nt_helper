@@ -120,6 +120,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   bool _showChatPanel = false;
   bool _chatFocusRequested = false;
   double _chatPanelWidth = 360;
+  ChatCubit? _chatCubit;
   final SectionParameterController _sectionController =
       SectionParameterController();
 
@@ -210,8 +211,32 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     _routingEditorCubit?.close();
+    _chatCubit?.close();
     _sectionController.dispose();
     super.dispose();
+  }
+
+  ChatCubit _getOrCreateChatCubit(DistingCubit distingCubit) {
+    return _chatCubit ??= ChatCubit(
+      toolRegistry: ToolRegistry(distingCubit),
+    );
+  }
+
+  void _toggleChatPanel() {
+    setState(() {
+      _showChatPanel = !_showChatPanel;
+      _chatFocusRequested = _showChatPanel;
+    });
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      _showChatPanel ? 'Chat panel opened' : 'Chat panel closed',
+      TextDirection.ltr,
+    );
+    if (_chatFocusRequested) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _chatFocusRequested = false);
+      });
+    }
   }
 
   @override
@@ -549,22 +574,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               );
             }
           },
-          onToggleChat: () {
-            setState(() {
-              _showChatPanel = !_showChatPanel;
-              _chatFocusRequested = _showChatPanel;
-            });
-            SemanticsService.sendAnnouncement(
-              View.of(context),
-              _showChatPanel ? 'Chat panel opened' : 'Chat panel closed',
-              TextDirection.ltr,
-            );
-            if (_chatFocusRequested) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) setState(() => _chatFocusRequested = false);
-              });
-            }
-          },
+          onToggleChat: _toggleChatPanel,
         ),
         child: Focus(
           focusNode: _screenFocusNode,
@@ -573,12 +583,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           child: BlocProvider.value(
             value: routingCubit,
             child: _showChatPanel
-                ? BlocProvider(
-                    create: (_) => ChatCubit(
-                      toolRegistry: ToolRegistry(
-                        context.read<DistingCubit>(),
-                      ),
-                    ),
+                ? BlocProvider.value(
+                    value: _getOrCreateChatCubit(cubit),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final maxChatWidth =
@@ -1681,7 +1687,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           semanticLabel: _showChatPanel ? 'Hide chat panel' : 'Show chat panel',
         ),
         tooltip: _showChatPanel ? 'Hide chat' : 'Show chat',
-        onPressed: () => setState(() => _showChatPanel = !_showChatPanel),
+        onPressed: _toggleChatPanel,
       ),
       // Overflow menu
       _buildOverflowMenu(cubit),
