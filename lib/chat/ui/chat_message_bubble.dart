@@ -134,6 +134,19 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
                       fontFamily: 'monospace',
                       backgroundColor: theme.colorScheme.surfaceContainerLow,
                     ),
+                    blockquote: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    blockquoteDecoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    blockquotePadding: const EdgeInsets.only(left: 12),
                   ),
                 ),
               ),
@@ -374,24 +387,33 @@ class _ToolExpandedCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    width: double.infinity,
-                    constraints: const BoxConstraints(maxHeight: 150),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerLowest,
+                  if (pair.result!.hasImage)
+                    ClipRRect(
                       borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: SingleChildScrollView(
-                      child: SelectableText(
-                        _formatJsonString(pair.result!.content),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                          fontSize: 11,
+                      child: Image.memory(
+                        base64Decode(pair.result!.imageBase64!),
+                        fit: BoxFit.contain,
+                      ),
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(maxHeight: 150),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: SingleChildScrollView(
+                        child: SelectableText(
+                          _formatJsonString(pair.result!.content),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ],
             ),

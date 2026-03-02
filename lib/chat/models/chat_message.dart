@@ -12,6 +12,8 @@ class ChatMessage {
   final String? toolName;
   final String? toolCallId;
   final Map<String, dynamic>? toolArguments;
+  final String? imageBase64;
+  final String? imageMimeType;
   final DateTime timestamp;
 
   const ChatMessage({
@@ -21,8 +23,12 @@ class ChatMessage {
     this.toolName,
     this.toolCallId,
     this.toolArguments,
+    this.imageBase64,
+    this.imageMimeType,
     required this.timestamp,
   });
+
+  bool get hasImage => imageBase64 != null && imageMimeType != null;
 
   factory ChatMessage.user(String content) => ChatMessage(
         id: _generateId(),
@@ -57,6 +63,8 @@ class ChatMessage {
     required String toolName,
     required String toolCallId,
     required String result,
+    String? imageBase64,
+    String? imageMimeType,
   }) =>
       ChatMessage(
         id: _generateId(),
@@ -64,6 +72,8 @@ class ChatMessage {
         content: result,
         toolName: toolName,
         toolCallId: toolCallId,
+        imageBase64: imageBase64,
+        imageMimeType: imageMimeType,
         timestamp: DateTime.now(),
       );
 

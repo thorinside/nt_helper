@@ -151,6 +151,25 @@ class OpenAIProvider implements LlmProvider {
             'tool_call_id': msg.toolCallId!,
             'content': msg.content!,
           });
+          if (msg.hasImage) {
+            result.add({
+              'role': 'user',
+              'content': <dynamic>[
+                {
+                  'type': 'text',
+                  'text':
+                      'Here is the screenshot from the ${msg.toolName} tool:',
+                },
+                {
+                  'type': 'image_url',
+                  'image_url': {
+                    'url':
+                        'data:${msg.imageMimeType};base64,${msg.imageBase64}',
+                  },
+                },
+              ],
+            });
+          }
       }
     }
 

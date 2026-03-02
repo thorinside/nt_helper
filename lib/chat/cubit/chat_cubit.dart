@@ -193,11 +193,15 @@ class ChatCubit extends Cubit<ChatState> {
         toolCallId: final id,
         toolName: final name,
         result: final result,
+        imageBase64: final imageBase64,
+        imageMimeType: final imageMimeType,
       ):
         final msg = ChatMessage.toolResult(
           toolName: name,
           toolCallId: id,
           result: result,
+          imageBase64: imageBase64,
+          imageMimeType: imageMimeType,
         );
         emit(
           currentState.copyWith(

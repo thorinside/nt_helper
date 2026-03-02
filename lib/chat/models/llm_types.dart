@@ -12,6 +12,8 @@ class LlmMessage {
   final List<LlmToolCall>? toolCalls;
   final String? toolCallId;
   final String? toolName;
+  final String? imageBase64;
+  final String? imageMimeType;
 
   const LlmMessage({
     required this.role,
@@ -19,7 +21,11 @@ class LlmMessage {
     this.toolCalls,
     this.toolCallId,
     this.toolName,
+    this.imageBase64,
+    this.imageMimeType,
   });
+
+  bool get hasImage => imageBase64 != null && imageMimeType != null;
 
   factory LlmMessage.user(String content) =>
       LlmMessage(role: LlmRole.user, content: content);
@@ -36,12 +42,16 @@ class LlmMessage {
     required String toolCallId,
     required String toolName,
     required String content,
+    String? imageBase64,
+    String? imageMimeType,
   }) =>
       LlmMessage(
         role: LlmRole.tool,
         content: content,
         toolCallId: toolCallId,
         toolName: toolName,
+        imageBase64: imageBase64,
+        imageMimeType: imageMimeType,
       );
 }
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:mcp_dart/mcp_dart.dart';
 import 'package:nt_helper/chat/services/memory_service.dart';
 import 'package:nt_helper/chat/services/memory_tools.dart';
+import 'package:nt_helper/chat/utils/image_result_detector.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
@@ -86,6 +87,12 @@ class ToolRegistry {
                     'Tool execution timed out after ${entry.timeout.inSeconds} seconds',
               }),
             );
+            final image = tryParseImageResult(resultJson);
+            if (image != null) {
+              return CallToolResult.fromContent([
+                ImageContent(data: image.data, mimeType: image.mimeType),
+              ]);
+            }
             return CallToolResult.fromContent([TextContent(text: resultJson)]);
           } catch (e) {
             return CallToolResult.fromContent([

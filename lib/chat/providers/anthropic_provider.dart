@@ -123,10 +123,26 @@ class AnthropicProvider implements LlmProvider {
             result.add({'role': 'assistant', 'content': msg.content ?? ''});
           }
         case LlmRole.tool:
+          final dynamic toolContent;
+          if (msg.hasImage) {
+            toolContent = <dynamic>[
+              {
+                'type': 'image',
+                'source': {
+                  'type': 'base64',
+                  'media_type': msg.imageMimeType!,
+                  'data': msg.imageBase64!,
+                },
+              },
+              {'type': 'text', 'text': msg.content!},
+            ];
+          } else {
+            toolContent = msg.content!;
+          }
           final toolResultBlock = {
             'type': 'tool_result',
             'tool_use_id': msg.toolCallId!,
-            'content': msg.content!,
+            'content': toolContent,
           };
           if (result.isNotEmpty && result.last['role'] == 'user') {
             final lastContent = result.last['content'];

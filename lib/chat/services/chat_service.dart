@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/services/tool_bridge_service.dart';
+import 'package:nt_helper/chat/utils/image_result_detector.dart';
 
 /// Events emitted during the agentic loop.
 sealed class ChatLoopEvent {}
@@ -18,7 +19,10 @@ class ChatLoopToolResult extends ChatLoopEvent {
   final String toolCallId;
   final String toolName;
   final String result;
-  ChatLoopToolResult(this.toolCallId, this.toolName, this.result);
+  final String? imageBase64;
+  final String? imageMimeType;
+  ChatLoopToolResult(this.toolCallId, this.toolName, this.result,
+      {this.imageBase64, this.imageMimeType});
 }
 
 class ChatLoopAssistantMessage extends ChatLoopEvent {
@@ -113,13 +117,28 @@ class ChatService {
           final result =
               await _toolBridge.executeTool(toolCall.name, toolCall.arguments);
 
-          yield ChatLoopToolResult(toolCall.id, toolCall.name, result);
+          final image = tryParseImageResult(result);
+          final String llmContent;
+          String? imageBase64;
+          String? imageMimeType;
+          if (image != null) {
+            llmContent = '{"type":"${image.mimeType}","size":"image data"}';
+            imageBase64 = image.data;
+            imageMimeType = image.mimeType;
+          } else {
+            llmContent = result;
+          }
+
+          yield ChatLoopToolResult(toolCall.id, toolCall.name, result,
+              imageBase64: imageBase64, imageMimeType: imageMimeType);
 
           // Add tool result to history
           currentMessages.add(LlmMessage.toolResult(
             toolCallId: toolCall.id,
             toolName: toolCall.name,
-            content: result,
+            content: llmContent,
+            imageBase64: imageBase64,
+            imageMimeType: imageMimeType,
           ));
         }
 
