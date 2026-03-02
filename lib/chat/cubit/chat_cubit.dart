@@ -368,9 +368,17 @@ class ChatCubit extends Cubit<ChatState> {
     await sub.cancel();
     if (!_compacting) return;
 
-    // Trim to last 10 messages
+    // Trim to ~last 10 messages, ensuring we start on a user message so that
+    // tool/assistant ordering is valid for all providers.
     if (_llmHistory.length > 10) {
-      _llmHistory.removeRange(0, _llmHistory.length - 10);
+      var start = _llmHistory.length - 10;
+      while (start < _llmHistory.length &&
+          _llmHistory[start].role != LlmRole.user) {
+        start++;
+      }
+      if (start < _llmHistory.length) {
+        _llmHistory.removeRange(0, start);
+      }
     }
 
     // Refresh daily logs since compaction may have appended

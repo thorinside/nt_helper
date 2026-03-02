@@ -406,4 +406,108 @@ void main() {
       ));
     });
   });
+
+  group('Bug 5: compaction trim breaks message role ordering', () {
+    test(
+        'after compaction, history sent to provider starts with user message '
+        'even when trim boundary falls mid-tool-sequence', () async {
+      int callCount = 0;
+
+      final provider = MockLlmProvider();
+      when(() => provider.dispose()).thenReturn(null);
+      when(
+        () => provider.sendMessages(
+          messages: any(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).thenAnswer((_) async {
+        callCount++;
+        switch (callCount) {
+          case 1:
+            // Turn 1, iteration 1: return tool calls to build up history
+            return const LlmResponse(
+              isComplete: false,
+              toolCalls: [
+                LlmToolCall(id: 'tc1', name: 'fake_tool', arguments: {}),
+                LlmToolCall(id: 'tc2', name: 'fake_tool', arguments: {}),
+                LlmToolCall(id: 'tc3', name: 'fake_tool', arguments: {}),
+              ],
+            );
+          case 2:
+            // Turn 1, iteration 2: more tool calls
+            return const LlmResponse(
+              isComplete: false,
+              toolCalls: [
+                LlmToolCall(id: 'tc4', name: 'fake_tool', arguments: {}),
+                LlmToolCall(id: 'tc5', name: 'fake_tool', arguments: {}),
+                LlmToolCall(id: 'tc6', name: 'fake_tool', arguments: {}),
+              ],
+            );
+          case 3:
+            // Turn 1, iteration 3: final response with high tokens to trigger
+            // compaction (limit/2 = 100000 for haiku's 200000).
+            return const LlmResponse(
+              content: 'Done with tools.',
+              isComplete: true,
+              usage: LlmUsage(inputTokens: 110000, outputTokens: 500),
+            );
+          case 4:
+            // Compaction loop: simple final response
+            return const LlmResponse(
+              content: 'Context saved.',
+              isComplete: true,
+              usage: LlmUsage(inputTokens: 100, outputTokens: 50),
+            );
+          default:
+            // Turn 2 actual message: final response
+            return const LlmResponse(
+              content: 'Second turn response.',
+              isComplete: true,
+              usage: LlmUsage(inputTokens: 100, outputTokens: 50),
+            );
+        }
+      });
+
+      final cubit = ChatCubit(
+        toolRegistry: toolRegistry,
+        memoryService: memoryService,
+        providerFactory: (_) => provider,
+      );
+      addTearDown(cubit.close);
+
+      // Turn 1: builds up tool call history and triggers _needsCompaction
+      await cubit.sendMessage('hello', _settings);
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect((cubit.state as ChatReady).isProcessing, isFalse);
+
+      // Turn 2: triggers compaction, then sends the real message.
+      // Before the fix, the trim could leave orphaned tool messages at the
+      // start of history, causing OpenAI to reject with 400.
+      await cubit.sendMessage('second question', _settings);
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect((cubit.state as ChatReady).isProcessing, isFalse);
+
+      // Verify the last sendMessages call got a history starting with user
+      final captured = verify(
+        () => provider.sendMessages(
+          messages: captureAny(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).captured;
+
+      // The last captured messages list is from the post-compaction real call
+      final lastMessages = captured.last as List<LlmMessage>;
+      expect(
+        lastMessages.first.role,
+        equals(LlmRole.user),
+        reason:
+            'After compaction trim, history must start with a user message. '
+            'Got: ${lastMessages.map((m) => m.role.name).join(', ')}',
+      );
+    });
+  });
 }
