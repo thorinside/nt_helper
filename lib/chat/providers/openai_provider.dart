@@ -21,8 +21,8 @@ class OpenAIProvider implements LlmProvider {
     required this.model,
     String? baseUrl,
     http.Client? client,
-  })  : baseUrl = baseUrl ?? _defaultBaseUrl,
-        _client = client ?? http.Client();
+  }) : baseUrl = baseUrl ?? _defaultBaseUrl,
+       _client = client ?? http.Client();
 
   @override
   String get displayName => 'OpenAI ($model)';
@@ -41,24 +41,20 @@ class OpenAIProvider implements LlmProvider {
 
     apiMessages.addAll(_convertMessages(messages));
 
-    final body = <String, dynamic>{
-      'model': model,
-      'messages': apiMessages,
-    };
+    final body = <String, dynamic>{'model': model, 'messages': apiMessages};
 
     if (tools.isNotEmpty) {
       body['tools'] = tools
-          .map((t) => {
-                'type': 'function',
-                'function': {
-                  'name': t.name,
-                  'description': t.description,
-                  'parameters': {
-                    'type': 'object',
-                    ...t.inputSchema,
-                  },
-                },
-              })
+          .map(
+            (t) => {
+              'type': 'function',
+              'function': {
+                'name': t.name,
+                'description': t.description,
+                'parameters': {'type': 'object', ...t.inputSchema},
+              },
+            },
+          )
           .toList();
     }
 
@@ -108,9 +104,11 @@ class OpenAIProvider implements LlmProvider {
 
     try {
       return _parseResponse(parsed);
-    } on FormatException catch (e) {
+    } on Object catch (e) {
+      final raw = jsonEncode(parsed);
+      final preview = raw.length > 500 ? '${raw.substring(0, 500)}...' : raw;
       DebugService().addLocalMessage(
-        'OpenAI response content error: $e\nRaw: ${jsonEncode(parsed).substring(0, (jsonEncode(parsed).length).clamp(0, 500))}',
+        'OpenAI response content error: $e\nRaw: $preview',
       );
       throw LlmApiException(
         'Failed to parse OpenAI response content (likely malformed tool call arguments): $e',
@@ -127,21 +125,21 @@ class OpenAIProvider implements LlmProvider {
           result.add({'role': 'user', 'content': msg.content!});
         case LlmRole.assistant:
           if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) {
-            final apiMsg = <String, dynamic>{
-              'role': 'assistant',
-            };
+            final apiMsg = <String, dynamic>{'role': 'assistant'};
             if (msg.content != null && msg.content!.isNotEmpty) {
               apiMsg['content'] = msg.content!;
             }
             apiMsg['tool_calls'] = msg.toolCalls!
-                .map((tc) => {
-                      'id': tc.id,
-                      'type': 'function',
-                      'function': {
-                        'name': tc.name,
-                        'arguments': jsonEncode(tc.arguments),
-                      },
-                    })
+                .map(
+                  (tc) => {
+                    'id': tc.id,
+                    'type': 'function',
+                    'function': {
+                      'name': tc.name,
+                      'arguments': jsonEncode(tc.arguments),
+                    },
+                  },
+                )
                 .toList();
             result.add(apiMsg);
           } else {
@@ -170,25 +168,21 @@ class OpenAIProvider implements LlmProvider {
     final finishReason = choice['finish_reason'] as String?;
     final usage = json['usage'] as Map<String, dynamic>?;
 
-    final textContent = message['content'] as String?;
+    final textContent = _parseTextContent(message['content']);
     final toolCalls = <LlmToolCall>[];
 
     final rawToolCalls = message['tool_calls'] as List<dynamic>?;
     if (rawToolCalls != null) {
       for (final tc in rawToolCalls) {
         final function = tc['function'] as Map<String, dynamic>;
-        final argsString = function['arguments'] as String? ?? '{}';
-        final Map<String, dynamic> args;
-        if (argsString.trim().isEmpty) {
-          args = {};
-        } else {
-          args = jsonDecode(argsString) as Map<String, dynamic>;
-        }
-        toolCalls.add(LlmToolCall(
-          id: tc['id'] as String,
-          name: function['name'] as String,
-          arguments: args,
-        ));
+        final args = _parseToolArguments(function['arguments']);
+        toolCalls.add(
+          LlmToolCall(
+            id: tc['id'] as String,
+            name: function['name'] as String,
+            arguments: args,
+          ),
+        );
       }
     }
 
@@ -203,6 +197,53 @@ class OpenAIProvider implements LlmProvider {
             )
           : null,
     );
+  }
+
+  static String? _parseTextContent(dynamic rawContent) {
+    if (rawContent == null) return null;
+    if (rawContent is String) return rawContent;
+
+    // Some OpenAI-compatible proxies return content as parts.
+    if (rawContent is List<dynamic>) {
+      final buffer = StringBuffer();
+      for (final part in rawContent) {
+        if (part is! Map) continue;
+        final text = part['text'];
+        if (text is String) {
+          buffer.write(text);
+        }
+      }
+      final combined = buffer.toString();
+      return combined.isEmpty ? null : combined;
+    }
+
+    if (rawContent is Map<String, dynamic>) {
+      final text = rawContent['text'];
+      return text is String ? text : null;
+    }
+
+    return null;
+  }
+
+  static Map<String, dynamic> _parseToolArguments(dynamic rawArguments) {
+    if (rawArguments == null) return {};
+    if (rawArguments is Map<String, dynamic>) return rawArguments;
+    if (rawArguments is Map) {
+      return rawArguments.map((key, value) => MapEntry(key.toString(), value));
+    }
+
+    if (rawArguments is String) {
+      final trimmed = rawArguments.trim();
+      if (trimmed.isEmpty) return {};
+      final decoded = jsonDecode(trimmed);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) {
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
+      }
+      return {};
+    }
+
+    return {};
   }
 
   @override

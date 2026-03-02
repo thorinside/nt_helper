@@ -47,9 +47,9 @@ class ChatCubit extends Cubit<ChatState> {
   ChatCubit({
     required ToolRegistry toolRegistry,
     required MemoryService memoryService,
-  })  : _toolRegistry = toolRegistry,
-        _memoryService = memoryService,
-        super(const ChatReady());
+  }) : _toolRegistry = toolRegistry,
+       _memoryService = memoryService,
+       super(const ChatReady());
 
   Future<void> sendMessage(String text, ChatSettings settings) async {
     if (text.trim().isEmpty) return;
@@ -64,7 +64,11 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     if (!settings.hasApiKey) {
-      emit(const ChatError('No API key configured. Open chat settings to add one.'));
+      emit(
+        const ChatError(
+          'No API key configured. Open chat settings to add one.',
+        ),
+      );
       return;
     }
 
@@ -83,6 +87,12 @@ class ChatCubit extends Cubit<ChatState> {
     // Track current model for context limits
     _currentModel = _resolveModel(settings);
 
+    // Wait for any in-flight summarization before compaction/provider reset.
+    if (_summarizationFuture != null) {
+      await _summarizationFuture;
+      _summarizationFuture = null;
+    }
+
     // Handle compaction if needed
     if (_needsCompaction) {
       await _performCompaction(settings);
@@ -91,12 +101,6 @@ class ChatCubit extends Cubit<ChatState> {
     // Add to LLM history
     _historyLengthBeforeLoop = _llmHistory.length;
     _llmHistory.add(LlmMessage.user(text.trim()));
-
-    // Wait for any in-flight summarization before disposing its provider
-    if (_summarizationFuture != null) {
-      await _summarizationFuture;
-      _summarizationFuture = null;
-    }
 
     // Create provider (disposing the previous one first)
     _activeProvider?.dispose();
@@ -112,9 +116,10 @@ class ChatCubit extends Cubit<ChatState> {
     );
 
     // Run agentic loop
-    _loopSubscription?.cancel();
-    _loopSubscription =
-        chatService.runAgenticLoop(_llmHistory).listen(_handleLoopEvent);
+    await _loopSubscription?.cancel();
+    _loopSubscription = chatService
+        .runAgenticLoop(_llmHistory)
+        .listen(_handleLoopEvent);
   }
 
   void _handleLoopEvent(ChatLoopEvent event) {
@@ -130,34 +135,40 @@ class ChatCubit extends Cubit<ChatState> {
           toolCallId: tc.id,
           arguments: tc.arguments,
         );
-        emit(currentState.copyWith(
-          messages: [...currentState.messages, msg],
-          currentToolName: tc.name,
-        ));
+        emit(
+          currentState.copyWith(
+            messages: [...currentState.messages, msg],
+            currentToolName: tc.name,
+          ),
+        );
       case ChatLoopToolResult(
-          toolCallId: final id,
-          toolName: final name,
-          result: final result
-        ):
+        toolCallId: final id,
+        toolName: final name,
+        result: final result,
+      ):
         final msg = ChatMessage.toolResult(
           toolName: name,
           toolCallId: id,
           result: result,
         );
-        emit(currentState.copyWith(
-          messages: [...currentState.messages, msg],
-          clearToolName: true,
-        ));
-        // Refresh memory after memory_write tool
+        emit(
+          currentState.copyWith(
+            messages: [...currentState.messages, msg],
+            clearToolName: true,
+          ),
+        );
+        // Keep cached memory context in sync for subsequent turns.
         if (name == 'memory_write') {
           _refreshMemory();
+        } else if (name == 'memory_append_daily') {
+          _refreshDailyLogs();
         }
       case ChatLoopAssistantMessage(
-          content: final content,
-          usage: final usage,
-          isFinal: final isFinal,
-          finalHistory: final finalHistory,
-        ):
+        content: final content,
+        usage: final usage,
+        isFinal: final isFinal,
+        finalHistory: final finalHistory,
+      ):
         final uiMessages = content.isNotEmpty
             ? [...currentState.messages, ChatMessage.assistant(content)]
             : currentState.messages;
@@ -173,30 +184,33 @@ class ChatCubit extends Cubit<ChatState> {
           // Check if compaction is needed
           final totalInput =
               currentState.totalInputTokens + (usage?.inputTokens ?? 0);
-          final limit =
-              _contextLimits[_currentModel] ?? _defaultContextLimit;
+          final limit = _contextLimits[_currentModel] ?? _defaultContextLimit;
           if (totalInput > limit ~/ 2) {
             _needsCompaction = true;
           }
         }
 
-        emit(currentState.copyWith(
-          messages: uiMessages,
-          isProcessing: isFinal ? false : null,
-          clearToolName: isFinal,
-          totalInputTokens:
-              currentState.totalInputTokens + (usage?.inputTokens ?? 0),
-          totalOutputTokens:
-              currentState.totalOutputTokens + (usage?.outputTokens ?? 0),
-        ));
+        emit(
+          currentState.copyWith(
+            messages: uiMessages,
+            isProcessing: isFinal ? false : null,
+            clearToolName: isFinal,
+            totalInputTokens:
+                currentState.totalInputTokens + (usage?.inputTokens ?? 0),
+            totalOutputTokens:
+                currentState.totalOutputTokens + (usage?.outputTokens ?? 0),
+          ),
+        );
       case ChatLoopError(message: final message):
-        _llmHistory.removeRange(_historyLengthBeforeLoop, _llmHistory.length);
+        _truncateHistoryAfterCancellationPoint();
         final msg = ChatMessage.assistant('Error: $message');
-        emit(currentState.copyWith(
-          messages: [...currentState.messages, msg],
-          isProcessing: false,
-          clearToolName: true,
-        ));
+        emit(
+          currentState.copyWith(
+            messages: [...currentState.messages, msg],
+            isProcessing: false,
+            clearToolName: true,
+          ),
+        );
     }
   }
 
@@ -204,10 +218,13 @@ class ChatCubit extends Cubit<ChatState> {
     _memoryContent = await _memoryService.readMemory();
   }
 
+  Future<void> _refreshDailyLogs() async {
+    _dailyLogs = await _memoryService.readDailyLogs();
+  }
+
   Future<void> _summarizeLargeToolResults() async {
     final provider = _activeProvider;
     if (provider == null) return;
-
     // Snapshot current length — do not iterate beyond it if new messages arrive.
     final snapshotLength = _llmHistory.length;
 
@@ -258,10 +275,12 @@ class ChatCubit extends Cubit<ChatState> {
     if (!_compacting) return;
 
     // Inject compaction request
-    _llmHistory.add(LlmMessage.user(
-      '[SYSTEM: Context is large. Use memory_append_daily to save important '
-      'session context before continuing.]',
-    ));
+    _llmHistory.add(
+      LlmMessage.user(
+        '[SYSTEM: Context is large. Use memory_append_daily to save important '
+        'session context before continuing.]',
+      ),
+    );
 
     // Run one agentic loop turn for the LLM to save context
     _activeProvider?.dispose();
@@ -277,18 +296,20 @@ class ChatCubit extends Cubit<ChatState> {
     );
 
     final completer = Completer<void>();
-    final sub = chatService.runAgenticLoop(_llmHistory).listen(
-      (event) {
-        if (event is ChatLoopAssistantMessage && event.isFinal) {
-          if (event.finalHistory != null) {
-            _llmHistory.clear();
-            _llmHistory.addAll(event.finalHistory!);
-          }
-        }
-      },
-      onDone: () => completer.complete(),
-      onError: (e) => completer.complete(),
-    );
+    final sub = chatService
+        .runAgenticLoop(_llmHistory)
+        .listen(
+          (event) {
+            if (event is ChatLoopAssistantMessage && event.isFinal) {
+              if (event.finalHistory != null) {
+                _llmHistory.clear();
+                _llmHistory.addAll(event.finalHistory!);
+              }
+            }
+          },
+          onDone: () => completer.complete(),
+          onError: (e) => completer.complete(),
+        );
 
     await completer.future;
     await sub.cancel();
@@ -309,14 +330,13 @@ class ChatCubit extends Cubit<ChatState> {
     // Add compaction notice to UI
     final currentState = state;
     if (currentState is ChatReady) {
-      emit(currentState.copyWith(
-        messages: [
-          ...currentState.messages,
-          ChatMessage.compaction(),
-        ],
-        totalInputTokens: 0,
-        totalOutputTokens: 0,
-      ));
+      emit(
+        currentState.copyWith(
+          messages: [...currentState.messages, ChatMessage.compaction()],
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+        ),
+      );
     }
   }
 
@@ -324,9 +344,11 @@ class ChatCubit extends Cubit<ChatState> {
     final contextDump = _serializeContext();
     final userMsg = ChatMessage.user('/context');
     final systemMsg = ChatMessage.system(contextDump);
-    emit(currentState.copyWith(
-      messages: [...currentState.messages, userMsg, systemMsg],
-    ));
+    emit(
+      currentState.copyWith(
+        messages: [...currentState.messages, userMsg, systemMsg],
+      ),
+    );
   }
 
   String _serializeContext() {
@@ -336,7 +358,9 @@ class ChatCubit extends Cubit<ChatState> {
 
     for (int i = 0; i < _llmHistory.length; i++) {
       final msg = _llmHistory[i];
-      buffer.writeln('--- Message ${i + 1}: ${msg.role.name.toUpperCase()} ---');
+      buffer.writeln(
+        '--- Message ${i + 1}: ${msg.role.name.toUpperCase()} ---',
+      );
 
       if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) {
         if (msg.content != null && msg.content!.isNotEmpty) {
@@ -374,7 +398,8 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> clearChat() async {
-    _loopSubscription?.cancel();
+    await _loopSubscription?.cancel();
+    _loopSubscription = null;
     _compacting = false;
     if (_summarizationFuture != null) {
       await _summarizationFuture;
@@ -391,13 +416,10 @@ class ChatCubit extends Cubit<ChatState> {
 
   void cancelProcessing() {
     _loopSubscription?.cancel();
-    _llmHistory.removeRange(_historyLengthBeforeLoop, _llmHistory.length);
+    _truncateHistoryAfterCancellationPoint();
     final currentState = state;
     if (currentState is ChatReady) {
-      emit(currentState.copyWith(
-        isProcessing: false,
-        clearToolName: true,
-      ));
+      emit(currentState.copyWith(isProcessing: false, clearToolName: true));
     }
   }
 
@@ -433,7 +455,7 @@ class ChatCubit extends Cubit<ChatState> {
 
   @override
   Future<void> close() async {
-    _loopSubscription?.cancel();
+    await _loopSubscription?.cancel();
     _compacting = false;
     if (_summarizationFuture != null) {
       await _summarizationFuture;
@@ -444,5 +466,13 @@ class ChatCubit extends Cubit<ChatState> {
     }
     _activeProvider?.dispose();
     return super.close();
+  }
+
+  void _truncateHistoryAfterCancellationPoint() {
+    if (_historyLengthBeforeLoop <= _llmHistory.length) {
+      _llmHistory.removeRange(_historyLengthBeforeLoop, _llmHistory.length);
+      return;
+    }
+    _llmHistory.clear();
   }
 }
