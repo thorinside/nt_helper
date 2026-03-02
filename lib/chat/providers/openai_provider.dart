@@ -91,17 +91,29 @@ class OpenAIProvider implements LlmProvider {
       );
     }
 
+    final Map<String, dynamic> parsed;
     try {
-      return _parseResponse(jsonDecode(response.body.trim()));
+      parsed = jsonDecode(response.body.trim()) as Map<String, dynamic>;
     } on FormatException catch (e) {
       final preview = response.body.length > 200
           ? '${response.body.substring(0, 200)}...'
           : response.body;
       DebugService().addLocalMessage(
-        'OpenAI response parse error: $e\nBody: $preview',
+        'OpenAI response body parse error: $e\nBody: $preview',
       );
       throw LlmApiException(
-        'Failed to parse OpenAI response. Check Debug Log for details.',
+        'Failed to parse OpenAI response body. Check Debug Log for details.',
+      );
+    }
+
+    try {
+      return _parseResponse(parsed);
+    } on FormatException catch (e) {
+      DebugService().addLocalMessage(
+        'OpenAI response content error: $e\nRaw: ${jsonEncode(parsed).substring(0, (jsonEncode(parsed).length).clamp(0, 500))}',
+      );
+      throw LlmApiException(
+        'Failed to parse OpenAI response content (likely malformed tool call arguments): $e',
       );
     }
   }
@@ -165,11 +177,17 @@ class OpenAIProvider implements LlmProvider {
     if (rawToolCalls != null) {
       for (final tc in rawToolCalls) {
         final function = tc['function'] as Map<String, dynamic>;
-        final argsString = function['arguments'] as String;
+        final argsString = function['arguments'] as String? ?? '{}';
+        final Map<String, dynamic> args;
+        if (argsString.trim().isEmpty) {
+          args = {};
+        } else {
+          args = jsonDecode(argsString) as Map<String, dynamic>;
+        }
         toolCalls.add(LlmToolCall(
           id: tc['id'] as String,
           name: function['name'] as String,
-          arguments: jsonDecode(argsString) as Map<String, dynamic>,
+          arguments: args,
         ));
       }
     }
