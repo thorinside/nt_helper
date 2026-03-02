@@ -79,7 +79,7 @@ class OpenAIProvider implements LlmProvider {
     if (response.statusCode != 200) {
       String errorMessage;
       try {
-        final errorBody = jsonDecode(response.body);
+        final errorBody = jsonDecode(response.body.trim());
         errorMessage =
             errorBody['error']?['message'] as String? ?? 'Unknown API error';
       } on FormatException {
@@ -92,7 +92,7 @@ class OpenAIProvider implements LlmProvider {
     }
 
     try {
-      return _parseResponse(jsonDecode(response.body));
+      return _parseResponse(jsonDecode(response.body.trim()));
     } on FormatException catch (e) {
       final preview = response.body.length > 200
           ? '${response.body.substring(0, 200)}...'
