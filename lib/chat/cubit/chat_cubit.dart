@@ -20,6 +20,8 @@ class ChatCubit extends Cubit<ChatState> {
   final MemoryService _memoryService;
   StreamSubscription<dynamic>? _loopSubscription;
   LlmProvider? _activeProvider;
+  Future<void>? _summarizationFuture;
+  bool _compacting = false;
 
   // Accumulated LLM message history for the agentic loop
   final List<LlmMessage> _llmHistory = [];
@@ -89,6 +91,12 @@ class ChatCubit extends Cubit<ChatState> {
     // Add to LLM history
     _historyLengthBeforeLoop = _llmHistory.length;
     _llmHistory.add(LlmMessage.user(text.trim()));
+
+    // Wait for any in-flight summarization before disposing its provider
+    if (_summarizationFuture != null) {
+      await _summarizationFuture;
+      _summarizationFuture = null;
+    }
 
     // Create provider (disposing the previous one first)
     _activeProvider?.dispose();
@@ -160,7 +168,7 @@ class ChatCubit extends Cubit<ChatState> {
           _llmHistory.addAll(newHistory);
 
           // Summarize large tool results in background
-          _summarizeLargeToolResults();
+          _summarizationFuture = _summarizeLargeToolResults();
 
           // Check if compaction is needed
           final totalInput =
@@ -197,17 +205,23 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> _summarizeLargeToolResults() async {
-    if (_activeProvider == null) return;
+    final provider = _activeProvider;
+    if (provider == null) return;
 
-    for (int i = 0; i < _llmHistory.length; i++) {
+    // Snapshot current length — do not iterate beyond it if new messages arrive.
+    final snapshotLength = _llmHistory.length;
+
+    for (int i = 0; i < snapshotLength && i < _llmHistory.length; i++) {
       final msg = _llmHistory[i];
       if (msg.role != LlmRole.tool) continue;
       final content = msg.content;
       if (content == null || content.length <= 4096) continue;
 
       final toolName = msg.toolName ?? 'unknown';
+      final toolCallId = msg.toolCallId;
+      if (toolCallId == null) continue;
       try {
-        final response = await _activeProvider!.sendMessages(
+        final response = await provider.sendMessages(
           messages: [
             LlmMessage.user(
               'Condense this $toolName result to key facts '
@@ -220,9 +234,12 @@ class ChatCubit extends Cubit<ChatState> {
         );
 
         final summary = response.content;
-        if (summary != null && summary.isNotEmpty) {
+        if (summary != null &&
+            summary.isNotEmpty &&
+            i < _llmHistory.length &&
+            identical(_llmHistory[i], msg)) {
           _llmHistory[i] = LlmMessage.toolResult(
-            toolCallId: msg.toolCallId!,
+            toolCallId: toolCallId,
             toolName: toolName,
             content: summary,
           );
@@ -234,8 +251,11 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> _performCompaction(ChatSettings settings) async {
+    _compacting = true;
+
     // Save snapshot of current state
     await _memoryService.saveSessionSnapshot(_llmHistory);
+    if (!_compacting) return;
 
     // Inject compaction request
     _llmHistory.add(LlmMessage.user(
@@ -272,6 +292,7 @@ class ChatCubit extends Cubit<ChatState> {
 
     await completer.future;
     await sub.cancel();
+    if (!_compacting) return;
 
     // Trim to last 10 messages
     if (_llmHistory.length > 10) {
@@ -283,6 +304,7 @@ class ChatCubit extends Cubit<ChatState> {
 
     // Reset compaction state and token counters
     _needsCompaction = false;
+    _compacting = false;
 
     // Add compaction notice to UI
     final currentState = state;
@@ -290,9 +312,7 @@ class ChatCubit extends Cubit<ChatState> {
       emit(currentState.copyWith(
         messages: [
           ...currentState.messages,
-          ChatMessage.system(
-            'Earlier context was compacted to stay within limits.',
-          ),
+          ChatMessage.compaction(),
         ],
         totalInputTokens: 0,
         totalOutputTokens: 0,
@@ -355,6 +375,11 @@ class ChatCubit extends Cubit<ChatState> {
 
   Future<void> clearChat() async {
     _loopSubscription?.cancel();
+    _compacting = false;
+    if (_summarizationFuture != null) {
+      await _summarizationFuture;
+      _summarizationFuture = null;
+    }
     if (_llmHistory.isNotEmpty) {
       await _memoryService.saveSessionSnapshot(_llmHistory.toList());
     }
@@ -409,6 +434,11 @@ class ChatCubit extends Cubit<ChatState> {
   @override
   Future<void> close() async {
     _loopSubscription?.cancel();
+    _compacting = false;
+    if (_summarizationFuture != null) {
+      await _summarizationFuture;
+      _summarizationFuture = null;
+    }
     if (_llmHistory.isNotEmpty) {
       await _memoryService.saveSessionSnapshot(_llmHistory.toList());
     }

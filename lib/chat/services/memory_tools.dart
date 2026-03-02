@@ -33,7 +33,8 @@ void registerMemoryTools(List<ToolRegistryEntry> entries, MemoryService memorySe
       'required': ['content'],
     },
     handler: (args) async {
-      final content = args['content'] as String?;
+      final raw = args['content'];
+      final content = raw is String ? raw : raw?.toString();
       if (content == null || content.isEmpty) {
         return jsonEncode({'success': false, 'error': 'content is required'});
       }
@@ -57,7 +58,8 @@ void registerMemoryTools(List<ToolRegistryEntry> entries, MemoryService memorySe
       'required': ['entry'],
     },
     handler: (args) async {
-      final entry = args['entry'] as String?;
+      final raw = args['entry'];
+      final entry = raw is String ? raw : raw?.toString();
       if (entry == null || entry.isEmpty) {
         return jsonEncode({'success': false, 'error': 'entry is required'});
       }

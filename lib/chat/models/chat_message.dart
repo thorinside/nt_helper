@@ -3,7 +3,7 @@
 // These are distinct from LlmMessage — they represent what the user sees,
 // including tool execution details and thinking indicators.
 
-enum ChatMessageRole { user, assistant, toolCall, toolResult, thinking, system }
+enum ChatMessageRole { user, assistant, toolCall, toolResult, thinking, system, compaction }
 
 class ChatMessage {
   final String id;
@@ -78,6 +78,13 @@ class ChatMessage {
         id: _generateId(),
         role: ChatMessageRole.system,
         content: content,
+        timestamp: DateTime.now(),
+      );
+
+  factory ChatMessage.compaction() => ChatMessage(
+        id: _generateId(),
+        role: ChatMessageRole.compaction,
+        content: 'Context compacted',
         timestamp: DateTime.now(),
       );
 

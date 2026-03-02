@@ -24,6 +24,7 @@ class ChatMessageBubble extends StatelessWidget {
         isNew: isNew,
       ),
       ChatMessageRole.system => _SystemBubble(message: message),
+      ChatMessageRole.compaction => const _CompactionChip(),
       ChatMessageRole.toolCall ||
       ChatMessageRole.toolResult => const SizedBox.shrink(),
       ChatMessageRole.thinking => _ThinkingIndicator(),
@@ -467,6 +468,29 @@ class _SystemBubble extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactionChip extends StatelessWidget {
+  const _CompactionChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      child: Semantics(
+        label: 'Context compacted',
+        child: Tooltip(
+          message: 'Earlier context was compacted to stay within limits',
+          child: Icon(
+            Icons.compress,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );
