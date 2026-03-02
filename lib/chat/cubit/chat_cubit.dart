@@ -225,6 +225,7 @@ class ChatCubit extends Cubit<ChatState> {
           final newHistory = finalHistory ?? [LlmMessage.assistant(content)];
           _llmHistory.clear();
           _llmHistory.addAll(newHistory);
+          _historyLengthBeforeLoop = _llmHistory.length;
 
           // Summarize large tool results in background
           _summarizationFuture = _summarizeLargeToolResults();

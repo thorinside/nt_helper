@@ -418,5 +418,115 @@ void main() {
         ),
       );
     });
+
+    test('handles null choices key gracefully', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'id': 'chatcmpl-xxx',
+              'object': 'chat.completion',
+              'choices': null,
+              'usage': {'prompt_tokens': 5, 'completion_tokens': 0},
+            }),
+            200,
+          );
+        }),
+      );
+
+      // Should not throw TypeError — should either return a valid response
+      // or throw LlmApiException.
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Hello')],
+        tools: const [],
+      );
+
+      expect(response.isComplete, isTrue);
+    });
+
+    test('handles missing choices key gracefully', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'id': 'chatcmpl-xxx',
+              'object': 'chat.completion',
+              'usage': {'prompt_tokens': 5, 'completion_tokens': 0},
+            }),
+            200,
+          );
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Hello')],
+        tools: const [],
+      );
+
+      expect(response.isComplete, isTrue);
+    });
+
+    test('handles usage values returned as strings from proxies', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {'role': 'assistant', 'content': 'Hello!'},
+                  'finish_reason': 'stop',
+                },
+              ],
+              'usage': {
+                'prompt_tokens': '42',
+                'completion_tokens': '7',
+              },
+            }),
+            200,
+          );
+        }),
+      );
+
+      // Should not throw TypeError — proxy usage values may be strings.
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Hello')],
+        tools: const [],
+      );
+
+      expect(response.content, 'Hello!');
+      expect(response.usage, isNotNull);
+      expect(response.usage!.inputTokens, 42);
+      expect(response.usage!.outputTokens, 7);
+    });
+
+    test('handles empty choices array', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [],
+              'usage': {'prompt_tokens': 5, 'completion_tokens': 0},
+            }),
+            200,
+          );
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Hello')],
+        tools: const [],
+      );
+
+      expect(response.isComplete, isTrue);
+      expect(response.content, isNull);
+    });
   });
 }

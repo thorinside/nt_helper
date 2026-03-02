@@ -246,7 +246,97 @@ void main() {
     );
   });
 
-  group('Bug 3: cancelProcessing resets state', () {
+  group('Bug 3: cancelProcessing after completed loop wipes history', () {
+    test('cancelProcessing after successful loop preserves conversation history',
+        () async {
+      final provider = MockLlmProvider();
+      when(() => provider.dispose()).thenReturn(null);
+      when(
+        () => provider.sendMessages(
+          messages: any(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).thenAnswer(
+        (_) async => const LlmResponse(
+          content: 'Hello!',
+          isComplete: true,
+          usage: LlmUsage(inputTokens: 10, outputTokens: 5),
+        ),
+      );
+
+      final cubit = ChatCubit(
+        toolRegistry: toolRegistry,
+        memoryService: memoryService,
+        providerFactory: (_) => provider,
+      );
+      addTearDown(cubit.close);
+
+      // Send a message and let the loop complete
+      await cubit.sendMessage('hello', _settings);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final stateBeforeCancel = cubit.state as ChatReady;
+      expect(stateBeforeCancel.isProcessing, isFalse);
+      expect(stateBeforeCancel.messages, hasLength(2)); // user + assistant
+
+      // Cancel after loop already completed — should be a no-op
+      cubit.cancelProcessing();
+
+      // Send another message — it should work, proving history wasn't wiped
+      when(
+        () => provider.sendMessages(
+          messages: any(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).thenAnswer(
+        (_) async => const LlmResponse(
+          content: 'Second response',
+          isComplete: true,
+          usage: LlmUsage(inputTokens: 15, outputTokens: 8),
+        ),
+      );
+
+      await cubit.sendMessage('second message', _settings);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // The LLM should have received the full conversation history
+      // (user + assistant from first turn, plus user from second turn).
+      // If cancelProcessing wiped the internal history, the LLM would only
+      // see the second user message.
+      final captured = verify(
+        () => provider.sendMessages(
+          messages: captureAny(named: 'messages'),
+          tools: any(named: 'tools'),
+          systemPrompt: any(named: 'systemPrompt'),
+        ),
+      ).captured;
+
+      // The second sendMessage call's messages should include the first turn.
+      // captured contains one list per invocation. The second invocation (index 1)
+      // is the one from the agentic loop's second call.
+      // But sendMessages is called once per loop iteration, and our mock returns
+      // a final response immediately. So the second call to sendMessages is from
+      // the second sendMessage(). The messages passed should be:
+      // user("hello"), assistant("Hello!"), user("second message")
+      final secondCallMessages = captured.last as List<LlmMessage>;
+      expect(
+        secondCallMessages.length,
+        greaterThanOrEqualTo(3),
+        reason: 'Expected at least 3 messages: '
+            '${secondCallMessages.map((m) => '${m.role.name}:${m.content}').join(', ')}',
+      );
+      // First-turn user message should be present
+      expect(secondCallMessages[0].content, 'hello');
+      // First-turn assistant response should be present
+      expect(secondCallMessages[1].content, 'Hello!');
+      // Second-turn user message should be present
+      expect(secondCallMessages[2].content, 'second message');
+    });
+  });
+
+  group('Bug 4: cancelProcessing resets state', () {
     test('cancelProcessing resets isProcessing to false', () async {
       final completer = Completer<LlmResponse>();
       final provider = MockLlmProvider();

@@ -158,7 +158,8 @@ class OpenAIProvider implements LlmProvider {
   }
 
   LlmResponse _parseResponse(Map<String, dynamic> json) {
-    final choices = json['choices'] as List<dynamic>;
+    final rawChoices = json['choices'];
+    final choices = rawChoices is List<dynamic> ? rawChoices : <dynamic>[];
     if (choices.isEmpty) {
       return const LlmResponse(isComplete: true);
     }
@@ -192,11 +193,21 @@ class OpenAIProvider implements LlmProvider {
       isComplete: finishReason != 'tool_calls',
       usage: usage != null
           ? LlmUsage(
-              inputTokens: usage['prompt_tokens'] as int? ?? 0,
-              outputTokens: usage['completion_tokens'] as int? ?? 0,
+              inputTokens: _parseIntField(usage['prompt_tokens']),
+              outputTokens: _parseIntField(usage['completion_tokens']),
             )
           : null,
     );
+  }
+
+  /// Parse a field that should be an int but may arrive as a String from
+  /// some OpenAI-compatible proxies.
+  static int _parseIntField(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   static String? _parseTextContent(dynamic rawContent) {

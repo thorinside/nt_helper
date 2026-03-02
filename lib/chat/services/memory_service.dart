@@ -56,10 +56,16 @@ class MemoryService {
       final dir = Directory(base);
       if (!await dir.exists()) await dir.create(recursive: true);
 
-      final lines = content.split('\n');
+      var lines = content.split('\n');
+      // A trailing newline produces an empty string at the end of the list;
+      // strip it so it doesn't count toward the 200-line cap.
+      final hasTrailingNewline =
+          lines.isNotEmpty && lines.last.isEmpty && content.endsWith('\n');
+      if (hasTrailingNewline) lines = lines.sublist(0, lines.length - 1);
+
       final capped = lines.length > _maxMemoryLines
           ? lines.sublist(lines.length - _maxMemoryLines).join('\n')
-          : content;
+          : lines.join('\n');
 
       await File('$base/memory.md').writeAsString(capped);
     } catch (e) {
