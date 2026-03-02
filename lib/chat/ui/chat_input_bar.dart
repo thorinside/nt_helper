@@ -49,14 +49,20 @@ class _ChatInputBarState extends State<ChatInputBar> {
   void _checkExpansion() {
     if (_availableWidth <= 0) return;
 
+    // Once expanded, only shrink back when text is cleared (i.e. message sent).
+    if (_isExpanded) {
+      if (_controller.text.isEmpty) {
+        setState(() => _isExpanded = false);
+      }
+      return;
+    }
+
     final text = _controller.text;
     bool shouldExpand = false;
 
     if (text.contains('\n')) {
       shouldExpand = true;
     } else {
-      // Approximate the width available to text inside the TextField
-      // (subtract padding: 16 horizontal on each side)
       const textFieldPadding = 32.0;
       final textWidth = _availableWidth - textFieldPadding;
 
@@ -73,8 +79,8 @@ class _ChatInputBarState extends State<ChatInputBar> {
       textPainter.dispose();
     }
 
-    if (shouldExpand != _isExpanded) {
-      setState(() => _isExpanded = shouldExpand);
+    if (shouldExpand) {
+      setState(() => _isExpanded = true);
     }
   }
 
