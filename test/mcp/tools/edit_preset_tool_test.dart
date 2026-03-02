@@ -65,31 +65,8 @@ void main() {
     });
 
     group('editPreset - parameter validation', () {
-      test('should return error when target parameter is missing', () async {
-        final result = await tools.editPreset({
-          'data': {'name': 'test'},
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('target'));
-      });
-
-      test('should return error when target is not "preset"', () async {
-        final result = await tools.editPreset({
-          'target': 'slot',
-          'data': {'name': 'test'},
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('target'));
-      });
-
       test('should return error when data parameter is missing', () async {
-        final result = await tools.editPreset({
-          'target': 'preset',
-        });
+        final result = await tools.editPreset({});
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
@@ -98,7 +75,7 @@ void main() {
 
       test('should return error when preset name is missing', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {'slots': []},
         });
 
@@ -109,7 +86,7 @@ void main() {
 
       test('should return error when preset name is empty', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {'name': '', 'slots': []},
         });
 
@@ -122,7 +99,7 @@ void main() {
     group('editPreset - slot validation', () {
       test('should return error when slot is not an object', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': ['not-an-object'],
@@ -141,7 +118,7 @@ void main() {
 
       test('should return error when algorithm is missing from slot', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [{}],
@@ -162,7 +139,7 @@ void main() {
           'should return error when algorithm has neither guid nor name',
           () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -187,7 +164,7 @@ void main() {
     group('editPreset - validation with valid algorithms', () {
       test('should validate slot index within valid range', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -208,7 +185,7 @@ void main() {
 
       test('should validate parameter number bounds', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -239,7 +216,7 @@ void main() {
     group('editPreset - parameter value validation', () {
       test('should validate parameter value is within bounds', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -265,7 +242,7 @@ void main() {
     group('editPreset - mapping validation', () {
       test('should validate MIDI channel is 0-15', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -299,7 +276,7 @@ void main() {
 
       test('should validate MIDI CC is 0-128', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -333,7 +310,7 @@ void main() {
 
       test('should validate CV input is 0-12', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -367,7 +344,7 @@ void main() {
 
       test('should validate i2c CC is 0-255', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -401,7 +378,7 @@ void main() {
 
       test('should validate performance_page is 0-30', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -435,7 +412,7 @@ void main() {
     group('editPreset - algorithm resolution', () {
       test('should accept valid algorithm GUID', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -457,7 +434,7 @@ void main() {
 
       test('should reject invalid algorithm GUID', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -482,7 +459,7 @@ void main() {
     group('editPreset - response structure', () {
       test('should return valid JSON response', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -499,7 +476,7 @@ void main() {
 
       test('should include success or error field', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [],
@@ -517,7 +494,7 @@ void main() {
     group('editPreset - edge cases', () {
       test('should handle empty slots array', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'empty preset',
             'slots': [],
@@ -530,7 +507,7 @@ void main() {
 
       test('should handle null slots array', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'no slots',
           },
@@ -542,7 +519,7 @@ void main() {
 
       test('should handle slots without parameters', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -559,7 +536,7 @@ void main() {
 
       test('should handle empty parameters array', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -577,7 +554,7 @@ void main() {
 
       test('should accept partial mapping specification', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -607,7 +584,7 @@ void main() {
     group('editPreset - algorithm name fuzzy matching', () {
       test('should accept algorithm by exact name match', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [
@@ -628,7 +605,7 @@ void main() {
 
       test('should reject algorithm with no name or guid match', () async {
         final result = await tools.editPreset({
-          'target': 'preset',
+
           'data': {
             'name': 'test',
             'slots': [

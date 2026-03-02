@@ -394,7 +394,6 @@ class DistingTools {
   /// MCP Tool: Simple interface to add an algorithm to the preset.
   /// Designed for minimal cognitive load - flat parameter structure.
   /// Parameters:
-  ///   - target (string, required): Must be "algorithm"
   ///   - slot_index (int, optional): Target slot (0-31). If omitted, adds to first empty slot.
   ///   - name (string, optional): Algorithm name (fuzzy matching ≥70%)
   ///   - guid (string, optional): Algorithm GUID (exact match)
@@ -402,28 +401,6 @@ class DistingTools {
   /// Returns:
   ///   A JSON string with the slot index where the algorithm was added, or an error.
   Future<String> addSimple(Map<String, dynamic> params) async {
-    // Validate target parameter
-    final String? target = params['target'] as String?;
-    if (target == null || target.isEmpty) {
-      return jsonEncode(
-        convertToSnakeCaseKeys(
-          MCPUtils.buildError(
-            'Missing "target". Use: {"target": "algorithm", "name": "VCO"}',
-          ),
-        ),
-      );
-    }
-
-    if (target != 'algorithm') {
-      return jsonEncode(
-        convertToSnakeCaseKeys(
-          MCPUtils.buildError(
-            'Invalid target "$target". Use target: "algorithm".',
-          ),
-        ),
-      );
-    }
-
     // Extract algorithm identifier (name or guid)
     final String? name = params['name'] as String?;
     final String? guid = params['guid'] as String?;
@@ -585,20 +562,11 @@ class DistingTools {
 
   /// MCP Tool: Removes (clears) the algorithm from a specific slot.
   /// Parameters:
-  ///   - target (string, required): Must be "slot"
   ///   - slot_index (int, required): The index of the slot to clear (0-31).
   /// Returns:
   ///   A JSON string confirming the removal. Lenient if slot is already empty.
   Future<String> removeSlot(Map<String, dynamic> params) async {
-    final String? target = params['target'] as String?;
     final int? slotIndex = params['slot_index'] as int?;
-
-    // Validate target
-    if (target == null || target != 'slot') {
-      return jsonEncode(
-        convertToSnakeCaseKeys(MCPUtils.buildError('Target must be "slot"')),
-      );
-    }
 
     // Validate slot_index presence
     if (slotIndex == null) {
@@ -2728,30 +2696,11 @@ class DistingTools {
   /// MCP Tool: Edit preset with preset-level granularity
   /// Accepts a complete preset state and applies only necessary changes
   /// Parameters:
-  ///   - target (string, required): Must be "preset"
   ///   - data (object, required): Preset JSON with name and slots array
   /// Returns:
   ///   Updated preset state after successful application or detailed error
   Future<String> editPreset(Map<String, dynamic> params) async {
     try {
-      // Step 1: Validate input parameters BEFORE accessing device
-      final String? target = params['target'] as String?;
-      if (target == null || target.isEmpty) {
-        return jsonEncode(
-          convertToSnakeCaseKeys(
-            MCPUtils.buildError('${MCPConstants.missingParamError}: "target"'),
-          ),
-        );
-      }
-
-      if (target != 'preset') {
-        return jsonEncode(
-          convertToSnakeCaseKeys(
-            MCPUtils.buildError('Invalid target "$target". Must be "preset".'),
-          ),
-        );
-      }
-
       final Map<String, dynamic>? data =
           params['data'] as Map<String, dynamic>?;
       if (data == null) {
@@ -2954,39 +2903,12 @@ class DistingTools {
   /// Applies only necessary changes to the specified slot or parameter while preserving other data
   Future<String> editSlot(Map<String, dynamic> params) async {
     try {
-      // Step 1: Validate input parameters BEFORE accessing device
-      final String? target = params['target'] as String?;
-      if (target == null || target.isEmpty) {
-        return jsonEncode(
-          convertToSnakeCaseKeys(
-            MCPUtils.buildError(
-              'Missing "target". Use target: "slot" or target: "parameter".',
-            ),
-          ),
-        );
-      }
-
-      if (target == 'parameter') {
-        return editParameter(params);
-      }
-
-      if (target != 'slot') {
-        return jsonEncode(
-          convertToSnakeCaseKeys(
-            MCPUtils.buildError(
-              'Invalid target "$target". Use "slot" to change algorithm/parameters, '
-              'or "parameter" to change a single value/mapping.',
-            ),
-          ),
-        );
-      }
-
       final int? slotIndex = params['slot_index'] as int?;
       if (slotIndex == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'Missing "slot_index". Use show tool with target: "preset" to see occupied slots.',
+              'Missing "slot_index". Use show_preset to see occupied slots.',
             ),
           ),
         );
@@ -3487,7 +3409,7 @@ class DistingTools {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'Missing "slot_index". Use show tool with target: "preset" to see occupied slots.',
+              'Missing "slot_index". Use show_preset to see occupied slots.',
             ),
           ),
         );
@@ -3551,7 +3473,7 @@ class DistingTools {
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
               'Slot $slotIndex is empty. Use add tool to add an algorithm first, '
-              'or show tool with target: "preset" to see which slots have algorithms.',
+              'or show_preset to see which slots have algorithms.',
             ),
           ),
         );
@@ -4712,7 +4634,6 @@ class DistingTools {
           MCPUtils.buildSuccess(
             'Parameter search completed',
             data: {
-              'target': 'parameter',
               'scope': 'preset',
               'query': normalizedQuery,
               'partial_match': partialMatch,
@@ -4813,7 +4734,6 @@ class DistingTools {
           MCPUtils.buildSuccess(
             'Parameter search in slot completed',
             data: {
-              'target': 'parameter',
               'scope': 'slot',
               'slot_index': slotIndex,
               'algorithm_name': algorithm.name,

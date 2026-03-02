@@ -286,30 +286,7 @@ class MCPAlgorithmTools {
   /// Note: Called via the 'search' tool when target="algorithm". Target validation
   /// is handled by the dispatcher in mcp_server_service.dart.
   Future<String> searchAlgorithms(Map<String, dynamic> params) async {
-    final dynamic typeRaw = params['type'];
-    final dynamic targetRaw = params['target'];
-    final String? typeParam = typeRaw is String ? typeRaw : null;
-    final String? targetParam = targetRaw is String ? targetRaw : null;
-    final String? typeOrTarget = (typeParam ?? targetParam)?.toLowerCase();
     final String? query = params['query'];
-
-    if (typeOrTarget == null || typeOrTarget.isEmpty) {
-      return jsonEncode(
-        convertToSnakeCaseKeys(
-          MCPUtils.buildError(
-            '${MCPConstants.missingParamError}: "type"',
-          ),
-        ),
-      );
-    }
-
-    if (typeOrTarget != 'algorithm') {
-      return jsonEncode(
-        convertToSnakeCaseKeys(
-          MCPUtils.buildError('Invalid type: "$typeOrTarget". Must be "algorithm".'),
-        ),
-      );
-    }
 
     if (query == null || query.isEmpty) {
       return jsonEncode(
@@ -769,10 +746,37 @@ class MCPAlgorithmTools {
     return jsonEncode(convertToSnakeCaseKeys(paramJson));
   }
 
-  /// Show single parameter by separate slot_index and parameter number.
-  /// Used by the split `show_parameter` tool.
-  Future<String> showParameterByIndex(int slotIndex, int parameterNumber) async {
-    return showParameter('$slotIndex:$parameterNumber');
+  /// Show single parameter by separate slot_index and parameter identifier.
+  /// Accepts integer parameter number or string parameter name.
+  Future<String> showParameterByIndex(int slotIndex, dynamic parameterIdent) async {
+    if (parameterIdent is int) {
+      return showParameter('$slotIndex:$parameterIdent');
+    }
+    if (parameterIdent is String) {
+      // Resolve parameter name to number
+      if (!_controller.isSynchronized) {
+        return jsonEncode(convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Device not synchronized',
+        }));
+      }
+      final parameters = await _controller.getParametersForSlot(slotIndex);
+      for (final p in parameters) {
+        if (p.name == parameterIdent) {
+          return showParameter('$slotIndex:${p.parameterNumber}');
+        }
+      }
+      final availableNames = parameters.map((p) => p.name).join(', ');
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': false,
+        'error':
+            'Parameter "$parameterIdent" not found in slot $slotIndex. Available: $availableNames',
+      }));
+    }
+    return jsonEncode(convertToSnakeCaseKeys({
+      'success': false,
+      'error': 'parameter_number must be an integer or string name.',
+    }));
   }
 
   /// Show current device screen as base64 JPEG image.

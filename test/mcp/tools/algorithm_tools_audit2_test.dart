@@ -221,41 +221,6 @@ void main() {
     });
   });
 
-  group('searchAlgorithms — type/target edge cases', () {
-    test('returns error when type is non-string value (int)', () async {
-      final result = await algoTools.searchAlgorithms({
-        'type': 42,
-        'query': 'Clock',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
-
-      // type: 42 should be rejected — it's not a string
-      expect(json['success'], isFalse);
-    });
-
-    test('returns error when both type and target provided with different values', () async {
-      final result = await algoTools.searchAlgorithms({
-        'type': 'algorithm',
-        'target': 'preset',
-        'query': 'Clock',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
-
-      // type takes precedence, so this should work with type='algorithm'
-      expect(json['results'], isNotEmpty);
-    });
-
-    test('type is case-insensitive', () async {
-      final result = await algoTools.searchAlgorithms({
-        'type': 'ALGORITHM',
-        'query': 'Clock',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
-
-      expect(json['results'], isNotEmpty);
-    });
-  });
-
   group('_buildParameterJson — powerOfTen edge cases', () {
     test('powerOfTen of 0 returns raw integer value', () async {
       final testParams = [

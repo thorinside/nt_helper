@@ -171,22 +171,8 @@ void main() {
   });
 
   group('addSimple — validation', () {
-    test('missing target returns error', () async {
-      final result = await distingTools.addSimple({});
-      final json = jsonDecode(result) as Map<String, dynamic>;
-      expect(json['success'], isFalse);
-      expect(json['error'], contains('target'));
-    });
-
-    test('invalid target returns error', () async {
-      final result = await distingTools.addSimple({'target': 'preset'});
-      final json = jsonDecode(result) as Map<String, dynamic>;
-      expect(json['success'], isFalse);
-      expect(json['error'], contains('preset'));
-    });
-
     test('missing name and guid returns error', () async {
-      final result = await distingTools.addSimple({'target': 'algorithm'});
+      final result = await distingTools.addSimple({});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
       expect(json['error'], contains('identifier'));
@@ -194,7 +180,7 @@ void main() {
 
     test('invalid slot_index returns error', () async {
       final result = await distingTools.addSimple({
-        'target': 'algorithm',
+
         'name': 'VCO',
         'slot_index': -1,
       });
@@ -205,7 +191,7 @@ void main() {
 
     test('slot_index 32 (out of range) returns error', () async {
       final result = await distingTools.addSimple({
-        'target': 'algorithm',
+
         'name': 'VCO',
         'slot_index': 32,
       });
@@ -263,7 +249,7 @@ void main() {
         when(() => cubit.refreshSlot(0)).thenAnswer((_) async {});
 
         final result = await distingTools.addSimple({
-          'target': 'algorithm',
+  
           'guid': guid,
         });
         final json = jsonDecode(result) as Map<String, dynamic>;
@@ -290,14 +276,8 @@ void main() {
       expect(json['error'], contains('slot'));
     });
 
-    test('wrong target returns error', () async {
-      final result = await distingTools.removeSlot({'target': 'preset'});
-      final json = jsonDecode(result) as Map<String, dynamic>;
-      expect(json['success'], isFalse);
-    });
-
     test('missing slot_index returns error', () async {
-      final result = await distingTools.removeSlot({'target': 'slot'});
+      final result = await distingTools.removeSlot({});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
       expect(json['error'], contains('slot_index'));
@@ -305,7 +285,7 @@ void main() {
 
     test('out of range slot_index returns error', () async {
       final result = await distingTools.removeSlot({
-        'target': 'slot',
+
         'slot_index': 32,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -319,7 +299,7 @@ void main() {
       ).thenAnswer((_) async => <int, Algorithm?>{});
 
       final result = await distingTools.removeSlot({
-        'target': 'slot',
+
         'slot_index': 0,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -331,7 +311,7 @@ void main() {
       when(() => controller.clearSlot(0)).thenAnswer((_) async {});
 
       final result = await distingTools.removeSlot({
-        'target': 'slot',
+
         'slot_index': 0,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -356,7 +336,7 @@ void main() {
         when(() => controller.clearSlot(5)).thenAnswer((_) async {});
 
         final result = await distingTools.removeSlot({
-          'target': 'slot',
+  
           'slot_index': 5,
         });
         final json = jsonDecode(result) as Map<String, dynamic>;
@@ -420,7 +400,7 @@ void main() {
         when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
         final result = await distingTools.editSlot({
-          'target': 'slot',
+  
           'slot_index': 0,
           'data': {
             'algorithm': {'guid': guid},
@@ -611,7 +591,7 @@ void main() {
       ).thenAnswer((_) async => 'OldPreset');
 
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {'name': 'NewPreset'},
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -622,7 +602,7 @@ void main() {
       when(() => controller.isSynchronized).thenReturn(false);
 
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'NewPreset',
           'slots': [
@@ -639,28 +619,15 @@ void main() {
   });
 
   group('editPreset — validation', () {
-    test('missing target returns error', () async {
-      final result = await distingTools.editPreset({});
-      final json = jsonDecode(result) as Map<String, dynamic>;
-      expect(json['success'], isFalse);
-    });
-
-    test('invalid target returns error', () async {
-      final result = await distingTools.editPreset({'target': 'slot'});
-      final json = jsonDecode(result) as Map<String, dynamic>;
-      expect(json['success'], isFalse);
-      expect(json['error'], contains('slot'));
-    });
-
     test('missing data returns error', () async {
-      final result = await distingTools.editPreset({'target': 'preset'});
+      final result = await distingTools.editPreset({});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
     });
 
     test('empty preset name returns error', () async {
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {'name': ''},
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -669,49 +636,9 @@ void main() {
     });
   });
 
-  group('editSlot — target routing', () {
-    test('target "parameter" delegates to editParameter', () async {
-      // editParameter needs slot_index and parameter
-      when(
-        () => controller.updateParameterValue(0, 5, 80),
-      ).thenAnswer((_) async {});
-      when(() => controller.getParameterValue(0, 5)).thenAnswer(
-        (_) async =>
-            ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 80),
-      );
-      when(
-        () => controller.getParameterMapping(0, 5),
-      ).thenAnswer((_) async => testMappings[1]);
-
-      final result = await distingTools.editSlot({
-        'target': 'parameter',
-        'slot_index': 0,
-        'parameter': 5,
-        'value': 80,
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
-      // editParameter returns a flat object without 'success' key
-      expect(json['parameter_number'], equals(5));
-      expect(json['value'], equals(80));
-      verify(() => controller.updateParameterValue(0, 5, 80)).called(1);
-    });
-
-    test('missing target returns error', () async {
-      final result = await distingTools.editSlot({});
-      final json = jsonDecode(result) as Map<String, dynamic>;
-      expect(json['success'], isFalse);
-      expect(json['error'], contains('target'));
-    });
-
-    test('invalid target returns error', () async {
-      final result = await distingTools.editSlot({'target': 'preset'});
-      final json = jsonDecode(result) as Map<String, dynamic>;
-      expect(json['success'], isFalse);
-      expect(json['error'], contains('preset'));
-    });
-
+  group('editSlot — validation', () {
     test('missing slot_index returns error', () async {
-      final result = await distingTools.editSlot({'target': 'slot'});
+      final result = await distingTools.editSlot({});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
       expect(json['error'], contains('slot_index'));
@@ -719,7 +646,6 @@ void main() {
 
     test('out of range slot_index returns error', () async {
       final result = await distingTools.editSlot({
-        'target': 'slot',
         'slot_index': 32,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -729,7 +655,7 @@ void main() {
 
     test('missing data returns error', () async {
       final result = await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -741,7 +667,7 @@ void main() {
       when(() => controller.isSynchronized).thenReturn(false);
 
       final result = await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [

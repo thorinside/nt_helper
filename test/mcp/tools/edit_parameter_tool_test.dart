@@ -65,22 +65,9 @@ void main() {
     });
 
     group('editParameter - parameter validation', () {
-      test('should return error when target parameter is missing', () async {
-        final result = await tools.editSlot({
-          'slot_index': 0,
-          'parameter': 0,
-          'value': 50,
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('target'));
-      });
-
       test('should return error when slot_index parameter is missing', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
-          'parameter': 0,
+        final result = await tools.editParameter({
+          'parameter_number': 0,
           'value': 50,
         });
 
@@ -90,10 +77,10 @@ void main() {
       });
 
       test('should return error when slot_index is negative', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': -1,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
         });
 
@@ -103,10 +90,10 @@ void main() {
       });
 
       test('should return error when slot_index exceeds maximum', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 32,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
         });
 
@@ -116,8 +103,8 @@ void main() {
       });
 
       test('should return error when parameter identifier is missing', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
           'value': 50,
         });
@@ -128,10 +115,10 @@ void main() {
       });
 
       test('should return error when both value and mapping are omitted', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
         });
 
         final decoded = jsonDecode(result);
@@ -149,10 +136,10 @@ void main() {
         final offlineController = DistingControllerImpl(offlineDistingCubit);
         final offlineTools = DistingTools(offlineController, offlineDistingCubit);
 
-        final result = await offlineTools.editSlot({
-          'target': 'parameter',
+        final result = await offlineTools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
         });
 
@@ -166,10 +153,10 @@ void main() {
 
     group('editParameter - parameter lookup by number', () {
       test('should return error when parameter number is out of range (negative)', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': -1,
+          'parameter_number': -1,
           'value': 50,
         });
 
@@ -179,10 +166,10 @@ void main() {
       });
 
       test('should return error when parameter number exceeds available parameters', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 999,
+          'parameter_number': 999,
           'value': 50,
         });
 
@@ -194,10 +181,10 @@ void main() {
 
     group('editParameter - parameter lookup by name', () {
       test('should return error when parameter name not found', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 'NonexistentParameter',
+          'parameter_number': 'NonexistentParameter',
           'value': 50,
         });
 
@@ -207,10 +194,10 @@ void main() {
       });
 
       test('should require exact match for parameter name', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 'parameter',
+          'parameter_number': 'parameter',
           'value': 50,
         });
 
@@ -222,10 +209,10 @@ void main() {
 
     group('editParameter - value validation', () {
       test('should return error when value is not a number', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 'not a number',
         });
 
@@ -235,10 +222,10 @@ void main() {
       });
 
       test('should return error when value is below minimum range', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': -100,
         });
 
@@ -250,10 +237,10 @@ void main() {
 
     group('editParameter - mapping validation', () {
       test('should return error when MIDI channel is negative', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'mapping': {
             'midi': {
               'midi_channel': -1,
@@ -267,10 +254,10 @@ void main() {
       });
 
       test('should return error when MIDI channel exceeds 15', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'mapping': {
             'midi': {
               'midi_channel': 16,
@@ -284,10 +271,10 @@ void main() {
       });
 
       test('should return error when MIDI CC exceeds 128', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'mapping': {
             'midi': {
               'midi_cc': 129,
@@ -301,10 +288,10 @@ void main() {
       });
 
       test('should accept MIDI CC value of 128 (aftertouch)', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'mapping': {
             'midi': {
               'midi_cc': 128,
@@ -323,10 +310,10 @@ void main() {
       });
 
       test('should return error when CV input exceeds 12', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'mapping': {
             'cv': {
               'cv_input': 13,
@@ -340,10 +327,10 @@ void main() {
       });
 
       test('should return error when i2c CC exceeds 255', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
           'mapping': {
             'i2c': {
@@ -358,10 +345,10 @@ void main() {
       });
 
       test('should return error when performance_page exceeds 30', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
           'mapping': {
             'performance_page': 31,
@@ -375,10 +362,10 @@ void main() {
       });
 
       test('should return error when MIDI type is invalid', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
           'mapping': {
             'midi': {
@@ -403,10 +390,10 @@ void main() {
         ];
 
         for (final midiType in validTypes) {
-          final result = await tools.editSlot({
-            'target': 'parameter',
+          final result = await tools.editParameter({
+  
             'slot_index': 0,
-            'parameter': 0,
+            'parameter_number': 0,
             'value': 50,
             'mapping': {
               'midi': {
@@ -426,10 +413,10 @@ void main() {
       });
 
       test('should support empty mapping object to preserve all mappings', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
           'mapping': {},
         });
@@ -445,10 +432,10 @@ void main() {
 
     group('editParameter - return value format', () {
       test('should include slot_index, parameter_number, parameter_name, and value in response', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
         });
 
@@ -464,10 +451,10 @@ void main() {
       });
 
       test('should omit disabled mappings from return value', () async {
-        final result = await tools.editSlot({
-          'target': 'parameter',
+        final result = await tools.editParameter({
+
           'slot_index': 0,
-          'parameter': 0,
+          'parameter_number': 0,
           'value': 50,
         });
 

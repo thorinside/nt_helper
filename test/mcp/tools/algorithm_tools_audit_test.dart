@@ -190,32 +190,8 @@ void main() {
   });
 
   group('searchAlgorithms — input validation', () {
-    test('returns error when type/target is missing', () async {
-      final result = await algoTools.searchAlgorithms({
-        'query': 'VCO',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
-
-      expect(json['success'], isFalse);
-      expect(json['error'], contains('"type"'));
-    });
-
-    test('returns error when type is invalid', () async {
-      final result = await algoTools.searchAlgorithms({
-        'type': 'preset',
-        'query': 'VCO',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
-
-      expect(json['success'], isFalse);
-      expect(json['error'], contains('Invalid type'));
-      expect(json['error'], contains('preset'));
-    });
-
     test('returns error when query is missing', () async {
-      final result = await algoTools.searchAlgorithms({
-        'type': 'algorithm',
-      });
+      final result = await algoTools.searchAlgorithms({});
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
@@ -233,16 +209,6 @@ void main() {
       expect(json['error'], contains('"query"'));
     });
 
-    test('accepts target parameter as alias for type', () async {
-      final result = await algoTools.searchAlgorithms({
-        'target': 'algorithm',
-        'query': 'Attenuverter',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
-
-      // Should not return a type error — either results or no match
-      expect(json.containsKey('error') && json['error'].toString().contains('type'), isFalse);
-    });
   });
 
   group('searchAlgorithms — matching', () {

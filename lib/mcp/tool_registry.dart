@@ -125,10 +125,7 @@ class ToolRegistry {
         },
         'required': ['query'],
       },
-      handler: (args) async {
-        final fullArgs = {...args, 'target': 'algorithm'};
-        return await _algoTools.searchAlgorithms(fullArgs);
-      },
+      handler: (args) => _algoTools.searchAlgorithms(args),
       timeout: const Duration(seconds: 5),
     ));
 
@@ -205,8 +202,12 @@ class ToolRegistry {
             'description': 'Slot index (0-31).',
           },
           'parameter_number': {
-            'type': 'integer',
-            'description': 'Parameter number (0-based index).',
+            'description':
+                'Parameter identifier: integer number (0-based) or string name.',
+            'oneOf': [
+              {'type': 'string'},
+              {'type': 'integer'},
+            ],
           },
         },
         'required': ['slot_index', 'parameter_number'],
@@ -273,7 +274,7 @@ class ToolRegistry {
         'required': ['data'],
       },
       handler: (args) =>
-          _distingTools.editPreset({...args, 'target': 'preset'}),
+          _distingTools.editPreset(args),
       timeout: const Duration(seconds: 30),
     ));
 
@@ -340,7 +341,7 @@ class ToolRegistry {
         },
         'required': ['slot_index', 'data'],
       },
-      handler: (args) => _distingTools.editSlot({...args, 'target': 'slot'}),
+      handler: (args) => _distingTools.editSlot(args),
       timeout: const Duration(seconds: 30),
     ));
 

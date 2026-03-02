@@ -63,40 +63,16 @@ void main() {
     });
 
     group('search - parameter validation', () {
-      test('should return error when type is missing', () async {
-        final result = await tools.searchAlgorithms({
-          'query': 'clock',
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('type'));
-      });
-
       test('should return error when query is missing', () async {
-        final result = await tools.searchAlgorithms({
-          'type': 'algorithm',
-        });
+        final result = await tools.searchAlgorithms({});
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
         expect(decoded['error'], contains('query'));
       });
 
-      test('should return error when type is not "algorithm"', () async {
-        final result = await tools.searchAlgorithms({
-          'type': 'effect',
-          'query': 'delay',
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('Invalid type'));
-      });
-
       test('should return error when query is empty string', () async {
         final result = await tools.searchAlgorithms({
-          'type': 'algorithm',
           'query': '',
         });
 

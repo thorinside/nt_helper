@@ -211,9 +211,9 @@ void main() {
           .thenAnswer((_) async => testMappings[1]);
 
       await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 5,
+        'parameter_number': 5,
         'value': 80,
       });
 
@@ -231,9 +231,9 @@ void main() {
           .thenAnswer((_) async => testMappings[1]);
 
       await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 'Mix',
+        'parameter_number': 'Mix',
         'value': 80,
       });
 
@@ -251,9 +251,9 @@ void main() {
           .thenAnswer((_) async => testMappings[1]);
 
       final result = await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 5,
+        'parameter_number': 5,
         'value': 80,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -263,9 +263,9 @@ void main() {
 
     test('editParameter(3) errors with available hardware numbers', () async {
       final result = await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 3,
+        'parameter_number': 3,
         'value': 50,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -279,9 +279,9 @@ void main() {
 
     test('editParameter(1) errors — array index, not hardware number', () async {
       final result = await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 1,
+        'parameter_number': 1,
         'value': 50,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -301,9 +301,9 @@ void main() {
           .thenAnswer((_) async => testMappings[1]);
 
       await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 5,
+        'parameter_number': 5,
         'value': 80,
       });
 
@@ -325,9 +325,9 @@ void main() {
           .thenAnswer((_) async => testMappings[1]);
 
       await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 5,
+        'parameter_number': 5,
         'value': 80,
       });
 
@@ -349,9 +349,9 @@ void main() {
           .thenAnswer((_) async => testMappings[1]);
 
       final result = await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 5,
+        'parameter_number': 5,
         'value': 80,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -377,7 +377,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [
@@ -391,7 +391,7 @@ void main() {
 
     test('editSlot errors with available numbers for invalid param', () async {
       final result = await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [
@@ -421,7 +421,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       final result = await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [
@@ -452,7 +452,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [
@@ -494,7 +494,7 @@ void main() {
           .thenAnswer((_) async {});
 
       await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [
@@ -528,7 +528,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       final result = await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [
@@ -554,7 +554,7 @@ void main() {
           .thenAnswer((_) async => 'OldPreset');
 
       await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'NewPreset',
         },
@@ -577,7 +577,7 @@ void main() {
       });
 
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'NewPreset',
         },
@@ -662,7 +662,7 @@ void main() {
       // editPreset: same algorithm, no parameter changes — just triggers
       // the mapping pre-collection loop
       await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'TestPreset',
           'slots': [
@@ -1017,7 +1017,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'TestPreset',
           'slots': [
@@ -1038,7 +1038,7 @@ void main() {
     test('rejects invalid hardware parameter number for existing algorithm',
         () async {
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'TestPreset',
           'slots': [
@@ -1061,7 +1061,7 @@ void main() {
     test('validates bounds using correct parameter for existing algorithm',
         () async {
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'TestPreset',
           'slots': [
@@ -1133,7 +1133,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [
@@ -1167,7 +1167,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'TestPreset',
           'slots': [
@@ -1239,9 +1239,9 @@ void main() {
           .thenAnswer((_) async => midiOnlyMapping);
 
       final result = await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 5,
+        'parameter_number': 5,
         'value': 80,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -1269,9 +1269,9 @@ void main() {
           .thenAnswer((_) async => cvMapping);
 
       final result = await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 5,
+        'parameter_number': 5,
         'value': 80,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -1298,9 +1298,9 @@ void main() {
           .thenAnswer((_) async => sourceMapping);
 
       final result = await distingTools.editParameter({
-        'target': 'parameter',
+
         'slot_index': 0,
-        'parameter': 5,
+        'parameter_number': 5,
         'value': 80,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -1350,7 +1350,7 @@ void main() {
       // Display value 150 with powerOfTen=2 => raw 15000, exceeds raw max 10000
       // Without the fix, 150 < 10000 (raw max) would PASS validation incorrectly
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'TestPreset',
           'slots': [
@@ -1383,7 +1383,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'TestPreset',
           'slots': [
@@ -1570,7 +1570,7 @@ void main() {
       when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
       final result = await distingTools.editSlot({
-        'target': 'slot',
+
         'slot_index': 0,
         'data': {
           'parameters': [
@@ -1603,7 +1603,7 @@ void main() {
           .thenAnswer((_) async => null);
 
       final result =
-          await distingTools.getCurrentPreset({'target': 'preset'});
+          await distingTools.getCurrentPreset({});
       final json = jsonDecode(result) as Map<String, dynamic>;
       final slots = json['slots'] as List<dynamic>;
       final slot = (slots.firstWhere((s) => s != null)) as Map<String, dynamic>;
@@ -1649,7 +1649,7 @@ void main() {
           .thenAnswer((_) async => null);
 
       final result = await distingTools.editPreset({
-        'target': 'preset',
+
         'data': {
           'name': 'TestPreset',
           'slots': [

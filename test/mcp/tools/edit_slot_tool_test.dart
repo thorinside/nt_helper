@@ -65,32 +65,8 @@ void main() {
     });
 
     group('editSlot - parameter validation', () {
-      test('should return error when target parameter is missing', () async {
-        final result = await tools.editSlot({
-          'slot_index': 0,
-          'data': {'parameters': []},
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('target'));
-      });
-
-      test('should return error when target is not "slot"', () async {
-        final result = await tools.editSlot({
-          'target': 'preset',
-          'slot_index': 0,
-          'data': {'parameters': []},
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('target'));
-      });
-
       test('should return error when slot_index parameter is missing', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
           'data': {'parameters': []},
         });
 
@@ -101,7 +77,7 @@ void main() {
 
       test('should return error when slot_index is negative', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': -1,
           'data': {'parameters': []},
         });
@@ -113,7 +89,7 @@ void main() {
 
       test('should return error when slot_index exceeds maximum', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 32,
           'data': {'parameters': []},
         });
@@ -125,7 +101,7 @@ void main() {
 
       test('should return error when data parameter is missing', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
         });
 
@@ -141,7 +117,7 @@ void main() {
         final offlineTools = DistingTools(offlineController, offlineDistingCubit);
 
         final result = await offlineTools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {'parameters': []},
         });
@@ -157,7 +133,7 @@ void main() {
     group('editSlot - algorithm validation', () {
       test('should return error when algorithm has neither guid nor name', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {},
@@ -176,7 +152,7 @@ void main() {
 
       test('should return error when algorithm guid does not exist', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -197,7 +173,7 @@ void main() {
 
       test('should return error when specifications count exceeds algorithm limit', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -222,7 +198,7 @@ void main() {
     group('editSlot - parameter value validation', () {
       test('should return error when parameter_number is missing', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'parameters': [
@@ -244,7 +220,7 @@ void main() {
 
       test('should return error when parameter value is not a number', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -270,7 +246,7 @@ void main() {
 
       test('should return error when parameter_number is out of range', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -298,7 +274,7 @@ void main() {
     group('editSlot - mapping validation', () {
       test('should return error when MIDI channel is out of range', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -328,7 +304,7 @@ void main() {
 
       test('should return error when MIDI CC is out of range', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -358,7 +334,7 @@ void main() {
 
       test('should return error when CV input is out of range', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -388,7 +364,7 @@ void main() {
 
       test('should return error when i2c CC is out of range', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -418,7 +394,7 @@ void main() {
 
       test('should return error when performance_page is out of range', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'algorithm': {
@@ -456,7 +432,7 @@ void main() {
 
         // Now update a parameter in that slot
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'parameters': [
@@ -487,7 +463,7 @@ void main() {
 
         // Now update the slot name
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'name': 'My Custom Clock',
@@ -513,7 +489,7 @@ void main() {
         // Now clear it by changing to a different algorithm without specifications
         // This tests the case where a slot might become empty
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'parameters': [],
@@ -538,7 +514,7 @@ void main() {
 
         // Now query the slot
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'parameters': [],
@@ -557,7 +533,7 @@ void main() {
     group('editSlot - edge cases', () {
       test('should accept empty data object', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {},
         });
@@ -572,7 +548,7 @@ void main() {
 
       test('should accept empty parameters array', () async {
         final result = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {
             'parameters': [],
@@ -589,7 +565,7 @@ void main() {
 
       test('should validate slot_index boundaries', () async {
         final result0 = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 0,
           'data': {},
         });
@@ -602,7 +578,7 @@ void main() {
         );
 
         final result31 = await tools.editSlot({
-          'target': 'slot',
+
           'slot_index': 31,
           'data': {},
         });
