@@ -8,6 +8,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show Algorithm, ParameterInfo, ParameterValue, Mapping, DisplayMode;
 import 'package:nt_helper/util/case_converter.dart';
 import 'package:nt_helper/mcp/mcp_constants.dart';
+import 'package:nt_helper/mcp/utils/bus_mapping.dart';
 
 /// Class containing methods representing MCP tools.
 /// Requires DistingController for accessing state and DistingCubit for
@@ -232,6 +233,8 @@ class MCPAlgorithmTools {
     // We extract bus usage directly from ports
     final slotDataList = <Map<String, dynamic>>[];
 
+    final hasExtended = state.firmwareVersion.hasExtendedAuxBuses;
+
     for (int i = 0; i < slots.length; i++) {
       final slot = slots[i];
       final routing = routings[i];
@@ -253,11 +256,20 @@ class MCPAlgorithmTools {
         }
       }
 
+      final sortedInputs = inputBuses.toList()..sort();
+      final sortedOutputs = outputBuses.toList()..sort();
+
       slotDataList.add({
         'slotIndex': i,
         'algorithmName': slot.algorithm.name,
-        'inputBuses': inputBuses.toList()..sort(),
-        'outputBuses': outputBuses.toList()..sort(),
+        'inputBuses': sortedInputs
+            .map((b) => BusMapping.busToName(b,
+                hasExtendedAuxBuses: hasExtended))
+            .toList(),
+        'outputBuses': sortedOutputs
+            .map((b) => BusMapping.busToName(b,
+                hasExtendedAuxBuses: hasExtended))
+            .toList(),
       });
     }
 
@@ -588,7 +600,7 @@ class MCPAlgorithmTools {
       final parameters = await _controller.getParametersForSlot(i);
       final values = await _controller.getValuesForSlot(i);
       final mappings = await _controller.getMappingsForSlot(i);
-      final slotJson = _buildSlotJson(i, algorithm, parameters, values, mappings);
+      final slotJson = await _buildSlotJson(i, algorithm, parameters, values, mappings);
       slotsJson.add(slotJson);
     }
 
@@ -643,7 +655,7 @@ class MCPAlgorithmTools {
 
     final algorithm = await _controller.getAlgorithmInSlot(slotIndex);
     if (algorithm == null) {
-      return jsonEncode(convertToSnakeCaseKeys(_buildSlotJson(
+      return jsonEncode(convertToSnakeCaseKeys(await _buildSlotJson(
         slotIndex,
         Algorithm(algorithmIndex: -1, guid: '', name: '', specifications: []),
         [],
@@ -660,7 +672,7 @@ class MCPAlgorithmTools {
     final values = await _controller.getValuesForSlot(slotIndex);
     final mappings = await _controller.getMappingsForSlot(slotIndex);
     return jsonEncode(convertToSnakeCaseKeys(
-      _buildSlotJson(slotIndex, algorithm, parameters, values, mappings),
+      await _buildSlotJson(slotIndex, algorithm, parameters, values, mappings),
     ));
   }
 
@@ -746,7 +758,8 @@ class MCPAlgorithmTools {
     final value = values[paramIdx];
     final mapping = mappings[paramIdx];
 
-    final paramJson = _buildParameterJson(
+    final paramJson = await _buildParameterJson(
+      slotIndex,
       parameter.parameterNumber,
       parameter,
       value,
@@ -867,19 +880,19 @@ class MCPAlgorithmTools {
   }
 
   /// Build JSON representation of a slot with all parameters and enabled mappings.
-  Map<String, dynamic> _buildSlotJson(
+  Future<Map<String, dynamic>> _buildSlotJson(
     int slotIndex,
     Algorithm algorithm,
     List<ParameterInfo> parameters,
     List<ParameterValue> values,
     List<Mapping> mappings,
-  ) {
+  ) async {
     final parametersJson = <Map<String, dynamic>>[];
     for (int i = 0; i < parameters.length; i++) {
       final param = parameters[i];
       final value = values[i];
       final mapping = mappings[i];
-      parametersJson.add(_buildParameterJson(param.parameterNumber, param, value, mapping));
+      parametersJson.add(await _buildParameterJson(slotIndex, param.parameterNumber, param, value, mapping));
     }
 
     return {
@@ -892,22 +905,48 @@ class MCPAlgorithmTools {
     };
   }
 
+
   /// Build JSON representation of a parameter with optional mapping.
-  Map<String, dynamic> _buildParameterJson(
+  Future<Map<String, dynamic>> _buildParameterJson(
+    int slotIndex,
     int parameterNumber,
     ParameterInfo parameter,
     ParameterValue value,
     Mapping mapping,
-  ) {
-    final paramJson = {
+  ) async {
+    final isEnum = parameter.unit == 1;
+
+    final paramJson = <String, dynamic>{
       'parameter_number': parameterNumber,
       'parameter_name': parameter.name,
-      'value': MCPUtils.scaleForDisplay(value.value, parameter.powerOfTen),
-      'min': MCPUtils.scaleForDisplay(parameter.min, parameter.powerOfTen),
-      'max': MCPUtils.scaleForDisplay(parameter.max, parameter.powerOfTen),
-      'unit': parameter.unit,
       'is_disabled': value.isDisabled,
     };
+
+    if (isEnum) {
+      final strings = await _controller.getParameterEnumStrings(
+        slotIndex,
+        parameterNumber,
+      );
+      final enumValues = strings?.values;
+      String? currentEnumValue;
+      if (enumValues != null &&
+          value.value >= 0 &&
+          value.value < enumValues.length) {
+        currentEnumValue = enumValues[value.value];
+      }
+      paramJson['is_enum'] = true;
+      paramJson['value'] = currentEnumValue ?? '';
+      if (enumValues != null) {
+        paramJson['valid_enum_values'] = enumValues;
+      }
+    } else {
+      paramJson['value'] =
+          MCPUtils.scaleForDisplay(value.value, parameter.powerOfTen);
+      paramJson['min'] =
+          MCPUtils.scaleForDisplay(parameter.min, parameter.powerOfTen);
+      paramJson['max'] =
+          MCPUtils.scaleForDisplay(parameter.max, parameter.powerOfTen);
+    }
 
     // Include mapping only if at least one type is enabled
     final mappingJson = _buildMappingJson(mapping);

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math'; // For min, pow functions
 import 'dart:typed_data'; // Added for Uint8List
 
 import 'package:collection/collection.dart';
@@ -20,6 +19,7 @@ import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/util/case_converter.dart';
 import 'package:nt_helper/mcp/mcp_constants.dart';
+import 'package:nt_helper/mcp/utils/bus_mapping.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
 
 /// Defines MCP tools for interacting with the Disting state (presets, slots, parameters)
@@ -32,6 +32,14 @@ class DistingTools {
   final int maxSlots = MCPConstants.maxSlots;
 
   DistingTools(this._controller, this._distingCubit);
+
+  bool get _hasExtendedAuxBuses {
+    final state = _distingCubit.state;
+    if (state is DistingStateSynchronized) {
+      return state.firmwareVersion.hasExtendedAuxBuses;
+    }
+    return false;
+  }
 
   // Use shared utility
   num _scaleForDisplay(int value, int? powerOfTen) =>
@@ -210,6 +218,7 @@ class DistingTools {
     return null;
   }
 
+
   /// MCP Tool: Gets the entire current preset state.
   /// Parameters: None
   /// Returns:
@@ -242,25 +251,9 @@ class DistingTools {
             final int? liveRawValue = paramValue?.value;
 
             // Build base parameter object
-            final paramData = {
+            final paramData = <String, dynamic>{
               'parameter_number': pInfo.parameterNumber,
               'parameter_name': pInfo.name,
-              'min_value': _scaleForDisplay(
-                pInfo.min,
-                pInfo.powerOfTen,
-              ), // Scaled
-              'max_value': _scaleForDisplay(
-                pInfo.max,
-                pInfo.powerOfTen,
-              ), // Scaled
-              'default_value': _scaleForDisplay(
-                pInfo.defaultValue,
-                pInfo.powerOfTen,
-              ), // Scaled
-              'unit': pInfo.unit,
-              'value': liveRawValue != null
-                  ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
-                  : null, // Scaled
               'is_disabled': paramValue?.isDisabled ?? false,
               'is_input': pInfo.isInput,
               'is_output': pInfo.isOutput,
@@ -268,7 +261,6 @@ class DistingTools {
               'is_output_mode': pInfo.isOutputMode,
             };
 
-            // Add enum metadata if this is an enum parameter
             if (_isEnumParameter(pInfo)) {
               final enumValues = await _getParameterEnumValues(
                 i,
@@ -276,14 +268,22 @@ class DistingTools {
               );
               if (enumValues != null) {
                 paramData['is_enum'] = true;
-                paramData['enum_values'] = enumValues;
+                paramData['valid_enum_values'] = enumValues;
                 if (liveRawValue != null) {
-                  paramData['enum_value'] = _enumIndexToString(
-                    enumValues,
-                    liveRawValue,
-                  );
+                  paramData['value'] =
+                      _enumIndexToString(enumValues, liveRawValue) ?? '';
                 }
               }
+            } else {
+              paramData['value'] = liveRawValue != null
+                  ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
+                  : null;
+              paramData['min_value'] =
+                  _scaleForDisplay(pInfo.min, pInfo.powerOfTen);
+              paramData['max_value'] =
+                  _scaleForDisplay(pInfo.max, pInfo.powerOfTen);
+              paramData['default_value'] =
+                  _scaleForDisplay(pInfo.defaultValue, pInfo.powerOfTen);
             }
 
             // Add mapping information (performance page, MIDI, CV, etc.)
@@ -745,79 +745,54 @@ class DistingTools {
         );
       }
 
-      // Handle enum parameter value conversion
       int rawValue;
       if (_isEnumParameter(paramInfo)) {
-        if (value is String) {
-          // Convert enum string to index
-          final enumValues = await _getParameterEnumValues(
-            slotIndex,
-            targetParameterNumber,
-          );
-          if (enumValues == null) {
-            return jsonEncode(
-              convertToSnakeCaseKeys(
-                MCPUtils.buildError(
-                  'Could not retrieve enum values for parameter ${paramInfo.name}',
-                ),
-              ),
-            );
-          }
-
-          final enumIndex = _enumStringToIndex(enumValues, value);
-          if (enumIndex == null) {
-            return jsonEncode(
-              convertToSnakeCaseKeys(
-                MCPUtils.buildError(
-                  'Invalid enum value "$value" for parameter ${paramInfo.name}. Valid values: ${enumValues.join(", ")}',
-                ),
-              ),
-            );
-          }
-          rawValue = enumIndex;
-        } else if (value is num) {
-          // Use numeric value directly
-          rawValue = value.round();
-          final numericEnumValues = await _getParameterEnumValues(
-            slotIndex,
-            targetParameterNumber,
-          );
-          if (numericEnumValues != null &&
-              (rawValue < 0 || rawValue >= numericEnumValues.length)) {
-            return jsonEncode(
-              convertToSnakeCaseKeys(
-                MCPUtils.buildError(
-                  'Enum index $rawValue out of range for parameter ${paramInfo.name}. Valid indices: 0-${numericEnumValues.length - 1}. Valid values: ${numericEnumValues.join(", ")}',
-                ),
-              ),
-            );
-          }
-        } else {
+        if (value is! String) {
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
-                'Enum parameter ${paramInfo.name} requires either a string enum value or numeric index',
+                'Enum parameter ${paramInfo.name} requires a string value '
+                'from its valid_enum_values list.',
               ),
             ),
           );
         }
+        final enumValues = await _getParameterEnumValues(
+          slotIndex,
+          targetParameterNumber,
+        );
+        if (enumValues == null) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Could not retrieve enum values for parameter ${paramInfo.name}',
+              ),
+            ),
+          );
+        }
+        final enumIndex = _enumStringToIndex(enumValues, value);
+        if (enumIndex == null) {
+          return jsonEncode(
+            convertToSnakeCaseKeys(
+              MCPUtils.buildError(
+                'Invalid value "$value" for parameter ${paramInfo.name}. '
+                'Valid values: ${enumValues.join(", ")}',
+              ),
+            ),
+          );
+        }
+        rawValue = enumIndex;
       } else {
-        // Handle non-enum parameters as before
         if (value is! num) {
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
-                'Non-enum parameter ${paramInfo.name} requires a numeric value',
+                'Parameter ${paramInfo.name} requires a numeric value.',
               ),
             ),
           );
         }
-
-        if (paramInfo.powerOfTen > 0) {
-          rawValue = (value * pow(10, paramInfo.powerOfTen)).round();
-        } else {
-          rawValue = value.round();
-        }
+        rawValue = MCPUtils.scaleToRaw(value, paramInfo.powerOfTen);
       }
 
       if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
@@ -962,14 +937,10 @@ class DistingTools {
         );
       }
 
-      final responseData = {
+      final responseData = <String, dynamic>{
         'slot_index': slotIndex,
         'parameter_number': resolvedParameterNumber,
         'parameter_name': paramInfo.name,
-        'value': _scaleForDisplay(
-          liveRawValue,
-          paramInfo.powerOfTen,
-        ), // Scaled value
         'is_disabled': paramValue.isDisabled,
         'is_input': paramInfo.isInput,
         'is_output': paramInfo.isOutput,
@@ -977,7 +948,6 @@ class DistingTools {
         'is_output_mode': paramInfo.isOutputMode,
       };
 
-      // Add enum metadata if applicable
       if (_isEnumParameter(paramInfo)) {
         final enumValues = await _getParameterEnumValues(
           slotIndex,
@@ -985,10 +955,13 @@ class DistingTools {
         );
         if (enumValues != null) {
           responseData['is_enum'] = true;
-          responseData['enum_values'] = enumValues;
-          responseData['enum_value'] =
+          responseData['valid_enum_values'] = enumValues;
+          responseData['value'] =
               _enumIndexToString(enumValues, liveRawValue) ?? '';
         }
+      } else {
+        responseData['value'] =
+            _scaleForDisplay(liveRawValue, paramInfo.powerOfTen);
       }
 
       return jsonEncode(
@@ -2648,23 +2621,12 @@ class DistingTools {
                   .getParameterValue(i, pInfo.parameterNumber);
               final int? liveRawValue = paramValue?.value;
 
-              final paramData = {
+              final paramData = <String, dynamic>{
                 'parameter_number': pInfo.parameterNumber,
                 'parameter_name': pInfo.name,
-                'min_value': _scaleForDisplay(pInfo.min, pInfo.powerOfTen),
-                'max_value': _scaleForDisplay(pInfo.max, pInfo.powerOfTen),
-                'default_value': _scaleForDisplay(
-                  pInfo.defaultValue,
-                  pInfo.powerOfTen,
-                ),
-                'unit': pInfo.unit,
-                'value': liveRawValue != null
-                    ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
-                    : null,
                 'is_disabled': paramValue?.isDisabled ?? false,
               };
 
-              // Add enum metadata if applicable
               if (_isEnumParameter(pInfo)) {
                 final enumValues = await _getParameterEnumValues(
                   i,
@@ -2672,14 +2634,22 @@ class DistingTools {
                 );
                 if (enumValues != null) {
                   paramData['is_enum'] = true;
-                  paramData['enum_values'] = enumValues;
+                  paramData['valid_enum_values'] = enumValues;
                   if (liveRawValue != null) {
-                    paramData['enum_value'] = _enumIndexToString(
-                      enumValues,
-                      liveRawValue,
-                    );
+                    paramData['value'] =
+                        _enumIndexToString(enumValues, liveRawValue) ?? '';
                   }
                 }
+              } else {
+                paramData['value'] = liveRawValue != null
+                    ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
+                    : null;
+                paramData['min_value'] =
+                    _scaleForDisplay(pInfo.min, pInfo.powerOfTen);
+                paramData['max_value'] =
+                    _scaleForDisplay(pInfo.max, pInfo.powerOfTen);
+                paramData['default_value'] =
+                    _scaleForDisplay(pInfo.defaultValue, pInfo.powerOfTen);
               }
 
               // Add mapping information
@@ -3228,30 +3198,70 @@ class DistingTools {
           // Validate parameter value if specified
           final dynamic paramValue = paramData['value'];
           if (paramValue != null) {
-            if (paramValue is! num) {
-              return jsonEncode(
-                convertToSnakeCaseKeys(
-                  MCPUtils.buildError(
-                    'Parameter value must be a number, got ${paramValue.runtimeType}',
-                  ),
-                ),
-              );
-            }
-
             final pInfo = parameterInfos[paramIdx];
-            final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
 
-            // Validate against parameter bounds (raw)
-            if (rawValue < pInfo.min || rawValue > pInfo.max) {
-              final displayMin = _scaleForDisplay(pInfo.min, pInfo.powerOfTen);
-              final displayMax = _scaleForDisplay(pInfo.max, pInfo.powerOfTen);
-              return jsonEncode(
-                convertToSnakeCaseKeys(
-                  MCPUtils.buildError(
-                    'Parameter value $paramValue out of range for parameter "$paramNumber" ($displayMin-$displayMax)',
+            if (_isEnumParameter(pInfo)) {
+              if (paramValue is! String) {
+                return jsonEncode(
+                  convertToSnakeCaseKeys(
+                    MCPUtils.buildError(
+                      'Enum parameter "${pInfo.name}" requires a string value '
+                      'from its valid_enum_values list.',
+                    ),
                   ),
-                ),
+                );
+              }
+              final enumValues = await _getParameterEnumValues(
+                slotIndex,
+                pInfo.parameterNumber,
               );
+              if (enumValues == null) {
+                return jsonEncode(
+                  convertToSnakeCaseKeys(
+                    MCPUtils.buildError(
+                      'Could not retrieve enum values for parameter "${pInfo.name}"',
+                    ),
+                  ),
+                );
+              }
+              final enumIndex = _enumStringToIndex(enumValues, paramValue);
+              if (enumIndex == null) {
+                return jsonEncode(
+                  convertToSnakeCaseKeys(
+                    MCPUtils.buildError(
+                      'Invalid value "$paramValue" for parameter "${pInfo.name}". '
+                      'Valid values: ${enumValues.join(", ")}',
+                    ),
+                  ),
+                );
+              }
+              // Store resolved enum index for later application
+              paramData['value'] = enumIndex;
+            } else {
+              if (paramValue is! num) {
+                return jsonEncode(
+                  convertToSnakeCaseKeys(
+                    MCPUtils.buildError(
+                      'Parameter "${pInfo.name}" requires a numeric value.',
+                    ),
+                  ),
+                );
+              }
+
+              final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
+
+              // Validate against parameter bounds (raw)
+              if (rawValue < pInfo.min || rawValue > pInfo.max) {
+                final displayMin = _scaleForDisplay(pInfo.min, pInfo.powerOfTen);
+                final displayMax = _scaleForDisplay(pInfo.max, pInfo.powerOfTen);
+                return jsonEncode(
+                  convertToSnakeCaseKeys(
+                    MCPUtils.buildError(
+                      'Value $paramValue out of range for parameter "${pInfo.name}" ($displayMin-$displayMax)',
+                    ),
+                  ),
+                );
+              }
             }
           }
 
@@ -3322,7 +3332,11 @@ class DistingTools {
             final pInfo = allParams.firstWhere(
               (p) => p.parameterNumber == paramNumber,
             );
-            final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
+            // Enum values are already resolved to raw ints during validation;
+            // only scale display→raw for regular numeric params.
+            final int rawValue = _isEnumParameter(pInfo)
+                ? (paramValue as num).toInt()
+                : MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
             await _controller.updateParameterValue(
               slotIndex,
               paramNumber,
@@ -3401,14 +3415,28 @@ class DistingTools {
               .getParameterValue(slotIndex, pInfo.parameterNumber);
           final int? liveRawValue = paramValue?.value;
 
-          final paramData = {
+          final paramData = <String, dynamic>{
             'parameter_number': pInfo.parameterNumber,
             'parameter_name': pInfo.name,
-            'value': liveRawValue != null
-                ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
-                : null,
             'is_disabled': paramValue?.isDisabled ?? false,
           };
+
+          if (_isEnumParameter(pInfo) && liveRawValue != null) {
+            final enumValues = await _getParameterEnumValues(
+              slotIndex,
+              pInfo.parameterNumber,
+            );
+            if (enumValues != null) {
+              paramData['is_enum'] = true;
+              paramData['valid_enum_values'] = enumValues;
+              paramData['value'] =
+                  _enumIndexToString(enumValues, liveRawValue) ?? '';
+            }
+          } else {
+            paramData['value'] = liveRawValue != null
+                ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
+                : null;
+          }
 
           parametersJsonList.add(paramData);
         }
@@ -3477,12 +3505,12 @@ class DistingTools {
       }
 
       // Get parameter identifier (name or number)
-      final dynamic parameterIdent = params['parameter'];
+      final dynamic parameterIdent = params['parameter_number'];
       if (parameterIdent == null) {
         return jsonEncode(
           convertToSnakeCaseKeys(
             MCPUtils.buildError(
-              'Missing "parameter". Use show tool with target: "slot", slot_index: $slotIndex to see parameter names.',
+              'Missing "parameter_number". Use show_slot tool with slot_index: $slotIndex to see parameter numbers and names.',
             ),
           ),
         );
@@ -3598,31 +3626,66 @@ class DistingTools {
       // Step 5: Validate value (if provided) — convert display→raw
       int? rawValue;
       if (value != null) {
-        if (value is! num) {
-          return jsonEncode(
-            convertToSnakeCaseKeys(
-              MCPUtils.buildError('Value must be a number'),
-            ),
-          );
-        }
-
-        rawValue = MCPUtils.scaleToRaw(value, paramInfo.powerOfTen);
-        if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
-          final displayMin = _scaleForDisplay(
-            paramInfo.min,
-            paramInfo.powerOfTen,
-          );
-          final displayMax = _scaleForDisplay(
-            paramInfo.max,
-            paramInfo.powerOfTen,
-          );
-          return jsonEncode(
-            convertToSnakeCaseKeys(
-              MCPUtils.buildError(
-                'Value $value out of range for parameter "$parameterName" ($displayMin-$displayMax)',
+        if (_isEnumParameter(paramInfo)) {
+          if (value is! String) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Enum parameter "$parameterName" requires a string value '
+                  'from its valid_enum_values list.',
+                ),
               ),
-            ),
+            );
+          }
+          final enumValues = await _getParameterEnumValues(
+            slotIndex,
+            resolvedParameterNumber,
           );
+          if (enumValues == null) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Could not retrieve enum values for parameter "$parameterName"',
+                ),
+              ),
+            );
+          }
+          final enumIndex = _enumStringToIndex(enumValues, value);
+          if (enumIndex == null) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Invalid value "$value" for parameter "$parameterName". '
+                  'Valid values: ${enumValues.join(", ")}',
+                ),
+              ),
+            );
+          }
+          rawValue = enumIndex;
+        } else {
+          if (value is! num) {
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Parameter "$parameterName" requires a numeric value.',
+                ),
+              ),
+            );
+          }
+          rawValue = MCPUtils.scaleToRaw(value, paramInfo.powerOfTen);
+          if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
+            final displayMin =
+                _scaleForDisplay(paramInfo.min, paramInfo.powerOfTen);
+            final displayMax =
+                _scaleForDisplay(paramInfo.max, paramInfo.powerOfTen);
+            return jsonEncode(
+              convertToSnakeCaseKeys(
+                MCPUtils.buildError(
+                  'Value $value out of range for parameter "$parameterName" ($displayMin-$displayMax)',
+                ),
+              ),
+            );
+          }
         }
       }
 
@@ -3663,15 +3726,29 @@ class DistingTools {
         resolvedParameterNumber,
       );
       final updatedValue = updatedParamValue?.value ?? 0;
-      final scaledValue = _scaleForDisplay(updatedValue, paramInfo.powerOfTen);
 
       final Map<String, dynamic> result = {
         'slot_index': slotIndex,
         'parameter_number': resolvedParameterNumber,
         'parameter_name': parameterName,
-        'value': scaledValue,
         'is_disabled': updatedParamValue?.isDisabled ?? false,
       };
+
+      if (_isEnumParameter(paramInfo)) {
+        final enumValues = await _getParameterEnumValues(
+          slotIndex,
+          resolvedParameterNumber,
+        );
+        if (enumValues != null) {
+          result['is_enum'] = true;
+          result['valid_enum_values'] = enumValues;
+          result['value'] =
+              _enumIndexToString(enumValues, updatedValue) ?? '';
+        }
+      } else {
+        result['value'] =
+            _scaleForDisplay(updatedValue, paramInfo.powerOfTen);
+      }
 
       // Include mappings if any are enabled
       final updatedMapping = await _controller.getParameterMapping(
@@ -3706,11 +3783,23 @@ class DistingTools {
       if (key == 'cv' && value is Map<String, dynamic>) {
         final cvInput = value['cv_input'];
         if (cvInput != null) {
-          if (cvInput is! int || cvInput < 0 || cvInput > 12) {
+          int? resolved;
+          if (cvInput is int) {
+            resolved = (cvInput >= 0 && cvInput <= 12) ? cvInput : null;
+          } else if (cvInput is String) {
+            // Accept "None" → 0, "Input 1"-"Input 12" → 1-12
+            final parsed = BusMapping.parseBus(cvInput,
+                hasExtendedAuxBuses: _hasExtendedAuxBuses);
+            if (parsed != null && parsed >= 0 && parsed <= 12) {
+              resolved = parsed;
+            }
+          }
+          if (resolved == null) {
             return MCPUtils.buildError(
-              'CV input must be 0-12 (where 0=disabled, 1-12=physical inputs), got $cvInput',
+              'CV input must be 0-12, or "None"/"Input 1" through "Input 12", got $cvInput',
             );
           }
+          value['cv_input'] = resolved;
         }
       } else if (key == 'midi' && value is Map<String, dynamic>) {
         // Check if is_midi_enabled flag is present when MIDI mapping is specified
@@ -4578,17 +4667,34 @@ class DistingTools {
             for (final param in matchingParams) {
               final ParameterValue? paramValue = await _controller
                   .getParameterValue(i, param.parameterNumber);
-              matches.add({
+              final matchData = <String, dynamic>{
                 'parameter_number': param.parameterNumber,
                 'parameter_name': param.name,
-                'min': _scaleForDisplay(param.min, param.powerOfTen),
-                'max': _scaleForDisplay(param.max, param.powerOfTen),
-                'unit': param.unit,
-                'value': paramValue != null
-                    ? _scaleForDisplay(paramValue.value, param.powerOfTen)
-                    : null,
                 'is_disabled': paramValue?.isDisabled ?? false,
-              });
+              };
+              if (_isEnumParameter(param)) {
+                final enumValues = await _getParameterEnumValues(
+                  i,
+                  param.parameterNumber,
+                );
+                if (enumValues != null) {
+                  matchData['is_enum'] = true;
+                  matchData['valid_enum_values'] = enumValues;
+                  if (paramValue != null) {
+                    matchData['value'] =
+                        _enumIndexToString(enumValues, paramValue.value) ?? '';
+                  }
+                }
+              } else {
+                matchData['value'] = paramValue != null
+                    ? _scaleForDisplay(paramValue.value, param.powerOfTen)
+                    : null;
+                matchData['min'] =
+                    _scaleForDisplay(param.min, param.powerOfTen);
+                matchData['max'] =
+                    _scaleForDisplay(param.max, param.powerOfTen);
+              }
+              matches.add(matchData);
             }
 
             results.add({
@@ -4674,17 +4780,32 @@ class DistingTools {
           slotIndex,
           param.parameterNumber,
         );
-        matches.add({
+        final matchData = <String, dynamic>{
           'parameter_number': param.parameterNumber,
           'parameter_name': param.name,
-          'min': _scaleForDisplay(param.min, param.powerOfTen),
-          'max': _scaleForDisplay(param.max, param.powerOfTen),
-          'unit': param.unit,
-          'value': paramValue != null
-              ? _scaleForDisplay(paramValue.value, param.powerOfTen)
-              : null,
           'is_disabled': paramValue?.isDisabled ?? false,
-        });
+        };
+        if (_isEnumParameter(param)) {
+          final enumValues = await _getParameterEnumValues(
+            slotIndex,
+            param.parameterNumber,
+          );
+          if (enumValues != null) {
+            matchData['is_enum'] = true;
+            matchData['valid_enum_values'] = enumValues;
+            if (paramValue != null) {
+              matchData['value'] =
+                  _enumIndexToString(enumValues, paramValue.value) ?? '';
+            }
+          }
+        } else {
+          matchData['value'] = paramValue != null
+              ? _scaleForDisplay(paramValue.value, param.powerOfTen)
+              : null;
+          matchData['min'] = _scaleForDisplay(param.min, param.powerOfTen);
+          matchData['max'] = _scaleForDisplay(param.max, param.powerOfTen);
+        }
+        matches.add(matchData);
       }
 
       return jsonEncode(

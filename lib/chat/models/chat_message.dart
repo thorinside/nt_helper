@@ -3,7 +3,7 @@
 // These are distinct from LlmMessage — they represent what the user sees,
 // including tool execution details and thinking indicators.
 
-enum ChatMessageRole { user, assistant, toolCall, toolResult, thinking }
+enum ChatMessageRole { user, assistant, toolCall, toolResult, thinking, system }
 
 class ChatMessage {
   final String id;
@@ -71,6 +71,13 @@ class ChatMessage {
         id: _generateId(),
         role: ChatMessageRole.thinking,
         content: 'Thinking...',
+        timestamp: DateTime.now(),
+      );
+
+  factory ChatMessage.system(String content) => ChatMessage(
+        id: _generateId(),
+        role: ChatMessageRole.system,
+        content: content,
         timestamp: DateTime.now(),
       );
 

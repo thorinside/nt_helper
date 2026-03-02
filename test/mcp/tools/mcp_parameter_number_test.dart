@@ -1484,15 +1484,15 @@ void main() {
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
         'parameter_number': 0,
-        'value': 10,
+        'value': 'Invalid',
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
-      expect(json['error'], contains('10'));
+      expect(json['error'], contains('Valid values'));
     });
 
-    test('rejects negative numeric enum index', () async {
+    test('rejects numeric value for enum parameter', () async {
       when(() => controller.getAlgorithmInSlot(0)).thenAnswer(
         (_) async => Algorithm(algorithmIndex: 0, guid: 'test', name: 'TestAlgo'),
       );
@@ -1513,14 +1513,15 @@ void main() {
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
         'parameter_number': 0,
-        'value': -1,
+        'value': 2,
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
+      expect(json['error'], contains('string value'));
     });
 
-    test('accepts valid numeric enum index', () async {
+    test('accepts valid enum string value', () async {
       when(() => controller.getAlgorithmInSlot(0)).thenAnswer(
         (_) async => Algorithm(algorithmIndex: 0, guid: 'test', name: 'TestAlgo'),
       );
@@ -1543,7 +1544,7 @@ void main() {
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
         'parameter_number': 0,
-        'value': 2,
+        'value': 'Mid',
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
 

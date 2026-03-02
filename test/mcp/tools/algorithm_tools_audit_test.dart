@@ -791,12 +791,11 @@ void main() {
       expect(json['is_disabled'], isTrue);
     });
 
-    test('includes parameter_name and unit', () async {
+    test('includes parameter_name', () async {
       final result = await algoTools.showParameter('0:5');
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['parameter_name'], equals('Mix'));
-      expect(json.containsKey('unit'), isTrue);
     });
   });
 

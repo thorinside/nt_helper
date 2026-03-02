@@ -1,129 +1,130 @@
-/// Bus mapping utilities for MCP tools
-/// Maps between bus numbers and semantic names for easier routing configuration
+import 'package:nt_helper/core/routing/bus_spec.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart' show ParameterInfo;
+
+/// Dynamic bus mapping utilities for MCP tools.
+/// Maps between bus numbers and human-friendly names using [BusSpec].
 class BusMapping {
-  static const Map<int, String> _busToName = {
-    0: 'None',
-    1: 'Input 1',
-    2: 'Input 2',
-    3: 'Input 3',
-    4: 'Input 4',
-    5: 'Input 5',
-    6: 'Input 6',
-    7: 'Input 7',
-    8: 'Input 8',
-    9: 'Input 9',
-    10: 'Input 10',
-    11: 'Input 11',
-    12: 'Input 12',
-    13: 'Output 1',
-    14: 'Output 2',
-    15: 'Output 3',
-    16: 'Output 4',
-    17: 'Output 5',
-    18: 'Output 6',
-    19: 'Output 7',
-    20: 'Output 8',
-    21: 'Aux 1',
-    22: 'Aux 2',
-    23: 'Aux 3',
-    24: 'Aux 4',
-    25: 'Aux 5',
-    26: 'Aux 6',
-    27: 'Aux 7',
-    28: 'Aux 8',
-  };
-
-  static const Map<String, int> _nameToBus = {
-    'None': 0,
-    'Input 1': 1,
-    'Input 2': 2,
-    'Input 3': 3,
-    'Input 4': 4,
-    'Input 5': 5,
-    'Input 6': 6,
-    'Input 7': 7,
-    'Input 8': 8,
-    'Input 9': 9,
-    'Input 10': 10,
-    'Input 11': 11,
-    'Input 12': 12,
-    'Output 1': 13,
-    'Output 2': 14,
-    'Output 3': 15,
-    'Output 4': 16,
-    'Output 5': 17,
-    'Output 6': 18,
-    'Output 7': 19,
-    'Output 8': 20,
-    'Aux 1': 21,
-    'Aux 2': 22,
-    'Aux 3': 23,
-    'Aux 4': 24,
-    'Aux 5': 25,
-    'Aux 6': 26,
-    'Aux 7': 27,
-    'Aux 8': 28,
-  };
-
-  /// Convert bus number to semantic name
-  static String? busToName(int busNumber) {
-    return _busToName[busNumber];
-  }
-
-  /// Convert semantic name to bus number
-  static int? nameToBus(String name) {
-    // Case-insensitive lookup
-    final normalizedName = name.trim().toLowerCase();
-    for (final entry in _nameToBus.entries) {
-      if (entry.key.toLowerCase() == normalizedName) {
-        return entry.value;
-      }
+  /// Convert bus number to human-friendly name.
+  /// Returns "None" for 0, "Input 1"-"Input 12", "Output 1"-"Output 8",
+  /// "Aux 1"-"Aux N", "ES-5 L"/"ES-5 R", or "Unknown (N)" for unrecognized.
+  static String busToName(
+    int busNumber, {
+    required bool hasExtendedAuxBuses,
+  }) {
+    if (busNumber == 0) return 'None';
+    if (BusSpec.isPhysicalInput(busNumber)) {
+      return 'Input $busNumber';
     }
-    return null;
+    if (BusSpec.isPhysicalOutput(busNumber)) {
+      return 'Output ${busNumber - (BusSpec.outputMin - 1)}';
+    }
+    if (BusSpec.isEs5ForFirmware(busNumber,
+        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+      final local = hasExtendedAuxBuses
+          ? busNumber - (BusSpec.es5MinExtended - 1)
+          : busNumber - (BusSpec.es5Min - 1);
+      return local == 1 ? 'ES-5 L' : 'ES-5 R';
+    }
+    if (BusSpec.isAuxForFirmware(busNumber,
+        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+      return 'Aux ${busNumber - (BusSpec.auxMin - 1)}';
+    }
+    return 'Unknown ($busNumber)';
   }
 
-  /// Get all available bus names
-  static List<String> get allBusNames => _busToName.values.toList();
+  static final _namePattern = RegExp(
+    r'^(input|output|aux|es-5|none)\s*(\d+|l|r)?$',
+    caseSensitive: false,
+  );
 
-  /// Get all available bus numbers
-  static List<int> get allBusNumbers => _busToName.keys.toList();
+  /// Convert human-friendly name to bus number.
+  /// Case-insensitive. Returns null for unrecognized names.
+  static int? nameToBus(
+    String name, {
+    required bool hasExtendedAuxBuses,
+  }) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return null;
 
-  /// Check if a bus number is valid
-  static bool isValidBusNumber(int busNumber) {
-    return _busToName.containsKey(busNumber);
+    final match = _namePattern.firstMatch(trimmed);
+    if (match == null) return null;
+
+    final category = match.group(1)!.toLowerCase();
+    final suffix = match.group(2)?.toLowerCase();
+
+    switch (category) {
+      case 'none':
+        return 0;
+      case 'input':
+        if (suffix == null) return null;
+        final n = int.tryParse(suffix);
+        if (n == null || n < 1 || n > BusSpec.inputMax) return null;
+        return n;
+      case 'output':
+        if (suffix == null) return null;
+        final n = int.tryParse(suffix);
+        if (n == null || n < 1 || n > 8) return null;
+        return BusSpec.outputMin - 1 + n;
+      case 'aux':
+        if (suffix == null) return null;
+        final n = int.tryParse(suffix);
+        if (n == null || n < 1) return null;
+        final bus = BusSpec.auxMin - 1 + n;
+        final auxMax =
+            BusSpec.auxMaxForFirmware(hasExtendedAuxBuses: hasExtendedAuxBuses);
+        // Skip over legacy ES-5 range on old firmware
+        if (!hasExtendedAuxBuses && bus >= BusSpec.es5Min && bus <= BusSpec.es5Max) {
+          return null;
+        }
+        if (bus > auxMax) return null;
+        return bus;
+      case 'es-5':
+        if (suffix == null) return null;
+        final int local;
+        if (suffix == 'l') {
+          local = 1;
+        } else if (suffix == 'r') {
+          local = 2;
+        } else {
+          return null;
+        }
+        return hasExtendedAuxBuses
+            ? BusSpec.es5MinExtended - 1 + local
+            : BusSpec.es5Min - 1 + local;
+      default:
+        return null;
+    }
   }
 
-  /// Check if a bus name is valid
-  static bool isValidBusName(String name) {
-    return nameToBus(name) != null;
-  }
-
-  /// Format bus for display (includes both number and name)
-  static String formatBus(int busNumber) {
-    final name = busToName(busNumber);
-    return name != null ? '$name ($busNumber)' : 'Unknown ($busNumber)';
-  }
-
-  /// Parse bus from either number or name string
-  static int? parseBus(dynamic value) {
+  /// Parse bus from either a name string or raw integer.
+  /// Accepts "Aux 1", "Input 5", "None", or integer bus numbers.
+  static int? parseBus(
+    dynamic value, {
+    required bool hasExtendedAuxBuses,
+  }) {
     if (value is int) {
-      return isValidBusNumber(value) ? value : null;
-    } else if (value is String) {
-      // Try parsing as number first
-      final asNumber = int.tryParse(value);
-      if (asNumber != null && isValidBusNumber(asNumber)) {
-        return asNumber;
+      if (value == 0) return 0;
+      return BusSpec.isValid(value) ? value : null;
+    }
+    if (value is String) {
+      // Try as integer first
+      final asInt = int.tryParse(value);
+      if (asInt != null) {
+        if (asInt == 0) return 0;
+        return BusSpec.isValid(asInt) ? asInt : null;
       }
-      // Try as name
-      return nameToBus(value);
+      return nameToBus(value, hasExtendedAuxBuses: hasExtendedAuxBuses);
     }
     return null;
   }
 
-  /// Get a human-readable routing description
-  static String describeRouting(int fromBus, int toBus) {
-    final from = busToName(fromBus) ?? 'Unknown';
-    final to = busToName(toBus) ?? 'Unknown';
-    return '$from → $to';
+  /// Detect whether a parameter is a bus assignment parameter.
+  /// Bus params have unit==1 (enum), min of 0 or 1, and a max value
+  /// matching known bus ceilings.
+  static bool isBusParameter(ParameterInfo param) {
+    return param.unit == 1 &&
+        (param.min == 0 || param.min == 1) &&
+        BusSpec.isBusParameterMaxValue(param.max);
   }
+
 }

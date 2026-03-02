@@ -204,15 +204,15 @@ class ToolRegistry {
             'maximum': 31,
             'description': 'Slot index (0-31).',
           },
-          'parameter': {
+          'parameter_number': {
             'type': 'integer',
             'description': 'Parameter number (0-based index).',
           },
         },
-        'required': ['slot_index', 'parameter'],
+        'required': ['slot_index', 'parameter_number'],
       },
       handler: (args) =>
-          _algoTools.showParameterByIndex(args['slot_index'], args['parameter']),
+          _algoTools.showParameterByIndex(args['slot_index'], args['parameter_number']),
     ));
 
     _entries.add(ToolRegistryEntry(
@@ -324,13 +324,13 @@ class ToolRegistry {
                       'description': 'Parameter index',
                     },
                     'value': {
-                      'type': 'number',
-                      'description': 'Parameter value',
+                      'description':
+                          'Parameter value. For enum parameters, use one of the exact strings from valid_enum_values. For numeric parameters, use a number.',
                     },
                     'mapping': {
                       'type': 'object',
                       'description':
-                          'Mapping with CV, MIDI, i2c, and performance page fields',
+                          'Mapping with CV, MIDI, i2c, and performance page fields. Supports partial updates.',
                     },
                   },
                 },
@@ -356,7 +356,7 @@ class ToolRegistry {
             'maximum': 31,
             'description': 'Slot index (0-31).',
           },
-          'parameter': {
+          'parameter_number': {
             'description':
                 'Parameter identifier: integer number (0-based) or string name.',
             'oneOf': [
@@ -365,9 +365,8 @@ class ToolRegistry {
             ],
           },
           'value': {
-            'type': 'number',
             'description':
-                'Parameter value in display scale (same as returned by show tools). Automatically converted to raw hardware value. If omitted, mapping must be provided.',
+                'Parameter value. For enum parameters, use one of the exact strings from valid_enum_values. For numeric parameters, use a number. If omitted, mapping must be provided.',
           },
           'mapping': {
             'type': 'object',
@@ -397,7 +396,7 @@ class ToolRegistry {
             },
           },
         },
-        'required': ['slot_index', 'parameter'],
+        'required': ['slot_index', 'parameter_number'],
       },
       handler: (args) => _distingTools.editParameter(args),
       timeout: const Duration(seconds: 15),
@@ -454,11 +453,6 @@ class ToolRegistry {
       description: 'Add an algorithm to the preset. Requires name or guid.',
       inputSchema: {
         'properties': {
-          'target': {
-            'type': 'string',
-            'enum': ['algorithm'],
-            'description': 'Must be "algorithm".',
-          },
           'name': {
             'type': 'string',
             'description':
@@ -491,11 +485,6 @@ class ToolRegistry {
           'Remove the algorithm from a slot, leaving it empty. Succeeds gracefully if slot is already empty.',
       inputSchema: {
         'properties': {
-          'target': {
-            'type': 'string',
-            'enum': ['slot'],
-            'description': 'Must be "slot".',
-          },
           'slot_index': {
             'type': 'integer',
             'description': 'Slot index to clear (0-31).',
@@ -505,6 +494,32 @@ class ToolRegistry {
       },
       handler: (args) =>
           _distingTools.removeSlot({...args, 'target': 'slot'}),
+    ));
+
+    _entries.add(ToolRegistryEntry(
+      name: 'move_algorithm',
+      description:
+          'Move an algorithm up or down in the slot list. '
+          'Algorithms swap positions with adjacent slots.',
+      inputSchema: {
+        'properties': {
+          'slot_index': {
+            'type': 'integer',
+            'description': 'Current slot index of the algorithm to move (0-31).',
+          },
+          'direction': {
+            'type': 'string',
+            'enum': ['up', 'down'],
+            'description': 'Direction to move: "up" (lower slot number) or "down" (higher slot number).',
+          },
+          'steps': {
+            'type': 'integer',
+            'description': 'Number of positions to move (default: 1).',
+          },
+        },
+        'required': ['slot_index', 'direction'],
+      },
+      handler: (args) => _distingTools.moveAlgorithm(args),
     ));
   }
 }

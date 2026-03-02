@@ -23,6 +23,7 @@ class ChatMessageBubble extends StatelessWidget {
         message: message,
         isNew: isNew,
       ),
+      ChatMessageRole.system => _SystemBubble(message: message),
       ChatMessageRole.toolCall ||
       ChatMessageRole.toolResult => const SizedBox.shrink(),
       ChatMessageRole.thinking => _ThinkingIndicator(),
@@ -394,6 +395,78 @@ class _ToolExpandedCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SystemBubble extends StatelessWidget {
+  final ChatMessage message;
+
+  const _SystemBubble({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 8, 0),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.data_object,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'LLM Context',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  _CopyButton(text: message.content),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxHeight: 400),
+              margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  message.content,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

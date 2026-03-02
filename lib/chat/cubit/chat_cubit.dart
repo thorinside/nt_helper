@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/chat/cubit/chat_state.dart';
@@ -34,6 +35,12 @@ class ChatCubit extends Cubit<ChatState> {
 
     final currentState = state;
     if (currentState is! ChatReady || currentState.isProcessing) return;
+
+    // Handle /context command locally — no API call needed
+    if (text.trim().toLowerCase() == '/context') {
+      _handleContextCommand(currentState);
+      return;
+    }
 
     if (!settings.hasApiKey) {
       emit(const ChatError('No API key configured. Open chat settings to add one.'));
@@ -132,6 +139,59 @@ class ChatCubit extends Cubit<ChatState> {
           clearToolName: true,
         ));
     }
+  }
+
+  void _handleContextCommand(ChatReady currentState) {
+    final contextDump = _serializeContext();
+    final userMsg = ChatMessage.user('/context');
+    final systemMsg = ChatMessage.system(contextDump);
+    emit(currentState.copyWith(
+      messages: [...currentState.messages, userMsg, systemMsg],
+    ));
+  }
+
+  String _serializeContext() {
+    final buffer = StringBuffer();
+    buffer.writeln('=== LLM Context (${_llmHistory.length} messages) ===');
+    buffer.writeln();
+
+    for (int i = 0; i < _llmHistory.length; i++) {
+      final msg = _llmHistory[i];
+      buffer.writeln('--- Message ${i + 1}: ${msg.role.name.toUpperCase()} ---');
+
+      if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) {
+        if (msg.content != null && msg.content!.isNotEmpty) {
+          buffer.writeln('Text: ${msg.content}');
+        }
+        for (final tc in msg.toolCalls!) {
+          buffer.writeln('Tool Call: ${tc.name} (id: ${tc.id})');
+          buffer.writeln('Arguments: ${_prettyJson(tc.arguments)}');
+        }
+      } else if (msg.role == LlmRole.tool) {
+        buffer.writeln('Tool: ${msg.toolName} (id: ${msg.toolCallId})');
+        buffer.writeln('Result: ${_truncateToolResult(msg.content ?? '')}');
+      } else {
+        buffer.writeln(msg.content ?? '(empty)');
+      }
+      buffer.writeln();
+    }
+
+    buffer.writeln('=== End Context ===');
+    return buffer.toString();
+  }
+
+  static String _prettyJson(Map<String, dynamic> json) {
+    try {
+      const encoder = JsonEncoder.withIndent('  ');
+      return encoder.convert(json);
+    } catch (_) {
+      return json.toString();
+    }
+  }
+
+  static String _truncateToolResult(String result) {
+    if (result.length <= 2000) return result;
+    return '${result.substring(0, 2000)}\n... (${result.length} chars total, truncated for display)';
   }
 
   void clearChat() {

@@ -199,8 +199,8 @@ void main() {
     });
   });
 
-  group('setParameterValue — enum numeric index', () {
-    test('accepts valid numeric index', () async {
+  group('setParameterValue — enum string value', () {
+    test('accepts valid enum string', () async {
       when(() => controller.getParameterEnumStrings(0, 5)).thenAnswer(
         (_) async => ParameterEnumStrings(
           algorithmIndex: 0,
@@ -214,7 +214,7 @@ void main() {
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
         'parameter_number': 5,
-        'value': 3,
+        'value': 'High',
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
 
@@ -222,7 +222,7 @@ void main() {
       verify(() => controller.updateParameterValue(0, 5, 3)).called(1);
     });
 
-    test('rejects index exceeding enum length', () async {
+    test('rejects invalid enum string', () async {
       when(() => controller.getParameterEnumStrings(0, 5)).thenAnswer(
         (_) async => ParameterEnumStrings(
           algorithmIndex: 0,
@@ -234,15 +234,15 @@ void main() {
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
         'parameter_number': 5,
-        'value': 4,
+        'value': 'Invalid',
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
-      expect(json['error'], contains('4'));
+      expect(json['error'], contains('Valid values'));
     });
 
-    test('rejects negative index', () async {
+    test('rejects numeric value for enum parameter', () async {
       when(() => controller.getParameterEnumStrings(0, 5)).thenAnswer(
         (_) async => ParameterEnumStrings(
           algorithmIndex: 0,
@@ -259,6 +259,7 @@ void main() {
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
+      expect(json['error'], contains('string value'));
     });
   });
 
@@ -743,7 +744,7 @@ void main() {
   });
 
   group('getParameterValue — enum parameter returns enum metadata', () {
-    test('includes enum_value string for enum parameter', () async {
+    test('includes valid_enum_values and string value for enum parameter', () async {
       when(() => controller.getParameterValue(0, 5)).thenAnswer(
         (_) async =>
             ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 2),
@@ -764,9 +765,8 @@ void main() {
 
       expect(json['success'], isTrue);
       expect(json['is_enum'], isTrue);
-      expect(json['enum_values'], equals(['Off', 'Low', 'Mid', 'High']));
-      expect(json['enum_value'], equals('Mid'));
-      expect(json['value'], equals(2));
+      expect(json['valid_enum_values'], equals(['Off', 'Low', 'Mid', 'High']));
+      expect(json['value'], equals('Mid'));
     });
   });
 

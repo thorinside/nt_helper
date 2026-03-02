@@ -69,6 +69,11 @@ class ChatService {
     final currentMessages = List<LlmMessage>.of(messages);
     final tools = _toolBridge.toolDefinitions;
 
+    // Accumulate token usage across all API calls in the loop, not just the
+    // final one.
+    int totalInputTokens = 0;
+    int totalOutputTokens = 0;
+
     for (int i = 0; i < _maxIterations; i++) {
       yield ChatLoopThinking();
 
@@ -82,6 +87,12 @@ class ChatService {
       } catch (e) {
         yield ChatLoopError(e.toString());
         return;
+      }
+
+      // Accumulate usage from every API call
+      if (response.usage != null) {
+        totalInputTokens += response.usage!.inputTokens;
+        totalOutputTokens += response.usage!.outputTokens;
       }
 
       if (response.hasToolCalls) {
@@ -121,7 +132,10 @@ class ChatService {
       currentMessages.add(LlmMessage.assistant(finalContent));
       yield ChatLoopAssistantMessage(
         finalContent,
-        usage: response.usage,
+        usage: LlmUsage(
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+        ),
         isFinal: true,
         finalHistory: List.unmodifiable(currentMessages),
       );
