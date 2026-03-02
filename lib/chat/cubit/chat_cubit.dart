@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/chat/cubit/chat_state.dart';
 import 'package:nt_helper/chat/models/chat_message.dart';
@@ -15,9 +16,12 @@ import 'package:nt_helper/chat/services/system_prompt.dart';
 import 'package:nt_helper/chat/services/tool_bridge_service.dart';
 import 'package:nt_helper/mcp/tool_registry.dart';
 
+typedef LlmProviderFactory = LlmProvider Function(ChatSettings settings);
+
 class ChatCubit extends Cubit<ChatState> {
   final ToolRegistry _toolRegistry;
   final MemoryService _memoryService;
+  final LlmProviderFactory? _providerFactory;
   StreamSubscription<dynamic>? _loopSubscription;
   LlmProvider? _activeProvider;
   Future<void>? _summarizationFuture;
@@ -47,8 +51,10 @@ class ChatCubit extends Cubit<ChatState> {
   ChatCubit({
     required ToolRegistry toolRegistry,
     required MemoryService memoryService,
+    @visibleForTesting LlmProviderFactory? providerFactory,
   }) : _toolRegistry = toolRegistry,
        _memoryService = memoryService,
+       _providerFactory = providerFactory,
        super(const ChatReady());
 
   Future<void> sendMessage(String text, ChatSettings settings) async {
@@ -77,74 +83,91 @@ class ChatCubit extends Cubit<ChatState> {
     final messages = [...currentState.messages, userMessage];
     emit(currentState.copyWith(messages: messages, isProcessing: true));
 
-    // Bootstrap memory on first send
-    if (!_bootstrapped) {
-      _memoryContent = await _memoryService.readMemory();
-      _dailyLogs = await _memoryService.readDailyLogs();
-      _bootstrapped = true;
-    }
+    try {
+      // Bootstrap memory on first send
+      if (!_bootstrapped) {
+        _memoryContent = await _memoryService.readMemory();
+        _dailyLogs = await _memoryService.readDailyLogs();
+        _bootstrapped = true;
+      }
 
-    // Track current model for context limits
-    _currentModel = _resolveModel(settings);
+      // Track current model for context limits
+      _currentModel = _resolveModel(settings);
 
-    // Wait for any in-flight summarization before compaction/provider reset.
-    if (_summarizationFuture != null) {
-      await _summarizationFuture;
-      _summarizationFuture = null;
-    }
+      // Wait for any in-flight summarization before compaction/provider reset.
+      if (_summarizationFuture != null) {
+        await _summarizationFuture;
+        _summarizationFuture = null;
+      }
 
-    // Handle compaction if needed
-    if (_needsCompaction) {
-      await _performCompaction(settings);
-    }
+      // Handle compaction if needed
+      if (_needsCompaction) {
+        await _performCompaction(settings);
+      }
 
-    // Add to LLM history
-    _historyLengthBeforeLoop = _llmHistory.length;
-    _llmHistory.add(LlmMessage.user(text.trim()));
+      // Add to LLM history
+      _historyLengthBeforeLoop = _llmHistory.length;
+      _llmHistory.add(LlmMessage.user(text.trim()));
 
-    // Create provider (disposing the previous one first)
-    _activeProvider?.dispose();
-    _activeProvider = _createProvider(settings);
-    final toolBridge = ToolBridgeService(_toolRegistry);
-    final chatService = ChatService(
-      provider: _activeProvider!,
-      toolBridge: toolBridge,
-      systemPrompt: distingNtSystemPrompt(
-        memoryContent: _memoryContent,
-        dailyLogs: _dailyLogs,
-      ),
-    );
+      // Create provider (disposing the previous one first)
+      _activeProvider?.dispose();
+      _activeProvider = _createProvider(settings);
+      final toolBridge = ToolBridgeService(_toolRegistry);
+      final chatService = ChatService(
+        provider: _activeProvider!,
+        toolBridge: toolBridge,
+        systemPrompt: distingNtSystemPrompt(
+          memoryContent: _memoryContent,
+          dailyLogs: _dailyLogs,
+        ),
+      );
 
-    // Run agentic loop
-    await _loopSubscription?.cancel();
-    _loopSubscription = chatService
-        .runAgenticLoop(_llmHistory)
-        .listen(
-          _handleLoopEvent,
-          onError: (Object error) {
-            _truncateHistoryAfterCancellationPoint();
-            final s = state;
-            if (s is ChatReady) {
-              emit(
-                s.copyWith(
-                  messages: [
-                    ...s.messages,
-                    ChatMessage.assistant('Error: $error'),
-                  ],
-                  isProcessing: false,
-                  clearToolName: true,
-                ),
-              );
-            }
-          },
-          onDone: () {
-            final s = state;
-            if (s is ChatReady && s.isProcessing) {
+      // Run agentic loop
+      await _loopSubscription?.cancel();
+      _loopSubscription = chatService
+          .runAgenticLoop(_llmHistory)
+          .listen(
+            _handleLoopEvent,
+            onError: (Object error) {
               _truncateHistoryAfterCancellationPoint();
-              emit(s.copyWith(isProcessing: false, clearToolName: true));
-            }
-          },
+              final s = state;
+              if (s is ChatReady) {
+                emit(
+                  s.copyWith(
+                    messages: [
+                      ...s.messages,
+                      ChatMessage.assistant('Error: $error'),
+                    ],
+                    isProcessing: false,
+                    clearToolName: true,
+                  ),
+                );
+              }
+            },
+            onDone: () {
+              final s = state;
+              if (s is ChatReady && s.isProcessing) {
+                _truncateHistoryAfterCancellationPoint();
+                emit(s.copyWith(isProcessing: false, clearToolName: true));
+              }
+            },
+          );
+    } catch (e) {
+      _truncateHistoryAfterCancellationPoint();
+      final s = state;
+      if (s is ChatReady) {
+        emit(
+          s.copyWith(
+            messages: [
+              ...s.messages,
+              ChatMessage.assistant('Error: $e'),
+            ],
+            isProcessing: false,
+            clearToolName: true,
+          ),
         );
+      }
+    }
   }
 
   void _handleLoopEvent(ChatLoopEvent event) {
@@ -440,6 +463,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void cancelProcessing() {
+    _compacting = false;
     _loopSubscription?.cancel();
     _truncateHistoryAfterCancellationPoint();
     final currentState = state;
@@ -463,6 +487,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   LlmProvider _createProvider(ChatSettings settings) {
+    if (_providerFactory != null) return _providerFactory(settings);
     switch (settings.provider) {
       case LlmProviderType.anthropic:
         return AnthropicProvider(

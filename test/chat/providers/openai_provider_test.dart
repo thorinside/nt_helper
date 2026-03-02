@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:nt_helper/chat/models/llm_types.dart';
+import 'package:nt_helper/chat/providers/anthropic_provider.dart'
+    show LlmApiException;
 import 'package:nt_helper/chat/providers/openai_provider.dart';
 
 void main() {
@@ -124,6 +126,297 @@ void main() {
 
       expect(response.hasToolCalls, isTrue);
       expect(response.toolCalls.single.arguments, isEmpty);
+    });
+
+    test('treats null tool arguments as empty map', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'role': 'assistant',
+                    'tool_calls': [
+                      {
+                        'id': 'call_3',
+                        'type': 'function',
+                        'function': {
+                          'name': 'show_preset',
+                          'arguments': null,
+                        },
+                      },
+                    ],
+                  },
+                  'finish_reason': 'tool_calls',
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Show preset')],
+        tools: const [],
+      );
+
+      expect(response.hasToolCalls, isTrue);
+      expect(response.toolCalls.single.arguments, isEmpty);
+    });
+
+    test('treats empty string tool arguments as empty map', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'role': 'assistant',
+                    'tool_calls': [
+                      {
+                        'id': 'call_4',
+                        'type': 'function',
+                        'function': {
+                          'name': 'show_preset',
+                          'arguments': '',
+                        },
+                      },
+                    ],
+                  },
+                  'finish_reason': 'tool_calls',
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Show preset')],
+        tools: const [],
+      );
+
+      expect(response.hasToolCalls, isTrue);
+      expect(response.toolCalls.single.arguments, isEmpty);
+    });
+
+    test('returns null content when content is null', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'role': 'assistant',
+                    'content': null,
+                    'tool_calls': [
+                      {
+                        'id': 'call_5',
+                        'type': 'function',
+                        'function': {
+                          'name': 'search_algorithms',
+                          'arguments': '{"query":"lfo"}',
+                        },
+                      },
+                    ],
+                  },
+                  'finish_reason': 'tool_calls',
+                },
+              ],
+              'usage': {'prompt_tokens': 10, 'completion_tokens': 3},
+            }),
+            200,
+          );
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Find LFO')],
+        tools: const [],
+      );
+
+      expect(response.content, isNull);
+      expect(response.hasToolCalls, isTrue);
+    });
+
+    test('returns empty string content when content is empty string', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {'role': 'assistant', 'content': ''},
+                  'finish_reason': 'stop',
+                },
+              ],
+              'usage': {'prompt_tokens': 5, 'completion_tokens': 0},
+            }),
+            200,
+          );
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Hello')],
+        tools: const [],
+      );
+
+      expect(response.content, '');
+    });
+
+    test('extracts text from content returned as Map with text key', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'role': 'assistant',
+                    'content': {'type': 'text', 'text': 'Hello from map'},
+                  },
+                  'finish_reason': 'stop',
+                },
+              ],
+              'usage': {'prompt_tokens': 5, 'completion_tokens': 3},
+            }),
+            200,
+          );
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Hello')],
+        tools: const [],
+      );
+
+      expect(response.content, 'Hello from map');
+    });
+
+    test('returns null content when content is Map without text key', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'role': 'assistant',
+                    'content': {'type': 'image', 'url': 'http://example.com'},
+                  },
+                  'finish_reason': 'stop',
+                },
+              ],
+              'usage': {'prompt_tokens': 5, 'completion_tokens': 1},
+            }),
+            200,
+          );
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Hello')],
+        tools: const [],
+      );
+
+      expect(response.content, isNull);
+    });
+
+    test('converts non-String Map keys in tool arguments to strings', () async {
+      final rawJson = '{"choices":[{"message":{"role":"assistant",'
+          '"tool_calls":[{"id":"call_6","type":"function",'
+          '"function":{"name":"search_algorithms",'
+          '"arguments":{"query":"lfo"}}}]},'
+          '"finish_reason":"tool_calls"}],'
+          '"usage":{"prompt_tokens":10,"completion_tokens":3}}';
+
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(rawJson, 200);
+        }),
+      );
+
+      final response = await provider.sendMessages(
+        messages: [LlmMessage.user('Find LFO')],
+        tools: const [],
+      );
+
+      expect(response.hasToolCalls, isTrue);
+      expect(response.toolCalls.single.arguments, isA<Map<String, dynamic>>());
+      expect(response.toolCalls.single.arguments['query'], 'lfo');
+    });
+
+    test('throws LlmApiException on non-200 status', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response(
+            jsonEncode({
+              'error': {'message': 'Rate limit exceeded', 'type': 'rate_limit'},
+            }),
+            429,
+          );
+        }),
+      );
+
+      expect(
+        () => provider.sendMessages(
+          messages: [LlmMessage.user('Hello')],
+          tools: const [],
+        ),
+        throwsA(
+          isA<LlmApiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Rate limit exceeded'),
+          ),
+        ),
+      );
+    });
+
+    test('throws LlmApiException on malformed JSON response body', () async {
+      final provider = OpenAIProvider(
+        apiKey: 'test-key',
+        model: 'gpt-5-nano',
+        client: MockClient((_) async {
+          return http.Response('not valid json {{{', 200);
+        }),
+      );
+
+      expect(
+        () => provider.sendMessages(
+          messages: [LlmMessage.user('Hello')],
+          tools: const [],
+        ),
+        throwsA(
+          isA<LlmApiException>().having(
+            (e) => e.message,
+            'message',
+            contains('Failed to parse OpenAI response body'),
+          ),
+        ),
+      );
     });
   });
 }
