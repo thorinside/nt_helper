@@ -1761,7 +1761,7 @@ class _GalleryViewState extends State<_GalleryView>
 
     final label = isUntracked
         ? 'Installed (untracked)'
-        : 'Installed ${info.installedVersion}';
+        : 'Installed ${GalleryService.extractSemver(info.installedVersion)}';
 
     final color = info.hasUpdate
         ? Colors.orange

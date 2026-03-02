@@ -1630,14 +1630,25 @@ class GalleryService {
     }
 
     try {
-      // Try semantic version comparison
-      final v1 = Version.parse(version1.replaceAll(RegExp(r'^v'), ''));
-      final v2 = Version.parse(version2.replaceAll(RegExp(r'^v'), ''));
+      // Try semantic version comparison, extracting semver from prefixed strings
+      final v1 = Version.parse(extractSemver(version1));
+      final v2 = Version.parse(extractSemver(version2));
       return v1.compareTo(v2);
     } catch (e) {
       // Semantic version parsing failed - return null to trigger date fallback
       return null;
     }
+  }
+
+  /// Extract a semver string from a potentially prefixed version tag.
+  ///
+  /// Handles mono-repo tags like `plugin-name-v1.2.3` or `plugin-name-1.2.3`
+  /// by finding the semver portion at the end. Returns the input unchanged
+  /// if no prefix is detected.
+  static String extractSemver(String version) {
+    // Match optional v prefix followed by semver at end of string
+    final match = RegExp(r'v?(\d+\.\d+\.\d+.*)$').firstMatch(version);
+    return match != null ? match.group(1)! : version;
   }
 
   /// Dispose of resources

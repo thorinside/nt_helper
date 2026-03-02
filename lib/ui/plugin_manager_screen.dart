@@ -152,11 +152,11 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     try {
       final dao = widget.database.pluginInstallationsDao;
 
-      // Build a map from C++ plugin filename to algorithm GUID using device algorithms
+      // Build a map from C++ plugin basename to algorithm GUID using device algorithms
       final guidByFilename = <String, String>{};
       for (final algo in state.algorithms) {
         if (algo.filename != null && algo.filename!.isNotEmpty) {
-          guidByFilename[algo.filename!] = algo.guid;
+          guidByFilename[algo.filename!.split('/').last] = algo.guid;
         }
       }
 
@@ -181,8 +181,8 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         final existing = await dao.getByInstallationPath(cppPlugin.path);
         if (existing != null) continue;
 
-        // Try to find a matching GUID via the algorithm list
-        final guid = guidByFilename[cppPlugin.path];
+        // Try to find a matching GUID via the algorithm list (match by filename)
+        final guid = guidByFilename[cppPlugin.filename];
         if (guid == null) continue;
 
         // Try to match GUID to a gallery plugin
