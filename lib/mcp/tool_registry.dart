@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:mcp_dart/mcp_dart.dart';
+import 'package:nt_helper/chat/services/memory_service.dart';
+import 'package:nt_helper/chat/services/memory_tools.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
@@ -27,16 +29,26 @@ class ToolRegistryEntry {
 /// Shared registry of tool definitions consumed by both the MCP server
 /// and the in-app chat's ToolBridgeService.
 class ToolRegistry {
+  static const _memoryToolNames = {
+    'memory_read',
+    'memory_write',
+    'memory_append_daily',
+    'memory_read_daily',
+  };
+
   final List<ToolRegistryEntry> _entries = [];
   late final DistingController _controller;
   late final MCPAlgorithmTools _algoTools;
   late final DistingTools _distingTools;
 
-  ToolRegistry(DistingCubit distingCubit) {
+  ToolRegistry(DistingCubit distingCubit, {MemoryService? memoryService}) {
     _controller = DistingControllerImpl(distingCubit);
     _algoTools = MCPAlgorithmTools(_controller, distingCubit);
     _distingTools = DistingTools(_controller, distingCubit);
     _registerAll();
+    if (memoryService != null) {
+      registerMemoryTools(_entries, memoryService);
+    }
   }
 
   List<ToolRegistryEntry> get entries => List.unmodifiable(_entries);
@@ -49,8 +61,10 @@ class ToolRegistry {
   }
 
   /// Apply all registered tools to an MCP server instance.
+  /// Memory tools are excluded — they are for the in-app chat only.
   void applyToMcpServer(McpServer server) {
     for (final entry in _entries) {
+      if (_memoryToolNames.contains(entry.name)) continue;
       server.registerTool(
         entry.name,
         description: entry.description,
