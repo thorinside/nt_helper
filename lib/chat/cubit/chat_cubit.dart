@@ -119,7 +119,32 @@ class ChatCubit extends Cubit<ChatState> {
     await _loopSubscription?.cancel();
     _loopSubscription = chatService
         .runAgenticLoop(_llmHistory)
-        .listen(_handleLoopEvent);
+        .listen(
+          _handleLoopEvent,
+          onError: (Object error) {
+            _truncateHistoryAfterCancellationPoint();
+            final s = state;
+            if (s is ChatReady) {
+              emit(
+                s.copyWith(
+                  messages: [
+                    ...s.messages,
+                    ChatMessage.assistant('Error: $error'),
+                  ],
+                  isProcessing: false,
+                  clearToolName: true,
+                ),
+              );
+            }
+          },
+          onDone: () {
+            final s = state;
+            if (s is ChatReady && s.isProcessing) {
+              _truncateHistoryAfterCancellationPoint();
+              emit(s.copyWith(isProcessing: false, clearToolName: true));
+            }
+          },
+        );
   }
 
   void _handleLoopEvent(ChatLoopEvent event) {
