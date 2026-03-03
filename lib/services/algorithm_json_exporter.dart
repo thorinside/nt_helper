@@ -16,8 +16,14 @@ class AlgorithmJsonExporter {
       final List<Map<String, dynamic>> exportData = [];
 
       for (final algorithm in algorithms) {
+        // Skip community plugins (uppercase GUIDs) — they don't have parameters
+        if (algorithm.guid != algorithm.guid.toLowerCase()) continue;
+
         // Get full details including parameters
         final details = await dao.getFullAlgorithmDetails(algorithm.guid);
+
+        // Skip algorithms with no parameters
+        if (details?.parameters == null || details!.parameters.isEmpty) continue;
 
         final Map<String, dynamic> algorithmData = {
           'guid': algorithm.guid,
@@ -27,20 +33,17 @@ class AlgorithmJsonExporter {
           'parameters': <Map<String, dynamic>>[],
         };
 
-        // Add parameters if they exist
-        if (details?.parameters != null) {
-          for (final paramWithUnit in details!.parameters) {
-            final param = paramWithUnit.parameter;
-            algorithmData['parameters'].add({
-              'name': param.name,
-              'parameterNumber': param.parameterNumber,
-              'minValue': param.minValue,
-              'maxValue': param.maxValue,
-              'defaultValue': param.defaultValue,
-              'unit': paramWithUnit.unitString,
-              'pageName': paramWithUnit.pageName,
-            });
-          }
+        for (final paramWithUnit in details.parameters) {
+          final param = paramWithUnit.parameter;
+          algorithmData['parameters'].add({
+            'name': param.name,
+            'parameterNumber': param.parameterNumber,
+            'minValue': param.minValue,
+            'maxValue': param.maxValue,
+            'defaultValue': param.defaultValue,
+            'unit': paramWithUnit.unitString,
+            'pageName': paramWithUnit.pageName,
+          });
         }
 
         exportData.add(algorithmData);
@@ -112,16 +115,38 @@ class AlgorithmJsonExporter {
       final dao = database.metadataDao;
 
       // Fetch all data from all metadata tables
-      final algorithms = await dao.getAllAlgorithms();
-      final specifications = await dao.getAllSpecifications();
+      final allAlgorithms = await dao.getAllAlgorithms();
       final units = await dao.getAllUnits();
-      final parameters = await dao.getAllParameters();
-      final parameterEnums = await dao.getAllParameterEnums();
-      final parameterPages = await dao.getAllParameterPages();
-      final parameterPageItems = await dao.getAllParameterPageItems();
-      final parameterOutputModeUsage =
-          await database.select(database.parameterOutputModeUsage).get();
       final metadataCache = await dao.getMetadataCacheEntries();
+
+      // Filter to factory algorithms only (lowercase GUIDs) that have parameters
+      final allParameters = await dao.getAllParameters();
+      final guidsWithParams = allParameters.map((p) => p.algorithmGuid).toSet();
+      final algorithms = allAlgorithms
+          .where((a) => a.guid == a.guid.toLowerCase() && guidsWithParams.contains(a.guid))
+          .toList();
+      final factoryGuids = algorithms.map((a) => a.guid).toSet();
+
+      // Filter related tables to factory algorithms only
+      final specifications = (await dao.getAllSpecifications())
+          .where((s) => factoryGuids.contains(s.algorithmGuid))
+          .toList();
+      final parameters = allParameters
+          .where((p) => factoryGuids.contains(p.algorithmGuid))
+          .toList();
+      final parameterEnums = (await dao.getAllParameterEnums())
+          .where((e) => factoryGuids.contains(e.algorithmGuid))
+          .toList();
+      final parameterPages = (await dao.getAllParameterPages())
+          .where((p) => factoryGuids.contains(p.algorithmGuid))
+          .toList();
+      final parameterPageItems = (await dao.getAllParameterPageItems())
+          .where((i) => factoryGuids.contains(i.algorithmGuid))
+          .toList();
+      final parameterOutputModeUsage =
+          (await database.select(database.parameterOutputModeUsage).get())
+          .where((p) => factoryGuids.contains(p.algorithmGuid))
+          .toList();
 
       // Build the complete export structure
       final Map<String, dynamic> exportJson = {
@@ -265,17 +290,31 @@ class AlgorithmJsonExporter {
     try {
       final dao = database.metadataDao;
 
-      // Get counts from all tables
-      final algorithms = await dao.getAllAlgorithms();
-      final specifications = await dao.getAllSpecifications();
+      // Get counts from all tables, filtered to factory algorithms with parameters
+      final allAlgorithms = await dao.getAllAlgorithms();
       final units = await dao.getAllUnits();
-      final parameters = await dao.getAllParameters();
-      final parameterEnums = await dao.getAllParameterEnums();
-      final parameterPages = await dao.getAllParameterPages();
-      final parameterPageItems = await dao.getAllParameterPageItems();
-      final parameterOutputModeUsage =
-          await database.select(database.parameterOutputModeUsage).get();
       final metadataCache = await dao.getMetadataCacheEntries();
+
+      final allParameters = await dao.getAllParameters();
+      final guidsWithParams = allParameters.map((p) => p.algorithmGuid).toSet();
+      final algorithms = allAlgorithms
+          .where((a) => a.guid == a.guid.toLowerCase() && guidsWithParams.contains(a.guid))
+          .toList();
+      final factoryGuids = algorithms.map((a) => a.guid).toSet();
+
+      final specifications = (await dao.getAllSpecifications())
+          .where((s) => factoryGuids.contains(s.algorithmGuid)).toList();
+      final parameters = allParameters
+          .where((p) => factoryGuids.contains(p.algorithmGuid)).toList();
+      final parameterEnums = (await dao.getAllParameterEnums())
+          .where((e) => factoryGuids.contains(e.algorithmGuid)).toList();
+      final parameterPages = (await dao.getAllParameterPages())
+          .where((p) => factoryGuids.contains(p.algorithmGuid)).toList();
+      final parameterPageItems = (await dao.getAllParameterPageItems())
+          .where((i) => factoryGuids.contains(i.algorithmGuid)).toList();
+      final parameterOutputModeUsage =
+          (await database.select(database.parameterOutputModeUsage).get())
+          .where((p) => factoryGuids.contains(p.algorithmGuid)).toList();
 
       // Estimate size (rough approximation)
       final estimatedSizeKB =
