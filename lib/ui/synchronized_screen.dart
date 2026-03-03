@@ -1685,15 +1685,17 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         duration: const Duration(milliseconds: 100),
         child: _buildModeSpecificActions(cubit),
       ),
-      // Chat panel toggle
-      IconButton(
-        icon: Icon(
-          _showChatPanel ? Icons.chat_bubble : Icons.chat_bubble_outline,
-          semanticLabel: _showChatPanel ? 'Hide chat panel' : 'Show chat panel',
+      // Chat panel toggle (desktop only — side panel doesn't fit on mobile)
+      if (!_platformService.isMobilePlatform())
+        IconButton(
+          icon: Icon(
+            _showChatPanel ? Icons.chat_bubble : Icons.chat_bubble_outline,
+            semanticLabel:
+                _showChatPanel ? 'Hide chat panel' : 'Show chat panel',
+          ),
+          tooltip: _showChatPanel ? 'Hide chat' : 'Show chat',
+          onPressed: _toggleChatPanel,
         ),
-        tooltip: _showChatPanel ? 'Hide chat' : 'Show chat',
-        onPressed: _toggleChatPanel,
-      ),
       // Overflow menu
       _buildOverflowMenu(cubit),
     ];
