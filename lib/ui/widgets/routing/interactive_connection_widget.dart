@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
+import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
     as painter;
 
@@ -362,6 +363,10 @@ class _InteractiveConnectionWidgetState
   Widget build(BuildContext context) {
     // Connection data mode: render the connection with hover detection
     if (widget.connectionData != null) {
+      final editorState = widget.routingEditorCubit.state;
+      final hasExtended = editorState is RoutingEditorStateLoaded &&
+          editorState.hasExtendedAuxBuses;
+
       if (!_platformService.supportsHoverInteractions()) {
         // Mobile: just render the connection without hover
         return Semantics(
@@ -376,6 +381,7 @@ class _InteractiveConnectionWidgetState
               connections: [widget.connectionData!],
               theme: Theme.of(context),
               showLabels: true,
+              hasExtendedAuxBuses: hasExtended,
             ),
           ),
         );
@@ -400,6 +406,7 @@ class _InteractiveConnectionWidgetState
               hoveredConnectionId: _isHovering
                   ? widget.connectionData!.connection.id
                   : null,
+              hasExtendedAuxBuses: hasExtended,
             ),
           ),
 

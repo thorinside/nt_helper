@@ -2768,6 +2768,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       return const SizedBox.shrink();
     }
 
+    final editorState = context.read<RoutingEditorCubit>().state;
+    final hasExtended = editorState is RoutingEditorStateLoaded &&
+        editorState.hasExtendedAuxBuses;
+
     // Choose rendering approach based on platform capabilities
     if (_platformService.supportsHoverInteractions()) {
       // Desktop: Draw connections in two passes:
@@ -2791,6 +2795,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                   hoveredConnectionId: _hoveredLabelConnectionId,
                   obstacles: _calculateNodeBounds(),
                   drawEndpointsOnly: true,
+                  hasExtendedAuxBuses: hasExtended,
                   onBoundsUpdated: (bounds) {
                     if (!_areBoundsEqual(_connectionLabelBounds, bounds)) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2825,6 +2830,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 hoveredConnectionId: null,
                 obstacles: _calculateNodeBounds(),
                 drawEndpointsOnly: false,
+                hasExtendedAuxBuses: hasExtended,
                 onBoundsUpdated: (_) {},
                 deletingPortId: _deletingPortId,
                 deleteAnimationProgress: _deleteAnimation.value,
@@ -2851,6 +2857,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 hoveredConnectionId: _hoveredLabelConnectionId,
                 obstacles: _calculateNodeBounds(),
                 drawEndpointsOnly: drawEndpointsOnly,
+                hasExtendedAuxBuses: hasExtended,
                 onBoundsUpdated: (bounds) {
                   // Only update bounds for the main pass
                   if (!drawEndpointsOnly &&
@@ -4440,6 +4447,8 @@ class _ConnectionPainterWithBounds extends CustomPainter {
 
   late final painter.ConnectionPainter _delegate;
 
+  final bool hasExtendedAuxBuses;
+
   _ConnectionPainterWithBounds({
     required this.connections,
     required this.theme,
@@ -4452,6 +4461,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
     this.deletingPortId,
     this.deleteAnimationProgress = 0.0,
     this.fadeOutProgress = 0.0,
+    this.hasExtendedAuxBuses = false,
   }) {
     _delegate = painter.ConnectionPainter(
       connections: connections,
@@ -4464,6 +4474,7 @@ class _ConnectionPainterWithBounds extends CustomPainter {
       deletingPortId: deletingPortId,
       deleteAnimationProgress: deleteAnimationProgress,
       fadeOutProgress: fadeOutProgress,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
     );
   }
 

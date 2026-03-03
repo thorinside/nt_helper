@@ -984,6 +984,7 @@ class ConnectionPainter extends CustomPainter {
         oldDelegate.deletingPortId != deletingPortId ||
         oldDelegate.deleteAnimationProgress != deleteAnimationProgress ||
         oldDelegate.fadeOutProgress != fadeOutProgress ||
+        oldDelegate.hasExtendedAuxBuses != hasExtendedAuxBuses ||
         !ListEquality().equals(oldDelegate.obstacles, obstacles);
   }
 }
