@@ -915,11 +915,19 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final targetIsVirtual = targetInputPort.parameterNumber != null &&
         targetInputPort.parameterNumber! < 0;
 
+    // Detect fixed-bus source ports (null parameterNumber with a busValue,
+    // e.g. the right channel of a stereo send whose bus = left bus + 1).
+    final sourceIsFixed = sourceOutputPort.parameterNumber == null &&
+        sourceOutputPort.busValue != null;
+
     // Get actual parameter values from slots
     int? sourceBusValue;
     int? targetBusValue;
 
-    if (sourceOutputPort.parameterNumber != null &&
+    if (sourceIsFixed) {
+      // Fixed-bus port — use the firmware-implicit bus value from the Port.
+      sourceBusValue = sourceOutputPort.busValue;
+    } else if (sourceOutputPort.parameterNumber != null &&
         sourceAlgorithmIndex < distingState.slots.length) {
       final sourceSlot = distingState.slots[sourceAlgorithmIndex];
       final sourceParam = sourceSlot.values.firstWhere(
@@ -976,7 +984,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     bool targetUpdated = false;
 
     // Update source output port (if it doesn't already have this bus based on actual hardware value)
-    if (sourceOutputPort.parameterNumber != null &&
+    if (sourceIsFixed) {
+      // Fixed-bus port (e.g. stereo right channel) — no parameter to update.
+      sourceUpdated = true;
+    } else if (sourceOutputPort.parameterNumber != null &&
         sourceBusValue != busToUse) {
       await _distingCubit!.updateParameterValue(
         algorithmIndex: sourceAlgorithmIndex,
