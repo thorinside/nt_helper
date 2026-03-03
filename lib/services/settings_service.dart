@@ -272,14 +272,24 @@ class SettingsService {
   LlmProviderType get chatLlmProvider {
     final value = _prefs?.getString(_chatLlmProviderKey);
     if (value == 'openai') return LlmProviderType.openai;
+    if (value == 'anthropic_subscription') {
+      return LlmProviderType.anthropicSubscription;
+    }
     return LlmProviderType.anthropic;
   }
 
   /// Set the LLM provider
   Future<bool> setChatLlmProvider(LlmProviderType provider) async {
-    return await _prefs?.setString(
-            _chatLlmProviderKey, provider == LlmProviderType.openai ? 'openai' : 'anthropic') ??
-        false;
+    final String value;
+    switch (provider) {
+      case LlmProviderType.openai:
+        value = 'openai';
+      case LlmProviderType.anthropicSubscription:
+        value = 'anthropic_subscription';
+      case LlmProviderType.anthropic:
+        value = 'anthropic';
+    }
+    return await _prefs?.setString(_chatLlmProviderKey, value) ?? false;
   }
 
   /// Get the Anthropic API key

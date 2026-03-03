@@ -1,6 +1,6 @@
 // Chat configuration models.
 
-enum LlmProviderType { anthropic, openai }
+enum LlmProviderType { anthropic, anthropicSubscription, openai }
 
 enum VoiceInputMethod { platform, whisper, elevenlabs }
 
@@ -30,6 +30,7 @@ class ChatSettings {
   bool get hasApiKey {
     switch (provider) {
       case LlmProviderType.anthropic:
+      case LlmProviderType.anthropicSubscription:
         return anthropicApiKey != null && anthropicApiKey!.trim().isNotEmpty;
       case LlmProviderType.openai:
         return openaiApiKey != null && openaiApiKey!.trim().isNotEmpty;

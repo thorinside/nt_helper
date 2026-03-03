@@ -32,7 +32,7 @@ class AnthropicProvider implements LlmProvider {
     final body = <String, dynamic>{
       'model': model,
       'max_tokens': 4096,
-      'messages': _convertMessages(messages),
+      'messages': convertMessages(messages),
     };
 
     if (systemPrompt != null) {
@@ -83,7 +83,7 @@ class AnthropicProvider implements LlmProvider {
     }
 
     try {
-      return _parseResponse(jsonDecode(response.body));
+      return parseResponse(jsonDecode(response.body));
     } on FormatException catch (e) {
       final preview = response.body.length > 200
           ? '${response.body.substring(0, 200)}...'
@@ -97,7 +97,7 @@ class AnthropicProvider implements LlmProvider {
     }
   }
 
-  List<Map<String, dynamic>> _convertMessages(List<LlmMessage> messages) {
+  List<Map<String, dynamic>> convertMessages(List<LlmMessage> messages) {
     final result = <Map<String, dynamic>>[];
 
     for (final msg in messages) {
@@ -161,7 +161,7 @@ class AnthropicProvider implements LlmProvider {
     return result;
   }
 
-  LlmResponse _parseResponse(Map<String, dynamic> json) {
+  LlmResponse parseResponse(Map<String, dynamic> json) {
     final stopReason = json['stop_reason'] as String?;
     final content = json['content'] as List<dynamic>? ?? [];
     final usage = json['usage'] as Map<String, dynamic>?;

@@ -12,6 +12,7 @@ class ChatSettingsDialog extends StatefulWidget {
 class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   final _settings = SettingsService();
   late LlmProviderType _provider;
+  late bool _useSubscription;
   late final TextEditingController _anthropicKeyController;
   late final TextEditingController _openaiKeyController;
   late final TextEditingController _anthropicModelController;
@@ -21,10 +22,22 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
 
   bool get _isOpenAI => _provider == LlmProviderType.openai;
 
+  /// The effective provider type, factoring in the subscription toggle.
+  LlmProviderType get _effectiveProvider =>
+      !_isOpenAI && _useSubscription
+          ? LlmProviderType.anthropicSubscription
+          : _provider;
+
   @override
   void initState() {
     super.initState();
-    _provider = _settings.chatLlmProvider;
+    final savedProvider = _settings.chatLlmProvider;
+    _useSubscription =
+        savedProvider == LlmProviderType.anthropicSubscription;
+    // Collapse subscription back to the anthropic tab
+    _provider = savedProvider == LlmProviderType.anthropicSubscription
+        ? LlmProviderType.anthropic
+        : savedProvider;
     _anthropicKeyController =
         TextEditingController(text: _settings.anthropicApiKey);
     _openaiKeyController =
@@ -50,7 +63,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   }
 
   Future<void> _save() async {
-    await _settings.setChatLlmProvider(_provider);
+    await _settings.setChatLlmProvider(_effectiveProvider);
     await _settings.setAnthropicApiKey(_anthropicKeyController.text.trim());
     await _settings.setOpenaiApiKey(_openaiKeyController.text.trim());
     await _settings.setAnthropicModel(_anthropicModelController.text.trim());
@@ -93,21 +106,85 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                 onSelectionChanged: (s) =>
                     setState(() => _provider = s.first),
               ),
-              const SizedBox(height: 24),
-              Text('API Key', style: theme.textTheme.titleSmall),
+              if (!_isOpenAI) ...[
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  title: Text(
+                    'Use Subscription',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  subtitle: Text(
+                    'Authenticate with Claude subscription OAuth token',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  value: _useSubscription,
+                  onChanged: (v) => setState(() => _useSubscription = v),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                _useSubscription && !_isOpenAI
+                    ? 'OAuth Token'
+                    : 'API Key',
+                style: theme.textTheme.titleSmall,
+              ),
               const SizedBox(height: 8),
               TextField(
-                key: ValueKey('apikey_${_provider.name}'),
+                key: ValueKey('apikey_${_effectiveProvider.name}'),
                 controller: _isOpenAI
                     ? _openaiKeyController
                     : _anthropicKeyController,
                 decoration: InputDecoration(
                   border: const OutlineInputBorder(),
-                  hintText: _isOpenAI ? 'sk-...' : 'sk-ant-...',
+                  hintText: _isOpenAI
+                      ? 'sk-...'
+                      : _useSubscription
+                          ? 'sk-ant-oat...'
+                          : 'sk-ant-...',
                   isDense: true,
                 ),
                 obscureText: true,
               ),
+              if (_useSubscription && !_isOpenAI) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Run "claude setup-key" in a terminal to get your token.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    Tooltip(
+                      richMessage: TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'To get your OAuth token:\n\n',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const TextSpan(
+                            text: '1. Install Claude Code (npm install -g @anthropic-ai/claude-code)\n'
+                                '2. Run: claude setup-key\n'
+                                '3. Copy the token (starts with sk-ant-oat)\n'
+                                '4. Paste it here',
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.help_outline,
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 16),
               Text('Model', style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),

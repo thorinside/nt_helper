@@ -8,6 +8,7 @@ import 'package:nt_helper/chat/models/chat_message.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart';
+import 'package:nt_helper/chat/providers/anthropic_subscription_provider.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/providers/openai_provider.dart';
 import 'package:nt_helper/chat/services/chat_service.dart';
@@ -493,6 +494,7 @@ class ChatCubit extends Cubit<ChatState> {
   String _resolveModel(ChatSettings settings) {
     switch (settings.provider) {
       case LlmProviderType.anthropic:
+      case LlmProviderType.anthropicSubscription:
         return settings.anthropicModel;
       case LlmProviderType.openai:
         return settings.openaiModel;
@@ -505,6 +507,11 @@ class ChatCubit extends Cubit<ChatState> {
       case LlmProviderType.anthropic:
         return AnthropicProvider(
           apiKey: settings.anthropicApiKey!,
+          model: settings.anthropicModel,
+        );
+      case LlmProviderType.anthropicSubscription:
+        return AnthropicSubscriptionProvider(
+          token: settings.anthropicApiKey!,
           model: settings.anthropicModel,
         );
       case LlmProviderType.openai:
