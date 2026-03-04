@@ -1,43 +1,28 @@
 {
   "guid": "auto",
   "name": "Auto-sampler",
-  "description": "This algorithm allows you to automatically create multi-sampled instruments in a format that can be used by the Poly Multisample algorithm, by triggering an external synth (by MIDI or CV/gate) and recording the resulting audio. You can set the range of notes to be sampled, and the step size (e.g., every note, every fourth note etc.). You can also choose to sample multiple velocity levels per note, and multiple round-robins of each note. The samples are stored on the MicroSD card, in a folder within the root ‘samples’ folder.",
+  "description": "This algorithm allows you to automatically create multi-sampled instruments in a format that can be used by the Poly Multisample algorithm, by triggering an external synth (by MIDI or CV/gate) and recording the resulting audio. You can set the range of notes to be sampled, and the step size (e.g. every note, every fourth note etc.). You can also choose to sample multiple velocity levels per note, and multiple round-robins of each note. The samples are stored on the MicroSD card, in a folder within the root 'samples' folder.",
   "categories": [
+    "Audio Processing",
     "Sampling",
-    "Audio Recording",
-    "Instrument Creation",
-    "MIDI/CV Control"
+    "Instrument Creation"
   ],
   "short_description": "Creates multisamples",
-  "use_cases": [
-    "Automated multi-sample instrument creation",
-    "Recording external synths via MIDI or CV/gate",
-    "Generating round-robin samples for dynamic playback",
-    "Velocity-layered sampling for expressive instruments"
-  ],
   "gui_description": "While sampling, the display shows a level meter, the filename of the sample currently being recorded, and the elapsed time. It also shows a gauge of the pressure on the MicroSD card.",
-  "input_ports": [
-    {
-      "name": "left_mono_input",
-      "description": "The left channel input to record (mono or stereo)."
-    },
-    {
-      "name": "right_input",
-      "description": "The right channel input, if recording in stereo."
-    }
-  ],
+  "specifications": [],
+  "input_ports": [],
   "output_ports": [
     {
-      "name": "cv_output",
-      "description": "Pitch CV output bus for triggering external synths."
+      "name": "CV output",
+      "description": "The pitch CV output bus."
     },
     {
-      "name": "gate_output",
-      "description": "Gate output bus to control note duration."
+      "name": "Gate output",
+      "description": "The gate output bus."
     },
     {
-      "name": "midi_output",
-      "description": "MIDI output port (None, Breakout, Select Bus, USB, Internal)."
+      "name": "MIDI output",
+      "description": "The MIDI output port (None, Breakout, Select Bus, USB, Internal)."
     }
   ]
 }

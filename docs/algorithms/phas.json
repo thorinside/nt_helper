@@ -1,25 +1,19 @@
 {
   "guid": "phas",
   "name": "Phaser",
-  "description": "This algorithm is based on the Phaser algorithm on the disting mk4. It’s a classic phaser effect, using a number of all-pass filters to introduce notches into the audio’s frequency spectrum. You may like to apply an LFO to the sweep CV input.",
+  "description": "This algorithm is based on the Phaser algorithm on the disting mk4. It's a classic phaser effect, using a number of all-pass filters to introduce notches into the audio's frequency spectrum. You may like to apply an LFO to the sweep CV input.",
   "categories": [
-    "effect",
-    "modulation",
-    "filter"
+    "Effects",
+    "Modulation",
+    "Phaser"
   ],
   "short_description": "Classic phaser effect",
-  "use_cases": [
-    "Audio effects processing",
-    "Frequency modulation",
-    "LFO-driven modulation"
-  ],
-  "gui_description": "Parameter controls for sweep, stages, feedback, warp, input scale, mix, and level. Routing parameters include sweep CV bus selection, audio input/output routing, and width (number of busses).",
   "parameters": [
     {
       "name": "Sweep",
-      "min": -1,
-      "max": 1,
-      "default": 0,
+      "min": -1.0,
+      "max": 1.0,
+      "default": 0.0,
       "description": "Sweeps the all-pass filters over the audio spectrum."
     },
     {
@@ -31,11 +25,11 @@
     },
     {
       "name": "Feedback",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "enum",
-      "is_bus": false
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets the amount of feedback around the effect.\nNegative values invert the signal.",
+      "type": "folder"
     },
     {
       "name": "Warp",
@@ -45,51 +39,58 @@
       "description": "If enabled, warps the sweep parameter/CV for a more perceptually linear sweep."
     },
     {
-      "name": "Input_scale",
+      "name": "Input scale",
       "min": -100,
       "max": 100,
       "default": 20,
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the scaling of the sweep CV input.",
+      "type": "folder"
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 50,
-      "description": "The output wet/dry mix."
+      "description": "The output wet/dry mix.",
+      "type": "folder"
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Sweep_input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for the sweep CV."
+      "description": "The output gain applied to the effected signal.",
+      "type": "folder"
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "type": "folder"
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "folder"
     }
   ],
   "input_ports": [
     {
-      "name": "Sweep_CV",
-      "description": "CV input controlling sweep parameter"
+      "name": "Sweep input",
+      "description": "The bus to use for the sweep CV."
     },
     {
-      "name": "Audio_Input",
-      "description": "First audio input bus (1-28)"
+      "name": "Input",
+      "description": "The first audio input bus."
+    },
+    {
+      "name": "Sweep input",
+      "description": "The bus to use for the sweep CV."
     },
     {
       "name": "Input",
@@ -99,7 +100,11 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The first output bus for processed signal."
+      "description": "The first output bus."
+    },
+    {
+      "name": "Output",
+      "description": "The first output bus."
     }
   ]
 }

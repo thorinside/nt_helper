@@ -1,28 +1,18 @@
 {
   "guid": "samc",
   "name": "Sample Player (Clocked)",
-  "description": "This algorithm plays samples synced to a clock input or MIDI. It stretches or shrinks the sample to fit the tempo and time signature provided by the clock, making it ideal for rhythmic synchronization. The algorithm calculates the optimal number of bars based on the sample length and adjusts playback speed accordingly. It also includes features like auto-triggering in loops and manual triggering options via bus, MIDI, or manually.",
+  "description": "This algorithm plays samples, stretching or shrinking them to fit the tempo provided by a clock input, or MIDI. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm, but works somewhat differently. Still, it might be fun to review the video (actually for the disting mk3) here. The algorithm looks at the length of the chosen sample, and uses the current tempo and time signature to figure out a number of bars that best fits. It then adjusts the playback speed so that the sample will fit that number of bars. You can use the Speed tune parameter to adjust the speed – this is particularly useful if the sample is not actually a full number of bars long.",
   "categories": [
-    "Audio",
-    "Sampling",
-    "Clock/Sync",
-    "MIDI",
-    "Sequencing"
+    "Sample Player",
+    "Clocked",
+    "Audio Playback"
   ],
   "short_description": "Plays samples synced to a clock",
-  "use_cases": [
-    "Rhythmic sample playback",
-    "Tempo-synchronized loops",
-    "Live performance with clocked triggers",
-    "MIDI clock synchronization",
-    "Time signature-based sample stretching"
-  ],
-  "gui_description": "The display shows the waveform of the sample, updated during playback. Unlike other Sample Players, it visualizes the calculated loop length rather than the full sample duration. Tick marks indicate bars and beats above the waveform. To the right, it displays the sample length (seconds), natural bar count at original speed, and adjusted bar count for sync.",
   "specifications": [
     {
       "name": "Record time",
       "min": 0,
-      "max": 60.00000059604645
+      "max": 60
     }
   ],
   "parameters": [
@@ -31,8 +21,8 @@
       "min": 50.0,
       "max": 200.0,
       "default": 100.0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     },
@@ -41,8 +31,8 @@
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     },
@@ -51,8 +41,8 @@
       "min": 1,
       "max": 99,
       "default": 4,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     },
@@ -61,8 +51,8 @@
       "min": 0,
       "max": 4,
       "default": 2,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     },
@@ -71,8 +61,8 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     },
@@ -81,8 +71,8 @@
       "min": 0,
       "max": 19,
       "default": 15,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     },
@@ -91,8 +81,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     },
@@ -101,8 +91,8 @@
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     },
@@ -111,8 +101,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "isCommon": true,
       "is_common": true,
       "is_bus": false
     }
@@ -120,11 +110,11 @@
   "input_ports": [
     {
       "name": "Clock input",
-      "description": "Bus used as the clock signal source for synchronization."
+      "description": "The bus to use as the clock input."
     },
     {
       "name": "Reset input",
-      "description": "Bus used to trigger a reset on the sample playback (either as a trigger or run/stop mode)."
+      "description": "The bus to use as the reset input."
     },
     {
       "name": "Clock input",
@@ -135,5 +125,10 @@
       "description": ""
     }
   ],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Audio output",
+      "description": "Audio output port."
+    }
+  ]
 }

@@ -1,62 +1,42 @@
 {
   "guid": "ensq",
   "name": "Envelope Sequencer",
-  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer, and some of the documentation for this algorithm cross-references with that for the other.\n\nEach step has a curve shape, a scale, and an offset. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock).\n\nThe algorithm has a function for randomising the curves in various ways.\n\nEach Envelope Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures.\n\nRemember that every curve shape, level, etc. is a parameter and therefore mappable.",
+  "description": "A 16-step envelope or curve sequencer that can output CV and/or MIDI. Each step has a curve shape, scale, and offset, with divisions for repeat or ratchet counts. It includes internal storage for 32 sequences for snapshots or patterns, and functions for randomizing curves.",
   "categories": [
-    "Sequencer",
-    "CV",
-    "MIDI",
-    "Modulation"
+    "sequencer",
+    "cv",
+    "midi",
+    "envelope"
   ],
   "short_description": "A really, really big curve sequencer",
   "use_cases": [
-    "Curve sequencing for modular synthesis",
-    "Dynamic modulation source",
-    "Pattern-based MIDI sequencing",
-    "CV-controlled pattern switching",
-    "Randomized envelope generation"
+    "generating CV sequences",
+    "creating MIDI patterns",
+    "sequencing envelope curves"
   ],
-  "gui_description": "The display shows an overview of the 16 steps. The current step being played is indicated by a highlight above the step. The start and end steps are indicated by solid bars. The step whose parameter is being edited is shown highlighted. Divisions (repeats or ratchets) are shown as breaks in the highlight, with a number above to indicate the division.",
-  "specifications": [
-    {
-      "name": "Internal storage",
-      "value": "32 sequences"
-    },
-    {
-      "name": "Steps per sequence",
-      "value": "16"
-    }
-  ],
+  "gui_description": "Display shows overview of 16 steps with highlights for current step, start/end steps, and parameter editing. Divisions shown as breaks in highlight.",
   "input_ports": [
     {
       "name": "Clock input",
-      "description": "The bus to use as the clock input for sequencing."
+      "description": "The bus to use as the clock input."
     },
     {
       "name": "Reset input",
-      "description": "The bus to use as the reset input for the sequencer."
+      "description": "The bus to use as the reset input."
     },
     {
       "name": "Sequence CV input",
-      "description": "The bus used to select the sequence via CV control."
+      "description": "The bus to use to select the sequence."
     },
     {
       "name": "Sequence trigger input",
-      "description": "The bus used for triggering sequence changes via CV."
+      "description": "The bus to use for the sequence select trigger."
     }
   ],
   "output_ports": [
     {
-      "name": "CV output",
-      "description": "The bus used for the CV output from the sequencer."
-    },
-    {
-      "name": "MIDI breakout",
-      "description": "MIDI output to the breakout port (if enabled)."
-    },
-    {
-      "name": "Select Bus MIDI",
-      "description": "MIDI output to the Select Bus (if enabled)."
+      "name": "Output",
+      "description": "The bus to use for the CV output."
     }
   ]
 }

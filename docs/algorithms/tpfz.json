@@ -1,185 +1,51 @@
 {
   "guid": "tpfz",
   "name": "Temporal Freeze",
-  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The ‘temporal’ part of the name indicates that it works in the time domain, in contrast to the Spectral Freeze algorithm (above). There are a number (depending on the specification) of different ‘voices’ i.e. you can freeze different moments of audio and play them simultaneously.",
+  "description": "This algorithm is an audio 'freeze' effect – it captures sound at a moment in time and sustains it indefinitely. The 'temporal' part of the name indicates that it works in the time domain, in contrast to the Spectral Freeze algorithm (above). There are a number (depending on the specification) of different 'voices' i.e. you can freeze different moments of audio and play them simultaneously.",
   "categories": [
     "Audio Effects",
-    "Temporal Processing",
-    "Freeze Effects"
+    "Time Domain",
+    "Freeze",
+    "Sustain"
   ],
   "short_description": "An audio 'freeze' effect",
   "use_cases": [
-    "Sustaining captured sound indefinitely for ambient textures or pads",
-    "Layering multiple frozen moments of audio simultaneously",
-    "Creating tape-like playback effects with adjustable speed variations",
-    "Generating evolving soundscapes using envelope controls"
+    "Manual voice control",
+    "Automatic voice selection",
+    "Sustaining audio moments",
+    "Creating swells"
   ],
-  "gui_description": "The display shows information about each voice. The vertical bar on the left indicates the envelope level, and a 'T' above the voice number denotes the freeze target (Auto if no 'T'). Each voice includes a condensed waveform view of captured audio, with an incoming audio waveform at the bottom-left.",
+  "gui_description": "The display shows information about each of the voices. The vertical bar on the left shows the envelope level. The 'T' above to the voice number indicates the 'Freeze target'; if there is no 'T', the target is set to 'Auto'. Each voice also shows a very condensed waveform view showing the section of audio that was captured. The similar waveform at the bottom left of the screen shows the incoming audio.",
   "specifications": [
     {
       "name": "Voices",
+      "description": "The number of simultaneous voices.",
       "min": 1,
       "max": 16
-    },
-    {
-      "name": "History Length",
-      "min": 0.1,
-      "max": 2.0
-    }
-  ],
-  "parameters": [
-    {
-      "name": "Freeze toggle",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Activates a new freeze when the parameter changes from '0' to '1'."
-    },
-    {
-      "name": "Freeze gate",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Activates a new freeze when the parameter changes from '0' to '1', and releases the freeze when the parameter changes from '1' to '0'."
-    },
-    {
-      "name": "Freeze target",
-      "min": 0,
-      "default": 0,
-      "description": "Chooses the voice for the next freeze, or '0' for 'Auto'."
-    },
-    {
-      "name": "Unfreeze all",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "When this parameter changes to '1', all active freezes are released."
-    },
-    {
-      "name": "Auto voices",
-      "default": "",
-      "description": "When the freeze target is Auto, sets how many voices will be used by the automatic voice selection. The remainder can be frozen manually."
-    },
-    {
-      "name": "Length",
-      "min": 10,
-      "max": 200,
-      "default": 200,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Length",
-      "min": 10,
-      "max": 200,
-      "default": 200,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Play heads",
-      "min": 1,
-      "max": 7,
-      "default": 4,
-      "description": "Sets the number of 'playback heads' (to use a tape metaphor)."
-    },
-    {
-      "name": "Octave down heads",
-      "min": 0,
-      "max": 7,
-      "default": 0,
-      "description": "Sets how many of the playback heads run at half speed i.e. an octave down."
-    },
-    {
-      "name": "Gain",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Attack",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "description": "Sets the envelope attack time. Exponential scale from 0.01s to 30s."
-    },
-    {
-      "name": "Release",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "description": "Sets the envelope release time. Exponential scale from 0.01s to 30s."
-    },
-    {
-      "name": "Mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "enum_values": [
-        "Normal",
-        "Complete attack"
-      ],
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Freeze (per-voice)",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Activates a new freeze on the corresponding voice when the parameter changes from '0' to '1', and releases the freeze when the parameter changes from '1' to '0'."
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
-      "type": "enum",
-      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Left/mono input",
-      "description": "Audio input for mono or left channel (bus number adjustable via parameter)"
+      "description": "Sets the left or mono input audio bus.",
+      "busIdRef": "Left/mono input"
     },
     {
       "name": "Right input",
-      "description": "Audio input for right channel (optional, enables stereo operation when set)"
-    },
-    {
-      "name": "Left/mono input",
-      "description": "Sets the left or mono input audio bus."
-    },
-    {
-      "name": "Right input",
-      "description": "Sets the right input audio bus. If not set to None, stereo operation is enabled, halving history length per voice and increasing CPU usage."
+      "description": "Sets the right input audio bus.",
+      "busIdRef": "Right input"
     }
   ],
   "output_ports": [
     {
       "name": "Left/mono output",
-      "description": "Output bus for frozen audio left/mono channel"
+      "description": "Sets the left output bus for the voice.",
+      "busIdRef": "Left/mono output"
     },
     {
       "name": "Right output",
-      "description": "Output bus for frozen audio right channel (stereo operation only)"
-    },
-    {
-      "name": "Left/mono output",
-      "description": "Sets the left output bus for the voice."
-    },
-    {
-      "name": "Right output",
-      "description": "Sets the right output bus for the voice."
+      "description": "Sets the right output bus for the voice.",
+      "busIdRef": "Right output"
     }
   ]
 }

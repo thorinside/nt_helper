@@ -1,100 +1,95 @@
 {
   "guid": "wavs",
   "name": "Waveshaper",
-  "description": "This algorithm is based on the Dual Waveshaper algorithm from the disting mk4. It features two distinct modes:\n\nType 0 (Wavefolder) increases harmonic content, especially as gain changes.\nType 1 (Triangle-to-sine waveshaper) provides gentle overdrive/saturation for most audio or generates a pure sine wave when fed with an appropriate triangle wave input. The GUI visually demonstrates how an input sine wave is affected by the waveshaping process.",
+  "description": "This algorithm is based on the Dual Waveshaper algorithm on the disting mk4. You may like to watch the video on that algorithm here. From the disting mk4 manual: Type 0 is what is usually termed a wavefolder. This increases the harmonic content of the sound in interesting ways, especially as the gain changes. Type 1 is a triangle-to-sine waveshaper. Used on most audio this is a relatively gentle form of overdrive/saturation. However, when fed with the right level of triangle wave, the output is exactly a sine wave, which is useful when you have a triangle wave VCO handy but really want a pure sine wave instead.",
   "categories": [
-    "Distortion",
-    "Waveshaping",
-    "Synthesis",
-    "Modulation"
+    "waveshaper",
+    "wavefolder",
+    "overdrive",
+    "saturation",
+    "sine generator"
   ],
   "short_description": "Waveshaper/wavefolder",
-  "use_cases": [
-    "Harmonic enhancement of audio signals",
-    "Generating pure sine waves from triangle waveforms",
-    "Gentle overdrive/saturation effects",
-    "Creative sound design and synthesis"
-  ],
-  "gui_description": "The display shows how an input sine wave will be affected by the waveshaper. It is not an oscilloscope but a graphical aid to illustrate waveshaping intensity.",
+  "gui_description": "The display shows how an input sine wave will be affected by the waveshaper. It is not an oscilloscope – it's not showing what your actual audio looks like (unless you happen to be feeding it a sine wave). It's just a graphical aid to get an idea of how much waveshaping is being applied.",
   "parameters": [
     {
       "name": "Input gain",
-      "min": -32,
-      "max": 32,
-      "default": 1,
-      "scope": "global",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_bus": false
+      "min": -32.0,
+      "max": 32.0,
+      "default": 1.0,
+      "description": "The input gain. Negative values invert the signal."
     },
     {
       "name": "Mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "global",
+      "enum_values": [
+        "Wavefolder",
+        "Tri-to-sine shaper"
+      ],
       "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "scope": "global",
+      "description": "The output wet/dry mix.",
       "type": "folder",
-      "is_per_channel": false,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Level",
       "min": -40,
       "max": 0,
       "default": 0,
-      "scope": "global",
+      "description": "The output gain applied to the shaped signal.",
       "type": "folder",
-      "is_per_channel": false,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "scope": "routing",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
       "type": "folder",
-      "is_per_channel": false,
-      "is_bus": false
+      "is_bus": true
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "folder",
+      "is_bus": true
     }
   ],
   "input_ports": [
     {
+      "name": "Input",
+      "description": "The first input bus to process."
+    },
+    {
       "name": "Gain input",
-      "description": ""
+      "description": "The bus to use to control the input gain. Scaled such that a 5V CV gives 32x gain."
     },
     {
       "name": "Input",
-      "description": ""
+      "description": "The first input bus to process."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": ""
+      "description": "The first output bus."
+    },
+    {
+      "name": "Output",
+      "description": "The first output bus."
     }
   ]
 }

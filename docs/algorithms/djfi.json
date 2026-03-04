@@ -1,27 +1,20 @@
 {
   "guid": "djfi",
   "name": "DJ Filter",
-  "description": "This algorithm is an implementation of the disting mk4 algorithm of the same name. It functions as a filter that sweeps from lowpass to highpass on a single control. The Sweep parameter sets the filter cutoff, with zero position applying no effect (indicated by '>DRY<'). Negative sweep values apply a lowpass filter with decreasing cutoff frequency, while positive sweep values apply a highpass filter with increasing cutoff frequency.",
+  "description": "This algorithm is an implementation of the disting mk4 algorithm of the same name. You may like to review the video about that algorithm, which is here. The algorithm is a filter which sweeps from lowpass to highpass on a single control. The Sweep parameter sets the filter cutoff. At the central, zero position no filter effect is applied. If the sweep goes negative, a lowpass filter is applied, with a cutoff frequency that sweeps down the more you go. If the sweep goes positive, a highpass filter is applied, with a cutoff frequency that sweeps up the more you go. There is a deadzone around zero where the filter has no effect, indicated by >DRY< next to the parameter value.",
   "categories": [
     "Filter",
-    "Audio Processing",
-    "Dynamic Filtering"
+    "Audio Effect"
   ],
   "short_description": "Low/High pass filter",
-  "use_cases": [
-    "Dynamic low/high-pass filtering in real-time audio processing",
-    "Creative sound design with sweepable cutoff frequencies",
-    "Automatable filter transitions for modular synthesis or live performance"
-  ],
-  "gui_description": "The interface features a central Sweep parameter controlling the filter transition from lowpass to highpass, with resonance adjustment and routing controls. A deadzone around zero is visually indicated by '>DRY<' next to the Sweep value.",
   "parameters": [
     {
       "name": "Sweep",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -29,8 +22,8 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -38,18 +31,26 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
     }
   ],
   "input_ports": [
+    {
+      "name": "Input",
+      "description": "The first input bus to process."
+    },
     {
       "name": "Input",
       "description": ""
     }
   ],
   "output_ports": [
+    {
+      "name": "Output",
+      "description": "The first output bus."
+    },
     {
       "name": "Output",
       "description": ""

@@ -1,60 +1,188 @@
 {
   "guid": "saml",
   "name": "Sample Player (Sliced)",
-  "description": "This algorithm allows you to place a number of marker points on a sample and conveniently trigger playback from the various marker points. It’s your go-to algorithm for breakbeat slicing.\n\nOnce the markers have been placed, the slices can be triggered either by MIDI notes or CV/gate. If triggering by MIDI, the ‘MIDI base note’ parameter sets the MIDI note number for slice 1. Subsequent slices are triggered by following MIDI notes (e.g., C4 for slice 2 if slice 1 is on C4). A MIDI note below the base note stops playback.\n\nIf triggering by CV/gate, a pitch CV provided to the ‘Slice input’ bus selects new slices at one semitone per step. A CV outside active slice range stops playback.\n\nA trigger signal on the ‘Advance input’ steps through slices (looping back to 1 after reaching the value set in ‘Slices’), while a trigger on the ‘Reset input’ returns to slice 1.\n\nWith a clock source and ‘Auto trigger’ enabled, the algorithm automatically loops playback, matching slice timing to tempo. The GUI displays the waveform with slices marked as check marks, showing triggered slice number, sample length in seconds/bars, and loop duration if applicable.",
+  "description": "This algorithm allows you to place a number of marker points on a sample, and conveniently trigger playback from the various marker points. It's your go-to algorithm for breakbeat slicing.",
   "categories": [
     "Audio",
-    "Sampling",
-    "Sequencing",
-    "MIDI",
-    "CV/Gate"
+    "Sampler",
+    "Slice"
   ],
   "short_description": "Plays sliced samples",
   "use_cases": [
     "Breakbeat slicing",
-    "Loop-based composition",
-    "Live sampling and triggering",
-    "Tempo-sync playback of segmented audio",
-    "Automated slice sequencing via MIDI/CV"
+    "Triggering samples from marker points",
+    "Automatic loop playback"
   ],
-  "gui_description": "The display shows the sample waveform with slices indicated as check marks above. The last triggered slice is shown as a large number in the bottom right, alongside sample length (in seconds), loop duration in bars at current tempo, and calculated loop bars if clock and ‘Auto trigger’ are enabled.",
+  "gui_description": "The display shows the sample waveform with the slices indicated as check marks above. The last triggered slice is shown as the large number bottom right. Above this is the sample length (in seconds), the sample length in bars at the current tempo, and the calculated number of bars that the sample will loop over, if a clock is supplied and 'Auto trigger' is enabled.",
   "specifications": [
     {
       "name": "Record time",
+      "description": "The maximum length of audio that can be recorded (sampled).",
       "min": 0,
-      "max": 60.00123456789012
+      "max": 60
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Slice",
+      "min": 1,
+      "max": 24,
+      "default": 1,
+      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the 'Play' parameter."
+    },
+    {
+      "name": "Slices",
+      "min": 1,
+      "max": 24,
+      "default": 24,
+      "description": "Sets the number of slices in use."
+    },
+    {
+      "name": "Speed",
+      "min": -200.0,
+      "max": 200.0,
+      "default": 100.0,
+      "description": "Sets the playback speed. Multiplied by the per-slice Speed parameter."
+    },
+    {
+      "name": "Transpose",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Transposes the playback speed in semitones (across all slices)."
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Adjusts the playback speed in cents (across all slices)."
+    },
+    {
+      "name": "Stop at slice end",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "If enabled, playback will stop when it reaches the next slice. Otherwise, playback continues to the end of the sample."
+    },
+    {
+      "name": "Detect transients",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes from 0 to 1, it invokes the 'Detect transients' function exactly as if the user had selected it from the menu."
+    },
+    {
+      "name": "Clock source",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets the clock source: 'Off', 'External', or 'MIDI'."
+    },
+    {
+      "name": "Auto trigger",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets whether the sample will automatically be triggered by the clock. This can be at a fixed interval, or set automatically by the length of the loop."
+    },
+    {
+      "name": "Auto divisor",
+      "min": 0,
+      "max": 19,
+      "default": 15,
+      "description": "Sets how often the sample will be triggered, if 'Auto trigger' is 'Fixed'."
+    },
+    {
+      "name": "Time sig num",
+      "min": 1,
+      "max": 99,
+      "default": 4,
+      "description": "The time signature numerator."
+    },
+    {
+      "name": "Time sig denom",
+      "min": 0,
+      "max": 4,
+      "default": 2,
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16."
+    },
+    {
+      "name": "Coarse",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The coarse slice position, as a percentage of the sample length."
+    },
+    {
+      "name": "Fine",
+      "min": -500,
+      "max": 500,
+      "default": 0,
+      "description": "The fine slice position, in sample frames."
+    },
+    {
+      "name": "Speed",
+      "min": -200.0,
+      "max": 200.0,
+      "default": 100.0,
+      "description": "The playback speed for the slice."
     }
   ],
   "input_ports": [
     {
       "name": "Slice input",
-      "description": "Pitch CV input (1V/octave) for selecting slices at one semitone per step."
+      "description": "CV input for slice selection (V/oct, scaled at one semitone per slice)."
     },
     {
       "name": "Trigger input",
-      "description": "CV/gate trigger input to initiate slice playback."
-    },
-    {
-      "name": "Clock input",
-      "description": "Clock signal input (24 ppqn) for tempo synchronization."
-    },
-    {
-      "name": "Run/stop input",
-      "description": "Input bus for controlling sample playback start/stop."
+      "description": "Trigger or gate input for triggering slices."
     },
     {
       "name": "Advance input",
-      "description": "Trigger input to step through slices sequentially (looping back to slice 1)."
+      "description": "Trigger input to advance to the next slice."
     },
     {
       "name": "Reset input",
-      "description": "Trigger input to reset playback to slice 1."
+      "description": "Trigger input to reset to slice 1."
+    },
+    {
+      "name": "Clock input",
+      "description": "Clock input (24 ppqn) for automatic loop playback."
+    },
+    {
+      "name": "Run/stop input",
+      "description": "Input to control run/stop state."
+    },
+    {
+      "name": "Slice input",
+      "description": "The bus to use for the slice CV input (V/oct, scaled at one semitone per slice)."
+    },
+    {
+      "name": "Clock input",
+      "description": "The bus to use for the clock input (24 ppqn)."
+    },
+    {
+      "name": "Run/stop input",
+      "description": "The bus to use for the run/stop input."
+    },
+    {
+      "name": "Advance input",
+      "description": "The bus to use for the advance input (to step through the slices)."
+    },
+    {
+      "name": "Reset input",
+      "description": "The bus to use for the reset input (to reset to slice 1)."
     }
   ],
   "output_ports": [
     {
       "name": "Audio output",
-      "description": "Processed audio signal from the selected slice."
+      "description": "Audio output for the sliced sample playback."
+    },
+    {
+      "name": "Slice CV",
+      "description": "CV output indicating the current slice selection."
     }
   ]
 }

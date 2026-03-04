@@ -3,51 +3,36 @@
   "name": "Chorus (Vintage)",
   "description": "This algorithm is a stereo chorus effect, modelled on that of the classic Juno-6 polysynth, based on measurements of the author's own unit. Those with keen ears may recognise it as the chorus that is built into the Poly Wavetable algorithm on the disting EX.",
   "categories": [
-    "effect",
-    "stereo",
-    "chorus",
-    "emulation"
+    "Effects",
+    "Stereo",
+    "Chorus",
+    "Vintage"
   ],
   "short_description": "Chorus effect based on an 80s polysynth",
   "use_cases": [
-    "Stereo widening",
-    "Polysynth emulation",
-    "Vintage sound enhancement"
+    "Stereo chorus effects",
+    "Juno-6 style chorus",
+    "Polyphonic chorus"
   ],
-  "specifications": [],
-  "parameters": [
-    {
-      "name": "Mode",
-      "min": 0,
-      "max": 2,
-      "default": 2,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
-    }
-  ],
+  "gui_description": "Stereo chorus effect modeled on the classic Juno-6 polysynth",
   "input_ports": [
     {
       "name": "Left/mono input",
-      "description": "The left or mono input bus.",
-      "channelCountRef": "1-28"
+      "description": "The left or mono input bus."
     },
     {
       "name": "Right input",
-      "description": "The right input bus, if stereo.",
-      "channelCountRef": "0-28"
+      "description": "The right input bus, if stereo."
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": "The left output bus.",
-      "channelCountRef": "13"
+      "description": "The left output bus."
     },
     {
       "name": "Right output",
-      "description": "The right output bus.",
-      "channelCountRef": "14"
+      "description": "The right output bus."
     }
   ]
 }

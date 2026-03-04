@@ -1,112 +1,117 @@
 {
   "guid": "revc",
   "name": "Reverb (Clouds)",
-  "description": "This algorithm implements the reverb and diffuser parts of the Clouds module by Émilie Gillet. The diffuser is a simple network of all-pass filters which 'smears' the sound slightly, turning a mono source into something that sounds stereo.",
+  "description": "This algorithm implements the reverb and diffuser parts of the Clouds module by Émilie Gillet. The diffuser is a simple network of all-pass filters which 'smears' the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
   "categories": [
-    "Reverb",
-    "Diffusion",
-    "Stereo Processing"
+    "Effects",
+    "Reverb"
   ],
   "short_description": "The reverb from Clouds",
   "use_cases": [
-    "Creating spatial effects in mono signals",
-    "Adding natural-sounding reverb to audio tracks",
-    "Enhancing stereo width through diffusion"
+    "Stereo widening",
+    "Reverb effects"
   ],
-  "gui_description": "Contains controls for diffuser mix, reverb time/diffusion/low-pass filtering, input gain, and routing parameters (input/output buses). Includes a sample rate selector between 'Native' and 'Authentic (32kHz)' modes.",
-  "specifications": [
-    {
-      "name": "Sample Rate Options",
-      "value": "'Native' or 'Authentic (32kHz)'"
-    }
-  ],
+  "gui_description": "The reverb and diffuser parts of the Clouds module",
   "parameters": [
     {
-      "name": "Diffuser_mix",
+      "name": "Diffuser mix",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Reverb_mix",
+      "name": "Reverb mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Reverb_time",
+      "name": "Reverb time",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Reverb_diffusion",
+      "name": "Reverb diffusion",
       "min": 0,
       "max": 100,
       "default": 70,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Reverb_low_pass",
+      "name": "Reverb low pass",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Reverb_input_gain",
+      "name": "Reverb input gain",
       "min": -40,
       "max": 0,
       "default": -14,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Sample_rate",
+      "name": "Sample rate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
       "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Left_input",
-      "description": "The left audio input bus (1-28). Defaults to bus 1.",
-      "channelCountRef": "1"
+      "name": "Left input",
+      "description": "The left audio input bus."
     },
     {
-      "name": "Right_input",
-      "description": "The right audio input bus (1-28). Defaults to bus 2.",
-      "channelCountRef": "1"
+      "name": "Right input",
+      "description": "The right audio input bus."
+    },
+    {
+      "name": "Left input",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
-      "name": "Left_output",
-      "description": "The left audio output bus (1-28). Defaults to bus 13.",
-      "channelCountRef": "1"
+      "name": "Left output",
+      "description": "The left audio output bus."
     },
     {
-      "name": "Right_output",
-      "description": "The right audio output bus (1-28). Defaults to bus 14.",
-      "channelCountRef": "1"
+      "name": "Right output",
+      "description": "The right audio output bus."
+    },
+    {
+      "name": "Left output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
     }
   ]
 }

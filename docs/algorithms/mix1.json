@@ -3,17 +3,11 @@
   "name": "Mixer Mono",
   "description": "This algorithm is a mono mixer - it mixes mono inputs to a mono output. Up to four aux send busses are available, which can be switched to pre- or post-fade.",
   "categories": [
-    "Audio",
-    "Mixing",
-    "Signal Routing"
+    "mixing",
+    "mono"
   ],
   "short_description": "A mono mixer",
-  "use_cases": [
-    "Mono audio mixing",
-    "Aux send routing (pre/post-fade)",
-    "Channel-level control for mono signals"
-  ],
-  "gui_description": "The display shows a level meter for each channel with a thin line at the top indicating 0dBFS. Clipping is shown as a small rectangle over the 0dBFS line. Chevrons indicate mixer gains, and mute/solo states are marked with 'M' or 'S'. Muted channels appear grayed out.",
+  "gui_description": "The display shows a level meter for each channel. The thin line at the top indicates 0dBFS; if a channel goes over this, a clip indicator will show. The chevrons to the right of the level meters indicate the mixer gains. Mute and Solo are indicated with a small 'M' and 'S' respectively. Muted level meters are grayed out.",
   "specifications": [
     {
       "name": "Channels",
@@ -21,71 +15,53 @@
       "max": 12
     },
     {
-      "name": "Aux Sends per Channel",
+      "name": "Sends",
       "min": 0,
       "max": 4
     }
   ],
   "parameters": [
     {
-      "name": "Duplicate_output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "An optional duplicate output. Convenient if you want to drive a stereo bus from a mono mix."
-    },
-    {
-      "name": "Output_mode",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_common": true,
-      "is_bus": true
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
-      "name": "Output_gain",
+      "name": "Output gain",
       "min": -70.0,
       "max": 6.0,
       "default": 0.0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": true
+      "description": "The mixer output gain."
     },
     {
       "name": "Destination",
       "min": 1,
-      "max": 28,
+      "max": 64,
       "default": 13,
       "description": "The output bus for the send."
     },
     {
-      "name": "Pre_post",
+      "name": "Pre/post",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "enum",
-      "is_common": false,
-      "is_bus": true
+      "description": "Whether the send is Pre-fade or Post-fade."
     },
     {
-      "name": "Output_mode_send",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector for the send.",
-      "type": "enum",
-      "is_common": false,
-      "is_bus": true
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": true
+      "description": "The channel gain."
     },
     {
       "name": "Mute",
@@ -103,29 +79,17 @@
     },
     {
       "name": "Name",
-      "type": "string",
-      "is_common": false,
-      "is_bus": true
+      "description": "A text name for the channel for identification."
     },
     {
-      "name": "Send_gain",
+      "name": "Send gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "type": "folder",
-      "is_common": false,
-      "is_bus": true
+      "description": "The send gain."
     }
   ],
   "input_ports": [
-    {
-      "name": "Channel Inputs (1-12)",
-      "description": "Up to twelve mono audio inputs per channel."
-    },
-    {
-      "name": "Aux Send Busses",
-      "description": "Up to four aux send busses for routing signals pre/post-fade."
-    },
     {
       "name": "Input",
       "description": "The channel input bus."
@@ -133,16 +97,12 @@
   ],
   "output_ports": [
     {
-      "name": "Mixer Output Bus",
-      "description": "The primary mono output of the mixer."
-    },
-    {
-      "name": "Duplicate Output Bus (optional)",
-      "description": "An optional secondary output for stereo routing or duplication."
-    },
-    {
       "name": "Output",
       "description": "The mixer output bus."
+    },
+    {
+      "name": "Duplicate output",
+      "description": "An optional duplicate output. Convenient if you want to drive a stereo bus from a mono mix."
     }
   ]
 }

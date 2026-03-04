@@ -1,0 +1,41 @@
+{
+  "guid": "lpsd",
+  "name": "Looper (MicroSD)",
+  "description": "This algorithm is a version of the Looper algorithm which uses the MicroSD card for storage instead of the module's memory. Consequently, the maximum loop times are much, much longer. Operation of the algorithm is identical to that of the Looper. When the algorithm is instantiated, it creates files on the MicroSD card, one for each layer of each loop. These are located in the 'looper' folder on card. Each file is (rather arbitrarily) 1GB in size, giving a maximum loop time of about 1.5 hours (using mono 32 bit float, 48kHz; other bit depths affect the time as for the regular Looper algorithm). To improve read/write performance, each file is also allocated as contiguous space on the card. This may not be possible if the card is badly fragmented. It is recommended to use 'exFAT' formatting for cards to be used with this algorithm.",
+  "categories": [
+    "Looper",
+    "Storage",
+    "Audio Processing"
+  ],
+  "short_description": "A MicroSD-based looper",
+  "use_cases": [
+    "Long duration looping",
+    "Recording multiple layers",
+    "Overdubbing"
+  ],
+  "gui_description": "Busy indicator displayed in UI during card operations with percentage indicator for overdub",
+  "parameters": [
+    {
+      "name": "Loops",
+      "min": 1,
+      "max": 4,
+      "description": "The number of simultaneous loops."
+    },
+    {
+      "name": "Layers",
+      "min": 1,
+      "max": 8,
+      "description": "The number of layers for each loop."
+    },
+    {
+      "name": "Minimum layers",
+      "description": "Sets the minimum number of layers required, or disables layers entirely."
+    },
+    {
+      "name": "Number of layers",
+      "description": "Sets how many of the available layers it will actually use. Setting this to '1' effectively disables layers for this loop."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

@@ -1,137 +1,86 @@
 {
   "guid": "usbt",
   "name": "USB audio (to host)",
-  "description": "This algorithm routes signals to the USB audio host, if one is connected.\n\nThe host sees 12 input channels. Each one of these can be set to receive any of the disting NT’s busses.\n\nNote that the signals seen by the algorithm, and so by the host, depend where in the list of algorithms this one appears. If it’s the first algorithm, it can send to the host the module’s own inputs, unmodified; if it’s the last algorithm, it can send to the host the outputs of all the other algorithms.\n\nNote also that “USB audio” doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
+  "description": "This algorithm routes signals to the USB audio host, if one is connected. The host sees 12 input channels. Each one of these can be set to receive any of the disting NT's busses. Note that the signals seen by the algorithm, and so by the host, depend where in the list of algorithms this one appears. If it's the first algorithm, it can send to the host the module's own inputs, unmodified; if it's the last algorithm, it can send to the host the outputs of all the other algorithms. Note also that 'USB audio' doesn't mean that the signals have to be audio; they could also be CVs, if you'd like to exchange signals with, say, VCV Rack or similar.",
   "categories": [
-    "Audio",
-    "Routing",
-    "Interface"
+    "Audio Routing",
+    "USB Audio",
+    "Signal Output"
   ],
   "short_description": "Sends audio to USB host",
   "use_cases": [
-    "Streaming audio to a DAW",
-    "Sending control voltages (CV) to VCV Rack or similar modular environments",
-    "Multi-channel signal routing for external processing"
+    "Sending audio to USB host",
+    "Routing module busses to USB host",
+    "CV exchange with VCV Rack"
   ],
-  "gui_description": "The interface allows mapping each of the 12 USB channels to any bus (1-28) within the disting NT system. Each channel has an adjustable selector parameter.",
-  "specifications": [
+  "gui_description": "12 input channels that can be set to receive any of the disting NT's busses",
+  "input_ports": [
     {
-      "name": "Host Channels",
-      "value": "12"
+      "name": "USB channel 1",
+      "description": "Input channel 1 from the module",
+      "channelCountRef": "1-64"
     },
     {
-      "name": "Bus Range",
-      "value": "1 to 28"
+      "name": "USB channel 2",
+      "description": "Input channel 2 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 3",
+      "description": "Input channel 3 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 4",
+      "description": "Input channel 4 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 5",
+      "description": "Input channel 5 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 6",
+      "description": "Input channel 6 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 7",
+      "description": "Input channel 7 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 8",
+      "description": "Input channel 8 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 9",
+      "description": "Input channel 9 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 10",
+      "description": "Input channel 10 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 11",
+      "description": "Input channel 11 from the module",
+      "channelCountRef": "1-64"
+    },
+    {
+      "name": "USB channel 12",
+      "description": "Input channel 12 from the module",
+      "channelCountRef": "1-64"
     }
   ],
-  "parameters": [
+  "output_ports": [
     {
-      "name": "USB channel 1 from",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 2 from",
-      "min": 1,
-      "max": 28,
-      "default": 2,
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 3 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 3.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 4 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 4.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 5 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 5.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 6 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 6.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 7 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 7.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 8 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 8.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 9 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 9.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 10 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 10.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 11 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 11.",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "USB channel 12 from",
-      "min": 1,
-      "max": 28,
-      "default": null,
-      "description": "The bus to send to USB channel 12.",
-      "type": "enum",
-      "is_bus": true
+      "name": "USB Audio Output",
+      "description": "Audio/CV signals sent to USB host",
+      "channelCountRef": "12"
     }
-  ],
-  "input_ports": [],
-  "output_ports": []
+  ]
 }

@@ -1,21 +1,19 @@
 {
   "guid": "pyfm",
   "name": "Poly FM",
-  "description": "This algorithm is inspired by the original Poly FM algorithm on the disting EX. It is a polyphonic, multitimbral, FM synthesizer using the six-operator FM engine from the open-source Plaits module by Émilie Gillet (exactly as used in the Macro Oscillator 2 algorithm). It loads Yamaha DX7 voice bank SysEx files from the MicroSD card. The algorithm supports up to four different 'timbres', which mainly means a different bank/voice, plus other parameters that make up a particular sound. The various timbres share a pool of (up to 24) simultaneous voices.",
+  "description": "A polyphonic, multitimbral, FM synthesizer inspired by the original Poly FM algorithm on the disting EX. It uses the six-operator FM engine from the open source Plaits module by Émilie Gillet and loads Yamaha DX7 voice bank SysEx files from the MicroSD card.",
   "categories": [
-    "Synthesizer",
+    "Synthesis",
     "FM Synthesis",
-    "Polyphonic",
-    "Multitimbral"
+    "Polysynth"
   ],
   "short_description": "A polyphonic FM synthesizer",
   "use_cases": [
-    "Lead synthesis",
-    "Pad sounds",
-    "Bass synthesis",
-    "Sound design with Yamaha DX7-style voices"
+    "FM synthesis",
+    "Multitimbral sound design",
+    "Yamaha DX7 voice loading"
   ],
-  "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar to indicate the note envelope. When adjusting microtuning parameters, more information about the chosen tuning is displayed.",
+  "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar to indicate the note envelope. When adjusting the microtuning parameters, more information about the chosen tuning is displayed.",
   "specifications": [
     {
       "name": "Timbres",
@@ -40,48 +38,51 @@
       "is_bus": false
     },
     {
-      "name": "Global gain (dB)",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
       "name": "Sustain mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum"
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Bank",
-      "type": "file",
-      "is_per_channel": true
+      "min": 0,
+      "max": 0,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Voice",
       "min": 1,
       "max": 32,
       "default": 1,
-      "type": "enum"
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "scaled",
+      "type": "folder",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -91,7 +92,7 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "scaled",
+      "type": "folder",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
@@ -101,13 +102,13 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "scaled",
+      "type": "folder",
       "is_per_channel": true,
       "is_common": false,
       "is_bus": false
     },
     {
-      "name": "Gain (dB)",
+      "name": "Gain",
       "min": -40,
       "max": 6,
       "default": 0,
@@ -121,82 +122,101 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum"
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Press -> volume",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Press -> bright",
       "min": -200,
       "max": 200,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "MPE Y -> volume",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": true
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "MPE Y -> bright",
       "min": -200,
       "max": 200,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": true
-    },
-    {
-      "name": "Left/mono output bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "type": "enum"
-    },
-    {
-      "name": "Right output bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum"
+      "type": "folder",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 1,
-      "type": "enum"
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": true
     },
     {
       "name": "MPE channels",
       "min": 1,
       "max": 16,
       "default": 1,
-      "type": "enum"
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": true
     },
     {
       "name": "I2C channel",
       "min": 0,
       "max": 255,
       "default": 1,
-      "type": "enum"
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": true
     },
     {
-      "name": "Bend range (ST)",
+      "name": "Bend range",
       "min": 0,
       "max": 48,
-      "default": 2
+      "default": 2,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": true
     }
   ],
   "input_ports": [],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
+    }
+  ]
 }

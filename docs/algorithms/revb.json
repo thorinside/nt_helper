@@ -4,18 +4,17 @@
   "description": "This algorithm offers a classic algorithmic reverb effect. It does not seek to emulate any particular hardware, or for that matter, any particular physical reverberant space.",
   "categories": [
     "effects",
-    "reverb",
-    "audio processing"
+    "reverb"
   ],
   "short_description": "A general purpose reverb effect",
+  "specifications": [],
   "parameters": [
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
@@ -23,8 +22,7 @@
       "min": 400,
       "max": 3000,
       "default": 1700,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
@@ -32,8 +30,7 @@
       "min": 0,
       "max": 3,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
@@ -41,74 +38,92 @@
       "min": 1,
       "max": 100,
       "default": 100,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "High_damp",
+      "name": "High damp",
       "min": 0,
       "max": 100,
       "default": 60,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Modulation_speed",
+      "name": "Modulation speed",
       "min": 0.01,
       "max": 5.0,
       "default": 2.5,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Modulation_depth",
+      "name": "Modulation depth",
       "min": 0,
       "max": 100,
       "default": 25,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Early_gain",
+      "name": "Early gain",
       "min": -40,
       "max": 6,
       "default": -12,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
       "is_bus": false
     },
     {
-      "name": "Diffuse_gain",
+      "name": "Diffuse gain",
       "min": -40,
       "max": 6,
       "default": -6,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
       "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Left_input",
+      "name": "Left input",
       "description": "The left audio input bus."
     },
     {
-      "name": "Right_input",
+      "name": "Right input",
       "description": "The right audio input bus."
+    },
+    {
+      "name": "Left input",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
-      "name": "Left_output",
+      "name": "Left output",
       "description": "The left audio output bus."
     },
     {
-      "name": "Right_output",
+      "name": "Right output",
       "description": "The right audio output bus."
+    },
+    {
+      "name": "Left output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
     }
   ]
 }

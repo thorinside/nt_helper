@@ -1,245 +1,199 @@
 {
   "guid": "spsh",
   "name": "Step Sequencer Head",
-  "description": "This algorithm shares the sequence of another Step Sequencer algorithm (above), and replicates the parameters that define how that sequence is played. This allows you to, for example, have the same sequence played in different directions simultaneously, or at different speeds, or with different transpositions.\n\nThe Step Sequencer Head refers to the nearest Step Sequencer above it in the algorithm list. You can have as many Step Sequencer Heads as you like for each Step Sequencer.",
+  "description": "This algorithm shares the sequence of another Step Sequencer algorithm (above), and replicates the parameters that define how that sequence is played. This allows you to, for example, have the same sequence played in different directions simultaneously, or at different speeds, or with different transpositions. The Step Sequencer Head refers to the nearest Step Sequencer above it in the algorithm list. You can have as many Step Sequencer Heads as you like for each Step Sequencer.",
   "categories": [
-    "Sequencing",
-    "Modulation",
-    "Clock/Trigger"
+    "sequencer",
+    "playback",
+    "control"
   ],
   "short_description": "An extra playback head",
   "use_cases": [
-    "Playing sequences in different directions simultaneously",
-    "Adjusting sequence speed independently",
-    "Transposing sequences differently",
-    "Multi-layered sequencing"
+    "play sequences in different directions simultaneously",
+    "play sequences at different speeds",
+    "play sequences with different transpositions"
   ],
-  "gui_description": null,
+  "gui_description": "An extra playback head",
   "parameters": [
     {
       "name": "Sequence",
       "min": 1,
       "max": 32,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Selects the current sequence."
     },
     {
       "name": "Start",
       "min": 1,
       "max": 16,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The first step to play. A reset will jump to this step."
     },
     {
       "name": "End",
       "min": 1,
       "max": 16,
       "default": 16,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The last step to play."
     },
     {
       "name": "Direction",
       "min": 0,
       "max": 6,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The sequencer direction. See above."
     },
     {
       "name": "Permutation",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The sequencer permutation. See above."
     },
     {
       "name": "Gate type",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the gate type: \"% of clock\" or \"Trigger\"."
     },
     {
       "name": "Gate length",
       "min": 1,
       "max": 99,
       "default": 50,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the length of the gate output if the type is \"% of clock\".",
+      "type": "folder"
     },
     {
       "name": "Trigger length",
       "min": 1,
       "max": 100,
       "default": 10,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the length of the gate output if the type is \"Trigger\".",
+      "type": "folder"
     },
     {
       "name": "Glide",
       "min": 0,
       "max": 1000,
       "default": 100,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the glide time for tied notes.",
+      "type": "folder"
     },
     {
       "name": "Octave",
       "min": -10,
       "max": 10,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Transposes the sequence in octaves."
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Transposes the sequence in semitones.",
+      "type": "folder"
     },
     {
       "name": "Reset mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the mode for the reset input. The options are: the input is a reset trigger. the input is a run/stop signal."
     },
     {
       "name": "Pitch output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above, for the pitch CV output."
     },
     {
       "name": "Gate output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above, for the gate output."
     },
     {
       "name": "Velocity output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above, for the velocity output."
     },
     {
       "name": "Mod output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above, for the modulation CV output."
     },
     {
       "name": "Step output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above, for the step CV output."
     },
     {
       "name": "Follow MIDI clock",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets whether the sequencer follows MIDI clock."
     },
     {
       "name": "Divisor",
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the clock divisor when following MIDI clock.",
+      "type": "folder"
     },
     {
       "name": "MIDI channel (out)",
       "min": 1,
       "max": 16,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the output MIDI channel."
     },
     {
       "name": "Output to breakout",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Enables MIDI output to the breakout."
     },
     {
       "name": "Output to Select Bus",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Enables MIDI output to the Select Bus."
     },
     {
       "name": "Output to USB",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Enables MIDI output to USB."
     },
     {
       "name": "Output to internal",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Enables internal MIDI output - that is, MIDI is sent to the other algorithms."
     },
     {
       "name": "Mod CC",
       "min": 0,
       "max": 127,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The MIDI CC to generate from the modulation lane."
     }
   ],
   "input_ports": [
@@ -253,27 +207,27 @@
     },
     {
       "name": "Sequence CV input",
-      "description": "The bus to use to select the sequence."
+      "description": "The bus to use to select the sequence. See above."
     },
     {
       "name": "Sequence trigger input",
-      "description": "The bus to use for the sequence select trigger."
+      "description": "The bus to use for the sequence select trigger. See above."
     },
     {
       "name": "Clock input",
-      "description": ""
+      "description": "The bus to use as the clock input."
     },
     {
       "name": "Reset input",
-      "description": ""
+      "description": "The bus to use as the reset input."
     },
     {
       "name": "Sequence CV input",
-      "description": ""
+      "description": "The bus to use to select the sequence. See above."
     },
     {
       "name": "Sequence trigger input",
-      "description": ""
+      "description": "The bus to use for the sequence select trigger. See above."
     }
   ],
   "output_ports": [
@@ -299,23 +253,23 @@
     },
     {
       "name": "Pitch output",
-      "description": ""
+      "description": "The bus to use for the pitch CV output."
     },
     {
       "name": "Gate output",
-      "description": ""
+      "description": "The bus to use for the gate output."
     },
     {
       "name": "Velocity output",
-      "description": ""
+      "description": "The bus to use for the velocity output."
     },
     {
       "name": "Mod output",
-      "description": ""
+      "description": "The bus to use for the modulation CV output."
     },
     {
       "name": "Step output",
-      "description": ""
+      "description": "The bus to use for the step CV output. This represents the current sequencer step number scaled as 1/12th of a Volt per step."
     }
   ]
 }

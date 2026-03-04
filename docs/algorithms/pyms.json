@@ -1,22 +1,21 @@
 {
   "guid": "pyms",
   "name": "Poly Multisample (legacy)",
-  "description": "This algorithm is inspired by the original 'SD Multisample' algorithm on the disting EX. It is a polyphonic, multitimbral sample playback instrument that plays WAV files from the MicroSD card. It supports CV/gate, MIDI, or I2C input methods and features both velocity switches and round robins per sample. The algorithm supports up to four different timbres (sample folders with unique parameters) sharing a pool of 1-16 simultaneous voices.",
+  "description": "This algorithm is a polyphonic, multitimbral, sample playback instrument, playing WAV files from the MicroSD card. It can be played via CV/gate, MIDI, or I2C. It supports both velocity switches and round robins per sample. It was the 'Poly Multisample' up until firmware version 1.10, in which it was replaced by the current 'Poly Multisample', which allows audio recording.",
   "categories": [
-    "Polyphonic Synth",
-    "Multitimbral",
+    "Synthesizer",
     "Sample Player",
-    "MIDI Controller",
-    "CV/Gate Instrument"
+    "Multitimbral",
+    "Polyphonic"
   ],
   "short_description": "A polyphonic sample player",
   "use_cases": [
-    "Live performance with CV/gate or MIDI control",
-    "Polyphonic sound design using WAV samples from MicroSD",
-    "Multitimbral layering via timbres (1-4)",
-    "Velocity-sensitive sample triggering"
+    "Playing WAV files from MicroSD card",
+    "CV/gate/MIDI/I2C control",
+    "Velocity switching",
+    "Round robin sampling"
   ],
-  "gui_description": "Displays active notes on a bar graph showing note envelopes, last played folder/filename, and microtuning details when adjusted.",
+  "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar to indicate the note envelope. The folder and filename of the last sample played are also shown.",
   "specifications": [
     {
       "name": "Timbres",
@@ -29,248 +28,32 @@
       "max": 16
     }
   ],
-  "parameters": [
-    {
-      "name": "Global gain",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Sustain mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Gate offset",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 0.2,
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Round robin mode",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Folder",
-      "scope": "timbre",
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Gain",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Pan",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Fine tune",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "folder",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Envelope",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Attack",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Decay",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Sustain (envelope)",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Release",
-      "min": 0,
-      "max": 127,
-      "default": 77,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Velocity sensitivity",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Sustain (pedal)",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Left/mono output bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
-    },
-    {
-      "name": "Right output bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
-    },
-    {
-      "name": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 1,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "MPE channels",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "I2C channel",
-      "min": 0,
-      "max": 255,
-      "default": 1,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Bend range",
-      "min": 0,
-      "max": 48,
-      "default": 2,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    }
-  ],
   "input_ports": [
     {
-      "name": "CV/Gate Input",
-      "description": "Accepts CV/gate signals for triggering samples and controlling pitch"
+      "name": "Pitch CV",
+      "description": "Pitch control voltage input"
     },
     {
-      "name": "MIDI Input",
-      "description": "Receives MIDI note events on specified channel(s)"
+      "name": "Gate",
+      "description": "Gate trigger input"
     },
     {
-      "name": "I2C Input",
-      "description": "Communicates via I2C protocol for control data"
+      "name": "MIDI",
+      "description": "MIDI input for control"
+    },
+    {
+      "name": "I2C",
+      "description": "I2C communication interface"
     }
   ],
   "output_ports": [
     {
-      "name": "Left Audio Output",
-      "description": "Stereo/mono left channel output (configurable bus)"
+      "name": "Left/Mono Output",
+      "description": "Left or mono audio output bus"
     },
     {
-      "name": "Right Audio Output",
-      "description": "Stereo right channel output (configurable bus)"
+      "name": "Right Output",
+      "description": "Right audio output bus"
     }
   ]
 }

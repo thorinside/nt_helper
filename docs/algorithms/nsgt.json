@@ -1,149 +1,122 @@
 {
   "guid": "nsgt",
   "name": "Noise gate",
-  "description": "This algorithm is a multi-channel noise gate. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you want a noise gate on all 12 module inputs, you don’t need to add 12 copies of the algorithm to do so.\n\nA sidechain input is available, to gate one signal with another.\n\nThe algorithm always works as an insert effect i.e. the output replaces the input.",
+  "description": "This algorithm is a multi-channel noise gate. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you, say, want a noise gate on all 12 module inputs, you don't need to add 12 copies of the algorithm to do so. A sidechain input is available, to gate one signal with another. The algorithm always works as an insert effect i.e. the output replaces the input.",
   "categories": [
     "Dynamics",
-    "Audio Processing",
-    "Multi-channel"
+    "Noise Gate",
+    "Multichannel"
   ],
   "short_description": "A simple noise gate",
-  "specifications": [
+  "gui_description": "The display shows a graph of the signal level (travelling from right to left). Superimposed on this are the threshold and hysteresis levels. To the right of the graph, the bar represents the gain reduction currently being applied.",
+  "parameters": [
     {
       "name": "Channels",
-      "description": "The number of bus channels to process, ranging from 1-12."
-    }
-  ],
-  "parameters": [
+      "min": 1,
+      "max": 12,
+      "description": "The number of bus channels to process."
+    },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "toggle",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
-    },
-    {
-      "name": "Left/mono_input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
-    },
-    {
-      "name": "Right_input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
-    },
-    {
-      "name": "Sidechain_input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "Enables the channel."
     },
     {
       "name": "Threshold",
       "min": -70.0,
       "max": 0.0,
       "default": -24.0,
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The threshold level required to open the gate.",
+      "type": "folder",
+      "is_per_channel": true
     },
     {
       "name": "Hysteresis",
       "min": -24.0,
       "max": 0.0,
       "default": -3.0,
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The level, relative to the threshold, that the input must drop below before the gate closes again.",
+      "type": "folder",
+      "is_per_channel": true
     },
     {
       "name": "Attack",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The attack time for the gate opening, from 0.2ms to 200ms with an exponential scale.",
+      "type": "folder",
+      "is_per_channel": true
     },
     {
       "name": "Hold",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The minimum time that the gate remains open, from 1ms to 1000ms with an exponential scale.",
+      "type": "folder",
+      "is_per_channel": true
     },
     {
       "name": "Release",
       "min": 0,
       "max": 1023,
       "default": 100,
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The release time for the gate closing, from 2ms to 2000ms with an exponential scale.",
+      "type": "folder",
+      "is_per_channel": true
     },
     {
       "name": "Lookahead",
       "min": 0.0,
       "max": 10.0,
       "default": 1.0,
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The lookahead time. Increase this to prevent the gate from missing sharp attack transients. Note that the audio is delayed by the amount of the lookahead time i.e. this adds latency.",
+      "type": "folder",
+      "is_per_channel": true
     },
     {
-      "name": "Gain_reduction",
+      "name": "Gain reduction",
       "min": -80,
       "max": 0,
       "default": -80,
-      "type": "scaled",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "Sets the amount by which the signal is attenuated when the gate is closed. '-80' is actually treated as '-∞dB' i.e. fully attenuated.",
+      "type": "folder",
+      "is_per_channel": true
     }
   ],
   "input_ports": [
     {
-      "name": "Left/mono_input",
-      "description": "The left or mono input bus for the channel."
+      "name": "Left/mono input",
+      "description": "The left or mono input bus."
     },
     {
-      "name": "Right_input",
+      "name": "Right input",
       "description": "The right input bus, if stereo."
     },
     {
-      "name": "Sidechain_input",
-      "description": "The sidechain input bus to gate one signal with another."
+      "name": "Sidechain input",
+      "description": "The sidechain input bus."
+    },
+    {
+      "name": "Left/mono input",
+      "description": "The left or mono input bus."
+    },
+    {
+      "name": "Right input",
+      "description": "The right input bus, if stereo."
+    },
+    {
+      "name": "Sidechain input",
+      "description": "The sidechain input bus."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The processed output replacing the input (insert effect)."
+      "description": "Processed audio output."
     }
   ]
 }

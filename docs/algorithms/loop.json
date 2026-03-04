@@ -1,81 +1,42 @@
 {
   "guid": "loop",
   "name": "Looper",
-  "description": "This algorithm is a looper based on the disting EX version but significantly extended. It supports up to four simultaneous loops with crossfades, fade-in/out, overdubbing, and synchronization to clock inputs or MIDI clocks. Features include loop reversal, half-speed playback (octave down), layers for undo/redo functionality, envelope controls for smooth transitions, and a two-button record/play/overdub paradigm. The looper can also generate clocks (analog/MIDI) and includes a dedicated MIDI-note interface for pedalboard integration. Memory usage depends on loop time, bit depth, and stereo/mono settings.",
+  "description": "This algorithm is a looper, based on the disting EX algorithm of the same name, but significantly extended. Loops can have crossfades, they can fade in and out, and overdubbing can fade in and out, all of which is designed to make it easy to achieve smooth, ambient looping. All looping operations can also be synchronised to a clock input, if tight rhythmic looping is more your thing. The looper can also generate clocks (analogue and/or MIDI), if you prefer the looper to be the source of tempo in your setup. Loops may also be reversed, and played at half speed (an octave down). A 'layers' system is also implemented, which is like the 'undo/redo' found on some loopers but more powerful.",
   "categories": [
-    "Audio",
-    "Looping",
-    "Effects",
-    "Sequencing",
-    "MIDI",
-    "Clock Synchronization"
+    "Audio Effects",
+    "Loopers",
+    "Rhythm"
   ],
-  "short_description": "A looper with four independent loops, crossfades, overdubbing, clock sync, and MIDI control.",
+  "short_description": "A looper",
   "use_cases": [
-    "Live performance looping",
-    "Ambient sound layering",
-    "Rhythmic pattern creation",
-    "Delay/echo effects",
-    "Clock-synchronized sequencing"
+    "Ambient looping",
+    "Rhythmic looping",
+    "Footswitch control",
+    "MIDI integration"
   ],
-  "gui_description": "The display shows loop states (empty, record, play, overdub, stop), loop length and position in seconds, envelope levels, and target loops with outlines. Icons indicate state: square for empty, circle for recording, triangle for playback, etc.",
-  "specifications": [
-    {
-      "name": "Loops",
-      "value": "1-4 simultaneous loops"
-    },
-    {
-      "name": "Max total loop time (mono 32-bit)",
-      "value": "90 seconds"
-    },
-    {
-      "name": "Bit depth options",
-      "value": "16-bit, 24-bit, or 32-bit float"
-    },
-    {
-      "name": "Memory impact",
-      "description": "Stereo halves max loop time; 16/24-bit doubles it compared to mono 32-bit. Clipping possible in 16/24-bit modes."
-    },
-    {
-      "name": "Clock synchronization",
-      "value": "Supports clock input, MIDI clock, or internal generation"
-    },
-    {
-      "name": "Layers",
-      "description": "Number depends on available memory and loop length. Minimum layers can be configured."
-    }
-  ],
+  "gui_description": "The display shows a considerable amount of information about the loop(s). A special large version of the GUI is shown if there is only a single loop. The target loops are indicated with a box drawn around their section of the display.",
   "input_ports": [
     {
       "name": "Input left/mono",
-      "description": "Audio input bus for the left channel or mono signal (1-28). Default: 1.",
-      "busIdRef": "Input_left_mono"
+      "description": "The input bus for the left (if stereo) or mono signal."
     },
     {
       "name": "Input right",
-      "description": "Audio input bus for the right channel if stereo (1-28). Default: 2.",
-      "busIdRef": "Input_right"
-    },
-    {
-      "name": "Clock input",
-      "description": "Clock signal input bus when 'Clock source' is set to 'Clock input'. Range: 1-28. Default: 3."
+      "description": "The input bus for the right signal, if stereo."
     }
   ],
   "output_ports": [
     {
       "name": "Output left/mono",
-      "description": "Audio output bus for the left channel or mono signal (1-28). Default: 13.",
-      "busIdRef": "Output_left_mono"
+      "description": "The output bus for the left (if stereo) or mono signal."
     },
     {
       "name": "Output right",
-      "description": "Audio output bus for the right channel if stereo (1-28). Default: 14.",
-      "busIdRef": "Output_right"
+      "description": "The output bus for the right signal, if stereo."
     },
     {
       "name": "Trigger output",
-      "description": "Output bus for end-of-loop trigger pulses or clocks (0-28). Default: 0.",
-      "busIdRef": "Trigger_output"
+      "description": "The output bus for an end-of-loop trigger pulse or clock."
     }
   ]
 }

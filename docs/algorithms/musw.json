@@ -1,32 +1,20 @@
 {
   "guid": "musw",
   "name": "Multi-Switch",
-  "description": "This algorithm offers up to six highly configurable sequential or voltage-controlled switches that are DC-coupled and can handle both audio and CV signals. Each switch consists of two sub-switches: an input sub-switch and an output sub-switch, where the selected input is routed to the selected output. When multiple switches share the same output, their signals are summed. Each sub-switch supports crossfading for click-free transitions or noticeable blends between sources/targets. The switches can be controlled by CV inputs or via 'Macro' parameters, which can be mapped to various control sources like CV, MIDI, or I2C.",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. It offers up to six highly configurable sequential or voltage controlled switches. Being DC-coupled, it can switch audio or CVs. Each switch consists of two sub-switches: an input sub-switch, and an output sub-switch. The selected input is routed to the selected output. When multiple switches share the same output, their signals are summed. Each sub-switch can crossfade when transitioning, for click-free switches (when the fade is very short) or noticeable blends between sources/targets (when the fade is long). The switches can be controlled by CV inputs, or by one of the 'Macro' parameters, which can in turn be controlled by one of the mapping sources (CV, MIDI, or I2C).",
   "categories": [
-    "Routing",
     "Switching",
-    "Sequencing",
-    "CV Processing",
-    "Audio Processing"
+    "Routing",
+    "CV Control",
+    "Sequential Control"
   ],
   "short_description": "Sequential or CV-controlled switch",
-  "use_cases": [
-    "Audio signal routing",
-    "CV signal switching",
-    "Sequencer control",
-    "Modular synthesis patching",
-    "Dynamic signal path management"
-  ],
-  "gui_description": "The display shows which input and output busses are currently joined by the various switches.",
   "specifications": [
     {
-      "name": "Number of Switches",
-      "description": "Configurable from 1 to 6 switches."
-    },
-    {
-      "name": "Crossfade Time",
-      "min": 0,
-      "max": 1000
+      "name": "Switches 1-6",
+      "description": "The number of switches.",
+      "min": 1,
+      "max": 6
     }
   ],
   "parameters": [
@@ -35,156 +23,131 @@
       "min": 0,
       "max": 127,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "A macro parameter that can be chosen as a sub-switch control source."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above, shared by all switch outputs."
     },
     {
       "name": "In control type",
       "min": 0,
       "max": 9,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The type of control source for the input switch. See 'control types' below."
     },
     {
       "name": "In control source",
       "min": 0,
       "max": 34,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The control source for the input switch – one of the 64 busses, or one of the 6 macro parameters."
     },
     {
       "name": "In link switch",
       "min": 0,
       "max": 6,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The linked switch, if the 'In control type' is 'Link'."
     },
     {
       "name": "In link offset",
       "min": 0,
       "max": 11,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The linked switch offset, if the 'In control type' is 'Link'."
     },
     {
       "name": "Out control type",
       "min": 0,
       "max": 9,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The type of control source for the output switch. See 'control types' below."
     },
     {
       "name": "Out control source",
       "min": 0,
       "max": 34,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The control source for the output switch – one of the 64 busses, or one of the 6 macro parameters."
     },
     {
       "name": "Out link switch",
       "min": 0,
       "max": 6,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The linked switch, if the 'Out control type' is 'Link'."
     },
     {
       "name": "Out link offset",
       "min": 0,
       "max": 11,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The linked switch offset, if the 'Out control type' is 'Link'."
     },
     {
       "name": "Reset source",
       "min": 0,
       "max": 34,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "description": "The reset source for the switch – one of the 64 busses, or one of the 6 macro parameters."
     },
     {
       "name": "Fade",
       "min": 0,
       "max": 1000,
       "default": 1,
+      "description": "The switch's crossfade time, in milliseconds.",
       "type": "enum",
       "is_per_channel": true,
-      "is_common": false,
-      "is_bus": false
+      "is_common": false
     },
     {
       "name": "Input A-L",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 0,
+      "description": "The bus to use for the 12 possible inputs of the input sub-switch.",
       "type": "enum",
       "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "is_common": false
     },
     {
       "name": "Output A-H",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 0,
+      "description": "The bus to use for the 8 possible outputs of the output sub-switch.",
       "type": "enum",
       "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "is_common": false
     }
   ],
   "input_ports": [
     {
-      "name": "Control Source (CV/MIDI/I2C)",
-      "description": "Inputs for controlling switch behavior via CV, MIDI, or I2C mapping sources."
+      "name": "Switch Control",
+      "description": "CV or macro parameter to control switch position or type."
+    },
+    {
+      "name": "Reset",
+      "description": "CV or macro parameter to reset the switch."
     },
     {
       "name": "Input A-L",
-      "description": "Up to 12 input busses for each input sub-switch."
+      "description": "12 input buses for the input sub-switch."
+    },
+    {
+      "name": "Output A-H",
+      "description": "8 output buses for the output sub-switch."
     }
   ],
   "output_ports": [
     {
-      "name": "Output A-H",
-      "description": "Up to 8 output busses for each output sub-switch. Signals are summed when multiple switches share the same output."
+      "name": "Switch Output",
+      "description": "Routed audio or CV signal from selected input to output."
     }
   ]
 }

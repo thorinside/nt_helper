@@ -1,61 +1,260 @@
 {
   "guid": "arpg",
   "name": "Arpeggiator",
-  "description": "This algorithm is a very flexible arpeggiator, in some respects an interactive, performance-oriented sequencer. It is based on the arpeggiator in our FH-2 module and takes MIDI or CV/gate input to generate MIDI and/or CV/gate output. The key feature is mapping 'Commands' parameters alongside playing notes to manipulate patterns. When used as a MIDI-to-MIDI arpeggiator, set its output channel differently from the input to avoid MIDI consumption conflicts with other algorithms in disting NT.",
+  "description": "This algorithm is a very flexible arpeggiator, in some respects an interactive, performance-oriented sequencer. It is based on the arpeggiator in our FH-2 module. It takes MIDI or CV/gate input and generates MIDI and/or CV/gate output. The key to using this as an interactive sequencer is to map the 'Commands' parameters, so you can use them alongside playing notes to manipulate your patterns. When using it as a MIDI-to-MIDI arpeggiator, and sending the MIDI internally to other algorithms, remember that algorithms in the disting NT do not 'consume' their input MIDI – the MIDI entering the arpeggiator will still arrive at the other algorithms as well. So, set the output channel of the arpeggiator to a different channel than the input, and have the other algorithms listen to that channel. For the purposes of MIDI and CV/gate input this algorithm is a polysynth.",
   "categories": [
-    "Sequencing",
-    "Arpeggiation",
-    "MIDI Processing",
-    "CV/Gate Processing"
+    "sequencer",
+    "arpeggiator",
+    "midi",
+    "cv"
   ],
   "short_description": "Makes sequences from held chords",
-  "use_cases": [
-    "Live performance arpeggios",
-    "Chord-based sequencing",
-    "Interactive MIDI/CV pattern manipulation",
-    "Rhythmic accompaniment generation"
-  ],
-  "gui_description": "The display shows the current output note, latch status, and root note. Three lines represent: full arpeggiation pattern, octave range (when 'Range' is active), and single-octave notes. In 'As Played' modes, the lowest line shows actual note numbers. '--' indicates rests; truncated steps appear greyed out.",
-  "specifications": [
+  "parameters": [
     {
-      "name": "Polyphony",
-      "description": "Functions as a polysynth for MIDI/CV input purposes"
+      "name": "Mode",
+      "min": 0,
+      "max": 11,
+      "default": 0,
+      "description": "The arpeggiation mode – see below."
+    },
+    {
+      "name": "Range",
+      "min": 1,
+      "max": 3,
+      "default": 1,
+      "description": "The number of octaves to repeat the arpeggiation pattern over."
+    },
+    {
+      "name": "Latch",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables latching. See above."
+    },
+    {
+      "name": "Truncate",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Shortens the arpeggiation pattern by only playing the first portion, according to the percentage set."
+    },
+    {
+      "name": "Gate type",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets the gate type: 'Trigger' or '% of clock'."
+    },
+    {
+      "name": "Length (ms)",
+      "min": 1,
+      "max": 100,
+      "default": 10,
+      "description": "Sets the length of the gate output if the type is 'Trigger'."
+    },
+    {
+      "name": "Length (%)",
+      "min": 1,
+      "max": 100,
+      "default": 50,
+      "description": "Sets the length of the gate output if the type is '% of clock'."
+    },
+    {
+      "name": "Add",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "While enabled, incoming notes will be added to the arpeggiation pattern. This is most useful when the Mode is 'As Played' and Latch is on. It allows you to have repeated notes in the pattern."
+    },
+    {
+      "name": "Remove",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "While enabled, incoming notes will be removed from the pattern (if the note in question is actually in the pattern already). If the same note appears multiple times, the last occurrence will be removed."
+    },
+    {
+      "name": "Rest",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When enabled, a rest is added to or removed from the arpeggiation pattern, according to whether Add or Remove is currently active."
+    },
+    {
+      "name": "Transpose",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "While enabled, incoming notes will transpose the current pattern, by the amount of the difference between the incoming note and the root note of the pattern. The root note is by default the lowest note of the pattern, but see 'Root note' below."
+    },
+    {
+      "name": "Transpose in key",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Like Transpose, but rather than a straight chromatic transposition, the pattern is transposed within the key defined by the root note. For example, if the pattern is C-E-G (root note C) and D is played, 'Transpose' will produce D-F♯-A, whereas 'Transpose in key' will produce D-F-A."
+    },
+    {
+      "name": "Root note",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "While enabled, an incoming note overrides the root note, so that subsequent transposition is based on the overridden note. For example, if the pattern is E-G-C, the default root note will be E, but you could use the 'Root note' command to let the arpeggiator know the key is C."
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel to listen on."
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Controls how the algorithm will respond to MPE. See above."
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard polysynth sustain mode parameter. See above."
+    },
+    {
+      "name": "Reset mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The reset mode, one of 'Trigger' or 'Run/stop'."
+    },
+    {
+      "name": "Follow MIDI clock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether the arpeggiator follows MIDI clock."
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "description": "Sets the clock divisor when following MIDI clock."
+    },
+    {
+      "name": "Auto reset",
+      "min": 0,
+      "max": 128,
+      "default": 0,
+      "description": "Sets a number of quarter notes after which the arpeggiator will automatically reset to step 1 (only available when following MIDI clock)."
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "description": "The output MIDI channel."
+    },
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to the breakout."
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to the Select Bus."
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to USB."
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
+    },
+    {
+      "name": "Gate mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the gate output."
+    },
+    {
+      "name": "Pitch mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the pitch output."
+    },
+    {
+      "name": "Velocity mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the velocity output."
     }
   ],
   "input_ports": [
     {
-      "name": "MIDI Input",
-      "description": "Accepts MIDI notes and control signals on specified channel"
+      "name": "MIDI/CV/gate input",
+      "description": "Takes MIDI or CV/gate input."
     },
     {
-      "name": "CV/Gate In",
-      "description": "Standard polysynth CV/gate inputs (pitch, gate, velocity)"
+      "name": "Clock input",
+      "description": "The bus to use for the clock input."
     },
     {
-      "name": "Clock Input",
-      "description": "External clock signal via bus 0-28 for synchronization"
-    },
-    {
-      "name": "Reset Input",
-      "description": "External reset trigger via bus 0-28"
+      "name": "Reset input",
+      "description": "The bus to use for the reset input."
     }
   ],
   "output_ports": [
     {
-      "name": "MIDI Output",
-      "description": "Generates MIDI notes on configurable output channel(s)"
+      "name": "MIDI output",
+      "description": "Generates MIDI output."
     },
     {
-      "name": "CV/Gate Out (Gate)",
-      "description": "Outputs gate signals to specified bus with adjustable mode"
+      "name": "CV/gate output",
+      "description": "Generates CV/gate output."
     },
     {
-      "name": "CV/Gate Out (Pitch)",
-      "description": "Outputs pitch CV to specified bus with adjustable mode"
+      "name": "Gate output",
+      "description": "The bus to use for the gate output."
     },
     {
-      "name": "CV/Gate Out (Velocity)",
-      "description": "Outputs velocity CV to specified bus with adjustable mode"
+      "name": "Pitch output",
+      "description": "The bus to use for the pitch output."
+    },
+    {
+      "name": "Velocity output",
+      "description": "The bus to use for the velocity output."
     }
   ]
 }

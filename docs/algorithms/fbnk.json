@@ -1,52 +1,42 @@
 {
   "guid": "fbnk",
   "name": "Filter bank",
-  "description": "This algorithm is based on the disting EX filter/resonator bank. It provides a configurable number of parallel filters (1-12) that can be mono, stereo, or up to 8 channels wide. The original disting EX implementation offered eight stereo bandpass filters or resonators with adjustable levels via CV/envelopes and pitch control via MIDI/CV. This version extends the filter count to 12 and introduces three modes: Resonator (peaking all-pass filters emphasizing narrow frequency bands), Bandpass (attenuating frequencies away from center points), and Multiband (crossover-based, like a multiband compressor). Filters can be manually controlled or driven by MIDI/CV/gates, with resonance/Q settings, envelope attack/release times, and individual gain controls. The GUI displays filter tuning notes overlaid on voice-level envelopes.",
+  "description": "A fixed filter/resonator bank based on the disting EX algorithm. Provides a bank of parallel stereo bandpass filters or resonators. Filters can be mono, stereo, or up to 8 channels wide. Supports Resonator, Bandpass, and Multiband modes. The number of filters can be increased to 12.",
   "categories": [
-    "Filter",
-    "Resonator",
-    "Multiband",
-    "MIDI",
-    "CV/Gate",
-    "Polysynth",
-    "Spatial Audio"
+    "filter",
+    "resonator",
+    "bandpass",
+    "multiband",
+    "polysynth"
   ],
-  "short_description": "A fixed filter/resonator bank with adjustable width (1-8 channels), modes, and per-filter controls.",
+  "short_description": "A fixed filter/resonator bank",
   "use_cases": [
-    "Chord-based sound design (e.g., Alesis Quadraverb-style resonators)",
-    "Multiband processing for dynamic frequency shaping",
-    "MIDI-driven filter banks for synths or effects",
-    "CV-controlled spectral manipulation",
-    "Spatial audio filtering with multi-channel support"
+    "playing chords over MIDI",
+    "filter bank effects",
+    "parallel stereo bandpass filters"
   ],
-  "gui_description": "The display shows notes corresponding to each filter’s tuning, overlaid on a bar representing the envelope level of the voice. This provides real-time visual feedback of filter pitch and signal presence.",
+  "gui_description": "The display shows the notes to which each filter is tuned, overlaid on a bar to represent the envelope level of the voice.",
   "specifications": [
     {
       "name": "Filters",
-      "value": "1-12",
-      "description": "Number of parallel filters in the bank."
-    },
-    {
-      "name": "Audio channels per filter",
-      "value": "Mono, Stereo, or up to 8 channels wide",
-      "description": "Configurable channel width for each filter."
-    },
-    {
-      "name": "Filter modes",
-      "value": "Resonator, Bandpass, Multiband",
-      "description": "Operational modes defining frequency behavior and independence."
+      "min": 1,
+      "max": 12
     }
   ],
   "input_ports": [
     {
       "name": "Audio input",
-      "description": "The first audio input bus (1-28). Additional buses are determined by the 'Width' parameter."
+      "description": "The first audio input bus."
+    },
+    {
+      "name": "Audio input busses",
+      "description": "The number of audio input busses (e.g. set to 2 for stereo)."
     }
   ],
   "output_ports": [
     {
-      "name": "Filter outputs",
-      "description": "Each filter’s output can be routed to a specific bus (1-28), with configurable Add/Replace mode."
+      "name": "Output bus",
+      "description": "The filter's output bus."
     }
   ]
 }

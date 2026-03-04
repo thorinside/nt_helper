@@ -1,33 +1,21 @@
 {
   "guid": "satu",
   "name": "Saturation",
-  "description": "This algorithm implements a simple soft-saturation effect. It can be used simply for creative toneshaping, but it is particularly useful for avoiding harsh digital clipping when signals get loud. (It is the same processing that is built into many of the disting EX algorithms as a final “output bus” limiter.)",
+  "description": "This algorithm implements a simple soft-saturation effect. It can be used simply for creative toneshaping, but it is particularly useful for avoiding harsh digital clipping when signals get loud. (It is the same processing that is built into many of the disting EX algorithms as a final \"output bus\" limiter.)",
   "categories": [
     "Effects",
-    "Dynamics",
-    "Signal Processing"
+    "Toneshaping",
+    "Saturation"
   ],
   "short_description": "Soft-clipping saturation",
-  "use_cases": [
-    "Creative toneshaping",
-    "Avoiding harsh digital clipping on loud signals",
-    "Output bus limiting in EX algorithms"
-  ],
-  "specifications": [
-    {
-      "name": "Channels",
-      "description": "The number of bus channels to process, ranging from 1-8."
-    }
-  ],
   "parameters": [
     {
       "name": "Pre gain",
       "min": -40,
       "max": 24,
       "default": 0,
-      "type": "enum",
+      "type": "folder",
       "is_per_channel": false,
-      "is_common": true,
       "is_bus": false
     },
     {
@@ -35,9 +23,8 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "enum",
+      "type": "folder",
       "is_per_channel": false,
-      "is_common": true,
       "is_bus": false
     },
     {
@@ -45,9 +32,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "toggle",
+      "type": "folder",
       "is_per_channel": true,
-      "is_common": false,
       "is_bus": false
     },
     {
@@ -55,16 +41,15 @@
       "min": 1,
       "max": 12,
       "default": 1,
-      "type": "enum",
+      "type": "folder",
       "is_per_channel": true,
-      "is_common": false,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "The input bus for the saturation effect."
+      "description": "The input (and output) bus."
     },
     {
       "name": "Input",
@@ -74,7 +59,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus after applying soft-saturation and post gain."
+      "description": "The output (and input) bus."
     }
   ]
 }

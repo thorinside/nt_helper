@@ -1,33 +1,32 @@
 {
   "guid": "eucp",
   "name": "Euclidean Patterns",
-  "description": "This algorithm generates rhythmic patterns of output pulses known as Euclidean patterns. For a detailed description of these patterns and how they are commonly found in music around the world see [Wikipedia](https://en.wikipedia.org/wiki/Euclidean_rhythm) or [Hisschemoller's blog](https://www.hisschemoller.com/blog/2011/euclidean-rhythms/). A pattern is described by the total number of steps and the number of pulses (i.e., the number of steps on which a pulse is output). The patterns can also be rotated. At zero rotation, the first step in the pattern will always be a pulse, and the remaining pulses are distributed according to the algorithm. The rotation setting moves the first pulse later by a number of steps.",
+  "description": "This algorithm generates rhythmic patterns of output pulses known as Euclidean patterns. For a detailed description of these patterns and how they are commonly found in music around the world see e.g. here or here . A pattern is described by the total number of steps and the number of pulses (i.e. the number steps on which a pulse is output). The patterns can also be rotated. At zero rotation, the first step in the pattern will always be a pulse, and the remaining pulses distributed according to the algorithm. The rotation setting moves the first pulse later by a number of steps.",
   "categories": [
     "Rhythm",
-    "Pattern Generator",
-    "Sequencer",
-    "MIDI Tools"
+    "Pattern Generation",
+    "Sequencer"
   ],
   "short_description": "Generates Euclidean rhythm patterns",
   "use_cases": [
-    "Creating complex rhythmic patterns for drum machines or synthesizers",
-    "Generating polyrhythms and cross-rhythms in electronic music production",
-    "Sequencing MIDI notes for melodic or percussive applications"
+    "Music production",
+    "Rhythm generation",
+    "Pattern sequencing"
   ],
   "gui_description": "The display shows a graphical representation of the patterns (channel 1 at the top).",
-  "specifications": [
-    {
-      "name": "Channels",
-      "description": "Number of simultaneous patterns to generate",
-      "min": 1,
-      "max": 8
-    }
-  ],
   "parameters": [
     {
+      "name": "Channels",
+      "min": 1,
+      "max": 8,
+      "description": "The number of simultaneous patterns to generate."
+    },
+    {
       "name": "Follow MIDI clock",
-      "type": "enum",
-      "is_bus": true
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether the pattern generator follows MIDI clock."
     },
     {
       "name": "Divisor",
@@ -45,31 +44,38 @@
     },
     {
       "name": "Output to breakout",
-      "type": "enum",
-      "is_bus": true
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to the breakout."
     },
     {
       "name": "Output to Select Bus",
-      "type": "enum",
-      "is_bus": true
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to the Select Bus."
     },
     {
       "name": "Output to USB",
-      "type": "enum",
-      "is_bus": true
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to USB."
     },
     {
       "name": "Output to internal",
-      "type": "enum",
-      "is_bus": true
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables the channel.",
-      "type": "toggle"
+      "description": "Enables the channel."
     },
     {
       "name": "Steps",
@@ -97,51 +103,42 @@
       "min": 0,
       "max": 128,
       "default": 0,
-      "description": "The overall repeat count, i.e., the number of clocks until the pattern repeats. If this is zero, the number of steps is used as the repeat. If the repeat count is greater than the number of steps, the pattern is extended with silence."
+      "description": "The overall repeat count i.e. the number of clocks until the pattern repeats. If this is zero, the number of steps is used as the repeat. If the repeat count is greater than the number of steps, the pattern is extended with silence."
     },
     {
       "name": "Output type",
-      "type": "enum",
-      "is_bus": true
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether the output is a fixed length trigger, or a clock pulse related to the period of the input clocks."
     },
     {
       "name": "Length (Trigger)",
       "min": 1,
       "max": 100,
       "default": 10,
-      "description": "Sets the trigger length if the ‘Output type’ is ‘Trigger’.",
-      "enum_values": [
-        "ms"
-      ]
+      "description": "Sets the trigger length, if the Output type is Trigger."
     },
     {
       "name": "Length (% of clock)",
       "min": 1,
       "max": 100,
       "default": 50,
-      "description": "Sets the output clock pulse width if the ‘Output type’ is ‘% of clock’.",
-      "enum_values": [
-        "%"
-      ]
-    },
-    {
-      "name": "Output bus",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "description": "The output bus for the channel."
+      "description": "Sets the output clock pulse width, if the Output type is % of clock."
     },
     {
       "name": "Output mode",
-      "type": "enum",
-      "is_bus": true
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "ES-5 Expander",
       "min": 0,
       "max": 6,
       "default": 0,
-      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. '1' means the ES-5 itself."
+      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. 1 means the ES-5 itself."
     },
     {
       "name": "MIDI channel",
@@ -161,14 +158,6 @@
   "input_ports": [
     {
       "name": "Clock input",
-      "description": "A rising edge advances the patterns by one step."
-    },
-    {
-      "name": "Reset input",
-      "description": "A high level resets the patterns to step 1 (and holds them there)."
-    },
-    {
-      "name": "Clock input",
       "description": "The clock input bus. A rising edge advances the patterns by one step."
     },
     {
@@ -178,12 +167,8 @@
   ],
   "output_ports": [
     {
-      "name": "Output bus",
+      "name": "Output",
       "description": "The output bus for the channel."
-    },
-    {
-      "name": "ES-5 Expander Outputs",
-      "description": "If using an ES-5 expander, outputs are routed to one of its 8 outputs."
     },
     {
       "name": "ES-5 Output",

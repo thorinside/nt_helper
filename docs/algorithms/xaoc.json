@@ -1,39 +1,189 @@
 {
   "guid": "xaoc",
   "name": "Chaos",
-  "description": "This algorithm generates chaotic CVs according to a variety of so-called ‘attractors’, including the well-known Lorenz equations [60]. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation – ‘Rho mod’ affects 'r' (aka 'ρ'), and ‘Beta mod’ affects 'b' (aka 'β'). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
+  "description": "This algorithm generates chaotic CVs according to a variety of so-called 'attractors', including the well-known Lorenz equations. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation – 'Rho mod' affects 'r' (aka 'ρ'), and 'Beta mod' affects 'b' (aka 'β'). With the values at 0V, the parameters are the classic values as studied by Lorenz (64 and 8/3 respectively).",
   "categories": [
-    "Chaos",
-    "CV Generation",
-    "Mathematical Attractors",
-    "Modulation"
+    "chaos",
+    "cv",
+    "attractor",
+    "lorenz"
   ],
   "short_description": "CVs from the Lorenz equations",
-  "use_cases": [
-    "Generating chaotic control voltages for modular synthesizers",
-    "Creating unpredictable modulation sources",
-    "Exploring mathematical attractor behavior in audio/visual contexts",
-    "Dynamic patching and experimental sound design"
-  ],
   "gui_description": "The display shows a graphical representation of the outputs, projected onto the X/Y, X/Z, and Y/Z planes.",
+  "parameters": [
+    {
+      "name": "Attractor",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Speed range",
+      "min": -64,
+      "max": 32,
+      "default": 0,
+      "type": "folder"
+    },
+    {
+      "name": "Speed",
+      "min": -500,
+      "max": 500,
+      "default": 0,
+      "type": "folder"
+    },
+    {
+      "name": "Rho mod",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Beta mod",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Reset",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Reset X",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 0.1,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Reset Y",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Reset Z",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "X scale",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 10.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "X offset",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Y scale",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 10.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Y offset",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Z scale",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 10.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Z offset",
+      "min": -20.0,
+      "max": 20.0,
+      "default": -8.0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "X output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Y output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_bus": false
+    },
+    {
+      "name": "Z output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_bus": false
+    }
+  ],
   "input_ports": [
     {
       "name": "Reset input",
-      "description": "A positive-going edge here resets the system to the values given by the Reset X/Y/Z parameters."
+      "description": ""
     }
   ],
   "output_ports": [
     {
+      "name": "X",
+      "description": "X output CV"
+    },
+    {
+      "name": "Y",
+      "description": "Y output CV"
+    },
+    {
+      "name": "Z",
+      "description": "Z output CV"
+    },
+    {
       "name": "X output",
-      "description": "Outputs the chaotic CV for the X coordinate of the attractor."
+      "description": ""
     },
     {
       "name": "Y output",
-      "description": "Outputs the chaotic CV for the Y coordinate of the attractor."
+      "description": ""
     },
     {
       "name": "Z output",
-      "description": "Outputs the chaotic CV for the Z coordinate of the attractor."
+      "description": ""
     }
   ]
 }

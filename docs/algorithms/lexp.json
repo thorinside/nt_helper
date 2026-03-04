@@ -1,120 +1,98 @@
 {
   "guid": "lexp",
   "name": "Linear/Exponential",
-  "description": "This algorithm implements a linear-to-exponential converter and an exponential-to-linear converter,\ntypically used when interfacing between Volt/octave and Hz/Volt CV standards.\n\nThe 0V point for the V/octave signals is taken as C3 (130.8Hz approximately).",
+  "description": "This algorithm implements a linear-to-exponential converter and an exponential-to-linear converter, typically used when interfacing between Volt/octave and Hz/Volt CV standards. The 0V point for the V/octave signals is taken as C3 (130.8Hz approximately).",
   "categories": [
-    "Conversion",
-    "Audio/MIDI Conversion",
-    "CV Processing"
+    "CV",
+    "Converter",
+    "Linear/Exponential"
   ],
   "short_description": "Converts e.g. V/Oct <-> Hz/V",
-  "use_cases": [
-    "Interfacing Volt/octave and Hz/Volt CV standards",
-    "Frequency-to-voltage conversion for modular synthesizers",
-    "Voltage-controlled frequency modulation"
-  ],
-  "gui_description": "The display shows the input and output voltages, and the internal calculated frequency,\nfor each converter.",
-  "specifications": [],
+  "gui_description": "The display shows the input and output voltages, and the internal calculated frequency, for each converter.",
   "parameters": [
     {
       "name": "Hz/V",
       "min": 1,
       "max": 2000,
       "default": 1000,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
+      "description": "The Hz/Volt scaling.",
+      "type": "folder"
     },
     {
       "name": "Offset",
       "min": -1000,
       "max": 1000,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
+      "description": "A voltage offset subtracted from the input.",
+      "type": "folder"
     },
     {
-      "name": "Input (Linear/Hz/V)",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Output (Exponential/V/Octave)",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": true
-    },
-    {
-      "name": "Output_mode (Linear/Exponential)",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
       "description": "The standard Add/Replace mode selector as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
-      "type": "enum",
-      "is_per_channel": false
+      "type": "folder"
     },
     {
-      "name": "Input (Exponential/V/Octave)",
-      "min": 0,
-      "max": 28,
+      "name": "Hz/V",
+      "min": 1,
+      "max": 2000,
+      "default": 1000,
+      "description": "The Hz/Volt scaling.",
+      "type": "folder"
+    },
+    {
+      "name": "Offset",
+      "min": -1000,
+      "max": 1000,
       "default": 0,
-      "description": "The input (exponential, V/octave) bus.",
-      "type": "enum",
-      "is_per_channel": false
+      "description": "A voltage offset added to the output.",
+      "type": "folder"
     },
     {
-      "name": "Output (Linear/Hz/V)",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The output (linear, Hz) bus.",
-      "type": "enum",
-      "is_per_channel": false
-    },
-    {
-      "name": "Output_mode (Exponential/Linear)",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
       "description": "The standard Add/Replace mode selector as described above.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
-      "type": "enum",
-      "is_per_channel": false
+      "type": "folder"
     }
   ],
   "input_ports": [
     {
-      "name": "Linear (Hz/V)",
-      "description": "Input bus for linear frequency voltage signals."
+      "name": "Input",
+      "description": "The input (linear, Hz/V) bus."
     },
     {
-      "name": "Exponential (V/Octave)",
-      "description": "Input bus for exponential V/octave CV signals."
+      "name": "Input",
+      "description": "The input (exponential, V/octave) bus."
+    },
+    {
+      "name": "Input",
+      "description": "The input (linear, Hz/V) bus."
+    },
+    {
+      "name": "Input",
+      "description": "The input (exponential, V/octave) bus."
     }
   ],
   "output_ports": [
     {
-      "name": "Exponential (V/Octave)",
-      "description": "Output bus for converted exponential V/octave signals."
+      "name": "Output",
+      "description": "The output (exponential, V/octave) bus."
     },
     {
-      "name": "Linear (Hz/V)",
-      "description": "Output bus for converted linear frequency voltage signals."
+      "name": "Output",
+      "description": "The output (linear, Hz/V) bus."
+    },
+    {
+      "name": "Output",
+      "description": "The output (exponential, V/octave) bus."
+    },
+    {
+      "name": "Output",
+      "description": "The output (linear, Hz/V) bus."
     }
   ]
 }

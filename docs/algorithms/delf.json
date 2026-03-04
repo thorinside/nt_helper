@@ -1,173 +1,30 @@
 {
   "guid": "delf",
   "name": "Delayed Function",
-  "description": "This algorithm generates a variety of one-shot functions after a delay, when triggered. The logic of each channel is as follows:\n   - When triggered, it immediately jumps to its idle voltage, if not already there.\n   - It stays at that voltage for the duration set by the Delay parameter.\n   - It then executes the function, for the duration set by the Time parameter, if relevant (for example, the Step function has no duration).\n   - Depending on the function, it then remains at the active or idle voltage until triggered again.\n\nThe available functions are:\n|Pulse|A simple rectangular pulse of the specified duration.|\n|Step|A step – the output goes from idle to active after the delay, and remains at the active level until retriggered.|\n|Ramp|A rising ramp of the specified duration. Stays at the active level after the ramp is complete.|\n|Sawtooth|A rising ramp of the specified duration, which jumps back to the idle level when complete.",
+  "description": "This algorithm generates a variety of one-shot functions after a delay, when triggered. The logic of each channel is as follows: When triggered, it immediately jumps to its idle voltage, if not already there. It stays at that voltage for the duration set by the Delay parameter. It then executes the function, for the duration set by the Time parameter, if relevant (for example, the Step function has no duration). Depending on the function, it then remains at the active or idle voltage until triggered again. The available functions are: Pulse - A simple rectangular pulse of the specified duration. Step - A step – the output goes from idle to active after the delay, and remains at the active level until retriggered. Ramp - A rising ramp of the specified duration. Stays at the active level after the ramp is complete. Sawtooth - A rising ramp of the specified duration, which jumps back to the idle level when complete.",
   "categories": [
+    "CV Generator",
     "Function Generator",
-    "Sequencing",
-    "Modulation",
-    "CV Tools"
+    "Trigger Based"
   ],
   "short_description": "Generates functions after a delay",
   "use_cases": [
-    "Creating delayed pulses for rhythmic patterns",
-    "Generating stepped or ramped CV signals with precise timing",
-    "Triggering events in modular synthesizers",
-    "Sequencing voltage-controlled modules with delays"
+    "CV sequencing",
+    "Rhythmic triggering",
+    "Modulation sources"
   ],
-  "gui_description": "The display shows, for each channel (1-8), from top to bottom:\n   - The remaining time of the delay, once triggered.\n   - The remaining time of the function.\n   - The output function as a bar graph.",
-  "specifications": [
-    {
-      "name": "Channels",
-      "min": 1,
-      "max": 8
-    }
-  ],
-  "parameters": [
-    {
-      "name": "Disable all",
-      "type": "enum",
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Detection",
-      "type": "enum",
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "enum"
-    },
-    {
-      "name": "Function",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Delay",
-      "min": 0,
-      "max": 1000,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "scaled"
-    },
-    {
-      "name": "Delay multiplier",
-      "min": 0,
-      "max": 6,
-      "default": 0,
-      "enum_values": [
-        "x1",
-        "x2",
-        "x5",
-        "x10",
-        "x20",
-        "x50",
-        "x100"
-      ],
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Time",
-      "min": 1,
-      "max": 1000,
-      "default": 100,
-      "scope": "per-channel",
-      "type": "scaled"
-    },
-    {
-      "name": "Time multiplier",
-      "min": 0,
-      "max": 6,
-      "default": 0,
-      "enum_values": [
-        "x1",
-        "x2",
-        "x5",
-        "x10",
-        "x20",
-        "x50",
-        "x100"
-      ],
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Active voltage",
-      "min": -10,
-      "max": 10,
-      "default": 5.0,
-      "scope": "per-channel",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Idle voltage",
-      "min": -10,
-      "max": 10,
-      "default": 0.0,
-      "scope": "per-channel",
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "scaled"
-    },
-    {
-      "name": "I2C channel",
-      "min": 0,
-      "max": 255,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "scaled"
-    }
-  ],
+  "gui_description": "The display shows, for each channel, from top to bottom: The remaining time of the delay, once triggered. The remaining time of the function. The output function as a bar graph.",
+  "specifications": [],
   "input_ports": [
     {
       "name": "Trigger input",
-      "description": "Bus for trigger signals (adjustable per channel)"
-    },
-    {
-      "name": "Trigger input",
-      "description": ""
+      "description": "The bus to use for the trigger input."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "Function output bus (adjustable per channel)"
-    },
-    {
-      "name": "Output",
-      "description": ""
+      "description": "The bus to use for the channel output."
     }
   ]
 }

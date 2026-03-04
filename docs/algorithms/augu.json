@@ -1,67 +1,447 @@
 {
   "guid": "augu",
   "name": "Augustus Loop",
-  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name. Essentially, it's a tape-inspired stereo delay with adjustable parameters for time, feedback, routing, and effects. The algorithm features four independent 'tape read heads', allowing for various delay configurations like straight stereo delays or ping-pong delays. It supports manual delay adjustment, tap tempo, clock input, CV control of tape speed (scaled 1V/octave), tape stop/reverse functionality, an effects loop for external processing, and a saturation/filter section. The module also includes advanced features such as inertia-free mode, bit depth selection, and detailed routing options.",
+  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name. Essentially, it's a tape-inspired stereo delay. The delay time can be dialled in manually, or set by tap tempo or a clock input. The longest delay possible is around 44 seconds. Being a tape delay, you can change the tape speed via CV. Patching an LFO into here is your route to all manner of subtle detuning or extreme mangling effects. You can also stop and reverse the tape. There is an option to run the delay signal through an 'effects loop', allowing you to insert other effects or processing into the guts of the delay.",
   "categories": [
     "Delay",
-    "Modulation",
-    "Effects",
-    "Audio Processing",
-    "Tape Emulation"
+    "Tape",
+    "Stereo",
+    "Effects"
   ],
-  "short_description": "Tape-like delay with stereo feedback paths, CV control, effects loop, and saturation/filtering.",
-  "use_cases": [
-    "Stereo delays (straight or ping-pong)",
-    "Multi-tap delay effects",
-    "CV-controlled tape speed modulation",
-    "External effects processing via FX loop",
-    "Saturation and filtering for warm tones"
-  ],
-  "gui_description": "The GUI displays feedback amount at the bottom left, delay time at the bottom right, and an animated center area indicating tape direction/speed. Clock pulses flash 'Clock', and tap tempo readiness shows as 'Tap'.",
-  "specifications": [
+  "short_description": "Tape-like delay",
+  "gui_description": "The display shows the feedback amount bottom left and the delay time bottom right. The centre area shows an animation indicating the tape direction and speed. If using a clock input, the word 'Clock' flashes up every time the algorithm receives a clock pulse. The word 'Tap' is displayed if the tap tempo function will set the delay time on the next tap.",
+  "parameters": [
     {
-      "name": "Max Delay Time",
-      "value": "44 seconds"
+      "name": "Time (coarse)",
+      "min": 0.0,
+      "max": 43.7,
+      "default": 1.0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Sample Rate Compatibility",
-      "value": "Standard (NT-compatible)"
+      "name": "Time (fine)",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Delay multiplier",
+      "min": 0,
+      "max": 23,
+      "default": 15,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Feedback",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "L-L Time",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "L-R Time",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "R-L Time",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "R-R Time",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "L-L Level",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "L-R Level",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "R-L Level",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "R-R Level",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Mono-ize",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Initial pan",
+      "min": -100,
+      "max": 100,
+      "default": -100,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Dry gain",
+      "min": -40,
+      "max": 6,
+      "default": -40,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Effect gain",
+      "min": -40,
+      "max": 6,
+      "default": -3,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Input level",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch inertia",
+      "min": 0,
+      "max": 125,
+      "default": 64,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Stop tape",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Reverse tape",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Bit depth",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Inertia free",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Inertia fade time",
+      "min": 1,
+      "max": 1000,
+      "default": 100,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch LFO speed",
+      "min": 0,
+      "max": 127,
+      "default": 96,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch LFO depth",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Clear loop",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Filter type",
+      "min": 0,
+      "max": 400,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Filter freq",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Filter Q",
+      "min": 0,
+      "max": 100,
+      "default": 20,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Saturation enable",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Saturation",
+      "min": 0,
+      "max": 110,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Saturation shape",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Tap tempo",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Clocks",
+      "min": 1,
+      "max": 10,
+      "default": 1,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "FX Loop position",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "FX Loop output L",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "FX Loop output R",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "FX Loop input L",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "FX Loop input R",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input L",
-      "description": "Left channel input for the delay module."
+      "name": "Input",
+      "description": "Left input signal."
     },
     {
-      "name": "Input R",
-      "description": "Right channel input for the delay module."
+      "name": "Right input",
+      "description": "Right input signal."
     },
     {
-      "name": "Pitch CV",
-      "description": "CV input controlling tape speed (scaled 1V/octave)."
+      "name": "Pitch CV input",
+      "description": "CV input to use for pitch."
     },
     {
-      "name": "Clock Input",
-      "description": "CV clock input to synchronize delay time with external timing signals."
+      "name": "Clock input",
+      "description": "CV input to use as the clock."
+    },
+    {
+      "name": "Tap tempo",
+      "description": "Tap tempo input."
+    },
+    {
+      "name": "Pitch CV input",
+      "description": ""
+    },
+    {
+      "name": "Clock input",
+      "description": ""
+    },
+    {
+      "name": "Left input",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
-      "name": "Output L",
-      "description": "Left channel output of the processed signal."
+      "name": "Left output",
+      "description": "Left output signal."
     },
     {
-      "name": "Output R",
-      "description": "Right channel output of the processed signal."
+      "name": "Right output",
+      "description": "Right output signal."
     },
     {
-      "name": "FX Loop Output L",
-      "description": "Left channel output for external effects loop processing (when enabled)."
+      "name": "FX Loop output L",
+      "description": "Left output to the effect loop."
     },
     {
-      "name": "FX Loop Output R",
-      "description": "Right channel output for external effects loop processing (when enabled)."
+      "name": "FX Loop output R",
+      "description": "Right output to the effect loop."
+    },
+    {
+      "name": "FX Loop input L",
+      "description": "Left input from the effects loop."
+    },
+    {
+      "name": "FX Loop input R",
+      "description": "Right input from the effects loop."
+    },
+    {
+      "name": "Left output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
     }
   ]
 }

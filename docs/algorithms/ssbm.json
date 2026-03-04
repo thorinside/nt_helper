@@ -1,22 +1,26 @@
 {
   "guid": "ssbm",
   "name": "SSB Modulator",
-  "description": "This algorithm is based on one mode of the Frequency Shifter algorithm on the disting EX. It modulates two signals with each other, and produces the upper and lower sidebands on separate outputs.\n\nIf you use a pure sine wave for one of the inputs, you essentially have a frequency shifter, but one where you control the shift by controlling the frequency of your input oscillator.",
+  "description": "This algorithm is based on one mode of the Frequency Shifter algorithm on the disting EX. It modulates two signals with each other, and produces the upper and lower sidebands on separate outputs.",
   "categories": [
-    "Modulation",
-    "Frequency Processing",
-    "Audio Routing"
+    "modulation",
+    "audio processing"
   ],
   "short_description": "Single Side Band modulator",
-  "specifications": [],
+  "use_cases": [
+    "frequency shifting",
+    "sideband modulation",
+    "audio processing"
+  ],
+  "gui_description": "Modulates two signals with each other, producing upper and lower sidebands on separate outputs.",
   "parameters": [
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "is_common": true,
       "is_bus": false
     },
     {
@@ -24,82 +28,82 @@
       "min": -40,
       "max": 0,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "is_common": true,
       "is_bus": false
     },
     {
-      "name": "Input1",
+      "name": "Input 1",
       "min": 1,
-      "max": 28,
+      "max": 64,
       "default": 1,
-      "description": "The first input bus to process for the first signal."
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
     },
     {
-      "name": "Input2",
+      "name": "Input 2",
       "min": 1,
-      "max": 28,
+      "max": 64,
       "default": 2,
-      "description": "The first input bus to process for the second signal."
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Width",
       "min": 1,
       "max": 8,
       "default": 1,
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
-    },
-    {
-      "name": "UpperSBOutput",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "description": "The first output bus for the upper side band."
-    },
-    {
-      "name": "UpperSBMode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "is_common": true,
       "is_bus": false
     },
     {
-      "name": "LowerSBOutput",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The first output bus for the lower side band."
-    },
-    {
-      "name": "LowerSBMode",
+      "name": "Upper SB mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
+      "type": "folder",
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Lower SB mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_common": true,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input1",
-      "description": "First input signal for modulation."
+      "name": "Input 1",
+      "description": "The first input bus to process for the first signal."
     },
     {
-      "name": "Input2",
-      "description": "Second input signal for modulation."
+      "name": "Input 2",
+      "description": "The first input bus to process for the second signal."
     }
   ],
   "output_ports": [
     {
-      "name": "UpperSBOutput",
-      "description": "Upper side band output signal."
+      "name": "Upper SB output",
+      "description": "The first output bus for the upper side band."
     },
     {
-      "name": "LowerSBOutput",
-      "description": "Lower side band output signal."
+      "name": "Lower SB output",
+      "description": "The first output bus for the lower side band."
+    },
+    {
+      "name": "Upper SB output",
+      "description": ""
+    },
+    {
+      "name": "Lower SB output",
+      "description": ""
     }
   ]
 }

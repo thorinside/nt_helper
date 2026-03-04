@@ -1,222 +1,44 @@
 {
   "guid": "pycv",
   "name": "Poly CV",
-  "description": "This algorithm takes the polysynth control logic from other polysynths and uses it not to produce sound but to output CVs (Control Voltages) and gates. It serves primarily as a MIDI/CV converter, enabling conversion between MIDI signals and analog CV/gate outputs. Additionally, it functions as a chord/arpeggio engine controlled by either CV/gate inputs or MIDI inputs. The algorithm can also generate MIDI output alongside or instead of CV/gates, making it versatile for applications like MIDI-to-MIDI harmony generation (e.g., SATB chords). It leverages the 'Common polysynth features' section for voice allocation logic and other shared parameters.",
+  "description": "This algorithm takes the polysynth control logic from the other polysynths and uses it not to produce sound, but to output CVs and gates. This makes it most obviously useful as a MIDI/CV converter, but it can also be used as a chord/arpeggio engine controlled by CV/gate inputs. In fact, the algorithm can also generate MIDI as well as or instead of CV/gates, and so works as a MIDI-to-MIDI chord engine, for example.",
   "categories": [
     "MIDI",
     "CV/Gate",
-    "Polyphonic",
     "Converter",
-    "Arpeggiator/Chord Generator"
+    "Chord Engine",
+    "Arpeggiator"
   ],
   "short_description": "A polyphonic MIDI/CV converter",
-  "use_cases": [
-    "MIDI to CV conversion",
-    "CV/gate to MIDI conversion",
-    "Polyphonic chord engine (e.g., SATB harmony)",
-    "Arpeggiator controlled by CV/gates or MIDI",
-    "Multi-voice MIDI routing and processing"
-  ],
-  "gui_description": "The display shows the notes being played by various voices. When adjusting microtuning parameters, additional information about the chosen tuning is displayed.",
   "specifications": [
     {
       "name": "Voices",
+      "description": "The number of simultaneous voices.",
       "min": 1,
       "max": 14
-    }
-  ],
-  "parameters": [
-    {
-      "name": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 1,
-      "description": "The MIDI channel to listen on."
-    },
-    {
-      "name": "MPE channels",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "description": "Controls how the algorithm will respond to MPE (Multi-dimensional Polyphonic Expression)."
-    },
-    {
-      "name": "I2C channel",
-      "min": 0,
-      "max": 255,
-      "default": 1,
-      "description": "Sets the I2C channel."
-    },
-    {
-      "name": "Sustain mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Sustain",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
-    },
-    {
-      "name": "Transpose",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "type": "scaled",
-      "is_bus": false
-    },
-    {
-      "name": "Fine tune",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Fine tuning control.",
-      "enum_values": [
-        "cents"
-      ]
-    },
-    {
-      "name": "Bend range",
-      "min": 0,
-      "max": 48,
-      "default": 2,
-      "description": "The MIDI pitch bend range."
-    },
-    {
-      "name": "Min vel gate",
-      "min": 0.0,
-      "max": 5.0,
-      "default": 1.0,
-      "description": "Sets the minimum gate voltage, if gates are scaled by velocity. Velocity gates range from this voltage (for MIDI velocity 0) up to 5V (for MIDI velocity 127).",
-      "enum_values": [
-        "V"
-      ]
-    },
-    {
-      "name": "Voices",
-      "min": 1,
-      "max": 14,
-      "default": 1,
-      "description": "The number of voices to use (up to the maximum set by the specification)."
-    },
-    {
-      "name": "Gate outputs",
-      "min": 0,
-      "max": 2,
-      "default": 1,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Pitch outputs",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "Whether to include pitch CV outputs."
-    },
-    {
-      "name": "Velocity outputs",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Whether to include velocity outputs."
-    },
-    {
-      "name": "Gate mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Pitch mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Velocity mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "ES-5 Expander",
-      "min": 0,
-      "max": 6,
-      "default": 0,
-      "description": "If set, the ES-5 expander header to use for gate output instead of allocating a gate from regular busses. '1' means the ES-5 itself."
-    },
-    {
-      "name": "MIDI channel (output)",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "description": "The output MIDI channel for generated MIDI signals."
-    },
-    {
-      "name": "Output to breakout",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Output to Select Bus",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Output to USB",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Output to internal",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables internal MIDI output – that is, MIDI is sent to other algorithms."
     }
   ],
   "input_ports": [],
   "output_ports": [
     {
       "name": "Gate",
-      "description": "Outputs gate signals for each voice. The bus assignment depends on the 'First output' and 'Voices' parameters, as well as whether velocity-scaled gates are enabled."
+      "description": "Gate output (CV/gate signal).",
+      "channelCountRef": "Voices"
     },
     {
       "name": "Pitch CV",
-      "description": "Outputs pitch control voltages for each voice. Bus allocation follows the same logic as gate outputs if enabled."
+      "description": "Pitch CV output (voltage).",
+      "channelCountRef": "Voices"
     },
     {
       "name": "Velocity",
-      "description": "Outputs velocity information as a control voltage, if enabled by the 'Velocity outputs' parameter."
+      "description": "Velocity output (voltage).",
+      "channelCountRef": "Voices"
     },
     {
-      "name": "First output",
-      "description": "The first output bus to use."
-    },
-    {
-      "name": "ES-5 Output",
-      "description": "If using an ES-5 expander output, sets which of the 8 outputs on the expander to use."
+      "name": "MIDI",
+      "description": "MIDI output.",
+      "channelCountRef": "Voices"
     }
   ]
 }

@@ -1,44 +1,20 @@
 {
   "guid": "quan",
   "name": "Quantizer",
-  "description": "This algorithm is a multi-channel CV quantizer, loosely based on the Quad Quantizer algorithm on the disting EX. It supports microtuning but this is not a requirement.\n\nIt quantizes CV inputs and generates CV outputs and/or MIDI output.\n\nThe quantization parameters are common to all channels; the individual channels’ parameters are solely related to routing.\n\n**Quantization signal flow:**\n1. The input CV is sampled (triggered by gate input if selected, otherwise when changed sufficiently).\n2. Input transpose is applied (±12-TET semitones).\n3. CV is quantized into the ‘lookup’ scale, yielding a note number.\n4. Shift parameter is applied.\n5. Note number selects a CV in the ‘output’ scale.\n6. Output transpose is applied.\n\n**Modes:**\n- **Nearest/Warped**: Lookup and output scales are identical; input quantized to nearest note (Warped redistributes voltages for even spacing).\n- **Mapped**: Uses 12-TET lookup, maps MIDI note numbers to custom scale via keyboard map (.kbm file).\n\n**Key/Scale/Mode:** Constrains notes to a specific scale (ignored if tuning has ≠12 degrees or microtuning is active). Supports live MIDI scales ('MIDI (any octave)'/'MIDI (exact)').\n\n**Mask:** Overrides key/scale/mode by deselecting specific notes (visualized in GUI for 12-degree tunings).\n\n**GUI:** Shows piano-key visualization of selected notes or channel-specific CV/MIDI data (voltage, note number, cents, tuning ratios).",
+  "description": "This algorithm is a multi-channel CV quantizer, loosely based on the Quad Quantizer algorithm on the disting EX. It supports microtuning (see above), but this is not a requirement. It quantizes CV inputs and generates CV outputs and/or MIDI output. The quantization parameters are common to all channels; the individual channels' parameters are solely related to routing.",
   "categories": [
-    "CV Processing",
-    "MIDI/CV Conversion",
-    "Microtonal Tuning",
-    "Modular Synthesis"
+    "CV",
+    "Quantizer",
+    "Microtuning",
+    "MIDI"
   ],
-  "short_description": "A multi-channel CV quantizer supporting microtuning, scale constraints, and MIDI output with flexible routing.",
-  "use_cases": [
-    "Microtonal music production (e.g., 31-EDO scales)",
-    "LFO-based rhythmic patterns with Warped mode",
-    "Live MIDI-to-CV quantization with custom keyboard maps",
-    "Pentatonic/blues-scale filtering via mask parameters",
-    "Pitch-bend modulation for dynamic tuning adjustments"
-  ],
-  "gui_description": "Displays either:\n1. **Scale visualization** (for Key/Scale/Mode/Mask parameters): Piano-key layout showing selected/deselected notes, with current output note highlighted.\n2. **Channel details**: Real-time CV/MIDI data (input voltage, sampled voltage, quantized note numbers, output voltage, tuning info in cents or ratios).\n\nTuning-specific displays show equal temperament vs. just intonation differences (e.g., A=900cents ET vs. 5/3 ratio JI).",
-  "specifications": [
-    {
-      "name": "Channels",
-      "min": 1,
-      "max": 12
-    },
-    {
-      "name": "Sample Rate Compatibility",
-      "description": "Standard audio/MIDI sample rates (not explicitly limited)"
-    }
-  ],
+  "short_description": "A CV quantizer",
   "parameters": [
     {
       "name": "Quantize mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "enum_values": [
-        "Nearest",
-        "Mapped",
-        "Warped"
-      ],
       "type": "enum",
       "is_per_channel": false,
       "is_common": true,
@@ -49,7 +25,7 @@
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -59,7 +35,7 @@
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -69,7 +45,7 @@
       "min": -12,
       "max": 12,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -79,7 +55,7 @@
       "min": 0,
       "max": 10,
       "default": 2,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -89,7 +65,7 @@
       "min": 1,
       "max": 12,
       "default": 1,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -99,7 +75,7 @@
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -109,7 +85,7 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -119,7 +95,7 @@
       "min": 0.0,
       "max": 10.0,
       "default": 2.0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -129,17 +105,27 @@
       "min": 0,
       "max": 16,
       "default": 1,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
+    },
+    {
+      "name": "MIDI channel (out)",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": true
     },
     {
       "name": "Output to breakout",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -149,7 +135,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -159,7 +145,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -169,7 +155,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -179,7 +165,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -189,7 +175,7 @@
       "min": 1,
       "max": 48,
       "default": 2,
-      "type": "enum",
+      "type": "string",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -198,30 +184,53 @@
   "input_ports": [
     {
       "name": "CV input",
-      "description": "Pitch CV input bus (0-28). Each channel has an independent CV input.",
-      "isPerChannel": true
+      "description": "The pitch CV input bus."
     },
     {
       "name": "Gate input",
-      "description": "(Optional) Gate input bus (0-28) to trigger sampling. If unused, CV is sampled on sufficient change.",
-      "isPerChannel": true
+      "description": "The (optional) gate input bus."
+    },
+    {
+      "name": "MIDI channel (in)",
+      "description": "The MIDI channel to receive on."
+    },
+    {
+      "name": "CV input",
+      "description": ""
+    },
+    {
+      "name": "Gate input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "CV output",
-      "description": "Pitch CV output bus (15 by default). Always uses 'Replace' mode.",
-      "isPerChannel": true
+      "description": "The pitch CV output bus. Always uses 'Replace' output mode."
     },
     {
       "name": "Gate output",
-      "description": "Gate/trigger output bus (0 by default), controlled by 'Output gate mode'. Uses 'Replace' mode.",
-      "isPerChannel": true
+      "description": "The gate output bus, according to the 'Output gate mode' parameter. Always uses 'Replace' output mode."
     },
     {
       "name": "Change output",
-      "description": "'Change trigger' output bus. Fires a pulse when quantized note changes. Uses 'Replace' mode.",
-      "isPerChannel": true
+      "description": "The 'change trigger' output bus. Fires a trigger pulse when the quantized note changes. Always uses 'Replace' output mode."
+    },
+    {
+      "name": "MIDI channel (out)",
+      "description": "The MIDI channel to output notes on."
+    },
+    {
+      "name": "CV output",
+      "description": ""
+    },
+    {
+      "name": "Gate output",
+      "description": ""
+    },
+    {
+      "name": "Change output",
+      "description": ""
     }
   ]
 }

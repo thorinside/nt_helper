@@ -1,45 +1,42 @@
 {
   "guid": "samp",
   "name": "Sample Player",
-  "description": "This algorithm plays samples from the MicroSD card. It is loosely based on the “SD 6 Triggers” algorithm on the disting EX. Whereas the “Poly Multisample” algorithm is aimed more at playing pitched instruments, this algorithm is mainly designed for playing simple one-shot samples e.g. drums. It supports both velocity switches and round robins per sample.\n\nThe trigger inputs are velocity sensitive – the voltage of the gate signal is used like the velocity of a MIDI note. 5V corresponds to maximum velocity.",
+  "description": "This algorithm plays samples from the MicroSD card. It is loosely based on the “SD 6 Triggers” algorithm on the disting EX. Whereas the “Poly Multisample” algorithm is aimed more at playing pitched instruments, this algorithm is mainly designed for playing simple one-shot samples e.g. drums. It supports both velocity switches and round robins per sample. The trigger inputs are velocity sensitive – the voltage of the gate signal is used like the velocity of a MIDI note. 5V corresponds to maximum velocity.",
   "categories": [
-    "Audio",
-    "Sample Player",
-    "Drums",
-    "Sequencing"
+    "Sample Playback",
+    "One-Shot",
+    "Drum Triggers",
+    "Velocity Sensitive"
   ],
   "short_description": "A simple sample player",
   "use_cases": [
-    "Playing one-shot samples like drums",
-    "Velocity-sensitive triggering",
-    "Round-robin sample playback",
-    "Manual and automated sample triggering"
+    "Playing simple one-shot samples",
+    "Drum kits",
+    "Velocity-sensitive triggers"
   ],
   "gui_description": "The display shows the MIDI note names of the samples being played by the various triggers, superimposed on a bar indicating the trigger’s envelope. The folder and filename of the most recently triggered sample is also shown.",
   "specifications": [
     {
       "name": "Triggers",
-      "value": "1-8"
+      "description": "The number of individual sample triggers.",
+      "min": 1,
+      "max": 8
     }
   ],
   "input_ports": [
     {
-      "name": "Trigger input (per-trigger)",
-      "description": "Input bus used as the gate/trigger for each trigger."
-    },
-    {
-      "name": "MIDI note",
-      "description": "MIDI notes that can trigger playback based on MIDI channel and note settings."
+      "name": "Trigger input",
+      "description": "The input bus to use as the gate/trigger."
     }
   ],
   "output_ports": [
     {
-      "name": "Left output (per-trigger)",
-      "description": "The left audio output bus for each trigger."
+      "name": "Left output",
+      "description": "The left audio output bus."
     },
     {
-      "name": "Right output (per-trigger)",
-      "description": "The right audio output bus for each trigger."
+      "name": "Right output",
+      "description": "The right audio output bus."
     }
   ]
 }

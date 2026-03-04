@@ -1,68 +1,422 @@
 {
   "guid": "krby",
   "name": "Kirbinator",
-  "description": "This algorithm continuously records audio into a buffer and plays slices of the buffer under the influence of various probabilities. The slices can be pitched up and down, played forwards and backwards, and panned in stereo.\n\nKey to its operation are two trigger inputs: the Mark input (defining slice boundaries) and the Trigger input (instructing playback changes). By default, behavior is random but can be made repeatable via a Random seed parameter. The algorithm supports transient detection for automatic marking, unclocked operations with adjustable play probabilities, and feedback for delay/echo effects.\n\nThe audio buffer is stereo but can operate in mono/stereo modes based on routing parameters.",
+  "description": "This algorithm continuously records audio into a buffer and plays slices of the buffer under the influence of various probabilities. The slices can be pitched up and down, played forwards and backwards, and panned in stereo. Key to the operation of the algorithm are two trigger inputs, the Mark input and the Trigger input. These can be the same signal, but more interesting results often arise when they're not. Typically both signals would be regular clocks, but this is by no means a requirement. The Mark input defines the slices in the audio buffer. The Trigger input tells the Kirbinator when to choose a new slice to play and to change its playback parameters. Note that playback continues with the new parameters until another Trigger is received; it doesn't, say, play one slice and then stop. The audio buffer is stereo, but the algorithm can be used as mono, stereo, or mono-in stereo-out, according to the routing parameters.",
   "categories": [
-    "Audio Effects",
-    "Granular Synthesis",
-    "Probabilistic Processing",
-    "Sequencing",
-    "Transient Detection"
+    "Audio",
+    "Stochastic",
+    "Buffer",
+    "Granular"
   ],
   "short_description": "Stochastic audio processor",
-  "use_cases": [
-    "Rhythmic slice playback with probabilistic pitch/direction changes",
-    "Automated granular synthesis via transient detection",
-    "Unclocked live performance effects",
-    "Feedback-based delay/echo simulations",
-    "Repeatable stochastic patterns using random seeds"
-  ],
-  "gui_description": "Displays a waveform of the audio buffer. A short dark line shows current recording position, longer lines indicate playback positions, and checkmarks mark slice boundaries defined by the Mark input.",
-  "specifications": [
+  "parameters": [
     {
-      "name": "Buffer size",
-      "min": 1,
-      "max": 0.0
+      "name": "Pitch up",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
-      "name": "Sample rate",
-      "description": "Standard audio sample rates supported"
+      "name": "Pitch down",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Fifths",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Reverse",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Glide",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Stutter",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Triplet",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Play",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Glide control",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Glide",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Glide up",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Glide down",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Through zero",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Min stutter",
+      "min": 1,
+      "max": 16,
+      "default": 2,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Max stutter",
+      "min": 1,
+      "max": 16,
+      "default": 3,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Min jump",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Max jump",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Stutter",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Pitch offset",
+      "min": -24,
+      "max": 24,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Glide offset",
+      "min": -1000,
+      "max": 1000,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Fade",
+      "min": 0,
+      "max": 1000,
+      "default": 10,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Random seed",
+      "min": 0,
+      "max": 32767,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Apply seed",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Mutate",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Trigger hold time",
+      "min": 0.0,
+      "max": 5.0,
+      "default": 0.0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Buffer size",
+      "min": 1.0,
+      "max": 44.0,
+      "default": 1.0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Feedback",
+      "min": -24.0,
+      "max": 0.0,
+      "default": -24.0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Detect",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Sensitivity",
+      "min": 0,
+      "max": 200,
+      "default": 100,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Dry gain",
+      "min": -40,
+      "max": 6,
+      "default": -40,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Effect gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Pan mean",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Pan deviation",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Audio input (left/mono)",
-      "description": "Left or mono audio signal input, selectable via routing parameters."
+      "name": "Audio Input",
+      "description": "Left or mono audio input (Left/mono input parameter controls routing)."
     },
     {
-      "name": "Audio input (right)",
-      "description": "Right audio signal input. Disabled if operating in mono mode."
+      "name": "Right Input",
+      "description": "Right audio input (Right input parameter controls routing)."
     },
     {
-      "name": "Mark",
-      "description": "Trigger input defining slice boundaries in the buffer. Typically a clock but can be any signal."
+      "name": "Mark Input",
+      "description": "Trigger input that defines slices in the audio buffer."
     },
     {
-      "name": "Trigger",
-      "description": "Trigger input initiating playback changes and selecting new slices."
+      "name": "Trigger Input",
+      "description": "Trigger input that tells the algorithm when to choose a new slice to play and change playback parameters."
     },
     {
-      "name": "Stop",
-      "description": "Trigger input to halt current slice playback."
+      "name": "Stop Input",
+      "description": "A trigger on this bus causes the currently playing slice to stop."
     },
     {
-      "name": "Pitch offset CV",
-      "description": "1V/octave control voltage input for dynamic pitch offset adjustments."
+      "name": "Pitch Offset Input",
+      "description": "A 1V/octave pitch CV on this bus is added to the Pitch offset parameter."
+    },
+    {
+      "name": "Left/mono input",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "description": ""
+    },
+    {
+      "name": "Mark input",
+      "description": ""
+    },
+    {
+      "name": "Trigger input",
+      "description": ""
+    },
+    {
+      "name": "Stop input",
+      "description": ""
+    },
+    {
+      "name": "Pitch offset input",
+      "description": ""
     }
   ],
   "output_ports": [
     {
-      "name": "Audio output (left/mono)",
-      "description": "Left or mono processed audio output, selectable via routing parameters."
+      "name": "Left/Mono Output",
+      "description": "Left or mono audio output (Left/mono output parameter controls routing)."
     },
     {
-      "name": "Audio output (right)",
-      "description": "Right processed audio output. Disabled if operating in mono mode."
+      "name": "Right Output",
+      "description": "Right audio output (Right output parameter controls routing)."
+    },
+    {
+      "name": "Left/mono output",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "description": ""
     }
   ]
 }

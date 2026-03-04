@@ -1,54 +1,45 @@
 {
   "guid": "luae",
   "name": "Lua Expression",
-  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example “a + b” to add two signals together. It is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you’re out and about without a computer on which to write the script). For more extensive discussion of Lua on the disting NT, see the Lua Script algorithm and the UI Scripts.",
+  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example a + b to add two signals together. It is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you're out and about without a computer on which to write the script).",
   "categories": [
     "Expression",
     "Lua",
-    "Math",
-    "Audio Processing",
-    "CV Processing"
+    "CV",
+    "Audio"
   ],
   "short_description": "A single line of Lua",
   "use_cases": [
-    "Simple arithmetic operations on audio/CV signals",
-    "Custom signal processing without full script complexity",
-    "Quick prototyping of mathematical expressions",
-    "Boolean logic for CV control",
-    "Signal routing and mixing"
+    "Quick arithmetic operations",
+    "Simple signal processing",
+    "Ad-hoc signal manipulation"
   ],
-  "gui_description": "The display shows any errors encountered when parsing or running the expression, or “No errors” if everything is OK. Text editing interface with button & encoder operations for parameter adjustment.",
+  "gui_description": "The display shows any errors encountered when parsing or running the expression, or No errors if everything is OK.",
   "specifications": [
     {
       "name": "Expressions",
-      "description": "Number of independent expressions to evaluate (1-8)",
       "min": 1,
       "max": 8
     }
   ],
   "parameters": [
     {
-      "name": "Input_A-H",
-      "type": "enum",
-      "busIdRef": "true",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_common": false,
-      "is_bus": true
+      "name": "Input A-H",
+      "min": 1,
+      "max": 64,
+      "description": "The bus to use for the correspondingly named expression variable.",
+      "type": "bus"
     },
     {
-      "name": "Input_A-H_mode",
+      "name": "Input A-H mode",
       "min": 0,
       "max": 1,
-      "default": 0,
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression).",
       "type": "enum",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_common": false,
-      "is_bus": false
+      "is_per_channel": true
     },
     {
-      "name": "Output_mode",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -59,70 +50,73 @@
       "name": "Enable",
       "min": 0,
       "max": 1,
-      "default": 1,
-      "type": "toggle",
-      "isPerChannel": true
+      "description": "Enables evaluation of the expression.",
+      "type": "enum"
     },
     {
       "name": "Expression",
-      "type": "string",
-      "isPerChannel": true,
-      "isCommon": false,
-      "is_common": false
+      "description": "The expression text.",
+      "type": "string"
     },
     {
       "name": "Rate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Whether the expression is evaluated at control rate (0) or audio rate (1).",
+      "description": "Whether the expression is evaluated at control rate or audio rate.",
       "type": "enum"
     }
   ],
   "input_ports": [
     {
-      "name": "a",
-      "description": "Input signal for variable 'a' in Lua expression."
+      "name": "Input A",
+      "description": "Input signal A for expression evaluation",
+      "isPerChannel": true
     },
     {
-      "name": "b",
-      "description": "Input signal for variable 'b' in Lua expression."
+      "name": "Input B",
+      "description": "Input signal B for expression evaluation",
+      "isPerChannel": true
     },
     {
-      "name": "c",
-      "description": "Input signal for variable 'c' in Lua expression."
+      "name": "Input C",
+      "description": "Input signal C for expression evaluation",
+      "isPerChannel": true
     },
     {
-      "name": "d",
-      "description": "Input signal for variable 'd' in Lua expression."
+      "name": "Input D",
+      "description": "Input signal D for expression evaluation",
+      "isPerChannel": true
     },
     {
-      "name": "e",
-      "description": "Input signal for variable 'e' in Lua expression."
+      "name": "Input E",
+      "description": "Input signal E for expression evaluation",
+      "isPerChannel": true
     },
     {
-      "name": "f",
-      "description": "Input signal for variable 'f' in Lua expression."
+      "name": "Input F",
+      "description": "Input signal F for expression evaluation",
+      "isPerChannel": true
     },
     {
-      "name": "g",
-      "description": "Input signal for variable 'g' in Lua expression."
+      "name": "Input G",
+      "description": "Input signal G for expression evaluation",
+      "isPerChannel": true
     },
     {
-      "name": "h",
-      "description": "Input signal for variable 'h' in Lua expression."
+      "name": "Input H",
+      "description": "Input signal H for expression evaluation",
+      "isPerChannel": true
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus for the evaluated expression result."
+      "description": "Expression result output"
     },
     {
       "name": "Output",
-      "description": "",
-      "busIdRef": "true",
-      "isPerChannel": true
+      "description": "The bus to use for the expression output."
     }
   ]
 }

@@ -1,41 +1,122 @@
 {
   "guid": "clkd",
   "name": "Clock Divider",
-  "description": "This algorithm is a simple clock divider, outputting slower clocks from a faster one. The channels can use completely independent clocks, or share clocks.\n\nThere is a shared reset input and a per-channel reset input. If either is active, the channel is reset.",
+  "description": "This algorithm is a simple clock divider, outputting slower clocks from a faster one. The channels can use completely independent clocks, or share clocks. There is a shared reset input and a per-channel reset input. If either is active, the channel is reset.",
   "categories": [
     "Clock",
-    "Modulation",
-    "Sequencing"
+    "Rhythm",
+    "Timebase"
   ],
   "short_description": "Divides clocks",
-  "use_cases": [
-    "Rhythmic pattern generation",
-    "Tempo subdivision",
-    "Clock synchronization between modules",
-    "Metrical and free division of clock signals"
-  ],
   "specifications": [
     {
       "name": "Channels",
-      "description": "The number of clock channels to process.",
       "min": 1,
       "max": 8
     }
   ],
-  "input_ports": [
+  "parameters": [
     {
-      "name": "Reset input (shared)",
-      "description": "Shared reset input bus that resets all channels if active."
+      "name": "Type",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "The divisor type. The options are Free, Metrical (2), and Metrical (2,3).",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false
     },
     {
-      "name": "Clock Input",
-      "description": "Input clock signal to be divided. Each channel can select a different input bus (1-28)."
+      "name": "Divisor",
+      "min": 1,
+      "max": 32,
+      "default": 2,
+      "description": "The divisor, if the type is Free. The divisor value is simply the parameter value.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 5,
+      "default": 1,
+      "description": "The divisor, if the type is Metrical (2). Chooses between 1, 2, 4, 8, 16, & 32.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 9,
+      "default": 1,
+      "description": "The divisor, if the type is Metrical (2,3). Chooses between 1, 2, 3, 4, 6, 8, 12, 16, 24, & 32.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables the channel. A disabled channel outputs nothing.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false
+    },
+    {
+      "name": "ES-5 Expander",
+      "min": 0,
+      "max": 6,
+      "default": 0,
+      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. 1 means the ES-5 itself.",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_common": false
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Reset input",
+      "description": "The shared reset input bus."
+    },
+    {
+      "name": "Reset input",
+      "description": "The shared reset input bus."
+    },
+    {
+      "name": "Input",
+      "description": "The clock input bus to divide."
+    },
+    {
+      "name": "Reset input",
+      "description": "The reset input bus for this channel."
     }
   ],
   "output_ports": [
     {
-      "name": "Clock Output",
-      "description": "Output clock signal after division. Each channel can route its output to a specific bus (1-28) or via ES-5 expander."
+      "name": "Output",
+      "description": "The clock output bus."
+    },
+    {
+      "name": "Output",
+      "description": "The clock output bus."
+    },
+    {
+      "name": "ES-5 Output",
+      "description": "If using an ES-5 expander output, sets which of the 8 outputs on the expander to use."
     }
   ]
 }

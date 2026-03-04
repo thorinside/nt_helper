@@ -1,23 +1,15 @@
 {
   "guid": "trak",
   "name": "Tracker",
-  "description": "This algorithm tracks the pitch and envelope of an audio signal, which are output as CVs. It can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio). The chords can be tuned microtonally using Scala or MTS.",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the video on that algorithm, here. The pitch shifter part of the EX algorithm was split out into a separate algorithm on the NT (above), which you can combine with this algorithm if it suits your needs. The algorithm tracks the pitch and envelope of an audio signal, which are output as CVs. It can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio). The chords can be tuned microtonally using Scala or MTS.",
   "categories": [
-    "Audio",
     "Pitch Tracking",
-    "Envelope Detection",
-    "Harmonization",
-    "Microtuning"
+    "Harmony",
+    "Microtuning",
+    "Audio Processing"
   ],
   "short_description": "A pitch and envelope tracker",
-  "use_cases": [
-    "Live performance pitch tracking for modular synths",
-    "Automated chord generation from monophonic input",
-    "Pitch correction and harmonization",
-    "CV control of VCOs based on tracked audio",
-    "Microtonal harmony generation"
-  ],
-  "gui_description": "The display shows the tracked note at the bottom (MIDI note number, cents deviation, frequency in Hz) alongside an envelope visualization. Above this are the closest scale note and four generated harmony notes.",
+  "gui_description": "The display shows the tracked note at the bottom of the screen, as a MIDI note number plus cents, and as a frequency in Hz. To the right of this is a bar that shows the envelope, and the tuning as a deviation from the true pitch of the tracked note. Above this is the closest note to the tracked note that lies within the current scale (on the left), and the four harmony notes (on the right).",
   "parameters": [
     {
       "name": "Range",
@@ -31,36 +23,21 @@
       "min": 0,
       "max": 100,
       "default": 10,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "An internal parameter of the pitch tracking algorithm, which can help it avoid errors of octave in some circumstances. The default value is recommended in most cases."
     },
     {
-      "name": "Track bias (dB)",
+      "name": "Track bias threshold",
       "min": -80,
       "max": 0,
       "default": -40,
-      "description": "Sets a signal threshold below which no attempt is made to track pitch.",
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets a signal threshold below which no attempt is made to track pitch."
     },
     {
       "name": "Harmony mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "enum_values": [
-        "Shape",
-        "SATB",
-        "MIDI"
-      ],
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the harmony mode – one of 'Shape', 'SATB', or 'MIDI'. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes."
     },
     {
       "name": "MIDI channel",
@@ -74,58 +51,172 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets whether the chord pitches should be absolutely in tune (allowing expressive pitch bending in a solo part over a straight backing), or in tune with the tracked audio (allowing the generated chords to bend with the tracked audio)."
+    },
+    {
+      "name": "Pitch output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the pitch CV output."
+    },
+    {
+      "name": "Env output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the envelope CV output."
+    },
+    {
+      "name": "Change trigger out",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "description": "The change trigger output bus – emits a trigger pulse when the current tracked note changes."
+    },
+    {
+      "name": "Change trigger mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the change trigger output."
+    },
+    {
+      "name": "Chord 1 output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the first chord note CV output."
+    },
+    {
+      "name": "Chord 2 output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the second chord note CV output."
+    },
+    {
+      "name": "Chord 3 output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the third chord note CV output."
+    },
+    {
+      "name": "Chord 4 output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the fourth chord note CV output."
+    },
+    {
+      "name": "Shift 1 output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the first pitch shifter CV output."
+    },
+    {
+      "name": "Shift 2 output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the second pitch shifter CV output."
+    },
+    {
+      "name": "Shift 3 output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above, for the third pitch shifter CV output."
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": "The audio input bus for pitch and envelope tracking."
+      "description": "The audio input bus."
+    },
+    {
+      "name": "Input",
+      "description": "The audio input bus."
     }
   ],
   "output_ports": [
     {
       "name": "Pitch output",
-      "description": "Outputs the tracked pitch as a CV signal."
+      "description": "The pitch CV output bus."
     },
     {
       "name": "Env output",
-      "description": "Outputs the detected envelope as a CV signal."
+      "description": "The envelope CV output bus."
     },
     {
       "name": "Change trigger out",
-      "description": "Emits a trigger pulse when the current tracked note changes."
+      "description": "The change trigger output bus – emits a trigger pulse when the current tracked note changes."
     },
     {
       "name": "Chord 1 output",
-      "description": "Pitch CV output bus for the first chord note."
+      "description": "The pitch CV output bus for the first chord note."
     },
     {
       "name": "Chord 2 output",
-      "description": "Pitch CV output bus for the second chord note."
+      "description": "The pitch CV output bus for the second chord note."
     },
     {
       "name": "Chord 3 output",
-      "description": "Pitch CV output bus for the third chord note."
+      "description": "The pitch CV output bus for the third chord note."
     },
     {
       "name": "Chord 4 output",
-      "description": "Pitch CV output bus for the fourth chord note."
+      "description": "The pitch CV output bus for the fourth chord note."
     },
     {
       "name": "Shift 1 output",
-      "description": "Pitch shift CV output bus for the first pitch shifter."
+      "description": "The pitch shift CV output bus for the first pitch shifter."
     },
     {
       "name": "Shift 2 output",
-      "description": "Pitch shift CV output bus for the second pitch shifter."
+      "description": "The pitch shift CV output bus for the second pitch shifter."
     },
     {
       "name": "Shift 3 output",
-      "description": "Pitch shift CV output bus for the third pitch shifter."
+      "description": "The pitch shift CV output bus for the third pitch shifter."
+    },
+    {
+      "name": "Pitch output",
+      "description": "The pitch CV output bus."
+    },
+    {
+      "name": "Env output",
+      "description": "The envelope CV output bus."
+    },
+    {
+      "name": "Chord 1 output",
+      "description": "The pitch CV output bus for the first chord note."
+    },
+    {
+      "name": "Chord 2 output",
+      "description": "The pitch CV output bus for the second chord note."
+    },
+    {
+      "name": "Chord 3 output",
+      "description": "The pitch CV output bus for the third chord note."
+    },
+    {
+      "name": "Chord 4 output",
+      "description": "The pitch CV output bus for the fourth chord note."
+    },
+    {
+      "name": "Shift 1 output",
+      "description": "The pitch shift CV output bus for the first pitch shifter."
+    },
+    {
+      "name": "Shift 2 output",
+      "description": "The pitch shift CV output bus for the second pitch shifter."
+    },
+    {
+      "name": "Shift 3 output",
+      "description": "The pitch shift CV output bus for the third pitch shifter."
     }
   ]
 }

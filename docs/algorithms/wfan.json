@@ -1,131 +1,37 @@
 {
   "guid": "wfan",
   "name": "Waveform Animator",
-  "description": "This algorithm is a version of the disting mk4 algorithm of the same name. It recreates an analogue circuit known as a waveform animator or wave multiplier. When given a sawtooth waveform as input, it uses comparators to generate square waves of suitable phase and pulse width such that when combined with the original sawtooth, they produce a richer, phase-shifted waveform resembling multiple VCOs. The algorithm employs four comparators and four LFOs for this purpose.\n\nThe comparator thresholds are set by combining the Threshold parameter and the Threshold CV input, along with the Separation parameter which defines a spread of individual thresholds around the center. The amplitude of square waves can be determined automatically via an envelope tracker or manually using the Track parameter. This effect works best when the square wave amplitude matches that of the sawtooth but can also create useful effects by fixing the square wave amplitude while varying the input signal's amplitude.\n\nThe algorithm includes adjustable parameters for threshold, tracking behavior, square wave count, LFO rate and depth, as well as routing controls for input/output buses.",
+  "description": "This algorithm recreates a popular analogue circuit variously known as a waveform animator or wave multiplier. Such a circuit, when given (typically) a sawtooth waveform as input, uses a comparator to generate a square wave of suitable phase and pulsewidth such that when the square and saw waves are added together the result is a phase shifted saw waveform. This is usually done a number of times and the results added with the overall effect of turning the original, rather plain, waveform into a much richer one which to all intents and purposes is the same as if you'd started with a number of VCOs rather than just one, and so sounds \"fatter\". In combination with LFOs varying the comparator thresholds, very rich textures can be generated. Here, four comparators and four LFOs are used.",
   "categories": [
-    "Waveform",
-    "Synthesis",
-    "Modulation",
-    "Audio Effects",
-    "Analog Emulation"
+    "Waveform Manipulation",
+    "Analog Modeling",
+    "Effects"
   ],
   "short_description": "Embiggens simple waveforms",
   "use_cases": [
-    "Creating richer, fatter sounds from a single oscillator",
-    "Generating complex textures with LFO modulation",
-    "Phase-shifted waveform synthesis",
-    "Adding harmonic complexity to sawtooth waveforms",
-    "CV-controlled threshold modulation"
+    "Thickening sawtooth waveforms",
+    "Generating rich textures with LFOs",
+    "Analog circuit simulation"
   ],
-  "gui_description": "The interface likely features knobs and sliders for Threshold, Track, Amplitude, Squares, Separation, Mix, LFO rate, and LFO depth. Routing controls include selectors for Input bus, Width (number of buses), Output bus, Output mode, and a CV input for Threshold.",
-  "parameters": [
+  "gui_description": "Waveform Animator interface with Threshold, Track, Amplitude, Squares, Separation, Mix, LFO rate, and LFO depth controls",
+  "input_ports": [
     {
-      "name": "Threshold",
-      "min": -10,
-      "max": 10,
-      "default": 0,
-      "type": "folder",
-      "is_bus": false
-    },
-    {
-      "name": "Track",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "type": "toggle",
-      "is_bus": false
-    },
-    {
-      "name": "Amplitude",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 5.0,
-      "type": "folder",
-      "is_bus": false
-    },
-    {
-      "name": "Squares",
-      "min": 1,
-      "max": 4,
-      "default": 4,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Separation",
-      "min": 0,
-      "max": 100,
-      "default": 50,
-      "type": "folder",
-      "is_bus": false
-    },
-    {
-      "name": "Mix",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "type": "folder",
-      "is_bus": false
-    },
-    {
-      "name": "LFO rate",
-      "min": 0,
-      "max": 1000,
-      "default": 699,
-      "type": "folder",
-      "is_bus": false
-    },
-    {
-      "name": "LFO depth",
-      "min": 0,
-      "max": 100,
-      "default": 10,
-      "type": "folder",
-      "is_bus": false
+      "name": "Input",
+      "description": "The first input bus to process."
     },
     {
       "name": "Width",
-      "min": 1,
-      "max": 8,
-      "default": 1,
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "type": "enum",
-      "is_bus": false
-    }
-  ],
-  "input_ports": [
-    {
-      "name": "Input signal",
-      "description": "The primary audio input (typically a sawtooth waveform) to be processed by the algorithm."
-    },
-    {
-      "name": "Threshold CV",
-      "description": "Control voltage input for modulating the comparator threshold, affecting the generated square waves and resulting waveforms."
-    },
-    {
-      "name": "Input",
-      "description": ""
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
     },
     {
       "name": "Threshold input",
-      "description": ""
+      "description": "The CV input bus for the comparator threshold."
     }
   ],
   "output_ports": [
     {
-      "name": "Output signal",
-      "description": "The processed waveform output, combining the original input with phase-shifted sawtooths and square waves."
-    },
-    {
       "name": "Output",
-      "description": ""
+      "description": "The first output bus."
     }
   ]
 }

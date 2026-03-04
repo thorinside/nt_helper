@@ -1,27 +1,17 @@
 {
   "guid": "fbrx",
   "name": "Feedback Receive/Send",
-  "description": "These two algorithms are taken together as they form a mechanism to introduce feedback into presets. Though perhaps misnamed – they can just as easily feed forward. Think of them as two ends of a teleport/hyperspace tunnel: what goes in one end (the send) comes out the other (the receive). If the receive is placed above the send in the preset, you have feedback; if placed after the send, it acts as a way to teleport busses past a section of the preset.\n\nBoth algorithms share an 'Identifier' parameter to match up send/receive pairs when multiple exist. The number of channels processed depends on specifications (1-8). If channel counts mismatch, only the smaller number is processed.\n\n**Warning:** Be cautious with feedback loops; the receive's gain defaults to -40dB (silent) for safety.",
+  "description": "These two algorithms are taken together, as they are two parts of a mechanism to introduce feedback into presets. Though perhaps they are misnamed – they can just as easily feed forward. Think of them as two ends of a teleport/hyperspace tunnel – what goes in one end (the send) comes out of the other (the receive). If the receive is placed above the send in the preset you have feedback; if the receive is placed after the send, you have a way of teleporting busses past a section of the preset.",
   "categories": [
-    "Routing",
-    "Signal Processing",
-    "Modulation",
-    "Feedback"
+    "Feedback",
+    "Signal Routing",
+    "Modular"
   ],
   "short_description": "Receive/send for internal feedback loop",
   "use_cases": [
-    "Creating feedback loops within presets",
-    "Teleporting audio busses across sections of a preset",
-    "Matching send/receive pairs for modular routing",
-    "Signal rerouting in complex patch structures"
-  ],
-  "gui_description": "Two distinct modules (Receive/Send) with shared identifier parameter. Channel-specific controls include input/output selection, gain adjustment, and enable/disable toggles.",
-  "specifications": [
-    {
-      "name": "Channels",
-      "min": 1,
-      "max": 8
-    }
+    "Feedback loops",
+    "Signal teleportation",
+    "Bus routing"
   ],
   "parameters": [
     {
@@ -29,63 +19,51 @@
       "min": 1,
       "max": 32,
       "default": 1,
-      "description": "An identifier to match up the receive with a send (or vice versa) when multiple pairs exist."
+      "description": "An identifier to match up the receive with a send.",
+      "type": "enum"
     },
     {
-      "name": "Output_mode",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum"
     },
     {
       "name": "Gain",
       "min": -40.0,
       "max": 24.0,
       "default": -40.0,
-      "type": "folder",
-      "is_bus": false
+      "description": "The gain applied to the received signal.",
+      "type": "enum"
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
-      "default": null,
       "description": "Enables or disables the channel.",
-      "is_bus": true
+      "type": "enum"
     }
   ],
   "input_ports": [
     {
-      "name": "Signal Input (Receive)",
-      "description": "Audio/CV signal input for the receive module, routed from a corresponding send."
-    },
-    {
-      "name": "Channel Inputs",
-      "description": "Per-channel inputs for the send module, sourced from specified busses.",
-      "isPerChannel": true
+      "name": "Input",
+      "description": "The bus to send."
     },
     {
       "name": "Input",
-      "description": ""
+      "description": "The bus to send."
     }
   ],
   "output_ports": [
     {
-      "name": "Signal Output (Receive)",
-      "description": "Audio/CV signal output routed to a specified bus after gain processing."
-    },
-    {
-      "name": "Output Bus",
-      "description": "The selected bus where the received or sent signal is directed.",
-      "isPerChannel": true
+      "name": "Output",
+      "description": "The bus on which to output the received signal."
     },
     {
       "name": "Output",
-      "description": ""
+      "description": "The bus on which to output the received signal."
     }
   ]
 }

@@ -1,0 +1,21 @@
+{
+  "guid": "pyfe",
+  "name": "Poly FM (Editable)",
+  "description": "A polyphonic FM synthesizer which forgoes multi-timbrality in favour of being able to edit the actual FM voice parameters, just as if you were editing a real DX7.",
+  "categories": [
+    "Synthesis",
+    "FM",
+    "Polyphonic"
+  ],
+  "short_description": "A polyphonic FM synthesizer",
+  "specifications": [
+    {
+      "name": "Voices",
+      "min": 1,
+      "max": 24
+    }
+  ],
+  "parameters": [],
+  "input_ports": [],
+  "output_ports": []
+}

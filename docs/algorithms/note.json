@@ -3,20 +3,17 @@
   "name": "Notes",
   "description": "This algorithm is simply a place to enter some text, perhaps an explanation of how the preset works, or your set list, or a reminder to buy milk. It has absolutely no effect on the busses and consumes no CPU.",
   "categories": [
-    "Utility",
-    "Text/Annotation"
+    "utility",
+    "text",
+    "documentation"
   ],
   "short_description": "A place to store some text",
-  "specifications": [
-    {
-      "name": "CPU_usage",
-      "value": "None (0%)"
-    },
-    {
-      "name": "Effect_on_busses",
-      "value": "None"
-    }
+  "use_cases": [
+    "preset explanation",
+    "set list",
+    "reminders"
   ],
+  "gui_description": "The display simply shows the lines of text all on one screen.",
   "parameters": [],
   "input_ports": [],
   "output_ports": []

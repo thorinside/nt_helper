@@ -1,50 +1,413 @@
 {
   "guid": "gran",
   "name": "Granulator",
-  "description": "This algorithm is an implementation of the original Granulator algorithm on the disting EX. It implements a granular synthesis engine, taking as its source material either live audio input or audio loaded from the MicroSD card. Live audio can be recorded into a buffer or streamed continuously.\n\nGranular synthesis works by playing many short snippets of sound, or 'grains', typically of the order of 100ms in length. Often various properties of the grains (e.g., their timing, length, pitch, stereo panning) are randomized to some extent.\n\nIn this algorithm, the creation ('spawning') of grains is controlled by 'notes'. Notes control when grain clouds begin and end, and affect other features such as grain pitch. Notes can be played via CV/gate pairs, MIDI, or I2C. The algorithm also offers three 'drone' voices that can simply be enabled via the parameter interface.\n\nThe display shows a waveform representation of the audio buffer with dots indicating currently playing grains. Two dotted lines represent the 'Size mean' (by separation) and 'Delay mean' (by position within the buffer). On the right, it shows current buffer size, delay, and number of grains playing.",
+  "description": "This algorithm is an implementation of the original Granulator algorithm on the disting EX. It implements a granular synthesis engine, taking as its source material either live audio input or audio loaded from the MicroSD card. Live audio can be recorded into a buffer or streamed continuously. Granular synthesis works by playing many short snippets of sound, or 'grains', typically of the order of 100ms in length. Often various properties of the grains (e.g. their timing, length, pitch, stereo panning etc.) are randomised to some extent. In this algorithm, the creation ('spawning') of grains is controlled by 'notes'. Notes control when grain clouds begin and end, and affect other features e.g. the grain pitch. Notes can be played via CV/gate pairs, or MIDI, or I2C. The algorithm also offers three 'drone' voices, which can simply be enabled via the usual parameter interface. When using the algorithm as an audio processing effect you're likely to just enable one or more of these drones and leave them on while manipulating other grain parameters.",
   "categories": [
-    "Granular Synthesis",
     "Audio Effects",
-    "Sampling",
-    "Modulation"
+    "Granular Synthesis",
+    "Sound Design"
   ],
-  "short_description": "A granulator",
+  "short_description": "A granular synthesis engine",
   "use_cases": [
-    "Live audio recording and processing",
-    "Sample playback with granular manipulation",
-    "Real-time sound design using CV/MIDI/I2C control",
-    "Granular synthesis for textural effects",
-    "Audio effects with feedback and drones"
+    "Audio processing effect",
+    "Live performance",
+    "Sound design",
+    "Texture generation"
   ],
-  "gui_description": "The display shows a waveform representation of the audio buffer, on which are superimposed dots indicating currently playing grains. The two dotted lines represent 'Size mean' (by separation) and 'Delay mean' (by position within the buffer). On the right side, it displays current buffer size, delay, and number of grains playing.",
+  "gui_description": "The display shows a waveform representation of the audio buffer, on which are superimposed dots indicating the currently playing grains. The two dotted lines represent the 'Size mean' (by their separation) and the 'Delay mean' (by their position within the buffer). On the right of the screen you can see the current buffer size, the current delay, and the number of grains currently playing.",
   "specifications": [
     {
       "name": "Max buffer size",
-      "value": "1-32 seconds"
+      "description": "1-32 seconds"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Input gain",
+      "min": -34,
+      "max": 12,
+      "default": 0,
+      "description": "Gain applied to the audio being recorded (does not affect the dry signal)."
+    },
+    {
+      "name": "Dry gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "Level of the input signal in the output mix."
+    },
+    {
+      "name": "Granulator gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "Level of the granulator signal in the output mix."
+    },
+    {
+      "name": "Input feedback",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The amount of feedback to apply around the audio buffer itself when recording (resulting in an echo effect on the input material, with a delay time equal to the buffer size)."
+    },
+    {
+      "name": "Main feedback",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The amount of the granulator output to feed back into the audio buffer when recording."
+    },
+    {
+      "name": "Normalize",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "If enabled, the overall volume of the grain cloud is lowered according to how many grains are active."
+    },
+    {
+      "name": "Record",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables recording into the buffer."
+    },
+    {
+      "name": "Buffer size",
+      "min": 100,
+      "max": 32000,
+      "default": 100,
+      "description": "The audio buffer size in milliseconds."
+    },
+    {
+      "name": "Record fade",
+      "min": 0,
+      "max": 1000,
+      "default": 5,
+      "description": "The duration of the fade applied when starting and stopping recording, to avoid clicks."
+    },
+    {
+      "name": "Shape",
+      "min": 0,
+      "max": 5,
+      "default": 0,
+      "description": "The grain envelope/window shape."
+    },
+    {
+      "name": "Spawn mode",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "description": "How grains are spawned."
+    },
+    {
+      "name": "Rate mean",
+      "min": 1,
+      "max": 1000,
+      "default": 5,
+      "description": "The average time between new grains being spawned."
+    },
+    {
+      "name": "Rate spread",
+      "min": 0,
+      "max": 200,
+      "default": 10,
+      "description": "The amount of variation in the spawn rate, expressed as a percentage of 'Rate mean'."
+    },
+    {
+      "name": "Size mean",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "description": "The average grain size. '0' has a special meaning – see below."
+    },
+    {
+      "name": "Size spread",
+      "min": 0,
+      "max": 200,
+      "default": 10,
+      "description": "The amount of variation in grain size, expressed as a percentage of 'Size mean'."
+    },
+    {
+      "name": "Pitch mean",
+      "min": -24,
+      "max": 24,
+      "default": 0,
+      "description": "The average grain pitch shift (in semitones). This is added to the pitch shift determined by the note's pitch CV."
+    },
+    {
+      "name": "Pitch spread",
+      "min": 0,
+      "max": 1200,
+      "default": 0,
+      "description": "The amount of variation in grain pitch shift."
+    },
+    {
+      "name": "Pan mean",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The average grain pan position."
+    },
+    {
+      "name": "Pan spread",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "description": "The amount of variation in grain pan."
+    },
+    {
+      "name": "Delay mean",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "The average grain delay (equivalently, the position in the audio buffer), expressed as a percentage of the buffer size."
+    },
+    {
+      "name": "Delay spread",
+      "min": 0,
+      "max": 100,
+      "default": 5,
+      "description": "The amount of variation in grain delay, expressed as a percentage of the buffer size."
+    },
+    {
+      "name": "Reverse",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the probability that a grain will be played backwards."
+    },
+    {
+      "name": "Grain limit",
+      "min": 1,
+      "max": 40,
+      "default": 40,
+      "description": "Imposes an arbitrary limit on the number of simultaneous grains."
+    },
+    {
+      "name": "Natural pitch",
+      "min": 0,
+      "max": 127,
+      "default": 48,
+      "description": "Sets the natural pitch of the audio i.e. the MIDI note number that will play back the audio at the same pitch at which it was recorded."
+    },
+    {
+      "name": "Pitch quantize",
+      "min": 0,
+      "max": 5,
+      "default": 0,
+      "description": "Quantizes the random pitch deviation (the sum of the 'Pitch mean' and 'Pitch spread') to musical intervals."
+    },
+    {
+      "name": "Opacity",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The 'opacity' of a note, which is the percentage of grains that would normally make up the note that actually sound."
+    },
+    {
+      "name": "Grain position",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets how the grain position is computed relative to the position set by the Delay mean/spread parameters. The options are 'Centred on delay' and 'Start at delay'."
+    },
+    {
+      "name": "LFO depth",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The depth of the LFO that affects the grain delay, expressed as a percentage of the buffer size."
+    },
+    {
+      "name": "LFO speed",
+      "min": 0,
+      "max": 255,
+      "default": 196,
+      "description": "The speed of the grain delay LFO. This is scaled relative to the buffer size – at the default value of 196 the LFO will cause the 'play head' (to use a tape metaphor) to advance at 1x speed."
+    },
+    {
+      "name": "LFO shape",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets the LFO shape. The options are 'Triangle', 'Ramp up', and 'Ramp down'."
+    },
+    {
+      "name": "Attack time",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "The envelope attack time, from 100ms to 30s with an exponential scaling."
+    },
+    {
+      "name": "Release time",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "The envelope release time, from 100ms to 30s with an exponential scaling."
+    },
+    {
+      "name": "Env -> opacity",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the note envelope affects the note opacity."
+    },
+    {
+      "name": "Env -> level",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The amount by which the note envelope affects the note level (volume)."
+    },
+    {
+      "name": "Veloc -> level",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The amount by which the note velocity affects the note level (volume)."
+    },
+    {
+      "name": "Veloc -> delay",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the note velocity affects the grain delay."
+    },
+    {
+      "name": "Pitch -> pitch",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The amount by which the note pitch affects the grain pitch. Commonly this will either be 100% (normal pitch tracking) or 0% (the incoming pitch doesn't affect the grain pitch at all, but may still affect e.g. the grain delay)."
+    },
+    {
+      "name": "Pitch -> delay",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the note pitch affects the grain delay."
+    },
+    {
+      "name": "Drone 1-3 pitch",
+      "min": 0,
+      "max": 127,
+      "default": "48/36/60",
+      "description": "The MIDI note number for the drone. Remember that 'Natural pitch' sets how these are interpreted. For the default Natural pitch of 48, done pitch 48 is the same pitch, drone pitch 36 is an octave down, and drone pitch 60 is an octave up."
+    },
+    {
+      "name": "Drone 1-3 enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables (gates) the drone."
+    },
+    {
+      "name": "Drone 1-3 opacity",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The opacity of the drone."
+    },
+    {
+      "name": "Drone 1-3 level",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "The level (volume) of the drone."
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "description": "The MIDI channel to listen on."
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Controls how the algorithm will respond to MPE. See above."
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range."
+    },
+    {
+      "name": "Delay unit",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Determines whether the Delay mean and spread parameters work in terms of % or ms."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Delay mean sampled",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "If enabled, the Delay mean input is sampled once at the start of a note. Otherwise, it is sampled afresh as every grain spawns."
     }
   ],
   "input_ports": [
     {
       "name": "Left input",
-      "description": "The left audio input bus for recording or processing."
+      "description": "The left audio input bus."
     },
     {
       "name": "Right input",
-      "description": "The right audio input bus for recording or processing."
+      "description": "The right audio input bus."
     },
     {
-      "name": "Delay mean input (CV)",
-      "description": "A CV input controlling the grain delay, where 5V corresponds to 100% of buffer size."
+      "name": "Delay mean input",
+      "description": "The input bus to use to control the grain delay. A CV of 5V corresponds to 100% of the buffer size."
+    },
+    {
+      "name": "Left input",
+      "description": "The left audio input bus."
+    },
+    {
+      "name": "Right input",
+      "description": "The right audio input bus."
+    },
+    {
+      "name": "Delay mean input",
+      "description": "The input bus to use to control the grain delay. A CV of 5V corresponds to 100% of the buffer size."
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": "The left audio output bus for processed or generated signal."
+      "description": "The left audio output bus."
     },
     {
       "name": "Right output",
-      "description": "The right audio output bus for processed or generated signal."
+      "description": "The right audio output bus."
+    },
+    {
+      "name": "Left output",
+      "description": "The left audio output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right audio output bus."
     }
   ]
 }

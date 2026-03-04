@@ -1,71 +1,60 @@
 {
   "guid": "spsq",
   "name": "Step Sequencer",
-  "description": "A simple note sequencer based on the sequencers in the Expert Sleepers FH-2 module. It can output CV and/or MIDI with each of its 16 steps featuring pitch, velocity, modulation values, division (repeat/ratchet count), pattern (substep activation), and ties for legato playback or gliding CV outputs. The algorithm supports randomization of pitches, rhythm, or both across 32 stored sequences, which can be switched manually or via CV control. Parameters are mappable, enabling complex modulation patterns like LFO-driven pitch evolution.",
+  "description": "A simple note sequencer based on the sequencers in the Expert Sleepers FH-2 module. It can output CVs and/or MIDI. Each step has pitch, velocity, and a general-purpose 'modulation' value. It also has a 'Division', which can either be a repeat count or a ratchet count. Each substep can be on or off, set by the 'Pattern' parameter. Each step or substep can be a tie, set by the 'Ties' parameter. The algorithm has a function for randomising the pitches, rhythm, or both. Each Step Sequencer has internal storage for 32 sequences, which you can use like 'snapshots' or 'patterns' to prepare a number of sequences and then switch between them to build up songs.",
   "categories": [
     "Sequencer",
-    "MIDI",
+    "Rhythm",
     "CV",
-    "Pattern Generation",
-    "Modulation"
+    "MIDI"
   ],
   "short_description": "A simple note sequencer",
   "use_cases": [
-    "Generating rhythmic and melodic patterns for live performance or composition",
-    "Creating evolving sequences with LFO modulation of step parameters",
-    "Building layered sequences by chaining multiple stored patterns",
-    "Randomizing pitches, rhythms, or both for procedural music generation",
-    "Sequencing sequences via CV control for modular synth integration"
+    "Step sequencing",
+    "Rhythm programming",
+    "CV/MIDI output",
+    "Pattern generation"
   ],
-  "gui_description": "The GUI displays an overview of the 16 steps with pitch values across the top. The current step is highlighted, and start/end steps are marked by solid bars. Edited parameters are visually emphasized, while divisions (repeats/ratchets) and ties are shown graphically as blocks or longer bars. Pitches, velocities, and modulation values for each step are displayed via thin lines to the left.",
-  "specifications": [
-    {
-      "name": "Polyphony",
-      "description": "Unlimited (MIDI output only)"
-    },
-    {
-      "name": "Stored Sequences",
-      "value": 32
-    }
-  ],
+  "gui_description": "The display shows an overview of the 16 steps. The step pitches are displayed across the top of the screen. The current step being played is indicated by a highlight on the pitch value.",
+  "specifications": [],
   "input_ports": [
     {
-      "name": "Clock Input",
-      "description": "Bus used as the clock input for triggering steps."
+      "name": "Clock input",
+      "description": "The bus to use as the clock input."
     },
     {
-      "name": "Reset Input",
-      "description": "Bus used to reset the sequencer or trigger run/stop actions, depending on Reset mode setting."
+      "name": "Reset input",
+      "description": "The bus to use as the reset input."
     },
     {
-      "name": "Sequence CV Input",
-      "description": "CV input scaled such that a semitone (1/12th of a Volt) corresponds to one sequence increment. Used for switching sequences via CV control."
+      "name": "Sequence CV input",
+      "description": "The bus to use to select the sequence."
     },
     {
-      "name": "Sequence Trigger Input",
-      "description": "Trigger input used in conjunction with Sequence CV Input to change sequences on trigger events."
+      "name": "Sequence trigger input",
+      "description": "The bus to use for the sequence select trigger."
     }
   ],
   "output_ports": [
     {
-      "name": "Pitch Output",
-      "description": "CV output for step pitch values, scaled as MIDI note numbers (0-127)."
+      "name": "Pitch output",
+      "description": "The bus to use for the pitch CV output."
     },
     {
-      "name": "Gate Output",
-      "description": "CV gate signal indicating when a step is active. Length determined by Gate type and length settings."
+      "name": "Gate output",
+      "description": "The bus to use for the gate output."
     },
     {
-      "name": "Velocity Output",
-      "description": "CV output for step velocity values (1-127)."
+      "name": "Velocity output",
+      "description": "The bus to use for the velocity output."
     },
     {
-      "name": "Modulation Output",
-      "description": "CV output for step modulation values (-10.0 to 10.0 Volts)."
+      "name": "Mod output",
+      "description": "The bus to use for the modulation CV output."
     },
     {
-      "name": "Step Output",
-      "description": "CV output representing the current sequencer step number, scaled as 1/12th of a Volt per step."
+      "name": "Step output",
+      "description": "The bus to use for the step CV output."
     }
   ]
 }

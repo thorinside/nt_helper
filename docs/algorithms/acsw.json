@@ -1,30 +1,22 @@
 {
   "guid": "acsw",
   "name": "Accent sweep",
-  "description": "This algorithm recreates a very specific aspect of the Roland TB-303’s circuitry. It creates an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered, based on the Devil Fish write-up detailing the unique behavior of the TB-303's accent sweep circuit.",
+  "description": "This algorithm recreates a very specific aspect of the Roland TB-303's circuitry. There is a lengthy write-up on it on the Devil Fish page here, but essentially it creates an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered.",
   "categories": [
-    "Envelope",
-    "Synth",
-    "Roland TB-303 Emulation",
-    "Audio Processing"
+    "Audio Effects",
+    "Envelope Shaping",
+    "TB-303 Emulation"
   ],
   "short_description": "AD envelope with variable peak",
-  "use_cases": [
-    "Emulating Roland TB-303 accent sweep behavior",
-    "Creating dynamic AD envelopes for synths",
-    "Adding rhythmic emphasis to repetitive triggers",
-    "Shaping audio signals with variable peaks"
-  ],
   "gui_description": "The display shows the input (dark) and output (light) signals.",
-  "specifications": [],
   "parameters": [
     {
       "name": "Input mode",
       "min": 0,
       "max": 1,
       "default": 0,
+      "description": "Sets how the input is treated: Direct feeds the input signal directly into the AD shaper. Trigger uses the input to trigger an internal pulse, which is fed into the shaper.",
       "type": "enum",
-      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -32,8 +24,8 @@
       "min": 1,
       "max": 200,
       "default": 100,
-      "type": "scaled",
-      "is_per_channel": false,
+      "description": "If the input mode is Trigger, the length of the pulse.",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -41,8 +33,8 @@
       "min": 0.1,
       "max": 10.0,
       "default": 10.0,
-      "type": "scaled",
-      "is_per_channel": false,
+      "description": "If the input mode is Trigger, the voltage of the pulse.",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -50,8 +42,8 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "scaled",
-      "is_per_channel": false,
+      "description": "This is the position of the pot (potentiometer), if you studied the Devil Fish write-up. At 0% the output is quite close to the input; at 100% it is heavily affected by the AD shaper.",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -59,8 +51,8 @@
       "min": 0,
       "max": 24,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": false,
+      "description": "Applies a gain to the output shape.",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -68,8 +60,8 @@
       "min": 1,
       "max": 470,
       "default": 47,
-      "type": "scaled",
-      "is_per_channel": false,
+      "description": "The value of the charge resistor.",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -77,8 +69,8 @@
       "min": 1,
       "max": 470,
       "default": 100,
-      "type": "scaled",
-      "is_per_channel": false,
+      "description": "The value of the discharge resistor.",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -86,8 +78,8 @@
       "min": 1,
       "max": 470,
       "default": 100,
-      "type": "scaled",
-      "is_per_channel": false,
+      "description": "The value of the potentiometer.",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -95,8 +87,8 @@
       "min": 0.1,
       "max": 10.0,
       "default": 1.0,
-      "type": "scaled",
-      "is_per_channel": false,
+      "description": "The value of the capacitor.",
+      "type": "enum",
       "is_bus": false
     },
     {
@@ -104,21 +96,29 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "description": "The standard Add/Replace mode selector as described above.",
       "type": "enum",
-      "is_per_channel": false,
       "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Input",
-      "description": ""
+      "description": "Input signal to the algorithm"
+    },
+    {
+      "name": "Input",
+      "description": "The bus to use as input."
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": ""
+      "description": "Processed output signal from the algorithm"
+    },
+    {
+      "name": "Output",
+      "description": "The bus to use as output."
     }
   ]
 }

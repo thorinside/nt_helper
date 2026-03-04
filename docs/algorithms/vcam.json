@@ -3,78 +3,65 @@
   "name": "VCA/Multiplier",
   "description": "This algorithm is a voltage multiplier, which can be used as a VCA. The CV on the common channel is used to multiply the voltages on the other channels.",
   "categories": [
-    "Modulation",
-    "Signal Routing",
-    "Voltage Controlled Amplifier (VCA)",
-    "Multiplier"
+    "vca",
+    "multiplier",
+    "analog"
   ],
-  "short_description": "\"Four quadrant multiplier\"",
-  "specifications": [
+  "short_description": "Four quadrant multiplier",
+  "parameters": [
     {
       "name": "Channels",
       "min": 1,
-      "max": 8
-    }
-  ],
-  "parameters": [
-    {
-      "name": "Input (Common)",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "description": "The common input bus."
+      "max": 8,
+      "description": "The number of bus channels to process."
     },
     {
       "name": "Clamp to 0V",
-      "type": "toggle",
-      "busIdRef": "Input (Common)",
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Clamp_to_0V",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "toggle",
-      "is_common": true,
-      "is_bus": false
+      "description": "Whether to clamp the common input to 0V (typical VCA usage) or not (four quadrant multiplier usage)."
     },
     {
-      "name": "Divider (Common)",
+      "name": "Divider",
       "min": 1,
       "max": 12,
       "default": 8,
-      "scope": "global",
-      "type": "scaled",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the scaling of the input CV that corresponds to unity gain.",
+      "type": "folder",
+      "is_per_channel": false
     },
     {
-      "name": "Input (Per-channel)",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "description": "The channel input bus.",
-      "type": "bus"
-    },
-    {
-      "name": "Output_mode",
+      "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "The standard Add/Replace mode selector.",
-      "enum_values": [
-        "Add",
-        "Replace"
-      ]
+      "description": "The standard Add/Replace mode selector as described above.",
+      "is_per_channel": true
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Input",
+      "description": "The common input bus."
+    },
+    {
+      "name": "Input",
+      "description": "The common input bus."
+    },
+    {
+      "name": "Input",
+      "description": "The channel input bus."
+    }
+  ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
+      "description": "The output bus."
+    },
+    {
+      "name": "Output",
+      "description": "The output bus. If set to None, the input bus is used as output, and the mode is always Replace."
     }
   ]
 }

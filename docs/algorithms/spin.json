@@ -1,30 +1,26 @@
 {
   "guid": "spin",
   "name": "Three Pot",
-  "description": "This algorithm allows you to run what are effectively DSP 'plug-ins', loaded from the MicroSD card. It was designed particularly to support programs written for the Spin Semiconductor FV-1 chip, a popular IC used in various Eurorack modules like FX Aid and Timiszoara. The name 'Three Pot' comes from the FV-1 hardware design, which features stereo inputs/outputs and three pots for user controls.\n\nAlthough primarily focused on converted FV-1 programs, the algorithm translates these to C++ and compiles them for the disting NT, enabling direct C++ programming as well. Programs are stored in JSON format with a '.3pot' extension inside the `/programs/three_pot` folder on the MicroSD card.\n\nThe 'Pre/post gain' parameter adjusts signal levels between normalized FV-1 DSP (±1.0) and disting NT's voltage range (±10.0V). The UI dynamically displays program names, pot labels, descriptions, and allows direct control of three physical pots mapped to the program parameters.",
+  "description": "This algorithm allows you to run what are effectively DSP plug-ins, loaded from the MicroSD card. It was designed particularly to support programs written for the Spin Semiconductor FV-1 chip. The name Three Pot comes from the FV-1 hardware design all it has are stereo inputs and outputs, and connections for three pots for user controls. Although the focus is on converted FV-1 programs, the conversion works by translating the programs to C++ and then compiling them for the disting NT so you can if you like actually write C++ directly and use this algorithm to run it on the module.",
   "categories": [
     "DSP",
-    "Audio Processing",
-    "Modular Synthesis",
-    "External Program Loading",
-    "Sample Rate Conversion"
+    "Plugin Loader",
+    "FV-1",
+    "Audio Processing"
   ],
   "short_description": "Runs DSP code from the SD card",
   "use_cases": [
-    "Running converted FV-1 programs on disting NT",
-    "Direct C++ audio processing",
-    "Eurorack module emulation",
-    "Custom DSP patching via MicroSD-loaded programs"
+    "Running FV-1 DSP programs",
+    "Running custom C++ DSP code",
+    "Eurorack module integration"
   ],
-  "gui_description": "The UI dynamically shows the program name, pot labels, and description from the loaded .3pot file. The three physical pots on the disting NT directly control the first three parameters of the selected program. The right encoder is used to change programs. During program selection, the display shows a detailed description of the chosen program.",
+  "gui_description": "The UI for this algorithm is currently unique on the disting NT in that it not only provides a custom display, but it also changes the way the knobs work. Having three physical pots on the module, matched up to the three controls on each program, was just too good an opportunity to ignore. The display shows the program name, pot labels, and description all from the 3pot file if provided. The three pots on the module control the three pot parameters directly. Additionally, the right encoder changes the program.",
   "specifications": [
     {
-      "name": "Code memory allocation",
-      "description": "Assignable in multiples of 512 bytes (range: 1-24)"
-    },
-    {
-      "name": "Sample rate range",
-      "value": "8.0 kHz to 40.0 kHz"
+      "name": "Code memory",
+      "description": "The amount of code memory to assign to the algorithm in multiples of 512 bytes",
+      "min": 1,
+      "max": 24
     }
   ],
   "parameters": [
@@ -34,123 +30,159 @@
       "max": 999,
       "default": 0,
       "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Pot 1",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Pot 2",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Pot 3",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Pre/post gain",
       "min": -36,
       "max": 0,
       "default": -20,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Mix style",
       "min": 0,
       "max": 2,
       "default": 0,
-      "enum_values": [
-        "None",
-        "Wet/dry",
-        "Independent"
-      ],
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Dry gain",
       "min": -40,
       "max": 24,
       "default": -40,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Wet gain",
       "min": -40,
       "max": 24,
       "default": 0,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Rate conversion",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     },
     {
       "name": "Sample rate",
       "min": 8.0,
       "max": 40.0,
       "default": 32.0,
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "folder",
+      "channelCountRef": "Left input",
+      "isPerChannel": false,
+      "isCommon": true
     }
   ],
   "input_ports": [
     {
       "name": "Left input",
-      "description": "The left audio input bus (range: 1-28)"
+      "description": "The left audio input bus."
     },
     {
       "name": "Right input",
-      "description": "The right audio input bus (range: 1-28)"
+      "description": "The right audio input bus."
+    },
+    {
+      "name": "Left input",
+      "description": "",
+      "isPerChannel": false
+    },
+    {
+      "name": "Right input",
+      "description": "",
+      "isPerChannel": false
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": "The left audio output bus (range: 1-28)"
+      "description": "The left audio output bus."
     },
     {
       "name": "Right output",
-      "description": "The right audio output bus (range: 1-28)"
+      "description": "The right audio output bus."
+    },
+    {
+      "name": "Left output",
+      "description": "",
+      "isPerChannel": false
+    },
+    {
+      "name": "Right output",
+      "description": "",
+      "isPerChannel": false
     }
   ]
 }

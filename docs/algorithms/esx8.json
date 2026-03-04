@@ -3,125 +3,116 @@
   "name": "ESX-8CV Combiner",
   "description": "This algorithm allows you to drive the outputs of an ESX-8CV module attached to an ES-5 expander which is in turn attached to the disting NT.",
   "categories": [
-    "Modular Synthesis",
+    "Audio Processing",
     "Hardware Control",
-    "Audio Routing"
+    "Expander"
   ],
   "short_description": "Drives ESX-8CV outputs",
-  "use_cases": [
-    "Synthesizer output routing",
-    "Hardware modular control",
-    "Adaptive hardware update optimization"
-  ],
-  "gui_description": null,
-  "specifications": [],
   "parameters": [
     {
       "name": "Expander",
       "min": 1,
       "max": 6,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Chooses the expansion header on the ES-5 to which the ESX-8CV is connected."
     },
     {
       "name": "Adaptive",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Controls whether the algorithm will update all eight of the hardware outputs continuously (non-adaptive mode), or only those outputs that are changing (adaptive mode)."
     },
     {
-      "name": "1",
+      "name": "Output 1 Bus",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 1,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The inputs bus from which to drive output 1."
     },
     {
-      "name": "2",
+      "name": "Output 2 Bus",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 2,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The inputs bus from which to drive output 2."
     },
     {
-      "name": "3",
+      "name": "Output 3 Bus",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 3,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The inputs bus from which to drive output 3."
     },
     {
-      "name": "4",
+      "name": "Output 4 Bus",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 4,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The inputs bus from which to drive output 4."
     },
     {
-      "name": "5",
+      "name": "Output 5 Bus",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 5,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The inputs bus from which to drive output 5."
     },
     {
-      "name": "6",
+      "name": "Output 6 Bus",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 6,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The inputs bus from which to drive output 6."
     },
     {
-      "name": "7",
+      "name": "Output 7 Bus",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 7,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The inputs bus from which to drive output 7."
     },
     {
-      "name": "8",
+      "name": "Output 8 Bus",
       "min": 0,
-      "max": 28,
+      "max": 64,
       "default": 8,
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The inputs bus from which to drive output 8."
     }
   ],
   "input_ports": [],
   "output_ports": [
     {
-      "name": "ESX-8CV Outputs (1-8)",
-      "description": "Eight hardware-controlled CV outputs of the ESX-8CV module, driven by internal audio buses."
+      "name": "ESX-8CV Output 1",
+      "description": "Hardware output 1 of the ESX-8CV module"
+    },
+    {
+      "name": "ESX-8CV Output 2",
+      "description": "Hardware output 2 of the ESX-8CV module"
+    },
+    {
+      "name": "ESX-8CV Output 3",
+      "description": "Hardware output 3 of the ESX-8CV module"
+    },
+    {
+      "name": "ESX-8CV Output 4",
+      "description": "Hardware output 4 of the ESX-8CV module"
+    },
+    {
+      "name": "ESX-8CV Output 5",
+      "description": "Hardware output 5 of the ESX-8CV module"
+    },
+    {
+      "name": "ESX-8CV Output 6",
+      "description": "Hardware output 6 of the ESX-8CV module"
+    },
+    {
+      "name": "ESX-8CV Output 7",
+      "description": "Hardware output 7 of the ESX-8CV module"
+    },
+    {
+      "name": "ESX-8CV Output 8",
+      "description": "Hardware output 8 of the ESX-8CV module"
     }
   ]
 }

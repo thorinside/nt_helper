@@ -1,0 +1,92 @@
+{
+  "guid": "sldt",
+  "name": "Slope Detector",
+  "description": "This algorithm provides slope detection, a classic modular synthesizer function that has been part of the synthesist's toolkit since the very early days of modular. It takes a CV input, and provides three outputs – simple gates that tell you whether the signal is rising, falling, or steady. If you would prefer to have trigger outputs (e.g. a trigger that tells you when a signal has started to rise), you can feed the outputs from this algorithm into a Delayed Function algorithm (above) to convert the gates into triggers. If you need simple inverse outputs (e.g. say you want 'changing' instead of 'steady'), use a Logic algorithm (above).",
+  "categories": [
+    "Signal Processing",
+    "CV Processing",
+    "Detector"
+  ],
+  "short_description": "Detects slopes",
+  "parameters": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 12,
+      "description": "The number of detector channels."
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Rising output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector as described above, for the 'rising' signal."
+    },
+    {
+      "name": "Steady output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector as described above, for the 'steady' signal."
+    },
+    {
+      "name": "Falling output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector as described above, for the 'falling' signal."
+    },
+    {
+      "name": "Sensitivity",
+      "min": 1,
+      "max": 1000,
+      "default": 100,
+      "description": "The detector sensitivity.",
+      "type": "string",
+      "isPerChannel": true
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "CV Input",
+      "description": "CV input signal for slope detection."
+    },
+    {
+      "name": "Input",
+      "description": "The input bus to process."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Rising Output",
+      "description": "Gate output for rising signal."
+    },
+    {
+      "name": "Falling Output",
+      "description": "Gate output for falling signal."
+    },
+    {
+      "name": "Steady Output",
+      "description": "Gate output for steady signal."
+    },
+    {
+      "name": "Rising output",
+      "description": "The output bus for the 'rising' signal."
+    },
+    {
+      "name": "Steady output",
+      "description": "The output bus for the 'steady' signal."
+    },
+    {
+      "name": "Falling output",
+      "description": "The output bus for the 'falling' signal."
+    }
+  ]
+}

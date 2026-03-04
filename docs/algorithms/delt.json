@@ -1,109 +1,78 @@
 {
   "guid": "delt",
   "name": "Delay (Tape)",
-  "description": "This algorithm is based on the disting mk4 algorithm 'D-2 Tape Delay', which is itself a simplified version of the 'Augustus Loop' effect. It is a delay/echo effect which simulates a variable speed tape loop echo device.\n\nThe 'Tape length' parameter sets the range of delay times available. Note though that changing this may introduce clicks and pops. The primary means of changing the delay time is the 'Tape speed' parameter and/or the Speed CV input.\n\nThe tape speed can be set in the range from half speed (0.5x) to double speed (2x). If using the CV input, the scaling is 8V/octave i.e. +8V gives double speed and -4V gives half speed.\n\nThree options are available for how the wet/dry mix is controlled:\n- With feedback: The amount of delay in the mix rises in direct proportion to the amount of feedback.\n- Crossfade: The 'Mix' parameter is a crossfader.\n- Add delay: The dry level is constant, and the 'Mix' parameter adds in the delay signal.",
+  "description": "This algorithm is based on the disting mk4 algorithm D-2 Tape Delay, which is itself a simplified version of the Augustus Loop effect. It is a delay/echo effect which simulates a variable speed tape loop echo device.",
   "categories": [
     "Delay",
     "Echo",
-    "Modulation",
-    "Effects"
+    "Tape Effect"
   ],
   "short_description": "A tape delay effect",
   "use_cases": [
-    "Music production (delay/echo effects)",
-    "Sound design (tape simulation)",
-    "Live performance (variable-speed delays)"
+    "Tape delay simulation",
+    "Variable speed delay",
+    "Echo effects"
   ],
-  "specifications": [
-    {
-      "name": "Max tape length",
-      "value": "1-30 seconds",
-      "description": "The maximum length of the 'tape'"
-    },
-    {
-      "name": "Stereo support",
-      "value": true,
-      "description": "Algorithm supports stereo processing"
-    }
-  ],
+  "gui_description": "Tape delay effect interface with tape length and speed controls",
   "parameters": [
     {
       "name": "Mix mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets how the delay and dry signals are mixed. See above."
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "scope": "global",
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Controls the wet/dry mix, unless the Mix mode is With feedback."
     },
     {
       "name": "Feedback",
       "min": 0,
       "max": 110,
       "default": 50,
-      "scope": "global",
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "The delay feedback."
     },
     {
       "name": "Tape length",
       "min": 1,
       "max": 250,
-      "default": null,
-      "scope": "global",
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "default": 250,
+      "description": "Sets the length of the tape i.e. the delay time at 1x speed."
     },
     {
       "name": "Tape speed",
       "min": -500,
       "max": 1000,
       "default": 0,
-      "scope": "global",
-      "type": "scaled",
-      "is_per_channel": false,
-      "is_bus": false
+      "description": "Sets the tape speed (in conjunction with the CV input)."
     }
   ],
   "input_ports": [
     {
       "name": "Left/mono input",
-      "description": "The left or mono input bus for the delay effect.",
-      "busIdRef": "1"
+      "description": "The left input bus."
     },
     {
       "name": "Right input",
-      "description": "The right input bus for stereo processing.",
-      "busIdRef": "2"
+      "description": "The right input bus."
     },
     {
-      "name": "Speed CV input",
-      "description": "CV input controlling the tape speed (8V/octave scaling).",
-      "busIdRef": "0"
+      "name": "Speed input",
+      "description": "The tape speed CV input bus."
     }
   ],
   "output_ports": [
     {
       "name": "Left/mono output",
-      "description": "The left or mono output bus for the processed signal.",
-      "busIdRef": "13"
+      "description": "The left output bus."
     },
     {
       "name": "Right output",
-      "description": "The right output bus for stereo processing.",
-      "busIdRef": "14"
+      "description": "The right output bus."
     }
   ]
 }

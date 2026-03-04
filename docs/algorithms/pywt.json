@@ -1,30 +1,453 @@
 {
   "guid": "pywt",
   "name": "Poly Wavetable",
-  "description": "This algorithm is a complete polyphonic synthesizer using wavetable oscillators. Each voice has two envelopes, a filter and an LFO. It is inspired by the original Poly Wavetable algorithm on the disting EX. The display shows notes being played with superimposed envelope bars for each voice, along with the waveform of the most recently played note's wavetable.",
+  "description": "A polyphonic wavetable synthesizer inspired by the original Poly Wavetable algorithm on the disting EX. It is a complete polyphonic synthesizer, using wavetable oscillators. Each voice has two envelopes, a filter and an LFO.",
   "categories": [
     "Synthesizer",
-    "Polyphonic",
-    "Wavetable"
+    "Wavetable",
+    "Polyphonic"
   ],
   "short_description": "A polyphonic wavetable synthesizer",
-  "gui_description": "The display shows notes being played by the various voices, each superimposed on a bar to indicate the note envelope. The waveform within the wavetable of the most recently played note is also shown.",
+  "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar to indicate the note envelope. The waveform within the wavetable of the most recently played note is also shown.",
   "specifications": [
     {
       "name": "Voices",
-      "min": 1,
-      "max": 24
+      "value": "1-24",
+      "description": "The number of simultaneous voices."
     }
   ],
-  "input_ports": [],
+  "parameters": [
+    {
+      "name": "Wavetable",
+      "min": 0,
+      "max": null,
+      "default": 0,
+      "description": "Chooses the wavetable from those installed on the MicroSD card."
+    },
+    {
+      "name": "Wave offset",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "An offset for the wavetable position, added to that set from the wave input."
+    },
+    {
+      "name": "Wave spread",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "An amount by which to spread out the per-voice wavetable positions."
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 127,
+      "default": 20,
+      "description": "Envelope attack time. Range 1ms-15s."
+    },
+    {
+      "name": "Decay",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Envelope decay time. Range 20ms-15s."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 127,
+      "default": 80,
+      "description": "Envelope sustain level."
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Envelope release time. Range 10ms-30s."
+    },
+    {
+      "name": "Attack shape",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Envelope attack shape. '0' is highly exponential; '127' is almost linear."
+    },
+    {
+      "name": "Decay shape",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Envelope decay & release shape."
+    },
+    {
+      "name": "Filter type",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "The filter type; 'Off', 'Lowpass', 'Bandpass' or 'Highpass'."
+    },
+    {
+      "name": "Filter freq",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "The filter frequency, specified as a MIDI note number."
+    },
+    {
+      "name": "Filter Q",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "The filter resonance."
+    },
+    {
+      "name": "LFO speed",
+      "min": -100,
+      "max": 100,
+      "default": 90,
+      "description": "The LFO speed. Range 0.01Hz-10Hz."
+    },
+    {
+      "name": "LFO retrigger",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets whether the LFOs are retriggered at note on. The options are 'Poly' (each voice's LFO triggers independently), 'Mono' (all LFOs are retriggered when the first note is played), or 'Off' (LFOs are free-running).",
+      "enum_values": [
+        "Poly",
+        "Mono",
+        "Off"
+      ]
+    },
+    {
+      "name": "LFO spread",
+      "min": 0,
+      "max": 90,
+      "default": 0,
+      "description": "Degrees",
+      "type": "enum"
+    },
+    {
+      "name": "LFO phase",
+      "min": 0,
+      "max": 360,
+      "default": 0,
+      "description": "Sets the phase to which LFOs are retriggered. The value, in degrees (360° per LFO cycle), is multiplied by the voice number to give the initial LFO phase. When retrigger is off, this sets the phase relationship between the free-running LFOs."
+    },
+    {
+      "name": "Veloc -> volume",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The amount by which the note velocity affects the note volume.",
+      "type": "enum"
+    },
+    {
+      "name": "Veloc -> wave",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the note velocity affects the wavetable position.",
+      "type": "enum"
+    },
+    {
+      "name": "Veloc -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which the note velocity affects the filter frequency.",
+      "type": "enum"
+    },
+    {
+      "name": "Pitch -> wave",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the note pitch affects the wavetable position.",
+      "type": "enum"
+    },
+    {
+      "name": "Pitch -> filter",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the note pitch affects the filter frequency.",
+      "type": "enum"
+    },
+    {
+      "name": "Env-1 -> wave",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which envelope 1 affects the wavetable position.",
+      "type": "enum"
+    },
+    {
+      "name": "Env-1 -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which envelope 1 affects the filter frequency.",
+      "type": "enum"
+    },
+    {
+      "name": "Env-2 -> wave",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which envelope 2 affects the wavetable position.",
+      "type": "enum"
+    },
+    {
+      "name": "Env-2 -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which envelope 2 affects the filter frequency.",
+      "type": "enum"
+    },
+    {
+      "name": "Env-2 -> pitch",
+      "min": -12.0,
+      "max": 12.0,
+      "default": 0.0,
+      "description": "The amount by which envelope 2 affects the note pitch.",
+      "type": "enum"
+    },
+    {
+      "name": "LFO -> wave",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the LFO affects the wavetable position.",
+      "type": "enum"
+    },
+    {
+      "name": "LFO -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which the LFO affects the filter frequency.",
+      "type": "enum"
+    },
+    {
+      "name": "LFO -> pitch",
+      "min": -12.0,
+      "max": 12.0,
+      "default": 0.0,
+      "description": "The amount by which the LFO affects the note pitch.",
+      "type": "enum"
+    },
+    {
+      "name": "Press -> volume",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which pressure (per note for MPE) affects the note volume.",
+      "type": "enum"
+    },
+    {
+      "name": "Press -> wave",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which pressure (per note for MPE) affects the wavetable position.",
+      "type": "enum"
+    },
+    {
+      "name": "Press -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which pressure (per note for MPE) affects the filter frequency.",
+      "type": "enum"
+    },
+    {
+      "name": "MPE Y -> volume",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the MPE Y dimension affects the note volume.",
+      "type": "enum"
+    },
+    {
+      "name": "MPE Y -> wave",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the MPE Y dimension affects the wavetable position.",
+      "type": "enum"
+    },
+    {
+      "name": "MPE Y -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which the MPE Y dimension affects the filter frequency.",
+      "type": "enum"
+    },
+    {
+      "name": "Unison",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of voices to play simultaneously for each note triggered."
+    },
+    {
+      "name": "Unison detune",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "description": "The detune amount when Unison is active.",
+      "type": "enum"
+    },
+    {
+      "name": "Output spread",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount of output spread.",
+      "type": "enum"
+    },
+    {
+      "name": "Spread mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "The output spread mode. See below.",
+      "enum_values": [
+        "Spread by voice",
+        "Spread by voice 2",
+        "Spread by pitch"
+      ]
+    },
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "Applies an overall output gain.",
+      "type": "enum"
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum"
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel to listen on.",
+      "type": "enum"
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Controls how the algorithm will respond to MPE. See above.",
+      "type": "enum"
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel.",
+      "type": "enum"
+    },
+    {
+      "name": "Max voices",
+      "min": 1,
+      "max": 24,
+      "default": 24,
+      "description": "Sets the maximum number of simultaneous voices.",
+      "type": "enum"
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard polysynth sustain mode parameter. See above.",
+      "type": "enum"
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain pedal).",
+      "type": "enum"
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range.",
+      "type": "enum"
+    },
+    {
+      "name": "Trigger mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets the note triggering mode. See below.",
+      "enum_values": [
+        "Gated",
+        "Triggered"
+      ]
+    },
+    {
+      "name": "Spread by voice",
+      "description": "Voices are spread across the stereo field from left to right."
+    },
+    {
+      "name": "Spread by voice 2",
+      "description": "Voices are spread across the stereo field in an alternating left/right manner, by a small amount for low numbered voices, increasing for the remaining voices."
+    },
+    {
+      "name": "Spread by pitch",
+      "description": "Voices are spread across the stereo field according to their pitch, with note 48 at the centre."
+    },
+    {
+      "name": "Gated",
+      "description": "Normal operation. Notes start at gate on and are released at gate off."
+    },
+    {
+      "name": "Triggered",
+      "description": "Notes start at gate on; envelopes proceed through one full cycle of attack, decay and release. Gate off is ignored."
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Wave input",
+      "description": "Which input bus to use to control the position in the wavetable."
+    },
+    {
+      "name": "Wave input",
+      "description": "Which input bus to use to control the position in the wavetable."
+    },
+    {
+      "name": "Pitchbend input",
+      "description": "Sets the input bus to use for pitch bend."
+    }
+  ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": "The left output bus for audio signal routing."
+      "description": "The left output bus."
     },
     {
       "name": "Right output",
-      "description": "The right output bus for audio signal routing."
+      "description": "The right output bus."
     }
   ]
 }

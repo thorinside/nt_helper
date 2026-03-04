@@ -1,100 +1,23 @@
 {
   "guid": "nois",
   "name": "Noise generator",
-  "description": "This algorithm is a simple noise generator. Various standard “colours” of noise can be generated.",
+  "description": "This algorithm is a simple noise generator. Various standard \"colours\" of noise can be generated.",
   "categories": [
-    "Audio",
-    "Utility",
-    "Signal Processing",
-    "Modulation"
+    "Audio Generation",
+    "Noise Synthesis"
   ],
   "short_description": "Generates various colours of noise",
   "use_cases": [
     "Sound design",
-    "Texturing",
-    "Synthesis",
-    "Effects processing",
-    "Random modulation source"
+    "Texture generation",
+    "Ambient sound creation"
   ],
-  "gui_description": "The interface provides global gain control and per-channel settings for output routing, amplitude, individual channel gain, noise color selection (with blend control for blended mode), and standard add/replace output mode.",
-  "specifications": [
-    {
-      "name": "Channels",
-      "description": "The number of output channels supported by the algorithm (1-8)."
-    }
-  ],
-  "parameters": [
-    {
-      "name": "Gain",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_bus": false
-    },
-    {
-      "name": "Output_mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "enum_values": [
-        "Add",
-        "Replace"
-      ],
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Amplitude",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 10.0,
-      "type": "folder",
-      "is_bus": false
-    },
-    {
-      "name": "Gain_per_channel",
-      "min": -40,
-      "max": 6,
-      "default": 0,
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "Colour",
-      "min": 0,
-      "max": 4,
-      "default": 0,
-      "enum_values": [
-        "Blended",
-        "Violet",
-        "White",
-        "Pink",
-        "Red"
-      ],
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "Blend",
-      "min": 0,
-      "max": 300,
-      "default": 0,
-      "description": "If \"Blended\" is selected, sets the blend between noise colours.",
-      "type": "enum",
-      "is_bus": true
-    }
-  ],
+  "gui_description": "Simple noise generator with various standard colours of noise",
   "input_ports": [],
   "output_ports": [
     {
-      "name": "Output_Audio",
-      "description": "Audio output port for generated noise signal (1-8 channels)"
-    },
-    {
       "name": "Output",
-      "description": "The output bus for the noise signal."
+      "description": "The output bus."
     }
   ]
 }

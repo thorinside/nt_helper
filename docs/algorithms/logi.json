@@ -1,163 +1,21 @@
 {
   "guid": "logi",
   "name": "Logic",
-  "description": "This algorithm is based on the disting mk4 algorithm of the same name and performs various logical operations on its X & Y inputs per channel (1-8). Each channel is independent and supports AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop, greater-than (>), and less-than (<) operations. Complex logic can be constructed by chaining channels internally. The global parameters set threshold and hysteresis for input comparators converting CV signals to logical states. Disabled channels are grayed out in the GUI.",
+  "description": "This algorithm is based on the disting mk4 algorithm of the same name. It performs various logical operations on its X & Y inputs for each channel, including AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop, and comparison operations. Each channel is independent and can be chained internally by setting inputs to outputs of other channels. Global parameters set the threshold and hysteresis of input comparators.",
   "categories": [
     "Logic",
-    "Modular Synthesis",
-    "Signal Processing",
     "Comparator",
-    "Sequencing"
+    "Digital"
   ],
   "short_description": "Performs various logical operations",
   "use_cases": [
-    "Digital logic synthesis",
-    "CV-to-logic conversion",
-    "Sequencer control signals",
-    "Modular patching logic gates",
-    "Event triggering based on voltage thresholds"
+    "Digital signal processing",
+    "Logic gate implementation",
+    "Comparator functions",
+    "Signal conditioning"
   ],
-  "gui_description": "The display shows active logical operations. Disabled channels appear grayed out. Inverted inputs/outputs are marked with a horizontal bar (¬) in standard logic notation.",
-  "specifications": [
-    {
-      "name": "Channels",
-      "description": "Number of independent processing channels",
-      "min": 1,
-      "max": 8
-    }
-  ],
-  "parameters": [
-    {
-      "name": "Threshold",
-      "type": "folder",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
-    },
-    {
-      "name": "Threshold",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 1.0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Hysteresis",
-      "min": 0.0,
-      "max": 10.0,
-      "default": 0.5,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Output true",
-      "min": -10.0,
-      "max": 10.0,
-      "default": 5.0,
-      "scope": "global",
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "toggle"
-    },
-    {
-      "name": "Operation",
-      "min": 0,
-      "max": 9,
-      "default": 0,
-      "enum_values": [
-        "AND (0)",
-        "OR (1)",
-        "XOR (2)",
-        "NAND (3)",
-        "NOR (4)",
-        "XNOR (5)",
-        "SR flip-flop (6)",
-        "D flip-flop (7)",
-        "> (greater than) (8)",
-        "< (less than) (9)"
-      ],
-      "type": "enum",
-      "is_bus": false
-    },
-    {
-      "name": "Invert X",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "toggle"
-    },
-    {
-      "name": "Invert Y",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-channel",
-      "type": "toggle"
-    },
-    {
-      "name": "Input X",
-      "min": 1,
-      "max": null,
-      "default": 1,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "Input Y",
-      "min": 1,
-      "max": null,
-      "default": 2,
-      "scope": "per-channel",
-      "type": "enum",
-      "is_bus": true
-    },
-    {
-      "name": "Output mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Standard Add/Replace mode selector for output routing.",
-      "enum_values": [
-        "Add (0)",
-        "Replace (1)"
-      ],
-      "type": "enum"
-    }
-  ],
-  "input_ports": [
-    {
-      "name": "X",
-      "description": "Primary input signal for logical operations. Can be CV or channel output."
-    },
-    {
-      "name": "Y",
-      "description": "Secondary input signal for logical operations. Can be CV or channel output."
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "Output bus (0-28)",
-      "description": "Logic output voltage (0V for false, configurable true voltage)."
-    },
-    {
-      "name": "Invert output",
-      "description": ""
-    },
-    {
-      "name": "Output",
-      "description": ""
-    }
-  ]
+  "gui_description": "The display shows the various logical operations being performed. Disabled channels are grayed out. Inverted inputs and outputs are indicated using the standard logic notation of a bar above the inverted quantity.",
+  "specifications": [],
+  "input_ports": [],
+  "output_ports": []
 }
