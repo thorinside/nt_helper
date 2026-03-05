@@ -169,7 +169,8 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
             (m) => m.presetSlotId,
           ).map(
             (slotId, entries) => MapEntry(slotId, {
-              for (var e in entries) e.parameterNumber: e.packedData,
+              for (var e in entries)
+                e.parameterNumber: e.packedData.copyWith(perfPageIndex: e.perfPageIndex),
             }),
           );
 

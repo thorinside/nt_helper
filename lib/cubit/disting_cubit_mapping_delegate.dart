@@ -21,6 +21,22 @@ class _MappingDelegate {
     }
   }
 
+  /// Reorders multiple performance parameters by setting new perfPageIndex values.
+  ///
+  /// Takes a list of (slotIndex, parameterNumber, perfPageIndex) records
+  /// and calls setPerformancePageMapping sequentially for each.
+  Future<void> reorderPerformanceParameters(
+    List<({int slotIndex, int parameterNumber, int perfPageIndex})> assignments,
+  ) async {
+    for (final assignment in assignments) {
+      await setPerformancePageMapping(
+        assignment.slotIndex,
+        assignment.parameterNumber,
+        assignment.perfPageIndex,
+      );
+    }
+  }
+
   /// Sets the performance page assignment for a parameter.
   ///
   /// - [slotIndex]: Slot index (0-31)
@@ -57,8 +73,8 @@ class _MappingDelegate {
 
     final originalMapping = slot.mappings[parameterNumber];
     final optimisticMapping = Mapping(
-      algorithmIndex: originalMapping.algorithmIndex,
-      parameterNumber: originalMapping.parameterNumber,
+      algorithmIndex: slotIndex,
+      parameterNumber: parameterNumber,
       packedMappingData: originalMapping.packedMappingData.copyWith(
         perfPageIndex: perfPageIndex,
       ),

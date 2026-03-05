@@ -430,6 +430,13 @@ class DistingCubit extends _DistingCubitBase
     renameSlotImpl(algorithmIndex, newName);
   }
 
+  /// Reorders multiple performance parameters by setting new perfPageIndex values.
+  Future<void> reorderPerformanceParameters(
+    List<({int slotIndex, int parameterNumber, int perfPageIndex})> assignments,
+  ) async {
+    return _mappingDelegate.reorderPerformanceParameters(assignments);
+  }
+
   /// Sets the performance page assignment for a parameter.
   ///
   /// - [slotIndex]: Slot index (0-31)

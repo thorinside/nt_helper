@@ -8,6 +8,7 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/ui/performance_screen.dart';
+import 'package:nt_helper/ui/widgets/performance/hardware_preview_widget.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}
 
@@ -20,9 +21,15 @@ void main() {
     mockCubit = MockDistingCubit();
   });
 
-  Widget createTestWidget({required Widget child}) {
+  Widget createTestWidget({required Widget child, double width = 800}) {
     return MaterialApp(
-      home: BlocProvider<DistingCubit>.value(value: mockCubit, child: child),
+      home: MediaQuery(
+        data: MediaQueryData(size: Size(width, 600)),
+        child: BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: child,
+        ),
+      ),
     );
   }
 
@@ -109,14 +116,11 @@ void main() {
     }
 
     final algorithmIndex = params.first.parameter.algorithmIndex;
-
-    // Find the maximum parameter number to size our arrays
     final maxParamNum = params
         .map((p) => p.parameter.parameterNumber)
         .reduce((a, b) => a > b ? a : b);
     final arraySize = maxParamNum + 1;
 
-    // Create properly indexed arrays (filled with filler values)
     final parameters = List<ParameterInfo>.filled(
       arraySize,
       ParameterInfo.filler(),
@@ -135,7 +139,6 @@ void main() {
       ParameterValueString.filler(),
     );
 
-    // Fill in the actual parameter data at the correct indices
     for (final param in params) {
       final paramNum = param.parameter.parameterNumber;
       parameters[paramNum] = param.parameter;
@@ -145,7 +148,6 @@ void main() {
       valueStrings[paramNum] = param.valueString;
     }
 
-    // Create parameter pages with parameters in order by parameter number
     final paramNums = params.map((p) => p.parameter.parameterNumber).toList()
       ..sort();
     final parameterPages = ParameterPages(
@@ -194,7 +196,7 @@ void main() {
       expect(find.byIcon(Icons.music_note_outlined), findsOneWidget);
     });
 
-    testWidgets('displays navigation rail with page filtering', (tester) async {
+    testWidgets('displays mode toggle and parameter list', (tester) async {
       final params = [
         createMappedParameter(
           perfPageIndex: 1,
@@ -228,49 +230,25 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(child: const PerformanceScreen(units: [])),
       );
-
-      // Wait for post-frame callback to set initial page selection
       await tester.pumpAndSettle();
 
-      // Should show NavigationRail
-      expect(find.byType(NavigationRail), findsOneWidget);
+      // Should show mode toggle
+      expect(find.text('Condensed'), findsOneWidget);
+      expect(find.text('As Indexed'), findsOneWidget);
 
-      // Should show two pages in navigation rail (as badges P1, P2)
-      expect(find.text('P1'), findsOneWidget);
-      expect(find.text('P2'), findsOneWidget);
-
-      // Should show only Param 1 initially (first page selected)
-      expect(find.text('Param 1'), findsOneWidget);
-      expect(find.text('Param 2'), findsNothing);
-
-      // Tap P2 badge
-      await tester.tap(find.text('P2'));
-      await tester.pumpAndSettle();
-
-      // Should now show only Param 2
-      expect(find.text('Param 1'), findsNothing);
-      expect(find.text('Param 2'), findsOneWidget);
+      // Should show both parameters
+      expect(find.text('Param 1'), findsAtLeast(1));
+      expect(find.text('Param 2'), findsAtLeast(1));
     });
 
-    testWidgets('sorts parameters by parameter page order within same page', (
-      tester,
-    ) async {
-      // Create parameters where alphabetical order would differ from parameter number order
-      // Zebra (param 0) should come before Apple (param 1) because param 0 < param 1
-      final algo0Params = [
+    testWidgets('shows hardware preview on wide screens', (tester) async {
+      final params = [
         createMappedParameter(
           perfPageIndex: 1,
-          algorithmName: 'Algo 1',
+          algorithmName: 'Test Algo',
           algorithmIndex: 0,
-          parameterName: 'Zebra', // Alphabetically last
-          parameterNumber: 0, // But parameter page order first
-        ),
-        createMappedParameter(
-          perfPageIndex: 1,
-          algorithmName: 'Algo 1',
-          algorithmIndex: 0,
-          parameterName: 'Apple', // Alphabetically first
-          parameterNumber: 1, // But parameter page order second
+          parameterName: 'Param 1',
+          parameterNumber: 0,
         ),
       ];
 
@@ -279,7 +257,7 @@ void main() {
           disting: MockDistingMidiManager(),
           distingVersion: 'v1.0',
           firmwareVersion: FirmwareVersion('1.0.0'),
-          slots: [createSlotFromMappedParameters(algo0Params)],
+          slots: [createSlotFromMappedParameters(params)],
           algorithms: const [],
           unitStrings: const [],
           presetName: 'Test',
@@ -288,39 +266,61 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(child: const PerformanceScreen(units: [])),
+        createTestWidget(
+          child: const PerformanceScreen(units: []),
+          width: 800,
+        ),
       );
-
-      // Wait for post-frame callback
       await tester.pumpAndSettle();
 
-      // Both parameters should be visible (same page)
-      expect(find.text('Zebra'), findsOneWidget);
-      expect(find.text('Apple'), findsOneWidget);
-
-      // Verify parameter page order (not alphabetical)
-      // Zebra (param 0) should appear before Apple (param 1)
-      final zebraY = tester.getTopLeft(find.text('Zebra')).dy;
-      final appleY = tester.getTopLeft(find.text('Apple')).dy;
-
-      expect(
-        zebraY < appleY,
-        true,
-        reason:
-            'Zebra (param 0) should appear before Apple (param 1) due to parameter page order',
-      );
+      expect(find.byType(HardwarePreviewWidget), findsOneWidget);
     });
 
-    testWidgets('shows only parameters for selected page', (tester) async {
-      // buildMappedParameterList already filters out perfPageIndex = 0,
-      // so we only include parameters with perfPageIndex > 0
+    testWidgets('hides hardware preview on narrow screens', (tester) async {
       final params = [
         createMappedParameter(
           perfPageIndex: 1,
           algorithmName: 'Test Algo',
           algorithmIndex: 0,
-          parameterName: 'Page 1 Param',
-          parameterNumber: 1,
+          parameterName: 'Param 1',
+          parameterNumber: 0,
+        ),
+      ];
+
+      when(() => mockCubit.state).thenReturn(
+        DistingStateSynchronized(
+          disting: MockDistingMidiManager(),
+          distingVersion: 'v1.0',
+          firmwareVersion: FirmwareVersion('1.0.0'),
+          slots: [createSlotFromMappedParameters(params)],
+          algorithms: const [],
+          unitStrings: const [],
+          presetName: 'Test',
+        ),
+      );
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const PerformanceScreen(units: []),
+          width: 500,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HardwarePreviewWidget), findsNothing);
+    });
+
+    testWidgets('mode toggle switches between condensed and as-indexed', (
+      tester,
+    ) async {
+      final params = [
+        createMappedParameter(
+          perfPageIndex: 1,
+          algorithmName: 'Test Algo',
+          algorithmIndex: 0,
+          parameterName: 'Param 1',
+          parameterNumber: 0,
         ),
       ];
 
@@ -340,73 +340,17 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(child: const PerformanceScreen(units: [])),
       );
-
-      // Wait for post-frame callback
       await tester.pumpAndSettle();
 
-      // Should show assigned parameter
-      expect(find.text('Page 1 Param'), findsOneWidget);
+      // Starts in condensed mode - should have drag handles
+      expect(find.byIcon(Icons.drag_handle), findsWidgets);
 
-      // NavigationRail should be present with single page (as badge P1)
-      expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.text('P1'), findsOneWidget);
-    });
-
-    testWidgets('handles multiple parameters on same page', (tester) async {
-      final algo0Params = [
-        createMappedParameter(
-          perfPageIndex: 1,
-          algorithmName: 'Algo 1',
-          algorithmIndex: 0,
-          parameterName: 'Param 1',
-          parameterNumber: 0,
-        ),
-      ];
-
-      final algo1Params = [
-        createMappedParameter(
-          perfPageIndex: 1,
-          algorithmName: 'Algo 2',
-          algorithmIndex: 1,
-          parameterName: 'Param 2',
-          parameterNumber: 0,
-        ),
-      ];
-
-      when(() => mockCubit.state).thenReturn(
-        DistingStateSynchronized(
-          disting: MockDistingMidiManager(),
-          distingVersion: 'v1.0',
-          firmwareVersion: FirmwareVersion('1.0.0'),
-          slots: [
-            createSlotFromMappedParameters(algo0Params),
-            createSlotFromMappedParameters(algo1Params),
-          ],
-          algorithms: const [],
-          unitStrings: const [],
-          presetName: 'Test',
-        ),
-      );
-      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-
-      await tester.pumpWidget(
-        createTestWidget(child: const PerformanceScreen(units: [])),
-      );
-
-      // Wait for post-frame callback
+      // Switch to as-indexed mode
+      await tester.tap(find.text('As Indexed'));
       await tester.pumpAndSettle();
 
-      // Should show both parameters (same page)
-      expect(find.text('Param 1'), findsOneWidget);
-      expect(find.text('Param 2'), findsOneWidget);
-
-      // Should show both algorithm names
-      expect(find.text('Algo 1'), findsOneWidget);
-      expect(find.text('Algo 2'), findsOneWidget);
-
-      // Should have NavigationRail with Page 1 only (as badge P1)
-      expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.text('P1'), findsOneWidget);
+      // Should show dropdown instead of drag handles
+      expect(find.byType(DropdownButton<int>), findsWidgets);
     });
 
     testWidgets('displays polling controls', (tester) async {
@@ -429,17 +373,170 @@ void main() {
         createTestWidget(child: const PerformanceScreen(units: [])),
       );
 
-      // Should find polling control button
       expect(find.byIcon(Icons.play_circle_fill), findsOneWidget);
 
-      // Tap to start polling
       await tester.tap(find.byIcon(Icons.play_circle_fill));
       await tester.pumpAndSettle();
 
-      // Should change to pause icon
       expect(find.byIcon(Icons.pause_circle_filled), findsOneWidget);
-
       verify(() => mockCubit.startPollingMappedParameters()).called(1);
+    });
+
+    testWidgets('shows remove button for each parameter', (tester) async {
+      final params = [
+        createMappedParameter(
+          perfPageIndex: 1,
+          algorithmName: 'Test Algo',
+          algorithmIndex: 0,
+          parameterName: 'Param 1',
+          parameterNumber: 0,
+        ),
+      ];
+
+      when(() => mockCubit.state).thenReturn(
+        DistingStateSynchronized(
+          disting: MockDistingMidiManager(),
+          distingVersion: 'v1.0',
+          firmwareVersion: FirmwareVersion('1.0.0'),
+          slots: [createSlotFromMappedParameters(params)],
+          algorithms: const [],
+          unitStrings: const [],
+          presetName: 'Test',
+        ),
+      );
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockCubit.setPerformancePageMapping(any(), any(), any()),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        createTestWidget(child: const PerformanceScreen(units: [])),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.remove_circle_outline));
+      await tester.pumpAndSettle();
+
+      verify(() => mockCubit.setPerformancePageMapping(0, 0, 0)).called(1);
+    });
+  });
+
+  group('HardwarePreviewWidget', () {
+    testWidgets('condensed mode groups parameters into pages of 3', (
+      tester,
+    ) async {
+      final params = [
+        createMappedParameter(
+          perfPageIndex: 1,
+          algorithmName: 'Algo',
+          algorithmIndex: 0,
+          parameterName: 'P1',
+          parameterNumber: 0,
+        ),
+        createMappedParameter(
+          perfPageIndex: 2,
+          algorithmName: 'Algo',
+          algorithmIndex: 0,
+          parameterName: 'P2',
+          parameterNumber: 1,
+        ),
+        createMappedParameter(
+          perfPageIndex: 3,
+          algorithmName: 'Algo',
+          algorithmIndex: 0,
+          parameterName: 'P3',
+          parameterNumber: 2,
+        ),
+        createMappedParameter(
+          perfPageIndex: 4,
+          algorithmName: 'Algo',
+          algorithmIndex: 0,
+          parameterName: 'P4',
+          parameterNumber: 3,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HardwarePreviewWidget(
+              parameters: params,
+              layoutMode: PerformanceLayoutMode.condensed,
+            ),
+          ),
+        ),
+      );
+
+      // Should show 2 pages (3 + 1)
+      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('Page 2'), findsOneWidget);
+
+      // All parameter names visible
+      expect(find.text('P1'), findsOneWidget);
+      expect(find.text('P2'), findsOneWidget);
+      expect(find.text('P3'), findsOneWidget);
+      expect(find.text('P4'), findsOneWidget);
+    });
+
+    testWidgets('as-indexed mode shows gaps for missing indices', (
+      tester,
+    ) async {
+      final params = [
+        createMappedParameter(
+          perfPageIndex: 1,
+          algorithmName: 'Algo',
+          algorithmIndex: 0,
+          parameterName: 'P1',
+          parameterNumber: 0,
+        ),
+        createMappedParameter(
+          perfPageIndex: 4,
+          algorithmName: 'Algo',
+          algorithmIndex: 0,
+          parameterName: 'P4',
+          parameterNumber: 1,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HardwarePreviewWidget(
+              parameters: params,
+              layoutMode: PerformanceLayoutMode.asIndexed,
+            ),
+          ),
+        ),
+      );
+
+      // Page 1 has P1 at index 1, gaps at 2 and 3
+      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('P1'), findsOneWidget);
+
+      // Page 2 has P4 at index 4, gaps at 5 and 6
+      // But page 2 should exist since index 4 is on page 2
+      expect(find.text('Page 2'), findsOneWidget);
+      expect(find.text('P4'), findsOneWidget);
+
+      // Empty slots shown as ---
+      expect(find.text('---'), findsAtLeast(1));
+    });
+
+    testWidgets('shows empty state with no parameters', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HardwarePreviewWidget(
+              parameters: const [],
+              layoutMode: PerformanceLayoutMode.condensed,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('No parameters assigned'), findsOneWidget);
     });
   });
 }

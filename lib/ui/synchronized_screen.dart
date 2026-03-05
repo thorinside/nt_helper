@@ -1967,11 +1967,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               children: [Text('Video'), Icon(Icons.videocam)],
             ),
           ),
-          // Perform: Disabled by loading OR offline
+          // Perform: Disabled by loading only
           PopupMenuItem(
             value: 'perform',
-            enabled: !widget.loading && !isOffline,
-            onTap: widget.loading || isOffline
+            enabled: !widget.loading,
+            onTap: widget.loading
                 ? null
                 : () {
                     final midiListener = popupCtx.read<MidiListenerCubit>();

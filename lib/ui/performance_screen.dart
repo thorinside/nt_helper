@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show ParameterPages, RoutingInfo;
-import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
+import 'package:nt_helper/ui/widgets/performance/hardware_preview_widget.dart';
 
 class PerformanceScreen extends StatefulWidget {
   const PerformanceScreen({super.key, required this.units});
@@ -15,10 +13,9 @@ class PerformanceScreen extends StatefulWidget {
 }
 
 class _PerformanceScreenState extends State<PerformanceScreen> {
-  // Local flag to track whether polling is enabled.
   bool _pollingEnabled = false;
   DistingCubit? _cubit;
-  int? _selectedPageIndex; // Nullable - null if no pages
+  PerformanceLayoutMode _layoutMode = PerformanceLayoutMode.condensed;
 
   @override
   void didChangeDependencies() {
@@ -32,26 +29,10 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     super.dispose();
   }
 
-  // Discover which pages have parameters assigned
-  List<int> _getPopulatedPages(List<MappedParameter> mappedParameters) {
-    final populatedPages = <int>{};
-    for (final param in mappedParameters) {
-      final pageIndex = param.mapping.packedMappingData.perfPageIndex;
-      if (pageIndex > 0) {
-        populatedPages.add(pageIndex);
-      }
-    }
-    return populatedPages.toList()..sort();
-  }
-
-  // Build a map of (algorithmIndex, parameterNumber) -> order
-  // based on the order parameters appear in the parameter pages
   Map<String, int> _buildParameterOrderMap(List<Slot> slots) {
     final orderMap = <String, int>{};
     var globalOrder = 0;
-
     for (final slot in slots) {
-      // Flatten all parameter numbers across all pages in order
       for (final page in slot.pages.pages) {
         for (final paramNum in page.parameters) {
           final key = '${slot.algorithm.algorithmIndex}_$paramNum';
@@ -59,11 +40,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         }
       }
     }
-
     return orderMap;
   }
 
-  // Sort parameters by page (ascending), then by parameter page order
   List<MappedParameter> _sortParameters(
     List<MappedParameter> mappedParameters,
     Map<String, int> orderMap,
@@ -72,36 +51,19 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     sorted.sort((a, b) {
       final pageA = a.mapping.packedMappingData.perfPageIndex;
       final pageB = b.mapping.packedMappingData.perfPageIndex;
+      if (pageA != pageB) return pageA.compareTo(pageB);
 
-      // First, sort by page number (ascending)
-      if (pageA != pageB) {
-        return pageA.compareTo(pageB);
-      }
-
-      // Within the same page, sort by parameter page order
       final keyA =
           '${a.parameter.algorithmIndex}_${a.parameter.parameterNumber}';
       final keyB =
           '${b.parameter.algorithmIndex}_${b.parameter.parameterNumber}';
       final orderA = orderMap[keyA] ?? 999999;
       final orderB = orderMap[keyB] ?? 999999;
-
       return orderA.compareTo(orderB);
     });
     return sorted;
   }
 
-  // Filter parameters for a specific page
-  List<MappedParameter> _filterParametersForPage(
-    List<MappedParameter> mappedParameters,
-    int pageIndex,
-  ) {
-    return mappedParameters
-        .where((p) => p.mapping.packedMappingData.perfPageIndex == pageIndex)
-        .toList();
-  }
-
-  // Get color for page badge
   Color _getPageColor(int pageIndex) {
     final colors = [
       Colors.blue,
@@ -111,32 +73,6 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       Colors.red,
     ];
     return colors[(pageIndex - 1) % colors.length];
-  }
-
-  // Build colored page badge for navigation rail
-  Widget _buildPageBadge(int pageIndex, {bool isSelected = false}) {
-    final color = _getPageColor(pageIndex);
-    final scale = isSelected ? 1.3 : 1.0;
-
-    return Transform.scale(
-      scale: scale,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
-        ),
-        child: Text(
-          'P$pageIndex',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: isSelected ? 16 : 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildEmptyState() {
@@ -162,61 +98,152 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     );
   }
 
-  Widget _buildParameterList(List<MappedParameter> parameters) {
+  void _onReorder(
+    List<MappedParameter> sortedParams,
+    int oldIndex,
+    int newIndex,
+  ) {
+    if (oldIndex < newIndex) newIndex -= 1;
+    if (oldIndex == newIndex) return;
+
+    final reordered = List<MappedParameter>.from(sortedParams);
+    final item = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, item);
+
+    final assignments =
+        <({int slotIndex, int parameterNumber, int perfPageIndex})>[];
+    for (var i = 0; i < reordered.length; i++) {
+      final p = reordered[i];
+      final newPerfIndex = i + 1;
+      if (p.mapping.packedMappingData.perfPageIndex != newPerfIndex) {
+        assignments.add((
+          slotIndex: p.parameter.algorithmIndex,
+          parameterNumber: p.parameter.parameterNumber,
+          perfPageIndex: newPerfIndex,
+        ));
+      }
+    }
+
+    if (assignments.isNotEmpty) {
+      context.read<DistingCubit>().reorderPerformanceParameters(assignments);
+    }
+  }
+
+  void _onRemoveParameter(MappedParameter param) {
+    context.read<DistingCubit>().setPerformancePageMapping(
+          param.parameter.algorithmIndex,
+          param.parameter.parameterNumber,
+          0,
+        );
+  }
+
+  void _onIndexChanged(MappedParameter param, int newIndex) {
+    context.read<DistingCubit>().setPerformancePageMapping(
+          param.parameter.algorithmIndex,
+          param.parameter.parameterNumber,
+          newIndex,
+        );
+  }
+
+  Widget _buildCondensedList(List<MappedParameter> sortedParams) {
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      buildDefaultDragHandles: false,
+      itemCount: sortedParams.length,
+      onReorder: (oldIndex, newIndex) =>
+          _onReorder(sortedParams, oldIndex, newIndex),
+      itemBuilder: (context, index) {
+        final item = sortedParams[index];
+        final perfIndex = item.mapping.packedMappingData.perfPageIndex;
+        final pageNum = ((perfIndex - 1) ~/ 3) + 1;
+
+        return ReorderableDragStartListener(
+          key: ValueKey(
+            'condensed_${item.parameter.algorithmIndex}_${item.parameter.parameterNumber}',
+          ),
+          index: index,
+          child: _ParameterListItem(
+            item: item,
+            pageColor: _getPageColor(pageNum),
+            indexLabel: '$perfIndex',
+            trailing: IconButton(
+              icon: const Icon(Icons.remove_circle_outline, size: 20),
+              tooltip: 'Remove from performance',
+              onPressed: () => _onRemoveParameter(item),
+            ),
+            leading: const Icon(Icons.drag_handle),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAsIndexedList(List<MappedParameter> sortedParams) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: sortedParams.length,
+      itemBuilder: (context, index) {
+        final item = sortedParams[index];
+        final perfIndex = item.mapping.packedMappingData.perfPageIndex;
+        final pageNum = ((perfIndex - 1) ~/ 3) + 1;
+
+        return _ParameterListItem(
+          key: ValueKey(
+            'indexed_${item.parameter.algorithmIndex}_${item.parameter.parameterNumber}',
+          ),
+          item: item,
+          pageColor: _getPageColor(pageNum),
+          indexLabel: '$perfIndex',
+          trailing: IconButton(
+            icon: const Icon(Icons.remove_circle_outline, size: 20),
+            tooltip: 'Remove from performance',
+            onPressed: () => _onRemoveParameter(item),
+          ),
+          leading: SizedBox(
+            width: 56,
+            child: DropdownButton<int>(
+              value: perfIndex,
+              isDense: true,
+              isExpanded: true,
+              items: List.generate(30, (i) {
+                return DropdownMenuItem(
+                  value: i + 1,
+                  child: Text('${i + 1}'),
+                );
+              }),
+              onChanged: (newValue) {
+                if (newValue != null && newValue != perfIndex) {
+                  _onIndexChanged(item, newValue);
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModeToggle() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: ListView.builder(
-        itemCount: parameters.length,
-        itemBuilder: (context, index) {
-          final item = parameters[index];
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              index == 0 ||
-                      (item.algorithm.name !=
-                          parameters[index - 1].algorithm.name)
-                  ? Padding(
-                      padding: EdgeInsets.only(
-                        top: (index == 0 ? 0.0 : 16.0),
-                        bottom: 8,
-                      ),
-                      child: Text(
-                        item.algorithm.name,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: Theme.of(
-                                context,
-                              ).textTheme.titleMedium?.color?.withAlpha(200),
-                            ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-              ParameterEditorView(
-                key: ValueKey(
-                  '${item.parameter.algorithmIndex}_${item.parameter.parameterNumber}',
-                ),
-                slot: Slot(
-                  algorithm: item.algorithm,
-                  routing: RoutingInfo.filler(),
-                  pages: ParameterPages(
-                    algorithmIndex: item.algorithm.algorithmIndex,
-                    pages: [],
-                  ),
-                  parameters: [item.parameter],
-                  values: [item.value],
-                  enums: [item.enums],
-                  mappings: [item.mapping],
-                  valueStrings: [item.valueString],
-                ),
-                parameterInfo: item.parameter,
-                enumStrings: item.enums,
-                mapping: item.mapping,
-                value: item.value,
-                valueString: item.valueString,
-                unit: item.parameter.getUnitString(widget.units),
-              ),
-            ],
-          );
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SegmentedButton<PerformanceLayoutMode>(
+        segments: const [
+          ButtonSegment(
+            value: PerformanceLayoutMode.condensed,
+            label: Text('Condensed'),
+            icon: Icon(Icons.reorder),
+          ),
+          ButtonSegment(
+            value: PerformanceLayoutMode.asIndexed,
+            label: Text('As Indexed'),
+            icon: Icon(Icons.grid_view),
+          ),
+        ],
+        selected: {_layoutMode},
+        onSelectionChanged: (selected) {
+          setState(() {
+            _layoutMode = selected.first;
+          });
         },
       ),
     );
@@ -256,75 +283,106 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               state,
             );
 
-            // If no parameters, show empty state
             if (mappedParameters.isEmpty) {
               return _buildEmptyState();
             }
 
-            // Discover populated pages
-            final populatedPages = _getPopulatedPages(mappedParameters);
-
-            // Set initial selection to first page if not set or if current selection is no longer valid
-            if (_selectedPageIndex == null ||
-                !populatedPages.contains(_selectedPageIndex)) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  setState(() {
-                    _selectedPageIndex = populatedPages.isNotEmpty
-                        ? populatedPages.first
-                        : null;
-                  });
-                }
-              });
-            }
-
-            // If no pages exist, show empty state
-            if (populatedPages.isEmpty || _selectedPageIndex == null) {
-              return _buildEmptyState();
-            }
-
-            // Build parameter order map from slots
             final orderMap = _buildParameterOrderMap(state.slots);
+            final sortedParams = _sortParameters(mappedParameters, orderMap);
 
-            // Filter parameters for selected page
-            final pageParameters = _filterParametersForPage(
-              mappedParameters,
-              _selectedPageIndex!,
-            );
+            final isWide = MediaQuery.of(context).size.width >= 720;
 
-            // Sort parameters by parameter page order within the page
-            final sortedParameters = _sortParameters(pageParameters, orderMap);
-
-            return Row(
+            return Column(
               children: [
-                // Navigation rail for page selection
-                NavigationRail(
-                  selectedIndex: populatedPages.indexOf(_selectedPageIndex!),
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      _selectedPageIndex = populatedPages[index];
-                    });
-                  },
-                  labelType: NavigationRailLabelType.all,
-                  destinations: populatedPages.map((pageIndex) {
-                    final isSelected = pageIndex == _selectedPageIndex;
-                    return NavigationRailDestination(
-                      icon: _buildPageBadge(pageIndex, isSelected: isSelected),
-                      label: Semantics(
-                        label: 'Page $pageIndex',
-                        child: Text('Page $pageIndex'),
-                      ),
-                    );
-                  }).toList(),
+                _buildModeToggle(),
+                Expanded(
+                  child: isWide
+                      ? Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: _layoutMode ==
+                                      PerformanceLayoutMode.condensed
+                                  ? _buildCondensedList(sortedParams)
+                                  : _buildAsIndexedList(sortedParams),
+                            ),
+                            const VerticalDivider(width: 1, thickness: 1),
+                            Expanded(
+                              flex: 2,
+                              child: HardwarePreviewWidget(
+                                parameters: sortedParams,
+                                layoutMode: _layoutMode,
+                              ),
+                            ),
+                          ],
+                        )
+                      : _layoutMode == PerformanceLayoutMode.condensed
+                          ? _buildCondensedList(sortedParams)
+                          : _buildAsIndexedList(sortedParams),
                 ),
-                const VerticalDivider(thickness: 1, width: 1),
-                // Parameter list for selected page
-                Expanded(child: _buildParameterList(sortedParameters)),
               ],
             );
           }
           return const Center(child: CircularProgressIndicator());
         },
+      ),
+    );
+  }
+}
+
+class _ParameterListItem extends StatelessWidget {
+  const _ParameterListItem({
+    super.key,
+    required this.item,
+    required this.pageColor,
+    required this.indexLabel,
+    required this.trailing,
+    required this.leading,
+  });
+
+  final MappedParameter item;
+  final Color pageColor;
+  final String indexLabel;
+  final Widget trailing;
+  final Widget leading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      child: ListTile(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            leading,
+            const SizedBox(width: 8),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: pageColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                indexLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+        title: Text(item.parameter.name),
+        subtitle: Text(
+          item.algorithm.name,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        trailing: trailing,
       ),
     );
   }
