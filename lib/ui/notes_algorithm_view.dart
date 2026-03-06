@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
@@ -398,7 +399,20 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
 
         // Text field
         Expanded(
-          child: TextField(
+          child: Shortcuts(
+            shortcuts: {
+              for (final key in _digitKeys) ...<SingleActivator, Intent>{
+                SingleActivator(key):
+                    const DoNothingAndStopPropagationTextIntent(),
+                SingleActivator(key, shift: true):
+                    const DoNothingAndStopPropagationTextIntent(),
+              },
+              for (final activator
+                  in KeyBindingService().globalShortcuts.keys)
+                activator:
+                    const DoNothingAndStopPropagationTextIntent(),
+            },
+            child: TextField(
             controller: _textController,
             maxLines: null,
             expands: true,
@@ -418,6 +432,7 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
               // Allow reasonable input length for editing
               LengthLimitingTextInputFormatter(500),
             ],
+          ),
           ),
         ),
 
@@ -562,3 +577,16 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
     );
   }
 }
+
+const _digitKeys = [
+  LogicalKeyboardKey.digit0,
+  LogicalKeyboardKey.digit1,
+  LogicalKeyboardKey.digit2,
+  LogicalKeyboardKey.digit3,
+  LogicalKeyboardKey.digit4,
+  LogicalKeyboardKey.digit5,
+  LogicalKeyboardKey.digit6,
+  LogicalKeyboardKey.digit7,
+  LogicalKeyboardKey.digit8,
+  LogicalKeyboardKey.digit9,
+];
