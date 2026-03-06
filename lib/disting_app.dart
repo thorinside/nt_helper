@@ -9,6 +9,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
@@ -273,6 +274,18 @@ class _DistingPageState extends State<DistingPage> {
                 onOfflinePressed: () async {
                   context.read<DistingCubit>().goOffline();
                 },
+                onFirmwarePressed: (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
+                    ? (String? probedVersion) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => FirmwareUpdateScreen(
+                              distingCubit: context.read<DistingCubit>(),
+                              currentVersionOverride: probedVersion,
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
                 canWorkOffline: state.canWorkOffline,
               );
             } else if (state is DistingStateConnected) {
@@ -335,6 +348,7 @@ class _DeviceSelectionView extends StatefulWidget {
   final Function() onSettingsPressed;
   final Function() onDemoPressed;
   final Function() onOfflinePressed;
+  final void Function(String? probedVersion)? onFirmwarePressed;
   final bool canWorkOffline;
 
   const _DeviceSelectionView({
@@ -345,6 +359,7 @@ class _DeviceSelectionView extends StatefulWidget {
     required this.onSettingsPressed,
     required this.onDemoPressed,
     required this.onOfflinePressed,
+    this.onFirmwarePressed,
     required this.canWorkOffline,
   });
 
@@ -356,10 +371,20 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
   MidiDevice? selectedInputDevice;
   MidiDevice? selectedOutputDevice;
   int? selectedSysExId = 0;
+  String? _probedFirmwareVersion;
+  bool _probing = false;
+  String? _lastProbedInputId;
+  String? _lastProbedOutputId;
+  final GlobalKey _splitButtonKey = GlobalKey();
+
+  bool get _distingDetected =>
+      selectedInputDevice?.name.toLowerCase().contains('disting') == true &&
+      selectedOutputDevice?.name.toLowerCase().contains('disting') == true;
 
   @override
   void initState() {
     selectFirstDisting();
+    _maybeProbe();
     super.initState();
   }
 
@@ -377,12 +402,129 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
     if (oldWidget.inputDevices != widget.inputDevices ||
         oldWidget.outputDevices != widget.outputDevices) {
       selectFirstDisting();
+      _maybeProbe();
     }
     super.didUpdateWidget(oldWidget);
   }
 
+  bool get _devicesSelected =>
+      selectedInputDevice != null &&
+      selectedOutputDevice != null &&
+      selectedSysExId != null;
+
+  void _maybeProbe() {
+    if (!_devicesSelected || _probing || widget.onFirmwarePressed == null) {
+      if (!_devicesSelected && (_probedFirmwareVersion != null || _probing)) {
+        setState(() {
+          _probedFirmwareVersion = null;
+          _probing = false;
+          _lastProbedInputId = null;
+          _lastProbedOutputId = null;
+        });
+      }
+      return;
+    }
+    // Don't re-probe the same device pair.
+    if (_lastProbedInputId == selectedInputDevice!.id &&
+        _lastProbedOutputId == selectedOutputDevice!.id) {
+      return;
+    }
+    _probing = true;
+    _probedFirmwareVersion = null;
+    final input = selectedInputDevice!;
+    final output = selectedOutputDevice!;
+    final sysExId = selectedSysExId!;
+    _lastProbedInputId = input.id;
+    _lastProbedOutputId = output.id;
+    context.read<DistingCubit>().probeFirmwareVersion(input, output, sysExId).then((version) {
+      if (mounted) {
+        setState(() {
+          _probedFirmwareVersion = version;
+          _probing = false;
+        });
+      }
+    });
+  }
+
+  void _onConnect() {
+    widget.onDeviceSelected(
+      selectedInputDevice!,
+      selectedOutputDevice!,
+      selectedSysExId!,
+    );
+  }
+
+  void _showSplitMenu() {
+    final renderBox =
+        _splitButtonKey.currentContext!.findRenderObject()! as RenderBox;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    final items = <PopupMenuEntry<String>>[];
+    if (_distingDetected) {
+      if (widget.canWorkOffline) {
+        items.add(PopupMenuItem<String>(
+          value: 'offline',
+          child: ListTile(
+            leading: const Icon(Icons.cloud_off),
+            title: const Text('Offline'),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ));
+      }
+    } else {
+      items.add(PopupMenuItem<String>(
+        value: 'connect',
+        enabled: _devicesSelected,
+        child: ListTile(
+          leading: const Icon(Icons.link),
+          title: const Text('Connect'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ));
+    }
+
+    if (items.isEmpty) return;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + size.height,
+        offset.dx + size.width,
+        offset.dy + size.height,
+      ),
+      items: items,
+    ).then((value) {
+      if (value == 'offline') {
+        widget.onOfflinePressed();
+      } else if (value == 'connect' && _devicesSelected) {
+        _onConnect();
+      }
+    });
+  }
+
+  bool get _hasAlternateAction {
+    if (_distingDetected) return widget.canWorkOffline;
+    return _devicesSelected;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Determine primary action
+    final bool primaryIsConnect = _distingDetected;
+    final String primaryLabel = primaryIsConnect ? 'Connect' : 'Offline';
+    final IconData primaryIcon = primaryIsConnect ? Icons.link : Icons.cloud_off;
+    final bool primaryEnabled =
+        primaryIsConnect ? _devicesSelected : widget.canWorkOffline;
+    final VoidCallback? primaryOnPressed =
+        primaryEnabled ? (primaryIsConnect ? _onConnect : widget.onOfflinePressed) : null;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Center(
@@ -392,14 +534,13 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Title row with settings button
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
                       "Select your Disting NT from the midi device list, or hit refresh to look for devices again.",
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      style: theme.textTheme.headlineSmall,
                     ),
                   ),
                   IconButton(
@@ -410,23 +551,34 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 ],
               ),
               const SizedBox(height: 24),
-              DropdownMenu<MidiDevice>(
-                width: 250,
-                initialSelection: selectedInputDevice,
-                enabled: true,
-                requestFocusOnTap: false,
-                label: const Text("Input MIDI Device"),
-                dropdownMenuEntries: widget.inputDevices.map((device) {
-                  return DropdownMenuEntry<MidiDevice>(
-                    value: device,
-                    label: device.name,
-                  );
-                }).toList(),
-                onSelected: (device) {
-                  setState(() {
-                    selectedInputDevice = device;
-                  });
-                },
+              Row(
+                children: [
+                  DropdownMenu<MidiDevice>(
+                    width: 250,
+                    initialSelection: selectedInputDevice,
+                    enabled: true,
+                    requestFocusOnTap: false,
+                    label: const Text("Input MIDI Device"),
+                    dropdownMenuEntries: widget.inputDevices.map((device) {
+                      return DropdownMenuEntry<MidiDevice>(
+                        value: device,
+                        label: device.name,
+                      );
+                    }).toList(),
+                    onSelected: (device) {
+                      setState(() {
+                        selectedInputDevice = device;
+                      });
+                      _maybeProbe();
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh devices',
+                    onPressed: widget.onRefresh,
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               DropdownMenu<MidiDevice>(
@@ -445,10 +597,10 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   setState(() {
                     selectedOutputDevice = device;
                   });
+                  _maybeProbe();
                 },
               ),
               const SizedBox(height: 16),
-              // Dropdown for selecting the SysEx ID
               DropdownMenu<int>(
                 width: 250,
                 initialSelection: selectedSysExId,
@@ -464,63 +616,78 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   setState(() {
                     selectedSysExId = id;
                   });
+                  _maybeProbe();
                 },
               ),
               const SizedBox(height: 32),
-              // Secondary actions: Refresh, Offline
               Row(
+                key: _splitButtonKey,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.refresh),
-                      label: const Text("Refresh"),
-                      onPressed: widget.onRefresh,
-                    ),
+                  FilledButton.icon(
+                    icon: Icon(primaryIcon),
+                    label: Text(primaryLabel),
+                    onPressed: primaryOnPressed,
+                    style: _hasAlternateAction
+                        ? FilledButton.styleFrom(
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                                bottomLeft: Radius.circular(20),
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
-                  if (widget.canWorkOffline) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Semantics(
-                        hint: 'Build presets using cached algorithm data without connecting to hardware',
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.cloud_off),
-                          label: const Text("Offline"),
-                          onPressed: widget.onOfflinePressed,
-                        ),
+                  if (_hasAlternateAction) ...[
+                    SizedBox(
+                      width: 1,
+                      height: 40,
+                      child: ColoredBox(
+                        color: primaryEnabled
+                            ? colorScheme.onPrimary.withAlpha(80)
+                            : colorScheme.onSurface.withAlpha(30),
                       ),
                     ),
+                    FilledButton(
+                      onPressed: primaryEnabled ? _showSplitMenu : null,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: const Size(40, 40),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(20),
+                            bottomRight: Radius.circular(20),
+                          ),
+                        ),
+                      ),
+                      child: const Icon(Icons.arrow_drop_down),
+                    ),
                   ],
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: widget.onFirmwarePressed != null && _devicesSelected
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 12),
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.system_update),
+                              label: const Text("Firmware"),
+                              onPressed: () => widget.onFirmwarePressed
+                                  ?.call(_probedFirmwareVersion),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              // Primary action: Connect
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.link),
-                  label: const Text("Connect"),
-                  onPressed:
-                      (selectedInputDevice != null &&
-                          selectedOutputDevice != null &&
-                          selectedSysExId != null)
-                      ? () {
-                          widget.onDeviceSelected(
-                            selectedInputDevice!,
-                            selectedOutputDevice!,
-                            selectedSysExId!,
-                          );
-                        }
-                      : null,
-                ),
               ),
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
-              // Demo section
               Text(
                 "No Disting? Try the demo:",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 12),
