@@ -816,6 +816,46 @@ class DistingCubit extends _DistingCubitBase
   /// Get the firmware version service for UI access
   FirmwareVersionService get firmwareVersionService => _firmwareVersionService;
 
+  /// Probes the firmware version from a device without affecting cubit state.
+  /// Uses the cubit's own [_midiCommand] to avoid platform channel conflicts.
+  /// Pauses the MIDI setup listener to prevent re-entrancy during connect/disconnect.
+  /// Returns the version string or null on failure.
+  Future<String?> probeFirmwareVersion(
+    MidiDevice inputDevice,
+    MidiDevice outputDevice,
+    int sysExId,
+  ) async {
+    _midiSetupSubscription?.pause();
+    try {
+      await _midiCommand.connectToDevice(inputDevice);
+      if (inputDevice.id != outputDevice.id) {
+        await _midiCommand.connectToDevice(outputDevice);
+      }
+      final manager = DistingMidiManager(
+        midiCommand: _midiCommand,
+        inputDevice: inputDevice,
+        outputDevice: outputDevice,
+        sysExId: sysExId,
+      );
+      try {
+        final version = await manager.requestVersionString()
+            .timeout(const Duration(seconds: 3));
+        return version;
+      } finally {
+        manager.dispose();
+      }
+    } catch (_) {
+      return null;
+    } finally {
+      _midiCommand.disconnectDevice(inputDevice);
+      if (inputDevice.id != outputDevice.id) {
+        _midiCommand.disconnectDevice(outputDevice);
+      }
+      _midiSetupSubscription?.resume();
+    }
+  }
+
+
   /// Called after a successful firmware update to refresh device version
   ///
   /// This clears the update indicator and triggers a re-sync to get the new

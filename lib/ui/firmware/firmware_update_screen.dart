@@ -8,6 +8,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_state.dart';
 import 'package:nt_helper/models/firmware_release.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/firmware_version_service.dart';
 import 'package:nt_helper/services/flash_tool_bridge.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
@@ -21,8 +22,13 @@ const String _kLastFirmwareDirectoryKey = 'last_firmware_directory';
 /// Screen for managing firmware updates on desktop platforms
 class FirmwareUpdateScreen extends StatelessWidget {
   final DistingCubit distingCubit;
+  final String? currentVersionOverride;
 
-  const FirmwareUpdateScreen({super.key, required this.distingCubit});
+  const FirmwareUpdateScreen({
+    super.key,
+    required this.distingCubit,
+    this.currentVersionOverride,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +53,9 @@ class FirmwareUpdateScreen extends StatelessWidget {
     final syncState = distingState is DistingStateSynchronized
         ? distingState
         : null;
-    final currentVersion = syncState?.firmwareVersion.versionString ?? 'Unknown';
+    final currentVersion = currentVersionOverride
+        ?? syncState?.firmwareVersion.versionString
+        ?? 'Unknown';
     final isDemo = syncState?.demo ?? false;
     final isOffline = syncState?.offline ?? false;
 
@@ -55,6 +63,10 @@ class FirmwareUpdateScreen extends StatelessWidget {
     final firmwareVersionService = FirmwareVersionService();
     final flashToolManager = FlashToolManager();
     final flashToolBridge = FlashToolBridge(toolManager: flashToolManager);
+
+    final firmwareVersion = currentVersionOverride != null
+        ? FirmwareVersion(currentVersionOverride!)
+        : syncState?.firmwareVersion;
 
     return BlocProvider.value(
       value: distingCubit,
@@ -66,7 +78,7 @@ class FirmwareUpdateScreen extends StatelessWidget {
           currentVersion: currentVersion,
           isDemo: isDemo,
           isOffline: isOffline,
-          firmwareVersion: syncState?.firmwareVersion,
+          firmwareVersion: firmwareVersion,
           midiManager: syncState != null ? distingCubit.disting() : null,
         )..loadAvailableVersions(),
         child: const _FirmwareUpdateView(),

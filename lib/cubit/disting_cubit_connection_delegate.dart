@@ -69,8 +69,9 @@ class _ConnectionDelegate {
 
   Future<void> loadDevices() async {
     try {
-      // Transition to a loading state if needed
-      _cubit._emitState(const DistingState.initial());
+      if (_cubit.state is! DistingStateSelectDevice) {
+        _cubit._emitState(const DistingState.initial());
+      }
 
       // Fetch devices using the helper
       final devices = await _fetchDeviceLists(); // Call helper

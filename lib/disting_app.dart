@@ -620,10 +620,12 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 },
               ),
               const SizedBox(height: 32),
-              Row(
-                key: _splitButtonKey,
-                mainAxisSize: MainAxisSize.min,
-                children: [
+              SizedBox(
+                height: 48,
+                child: Row(
+                  key: _splitButtonKey,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   FilledButton.icon(
                     icon: Icon(primaryIcon),
                     label: Text(primaryLabel),
@@ -679,7 +681,8 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                           )
                         : const SizedBox.shrink(),
                   ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               const Divider(),
