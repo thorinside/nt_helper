@@ -405,7 +405,9 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
           baseName == 'Voices' ||
           baseName == 'Gate outputs' ||
           baseName == 'Pitch outputs' ||
-          baseName == 'Velocity outputs') {
+          baseName == 'Velocity outputs' ||
+          baseName == 'Paraphonic gate' ||
+          baseName == 'Para gate mode') {
         continue;
       }
 
@@ -644,12 +646,12 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
 
         // Pitch and Velocity CVs ALWAYS use normal bus allocation
         // (ES-5 does not affect CV outputs)
-        // Bus allocation: Each voice occupies totalOutputsPerVoice buses
-        // Calculate total outputs per voice for proper bus allocation
-        int totalOutputsPerVoice = 0;
-        if (gateOutputs > 0) totalOutputsPerVoice++;
-        if (pitchOutputs > 0) totalOutputsPerVoice++;
-        if (velocityOutputs > 0) totalOutputsPerVoice++;
+        // Bus allocation: Each voice occupies busOutputsPerVoice buses
+        // When gates use ES-5, they don't consume a bus
+        int busOutputsPerVoice = 0;
+        if (gateOutputs > 0 && !useEs5ForGates) busOutputsPerVoice++;
+        if (pitchOutputs > 0) busOutputsPerVoice++;
+        if (velocityOutputs > 0) busOutputsPerVoice++;
 
         int cvBusOffset = 0;
         // When gates use normal buses, CVs come after gates within this voice's allocation
@@ -659,7 +661,7 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
         }
 
         final cvBaseBus =
-            firstOutput + (voice * totalOutputsPerVoice) + cvBusOffset;
+            firstOutput + (voice * busOutputsPerVoice) + cvBusOffset;
         int currentCvOffset = 0;
 
         if (pitchOutputs > 0) {
@@ -708,6 +710,66 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
           currentCvOffset++;
         }
       }
+    }
+
+    // Handle Paraphonic gate as a dedicated single output (not per-voice, never ES-5)
+    final paraphonicGateParam = slot.parameters.firstWhere(
+      (p) =>
+          p.name == 'Paraphonic gate' ||
+          AlgorithmRouting.stripPagePrefix(p.name) == 'Paraphonic gate',
+      orElse: () => ParameterInfo.filler(),
+    );
+    final hasParaphonicGate = paraphonicGateParam.parameterNumber >= 0;
+    final paraphonicGateBus = hasParaphonicGate
+        ? AlgorithmRouting.getParameterValue(slot, 'Paraphonic gate')
+        : 0;
+    if (hasParaphonicGate) {
+      String? paraGateMode;
+      if (modeParameters != null &&
+          modeParameters.containsKey('Para gate mode')) {
+        paraGateMode =
+            modeParameters['Para gate mode'] == 1 ? 'replace' : 'add';
+      }
+
+      // Get mode from outputModeMap if available
+      final paraGateModeParam = slot.parameters.firstWhere(
+        (p) =>
+            p.name == 'Para gate mode' ||
+            AlgorithmRouting.stripPagePrefix(p.name) == 'Para gate mode',
+        orElse: () => ParameterInfo.filler(),
+      );
+
+      int? modeParameterNumber;
+      if (paraGateModeParam.parameterNumber >= 0) {
+        modeParameterNumber = paraGateModeParam.parameterNumber;
+      }
+
+      // Check outputModeMap for mode value
+      if (paraphonicGateParam.parameterNumber >= 0) {
+        for (final entry in slot.outputModeMap.entries) {
+          if (entry.value.contains(paraphonicGateParam.parameterNumber)) {
+            final modeValue = AlgorithmRouting.getParameterValueByNumber(
+              slot,
+              entry.key,
+              defaultValue: 0,
+            );
+            paraGateMode = (modeValue == 1) ? 'replace' : 'add';
+            modeParameterNumber = entry.key;
+            break;
+          }
+        }
+      }
+
+      outputPorts.add({
+        'id': '${algId}_paraphonic_gate',
+        'name': 'Paraphonic gate',
+        'type': 'gate',
+        'busValue': paraphonicGateBus > 0 ? paraphonicGateBus : null,
+        'busParam': 'Paraphonic gate',
+        'parameterNumber': paraphonicGateParam.parameterNumber,
+        'outputMode': paraGateMode,
+        'modeParameterNumber': modeParameterNumber,
+      });
     }
 
     // Create configuration for poly routing

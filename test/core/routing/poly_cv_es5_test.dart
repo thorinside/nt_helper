@@ -14,6 +14,7 @@ void main() {
       required int firstOutput,
       required int es5Expander,
       required int es5Output,
+      int paraphonicGate = 0,
       int algorithmIndex = 0,
     }) {
       final parameters = <ParameterInfo>[];
@@ -168,6 +169,48 @@ void main() {
         ),
       );
 
+      // Paraphonic gate parameter (62)
+      parameters.add(
+        ParameterInfo(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: 62,
+          name: 'Paraphonic gate',
+          min: 0,
+          max: 64,
+          defaultValue: 0,
+          unit: 1,
+          powerOfTen: 0,
+        ),
+      );
+      values.add(
+        ParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: 62,
+          value: paraphonicGate,
+        ),
+      );
+
+      // Para gate mode parameter (63)
+      parameters.add(
+        ParameterInfo(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: 63,
+          name: 'Para gate mode',
+          min: 0,
+          max: 1,
+          defaultValue: 1,
+          unit: 1,
+          powerOfTen: 0,
+        ),
+      );
+      values.add(
+        ParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: 63,
+          value: 1,
+        ),
+      );
+
       return Slot(
         algorithm: Algorithm(
           algorithmIndex: algorithmIndex,
@@ -310,7 +353,7 @@ void main() {
     });
 
     group('Mixed Routing Tests', () {
-      test('Gates to ES-5, Pitch CVs to normal buses', () {
+      test('Gates to ES-5, Pitch CVs to normal buses (tightly packed)', () {
         final slot = createPolyCvSlot(
           voices: 4,
           gateOutputs: 1,
@@ -337,17 +380,9 @@ void main() {
 
         final outputPorts = routing.outputPorts;
 
-        // Filter out the ES-5 Output parameter port
-        final realPorts = outputPorts
-            .where((p) => !p.name.contains('ES-5 Output'))
-            .toList();
-
-        // Should have 4 gates (ES-5) + 4 pitch CVs (normal)
-        expect(realPorts, hasLength(8));
-
-        // Check gates go to ES-5
-        final gatePorts = realPorts
-            .where((p) => p.name.contains('Gate'))
+        // Check per-voice gates go to ES-5
+        final gatePorts = outputPorts
+            .where((p) => p.name.contains('Gate') && p.name != 'Paraphonic gate')
             .toList();
         expect(gatePorts, hasLength(4));
         for (final port in gatePorts) {
@@ -355,20 +390,18 @@ void main() {
           expect(port.name, contains('ES-5'));
         }
 
-        // Check pitch CVs use normal buses
-        final pitchPorts = realPorts
+        // Check pitch CVs use normal buses, tightly packed (no gaps for gates)
+        final pitchPorts = outputPorts
             .where((p) => p.name.contains('Pitch'))
             .toList();
         expect(pitchPorts, hasLength(4));
-        for (final port in pitchPorts) {
-          // Pitch ports have busParam set to 'Pitch output' but use busValue for routing
-          expect(port.busParam, isNot(equals('es5_direct')));
-          expect(port.busValue, isNotNull);
-          expect(port.busValue! >= 13, isTrue);
+        for (int i = 0; i < 4; i++) {
+          expect(pitchPorts[i].busParam, isNot(equals('es5_direct')));
+          expect(pitchPorts[i].busValue, equals(13 + i));
         }
       });
 
-      test('Gates to ES-5, Pitch + Velocity CVs to normal buses', () {
+      test('Gates to ES-5, Pitch + Velocity CVs to normal buses (tightly packed)', () {
         final slot = createPolyCvSlot(
           voices: 2,
           gateOutputs: 1,
@@ -395,35 +428,29 @@ void main() {
 
         final outputPorts = routing.outputPorts;
 
-        // Filter out the ES-5 Output parameter port
-        final realPorts = outputPorts
-            .where((p) => !p.name.contains('ES-5 Output'))
-            .toList();
-
-        // Should have 2 gates (ES-5) + 2 pitch CVs + 2 velocity CVs (normal)
-        expect(realPorts, hasLength(6));
-
-        // Check gates go to ES-5
-        final gatePorts = realPorts
-            .where((p) => p.name.contains('Gate'))
+        // Check per-voice gates go to ES-5
+        final gatePorts = outputPorts
+            .where((p) => p.name.contains('Gate') && p.name != 'Paraphonic gate')
             .toList();
         expect(gatePorts, hasLength(2));
         for (final port in gatePorts) {
           expect(port.busParam, equals('es5_direct'));
         }
 
-        // Check CVs use normal buses (not ES-5)
-        final cvPorts = realPorts
-            .where(
-              (p) => p.name.contains('Pitch') || p.name.contains('Velocity'),
-            )
+        // Check pitch + velocity CVs tightly packed: pitch1, vel1, pitch2, vel2
+        final pitchPorts = outputPorts
+            .where((p) => p.name.contains('Pitch'))
             .toList();
-        expect(cvPorts, hasLength(4));
-        for (final port in cvPorts) {
-          // CV ports have busParam set but use busValue for routing
-          expect(port.busParam, isNot(equals('es5_direct')));
-          expect(port.busValue, isNotNull);
-        }
+        final velPorts = outputPorts
+            .where((p) => p.name.contains('Velocity'))
+            .toList();
+        expect(pitchPorts, hasLength(2));
+        expect(velPorts, hasLength(2));
+        // Voice 1: pitch=13, velocity=14; Voice 2: pitch=15, velocity=16
+        expect(pitchPorts[0].busValue, equals(13));
+        expect(velPorts[0].busValue, equals(14));
+        expect(pitchPorts[1].busValue, equals(15));
+        expect(velPorts[1].busValue, equals(16));
       });
     });
 
@@ -455,17 +482,94 @@ void main() {
 
         final outputPorts = routing.outputPorts;
 
-        // Filter out the ES-5 Output parameter port
-        final realPorts = outputPorts
-            .where((p) => !p.name.contains('ES-5 Output'))
+        // Per-voice ports should use normal buses (no ES-5)
+        final voicePorts = outputPorts
+            .where((p) => p.name != 'Paraphonic gate')
             .toList();
 
-        // All ports should use normal buses (no ES-5)
-        for (final port in realPorts) {
+        for (final port in voicePorts) {
           expect(port.busParam, isNot(equals('es5_direct')));
           expect(port.busValue, isNotNull);
           expect(port.busValue! >= 13, isTrue);
         }
+      });
+    });
+
+    group('Paraphonic Gate Tests', () {
+      test('Paraphonic gate appears as single output port on normal bus', () {
+        final slot = createPolyCvSlot(
+          voices: 4,
+          gateOutputs: 1,
+          pitchOutputs: 1,
+          velocityOutputs: 0,
+          firstOutput: 21,
+          es5Expander: 1,
+          es5Output: 1,
+          paraphonicGate: 13, // Output 1
+        );
+
+        final routing = PolyAlgorithmRouting.createFromSlot(
+          slot,
+          ioParameters: {
+            'Voices': 4,
+            'First output': 21,
+            'Gate outputs': 1,
+            'Pitch outputs': 1,
+            'Velocity outputs': 0,
+            'ES-5 Expander': 1,
+            'ES-5 Output': 1,
+            'Paraphonic gate': 13,
+            'Para gate mode': 1,
+          },
+          algorithmUuid: 'test-uuid-pycv',
+        );
+
+        final outputPorts = routing.outputPorts;
+
+        // Find the paraphonic gate port
+        final paraGatePorts = outputPorts
+            .where((p) => p.name == 'Paraphonic gate')
+            .toList();
+        expect(paraGatePorts, hasLength(1));
+        expect(paraGatePorts[0].busValue, equals(13));
+        expect(paraGatePorts[0].busParam, isNot(equals('es5_direct')));
+      });
+
+      test('Paraphonic gate shown with no bus when set to None', () {
+        final slot = createPolyCvSlot(
+          voices: 4,
+          gateOutputs: 1,
+          pitchOutputs: 1,
+          velocityOutputs: 0,
+          firstOutput: 21,
+          es5Expander: 1,
+          es5Output: 1,
+          paraphonicGate: 0, // None
+        );
+
+        final routing = PolyAlgorithmRouting.createFromSlot(
+          slot,
+          ioParameters: {
+            'Voices': 4,
+            'First output': 21,
+            'Gate outputs': 1,
+            'Pitch outputs': 1,
+            'Velocity outputs': 0,
+            'ES-5 Expander': 1,
+            'ES-5 Output': 1,
+            'Paraphonic gate': 0,
+            'Para gate mode': 1,
+          },
+          algorithmUuid: 'test-uuid-pycv',
+        );
+
+        final outputPorts = routing.outputPorts;
+
+        final paraGatePorts = outputPorts
+            .where((p) => p.name == 'Paraphonic gate')
+            .toList();
+        expect(paraGatePorts, hasLength(1));
+        expect(paraGatePorts[0].busValue, isNull);
       });
     });
 

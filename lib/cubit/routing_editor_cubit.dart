@@ -231,6 +231,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   parameterNumber: p.parameterNumber,
                   modeParameterNumber: p.modeParameterNumber,
                   outputMode: p.outputMode,
+                  channelNumber: p.channelNumber,
                 ),
               )
               .toList(),

@@ -2159,7 +2159,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
               outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
               inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
               outputPortIds: algorithm.outputPorts.map((p) => p.id).toList(),
-              outputChannelNumbers: es5Data?.channelNumbers,
+              outputChannelNumbers: es5Data != null
+                  ? _buildOutputChannelNumbers(algorithm, es5Data)
+                  : null,
               connectedPorts: _getConnectedPortIds(connections),
               shadowedPortIds: shadowedOutputPortIds,
               onPortPositionResolved: (portId, globalCenter, isInput) {
@@ -2551,6 +2553,41 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       parameterNumbers: parameterNumbers,
       channelNumbers: channelNumbers,
     );
+  }
+
+  /// Builds the outputChannelNumbers list aligned with output ports.
+  ///
+  /// For Poly CV, output ports interleave gates and pitch/velocity, so we
+  /// must map channel numbers to the correct port indices. Gate ports (with
+  /// busParam 'es5_direct') get their ES-5 channel number; other ports get 0.
+  ///
+  /// For Clock/Euclidean algorithms, each channel has exactly one output port,
+  /// so the channelNumbers list from es5Data aligns naturally.
+  List<int> _buildOutputChannelNumbers(
+    RoutingAlgorithm algorithm,
+    ({
+      Map<int, bool> toggles,
+      Map<int, int> parameterNumbers,
+      List<int> channelNumbers,
+    }) es5Data,
+  ) {
+    final guid = algorithm.algorithm.guid;
+    if (guid.startsWith('py')) {
+      // Poly CV: gates and pitch/velocity are interleaved.
+      // Only gate ports should get an ES-5 channel number.
+      // Gate ports are identified by name containing "Gate" (both modes:
+      // "Gate output N" when ES-5 off, "Voice N Gate → ES-5 N" when on).
+      int gateIndex = 0;
+      return algorithm.outputPorts.map((p) {
+        final isGate = p.name.contains('Gate');
+        if (isGate && gateIndex < es5Data.channelNumbers.length) {
+          return es5Data.channelNumbers[gateIndex++];
+        }
+        return 0;
+      }).toList();
+    }
+    // Clock/Euclidean/etc: 1:1 mapping
+    return es5Data.channelNumbers;
   }
 
   /// Handle ES-5 toggle change for a channel.
