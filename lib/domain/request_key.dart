@@ -100,6 +100,28 @@ class RequestKey {
     return true;
   }
 
+  /// Strict matching — like [matches] but without the lenient enum string
+  /// workaround. Used by expired handlers to avoid cross-contamination between
+  /// different parameter requests on the same slot.
+  bool matchesStrict(DistingNTParsedMessage msg) {
+    if (sysExId != msg.sysExId) return false;
+    if (messageType != msg.messageType) return false;
+
+    final responseKey = RequestKey.fromDistingNTParsedMessage(msg);
+
+    if (algorithmIndex != null &&
+        algorithmIndex != responseKey.algorithmIndex) {
+      return false;
+    }
+
+    if (parameterNumber != null &&
+        parameterNumber != responseKey.parameterNumber) {
+      return false;
+    }
+
+    return true;
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

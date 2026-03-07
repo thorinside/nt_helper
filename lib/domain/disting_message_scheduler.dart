@@ -76,6 +76,113 @@ class _ScheduledRequest {
 }
 
 // -----------------------------------------------------------------------------
+// Response Demultiplexer
+// -----------------------------------------------------------------------------
+
+class _ActiveHandler {
+  _ActiveHandler({required this.key, required this.onMatch});
+
+  final RequestKey key;
+  final void Function(DistingNTParsedMessage) onMatch;
+}
+
+class _ExpiredHandler {
+  _ExpiredHandler({required this.key, required this.expiredAt});
+
+  final RequestKey key;
+  final DateTime expiredAt;
+}
+
+class _ResponseDemux {
+  _ActiveHandler? _activeHandler;
+  final List<_ExpiredHandler> _expiredHandlers = [];
+  final List<void Function(DistingNTParsedMessage)> _observers = [];
+
+  int staleResponsesAbsorbed = 0;
+  int unmatchedResponsesDiscarded = 0;
+
+  int get expiredHandlerCount => _expiredHandlers.length;
+
+  static const int _maxExpiredHandlers = 20;
+  static const Duration _expiredHandlerMaxAge = Duration(seconds: 30);
+
+  void registerActive(RequestKey key, void Function(DistingNTParsedMessage) onMatch) {
+    _activeHandler = _ActiveHandler(key: key, onMatch: onMatch);
+  }
+
+  void expireActive() {
+    final handler = _activeHandler;
+    if (handler != null) {
+      _activeHandler = null;
+      _expiredHandlers.add(
+        _ExpiredHandler(key: handler.key, expiredAt: DateTime.now()),
+      );
+    }
+  }
+
+  void addObserver(void Function(DistingNTParsedMessage) observer) {
+    _observers.add(observer);
+  }
+
+  void removeObserver(void Function(DistingNTParsedMessage) observer) {
+    _observers.remove(observer);
+  }
+
+  void dispatch(DistingNTParsedMessage parsed) {
+    // 1. Notify all passive observers before any matching
+    for (final observer in _observers) {
+      try {
+        observer(parsed);
+      } catch (_) {
+      }
+    }
+
+    // 2. Check active handler first — active request always takes priority
+    if (_activeHandler != null && _activeHandler!.key.matches(parsed)) {
+      final handler = _activeHandler!;
+      _activeHandler = null;
+      handler.onMatch(parsed);
+      return;
+    }
+
+    // 3. Check expired handlers (oldest first) — absorb stale responses
+    final expiredMatch = _expiredHandlers.indexWhere(
+      (h) => h.key.matchesStrict(parsed),
+    );
+    if (expiredMatch != -1) {
+      _expiredHandlers.removeAt(expiredMatch);
+      staleResponsesAbsorbed++;
+      return;
+    }
+
+    // 4. No match — discard cleanly
+    unmatchedResponsesDiscarded++;
+
+    // Lazy cleanup of old expired handlers
+    _cleanupExpiredHandlers();
+  }
+
+  void _cleanupExpiredHandlers() {
+    if (_expiredHandlers.isEmpty) return;
+
+    final now = DateTime.now();
+    _expiredHandlers.removeWhere(
+      (h) => now.difference(h.expiredAt) > _expiredHandlerMaxAge,
+    );
+
+    // Cap the list size
+    while (_expiredHandlers.length > _maxExpiredHandlers) {
+      _expiredHandlers.removeAt(0);
+    }
+  }
+
+  void clear() {
+    _activeHandler = null;
+    _expiredHandlers.clear();
+  }
+}
+
+// -----------------------------------------------------------------------------
 // RTT Statistics per message type
 // -----------------------------------------------------------------------------
 
@@ -164,8 +271,10 @@ class DistingMessageScheduler {
   _ScheduledRequest? _currentRequest;
   Timer? _nextProcessTimer;
   Timer? _retryTimer;
-  Timer? _streamRecoveryTimer;
   StreamSubscription? _subscription;
+
+  // Response demultiplexer
+  final _ResponseDemux _demux = _ResponseDemux();
 
   // Diagnostic counters
   int _totalPacketsReceived = 0;
@@ -249,6 +358,10 @@ class DistingMessageScheduler {
       'rttMaxMs': _totalRequestsCompleted > 0
           ? (_maxRtt.inMicroseconds / 1000).toStringAsFixed(2)
           : 'N/A',
+      // Response demux diagnostics
+      'staleResponsesAbsorbed': _demux.staleResponsesAbsorbed,
+      'unmatchedResponsesDiscarded': _demux.unmatchedResponsesDiscarded,
+      'expiredHandlerCount': _demux.expiredHandlerCount,
     };
   }
 
@@ -440,6 +553,17 @@ class DistingMessageScheduler {
     _subscriptionActive = false;
   }
 
+  /// Adds a passive observer that receives ALL parsed Disting NT SysEx messages,
+  /// regardless of whether they match a pending request.
+  void addMessageObserver(void Function(DistingNTParsedMessage) observer) {
+    _demux.addObserver(observer);
+  }
+
+  /// Removes a previously added message observer.
+  void removeMessageObserver(void Function(DistingNTParsedMessage) observer) {
+    _demux.removeObserver(observer);
+  }
+
   Future<T?> sendRequest<T>(
     Uint8List packet,
     RequestKey key, {
@@ -473,7 +597,7 @@ class DistingMessageScheduler {
     _subscription?.cancel();
     _nextProcessTimer?.cancel();
     _retryTimer?.cancel();
-    _streamRecoveryTimer?.cancel();
+    _demux.clear();
     final current = _currentRequest;
     if (current != null && !current.completer.isCompleted) {
       current.completer.completeError(StateError('Scheduler disposed'));
@@ -535,6 +659,15 @@ class DistingMessageScheduler {
     request.stopwatch.reset();
     request.stopwatch.start();
 
+    // Register handler with demux BEFORE sending (first attempt only).
+    // Handler persists across retries — only moved to expired on final timeout.
+    if (request.attemptCount == 1 &&
+        request.expectation != ResponseExpectation.none) {
+      _demux.registerActive(request.key, (parsed) {
+        _onResponseMatched(request, parsed);
+      });
+    }
+
     // Send the message
     try {
       _midi.sendData(request.packet, deviceId: _outputDevice.id);
@@ -555,6 +688,63 @@ class DistingMessageScheduler {
     }
   }
 
+  /// Called by the demux when a response matches the active handler.
+  void _onResponseMatched(_ScheduledRequest request, DistingNTParsedMessage parsed) {
+    // Guard against race conditions
+    if (request.completer.isCompleted) {
+      _finishCurrentRequest();
+      return;
+    }
+
+    // Cancel timeout timer since we got a response
+    request.timeoutTimer?.cancel();
+
+    // Reset consecutive timeout counter
+    _consecutiveTimeouts = 0;
+
+    // Record RTT measurement
+    request.stopwatch.stop();
+    final rtt = request.stopwatch.elapsed;
+    _recordRtt(
+      rtt,
+      parsed.messageType,
+      libraryIndex: request.key.libraryIndex,
+    );
+
+    // Parse and complete the response
+    final response = ResponseFactory.fromMessageType(
+      parsed.messageType,
+      parsed.payload,
+    );
+
+    if (response != null) {
+      try {
+        final parsedResponse = response.parse();
+        request.completer.complete(parsedResponse);
+      } catch (e) {
+        if (request.expectation == ResponseExpectation.optional) {
+          request.completer.complete(null);
+        } else {
+          request.completer.completeError(
+            StateError(
+              'Failed to parse response: ${response.runtimeType} - $e',
+            ),
+          );
+        }
+      }
+    } else {
+      if (request.expectation == ResponseExpectation.optional) {
+        request.completer.complete(null);
+      } else {
+        request.completer.completeError(
+          StateError('Unhandled response type: ${parsed.messageType}'),
+        );
+      }
+    }
+
+    _finishCurrentRequest();
+  }
+
   void _onTimeout() {
     final request = _currentRequest;
 
@@ -572,7 +762,10 @@ class DistingMessageScheduler {
     }
 
     if (request.attemptCount >= request.maxRetries) {
-      // Out of retries - record timeout for stats
+      // Out of retries — expire the handler so late responses get absorbed
+      _demux.expireActive();
+
+      // Record timeout for stats
       request.stopwatch.stop();
       _recordTimeout(request.key.messageType);
       _consecutiveTimeouts++;
@@ -595,7 +788,7 @@ class DistingMessageScheduler {
       }
       _finishCurrentRequest();
     } else {
-      // Retry after delay
+      // Retry after delay — handler persists across retries
       _state = _SchedulerState.sending;
 
       if (request.retryDelay == Duration.zero) {
@@ -613,6 +806,7 @@ class DistingMessageScheduler {
     }
 
     if (request.attemptCount >= request.maxRetries) {
+      _demux.expireActive();
       request.completer.completeError(
         StateError('Failed to send request after ${request.attemptCount} attempts: $error'),
       );
@@ -640,6 +834,7 @@ class DistingMessageScheduler {
 
     // Schedule next request after message interval
     if (_queue.isNotEmpty) {
+      _nextProcessTimer?.cancel();
       _nextProcessTimer = Timer(messageInterval, _processNext);
     }
   }
@@ -699,11 +894,22 @@ class DistingMessageScheduler {
       _sysExBuffer.addAll(raw);
 
       if (hasF7) {
-        // Complete message received
         _isBufferingSysEx = false;
         final completeMessage = Uint8List.fromList(_sysExBuffer);
         _sysExBuffer.clear();
-        _processCompleteSysEx(completeMessage);
+        _sysexPacketsReceived++;
+        _processExtractedSysEx(_extractSysExMessages(completeMessage));
+
+        // Check for a trailing F0 (start of next split SysEx)
+        final lastF7 = completeMessage.lastIndexOf(0xF7);
+        if (lastF7 < completeMessage.length - 1) {
+          final trailing = completeMessage.sublist(lastF7 + 1);
+          if (trailing.contains(0xF0)) {
+            final trailingF0 = trailing.indexOf(0xF0);
+            _sysExBuffer.addAll(trailing.sublist(trailingF0));
+            _isBufferingSysEx = true;
+          }
+        }
         return;
       }
       // Still waiting for F7
@@ -715,7 +921,7 @@ class DistingMessageScheduler {
       // Start of a split SysEx message
       _isBufferingSysEx = true;
       _sysExBuffer.clear();
-      _sysExBuffer.addAll(raw);
+      _sysExBuffer.addAll(raw.sublist(raw.indexOf(0xF0)));
       return;
     }
 
@@ -725,116 +931,41 @@ class DistingMessageScheduler {
     final sysexMessages = _extractSysExMessages(raw);
     if (sysexMessages.isEmpty) {
       _nonSysexPacketsReceived++;
-
-      if (_state == _SchedulerState.waitingForResponse) {
-        _scheduleStreamRecovery();
-      }
       return;
     }
 
     _sysexPacketsReceived++;
-    _cancelStreamRecovery();
-    _processCompleteSysEx(raw);
+
+    // Check for trailing split SysEx start after the last complete message
+    final lastMsgEnd = raw.lastIndexOf(0xF7);
+    if (lastMsgEnd < raw.length - 1) {
+      final trailing = raw.sublist(lastMsgEnd + 1);
+      if (trailing.contains(0xF0)) {
+        final trailingF0 = trailing.indexOf(0xF0);
+        _isBufferingSysEx = true;
+        _sysExBuffer.clear();
+        _sysExBuffer.addAll(trailing.sublist(trailingF0));
+      }
+    }
+
+    _processExtractedSysEx(sysexMessages);
   }
 
-  void _processCompleteSysEx(Uint8List raw) {
-    final sysexMessages = _extractSysExMessages(raw);
-    if (sysexMessages.isEmpty) {
-      return;
-    }
-
-    _sysexPacketsReceived++;
-
+  void _processExtractedSysEx(List<Uint8List> sysexMessages) {
     for (final sysex in sysexMessages) {
-      if (_tryHandleSysEx(sysex)) {
-        break;
-      }
+      _dispatchSysEx(sysex);
     }
   }
 
-  void _scheduleStreamRecovery() {
-    // Disabled: Auto-recovery was causing MIDI state corruption.
-    // Non-SysEx bytes shouldn't break things.
-  }
-
-  void _cancelStreamRecovery() {
-    _streamRecoveryTimer?.cancel();
-    _streamRecoveryTimer = null;
-  }
-
-  bool _tryHandleSysEx(Uint8List sysex) {
+  void _dispatchSysEx(Uint8List sysex) {
     try {
       final parsed = decodeDistingNTSysEx(sysex);
-      if (parsed == null) {
-        return false;
-      }
+      if (parsed == null) return;
+      if (parsed.sysExId != _sysExId) return;
 
-      if (parsed.sysExId != _sysExId) {
-        return false;
-      }
-
-      final request = _currentRequest;
-      if (request == null ||
-          _state != _SchedulerState.waitingForResponse ||
-          request.completer.isCompleted) {
-        return false;
-      }
-
-      if (!request.key.matches(parsed)) {
-        return false;
-      }
-
-      // Successfully matched a response - reset consecutive timeout counter
-      _consecutiveTimeouts = 0;
-
-      // Record RTT measurement
-      request.stopwatch.stop();
-      final rtt = request.stopwatch.elapsed;
-      _recordRtt(
-        rtt,
-        parsed.messageType,
-        libraryIndex: request.key.libraryIndex,
-      );
-
-      // Parse and complete the response
-      final response = ResponseFactory.fromMessageType(
-        parsed.messageType,
-        parsed.payload,
-      );
-
-      if (response != null) {
-        try {
-          final parsedResponse = response.parse();
-          request.completer.complete(parsedResponse);
-        } catch (e) {
-          // If parsing fails, complete with error instead of raw response to avoid type mismatches
-          if (request.expectation == ResponseExpectation.optional) {
-            request.completer.complete(null);
-          } else {
-            request.completer.completeError(
-              StateError(
-                'Failed to parse response: ${response.runtimeType} - $e',
-              ),
-            );
-          }
-        }
-      } else {
-        // No parser available
-        if (request.expectation == ResponseExpectation.optional) {
-          request.completer.complete(null);
-        } else {
-          request.completer.completeError(
-            StateError('Unhandled response type: ${parsed.messageType}'),
-          );
-        }
-      }
-
-      _finishCurrentRequest();
-      return true;
+      _demux.dispatch(parsed);
     } catch (e) {
       // Catch any unexpected exceptions to prevent scheduler from getting stuck.
-      // The timeout will eventually clean up the current request.
     }
-    return false;
   }
 }
