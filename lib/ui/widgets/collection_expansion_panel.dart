@@ -8,6 +8,7 @@ class CollectionExpansionPanel extends StatefulWidget {
   final Function(int index) onTogglePlugin;
   final Function(bool selected) onSelectAll;
   final Function(List<CollectionPlugin> selected) onInstall;
+  final bool fillHeight;
 
   const CollectionExpansionPanel({
     super.key,
@@ -17,6 +18,7 @@ class CollectionExpansionPanel extends StatefulWidget {
     required this.onTogglePlugin,
     required this.onSelectAll,
     required this.onInstall,
+    this.fillHeight = false,
   });
 
   @override
@@ -26,7 +28,9 @@ class CollectionExpansionPanel extends StatefulWidget {
 
 class _CollectionExpansionPanelState extends State<CollectionExpansionPanel> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
+  bool _hasFocusedSearch = false;
 
   @override
   void initState() {
@@ -39,6 +43,7 @@ class _CollectionExpansionPanelState extends State<CollectionExpansionPanel> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -102,6 +107,13 @@ class _CollectionExpansionPanelState extends State<CollectionExpansionPanel> {
     final filtered = _filteredPlugins;
     final showSearch = plugins.length > 5;
 
+    if (showSearch && !_hasFocusedSearch) {
+      _hasFocusedSearch = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _searchFocusNode.requestFocus();
+      });
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
@@ -117,6 +129,7 @@ class _CollectionExpansionPanelState extends State<CollectionExpansionPanel> {
           if (showSearch) ...[
             TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
               decoration: InputDecoration(
                 hintText: 'Search in collection...',
                 prefixIcon: const Icon(Icons.search, size: 20),
@@ -160,10 +173,9 @@ class _CollectionExpansionPanelState extends State<CollectionExpansionPanel> {
           const SizedBox(height: 4),
 
           // Plugin list
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 300),
-            child: ListView.builder(
-              shrinkWrap: true,
+          _wrapListView(
+            ListView.builder(
+              shrinkWrap: !widget.fillHeight,
               itemCount: filtered.length,
               itemBuilder: (context, i) {
                 final entry = filtered[i];
@@ -186,7 +198,7 @@ class _CollectionExpansionPanelState extends State<CollectionExpansionPanel> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          plugin.fileType.toUpperCase(),
+                          _getFileTypeLabel(plugin.fileType),
                           style: theme.textTheme.bodySmall,
                         ),
                         if (plugin.fileSize != null) ...[
@@ -228,6 +240,31 @@ class _CollectionExpansionPanelState extends State<CollectionExpansionPanel> {
         ],
       ),
     );
+  }
+
+  Widget _wrapListView(Widget listView) {
+    if (widget.fillHeight) {
+      return Expanded(child: listView);
+    }
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 300),
+      child: listView,
+    );
+  }
+
+  String _getFileTypeLabel(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'o':
+        return 'C++ Plugin';
+      case 'lua':
+        return 'Lua Script';
+      case '3pot':
+        return 'Preset';
+      case 'wav':
+        return 'Audio Sample';
+      default:
+        return '.${fileType.toLowerCase()}';
+    }
   }
 
   IconData _getFileTypeIcon(String fileType) {

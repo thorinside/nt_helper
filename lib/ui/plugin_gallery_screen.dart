@@ -1774,56 +1774,87 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                 ? state.expandedCollections[plugin.id]
                 : null;
 
-            return AlertDialog(
-              title: Row(
-                children: [
-                  const Icon(Icons.folder_open, size: 22),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(plugin.name)),
-                ],
-              ),
-              contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
-              content: SizedBox(
-                width: 480,
-                child: expansion == null
-                    ? const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Loading collection contents...'),
-                          ],
-                        ),
-                      )
-                    : CollectionExpansionPanel(
-                        expansion: expansion,
-                        pluginId: plugin.id,
-                        installDisabled: false,
-                        onTogglePlugin: (index) =>
-                            context.read<GalleryCubit>().toggleCollectionPlugin(plugin.id, index),
-                        onSelectAll: (selected) =>
-                            context.read<GalleryCubit>().selectAllCollectionPlugins(plugin.id, selected),
-                        onInstall: (selected) {
-                          Navigator.of(dialogContext).pop();
-                          _doInstallCollectionPlugins(plugin.id, selected);
-                        },
-                      ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    galleryCubit.collapseCollection(plugin.id);
-                    Navigator.of(dialogContext).pop();
-                  },
-                  child: const Text('Close'),
+            final screenHeight = MediaQuery.of(context).size.height;
+
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 480,
+                  maxHeight: screenHeight * 0.5,
                 ),
-              ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title bar with close button
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.folder_open, size: 22),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(plugin.name,
+                              style: Theme.of(context).textTheme.titleLarge),
+                          ),
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              iconSize: 20,
+                              icon: const Icon(Icons.close, semanticLabel: 'Close'),
+                              onPressed: () {
+                                galleryCubit.collapseCollection(plugin.id);
+                                Navigator.of(dialogContext).pop();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Content — animates between loading and loaded
+                    Flexible(
+                      child: AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        alignment: Alignment.topCenter,
+                        child: expansion == null
+                            ? const Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text('Loading collection contents...'),
+                                  ],
+                                ),
+                              )
+                            : CollectionExpansionPanel(
+                                expansion: expansion,
+                                pluginId: plugin.id,
+                                installDisabled: false,
+                                fillHeight: true,
+                                onTogglePlugin: (index) =>
+                                    context.read<GalleryCubit>().toggleCollectionPlugin(plugin.id, index),
+                                onSelectAll: (selected) =>
+                                    context.read<GalleryCubit>().selectAllCollectionPlugins(plugin.id, selected),
+                                onInstall: (selected) {
+                                  Navigator.of(dialogContext).pop();
+                                  _doInstallCollectionPlugins(plugin.id, selected);
+                                },
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
           },
         ),
