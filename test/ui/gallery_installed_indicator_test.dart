@@ -55,7 +55,6 @@ void main() {
     final loadedState = GalleryState.loaded(
       gallery: gallery,
       filteredPlugins: [plugin],
-      queue: [],
       selectedCategory: null,
       selectedType: null,
       showFeaturedOnly: false,
@@ -66,8 +65,6 @@ void main() {
 
     when(() => mockCubit.state).thenReturn(loadedState);
     when(() => mockCubit.stream).thenAnswer((_) => Stream.value(loadedState));
-
-    when(() => mockCubit.isInQueue(any())).thenReturn(false);
 
     return MaterialApp(
       home: BlocProvider<GalleryCubit>.value(

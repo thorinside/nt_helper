@@ -775,6 +775,115 @@ class GalleryService {
     return response.bodyBytes;
   }
 
+  /// Install a single plugin directly (no queue), reporting progress via callbacks.
+  ///
+  /// If [cachedArchiveBytes] is provided, skips downloading.
+  /// [selectedPlugins] filters which files to install from a collection archive.
+  Future<SampleInstallationResult?> installPlugin(
+    GalleryPlugin plugin, {
+    required Function(
+      String fileName,
+      Uint8List fileData, {
+      Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
+    })
+    distingInstallPlugin,
+    SampleInstallCallback? distingInstallSample,
+    Function(PluginInstallPhase phase, double progress)? onProgress,
+    List<int>? cachedArchiveBytes,
+    List<CollectionPlugin>? selectedPlugins,
+  }) async {
+    final version = plugin.getVersionTag('latest');
+
+    // Download
+    onProgress?.call(PluginInstallPhase.downloading, 0.0);
+    List<int> fileBytes;
+    if (cachedArchiveBytes != null) {
+      fileBytes = cachedArchiveBytes;
+      onProgress?.call(PluginInstallPhase.downloading, 0.5);
+    } else {
+      final downloadUrl = await _getDownloadUrl(plugin, version);
+      fileBytes = await _downloadWithProgress(downloadUrl, (progress) {
+        onProgress?.call(PluginInstallPhase.downloading, progress * 0.5);
+      });
+    }
+
+    // Determine file type
+    final downloadUrl = cachedArchiveBytes != null
+        ? 'archive.zip'
+        : await _getDownloadUrl(plugin, version);
+    final fileName = path.basename(Uri.parse(downloadUrl).path);
+    final fileExtension = path.extension(fileName).toLowerCase();
+
+    List<MapEntry<String, List<int>>> filesToInstall;
+    ExtractedArchiveContents? extractedContents;
+
+    if (fileExtension == '.zip' || cachedArchiveBytes != null) {
+      onProgress?.call(PluginInstallPhase.extracting, 0.5);
+
+      // Build a temporary QueuedPlugin-like filter using selectedPlugins
+      // We pass selectedPlugins directly to _extractArchive via a synthetic QueuedPlugin
+      QueuedPlugin? filterPlugin;
+      if (selectedPlugins != null && selectedPlugins.isNotEmpty) {
+        filterPlugin = QueuedPlugin(
+          plugin: plugin,
+          selectedVersion: 'latest',
+          isCollection: true,
+          selectedPlugins: selectedPlugins,
+        );
+      }
+
+      extractedContents = await _extractArchive(
+        fileBytes,
+        plugin,
+        queuedPlugin: filterPlugin,
+      );
+      filesToInstall = extractedContents.pluginFiles;
+    } else if (_isRawPluginFile(fileExtension)) {
+      filesToInstall = [MapEntry(fileName, fileBytes)];
+    } else {
+      throw GalleryException(
+        'Unsupported file type: $fileExtension',
+      );
+    }
+
+    // Install
+    onProgress?.call(PluginInstallPhase.installing, 0.6);
+    await _installFilesViaDisting(
+      filesToInstall,
+      plugin,
+      version,
+      distingInstallPlugin,
+      (uploadProgress) {
+        onProgress?.call(
+          PluginInstallPhase.installing,
+          0.6 + (uploadProgress * 0.2),
+        );
+      },
+    );
+
+    // Install samples if present
+    SampleInstallationResult? sampleResult;
+    if (extractedContents != null &&
+        extractedContents.hasSamples &&
+        distingInstallSample != null) {
+      sampleResult = await _installSampleFiles(
+        extractedContents.sampleFiles,
+        distingInstallSample,
+        (sampleProgress) {
+          onProgress?.call(
+            PluginInstallPhase.installing,
+            0.8 + (sampleProgress * 0.2),
+          );
+        },
+      );
+    }
+
+    onProgress?.call(PluginInstallPhase.completed, 1.0);
+    return sampleResult;
+  }
+
   /// Install all plugins in the queue using Disting upload functionality
   ///
   /// [distingInstallPlugin] - Callback to install plugin files (.o, .lua, .3pot)

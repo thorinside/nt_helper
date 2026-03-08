@@ -41,7 +41,7 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
-import 'package:nt_helper/ui/plugin_manager_screen.dart';
+import 'package:nt_helper/ui/plugin_gallery_screen.dart';
 import 'package:nt_helper/ui/widgets/shortcut_help_overlay.dart';
 
 import 'package:nt_helper/util/extensions.dart';
@@ -2004,7 +2004,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     Navigator.push(
                       popupCtx,
                       MaterialPageRoute(
-                        builder: (_) => PluginManagerScreen(
+                        builder: (_) => PluginGalleryScreen(
                           distingCubit: distingCubit,
                           database: distingCubit.database,
                         ),

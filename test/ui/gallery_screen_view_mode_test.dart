@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nt_helper/ui/gallery_screen.dart';
+import 'package:nt_helper/ui/plugin_gallery_screen.dart';
 
 void main() {
   group('GalleryViewMode', () {

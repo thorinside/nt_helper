@@ -1,31 +1,52 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/services/gallery_service.dart';
+import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 
 part 'gallery_cubit.freezed.dart';
 part 'gallery_state.dart';
 
+/// Pending install request stored for queue processing
+class _PendingInstall {
+  final GalleryPlugin plugin;
+  final Function(String, Uint8List, {Function(double)? onProgress, String? galleryPluginId, String? galleryPluginVersion}) distingInstallPlugin;
+  final SampleInstallCallback? distingInstallSample;
+  final VoidCallback? onComplete;
+  final Function(String)? onError;
+  final List<CollectionPlugin>? selectedPlugins;
+
+  _PendingInstall({
+    required this.plugin,
+    required this.distingInstallPlugin,
+    this.distingInstallSample,
+    this.onComplete,
+    this.onError,
+    this.selectedPlugins,
+  });
+}
+
 class GalleryCubit extends Cubit<GalleryState> {
   final GalleryService _galleryService;
-  StreamSubscription<List<QueuedPlugin>>? _queueSubscription;
 
-  GalleryCubit(this._galleryService) : super(const GalleryState.initial()) {
-    // Listen to queue changes from the service
-    _queueSubscription = _galleryService.queueStream.listen((queue) {
-      if (state is GalleryLoaded) {
-        emit((state as GalleryLoaded).copyWith(queue: queue));
-      }
-    });
-  }
+  /// Cache of downloaded collection archives (kept off freezed state — too large)
+  final Map<String, List<int>> _archiveCache = {};
+
+  /// Queue of pending installs (processed one at a time)
+  final List<_PendingInstall> _installQueue = [];
+  bool _isProcessingQueue = false;
+
+  GalleryCubit(this._galleryService) : super(const GalleryState.initial());
 
   @override
   Future<void> close() {
-    _queueSubscription?.cancel();
+    _archiveCache.clear();
+    _installQueue.clear();
     return super.close();
   }
 
@@ -34,10 +55,8 @@ class GalleryCubit extends Cubit<GalleryState> {
     Set<String>? devicePluginGuids,
     Map<String, String>? devicePluginPaths,
   }) async {
-    // Stale-while-revalidate: show cached data immediately, refresh in background
     final currentState = state;
 
-    // If we already have loaded data, refresh in background without spinner
     if (currentState is GalleryLoaded) {
       emit(currentState.copyWith(isRefreshing: true));
       _refreshInBackground(
@@ -48,26 +67,23 @@ class GalleryCubit extends Cubit<GalleryState> {
       return;
     }
 
-    // Try to load cached data first (fast path)
+    // Try cached data first
     if (currentState is! GalleryLoaded) {
       try {
         final cachedGallery = await _galleryService.fetchGallery(
           forceRefresh: false,
         );
 
-        final queue = _galleryService.installQueue;
         final updateInfo = await _galleryService.compareWithInstalledVersions(
           cachedGallery,
           devicePluginGuids: devicePluginGuids,
           devicePluginPaths: devicePluginPaths,
         );
 
-        // Emit cached data immediately with refreshing flag
         emit(
           GalleryState.loaded(
             gallery: cachedGallery,
             filteredPlugins: cachedGallery.plugins,
-            queue: queue,
             selectedCategory: null,
             selectedType: null,
             showFeaturedOnly: false,
@@ -78,7 +94,6 @@ class GalleryCubit extends Cubit<GalleryState> {
           ),
         );
 
-        // Refresh in background
         _refreshInBackground(
           devicePluginGuids: devicePluginGuids,
           devicePluginPaths: devicePluginPaths,
@@ -86,11 +101,10 @@ class GalleryCubit extends Cubit<GalleryState> {
         );
         return;
       } catch (_) {
-        // No cached data available, fall through to loading state
+        // No cached data, fall through
       }
     }
 
-    // No cached data - show loading spinner
     emit(const GalleryState.loading());
 
     try {
@@ -98,10 +112,6 @@ class GalleryCubit extends Cubit<GalleryState> {
         forceRefresh: forceRefresh,
       );
 
-      final queue = _galleryService.installQueue;
-
-      // Compare gallery plugins with installed versions immediately
-      // Pass device plugin GUIDs to detect manually installed plugins
       final updateInfo = await _galleryService.compareWithInstalledVersions(
         gallery,
         devicePluginGuids: devicePluginGuids,
@@ -112,7 +122,6 @@ class GalleryCubit extends Cubit<GalleryState> {
         GalleryState.loaded(
           gallery: gallery,
           filteredPlugins: gallery.plugins,
-          queue: queue,
           selectedCategory: null,
           selectedType: null,
           showFeaturedOnly: false,
@@ -126,7 +135,6 @@ class GalleryCubit extends Cubit<GalleryState> {
     }
   }
 
-  /// Background refresh without blocking UI
   Future<void> _refreshInBackground({
     Set<String>? devicePluginGuids,
     Map<String, String>? devicePluginPaths,
@@ -137,14 +145,12 @@ class GalleryCubit extends Cubit<GalleryState> {
         forceRefresh: forceRefresh,
       );
 
-      final queue = _galleryService.installQueue;
       final updateInfo = await _galleryService.compareWithInstalledVersions(
         gallery,
         devicePluginGuids: devicePluginGuids,
         devicePluginPaths: devicePluginPaths,
       );
 
-      // Preserve current filters when updating with fresh data
       final currentState = state;
       if (currentState is GalleryLoaded) {
         final filteredPlugins = _galleryService.searchPlugins(
@@ -160,7 +166,6 @@ class GalleryCubit extends Cubit<GalleryState> {
           currentState.copyWith(
             gallery: gallery,
             filteredPlugins: filteredPlugins,
-            queue: queue,
             updateInfo: updateInfo,
             isRefreshing: false,
           ),
@@ -170,7 +175,6 @@ class GalleryCubit extends Cubit<GalleryState> {
           GalleryState.loaded(
             gallery: gallery,
             filteredPlugins: gallery.plugins,
-            queue: queue,
             selectedCategory: null,
             selectedType: null,
             showFeaturedOnly: false,
@@ -181,7 +185,6 @@ class GalleryCubit extends Cubit<GalleryState> {
         );
       }
     } catch (e) {
-      // Background refresh failed - just clear refreshing flag
       final currentState = state;
       if (currentState is GalleryLoaded) {
         emit(currentState.copyWith(isRefreshing: false));
@@ -242,22 +245,25 @@ class GalleryCubit extends Cubit<GalleryState> {
     );
   }
 
-  Future<void> addToQueue(GalleryPlugin plugin) async {
-    await _galleryService.addToQueue(plugin);
-    // State will be updated automatically via the stream listener
+  /// Get a reference to the gallery service for direct access to download methods
+  GalleryService get galleryService => _galleryService;
+
+  // --- Direct Install Methods ---
+
+  /// True if any plugin is currently being installed
+  bool get isInstalling {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return false;
+
+    return currentState.installStatuses.values.any((s) =>
+        s.phase == PluginInstallPhase.downloading ||
+        s.phase == PluginInstallPhase.extracting ||
+        s.phase == PluginInstallPhase.installing);
   }
 
-  void removeFromQueue(String pluginId) {
-    _galleryService.removeFromQueue(pluginId);
-    // State will be updated automatically via the stream listener
-  }
-
-  void clearQueue() {
-    _galleryService.clearQueue();
-    // State will be updated automatically via the stream listener
-  }
-
-  Future<void> installQueue({
+  /// Queue a single plugin for installation
+  void installPlugin(
+    GalleryPlugin plugin, {
     required Function(
       String fileName,
       Uint8List fileData, {
@@ -266,42 +272,264 @@ class GalleryCubit extends Cubit<GalleryState> {
       String? galleryPluginVersion,
     })
     distingInstallPlugin,
-  }) async {
+    SampleInstallCallback? distingInstallSample,
+    VoidCallback? onComplete,
+    Function(String error)? onError,
+  }) {
     final currentState = state;
     if (currentState is! GalleryLoaded) return;
 
-    try {
-      await _galleryService.installQueuedPlugins(
-        distingInstallPlugin: distingInstallPlugin,
+    _installQueue.add(_PendingInstall(
+      plugin: plugin,
+      distingInstallPlugin: distingInstallPlugin,
+      distingInstallSample: distingInstallSample,
+      onComplete: onComplete,
+      onError: onError,
+    ));
+
+    _updateInstallStatus(
+      plugin.id,
+      const PluginInstallStatus(phase: PluginInstallPhase.queued),
+    );
+
+    _processQueue();
+  }
+
+  /// Queue selected sub-plugins from a collection for installation
+  void installCollectionPlugins(
+    String pluginId,
+    List<CollectionPlugin> selected, {
+    required Function(
+      String fileName,
+      Uint8List fileData, {
+      Function(double)? onProgress,
+      String? galleryPluginId,
+      String? galleryPluginVersion,
+    })
+    distingInstallPlugin,
+    SampleInstallCallback? distingInstallSample,
+    VoidCallback? onComplete,
+    Function(String error)? onError,
+  }) {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return;
+
+    final plugin = currentState.gallery.plugins.firstWhere(
+      (p) => p.id == pluginId,
+    );
+
+    _installQueue.add(_PendingInstall(
+      plugin: plugin,
+      distingInstallPlugin: distingInstallPlugin,
+      distingInstallSample: distingInstallSample,
+      onComplete: onComplete,
+      onError: onError,
+      selectedPlugins: selected,
+    ));
+
+    _updateInstallStatus(
+      pluginId,
+      const PluginInstallStatus(phase: PluginInstallPhase.queued),
+    );
+
+    _processQueue();
+  }
+
+  Future<void> _processQueue() async {
+    if (_isProcessingQueue) return;
+    _isProcessingQueue = true;
+
+    while (_installQueue.isNotEmpty) {
+      final pending = _installQueue.removeAt(0);
+      final pluginId = pending.plugin.id;
+
+      _updateInstallStatus(
+        pluginId,
+        const PluginInstallStatus(phase: PluginInstallPhase.downloading),
       );
-      // Queue will be cleared automatically and state updated via stream
+
+      try {
+        final cachedBytes = _archiveCache[pluginId];
+
+        await _galleryService.installPlugin(
+          pending.plugin,
+          distingInstallPlugin: pending.distingInstallPlugin,
+          distingInstallSample: pending.distingInstallSample,
+          cachedArchiveBytes: cachedBytes,
+          selectedPlugins: pending.selectedPlugins,
+          onProgress: (phase, progress) {
+            _updateInstallStatus(
+              pluginId,
+              PluginInstallStatus(phase: phase, progress: progress),
+            );
+          },
+        );
+
+        _updateInstallStatus(
+          pluginId,
+          const PluginInstallStatus(
+            phase: PluginInstallPhase.completed,
+            progress: 1.0,
+          ),
+        );
+        pending.onComplete?.call();
+      } catch (e) {
+        _updateInstallStatus(
+          pluginId,
+          PluginInstallStatus(
+            phase: PluginInstallPhase.failed,
+            errorMessage: e.toString(),
+          ),
+        );
+        pending.onError?.call(e.toString());
+      }
+    }
+
+    _isProcessingQueue = false;
+  }
+
+  /// Expand a collection inline — download archive, extract metadata
+  Future<void> expandCollection(GalleryPlugin plugin) async {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return;
+
+    // Mark as loading
+    final expanded = Map<String, CollectionExpansion>.from(
+      currentState.expandedCollections,
+    );
+    expanded[plugin.id] = const CollectionExpansion(
+      plugins: [],
+      isLoading: true,
+    );
+    emit(currentState.copyWith(expandedCollections: expanded));
+
+    try {
+      final archiveBytes = await _galleryService.downloadPluginArchive(
+        plugin,
+        'latest',
+      );
+
+      // Cache for later install
+      _archiveCache[plugin.id] = archiveBytes;
+
+      final availablePlugins =
+          await PluginMetadataExtractor.extractPluginsFromArchive(
+        archiveBytes,
+        plugin,
+      );
+
+      // Select all installable plugins by default
+      final pluginsWithSelection = availablePlugins
+          .map(
+            (p) => p.copyWith(
+              selected: const ['.o', '.lua', '.3pot'].contains('.${p.fileType}'),
+            ),
+          )
+          .toList();
+
+      final refreshedState = state;
+      if (refreshedState is! GalleryLoaded) return;
+
+      final refreshedExpanded = Map<String, CollectionExpansion>.from(
+        refreshedState.expandedCollections,
+      );
+      refreshedExpanded[plugin.id] = CollectionExpansion(
+        plugins: pluginsWithSelection,
+      );
+      emit(refreshedState.copyWith(expandedCollections: refreshedExpanded));
     } catch (e) {
-      // Handle installation errors if needed
-      // For now, let the service handle error reporting
+      final refreshedState = state;
+      if (refreshedState is! GalleryLoaded) return;
+
+      final refreshedExpanded = Map<String, CollectionExpansion>.from(
+        refreshedState.expandedCollections,
+      );
+      refreshedExpanded[plugin.id] = CollectionExpansion(
+        plugins: [],
+        error: e.toString(),
+      );
+      emit(refreshedState.copyWith(expandedCollections: refreshedExpanded));
     }
   }
 
-  bool isInQueue(String pluginId) {
+  /// Collapse a collection and clear its archive cache
+  void collapseCollection(String pluginId) {
     final currentState = state;
-    if (currentState is! GalleryLoaded) return false;
+    if (currentState is! GalleryLoaded) return;
 
-    return currentState.queue.any((q) => q.plugin.id == pluginId);
+    _archiveCache.remove(pluginId);
+
+    final expanded = Map<String, CollectionExpansion>.from(
+      currentState.expandedCollections,
+    );
+    expanded.remove(pluginId);
+    emit(currentState.copyWith(expandedCollections: expanded));
   }
 
-  void updateQueuedPluginSelection(
-    String pluginId,
-    List<CollectionPlugin> selectedPlugins,
-  ) {
-    _galleryService.updateQueuedPluginSelection(pluginId, selectedPlugins);
-    // State will be updated automatically via the stream listener
+  /// Toggle a single collection plugin checkbox
+  void toggleCollectionPlugin(String pluginId, int index) {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return;
+
+    final expansion = currentState.expandedCollections[pluginId];
+    if (expansion == null) return;
+
+    final updatedPlugins = List<CollectionPlugin>.from(expansion.plugins);
+    updatedPlugins[index] = updatedPlugins[index].copyWith(
+      selected: !updatedPlugins[index].selected,
+    );
+
+    final expanded = Map<String, CollectionExpansion>.from(
+      currentState.expandedCollections,
+    );
+    expanded[pluginId] = expansion.copyWith(plugins: updatedPlugins);
+    emit(currentState.copyWith(expandedCollections: expanded));
   }
 
-  /// Get a reference to the gallery service for direct access to download methods
-  GalleryService get galleryService => _galleryService;
+  /// Toggle all collection plugins selected/deselected
+  void selectAllCollectionPlugins(String pluginId, bool selected) {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return;
+
+    final expansion = currentState.expandedCollections[pluginId];
+    if (expansion == null) return;
+
+    final updatedPlugins = expansion.plugins
+        .map((p) => p.copyWith(selected: selected))
+        .toList();
+
+    final expanded = Map<String, CollectionExpansion>.from(
+      currentState.expandedCollections,
+    );
+    expanded[pluginId] = expansion.copyWith(plugins: updatedPlugins);
+    emit(currentState.copyWith(expandedCollections: expanded));
+  }
+
+  /// Clear a completed/failed install status
+  void clearInstallStatus(String pluginId) {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return;
+
+    final statuses = Map<String, PluginInstallStatus>.from(
+      currentState.installStatuses,
+    );
+    statuses.remove(pluginId);
+    emit(currentState.copyWith(installStatuses: statuses));
+  }
+
+  void _updateInstallStatus(String pluginId, PluginInstallStatus status) {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return;
+
+    final statuses = Map<String, PluginInstallStatus>.from(
+      currentState.installStatuses,
+    );
+    statuses[pluginId] = status;
+    emit(currentState.copyWith(installStatuses: statuses));
+  }
 
   // --- Update Management Methods ---
 
-  /// Refresh update information by reloading gallery data
   Future<void> refreshUpdates({
     Set<String>? devicePluginGuids,
     Map<String, String>? devicePluginPaths,
@@ -313,7 +541,6 @@ class GalleryCubit extends Cubit<GalleryState> {
     );
   }
 
-  /// Get update info for a specific plugin
   PluginUpdateInfo? getPluginUpdateInfo(String pluginId) {
     final currentState = state;
     if (currentState is! GalleryLoaded) return null;
@@ -321,7 +548,6 @@ class GalleryCubit extends Cubit<GalleryState> {
     return currentState.updateInfo[pluginId];
   }
 
-  /// Check if any plugins have updates available
   bool get hasUpdatesAvailable {
     final currentState = state;
     if (currentState is! GalleryLoaded) return false;
@@ -329,7 +555,6 @@ class GalleryCubit extends Cubit<GalleryState> {
     return currentState.updateInfo.values.any((info) => info.updateAvailable);
   }
 
-  /// Get count of plugins with updates available
   int get updateCount {
     final currentState = state;
     if (currentState is! GalleryLoaded) return 0;
@@ -338,8 +563,4 @@ class GalleryCubit extends Cubit<GalleryState> {
         .where((info) => info.updateAvailable)
         .length;
   }
-
-  // --- README Documentation Methods ---
-
-  /// Check if README documentation is available for a plugin
 }

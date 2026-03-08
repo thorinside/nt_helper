@@ -251,6 +251,35 @@ sealed class Gallery with _$Gallery {
       _$GalleryFromJson(json);
 }
 
+/// Per-plugin installation progress (replaces queue in UI)
+@freezed
+sealed class PluginInstallStatus with _$PluginInstallStatus {
+  const factory PluginInstallStatus({
+    required PluginInstallPhase phase,
+    @Default(0.0) double progress,
+    String? errorMessage,
+  }) = _PluginInstallStatus;
+}
+
+enum PluginInstallPhase {
+  queued,
+  downloading,
+  extracting,
+  installing,
+  completed,
+  failed,
+}
+
+/// Expanded collection state (inline, not dialog)
+@freezed
+sealed class CollectionExpansion with _$CollectionExpansion {
+  const factory CollectionExpansion({
+    required List<CollectionPlugin> plugins,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = _CollectionExpansion;
+}
+
 /// Individual plugin within a collection
 @freezed
 sealed class CollectionPlugin with _$CollectionPlugin {
