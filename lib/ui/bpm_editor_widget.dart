@@ -268,34 +268,53 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              TextField(
-                controller: _textController,
-                focusNode: _focusNode,
-                textAlign: TextAlign.center,
-                textAlignVertical: TextAlignVertical.center,
-                keyboardType: TextInputType.number,
-                style: textStyle?.copyWith(fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  isDense: true,
-                  labelText: 'BPM',
-                  floatingLabelBehavior: FloatingLabelBehavior.never,
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 12.0,
-                    horizontal: 8.0,
+              Shortcuts(
+                shortcuts: <ShortcutActivator, Intent>{
+                  for (final key in [
+                    LogicalKeyboardKey.digit0,
+                    LogicalKeyboardKey.digit1,
+                    LogicalKeyboardKey.digit2,
+                    LogicalKeyboardKey.digit3,
+                    LogicalKeyboardKey.digit4,
+                    LogicalKeyboardKey.digit5,
+                    LogicalKeyboardKey.digit6,
+                    LogicalKeyboardKey.digit7,
+                    LogicalKeyboardKey.digit8,
+                    LogicalKeyboardKey.digit9,
+                    LogicalKeyboardKey.period,
+                  ])
+                    SingleActivator(key):
+                        const DoNothingAndStopPropagationTextIntent(),
+                },
+                child: TextField(
+                  controller: _textController,
+                  focusNode: _focusNode,
+                  textAlign: TextAlign.center,
+                  textAlignVertical: TextAlignVertical.center,
+                  keyboardType: TextInputType.number,
+                  style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    labelText: 'BPM',
+                    floatingLabelBehavior: FloatingLabelBehavior.never,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12.0,
+                      horizontal: 8.0,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    suffixText: null,
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  suffixText: null,
+                  onSubmitted: (_) => _validateAndSubmit(),
+                  inputFormatters: [
+                    // Allow digits and decimal point for scaled BPM values
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                    LengthLimitingTextInputFormatter(
+                      7,
+                    ), // Allow up to "999.99" or similar
+                  ],
                 ),
-                onSubmitted: (_) => _validateAndSubmit(),
-                inputFormatters: [
-                  // Allow digits and decimal point for scaled BPM values
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-                  LengthLimitingTextInputFormatter(
-                    7,
-                  ), // Allow up to "999.99" or similar
-                ],
               ),
               // Position "BPM" as a separate widget to prevent it from affecting text alignment
               if (widescreen)
