@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -20,9 +19,6 @@ import 'package:nt_helper/ui/widgets/collection_expansion_panel.dart';
 import 'package:nt_helper/ui/widgets/linkified_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nt_helper/utils/responsive.dart';
-
-/// View mode for the Plugin Manager
-enum GalleryViewMode { card, list }
 
 bool _isDevicePluginAlgorithm(AlgorithmInfo algorithm) {
   if (algorithm.isPlugin) return true;
@@ -126,9 +122,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  static const _viewModeKey = 'gallery_view_mode';
-  GalleryViewMode _selectedViewMode = GalleryViewMode.card;
-
   // Drag and drop state
   bool _isDragOver = false;
   bool _isInstallingFile = false;
@@ -145,20 +138,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchFocusNode.requestFocus();
     });
-
-    SharedPreferences.getInstance().then((prefs) {
-      final modeIndex = prefs.getInt(_viewModeKey) ?? 0;
-      if (mounted) {
-        setState(() {
-          _selectedViewMode = GalleryViewMode.values[modeIndex.clamp(0, 1)];
-        });
-      }
-    });
-  }
-
-  Future<void> _saveViewMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_viewModeKey, _selectedViewMode.index);
   }
 
   @override
@@ -411,8 +390,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                     SizedBox(width: filterSpacing),
                     _buildClearFilter(),
                   ],
-                  SizedBox(width: filterSpacing),
-                  _buildViewModeSelector(),
                 ],
               ),
             ),
@@ -451,8 +428,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                 _buildTypeFilter(state),
                 const SizedBox(width: 8),
                 _buildFeaturedFilter(state),
-                const SizedBox(width: 8),
-                _buildViewModeSelector(),
                 const SizedBox(width: 8),
                 if (state.selectedCategory != null ||
                     state.selectedType != null ||
@@ -589,31 +564,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
     );
   }
 
-  Widget _buildViewModeSelector() {
-    return SegmentedButton<GalleryViewMode>(
-      segments: const [
-        ButtonSegment(
-          value: GalleryViewMode.card,
-          icon: Icon(Icons.grid_view),
-          label: Text('Cards'),
-          tooltip: 'Card View',
-        ),
-        ButtonSegment(
-          value: GalleryViewMode.list,
-          icon: Icon(Icons.view_list),
-          label: Text('List'),
-          tooltip: 'List View',
-        ),
-      ],
-      selected: {_selectedViewMode},
-      onSelectionChanged: (selected) {
-        setState(() => _selectedViewMode = selected.first);
-        _saveViewMode();
-      },
-      showSelectedIcon: false,
-    );
-  }
-
   // --- Plugin Views ---
 
   Widget _buildPluginView(GalleryLoaded state) {
@@ -635,14 +585,8 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         .where((p) => state.updateInfo[p.id] == null)
         .toList();
 
-    switch (_selectedViewMode) {
-      case GalleryViewMode.card:
-        return _buildCardView(
-          state, pluginsWithUpdates, installedPlugins, availablePlugins);
-      case GalleryViewMode.list:
-        return _buildListView(
-          state, pluginsWithUpdates, installedPlugins, availablePlugins);
-    }
+    return _buildListView(
+      state, pluginsWithUpdates, installedPlugins, availablePlugins);
   }
 
   Widget _buildEmptyPluginState() {
@@ -707,54 +651,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
     }
   }
 
-  Widget _buildCardView(
-    GalleryLoaded state,
-    List<GalleryPlugin> updates,
-    List<GalleryPlugin> installed,
-    List<GalleryPlugin> available,
-  ) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (updates.isNotEmpty) ...[
-            _buildSectionHeader('Updates Available', updates.length, state),
-            const SizedBox(height: 12),
-            Wrap(
-              alignment: WrapAlignment.start,
-              spacing: 12,
-              runSpacing: 12,
-              children: updates.map((p) => _buildPluginCard(p, state)).toList(),
-            ),
-            const SizedBox(height: 24),
-          ],
-          if (installed.isNotEmpty) ...[
-            _buildSectionHeader('Installed', installed.length, state),
-            const SizedBox(height: 12),
-            Wrap(
-              alignment: WrapAlignment.start,
-              spacing: 12,
-              runSpacing: 12,
-              children: installed.map((p) => _buildPluginCard(p, state)).toList(),
-            ),
-            const SizedBox(height: 24),
-          ],
-          if (available.isNotEmpty) ...[
-            _buildSectionHeader('Available', available.length, state),
-            const SizedBox(height: 12),
-            Wrap(
-              alignment: WrapAlignment.start,
-              spacing: 12,
-              runSpacing: 12,
-              children: available.map((p) => _buildPluginCard(p, state)).toList(),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _buildListView(
     GalleryLoaded state,
     List<GalleryPlugin> updates,
@@ -785,210 +681,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
     );
   }
 
-  // --- Plugin Card ---
-
-  Widget _buildPluginCard(GalleryPlugin plugin, GalleryLoaded state) {
-    final author = plugin.getAuthor(state.gallery);
-    final category = plugin.getCategory(state.gallery);
-    final updateInfo = state.updateInfo[plugin.id];
-    final hasUpdate = updateInfo?.hasUpdate ?? false;
-    final isInstalled = updateInfo != null;
-    final installStatus = state.installStatuses[plugin.id];
-    final galleryCubit = context.read<GalleryCubit>();
-
-    final width = MediaQuery.of(context).size.width;
-    final isNarrowScreen = width < 375;
-
-    return Semantics(
-      label: '${plugin.name}, ${plugin.type.displayName}${hasUpdate ? ', update available' : isInstalled ? ', installed' : ''}',
-      container: true,
-      child: _HoverScaleCard(
-      child: SizedBox(
-      width: 320,
-      child: Card(
-        elevation: 2,
-        clipBehavior: Clip.antiAlias,
-        shape: isInstalled
-            ? RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: hasUpdate
-                      ? Theme.of(context).colorScheme.tertiary
-                      : Theme.of(context).colorScheme.secondary,
-                  width: 2,
-                ),
-              )
-            : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Fixed-height card body (header + content)
-            SizedBox(
-              height: isNarrowScreen ? null : 305,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.05),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withValues(alpha: 0.1),
-                        ),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            if (plugin.featured) ...[
-                              Icon(Icons.star, size: 16,
-                                color: Theme.of(context).colorScheme.primary),
-                              const SizedBox(width: 8),
-                            ],
-                            if (plugin.isCollection) ...[
-                              Icon(Icons.folder_copy, size: 16,
-                                color: Theme.of(context).colorScheme.tertiary),
-                              const SizedBox(width: 8),
-                            ],
-                            Expanded(
-                              child: Text(
-                                plugin.name,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w600),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.secondary,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                plugin.type.displayName,
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSecondary),
-                              ),
-                            ),
-                            if (category != null) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(category.name,
-                                  style: Theme.of(context).textTheme.labelSmall),
-                              ),
-                            ],
-                            if (updateInfo != null) ...[
-                              const SizedBox(width: 6),
-                              _buildVersionBadge(updateInfo),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Content — fills remaining height, button pinned at bottom
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          LinkifiedText(
-                            text: plugin.description,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            maxLines: isNarrowScreen ? 3 : 5,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-
-                          const Spacer(),
-
-                          // Metadata row
-                          Row(
-                            children: [
-                              if (author != null) ...[
-                                Icon(Icons.person, size: 14,
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    author.name,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ] else
-                                const Spacer(),
-                              if (plugin.formattedLatestVersion.isNotEmpty)
-                                Text(
-                                  plugin.formattedLatestVersion,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                                ),
-                              if (plugin.hasReadmeDocumentation)
-                                IconButton(
-                                  icon: Icon(Icons.description_outlined,
-                                    semanticLabel: 'View Documentation', size: 20,
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                                  tooltip: 'View Documentation',
-                                  onPressed: () => _showReadmeDialog(plugin),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Install status or action button — fixed height to prevent layout shifts
-                          SizedBox(
-                            height: 48,
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              switchInCurve: Curves.easeOut,
-                              switchOutCurve: Curves.easeIn,
-                              child: installStatus != null
-                                  ? Center(child: _buildInstallProgress(plugin.id, installStatus))
-                                  : _buildActionButton(plugin, hasUpdate, isInstalled, galleryCubit),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          ],
-        ),
-      ),
-    ),
-    ),
-    );
-  }
-
   // --- Plugin List Tile ---
 
   Widget _buildPluginListTile(GalleryPlugin plugin, GalleryLoaded state) {
@@ -1007,17 +699,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           constraints: const BoxConstraints(minHeight: 72),
           child: Card(
             margin: const EdgeInsets.only(bottom: 8),
-            shape: isInstalled
-                ? RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: hasUpdate
-                          ? Theme.of(context).colorScheme.tertiary
-                          : Theme.of(context).colorScheme.secondary,
-                      width: 2,
-                    ),
-                  )
-                : null,
             child: Column(
               children: [
                 ListTile(
@@ -1140,73 +821,6 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           ),
         ),
       );
-  }
-
-  // --- Action Buttons ---
-
-  Widget _buildActionButton(
-    GalleryPlugin plugin,
-    bool hasUpdate,
-    bool isInstalled,
-    GalleryCubit galleryCubit,
-  ) {
-    if (plugin.isCollection) {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () => _showCollectionDialog(plugin, galleryCubit),
-          icon: const Icon(Icons.folder_open),
-          label: const Text('Show Contents'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          ),
-        ),
-      );
-    }
-
-    if (hasUpdate) {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () => _doInstallPlugin(plugin),
-          icon: const Icon(Icons.update),
-          label: const Text('Update'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
-          ),
-        ),
-      );
-    }
-
-    if (isInstalled) {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () => _doInstallPlugin(plugin),
-          icon: const Icon(Icons.refresh),
-          label: const Text('Reinstall'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => _doInstallPlugin(plugin),
-        icon: const Icon(Icons.download),
-        label: const Text('Install'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        ),
-      ),
-    );
   }
 
   Widget _buildListActionButton(
@@ -2235,59 +1849,6 @@ class _FailureRowState extends State<_FailureRow>
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// Subtle hover scale effect for desktop — elevates cards on hover
-class _HoverScaleCard extends StatefulWidget {
-  final Widget child;
-  const _HoverScaleCard({required this.child});
-
-  @override
-  State<_HoverScaleCard> createState() => _HoverScaleCardState();
-}
-
-class _HoverScaleCardState extends State<_HoverScaleCard> {
-  bool _hovering = false;
-
-  @override
-  Widget build(BuildContext context) {
-    // Only apply hover effect on desktop
-    if (kIsWeb ||
-        !(defaultTargetPlatform == TargetPlatform.windows ||
-            defaultTargetPlatform == TargetPlatform.macOS ||
-            defaultTargetPlatform == TargetPlatform.linux)) {
-      return widget.child;
-    }
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: AnimatedScale(
-        scale: _hovering ? 1.02 : 1.0,
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: _hovering
-                ? [
-                    BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .shadow
-                          .withValues(alpha: 0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: widget.child,
-        ),
       ),
     );
   }
