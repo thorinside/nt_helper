@@ -24,12 +24,19 @@ class _StateRefreshDelegate {
       final presetName = await disting.requestPresetName() ?? "Error";
       final slots = await _cubit.fetchSlots(numAlgorithmsInPreset, disting);
 
+      // Re-fetch perf page items if firmware supports them (v1.16+)
+      List<PerformancePageItem>? perfPageItems;
+      if (currentState.firmwareVersion.hasPerfPageItems) {
+        perfPageItems = await _cubit._perfPageDelegate
+            .fetchAllPerfPageItems(disting);
+      }
+
       _cubit._emitState(
         currentState.copyWith(
           loading: false,
           presetName: presetName,
           slots: slots,
-          // Keep other fields like disting, version, algorithms, units, offline status
+          perfPageItems: perfPageItems ?? currentState.perfPageItems,
         ),
       );
     } catch (e, stackTrace) {

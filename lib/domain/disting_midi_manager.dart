@@ -42,6 +42,8 @@ import 'package:nt_helper/domain/sysex/requests/set_midi_mapping.dart';
 import 'package:nt_helper/domain/sysex/requests/set_parameter_value.dart';
 import 'package:nt_helper/domain/sysex/requests/set_parameter_string.dart';
 import 'package:nt_helper/domain/sysex/requests/set_performance_page_message.dart';
+import 'package:nt_helper/domain/sysex/requests/request_perf_page_item.dart';
+import 'package:nt_helper/domain/sysex/requests/set_perf_page_item.dart';
 import 'package:nt_helper/domain/sysex/requests/set_preset_name.dart';
 import 'package:nt_helper/domain/sysex/requests/set_real_time_clock.dart';
 import 'package:nt_helper/domain/sysex/requests/set_slot_name.dart';
@@ -50,6 +52,7 @@ import 'package:nt_helper/domain/sysex/requests/request_reboot.dart';
 import 'package:nt_helper/domain/sysex/requests/take_screenshot.dart';
 import 'package:nt_helper/domain/sysex/requests/wake.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/domain/sysex/requests/request_directory_listing.dart';
 import 'package:nt_helper/domain/sysex/requests/request_file_download.dart';
@@ -1224,6 +1227,42 @@ class DistingMidiManager implements IDistingMidiManager {
         messageType: DistingNTRespMessageType.respSdStatus,
       ),
       responseExpectation: ResponseExpectation.optional,
+    );
+  }
+
+  @override
+  Future<PerformancePageItem?> requestPerfPageItem(int itemIndex) async {
+    final message = RequestPerfPageItemMessage(
+      sysExId: sysExId,
+      itemIndex: itemIndex,
+    );
+    final packet = message.encode();
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respPerfPageItem,
+      parameterNumber: itemIndex,
+    );
+
+    return await _scheduler.sendRequest<PerformancePageItem>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
+  }
+
+  @override
+  Future<void> setPerfPageItem(PerformancePageItem item) {
+    final message = SetPerfPageItemMessage(
+      sysExId: sysExId,
+      item: item,
+    );
+    final packet = message.encode();
+    final key = RequestKey(sysExId: sysExId);
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
     );
   }
 

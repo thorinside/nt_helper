@@ -222,6 +222,13 @@ class _ConnectionDelegate {
       var unitStrings = await distingManager.requestUnitStrings() ?? [];
       List<Slot> slots = await _cubit.fetchSlots(numInPreset, distingManager);
 
+      // Fetch performance page items if firmware supports them (v1.16+)
+      List<PerformancePageItem> perfPageItems = [];
+      if (firmwareVersion.hasPerfPageItems) {
+        perfPageItems = await _cubit._perfPageDelegate
+            .fetchAllPerfPageItems(distingManager);
+      }
+
       // --- Emit final synchronized state --- (Ensure offline is false)
       _cubit._emitState(
         DistingState.synchronized(
@@ -236,6 +243,7 @@ class _ConnectionDelegate {
           outputDevice: outputDevice,
           loading: false,
           offline: false,
+          perfPageItems: perfPageItems,
         ),
       );
 

@@ -20,6 +20,11 @@ class FirmwareVersion {
     }
   }
 
+  /// Firmware 1.16+ supports performance page items via SysEx 0x57/0x58.
+  bool get hasPerfPageItems {
+    return major > 1 || (major == 1 && minor >= 16);
+  }
+
   /// Firmware 1.15+ supports entering bootloader mode via SysEx.
   bool get hasBootloaderSysEx {
     return major > 1 || (major == 1 && minor >= 15);

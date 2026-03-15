@@ -64,5 +64,7 @@ sealed class DistingState with _$DistingState {
     @Default(null) VideoStreamState? videoStream,
     /// Available firmware update (null if no update available or not checked)
     @Default(null) FirmwareRelease? availableFirmwareUpdate,
+    /// Performance page items (firmware v1.16+, populated via SysEx 0x57/0x58)
+    @Default([]) List<PerformancePageItem> perfPageItems,
   }) = DistingStateSynchronized;
 }

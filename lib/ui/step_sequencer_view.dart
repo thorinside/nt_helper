@@ -125,6 +125,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
               demo,
               videoStream,
               availableFirmwareUpdate,
+              perfPageItems,
             ) => offline,
             orElse: () => false,
           );

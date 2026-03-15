@@ -24,6 +24,7 @@ import 'package:nt_helper/models/plugin_info.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/firmware_release.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/services/firmware_version_service.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -57,6 +58,7 @@ part 'disting_cubit_parameter_value_delegate.dart';
 part 'disting_cubit_hardware_commands_delegate.dart';
 part 'disting_cubit_state_helpers_delegate.dart';
 part 'disting_cubit_refresh_delegate.dart';
+part 'disting_cubit_perf_page_delegate.dart';
 part 'disting_cubit_internal_types.dart';
 
 abstract class _DistingCubitBase extends Cubit<DistingState> {
@@ -119,6 +121,7 @@ class DistingCubit extends _DistingCubitBase
   late final _StateHelpersDelegate _stateHelpersDelegate =
       _StateHelpersDelegate(this);
   late final _RefreshDelegate _refreshDelegate = _RefreshDelegate(this);
+  late final _PerfPageDelegate _perfPageDelegate = _PerfPageDelegate(this);
 
   /// Service for checking firmware updates
   final FirmwareVersionService _firmwareVersionService =
@@ -174,6 +177,7 @@ class DistingCubit extends _DistingCubitBase
             demo,
             videoStream,
             availableFirmwareUpdate,
+            perfPageItems,
           ) => videoStream,
       orElse: () => null,
     ),
@@ -458,6 +462,37 @@ class DistingCubit extends _DistingCubitBase
       parameterNumber,
       perfPageIndex,
     );
+  }
+
+  /// Sets a performance page item (firmware v1.16+).
+  Future<void> setPerfPageItem(PerformancePageItem item) async {
+    return _perfPageDelegate.setPerfPageItem(item);
+  }
+
+  /// Removes a performance page item (firmware v1.16+).
+  Future<void> removePerfPageItem(int itemIndex) async {
+    return _perfPageDelegate.removePerfPageItem(itemIndex);
+  }
+
+  /// Reorders performance page items (firmware v1.16+).
+  Future<void> reorderPerfPageItems(
+    List<PerformancePageItem> reorderedItems,
+  ) async {
+    return _perfPageDelegate.reorderPerfPageItems(reorderedItems);
+  }
+
+  /// Re-fetches all 30 performance page items from hardware (firmware v1.16+).
+  Future<void> refreshPerfPageItems() async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+    if (!currentState.firmwareVersion.hasPerfPageItems) return;
+
+    final disting = requireDisting();
+    final items = await _perfPageDelegate.fetchAllPerfPageItems(disting);
+    final refreshedState = state;
+    if (refreshedState is DistingStateSynchronized) {
+      _emitState(refreshedState.copyWith(perfPageItems: items));
+    }
   }
 
   // --- Helper Methods ---

@@ -59,6 +59,13 @@ class RequestKey {
         }
         break;
 
+      // Perf page item response: payload[1] = item index (used as parameterNumber for matching)
+      case DistingNTRespMessageType.respPerfPageItem:
+        if (msg.payload.length >= 2) {
+          parameterNumber = msg.payload[1];
+        }
+        break;
+
       // Other messages don't have these indices.
       case DistingNTRespMessageType.respAlgorithmInfo:
       default:

@@ -1,23 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 
 enum PerformanceLayoutMode { condensed, asIndexed }
 
 class HardwarePreviewWidget extends StatelessWidget {
   const HardwarePreviewWidget({
     super.key,
-    required this.parameters,
-    required this.layoutMode,
+    this.parameters = const [],
+    this.layoutMode = PerformanceLayoutMode.asIndexed,
+    this.perfPageItems,
   });
 
   final List<MappedParameter> parameters;
   final PerformanceLayoutMode layoutMode;
+  final List<PerformancePageItem>? perfPageItems;
 
   @override
   Widget build(BuildContext context) {
-    final pages = layoutMode == PerformanceLayoutMode.condensed
-        ? _buildCondensedPages()
-        : _buildAsIndexedPages();
+    List<_PageData> pages;
+    if (perfPageItems != null && perfPageItems!.isNotEmpty) {
+      pages = _buildPerfItemPages();
+    } else if (layoutMode == PerformanceLayoutMode.condensed) {
+      pages = _buildCondensedPages();
+    } else {
+      pages = _buildAsIndexedPages();
+    }
 
     if (pages.isEmpty) {
       return const Center(
@@ -33,12 +41,50 @@ class HardwarePreviewWidget extends StatelessWidget {
       itemCount: pages.length,
       itemBuilder: (context, index) {
         final page = pages[index];
-        return _PageCard(
-          pageNumber: page.pageNumber,
-          knobs: page.knobs,
-        );
+        return _PageCard(pageNumber: page.pageNumber, knobs: page.knobs);
       },
     );
+  }
+
+  List<_PageData> _buildPerfItemPages() {
+    final items = perfPageItems!;
+    final maxIndex = items
+        .map((i) => i.itemIndex)
+        .reduce((a, b) => a > b ? a : b);
+    final totalPages = (maxIndex ~/ 3) + 1;
+
+    final itemByIndex = <int, PerformancePageItem>{};
+    for (final item in items) {
+      itemByIndex[item.itemIndex] = item;
+    }
+
+    final pages = <_PageData>[];
+    for (var page = 0; page < totalPages; page++) {
+      final knobs = <_KnobData>[];
+      for (var k = 0; k < 3; k++) {
+        final index = page * 3 + k;
+        final item = itemByIndex[index];
+        if (item != null) {
+          knobs.add(
+            _KnobData(
+              label: item.upperLabel.isNotEmpty
+                  ? item.upperLabel
+                  : 'Item ${item.itemIndex + 1}',
+              algorithmName: item.lowerLabel.isNotEmpty
+                  ? item.lowerLabel
+                  : 'Slot ${item.slotIndex + 1}, P${item.parameterNumber}',
+              isEmpty: false,
+            ),
+          );
+        } else {
+          knobs.add(
+            const _KnobData(label: '', algorithmName: '', isEmpty: true),
+          );
+        }
+      }
+      pages.add(_PageData(pageNumber: page + 1, knobs: knobs));
+    }
+    return pages;
   }
 
   List<_PageData> _buildCondensedPages() {
@@ -51,17 +97,17 @@ class HardwarePreviewWidget extends StatelessWidget {
       for (var k = 0; k < 3; k++) {
         if (i + k < parameters.length) {
           final p = parameters[i + k];
-          knobs.add(_KnobData(
-            label: p.parameter.name,
-            algorithmName: p.algorithm.name,
-            isEmpty: false,
-          ));
+          knobs.add(
+            _KnobData(
+              label: p.parameter.name,
+              algorithmName: p.algorithm.name,
+              isEmpty: false,
+            ),
+          );
         } else {
-          knobs.add(const _KnobData(
-            label: '',
-            algorithmName: '',
-            isEmpty: true,
-          ));
+          knobs.add(
+            const _KnobData(label: '', algorithmName: '', isEmpty: true),
+          );
         }
       }
       pages.add(_PageData(pageNumber: pageNumber, knobs: knobs));
@@ -89,17 +135,17 @@ class HardwarePreviewWidget extends StatelessWidget {
         final index = page * 3 + k + 1;
         final p = paramByIndex[index];
         if (p != null) {
-          knobs.add(_KnobData(
-            label: p.parameter.name,
-            algorithmName: p.algorithm.name,
-            isEmpty: false,
-          ));
+          knobs.add(
+            _KnobData(
+              label: p.parameter.name,
+              algorithmName: p.algorithm.name,
+              isEmpty: false,
+            ),
+          );
         } else {
-          knobs.add(const _KnobData(
-            label: '',
-            algorithmName: '',
-            isEmpty: true,
-          ));
+          knobs.add(
+            const _KnobData(label: '', algorithmName: '', isEmpty: true),
+          );
         }
       }
       pages.add(_PageData(pageNumber: page + 1, knobs: knobs));
@@ -146,8 +192,8 @@ class _PageCard extends StatelessWidget {
             Text(
               'Page $pageNumber',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -155,10 +201,7 @@ class _PageCard extends StatelessWidget {
                 const potLabels = ['L', 'C', 'R'];
                 final knob = i < knobs.length ? knobs[i] : null;
                 return Expanded(
-                  child: _KnobSlot(
-                    potLabel: potLabels[i],
-                    knob: knob,
-                  ),
+                  child: _KnobSlot(potLabel: potLabels[i], knob: knob),
                 );
               }),
             ),
@@ -197,19 +240,19 @@ class _KnobSlot extends StatelessWidget {
           Text(
             'Pot $potLabel',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 10,
-                ),
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 10,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             isEmpty ? '---' : knob!.label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: isEmpty
-                      ? colorScheme.onSurfaceVariant.withAlpha(100)
-                      : colorScheme.onSurface,
-                  fontWeight: isEmpty ? null : FontWeight.w500,
-                ),
+              color: isEmpty
+                  ? colorScheme.onSurfaceVariant.withAlpha(100)
+                  : colorScheme.onSurface,
+              fontWeight: isEmpty ? null : FontWeight.w500,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
@@ -219,9 +262,9 @@ class _KnobSlot extends StatelessWidget {
             Text(
               knob!.algorithmName,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 9,
-                  ),
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 9,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,

@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
@@ -870,6 +871,21 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// ---------------------
   /// Performance Editor
   /// ---------------------
+  int _findPerfItemDisplayIndex(
+    List<PerformancePageItem> items,
+    int slotIndex,
+    int paramNumber,
+  ) {
+    for (final item in items) {
+      if (item.enabled &&
+          item.slotIndex == slotIndex &&
+          item.parameterNumber == paramNumber) {
+        return item.itemIndex + 1;
+      }
+    }
+    return 0;
+  }
+
   Widget _buildPerformanceEditor() {
     return BlocBuilder<DistingCubit, DistingState>(
       builder: (context, state) {
@@ -877,87 +893,194 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           return const Center(child: Text('Not synchronized'));
         }
 
-        final slot = state.slots[widget.algorithmIndex];
-        final currentPerfPageIndex =
-            slot.mappings[widget.parameterNumber].packedMappingData.perfPageIndex;
+        final usePerfPageItems = state.firmwareVersion.hasPerfPageItems;
 
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Info text explaining performance pages
-              Text(
-                'Assign this parameter to a performance page for quick access.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+        if (usePerfPageItems) {
+          return _buildPerformanceEditorV116(context, state);
+        } else {
+          return _buildPerformanceEditorLegacy(context, state);
+        }
+      },
+    );
+  }
+
+  Widget _buildPerformanceEditorLegacy(
+    BuildContext context,
+    DistingStateSynchronized state,
+  ) {
+    final slot = state.slots[widget.algorithmIndex];
+    final currentPerfPageIndex =
+        slot.mappings[widget.parameterNumber].packedMappingData.perfPageIndex;
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Assign this parameter to a performance page for quick access.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+          ),
+          const SizedBox(height: 16),
+          DropdownMenu<int>(
+            initialSelection: currentPerfPageIndex,
+            label: const Text('Performance Page'),
+            expandedInsets: EdgeInsets.zero,
+            dropdownMenuEntries: [
+              const DropdownMenuEntry<int>(
+                value: 0,
+                label: 'None',
               ),
-              const SizedBox(height: 16),
-
-              // Performance page dropdown
-              DropdownMenu<int>(
-                initialSelection: currentPerfPageIndex,
-                label: const Text('Performance Page'),
-                expandedInsets: EdgeInsets.zero,
-                dropdownMenuEntries: [
-                  // "None" option
-                  const DropdownMenuEntry<int>(
-                    value: 0,
-                    label: 'None',
-                  ),
-                  // P1 through P15
-                  for (int i = 1; i <= 15; i++)
-                    DropdownMenuEntry<int>(
-                      value: i,
-                      label: 'P$i',
-                      leadingIcon: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getPageColor(i),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'P$i',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+              for (int i = 1; i <= 15; i++)
+                DropdownMenuEntry<int>(
+                  value: i,
+                  label: 'P$i',
+                  leadingIcon: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getPageColor(i),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'P$i',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                ],
-                onSelected: (newValue) {
-                  if (newValue == null) return;
-                  // Call cubit directly - SAME AS INLINE DROPDOWN
-                  context.read<DistingCubit>().setPerformancePageMapping(
-                        widget.algorithmIndex,
-                        widget.parameterNumber,
-                        newValue,
-                      );
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // Help text
-              Text(
-                currentPerfPageIndex == 0
-                    ? 'Not assigned to any performance page'
-                    : 'Assigned to Performance Page $currentPerfPageIndex',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[700],
-                      fontStyle: FontStyle.italic,
-                    ),
-              ),
+                  ),
+                ),
             ],
+            onSelected: (newValue) {
+              if (newValue == null) return;
+              context.read<DistingCubit>().setPerformancePageMapping(
+                    widget.algorithmIndex,
+                    widget.parameterNumber,
+                    newValue,
+                  );
+            },
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          Text(
+            currentPerfPageIndex == 0
+                ? 'Not assigned to any performance page'
+                : 'Assigned to Performance Page $currentPerfPageIndex',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[700],
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPerformanceEditorV116(
+    BuildContext context,
+    DistingStateSynchronized state,
+  ) {
+    final currentDisplayIndex = _findPerfItemDisplayIndex(
+      state.perfPageItems,
+      widget.algorithmIndex,
+      widget.parameterNumber,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Assign this parameter to a performance index for quick access.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+          ),
+          const SizedBox(height: 16),
+          DropdownMenu<int>(
+            initialSelection: currentDisplayIndex,
+            label: const Text('Performance Index'),
+            expandedInsets: EdgeInsets.zero,
+            dropdownMenuEntries: [
+              const DropdownMenuEntry<int>(
+                value: 0,
+                label: 'None',
+              ),
+              for (int i = 1; i <= 30; i++)
+                DropdownMenuEntry<int>(
+                  value: i,
+                  label: '$i',
+                  leadingIcon: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getPageColor(i),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '$i',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+            onSelected: (newValue) {
+              if (newValue == null) return;
+              final cubit = context.read<DistingCubit>();
+              final oldDisplayIndex = currentDisplayIndex;
+
+              if (oldDisplayIndex > 0 && newValue == 0) {
+                cubit.removePerfPageItem(oldDisplayIndex - 1);
+              } else if (oldDisplayIndex > 0 && newValue != oldDisplayIndex) {
+                cubit.removePerfPageItem(oldDisplayIndex - 1);
+                cubit.setPerfPageItem(PerformancePageItem(
+                  itemIndex: newValue - 1,
+                  enabled: true,
+                  slotIndex: widget.algorithmIndex,
+                  parameterNumber: widget.parameterNumber,
+                  min: widget.parameterMin,
+                  max: widget.parameterMax,
+                  upperLabel: '',
+                  lowerLabel: '',
+                ));
+              } else if (oldDisplayIndex == 0 && newValue > 0) {
+                cubit.setPerfPageItem(PerformancePageItem(
+                  itemIndex: newValue - 1,
+                  enabled: true,
+                  slotIndex: widget.algorithmIndex,
+                  parameterNumber: widget.parameterNumber,
+                  min: widget.parameterMin,
+                  max: widget.parameterMax,
+                  upperLabel: '',
+                  lowerLabel: '',
+                ));
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          Text(
+            currentDisplayIndex == 0
+                ? 'Not assigned to any performance index'
+                : 'Assigned to Performance Index $currentDisplayIndex',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[700],
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+        ],
+      ),
     );
   }
 

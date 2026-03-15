@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart';
 import '../db/daos/presets_dao.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 
 /// An implementation of [IDistingMidiManager] that interacts with the
@@ -976,6 +977,22 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestRemountSd() async {
     // No-op in offline mode - remount not applicable without hardware
+  }
+
+  final List<PerformancePageItem> _perfPageItems =
+      List.generate(30, (i) => PerformancePageItem.empty(i));
+
+  @override
+  Future<PerformancePageItem?> requestPerfPageItem(int itemIndex) async {
+    if (itemIndex < 0 || itemIndex >= _perfPageItems.length) return null;
+    return _perfPageItems[itemIndex];
+  }
+
+  @override
+  Future<void> setPerfPageItem(PerformancePageItem item) async {
+    if (item.itemIndex >= 0 && item.itemIndex < _perfPageItems.length) {
+      _perfPageItems[item.itemIndex] = item;
+    }
   }
 
   @override

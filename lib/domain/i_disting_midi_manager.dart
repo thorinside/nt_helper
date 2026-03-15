@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:nt_helper/db/daos/presets_dao.dart' show FullPresetDetails;
 
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
@@ -118,6 +119,10 @@ abstract class IDistingMidiManager {
   Future<SdCardStatus?> requestDirectoryCreate(String path);
   Future<void> requestRescanPlugins();
   Future<void> requestRemountSd();
+
+  // Performance Page Items (firmware v1.16+)
+  Future<PerformancePageItem?> requestPerfPageItem(int itemIndex);
+  Future<void> setPerfPageItem(PerformancePageItem item);
 
   // Scala/Tuning Operations
   Future<void> requestSclFile(String filePath);

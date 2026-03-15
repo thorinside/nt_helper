@@ -472,6 +472,10 @@ enum DistingNTRequestMessageType {
   setPerformancePageMapping(0x54),
   /// Request output mode usage for a parameter (SysEx 0x55)
   requestOutputModeUsage(0x55),
+  /// Request performance page item (SysEx 0x57, firmware v1.16+)
+  requestPerfPageItem(0x57),
+  /// Set performance page item (SysEx 0x58, firmware v1.16+)
+  setPerfPageItem(0x58),
   requestNumAlgorithmsInPreset(0x60),
   requestRouting(0x61),
   requestCpuUsage(0x62),
@@ -518,6 +522,8 @@ enum DistingNTRespMessageType {
   /// Response to output mode usage query (SysEx 0x55)
   /// Returns list of parameters affected by an output mode control parameter
   respOutputModeUsage(0x55),
+  /// Response to performance page item request (SysEx 0x57, firmware v1.16+)
+  respPerfPageItem(0x57),
   respNumAlgorithmsInPreset(0x60),
   respRouting(0x61),
   respCpuUsage(0x62),

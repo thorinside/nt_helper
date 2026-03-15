@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
@@ -119,8 +120,73 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     });
   }
 
-  // Get list of parameter indices that have perfPageIndex > 0
+  bool get _usePerfPageItems {
+    final state = context.read<DistingCubit>().state;
+    if (state is! DistingStateSynchronized) return false;
+    return state.firmwareVersion.hasPerfPageItems;
+  }
+
+  int _findPerfItemDisplayIndex(
+    List<PerformancePageItem> items,
+    int slotIndex,
+    int paramNumber,
+  ) {
+    for (final item in items) {
+      if (item.enabled &&
+          item.slotIndex == slotIndex &&
+          item.parameterNumber == paramNumber) {
+        return item.itemIndex + 1;
+      }
+    }
+    return 0;
+  }
+
+  PerformancePageItem? _findPerfItem(
+    List<PerformancePageItem> items,
+    int slotIndex,
+    int paramNumber,
+  ) {
+    for (final item in items) {
+      if (item.enabled &&
+          item.slotIndex == slotIndex &&
+          item.parameterNumber == paramNumber) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  // Get list of parameter indices that have performance page assignments
   List<int> _getPerformanceParameterIndices() {
+    final state = context.read<DistingCubit>().state;
+    if (state is! DistingStateSynchronized) return [];
+
+    if (state.firmwareVersion.hasPerfPageItems) {
+      final perfParams = <int>[];
+      for (final item in state.perfPageItems) {
+        if (item.enabled && item.slotIndex == widget.slotIndex) {
+          perfParams.add(item.parameterNumber);
+        }
+      }
+      perfParams.sort((a, b) {
+        final itemA = _findPerfItem(
+          state.perfPageItems,
+          widget.slotIndex,
+          a,
+        );
+        final itemB = _findPerfItem(
+          state.perfPageItems,
+          widget.slotIndex,
+          b,
+        );
+        final indexCompare =
+            (itemA?.itemIndex ?? 0).compareTo(itemB?.itemIndex ?? 0);
+        if (indexCompare != 0) return indexCompare;
+        return a.compareTo(b);
+      });
+      return perfParams;
+    }
+
     final perfParams = <int>[];
     for (int i = 0; i < widget.slot.mappings.length; i++) {
       final mapping = widget.slot.mappings[i];
@@ -128,7 +194,6 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         perfParams.add(i);
       }
     }
-    // Sort by perfPageIndex, then by parameter number
     perfParams.sort((a, b) {
       final mappingA = widget.slot.mappings[a];
       final mappingB = widget.slot.mappings[b];
@@ -168,7 +233,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   }
 
   // Build performance parameter row
-  Widget _buildPerformanceParameterRow(int parameterNumber) {
+  Widget _buildPerformanceParameterRow(
+    int parameterNumber, {
+    PerformancePageItem? perfItem,
+  }) {
     final value = widget.slot.values.elementAtOrNull(parameterNumber);
     final enumStrings = widget.slot.enums.elementAtOrNull(parameterNumber);
     final mapping = widget.slot.mappings.elementAtOrNull(parameterNumber);
@@ -186,24 +254,26 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
 
     final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
     final safeValueString = valueString ?? ParameterValueString.filler();
-    // For string-type parameters, don't fetch unit - they use value strings
-    // The registry handles firmware version differences automatically
     final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
       parameterInfo.unit,
     );
     final unit = shouldShowUnit
         ? parameterInfo.getUnitString(widget.units)
         : null;
-    final perfPageIndex = mapping.packedMappingData.perfPageIndex;
+
+    final int badgeIndex;
+    if (perfItem != null) {
+      badgeIndex = perfItem.itemIndex + 1;
+    } else {
+      badgeIndex = mapping.packedMappingData.perfPageIndex;
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
         children: [
-          // Page badge
-          _buildPageBadge(perfPageIndex),
+          _buildPageBadge(badgeIndex),
           const SizedBox(width: 12),
-          // Parameter editor (expanded)
           Expanded(
             child: ParameterEditorView(
               slot: widget.slot,
@@ -215,7 +285,6 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               unit: unit,
             ),
           ),
-          // Remove button
           IconButton(
             icon: const Icon(
               Icons.close,
@@ -233,11 +302,24 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   Future<void> _removeFromPerformancePage(int parameterNumber) async {
     final cubit = context.read<DistingCubit>();
     try {
-      await cubit.setPerformancePageMapping(
-        widget.slot.algorithm.algorithmIndex,
-        parameterNumber,
-        0, // Remove from performance page
-      );
+      if (_usePerfPageItems) {
+        final state = cubit.state;
+        if (state is! DistingStateSynchronized) return;
+        final item = _findPerfItem(
+          state.perfPageItems,
+          widget.slotIndex,
+          parameterNumber,
+        );
+        if (item != null) {
+          await cubit.removePerfPageItem(item.itemIndex);
+        }
+      } else {
+        await cubit.setPerformancePageMapping(
+          widget.slot.algorithm.algorithmIndex,
+          parameterNumber,
+          0,
+        );
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -256,20 +338,52 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     int parameterNumber,
     int pageIndex,
   ) async {
-    // Optimistically update the UI immediately
+    final cubit = context.read<DistingCubit>();
+
+    if (_usePerfPageItems) {
+      final state = cubit.state;
+      if (state is! DistingStateSynchronized) return;
+
+      final oldItem = _findPerfItem(
+        state.perfPageItems,
+        widget.slotIndex,
+        parameterNumber,
+      );
+
+      if (pageIndex == 0) {
+        if (oldItem != null) {
+          cubit.removePerfPageItem(oldItem.itemIndex);
+        }
+      } else {
+        if (oldItem != null) {
+          cubit.removePerfPageItem(oldItem.itemIndex);
+        }
+        final paramInfo = widget.slot.parameters[parameterNumber];
+        cubit.setPerfPageItem(PerformancePageItem(
+          itemIndex: pageIndex - 1,
+          enabled: true,
+          slotIndex: widget.slotIndex,
+          parameterNumber: parameterNumber,
+          min: paramInfo.min,
+          max: paramInfo.max,
+          upperLabel: '',
+          lowerLabel: '',
+        ));
+      }
+      return;
+    }
+
+    // Legacy path
     setState(() {
       _optimisticPerfPageAssignments[parameterNumber] = pageIndex;
     });
 
-    final cubit = context.read<DistingCubit>();
     try {
       await cubit.setPerformancePageMapping(
         widget.slot.algorithm.algorithmIndex,
         parameterNumber,
         pageIndex,
       );
-      // Only show SnackBar feedback in connected mode (real hardware)
-      // Demo and offline modes are silent operations
       if (mounted) {
         final manager = cubit.disting();
         final isConnectedMode = manager is DistingMidiManager;
@@ -286,7 +400,6 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         }
       }
     } catch (e) {
-      // Revert optimistic update on error
       if (mounted) {
         setState(() {
           _optimisticPerfPageAssignments.remove(parameterNumber);
@@ -305,16 +418,28 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     required ParameterValueString valueString,
     required String? unit,
   }) {
-    // Use optimistic value if available, otherwise use actual mapping data
-    final actualPerfPageIndex = mapping?.packedMappingData.perfPageIndex ?? 0;
-    final perfPageIndex =
-        _optimisticPerfPageAssignments[parameterNumber] ?? actualPerfPageIndex;
+    final int perfPageIndex;
+    if (_usePerfPageItems) {
+      final state = context.read<DistingCubit>().state;
+      if (state is DistingStateSynchronized) {
+        perfPageIndex = _findPerfItemDisplayIndex(
+          state.perfPageItems,
+          widget.slotIndex,
+          parameterNumber,
+        );
+      } else {
+        perfPageIndex = 0;
+      }
+    } else {
+      final actualPerfPageIndex = mapping?.packedMappingData.perfPageIndex ?? 0;
+      perfPageIndex =
+          _optimisticPerfPageAssignments[parameterNumber] ?? actualPerfPageIndex;
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
         children: [
-          // Parameter editor (expanded)
           Expanded(
             child: ParameterEditorView(
               slot: widget.slot,
@@ -326,11 +451,12 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               unit: unit,
             ),
           ),
-          // Only show inline dropdown on desktop (width >= 600)
           if (MediaQuery.of(context).size.width >= 600) ...[
             const SizedBox(width: 8),
             Semantics(
-              label: 'Assign to performance page',
+              label: _usePerfPageItems
+                  ? 'Assign to performance index'
+                  : 'Assign to performance page',
               child: DropdownButton<int>(
                 value: perfPageIndex,
                 isDense: true,
@@ -338,7 +464,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(fontSize: 11),
-                hint: const Text('Page'),
+                hint: Text(_usePerfPageItems ? 'Index' : 'Page'),
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 onChanged: (newValue) {
                   if (newValue != null) {
@@ -350,7 +476,11 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                   ...List.generate(30, (i) {
                     return DropdownMenuItem(
                       value: i + 1,
-                      child: Text('Page ${i + 1}'),
+                      child: Text(
+                        _usePerfPageItems
+                            ? 'Index ${i + 1}'
+                            : 'Page ${i + 1}',
+                      ),
                     );
                   }),
                 ],
@@ -366,6 +496,12 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   Widget _buildPerformanceParametersSection() {
     final perfParams = _getPerformanceParameterIndices();
     final isEmpty = perfParams.isEmpty;
+
+    final state = context.read<DistingCubit>().state;
+    final syncState = state is DistingStateSynchronized &&
+            state.firmwareVersion.hasPerfPageItems
+        ? state
+        : null;
 
     return ExpansionTile(
       initiallyExpanded: !isEmpty,
@@ -388,7 +524,18 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               ),
             ]
           : perfParams.map((paramIndex) {
-              return _buildPerformanceParameterRow(paramIndex);
+              PerformancePageItem? perfItem;
+              if (syncState != null) {
+                perfItem = _findPerfItem(
+                  syncState.perfPageItems,
+                  widget.slotIndex,
+                  paramIndex,
+                );
+              }
+              return _buildPerformanceParameterRow(
+                paramIndex,
+                perfItem: perfItem,
+              );
             }).toList(),
     );
   }

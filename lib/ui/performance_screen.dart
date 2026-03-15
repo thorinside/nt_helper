@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/ui/widgets/performance/hardware_preview_widget.dart';
 
 class PerformanceScreen extends StatefulWidget {
@@ -18,6 +23,14 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   PerformanceLayoutMode _layoutMode = PerformanceLayoutMode.condensed;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DistingCubit>().refreshPerfPageItems();
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _cubit = context.read<DistingCubit>();
@@ -28,6 +41,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     _cubit?.stopPollingMappedParameters();
     super.dispose();
   }
+
+  // --- Legacy (pre-v1.16) helpers ---
 
   Map<String, int> _buildParameterOrderMap(List<Slot> slots) {
     final orderMap = <String, int>{};
@@ -75,6 +90,18 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     return colors[(pageIndex - 1) % colors.length];
   }
 
+  Color _getPerfItemColor(int itemIndex) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.red,
+    ];
+    final pageNum = (itemIndex ~/ 3);
+    return colors[pageNum % colors.length];
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -97,6 +124,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       ),
     );
   }
+
+  // --- Legacy (pre-v1.16) callbacks ---
 
   void _onReorder(
     List<MappedParameter> sortedParams,
@@ -131,19 +160,27 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
 
   void _onRemoveParameter(MappedParameter param) {
     context.read<DistingCubit>().setPerformancePageMapping(
-          param.parameter.algorithmIndex,
-          param.parameter.parameterNumber,
-          0,
-        );
+      param.parameter.algorithmIndex,
+      param.parameter.parameterNumber,
+      0,
+    );
   }
 
   void _onIndexChanged(MappedParameter param, int newIndex) {
     context.read<DistingCubit>().setPerformancePageMapping(
-          param.parameter.algorithmIndex,
-          param.parameter.parameterNumber,
-          newIndex,
-        );
+      param.parameter.algorithmIndex,
+      param.parameter.parameterNumber,
+      newIndex,
+    );
   }
+
+  // --- v1.16+ callbacks ---
+
+  void _onRemovePerfItem(PerformancePageItem item) {
+    context.read<DistingCubit>().removePerfPageItem(item.itemIndex);
+  }
+
+  // --- Legacy (pre-v1.16) list builders ---
 
   Widget _buildCondensedList(List<MappedParameter> sortedParams) {
     return ReorderableListView.builder(
@@ -206,10 +243,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               isDense: true,
               isExpanded: true,
               items: List.generate(30, (i) {
-                return DropdownMenuItem(
-                  value: i + 1,
-                  child: Text('${i + 1}'),
-                );
+                return DropdownMenuItem(value: i + 1, child: Text('${i + 1}'));
               }),
               onChanged: (newValue) {
                 if (newValue != null && newValue != perfIndex) {
@@ -218,6 +252,40 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               },
             ),
           ),
+        );
+      },
+    );
+  }
+
+  // --- v1.16+ list builder ---
+
+  Widget _buildPerfItemList(
+    List<PerformancePageItem> enabledItems,
+    DistingStateSynchronized state,
+  ) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: enabledItems.length,
+      itemBuilder: (context, index) {
+        final item = enabledItems[index];
+
+        ParameterInfo? parameterInfo;
+        String? unitString;
+        if (item.slotIndex < state.slots.length) {
+          final slot = state.slots[item.slotIndex];
+          if (item.parameterNumber < slot.parameters.length) {
+            parameterInfo = slot.parameters[item.parameterNumber];
+            unitString = parameterInfo.getUnitString(state.unitStrings);
+          }
+        }
+
+        return _PerfPageItemListTile(
+          key: ValueKey('perf_${item.itemIndex}'),
+          item: item,
+          pageColor: _getPerfItemColor(item.itemIndex),
+          onRemove: () => _onRemovePerfItem(item),
+          parameterInfo: parameterInfo,
+          unitString: unitString,
         );
       },
     );
@@ -247,6 +315,74 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildLegacyBody(DistingStateSynchronized state) {
+    final mappedParameters = DistingCubit.buildMappedParameterList(state);
+
+    if (mappedParameters.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    final orderMap = _buildParameterOrderMap(state.slots);
+    final sortedParams = _sortParameters(mappedParameters, orderMap);
+
+    final isWide = MediaQuery.of(context).size.width >= 720;
+
+    return Column(
+      children: [
+        _buildModeToggle(),
+        Expanded(
+          child: isWide
+              ? Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _layoutMode == PerformanceLayoutMode.condensed
+                          ? _buildCondensedList(sortedParams)
+                          : _buildAsIndexedList(sortedParams),
+                    ),
+                    const VerticalDivider(width: 1, thickness: 1),
+                    Expanded(
+                      flex: 2,
+                      child: HardwarePreviewWidget(
+                        parameters: sortedParams,
+                        layoutMode: _layoutMode,
+                      ),
+                    ),
+                  ],
+                )
+              : _layoutMode == PerformanceLayoutMode.condensed
+              ? _buildCondensedList(sortedParams)
+              : _buildAsIndexedList(sortedParams),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPerfItemsBody(DistingStateSynchronized state) {
+    final enabledItems = state.perfPageItems.where((i) => i.enabled).toList();
+
+    if (enabledItems.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    final isWide = MediaQuery.of(context).size.width >= 720;
+
+    if (isWide) {
+      return Row(
+        children: [
+          Expanded(flex: 3, child: _buildPerfItemList(enabledItems, state)),
+          const VerticalDivider(width: 1, thickness: 1),
+          Expanded(
+            flex: 2,
+            child: HardwarePreviewWidget(perfPageItems: enabledItems),
+          ),
+        ],
+      );
+    }
+
+    return _buildPerfItemList(enabledItems, state);
   }
 
   @override
@@ -279,49 +415,10 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       body: BlocBuilder<DistingCubit, DistingState>(
         builder: (context, state) {
           if (state is DistingStateSynchronized) {
-            final mappedParameters = DistingCubit.buildMappedParameterList(
-              state,
-            );
-
-            if (mappedParameters.isEmpty) {
-              return _buildEmptyState();
+            if (state.firmwareVersion.hasPerfPageItems) {
+              return _buildPerfItemsBody(state);
             }
-
-            final orderMap = _buildParameterOrderMap(state.slots);
-            final sortedParams = _sortParameters(mappedParameters, orderMap);
-
-            final isWide = MediaQuery.of(context).size.width >= 720;
-
-            return Column(
-              children: [
-                _buildModeToggle(),
-                Expanded(
-                  child: isWide
-                      ? Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: _layoutMode ==
-                                      PerformanceLayoutMode.condensed
-                                  ? _buildCondensedList(sortedParams)
-                                  : _buildAsIndexedList(sortedParams),
-                            ),
-                            const VerticalDivider(width: 1, thickness: 1),
-                            Expanded(
-                              flex: 2,
-                              child: HardwarePreviewWidget(
-                                parameters: sortedParams,
-                                layoutMode: _layoutMode,
-                              ),
-                            ),
-                          ],
-                        )
-                      : _layoutMode == PerformanceLayoutMode.condensed
-                          ? _buildCondensedList(sortedParams)
-                          : _buildAsIndexedList(sortedParams),
-                ),
-              ],
-            );
+            return _buildLegacyBody(state);
           }
           return const Center(child: CircularProgressIndicator());
         },
@@ -379,10 +476,397 @@ class _ParameterListItem extends StatelessWidget {
         subtitle: Text(
           item.algorithm.name,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         trailing: trailing,
+      ),
+    );
+  }
+}
+
+class _PerfPageItemListTile extends StatefulWidget {
+  const _PerfPageItemListTile({
+    super.key,
+    required this.item,
+    required this.pageColor,
+    required this.onRemove,
+    this.parameterInfo,
+    this.unitString,
+  });
+
+  final PerformancePageItem item;
+  final Color pageColor;
+  final VoidCallback onRemove;
+  final ParameterInfo? parameterInfo;
+  final String? unitString;
+
+  @override
+  State<_PerfPageItemListTile> createState() => _PerfPageItemListTileState();
+}
+
+class _PerfPageItemListTileState extends State<_PerfPageItemListTile> {
+  bool _expanded = false;
+  late PerformancePageItem _item;
+  late TextEditingController _upperLabelController;
+  late TextEditingController _lowerLabelController;
+
+  Timer? _debounceTimer;
+  bool _isDirty = false;
+  DistingCubit? _cubit;
+
+  DateTime? _lastPreviewSent;
+  static const _previewThrottleDuration = Duration(milliseconds: 100);
+  static const _debounceDuration = Duration(seconds: 1);
+
+  @override
+  void initState() {
+    super.initState();
+    _item = widget.item;
+    _upperLabelController = TextEditingController(text: _item.upperLabel);
+    _lowerLabelController = TextEditingController(text: _item.lowerLabel);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _cubit = context.read<DistingCubit>();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PerfPageItemListTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.item != oldWidget.item && !_isDirty) {
+      _item = widget.item;
+      if (_upperLabelController.text != _item.upperLabel) {
+        _upperLabelController.text = _item.upperLabel;
+      }
+      if (_lowerLabelController.text != _item.lowerLabel) {
+        _lowerLabelController.text = _item.lowerLabel;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    if (_isDirty) {
+      _performSaveSync();
+    }
+    _upperLabelController.dispose();
+    _lowerLabelController.dispose();
+    super.dispose();
+  }
+
+  void _performSaveSync() {
+    _item = _item.copyWith(
+      upperLabel: _upperLabelController.text,
+      lowerLabel: _lowerLabelController.text,
+    );
+    _cubit?.setPerfPageItem(_item);
+  }
+
+  void _previewParameterValue(int value) {
+    final now = DateTime.now();
+    if (_lastPreviewSent == null ||
+        now.difference(_lastPreviewSent!) > _previewThrottleDuration) {
+      _lastPreviewSent = now;
+      _cubit?.updateParameterValue(
+        algorithmIndex: _item.slotIndex,
+        parameterNumber: _item.parameterNumber,
+        value: value,
+        userIsChangingTheValue: true,
+      );
+    }
+  }
+
+  void _restoreParameterValue() {
+    final cubit = _cubit;
+    if (cubit == null) return;
+    final state = cubit.state;
+    if (state is DistingStateSynchronized) {
+      if (_item.slotIndex >= state.slots.length) return;
+      final slot = state.slots[_item.slotIndex];
+      if (_item.parameterNumber >= slot.values.length) return;
+      final currentValue = slot.values[_item.parameterNumber].value;
+      cubit.updateParameterValue(
+        algorithmIndex: _item.slotIndex,
+        parameterNumber: _item.parameterNumber,
+        value: currentValue,
+        userIsChangingTheValue: false,
+      );
+    }
+  }
+
+  void _onIndexChanged(int newIndex) {
+    final cubit = _cubit;
+    if (cubit == null) return;
+    _debounceTimer?.cancel();
+    if (_isDirty) {
+      _item = _item.copyWith(
+        upperLabel: _upperLabelController.text,
+        lowerLabel: _lowerLabelController.text,
+      );
+      _isDirty = false;
+    }
+    final oldIndex = _item.itemIndex;
+    final movedItem = _item.copyWith(itemIndex: newIndex);
+    cubit.removePerfPageItem(oldIndex);
+    cubit.setPerfPageItem(movedItem);
+  }
+
+  void _triggerOptimisticSave() {
+    setState(() {
+      _isDirty = true;
+    });
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, () {
+      _performSaveSync();
+      if (mounted) {
+        setState(() {
+          _isDirty = false;
+        });
+      }
+    });
+  }
+
+  String _formatDisplayValue(double displayValue) {
+    final pi = widget.parameterInfo!;
+    final decimalPlaces = pi.powerOfTen.abs();
+    final formatted = displayValue.toStringAsFixed(decimalPlaces);
+    final unit = widget.unitString?.trim();
+    if (unit != null && unit.isNotEmpty) {
+      return '$formatted $unit';
+    }
+    return formatted;
+  }
+
+  Widget _buildRangeSlider() {
+    final pi = widget.parameterInfo!;
+    final scale = pow(10, pi.powerOfTen).toDouble();
+    var sliderMin = pi.min;
+    var sliderMax = pi.max;
+    if (sliderMin > sliderMax) {
+      final tmp = sliderMin;
+      sliderMin = sliderMax;
+      sliderMax = tmp;
+    }
+
+    if (sliderMin == sliderMax) {
+      final displayValue = sliderMin * scale;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Text(
+          'Range: ${_formatDisplayValue(displayValue)}',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+
+    final displayMin = sliderMin * scale;
+    final displayMax = sliderMax * scale;
+
+    var clampedMin = _item.min.clamp(sliderMin, sliderMax);
+    var clampedMax = _item.max.clamp(sliderMin, sliderMax);
+    if (clampedMin > clampedMax) {
+      final tmp = clampedMin;
+      clampedMin = clampedMax;
+      clampedMax = tmp;
+    }
+    final displayStart = clampedMin * scale;
+    final displayEnd = clampedMax * scale;
+
+    final divisions = sliderMax - sliderMin;
+
+    return Column(
+      children: [
+        RangeSlider(
+          values: RangeValues(displayStart, displayEnd),
+          min: displayMin,
+          max: displayMax,
+          divisions: divisions,
+          labels: RangeLabels(
+            _formatDisplayValue(displayStart),
+            _formatDisplayValue(displayEnd),
+          ),
+          semanticFormatterCallback: (value) => _formatDisplayValue(value),
+          onChanged: (RangeValues values) {
+            final rawMin = (values.start / scale).round();
+            final rawMax = (values.end / scale).round();
+            final previousMin = _item.min;
+            setState(() {
+              _item = _item.copyWith(min: rawMin, max: rawMax);
+            });
+            _triggerOptimisticSave();
+
+            final previewValue = (rawMin != previousMin) ? rawMin : rawMax;
+            _previewParameterValue(previewValue);
+          },
+          onChangeEnd: (RangeValues values) {
+            _restoreParameterValue();
+          },
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Min: ${_formatDisplayValue(displayStart)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                'Max: ${_formatDisplayValue(displayEnd)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      clipBehavior: Clip.hardEdge,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            onTap: widget.parameterInfo != null
+                ? () => setState(() => _expanded = !_expanded)
+                : null,
+            leading: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: widget.pageColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${widget.item.itemIndex + 1}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            title: Text(
+              _item.upperLabel.isNotEmpty
+                  ? _item.upperLabel
+                  : 'Item ${_item.itemIndex + 1}',
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_item.lowerLabel.isNotEmpty)
+                  Text(
+                    _item.lowerLabel,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                Text(
+                  'Slot ${_item.slotIndex + 1}, Param ${_item.parameterNumber}  '
+                  'Range: ${_item.min}..${_item.max}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.parameterInfo != null)
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20,
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  tooltip: 'Remove from performance',
+                  onPressed: widget.onRemove,
+                ),
+              ],
+            ),
+          ),
+          if (_expanded && widget.parameterInfo != null) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Index',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 72,
+                        child: DropdownButtonFormField<int>(
+                          key: ValueKey('perf_idx_${_item.itemIndex}'),
+                          initialValue: _item.itemIndex + 1,
+                          isDense: true,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          items: List.generate(30, (i) {
+                            return DropdownMenuItem(
+                              value: i + 1,
+                              child: Text('${i + 1}'),
+                            );
+                          }),
+                          onChanged: (newValue) {
+                            if (newValue != null &&
+                                newValue - 1 != _item.itemIndex) {
+                              _onIndexChanged(newValue - 1);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Range', style: Theme.of(context).textTheme.labelLarge),
+                  _buildRangeSlider(),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _upperLabelController,
+                    decoration: const InputDecoration(
+                      labelText: 'Upper Label',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (_) => _triggerOptimisticSave(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _lowerLabelController,
+                    decoration: const InputDecoration(
+                      labelText: 'Lower Label',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (_) => _triggerOptimisticSave(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -19,16 +19,15 @@ void main() {
 
   setUp(() {
     mockCubit = MockDistingCubit();
+    when(() => mockCubit.refreshPerfPageItems())
+        .thenAnswer((_) async {});
   });
 
   Widget createTestWidget({required Widget child, double width = 800}) {
     return MaterialApp(
       home: MediaQuery(
         data: MediaQueryData(size: Size(width, 600)),
-        child: BlocProvider<DistingCubit>.value(
-          value: mockCubit,
-          child: child,
-        ),
+        child: BlocProvider<DistingCubit>.value(value: mockCubit, child: child),
       ),
     );
   }
@@ -266,10 +265,7 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PerformanceScreen(units: []),
-          width: 800,
-        ),
+        createTestWidget(child: const PerformanceScreen(units: []), width: 800),
       );
       await tester.pumpAndSettle();
 
@@ -301,10 +297,7 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PerformanceScreen(units: []),
-          width: 500,
-        ),
+        createTestWidget(child: const PerformanceScreen(units: []), width: 500),
       );
       await tester.pumpAndSettle();
 
