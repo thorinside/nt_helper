@@ -810,7 +810,7 @@ class _PerfPageItemListTileState extends State<_PerfPageItemListTile> {
                       ),
                       const SizedBox(width: 12),
                       SizedBox(
-                        width: 72,
+                        width: 80,
                         child: DropdownButtonFormField<int>(
                           key: ValueKey('perf_idx_${_item.itemIndex}'),
                           initialValue: _item.itemIndex + 1,
@@ -819,7 +819,7 @@ class _PerfPageItemListTileState extends State<_PerfPageItemListTile> {
                             border: OutlineInputBorder(),
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
+                              horizontal: 8,
                               vertical: 8,
                             ),
                           ),

@@ -1040,6 +1040,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               if (newValue == null) return;
               final cubit = context.read<DistingCubit>();
               final oldDisplayIndex = currentDisplayIndex;
+              final slot = state.slots[widget.algorithmIndex];
+              final paramName = slot.parameters[widget.parameterNumber].name;
+              final algoName = slot.algorithm.name;
 
               if (oldDisplayIndex > 0 && newValue == 0) {
                 cubit.removePerfPageItem(oldDisplayIndex - 1);
@@ -1052,8 +1055,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   parameterNumber: widget.parameterNumber,
                   min: widget.parameterMin,
                   max: widget.parameterMax,
-                  upperLabel: '',
-                  lowerLabel: '',
+                  upperLabel: algoName,
+                  lowerLabel: paramName,
                 ));
               } else if (oldDisplayIndex == 0 && newValue > 0) {
                 cubit.setPerfPageItem(PerformancePageItem(
@@ -1063,8 +1066,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   parameterNumber: widget.parameterNumber,
                   min: widget.parameterMin,
                   max: widget.parameterMax,
-                  upperLabel: '',
-                  lowerLabel: '',
+                  upperLabel: algoName,
+                  lowerLabel: paramName,
                 ));
               }
             },

@@ -366,8 +366,8 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           parameterNumber: parameterNumber,
           min: paramInfo.min,
           max: paramInfo.max,
-          upperLabel: '',
-          lowerLabel: '',
+          upperLabel: widget.slot.algorithm.name,
+          lowerLabel: paramInfo.name,
         ));
       }
       return;
