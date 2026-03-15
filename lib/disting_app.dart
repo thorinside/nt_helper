@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -244,11 +245,14 @@ class _DistingPageState extends State<DistingPage> {
           builder: (context, state) {
             if (state is DistingStateInitial) {
               return Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    context.read<DistingCubit>().loadDevices();
-                  },
-                  child: Text("Load Devices"),
+                child: Semantics(
+                  hint: 'Scan for connected MIDI devices',
+                  child: ElevatedButton(
+                    onPressed: () {
+                      context.read<DistingCubit>().loadDevices();
+                    },
+                    child: Text("Load Devices"),
+                  ),
                 ),
               );
             } else if (state is DistingStateSelectDevice) {
@@ -291,7 +295,9 @@ class _DistingPageState extends State<DistingPage> {
             } else if (state is DistingStateConnected) {
               return Center(
                 child: SingleChildScrollView(
-                  child: Column(
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -301,7 +307,9 @@ class _DistingPageState extends State<DistingPage> {
                       ),
                       Padding(
                         padding: const EdgeInsets.all(24.0),
-                        child: CircularProgressIndicator(),
+                        child: CircularProgressIndicator(
+                          semanticsLabel: 'Synchronizing with Disting NT',
+                        ),
                       ),
                       OutlinedButton(
                         onPressed: () {
@@ -310,6 +318,7 @@ class _DistingPageState extends State<DistingPage> {
                         child: Text("Cancel"),
                       ),
                     ],
+                  ),
                   ),
                 ),
               );
@@ -384,6 +393,17 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
   @override
   void initState() {
     selectFirstDisting();
+    if (selectedInputDevice != null && selectedOutputDevice != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Disting NT detected. Input and output devices auto-selected.',
+            TextDirection.ltr,
+          );
+        }
+      });
+    }
     _maybeProbe();
     super.initState();
   }
@@ -403,6 +423,17 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
         oldWidget.outputDevices != widget.outputDevices) {
       selectFirstDisting();
       _maybeProbe();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final inputCount = widget.inputDevices.length;
+          final outputCount = widget.outputDevices.length;
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Device list updated. $inputCount input and $outputCount output devices found.',
+            TextDirection.ltr,
+          );
+        }
+      });
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -442,6 +473,13 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
           _probedFirmwareVersion = version;
           _probing = false;
         });
+        if (version != null) {
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            'Firmware version $version detected. Firmware update button now available.',
+            TextDirection.ltr,
+          );
+        }
       }
     });
   }
@@ -530,7 +568,9 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
+          child: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -538,9 +578,12 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      "Select your Disting NT from the midi device list, or hit refresh to look for devices again.",
-                      style: theme.textTheme.headlineSmall,
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        "Select your Disting NT from the midi device list, or hit refresh to look for devices again.",
+                        style: theme.textTheme.headlineSmall,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -557,7 +600,6 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                     width: 250,
                     initialSelection: selectedInputDevice,
                     enabled: true,
-                    requestFocusOnTap: false,
                     label: const Text("Input MIDI Device"),
                     dropdownMenuEntries: widget.inputDevices.map((device) {
                       return DropdownMenuEntry<MidiDevice>(
@@ -574,7 +616,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(Icons.refresh, semanticLabel: 'Refresh devices'),
                     tooltip: 'Refresh devices',
                     onPressed: widget.onRefresh,
                   ),
@@ -585,7 +627,6 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 width: 250,
                 initialSelection: selectedOutputDevice,
                 enabled: true,
-                requestFocusOnTap: false,
                 label: const Text("Output MIDI Device"),
                 dropdownMenuEntries: widget.outputDevices.map((device) {
                   return DropdownMenuEntry<MidiDevice>(
@@ -604,7 +645,6 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
               DropdownMenu<int>(
                 width: 250,
                 initialSelection: selectedSysExId,
-                requestFocusOnTap: false,
                 label: const Text("Device ID"),
                 dropdownMenuEntries: List.generate(128, (index) {
                   return DropdownMenuEntry<int>(
@@ -642,28 +682,33 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                         : null,
                   ),
                   if (_hasAlternateAction) ...[
-                    SizedBox(
-                      width: 1,
-                      height: 40,
-                      child: ColoredBox(
-                        color: primaryEnabled
-                            ? colorScheme.onPrimary.withAlpha(80)
-                            : colorScheme.onSurface.withAlpha(30),
-                      ),
-                    ),
-                    FilledButton(
-                      onPressed: primaryEnabled ? _showSplitMenu : null,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: const Size(40, 40),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(20),
-                            bottomRight: Radius.circular(20),
-                          ),
+                    ExcludeSemantics(
+                      child: SizedBox(
+                        width: 1,
+                        height: 40,
+                        child: ColoredBox(
+                          color: primaryEnabled
+                              ? colorScheme.onPrimary.withAlpha(80)
+                              : colorScheme.onSurface.withAlpha(30),
                         ),
                       ),
-                      child: const Icon(Icons.arrow_drop_down),
+                    ),
+                    Tooltip(
+                      message: 'More connection options',
+                      child: FilledButton(
+                        onPressed: primaryEnabled ? _showSplitMenu : null,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: const Size(40, 40),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              topRight: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                            ),
+                          ),
+                        ),
+                        child: const Icon(Icons.arrow_drop_down, semanticLabel: 'More connection options'),
+                      ),
                     ),
                   ],
                   AnimatedSize(
@@ -687,10 +732,13 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
-              Text(
-                "No Disting? Try the demo:",
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+              Semantics(
+                header: true,
+                child: Text(
+                  "No Disting? Try the demo:",
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -703,6 +751,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),
