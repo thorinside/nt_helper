@@ -293,7 +293,6 @@ class ParameterEditorRegistry {
 
     // Tuner files
     ParameterEditorRule(
-      algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.scl',
       unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/scala',
@@ -302,7 +301,6 @@ class ParameterEditorRegistry {
       description: 'Scala scale file selection',
     ),
     ParameterEditorRule(
-      algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.kbm',
       unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/scala',
@@ -311,13 +309,46 @@ class ParameterEditorRegistry {
       description: 'Scala keyboard mapping file selection',
     ),
     ParameterEditorRule(
-      algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.syx',
       unit: ParameterUnits.legacyFileFolder,
       baseDirectory: '/mts',
       mode: FileSelectionMode.directFile,
       allowedExtensions: ['.syx'],
       description: 'MTS tuning file selection',
+    ),
+
+    // Community plugin tuning files
+    ParameterEditorRule(
+      parameterNamePattern: r'(?:Scl|Scale)\s*file',
+      unit: ParameterUnits.legacyFileFolder,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.scl'],
+      description: 'Community plugin scala file selection',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'(?:Scl|Scale)\s*file',
+      unit: ParameterUnits.legacyFilePath,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.scl'],
+      description: 'Community plugin scala file selection',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'(?:Kbm|Keyboard mapping)\s*file',
+      unit: ParameterUnits.legacyFileFolder,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.kbm'],
+      description: 'Community plugin keyboard mapping file selection',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'(?:Kbm|Keyboard mapping)\s*file',
+      unit: ParameterUnits.legacyFilePath,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.kbm'],
+      description: 'Community plugin keyboard mapping file selection',
     ),
 
     // Poly FM
@@ -493,7 +524,6 @@ class ParameterEditorRegistry {
 
     // Tuner files
     ParameterEditorRule(
-      algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.scl',
       unit: ParameterUnits.modernHasStrings,
       baseDirectory: '/scala',
@@ -502,7 +532,6 @@ class ParameterEditorRegistry {
       description: 'Scala scale file selection',
     ),
     ParameterEditorRule(
-      algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.kbm',
       unit: ParameterUnits.modernHasStrings,
       baseDirectory: '/scala',
@@ -511,13 +540,46 @@ class ParameterEditorRegistry {
       description: 'Scala keyboard mapping file selection',
     ),
     ParameterEditorRule(
-      algorithmGuid: 'tunf',
       parameterNamePattern: r'.*\.syx',
       unit: ParameterUnits.modernHasStrings,
       baseDirectory: '/mts',
       mode: FileSelectionMode.directFile,
       allowedExtensions: ['.syx'],
       description: 'MTS tuning file selection',
+    ),
+
+    // Community plugin tuning files
+    ParameterEditorRule(
+      parameterNamePattern: r'(?:Scl|Scale)\s*file',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.scl'],
+      description: 'Community plugin scala file selection',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'(?:Scl|Scale)\s*file',
+      unit: ParameterUnits.modernConfirm,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.scl'],
+      description: 'Community plugin scala file selection',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'(?:Kbm|Keyboard mapping)\s*file',
+      unit: ParameterUnits.modernHasStrings,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.kbm'],
+      description: 'Community plugin keyboard mapping file selection',
+    ),
+    ParameterEditorRule(
+      parameterNamePattern: r'(?:Kbm|Keyboard mapping)\s*file',
+      unit: ParameterUnits.modernConfirm,
+      baseDirectory: '/scala',
+      mode: FileSelectionMode.directFile,
+      allowedExtensions: ['.kbm'],
+      description: 'Community plugin keyboard mapping file selection',
     ),
 
     // Poly FM

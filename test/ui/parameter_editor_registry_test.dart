@@ -169,6 +169,134 @@ void main() {
       expect(fileEditor.rule.mode, equals(FileSelectionMode.textInput));
     });
 
+    test('.scl parameter matches for non-tunf algorithm', () {
+      final slot = createTestSlot(
+        guid: 'tuns',
+        parameterName: 'Tuning .scl',
+        unit: ParameterUnits.legacyFileFolder,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+    });
+
+    test('.kbm parameter matches for non-tunf algorithm', () {
+      final slot = createTestSlot(
+        guid: 'quan',
+        parameterName: 'Mapping .kbm',
+        unit: ParameterUnits.legacyFileFolder,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
+    });
+
+    test('.syx parameter matches for non-tunf algorithm', () {
+      final slot = createTestSlot(
+        guid: 'ssjw',
+        parameterName: 'Tuning .syx',
+        unit: ParameterUnits.legacyFileFolder,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/mts'));
+      expect(fileEditor.rule.allowedExtensions, contains('.syx'));
+    });
+
+    test('"Scl file" matches community plugin rule', () {
+      final slot = createTestSlot(
+        guid: 'XYZW',
+        parameterName: 'Scl file',
+        unit: ParameterUnits.legacyFileFolder,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+    });
+
+    test('"Scale file" matches community plugin rule', () {
+      final slot = createTestSlot(
+        guid: 'XYZW',
+        parameterName: 'Scale file',
+        unit: ParameterUnits.legacyFileFolder,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+    });
+
+    test('Quantizer "Scale" with enum unit does NOT match tuning rules', () {
+      final slot = createTestSlot(
+        guid: 'quan',
+        parameterName: 'Scale',
+        unit: 1, // enum unit
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNull);
+    });
+
     test('isStringTypeUnit returns true for legacy string units', () {
       expect(
           ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.legacyFilePath),
@@ -315,6 +443,134 @@ void main() {
       );
 
       // BPM should NOT have a file editor
+      expect(editor, isNull);
+    });
+
+    test('.scl parameter matches for non-tunf algorithm', () {
+      final slot = createTestSlot(
+        guid: 'tuns',
+        parameterName: 'Tuning .scl',
+        unit: ParameterUnits.modernHasStrings,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+    });
+
+    test('.kbm parameter matches for non-tunf algorithm', () {
+      final slot = createTestSlot(
+        guid: 'quan',
+        parameterName: 'Mapping .kbm',
+        unit: ParameterUnits.modernHasStrings,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
+    });
+
+    test('.syx parameter matches for non-tunf algorithm', () {
+      final slot = createTestSlot(
+        guid: 'ssjw',
+        parameterName: 'Tuning .syx',
+        unit: ParameterUnits.modernHasStrings,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/mts'));
+      expect(fileEditor.rule.allowedExtensions, contains('.syx'));
+    });
+
+    test('"Scl file" matches community plugin rule', () {
+      final slot = createTestSlot(
+        guid: 'XYZW',
+        parameterName: 'Scl file',
+        unit: ParameterUnits.modernHasStrings,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+    });
+
+    test('"Scale file" matches community plugin rule', () {
+      final slot = createTestSlot(
+        guid: 'XYZW',
+        parameterName: 'Scale file',
+        unit: ParameterUnits.modernHasStrings,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+    });
+
+    test('Quantizer "Scale" with enum unit does NOT match tuning rules', () {
+      final slot = createTestSlot(
+        guid: 'quan',
+        parameterName: 'Scale',
+        unit: 1, // enum unit
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
       expect(editor, isNull);
     });
 
