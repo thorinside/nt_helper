@@ -519,99 +519,15 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     if (!mounted) return;
     final selectedEntry = await showDialog<DirectoryEntry>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Select ${widget.rule.mode == FileSelectionMode.folderOnly ? 'Folder' : 'File'}',
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: Column(
-            children: [
-              if (_currentDirectory != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    'Location: $_currentDirectory',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _availableFiles.length,
-                  itemBuilder: (context, index) {
-                    final entry = _availableFiles[index];
-                    final paramValue = widget.currentValue;
-                    final selectedIndex = paramValue - widget.parameterInfo.min;
-                    final isSelected = index == selectedIndex;
-                    final displayName = _cleanDisplayName(
-                      entry.name,
-                      isFolder: entry.isDirectory,
-                    );
-
-                    // For recursive mode with subdirectories, show the path structure
-                    Widget titleWidget;
-                    if (widget.rule.recursive && displayName.contains('/')) {
-                      final parts = displayName.split('/');
-                      final fileName = parts.last;
-                      final path = parts.sublist(0, parts.length - 1).join('/');
-                      titleWidget = Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            fileName,
-                            style: isSelected
-                                ? const TextStyle(fontWeight: FontWeight.bold)
-                                : null,
-                          ),
-                          Text(
-                            path,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      );
-                    } else {
-                      titleWidget = Text(
-                        displayName,
-                        style: isSelected
-                            ? const TextStyle(fontWeight: FontWeight.bold)
-                            : null,
-                      );
-                    }
-
-                    return ListTile(
-                      leading: Icon(
-                        entry.isDirectory
-                            ? Icons.folder
-                            : _getFileIcon(entry.name),
-                        color: entry.isDirectory
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.secondary,
-                      ),
-                      title: titleWidget,
-                      subtitle: entry.isDirectory
-                          ? null
-                          : Text(_formatFileSize(entry.size)),
-                      selected: isSelected,
-                      onTap: () => Navigator.of(context).pop(entry),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
+      builder: (context) => _FileSelectionDialog(
+        availableFiles: _availableFiles,
+        currentDirectory: _currentDirectory,
+        currentValue: widget.currentValue,
+        parameterInfo: widget.parameterInfo,
+        rule: widget.rule,
+        cleanDisplayName: _cleanDisplayName,
+        getFileIcon: _getFileIcon,
+        formatFileSize: _formatFileSize,
       ),
     );
 
@@ -1283,5 +1199,182 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     }
 
     return content;
+  }
+}
+
+class _FileSelectionDialog extends StatefulWidget {
+  final List<DirectoryEntry> availableFiles;
+  final String? currentDirectory;
+  final int currentValue;
+  final ParameterInfo parameterInfo;
+  final ParameterEditorRule rule;
+  final String Function(String, {required bool isFolder}) cleanDisplayName;
+  final IconData Function(String) getFileIcon;
+  final String Function(int) formatFileSize;
+
+  const _FileSelectionDialog({
+    required this.availableFiles,
+    required this.currentDirectory,
+    required this.currentValue,
+    required this.parameterInfo,
+    required this.rule,
+    required this.cleanDisplayName,
+    required this.getFileIcon,
+    required this.formatFileSize,
+  });
+
+  @override
+  State<_FileSelectionDialog> createState() => _FileSelectionDialogState();
+}
+
+class _FileSelectionDialogState extends State<_FileSelectionDialog> {
+  String _searchQuery = '';
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelected();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelected() {
+    if (_searchQuery.isNotEmpty) return;
+    final selectedIndex =
+        widget.currentValue - widget.parameterInfo.min;
+    if (selectedIndex >= 0 && selectedIndex < widget.availableFiles.length) {
+      const itemHeight = 36.0;
+      final offset = selectedIndex * itemHeight;
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      _scrollController.jumpTo(offset.clamp(0.0, maxScroll));
+    }
+  }
+
+  List<(int, DirectoryEntry)> get _filteredFiles {
+    final indexed = widget.availableFiles.asMap().entries.map(
+      (e) => (e.key, e.value),
+    );
+    if (_searchQuery.isEmpty) return indexed.toList();
+    final query = _searchQuery.toLowerCase();
+    return indexed.where((entry) {
+      final name = widget.cleanDisplayName(
+        entry.$2.name,
+        isFolder: entry.$2.isDirectory,
+      );
+      return name.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFolder = widget.rule.mode == FileSelectionMode.folderOnly;
+    final filtered = _filteredFiles;
+    final selectedIndex = widget.currentValue - widget.parameterInfo.min;
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          Text('Select ${isFolder ? 'Folder' : 'File'}'),
+          if (widget.currentDirectory != null) ...[
+            const Spacer(),
+            Text(
+              widget.currentDirectory!,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+      content: SizedBox(
+        width: 360,
+        height: 400,
+        child: Column(
+          children: [
+            TextField(
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Search...',
+                prefixIcon: Icon(Icons.search, size: 20),
+                isDense: true,
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: filtered.length,
+                itemExtent: 36,
+                itemBuilder: (context, index) {
+                  final (originalIndex, entry) = filtered[index];
+                  final isSelected = originalIndex == selectedIndex;
+                  final displayName = widget.cleanDisplayName(
+                    entry.name,
+                    isFolder: entry.isDirectory,
+                  );
+
+                  return InkWell(
+                    onTap: () => Navigator.of(context).pop(entry),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      color: isSelected
+                          ? Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withValues(alpha: 0.5)
+                          : null,
+                      child: Row(
+                        children: [
+                          Icon(
+                            entry.isDirectory
+                                ? Icons.folder
+                                : widget.getFileIcon(entry.name),
+                            size: 18,
+                            color: entry.isDirectory
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.secondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              displayName,
+                              overflow: TextOverflow.ellipsis,
+                              style: isSelected
+                                  ? const TextStyle(
+                                      fontWeight: FontWeight.bold)
+                                  : null,
+                            ),
+                          ),
+                          if (!entry.isDirectory)
+                            Text(
+                              widget.formatFileSize(entry.size),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
   }
 }

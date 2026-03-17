@@ -187,7 +187,7 @@ void main() {
       expect(editor, isNotNull);
       expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.scl'));
     });
 
@@ -209,7 +209,7 @@ void main() {
       expect(editor, isNotNull);
       expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
     });
 
@@ -253,7 +253,7 @@ void main() {
       expect(editor, isNotNull);
       expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.scl'));
     });
 
@@ -275,7 +275,7 @@ void main() {
       expect(editor, isNotNull);
       expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.scl'));
     });
 
@@ -464,7 +464,7 @@ void main() {
       expect(editor, isNotNull);
       expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.scl'));
     });
 
@@ -486,7 +486,7 @@ void main() {
       expect(editor, isNotNull);
       expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
     });
 
@@ -530,7 +530,7 @@ void main() {
       expect(editor, isNotNull);
       expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.scl'));
     });
 
@@ -552,7 +552,29 @@ void main() {
       expect(editor, isNotNull);
       expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scala'));
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
+      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+    });
+
+    test('"Scale File" (capital F) matches community plugin rule', () {
+      final slot = createTestSlot(
+        guid: 'ThMs',
+        parameterName: 'Scale File',
+        unit: ParameterUnits.modernHasStrings,
+      );
+
+      final editor = ParameterEditorRegistry.findEditorFor(
+        slot: slot,
+        parameterInfo: slot.parameters[0],
+        parameterNumber: 0,
+        currentValue: 0,
+        onValueChanged: (_) {},
+      );
+
+      expect(editor, isNotNull);
+      expect(editor, isA<FileParameterEditor>());
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.scl'));
     });
 

@@ -923,6 +923,7 @@ class MCPAlgorithmTools {
     final paramJson = <String, dynamic>{
       'parameter_number': parameterNumber,
       'parameter_name': parameter.name,
+      'unit': parameter.unit,
       'is_disabled': value.isDisabled,
     };
 
