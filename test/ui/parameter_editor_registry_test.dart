@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
@@ -54,377 +55,126 @@ void main() {
     );
   }
 
-  group('ParameterEditorRegistry - Legacy firmware (≤1.12)', () {
-    setUp(() {
-      // Set to legacy firmware scheme
-      ParameterEditorRegistry.setFirmwareVersion(FirmwareVersion('1.12.0'));
+  Widget? findEditor(Slot slot) {
+    return ParameterEditorRegistry.findEditorFor(
+      slot: slot,
+      parameterInfo: slot.parameters[0],
+      parameterNumber: 0,
+      currentValue: 0,
+      onValueChanged: (_) {},
+    );
+  }
+
+  group('ParameterEditorRegistry - Unified rules', () {
+    test('Lua Script Program matches with both legacy and modern units', () {
+      for (final unit in [
+        ParameterUnits.legacyFilePath,
+        ParameterUnits.modernConfirm,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'lua ',
+          parameterName: 'Program',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        expect(editor, isA<FileParameterEditor>());
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, equals(FileSelectionMode.directFile));
+        expect(
+            fileEditor.rule.description.toLowerCase(), contains('lua script'));
+      }
     });
 
-    test('Lua Script Program parameter (unit 13) matches directFile rule', () {
-      final slot = createTestSlot(
-        guid: 'lua ', // Note: trailing space
-        parameterName: 'Program',
-        unit: ParameterUnits.legacyFilePath,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.directFile));
-      expect(
-          fileEditor.rule.description.toLowerCase(), contains('lua script'));
+    test('Three Pot Program matches with both legacy and modern units', () {
+      for (final unit in [
+        ParameterUnits.legacyFilePath,
+        ParameterUnits.modernConfirm,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'spin',
+          parameterName: 'Program',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, equals(FileSelectionMode.directFile));
+        expect(
+            fileEditor.rule.description.toLowerCase(), contains('three pot'));
+      }
     });
 
-    test('Three Pot Program parameter (unit 13) matches directFile rule', () {
-      final slot = createTestSlot(
-        guid: 'spin',
-        parameterName: 'Program',
-        unit: ParameterUnits.legacyFilePath,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.directFile));
-      expect(fileEditor.rule.description.toLowerCase(), contains('three pot'));
+    test('Sample Player Folder matches with both legacy and modern units', () {
+      for (final unit in [
+        ParameterUnits.legacyFileFolder,
+        ParameterUnits.modernHasStrings,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'splr',
+          parameterName: 'Folder',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, equals(FileSelectionMode.folderOnly));
+      }
     });
 
-    test('Sample Player Folder parameter (unit 14) matches folderOnly rule',
-        () {
-      final slot = createTestSlot(
-        guid: 'splr',
-        parameterName: 'Folder',
-        unit: ParameterUnits.legacyFileFolder,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.folderOnly));
+    test('Sample Player Sample matches with both legacy and modern units', () {
+      for (final unit in [
+        ParameterUnits.legacyFileFolder,
+        ParameterUnits.modernHasStrings,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'splr',
+          parameterName: 'Sample',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, equals(FileSelectionMode.fileOnly));
+      }
     });
 
-    test('Sample Player Sample parameter (unit 14) matches fileOnly rule', () {
-      final slot = createTestSlot(
-        guid: 'splr',
-        parameterName: 'Sample',
-        unit: ParameterUnits.legacyFileFolder,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.fileOnly));
+    test('Text input matches with both legacy and modern units', () {
+      for (final unit in [
+        ParameterUnits.legacyTextInput,
+        ParameterUnits.modernTextInput,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'test',
+          parameterName: 'Mix Name',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, equals(FileSelectionMode.textInput));
+      }
     });
 
-    test('Unit 17 parameter matches textInput rule', () {
-      final slot = createTestSlot(
-        guid: 'test',
-        parameterName: 'Mix Name',
-        unit: ParameterUnits.legacyTextInput,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.textInput));
-    });
-
-    test('.scl parameter matches for non-tunf algorithm', () {
-      final slot = createTestSlot(
-        guid: 'tuns',
-        parameterName: 'Tuning .scl',
-        unit: ParameterUnits.legacyFileFolder,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scl'));
-      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
-    });
-
-    test('.kbm parameter matches for non-tunf algorithm', () {
-      final slot = createTestSlot(
-        guid: 'quan',
-        parameterName: 'Mapping .kbm',
-        unit: ParameterUnits.legacyFileFolder,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scl'));
-      expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
-    });
-
-    test('.syx parameter matches for non-tunf algorithm', () {
-      final slot = createTestSlot(
-        guid: 'ssjw',
-        parameterName: 'Tuning .syx',
-        unit: ParameterUnits.legacyFileFolder,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/mts'));
-      expect(fileEditor.rule.allowedExtensions, contains('.syx'));
-    });
-
-    test('"Scl file" matches community plugin rule', () {
-      final slot = createTestSlot(
-        guid: 'XYZW',
-        parameterName: 'Scl file',
-        unit: ParameterUnits.legacyFileFolder,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scl'));
-      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
-    });
-
-    test('"Scale file" matches community plugin rule', () {
-      final slot = createTestSlot(
-        guid: 'XYZW',
-        parameterName: 'Scale file',
-        unit: ParameterUnits.legacyFileFolder,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scl'));
-      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
-    });
-
-    test('Quantizer "Scale" with enum unit does NOT match tuning rules', () {
-      final slot = createTestSlot(
-        guid: 'quan',
-        parameterName: 'Scale',
-        unit: 1, // enum unit
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNull);
-    });
-
-    test('isStringTypeUnit returns true for legacy string units', () {
-      expect(
-          ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.legacyFilePath),
-          isTrue);
-      expect(
-          ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.legacyFileFolder),
-          isTrue);
-      expect(
-          ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.legacyTextInput),
-          isTrue);
-      expect(ParameterEditorRegistry.isStringTypeUnit(0), isFalse);
-      expect(ParameterEditorRegistry.isStringTypeUnit(1), isFalse);
-    });
-  });
-
-  group('ParameterEditorRegistry - Modern firmware (≥1.13)', () {
-    setUp(() {
-      // Set to modern firmware scheme
-      ParameterEditorRegistry.setFirmwareVersion(FirmwareVersion('1.13.0'));
-    });
-
-    test('Lua Script Program parameter (unit 17) matches directFile rule', () {
-      final slot = createTestSlot(
-        guid: 'lua ', // Note: trailing space
-        parameterName: 'Program',
-        unit: ParameterUnits.modernConfirm,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.directFile));
-      expect(
-          fileEditor.rule.description.toLowerCase(), contains('lua script'));
-    });
-
-    test('Three Pot Program parameter (unit 17) matches directFile rule', () {
-      final slot = createTestSlot(
-        guid: 'spin',
-        parameterName: 'Program',
-        unit: ParameterUnits.modernConfirm,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.directFile));
-      expect(fileEditor.rule.description.toLowerCase(), contains('three pot'));
-    });
-
-    test('Sample Player Folder parameter (unit 16) matches folderOnly rule',
-        () {
-      final slot = createTestSlot(
-        guid: 'splr',
-        parameterName: 'Folder',
-        unit: ParameterUnits.modernHasStrings,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.folderOnly));
-    });
-
-    test('Sample Player Sample parameter (unit 16) matches fileOnly rule', () {
-      final slot = createTestSlot(
-        guid: 'splr',
-        parameterName: 'Sample',
-        unit: ParameterUnits.modernHasStrings,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.fileOnly));
-    });
-
-    test('Unit 18 parameter matches textInput rule', () {
-      final slot = createTestSlot(
-        guid: 'test',
-        parameterName: 'Mix Name',
-        unit: ParameterUnits.modernTextInput,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.mode, equals(FileSelectionMode.textInput));
+    test('Wavetable matches with legacy, modern, and enum units', () {
+      for (final unit in [
+        ParameterUnits.legacyFilePath,
+        ParameterUnits.legacyFileFolder,
+        ParameterUnits.modernHasStrings,
+        ParameterUnits.modernConfirm,
+        ParameterUnits.enum_,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'vcot',
+          parameterName: 'Wavetable',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.mode, equals(FileSelectionMode.folderOnly));
+        expect(fileEditor.rule.baseDirectory, equals('/wavetables'));
+      }
     });
 
     test('Unit 14 (BPM) does NOT match any file editor rule', () {
@@ -433,105 +183,109 @@ void main() {
         parameterName: 'Tempo',
         unit: ParameterUnits.modernBPM,
       );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      // BPM should NOT have a file editor
-      expect(editor, isNull);
+      expect(findEditor(slot), isNull);
     });
 
-    test('.scl parameter matches for non-tunf algorithm', () {
+    test('Regular parameter (unit 0) returns null', () {
       final slot = createTestSlot(
-        guid: 'tuns',
-        parameterName: 'Tuning .scl',
-        unit: ParameterUnits.modernHasStrings,
+        guid: 'test',
+        parameterName: 'Level',
+        unit: 0,
       );
+      expect(findEditor(slot), isNull);
+    });
+  });
 
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scl'));
-      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+  group('ParameterEditorRegistry - Tuning file rules', () {
+    test('.scl parameter matches for any algorithm with file units', () {
+      for (final unit in [
+        ParameterUnits.legacyFileFolder,
+        ParameterUnits.legacyFilePath,
+        ParameterUnits.modernHasStrings,
+        ParameterUnits.modernConfirm,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'tuns',
+          parameterName: 'Tuning .scl',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.baseDirectory, equals('/scl'));
+        expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+      }
     });
 
-    test('.kbm parameter matches for non-tunf algorithm', () {
+    test('.kbm parameter matches for any algorithm with file units', () {
+      for (final unit in [
+        ParameterUnits.legacyFileFolder,
+        ParameterUnits.legacyFilePath,
+        ParameterUnits.modernHasStrings,
+        ParameterUnits.modernConfirm,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'quan',
+          parameterName: 'Mapping .kbm',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.baseDirectory, equals('/scl'));
+        expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
+      }
+    });
+
+    test('.syx parameter matches for any algorithm with file units', () {
+      for (final unit in [
+        ParameterUnits.legacyFileFolder,
+        ParameterUnits.legacyFilePath,
+        ParameterUnits.modernHasStrings,
+        ParameterUnits.modernConfirm,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'ssjw',
+          parameterName: 'Tuning .syx',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.baseDirectory, equals('/mts'));
+        expect(fileEditor.rule.allowedExtensions, contains('.syx'));
+      }
+    });
+
+    test('Quantizer "Scale" with enum unit does NOT match tuning rules', () {
       final slot = createTestSlot(
         guid: 'quan',
-        parameterName: 'Mapping .kbm',
-        unit: ParameterUnits.modernHasStrings,
+        parameterName: 'Scale',
+        unit: 1,
       );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scl'));
-      expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
+      expect(findEditor(slot), isNull);
     });
+  });
 
-    test('.syx parameter matches for non-tunf algorithm', () {
-      final slot = createTestSlot(
-        guid: 'ssjw',
-        parameterName: 'Tuning .syx',
-        unit: ParameterUnits.modernHasStrings,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/mts'));
-      expect(fileEditor.rule.allowedExtensions, contains('.syx'));
-    });
-
-    test('"Scl file" matches community plugin rule', () {
-      final slot = createTestSlot(
-        guid: 'XYZW',
-        parameterName: 'Scl file',
-        unit: ParameterUnits.modernHasStrings,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
-      final fileEditor = editor as FileParameterEditor;
-      expect(fileEditor.rule.baseDirectory, equals('/scl'));
-      expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+  group('ParameterEditorRegistry - Community plugin rules', () {
+    test('"Scl file" matches with all file units', () {
+      for (final unit in [
+        ParameterUnits.legacyFileFolder,
+        ParameterUnits.legacyFilePath,
+        ParameterUnits.modernHasStrings,
+        ParameterUnits.modernConfirm,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'XYZW',
+          parameterName: 'Scl file',
+          unit: unit,
+        );
+        final editor = findEditor(slot);
+        expect(editor, isNotNull, reason: 'unit=$unit');
+        final fileEditor = editor as FileParameterEditor;
+        expect(fileEditor.rule.baseDirectory, equals('/scl'));
+        expect(fileEditor.rule.allowedExtensions, contains('.scl'));
+      }
     });
 
     test('"Scale file" matches community plugin rule', () {
@@ -540,17 +294,8 @@ void main() {
         parameterName: 'Scale file',
         unit: ParameterUnits.modernHasStrings,
       );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
+      final editor = findEditor(slot);
       expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
       expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.scl'));
@@ -560,79 +305,87 @@ void main() {
       final slot = createTestSlot(
         guid: 'ThMs',
         parameterName: 'Scale File',
-        unit: ParameterUnits.modernHasStrings,
+        unit: ParameterUnits.modernConfirm,
       );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
+      final editor = findEditor(slot);
       expect(editor, isNotNull);
-      expect(editor, isA<FileParameterEditor>());
       final fileEditor = editor as FileParameterEditor;
       expect(fileEditor.rule.baseDirectory, equals('/scl'));
       expect(fileEditor.rule.allowedExtensions, contains('.scl'));
     });
 
-    test('Quantizer "Scale" with enum unit does NOT match tuning rules', () {
+    test('"Kbm file" matches community plugin rule', () {
       final slot = createTestSlot(
-        guid: 'quan',
-        parameterName: 'Scale',
-        unit: 1, // enum unit
+        guid: 'XYZW',
+        parameterName: 'Kbm file',
+        unit: ParameterUnits.modernHasStrings,
       );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNull);
+      final editor = findEditor(slot);
+      expect(editor, isNotNull);
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
+      expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
     });
 
-    test('isStringTypeUnit returns true for modern string units', () {
+    test('"Keyboard mapping file" matches community plugin rule', () {
+      final slot = createTestSlot(
+        guid: 'XYZW',
+        parameterName: 'Keyboard mapping file',
+        unit: ParameterUnits.modernHasStrings,
+      );
+      final editor = findEditor(slot);
+      expect(editor, isNotNull);
+      final fileEditor = editor as FileParameterEditor;
+      expect(fileEditor.rule.baseDirectory, equals('/scl'));
+      expect(fileEditor.rule.allowedExtensions, contains('.kbm'));
+    });
+  });
+
+  group('ParameterEditorRegistry - isStringTypeUnit', () {
+    setUp(() {
+      ParameterEditorRegistry.setFirmwareVersion(FirmwareVersion('1.12.0'));
+    });
+
+    test('returns true for legacy string units', () {
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.modernHasStrings),
+          ParameterEditorRegistry.isStringTypeUnit(
+              ParameterUnits.legacyFilePath),
           isTrue);
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.modernConfirm),
+          ParameterEditorRegistry.isStringTypeUnit(
+              ParameterUnits.legacyFileFolder),
           isTrue);
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.modernTextInput),
+          ParameterEditorRegistry.isStringTypeUnit(
+              ParameterUnits.legacyTextInput),
           isTrue);
-      // BPM is NOT a string type
-      expect(ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.modernBPM),
+      expect(ParameterEditorRegistry.isStringTypeUnit(0), isFalse);
+      expect(ParameterEditorRegistry.isStringTypeUnit(1), isFalse);
+    });
+
+    test('returns true for modern string units', () {
+      ParameterEditorRegistry.setFirmwareVersion(FirmwareVersion('1.13.0'));
+      expect(
+          ParameterEditorRegistry.isStringTypeUnit(
+              ParameterUnits.modernHasStrings),
+          isTrue);
+      expect(
+          ParameterEditorRegistry.isStringTypeUnit(
+              ParameterUnits.modernConfirm),
+          isTrue);
+      expect(
+          ParameterEditorRegistry.isStringTypeUnit(
+              ParameterUnits.modernTextInput),
+          isTrue);
+      expect(
+          ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.modernBPM),
           isFalse);
       expect(ParameterEditorRegistry.isStringTypeUnit(0), isFalse);
       expect(ParameterEditorRegistry.isStringTypeUnit(1), isFalse);
     });
   });
 
-  group('ParameterEditorRegistry - Common tests', () {
-    test('Regular parameter (unit 0) returns null', () {
-      final slot = createTestSlot(
-        guid: 'test',
-        parameterName: 'Level',
-        unit: 0,
-      );
-
-      final editor = ParameterEditorRegistry.findEditorFor(
-        slot: slot,
-        parameterInfo: slot.parameters[0],
-        parameterNumber: 0,
-        currentValue: 0,
-        onValueChanged: (_) {},
-      );
-
-      expect(editor, isNull);
-    });
-
+  group('ParameterEditorRegistry - Firmware scheme detection', () {
     test('schemeFor correctly detects legacy firmware', () {
       expect(ParameterUnits.schemeFor(FirmwareVersion('1.12.0')),
           equals(ParameterUnitScheme.legacy));
@@ -654,7 +407,15 @@ void main() {
     });
 
     test('schemeFor returns modern for null version', () {
-      expect(ParameterUnits.schemeFor(null), equals(ParameterUnitScheme.modern));
+      expect(
+          ParameterUnits.schemeFor(null), equals(ParameterUnitScheme.modern));
+    });
+  });
+
+  group('ParameterEditorRegistry - Rule count', () {
+    test('unified rules list is smaller than combined legacy + modern', () {
+      // Verify we actually reduced duplication
+      expect(ParameterEditorRegistry.rules.length, lessThan(40));
     });
   });
 }
