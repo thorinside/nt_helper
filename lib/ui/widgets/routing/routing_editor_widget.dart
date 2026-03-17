@@ -480,15 +480,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   /// Scroll the canvas to center on a specific position
-  void _scrollToPosition(Offset position) {
-    // Calculate target scroll positions to center the given position
-    final targetHX = (position.dx - widget.canvasSize.width / 2).clamp(
+  void _scrollToPosition(Offset position, double zoomLevel) {
+    // Scale position to screen coordinates (Transform.scale affects scroll extent)
+    final scaledX = position.dx * zoomLevel;
+    final scaledY = position.dy * zoomLevel;
+    final viewportW = widget.canvasSize.width;
+    final viewportH = widget.canvasSize.height;
+
+    final targetHX = (scaledX - viewportW / 2).clamp(
       0.0,
-      _canvasWidth - widget.canvasSize.width,
+      _canvasWidth * zoomLevel - viewportW,
     );
-    final targetVY = (position.dy - widget.canvasSize.height / 2).clamp(
+    final targetVY = (scaledY - viewportH / 2).clamp(
       0.0,
-      _canvasHeight - widget.canvasSize.height,
+      _canvasHeight * zoomLevel - viewportH,
     );
 
     if (_horizontalScrollController.hasClients) {
@@ -943,7 +948,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         // Scroll to cascade target when it changes
         if (state is RoutingEditorStateLoaded &&
             state.cascadeScrollTarget != null) {
-          _scrollToPosition(state.cascadeScrollTarget!);
+          _scrollToPosition(state.cascadeScrollTarget!, state.zoomLevel);
           // Clear the scroll target after scrolling
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
