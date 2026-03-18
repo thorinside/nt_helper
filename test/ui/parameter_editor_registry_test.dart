@@ -177,6 +177,20 @@ void main() {
       }
     });
 
+    test('"Sample rate" does NOT match generic Sample rule', () {
+      for (final unit in [
+        ParameterUnits.legacyFileFolder,
+        ParameterUnits.modernHasStrings,
+      ]) {
+        final slot = createTestSlot(
+          guid: 'revc',
+          parameterName: 'Sample rate',
+          unit: unit,
+        );
+        expect(findEditor(slot), isNull, reason: 'unit=$unit');
+      }
+    });
+
     test('Unit 14 (BPM) does NOT match any file editor rule', () {
       final slot = createTestSlot(
         guid: 'clck',

@@ -225,14 +225,14 @@ class ParameterEditorRegistry {
 
     // Generic folder/sample
     ParameterEditorRule(
-      parameterNamePattern: r'Folder',
+      parameterNamePattern: r'^Folder$',
       units: _folderUnits,
       baseDirectory: '/samples',
       mode: FileSelectionMode.folderOnly,
       description: 'Generic folder selection',
     ),
     ParameterEditorRule(
-      parameterNamePattern: r'Sample',
+      parameterNamePattern: r'^Sample$',
       units: _folderUnits,
       baseDirectory: '/samples',
       mode: FileSelectionMode.fileOnly,
