@@ -891,6 +891,43 @@ class DistingCubit extends _DistingCubitBase
   }
 
 
+  /// Creates a connected [IDistingMidiManager] for firmware operations.
+  ///
+  /// Pauses the MIDI setup listener during connection. The caller is
+  /// responsible for calling [disposeFirmwareMidiManager] when done.
+  Future<IDistingMidiManager> createFirmwareMidiManager(
+    MidiDevice inputDevice,
+    MidiDevice outputDevice,
+    int sysExId,
+  ) async {
+    _midiSetupSubscription?.pause();
+    await _midiCommand.connectToDevice(inputDevice);
+    if (inputDevice.id != outputDevice.id) {
+      await _midiCommand.connectToDevice(outputDevice);
+    }
+    return DistingMidiManager(
+      midiCommand: _midiCommand,
+      inputDevice: inputDevice,
+      outputDevice: outputDevice,
+      sysExId: sysExId,
+    );
+  }
+
+  /// Disposes a midi manager created by [createFirmwareMidiManager] and
+  /// disconnects the devices.
+  void disposeFirmwareMidiManager(
+    IDistingMidiManager manager,
+    MidiDevice inputDevice,
+    MidiDevice outputDevice,
+  ) {
+    manager.dispose();
+    _midiCommand.disconnectDevice(inputDevice);
+    if (inputDevice.id != outputDevice.id) {
+      _midiCommand.disconnectDevice(outputDevice);
+    }
+    _midiSetupSubscription?.resume();
+  }
+
   /// Called after a successful firmware update to refresh device version
   ///
   /// This clears the update indicator and triggers a re-sync to get the new

@@ -4,11 +4,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_cubit.dart';
 import 'package:nt_helper/cubit/firmware_update_state.dart';
 import 'package:nt_helper/models/firmware_release.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/models/flash_progress.dart';
+import 'package:nt_helper/models/flash_stage.dart';
 import 'package:nt_helper/services/firmware_version_service.dart';
 import 'package:nt_helper/services/flash_tool_bridge.dart';
 import 'package:nt_helper/services/flash_tool_manager.dart';
@@ -23,11 +26,17 @@ const String _kLastFirmwareDirectoryKey = 'last_firmware_directory';
 class FirmwareUpdateScreen extends StatelessWidget {
   final DistingCubit distingCubit;
   final String? currentVersionOverride;
+  final MidiDevice? inputDevice;
+  final MidiDevice? outputDevice;
+  final int? sysExId;
 
   const FirmwareUpdateScreen({
     super.key,
     required this.distingCubit,
     this.currentVersionOverride,
+    this.inputDevice,
+    this.outputDevice,
+    this.sysExId,
   });
 
   @override
@@ -68,6 +77,10 @@ class FirmwareUpdateScreen extends StatelessWidget {
         ? FirmwareVersion(currentVersionOverride!)
         : syncState?.firmwareVersion;
 
+    final hasDeviceInfo = inputDevice != null &&
+        outputDevice != null &&
+        sysExId != null;
+
     return BlocProvider.value(
       value: distingCubit,
       child: BlocProvider(
@@ -80,6 +93,20 @@ class FirmwareUpdateScreen extends StatelessWidget {
           isOffline: isOffline,
           firmwareVersion: firmwareVersion,
           midiManager: syncState != null ? distingCubit.disting() : null,
+          createMidiManager: hasDeviceInfo
+              ? () => distingCubit.createFirmwareMidiManager(
+                    inputDevice!,
+                    outputDevice!,
+                    sysExId!,
+                  )
+              : null,
+          disposeMidiManager: hasDeviceInfo
+              ? (manager) => distingCubit.disposeFirmwareMidiManager(
+                    manager,
+                    inputDevice!,
+                    outputDevice!,
+                  )
+              : null,
         )..loadAvailableVersions(),
         child: const _FirmwareUpdateView(),
       ),
@@ -726,10 +753,29 @@ class _FlashingStateView extends StatelessWidget {
 
   const _FlashingStateView({required this.state});
 
+  /// Maps per-stage percent (0-100) into an overall percent (0-100)
+  /// so the progress bar always moves forward.
+  int _overallPercent(FlashProgress progress) {
+    // Stage weight ranges (start%, end%) within overall progress.
+    // Actual tool order: sdpConnect → blCheck → sdpUpload → configure → write → reset → complete
+    const stageRanges = {
+      FlashStage.sdpConnect: (0, 5),
+      FlashStage.blCheck: (5, 10),
+      FlashStage.sdpUpload: (10, 40),
+      FlashStage.configure: (40, 50),
+      FlashStage.write: (50, 95),
+      FlashStage.reset: (95, 100),
+      FlashStage.complete: (100, 100),
+    };
+    final (start, end) = stageRanges[progress.stage] ?? (0, 100);
+    return (start + (end - start) * progress.percent / 100).round();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<FirmwareUpdateCubit>();
     final theme = Theme.of(context);
+    final overall = _overallPercent(state.progress);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -760,9 +806,9 @@ class _FlashingStateView extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Progress bar
-        LinearProgressIndicator(value: state.progress.percent / 100),
+        LinearProgressIndicator(value: overall / 100),
         const SizedBox(height: 8),
-        Text('${state.progress.percent}%'),
+        Text('$overall%'),
 
         const SizedBox(height: 32),
 
@@ -835,7 +881,6 @@ class _SuccessStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<FirmwareUpdateCubit>();
     final distingCubit = context.read<DistingCubit>();
     final theme = Theme.of(context);
 
@@ -855,10 +900,12 @@ class _SuccessStateView extends StatelessWidget {
         const SizedBox(height: 32),
         FilledButton(
           onPressed: () {
-            cubit.cleanupAndReset();
-            // Notify DistingCubit to refresh firmware version from device
-            distingCubit.onFirmwareUpdateComplete();
+            // Pop first — BlocProvider.close() handles firmware cubit cleanup
+            // (temp files, MIDI manager disposal) automatically
             Navigator.of(context).pop();
+            // Then notify DistingCubit to disconnect and return to device selection
+            // (distingCubit lives in a parent provider, still valid after pop)
+            distingCubit.onFirmwareUpdateComplete();
           },
           child: const Text('Done'),
         ),
