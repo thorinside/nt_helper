@@ -1404,6 +1404,93 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             },
           ),
 
+          const SizedBox(width: 8),
+
+          // Quick-action buttons for frequently used features
+          BlocBuilder<DistingCubit, DistingState>(
+            buildWhen: (previous, current) {
+              final prevOffline = previous is DistingStateSynchronized &&
+                  previous.offline;
+              final currOffline = current is DistingStateSynchronized &&
+                  current.offline;
+              return prevOffline != currOffline;
+            },
+            builder: (context, state) {
+              final isOffline = switch (state) {
+                DistingStateSynchronized(offline: final o) => o,
+                _ => false,
+              };
+
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'File Browser',
+                    icon: const Icon(
+                      Icons.folder_open,
+                      semanticLabel: 'File Browser',
+                    ),
+                    onPressed: widget.loading || isOffline
+                        ? null
+                        : () {
+                            final cubit = context.read<DistingCubit>();
+                            _handleBrowsePresets(cubit);
+                          },
+                  ),
+                  IconButton(
+                    tooltip: 'Perform',
+                    icon: const Icon(
+                      Icons.library_music,
+                      semanticLabel: 'Perform',
+                    ),
+                    onPressed: widget.loading
+                        ? null
+                        : () {
+                            final cubit = context.read<DistingCubit>();
+                            final midiListener =
+                                context.read<MidiListenerCubit>();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MultiBlocProvider(
+                                  providers: [
+                                    BlocProvider.value(value: cubit),
+                                    BlocProvider.value(value: midiListener),
+                                  ],
+                                  child:
+                                      PerformanceScreen(units: widget.units),
+                                ),
+                              ),
+                            );
+                          },
+                  ),
+                  IconButton(
+                    tooltip: 'Plugin Manager',
+                    icon: const Icon(
+                      Icons.extension_rounded,
+                      semanticLabel: 'Plugin Manager',
+                    ),
+                    onPressed: widget.loading
+                        ? null
+                        : () {
+                            final distingCubit =
+                                context.read<DistingCubit>();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PluginGalleryScreen(
+                                  distingCubit: distingCubit,
+                                  database: distingCubit.database,
+                                ),
+                              ),
+                            );
+                          },
+                  ),
+                ],
+              );
+            },
+          ),
+
           const Spacer(),
 
           // MCP server status indicator (desktop only)
