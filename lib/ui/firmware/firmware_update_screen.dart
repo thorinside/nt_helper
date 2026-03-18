@@ -881,7 +881,6 @@ class _SuccessStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<FirmwareUpdateCubit>();
     final distingCubit = context.read<DistingCubit>();
     final theme = Theme.of(context);
 
@@ -901,10 +900,12 @@ class _SuccessStateView extends StatelessWidget {
         const SizedBox(height: 32),
         FilledButton(
           onPressed: () {
-            cubit.cleanupAndReset();
-            // Notify DistingCubit to refresh firmware version from device
-            distingCubit.onFirmwareUpdateComplete();
+            // Pop first — BlocProvider.close() handles firmware cubit cleanup
+            // (temp files, MIDI manager disposal) automatically
             Navigator.of(context).pop();
+            // Then notify DistingCubit to disconnect and return to device selection
+            // (distingCubit lives in a parent provider, still valid after pop)
+            distingCubit.onFirmwareUpdateComplete();
           },
           child: const Text('Done'),
         ),
