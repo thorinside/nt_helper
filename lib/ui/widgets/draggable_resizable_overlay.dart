@@ -5,23 +5,27 @@ import 'package:nt_helper/services/settings_service.dart';
 
 class DraggableResizableOverlay extends StatefulWidget {
   final Widget child;
+  final Widget? bottomBar;
   final OverlayEntry overlayEntry;
   final double initialWidth;
   final double initialHeight;
   final double minWidth;
   final double maxWidth;
   final double aspectRatio; // width / height
+  final double bottomBarHeight;
   final Duration controlsHideDelay;
 
   const DraggableResizableOverlay({
     super.key,
     required this.child,
+    this.bottomBar,
     required this.overlayEntry,
     this.initialWidth = 256.0,
     this.initialHeight = 64.0,
     this.minWidth = 128.0, // 0.5x scale (256 * 0.5)
     this.maxWidth = 1024.0, // 4x scale (256 * 4)
     this.aspectRatio = 4.0, // 4:1 aspect ratio for Disting NT display
+    this.bottomBarHeight = 36.0,
     this.controlsHideDelay = const Duration(seconds: 10),
   });
 
@@ -101,7 +105,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
       // Default positioning (bottom-right)
       final screenSize = MediaQuery.of(context).size;
       _x = screenSize.width - _width - 16;
-      _y = screenSize.height - kBottomNavigationBarHeight - _height - 16;
+      _y = screenSize.height - kBottomNavigationBarHeight - _totalHeight - 16;
     }
 
     // Ensure overlay stays within screen bounds
@@ -110,10 +114,13 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     });
   }
 
+  double get _totalHeight =>
+      _height + (widget.bottomBar != null ? widget.bottomBarHeight : 0);
+
   void _constrainToScreen() {
     final screenSize = MediaQuery.of(context).size;
     _x = _x.clamp(0, screenSize.width - _width);
-    _y = _y.clamp(0, screenSize.height - _height);
+    _y = _y.clamp(0, screenSize.height - _totalHeight);
   }
 
   void _saveSettings() {
@@ -179,16 +186,23 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     final isAccessible = MediaQuery.of(context).accessibleNavigation;
     final showControls = _controlsVisible || _isResizing || _isDragging || isAccessible;
 
+    final hasBottomBar = widget.bottomBar != null;
+    final barHeight = hasBottomBar ? widget.bottomBarHeight : 0.0;
+
     return Positioned(
       left: _x,
       top: _y,
       child: SizedBox(
         width: _width,
-        height: _height,
+        height: _totalHeight,
         child: Stack(
           children: [
             // Main content
-            Positioned.fill(
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: barHeight,
               child: GestureDetector(
                 onTap: _showControls,
                 onPanStart: _onPanStart,
@@ -217,6 +231,20 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
                 ),
               ),
             ),
+
+            // Bottom toolbar
+            if (hasBottomBar)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: barHeight,
+                child: AnimatedOpacity(
+                  opacity: showControls ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: widget.bottomBar!,
+                ),
+              ),
 
             // Close button (top-right corner)
             Positioned(

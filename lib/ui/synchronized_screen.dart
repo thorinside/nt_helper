@@ -1314,7 +1314,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               };
 
               if (isOffline) {
-                // Show "Offline Data" button when offline
                 return IconButton(
                   tooltip: "Offline Data",
                   icon: const Icon(
@@ -1332,79 +1331,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     );
                   },
                 );
-              } else {
-                // Show platform-adaptive view mode buttons when online
-                return isMobile
-                    ? Semantics(
-                        label: 'View Options',
-                        hint: 'Opens display mode menu',
-                        button: true,
-                        child: IconButton(
-                          tooltip: "View Options",
-                          icon: const Icon(
-                            Icons.view_list,
-                            semanticLabel: 'View Options',
-                          ),
-                          onPressed: () => _showDisplayModeBottomSheet(context),
-                        ),
-                      )
-                    : Row(
-                        children: [
-                          IconButton(
-                            tooltip: "Parameter View",
-                            onPressed: () {
-                              context.read<DistingCubit>().setDisplayMode(
-                                DisplayMode.parameters,
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.list_alt_rounded,
-                              semanticLabel: 'Parameter View',
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: "Algorithm UI",
-                            onPressed: () {
-                              context.read<DistingCubit>().setDisplayMode(
-                                DisplayMode.algorithmUI,
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.line_axis_rounded,
-                              semanticLabel: 'Algorithm UI',
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: "Overview UI",
-                            onPressed: () {
-                              context.read<DistingCubit>().setDisplayMode(
-                                DisplayMode.overview,
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.line_weight_rounded,
-                              semanticLabel: 'Overview UI',
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: "Overview VU Meters",
-                            onPressed: () {
-                              context.read<DistingCubit>().setDisplayMode(
-                                DisplayMode.overviewVUs,
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.leaderboard_rounded,
-                              semanticLabel: 'Overview VU Meters',
-                            ),
-                          ),
-                        ],
-                      );
               }
+              return const SizedBox.shrink();
             },
           ),
-
-          const SizedBox(width: 8),
 
           // Quick-action buttons for frequently used features
           BlocBuilder<DistingCubit, DistingState>(
@@ -1589,104 +1519,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           ],
           // Spacer for FAB so it doesn't cover the version/CPU info
           const SizedBox(width: 80),
-        ],
-      ),
-    );
-  }
-
-  void _showDisplayModeBottomSheet(BuildContext context) {
-    // Capture the cubit instance before the builder (bottom sheet creates new overlay route)
-    final distingCubit = context.read<DistingCubit>();
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (BuildContext sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildBottomSheetHeader(),
-              _buildDisplayModeOption(
-                distingCubit,
-                sheetContext,
-                icon: Icons.list_alt_rounded,
-                title: 'Parameter View',
-                subtitle: 'Hardware parameter list',
-                mode: DisplayMode.parameters,
-              ),
-              _buildDisplayModeOption(
-                distingCubit,
-                sheetContext,
-                icon: Icons.line_axis_rounded,
-                title: 'Algorithm UI',
-                subtitle: 'Custom algorithm interface',
-                mode: DisplayMode.algorithmUI,
-              ),
-              _buildDisplayModeOption(
-                distingCubit,
-                sheetContext,
-                icon: Icons.line_weight_rounded,
-                title: 'Overview UI',
-                subtitle: 'All slots overview',
-                mode: DisplayMode.overview,
-              ),
-              _buildDisplayModeOption(
-                distingCubit,
-                sheetContext,
-                icon: Icons.leaderboard_rounded,
-                title: 'Overview VU Meters',
-                subtitle: 'VU meter display',
-                mode: DisplayMode.overviewVUs,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDisplayModeOption(
-    DistingCubit distingCubit,
-    BuildContext sheetContext, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required DisplayMode mode,
-  }) {
-    return Semantics(
-      label: '$title. $subtitle',
-      button: true,
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        onTap: () {
-          Navigator.pop(sheetContext);
-          distingCubit.setDisplayMode(mode);
-        },
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      ),
-    );
-  }
-
-  Widget _buildBottomSheetHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Hardware Display Mode',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
         ],
       ),
     );

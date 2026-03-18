@@ -77,37 +77,23 @@ void main() {
       );
     }
 
-    testWidgets('Desktop layout renders 4 display mode buttons when not offline',
+    testWidgets('Display mode buttons are not in bottom bar when online',
         (tester) async {
       await tester.pumpWidget(
         createTestWidget(isMobile: false, isOffline: false),
       );
 
-      // Verify desktop shows 4 icon buttons
-      expect(find.byTooltip('Parameter View'), findsOneWidget);
-      expect(find.byTooltip('Algorithm UI'), findsOneWidget);
-      expect(find.byTooltip('Overview UI'), findsOneWidget);
-      expect(find.byTooltip('Overview VU Meters'), findsOneWidget);
-
-      // Verify mobile "View Options" button is NOT present
-      expect(find.byTooltip('View Options'), findsNothing);
-    });
-
-    testWidgets('Mobile layout renders single "View Options" button when not offline',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(isMobile: true, isOffline: false),
-      );
-
-      // Verify mobile shows single "View Options" button with correct icon
-      expect(find.byTooltip('View Options'), findsOneWidget);
-      expect(find.byIcon(Icons.view_list), findsOneWidget);
-
-      // Verify desktop buttons are NOT present
+      // Display mode buttons moved to video overlay — not in bottom bar
       expect(find.byTooltip('Parameter View'), findsNothing);
       expect(find.byTooltip('Algorithm UI'), findsNothing);
       expect(find.byTooltip('Overview UI'), findsNothing);
       expect(find.byTooltip('Overview VU Meters'), findsNothing);
+      expect(find.byTooltip('View Options'), findsNothing);
+
+      // Quick-action buttons should still be present
+      expect(find.byTooltip('File Browser'), findsOneWidget);
+      expect(find.byTooltip('Perform'), findsOneWidget);
+      expect(find.byTooltip('Plugin Manager'), findsOneWidget);
     });
 
     testWidgets('Offline mode shows "Offline Data" button on desktop',
@@ -148,18 +134,16 @@ void main() {
       expect(find.byTooltip('Overview VU Meters'), findsNothing);
     });
 
-    testWidgets('Platform detection happens on every rebuild (no caching)',
+    testWidgets('Quick-action buttons render on both platforms',
         (tester) async {
-      // Start with desktop
       await tester.pumpWidget(
         createTestWidget(isMobile: false, isOffline: false),
       );
 
-      // Verify desktop buttons are shown
-      expect(find.byTooltip('Parameter View'), findsOneWidget);
-
-      // Platform detection should be called on every build
-      verify(() => mockPlatformService.isMobilePlatform()).called(greaterThan(0));
+      // Quick-action buttons should be present regardless of platform
+      expect(find.byTooltip('File Browser'), findsOneWidget);
+      expect(find.byTooltip('Perform'), findsOneWidget);
+      expect(find.byTooltip('Plugin Manager'), findsOneWidget);
     });
   });
 }

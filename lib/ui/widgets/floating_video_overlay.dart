@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/cubit/video_frame_cubit.dart';
 import 'package:nt_helper/cubit/video_frame_state.dart';
 import 'package:nt_helper/domain/video/video_stream_state.dart';
@@ -85,10 +86,62 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
     }
   }
 
+  Widget _buildDisplayModeBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(6),
+          bottomRight: Radius.circular(6),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _displayModeButton(
+            Icons.list_alt_rounded,
+            'Parameter View',
+            DisplayMode.parameters,
+          ),
+          _displayModeButton(
+            Icons.line_axis_rounded,
+            'Algorithm UI',
+            DisplayMode.algorithmUI,
+          ),
+          _displayModeButton(
+            Icons.line_weight_rounded,
+            'Overview UI',
+            DisplayMode.overview,
+          ),
+          _displayModeButton(
+            Icons.leaderboard_rounded,
+            'Overview VU Meters',
+            DisplayMode.overviewVUs,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _displayModeButton(
+    IconData icon,
+    String tooltip,
+    DisplayMode mode,
+  ) {
+    return IconButton(
+      tooltip: tooltip,
+      icon: Icon(icon, size: 18, color: Colors.white),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      onPressed: () => widget.cubit.setDisplayMode(mode),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DraggableResizableOverlay(
       overlayEntry: widget.overlayEntry,
+      bottomBar: _buildDisplayModeBar(),
       child: FloatingVideoContent(
         cubit: widget.cubit,
         videoFrameCubit: widget.videoFrameCubit,
