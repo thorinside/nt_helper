@@ -279,12 +279,15 @@ class _DistingPageState extends State<DistingPage> {
                   context.read<DistingCubit>().goOffline();
                 },
                 onFirmwarePressed: (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
-                    ? (String? probedVersion) {
+                    ? (String? probedVersion, MidiDevice? inputDevice, MidiDevice? outputDevice, int? sysExId) {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => FirmwareUpdateScreen(
                               distingCubit: context.read<DistingCubit>(),
                               currentVersionOverride: probedVersion,
+                              inputDevice: inputDevice,
+                              outputDevice: outputDevice,
+                              sysExId: sysExId,
                             ),
                           ),
                         );
@@ -357,7 +360,7 @@ class _DeviceSelectionView extends StatefulWidget {
   final Function() onSettingsPressed;
   final Function() onDemoPressed;
   final Function() onOfflinePressed;
-  final void Function(String? probedVersion)? onFirmwarePressed;
+  final void Function(String? probedVersion, MidiDevice? inputDevice, MidiDevice? outputDevice, int? sysExId)? onFirmwarePressed;
   final bool canWorkOffline;
 
   const _DeviceSelectionView({
@@ -721,7 +724,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                               icon: const Icon(Icons.system_update),
                               label: const Text("Firmware"),
                               onPressed: () => widget.onFirmwarePressed
-                                  ?.call(_probedFirmwareVersion),
+                                  ?.call(_probedFirmwareVersion, selectedInputDevice, selectedOutputDevice, selectedSysExId),
                             ),
                           )
                         : const SizedBox.shrink(),

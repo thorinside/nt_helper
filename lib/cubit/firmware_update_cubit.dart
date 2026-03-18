@@ -22,7 +22,10 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
   final bool _isOffline;
   final String _initialCurrentVersion;
   final FirmwareVersion? _firmwareVersion;
-  final IDistingMidiManager? _midiManager;
+  IDistingMidiManager? _midiManager;
+  final Future<IDistingMidiManager> Function()? _createMidiManager;
+  final void Function(IDistingMidiManager)? _disposeMidiManager;
+  bool _ownsMidiManager = false;
 
   StreamSubscription<FlashProgress>? _flashSubscription;
   String? _currentFirmwarePath;
@@ -37,6 +40,8 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
     required bool isOffline,
     FirmwareVersion? firmwareVersion,
     IDistingMidiManager? midiManager,
+    Future<IDistingMidiManager> Function()? createMidiManager,
+    void Function(IDistingMidiManager)? disposeMidiManager,
   }) : _firmwareVersionService = firmwareVersionService,
        _flashToolManager = flashToolManager,
        _flashToolBridge = flashToolBridge,
@@ -45,10 +50,13 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
        _initialCurrentVersion = currentVersion,
        _firmwareVersion = firmwareVersion,
        _midiManager = midiManager,
+       _createMidiManager = createMidiManager,
+       _disposeMidiManager = disposeMidiManager,
        super(FirmwareUpdateState.initial(currentVersion: currentVersion));
 
   bool get _canAutoEnterBootloader =>
-      _firmwareVersion?.hasBootloaderSysEx == true && _midiManager != null;
+      _firmwareVersion?.hasBootloaderSysEx == true &&
+      (_midiManager != null || _createMidiManager != null);
 
   /// Whether firmware update is available (desktop only, not demo/offline)
   bool get isUpdateAvailable {
@@ -384,6 +392,12 @@ class FirmwareUpdateCubit extends Cubit<FirmwareUpdateState> {
         targetVersion: targetVersion,
       ),
     );
+
+    if (_midiManager == null && _createMidiManager != null) {
+      _midiManager = await _createMidiManager();
+      _ownsMidiManager = true;
+    }
+
     await _midiManager!.requestEnterBootloader();
 
     // Wait for the device to switch to bootloader mode, updating progress.
@@ -645,6 +659,11 @@ SUBSYSTEM=="usb", ATTR{idVendor}=="15a2", ATTR{idProduct}=="0073", MODE="0666"
   Future<void> close() async {
     await _flashSubscription?.cancel();
     await _cleanupTempFiles();
+    if (_ownsMidiManager && _midiManager != null) {
+      _disposeMidiManager?.call(_midiManager!);
+      _midiManager = null;
+      _ownsMidiManager = false;
+    }
     return super.close();
   }
 }
