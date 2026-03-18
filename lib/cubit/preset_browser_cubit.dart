@@ -76,40 +76,109 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   }
 
   /// Attempts to restore navigation to a previously saved path.
+  /// Rebuilds three-panel context for desktop and drill path for mobile.
   /// Falls back silently to root if the path no longer exists.
   Future<void> _restoreSavedPath(String targetPath) async {
     try {
-      final listing = await midiManager.requestDirectoryListing(targetPath);
-      if (listing == null) return;
-
       final sortByDate = state.maybeMap(
         loaded: (s) => s.sortByDate,
         orElse: () => false,
       );
 
-      final entries = _sortEntries(
-        listing.entries,
+      // Load the target directory to verify it exists
+      final targetListing =
+          await midiManager.requestDirectoryListing(targetPath);
+      if (targetListing == null) return;
+
+      final targetEntries = _sortEntries(
+        targetListing.entries,
         sortByDate,
         currentPath: targetPath,
         addParentEntry: targetPath != '/',
       );
-      _directoryCache[targetPath] = entries;
+      _directoryCache[targetPath] = targetEntries;
+
+      // Parse path segments to rebuild panel hierarchy
+      final segments =
+          targetPath.split('/').where((s) => s.isNotEmpty).toList();
+
+      // Determine panel layout based on depth
+      String currentPath;
+      List<DirectoryEntry> leftItems;
+      List<DirectoryEntry> centerItems;
+      DirectoryEntry? selectedLeft;
+      DirectoryEntry? selectedCenter;
+
+      if (segments.length >= 2) {
+        // Deep path: grandparent = currentPath, parent = left, target = center
+        currentPath =
+            '/${segments.take(segments.length - 2).join('/')}';
+        final parentName = segments[segments.length - 2];
+        final targetName = segments.last;
+
+        final parentPath =
+            '/${segments.take(segments.length - 1).join('/')}';
+
+        // Load currentPath (grandparent) for left panel
+        final leftListing =
+            await midiManager.requestDirectoryListing(currentPath);
+        if (leftListing == null) return;
+        leftItems = _sortEntries(
+          leftListing.entries,
+          sortByDate,
+          currentPath: currentPath,
+          addParentEntry: currentPath != '/',
+        );
+        _directoryCache[currentPath] = leftItems;
+
+        // Load parent directory for center panel
+        final centerListing =
+            await midiManager.requestDirectoryListing(parentPath);
+        centerItems = centerListing != null
+            ? _sortEntries(
+                centerListing.entries,
+                sortByDate,
+                currentPath: parentPath,
+              )
+            : [];
+        _directoryCache[parentPath] = centerItems;
+
+        // Find selected items by name
+        selectedLeft = leftItems
+            .where((e) => _cleanName(e.name) == parentName)
+            .firstOrNull;
+        selectedCenter = centerItems
+            .where((e) => _cleanName(e.name) == targetName)
+            .firstOrNull;
+      } else if (segments.length == 1) {
+        // One level deep: root = currentPath, target = left selection
+        currentPath = '/';
+        leftItems = _directoryCache['/'] ?? [];
+        centerItems = targetEntries;
+        selectedLeft = leftItems
+            .where((e) => _cleanName(e.name) == segments.first)
+            .firstOrNull;
+        selectedCenter = null;
+      } else {
+        // Root — already there
+        return;
+      }
 
       emit(
         PresetBrowserState.loaded(
-          currentPath: targetPath,
-          leftPanelItems: entries,
-          centerPanelItems: const [],
-          rightPanelItems: const [],
-          selectedLeftItem: null,
-          selectedCenterItem: null,
+          currentPath: currentPath,
+          leftPanelItems: leftItems,
+          centerPanelItems: centerItems,
+          rightPanelItems: selectedCenter != null ? targetEntries : const [],
+          selectedLeftItem: selectedLeft,
+          selectedCenterItem: selectedCenter,
           selectedRightItem: null,
           navigationHistory: [],
           sortByDate: sortByDate,
           directoryCache: Map.from(_directoryCache),
           drillPath: targetPath,
           breadcrumbs: _getBreadcrumbsFromPath(targetPath),
-          currentDrillItems: entries,
+          currentDrillItems: targetEntries,
           selectedDrillItem: null,
         ),
       );
@@ -168,6 +237,10 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             entry,
             entries,
           );
+
+          // Save deepest navigated directory path for restore
+          _saveLastPath(_getDeepestPath(newState));
+
           emit(newState);
         } catch (e) {
           emit(
@@ -1088,6 +1161,29 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   List<String> _getBreadcrumbsFromPath(String path) {
     if (path == '/' || path.isEmpty) return [];
     return path.split('/').where((s) => s.isNotEmpty).toList();
+  }
+
+  /// Returns the deepest directory path the user is currently viewing,
+  /// walking currentPath + selected panel items.
+  String _getDeepestPath(PresetBrowserState state) {
+    return state.maybeMap(
+      loaded: (s) {
+        var path = s.currentPath;
+
+        final left = s.selectedLeftItem;
+        if (left != null && left.isDirectory && left.name != '..') {
+          path = _joinPath(path, _cleanName(left.name));
+
+          final center = s.selectedCenterItem;
+          if (center != null && center.isDirectory && center.name != '..') {
+            path = _joinPath(path, _cleanName(center.name));
+          }
+        }
+
+        return path;
+      },
+      orElse: () => '/',
+    );
   }
 
   void _saveLastPath(String path) {
