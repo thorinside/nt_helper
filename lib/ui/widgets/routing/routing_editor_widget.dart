@@ -453,12 +453,22 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     final contentCenterX = ((minX + maxX) / 2).clamp(0.0, _canvasWidth);
     final contentCenterY = ((minY + maxY) / 2).clamp(0.0, _canvasHeight);
 
-    // Calculate target scroll positions to center the content
-    final targetHX = (contentCenterX - widget.canvasSize.width / 2).clamp(
+    // Transform.scale uses Alignment.center, so a canvas point maps to
+    // visual position: (point - canvasCenter) * zoom + canvasCenter
+    final routingState = context.read<RoutingEditorCubit>().state;
+    final zoomLevel = routingState is RoutingEditorStateLoaded
+        ? routingState.zoomLevel
+        : 1.0;
+    final halfW = _canvasWidth / 2;
+    final halfH = _canvasHeight / 2;
+    final visualCenterX = (contentCenterX - halfW) * zoomLevel + halfW;
+    final visualCenterY = (contentCenterY - halfH) * zoomLevel + halfH;
+
+    final targetHX = (visualCenterX - widget.canvasSize.width / 2).clamp(
       0.0,
       _canvasWidth - widget.canvasSize.width,
     );
-    final targetVY = (contentCenterY - widget.canvasSize.height / 2).clamp(
+    final targetVY = (visualCenterY - widget.canvasSize.height / 2).clamp(
       0.0,
       _canvasHeight - widget.canvasSize.height,
     );
@@ -481,19 +491,23 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
   /// Scroll the canvas to center on a specific position
   void _scrollToPosition(Offset position, double zoomLevel) {
-    // Scale position to screen coordinates (Transform.scale affects scroll extent)
-    final scaledX = position.dx * zoomLevel;
-    final scaledY = position.dy * zoomLevel;
+    // Transform.scale uses Alignment.center, so a canvas point maps to
+    // visual position: (point - canvasCenter) * zoom + canvasCenter
+    final halfW = _canvasWidth / 2;
+    final halfH = _canvasHeight / 2;
+    final visualX = (position.dx - halfW) * zoomLevel + halfW;
+    final visualY = (position.dy - halfH) * zoomLevel + halfH;
     final viewportW = widget.canvasSize.width;
     final viewportH = widget.canvasSize.height;
 
-    final targetHX = (scaledX - viewportW / 2).clamp(
+    // Layout is unaffected by Transform, so max scroll = canvas - viewport
+    final targetHX = (visualX - viewportW / 2).clamp(
       0.0,
-      _canvasWidth * zoomLevel - viewportW,
+      _canvasWidth - viewportW,
     );
-    final targetVY = (scaledY - viewportH / 2).clamp(
+    final targetVY = (visualY - viewportH / 2).clamp(
       0.0,
-      _canvasHeight * zoomLevel - viewportH,
+      _canvasHeight - viewportH,
     );
 
     if (_horizontalScrollController.hasClients) {
