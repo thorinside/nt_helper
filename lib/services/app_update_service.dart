@@ -269,10 +269,7 @@ Start-Process "$exePath"
       mode: ProcessStartMode.detached,
     );
 
-    return const InstallResult(
-      outcome: InstallOutcome.needsRestart,
-      message: 'Update script launched. The app will restart automatically.',
-    );
+    exit(0);
   }
 
   Future<void> _removeQuarantineAttribute(String appPath) async {
@@ -344,6 +341,68 @@ Start-Process "$exePath"
       await updateDir.create(recursive: true);
     }
     return updateDir;
+  }
+
+  /// Launches a platform-specific script that waits for this process to exit,
+  /// then relaunches the app. Calls `exit(0)` after launching the script.
+  static Future<void> relaunchApp() async {
+    final currentPid = pid;
+    final tempDir = await getApplicationSupportDirectory();
+    final updateDir = Directory(path.join(tempDir.path, 'app-update'));
+    if (!await updateDir.exists()) {
+      await updateDir.create(recursive: true);
+    }
+
+    if (Platform.isMacOS) {
+      final exePath = Platform.resolvedExecutable;
+      // Go up 3 levels: MacOS -> Contents -> App.app
+      final appBundlePath = path.dirname(
+        path.dirname(path.dirname(exePath)),
+      );
+      final scriptPath = path.join(updateDir.path, 'relaunch.sh');
+      await File(scriptPath).writeAsString('''
+#!/bin/bash
+while kill -0 $currentPid 2>/dev/null; do sleep 0.2; done
+sleep 0.5
+open "$appBundlePath"
+''');
+      await Process.run('chmod', ['+x', scriptPath]);
+      await Process.start(
+        '/bin/bash',
+        [scriptPath],
+        mode: ProcessStartMode.detached,
+      );
+    } else if (Platform.isLinux) {
+      final exePath = Platform.resolvedExecutable;
+      final scriptPath = path.join(updateDir.path, 'relaunch.sh');
+      await File(scriptPath).writeAsString('''
+#!/bin/bash
+while kill -0 $currentPid 2>/dev/null; do sleep 0.2; done
+sleep 0.5
+nohup "$exePath" &>/dev/null &
+''');
+      await Process.run('chmod', ['+x', scriptPath]);
+      await Process.start(
+        '/bin/bash',
+        [scriptPath],
+        mode: ProcessStartMode.detached,
+      );
+    } else if (Platform.isWindows) {
+      final exePath = Platform.resolvedExecutable;
+      final scriptPath = path.join(updateDir.path, 'relaunch.ps1');
+      await File(scriptPath).writeAsString('''
+Start-Sleep -Seconds 2
+try { Wait-Process -Id $currentPid -Timeout 10 -ErrorAction SilentlyContinue } catch {}
+Start-Process "$exePath"
+''');
+      await Process.start(
+        'powershell',
+        ['-ExecutionPolicy', 'Bypass', '-File', scriptPath],
+        mode: ProcessStartMode.detached,
+      );
+    }
+
+    exit(0);
   }
 
   String _getPlatformKeyword() {

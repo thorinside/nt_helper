@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:nt_helper/models/app_release.dart';
@@ -76,13 +75,8 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
     }
   }
 
-  void _restartApp() {
-    Process.start(
-      Platform.resolvedExecutable,
-      [],
-      mode: ProcessStartMode.detached,
-    );
-    exit(0);
+  Future<void> _restartApp() async {
+    await AppUpdateService.relaunchApp();
   }
 
   @override
