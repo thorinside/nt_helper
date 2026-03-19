@@ -841,4 +841,226 @@ void main() {
       expect(decoded.isMidiRelative, equals(true));
     });
   });
+
+  group('Forward Compatibility', () {
+    test('unknown version > 5 parses as v5', () {
+      // Create v5-sized data (26 bytes) + 2 extra bytes for "v6"
+      final data = Uint8List(28);
+      int offset = 0;
+
+      // CV Mapping (7 bytes)
+      data[offset++] = 1; // source
+      data[offset++] = 2; // cvInput
+      data[offset++] = 1; // flags (unipolar)
+      data[offset++] = 5; // volts
+      final deltaBytes = encode16(100);
+      data[offset++] = deltaBytes[0];
+      data[offset++] = deltaBytes[1];
+      data[offset++] = deltaBytes[2];
+
+      // MIDI Mapping (9 bytes)
+      data[offset++] = 42; // midiCC
+      data[offset++] = 0x09; // flags: enabled=1, channel=1
+      data[offset++] = 0; // midiFlags2
+      final minBytes = encode16(0);
+      data[offset++] = minBytes[0];
+      data[offset++] = minBytes[1];
+      data[offset++] = minBytes[2];
+      final maxBytes = encode16(127);
+      data[offset++] = maxBytes[0];
+      data[offset++] = maxBytes[1];
+      data[offset++] = maxBytes[2];
+
+      // I2C Mapping (9 bytes)
+      data[offset++] = 32;
+      data[offset++] = 0;
+      data[offset++] = 0;
+      final i2cMinBytes = encode16(0);
+      data[offset++] = i2cMinBytes[0];
+      data[offset++] = i2cMinBytes[1];
+      data[offset++] = i2cMinBytes[2];
+      final i2cMaxBytes = encode16(16383);
+      data[offset++] = i2cMaxBytes[0];
+      data[offset++] = i2cMaxBytes[1];
+      data[offset++] = i2cMaxBytes[2];
+
+      // Performance Page (1 byte)
+      data[offset++] = 3;
+
+      // Extra trailing bytes from hypothetical v6
+      data[offset++] = 0x55;
+      data[offset++] = 0x66;
+
+      final mapping = PackedMappingData.fromBytes(6, data);
+
+      // Should parse successfully, not return filler
+      expect(mapping.midiCC, equals(42));
+      expect(mapping.isMidiEnabled, isTrue);
+      expect(mapping.midiChannel, equals(1));
+      expect(mapping.perfPageIndex, equals(3));
+      expect(mapping.source, equals(1));
+      expect(mapping.cvInput, equals(2));
+      // Preserves original firmware version
+      expect(mapping.version, equals(6));
+    });
+
+    test('version 0 returns filler', () {
+      final data = Uint8List(26);
+      final mapping = PackedMappingData.fromBytes(0, data);
+      expect(mapping.midiCC, equals(-1));
+    });
+
+    test('negative version returns filler', () {
+      final data = Uint8List(26);
+      final mapping = PackedMappingData.fromBytes(-1, data);
+      expect(mapping.midiCC, equals(-1));
+    });
+
+    test('v5 data with extra trailing bytes parses correctly', () {
+      // 26 bytes (v5) + 3 extra bytes
+      final data = Uint8List(29);
+      int offset = 0;
+
+      // CV Mapping (7 bytes)
+      data[offset++] = 0; // source
+      data[offset++] = 3; // cvInput
+      data[offset++] = 0; // flags
+      data[offset++] = 5; // volts
+      final deltaBytes = encode16(50);
+      data[offset++] = deltaBytes[0];
+      data[offset++] = deltaBytes[1];
+      data[offset++] = deltaBytes[2];
+
+      // MIDI Mapping (9 bytes)
+      data[offset++] = 64; // midiCC
+      data[offset++] = 0x09; // flags: enabled=1, channel=1
+      data[offset++] = 0; // midiFlags2
+      final minBytes = encode16(10);
+      data[offset++] = minBytes[0];
+      data[offset++] = minBytes[1];
+      data[offset++] = minBytes[2];
+      final maxBytes = encode16(100);
+      data[offset++] = maxBytes[0];
+      data[offset++] = maxBytes[1];
+      data[offset++] = maxBytes[2];
+
+      // I2C Mapping (9 bytes)
+      data[offset++] = 0;
+      data[offset++] = 0;
+      data[offset++] = 0;
+      final i2cMinBytes = encode16(0);
+      data[offset++] = i2cMinBytes[0];
+      data[offset++] = i2cMinBytes[1];
+      data[offset++] = i2cMinBytes[2];
+      final i2cMaxBytes = encode16(0);
+      data[offset++] = i2cMaxBytes[0];
+      data[offset++] = i2cMaxBytes[1];
+      data[offset++] = i2cMaxBytes[2];
+
+      // Performance Page (1 byte)
+      data[offset++] = 0;
+
+      // Extra trailing bytes
+      data[offset++] = 0xAA;
+      data[offset++] = 0xBB;
+      data[offset++] = 0xCC;
+
+      final mapping = PackedMappingData.fromBytes(5, data);
+
+      expect(mapping.midiCC, equals(64));
+      expect(mapping.isMidiEnabled, isTrue);
+      expect(mapping.cvInput, equals(3));
+      expect(mapping.midiMin, equals(10));
+      expect(mapping.midiMax, equals(100));
+      expect(mapping.version, equals(5));
+    });
+
+    test('v6 round-trip preserves original version and data', () {
+      // Create v5-sized data (26 bytes) + 2 extra bytes for "v6"
+      final v6Data = Uint8List(28);
+      int offset = 0;
+
+      // CV Mapping (7 bytes)
+      v6Data[offset++] = 1; // source
+      v6Data[offset++] = 2; // cvInput
+      v6Data[offset++] = 1; // flags (unipolar)
+      v6Data[offset++] = 5; // volts
+      final deltaBytes = encode16(100);
+      v6Data[offset++] = deltaBytes[0];
+      v6Data[offset++] = deltaBytes[1];
+      v6Data[offset++] = deltaBytes[2];
+
+      // MIDI Mapping (9 bytes)
+      v6Data[offset++] = 42; // midiCC
+      v6Data[offset++] = 0x09; // flags: enabled=1, channel=1
+      v6Data[offset++] = 0x0C; // midiFlags2: type=3 (cc14BitLow)
+      final minBytes = encode16(10);
+      v6Data[offset++] = minBytes[0];
+      v6Data[offset++] = minBytes[1];
+      v6Data[offset++] = minBytes[2];
+      final maxBytes = encode16(200);
+      v6Data[offset++] = maxBytes[0];
+      v6Data[offset++] = maxBytes[1];
+      v6Data[offset++] = maxBytes[2];
+
+      // I2C Mapping (9 bytes)
+      v6Data[offset++] = 32;
+      v6Data[offset++] = 0;
+      v6Data[offset++] = 3; // enabled + symmetric
+      final i2cMinBytes = encode16(50);
+      v6Data[offset++] = i2cMinBytes[0];
+      v6Data[offset++] = i2cMinBytes[1];
+      v6Data[offset++] = i2cMinBytes[2];
+      final i2cMaxBytes = encode16(500);
+      v6Data[offset++] = i2cMaxBytes[0];
+      v6Data[offset++] = i2cMaxBytes[1];
+      v6Data[offset++] = i2cMaxBytes[2];
+
+      // Performance Page (1 byte)
+      v6Data[offset++] = 7;
+
+      // Extra trailing bytes from hypothetical v6
+      v6Data[offset++] = 0x55;
+      v6Data[offset++] = 0x66;
+
+      // Parse as v6
+      final parsed = PackedMappingData.fromBytes(6, v6Data);
+
+      // Version must be preserved as 6
+      expect(parsed.version, equals(6));
+
+      // Round-trip: toBytes encodes using v5 format (highest known)
+      final roundTripped = parsed.toBytes();
+      expect(roundTripped.length, equals(26)); // v5 encoding length
+
+      // Re-parse the round-tripped bytes as v6 to verify data integrity
+      final reparsed = PackedMappingData.fromBytes(6, roundTripped);
+      expect(reparsed.version, equals(6));
+      expect(reparsed.source, equals(parsed.source));
+      expect(reparsed.cvInput, equals(parsed.cvInput));
+      expect(reparsed.isUnipolar, equals(parsed.isUnipolar));
+      expect(reparsed.volts, equals(parsed.volts));
+      expect(reparsed.delta, equals(parsed.delta));
+      expect(reparsed.midiCC, equals(parsed.midiCC));
+      expect(reparsed.midiChannel, equals(parsed.midiChannel));
+      expect(reparsed.isMidiEnabled, equals(parsed.isMidiEnabled));
+      expect(reparsed.midiMappingType, equals(parsed.midiMappingType));
+      expect(reparsed.midiMin, equals(parsed.midiMin));
+      expect(reparsed.midiMax, equals(parsed.midiMax));
+      expect(reparsed.i2cCC, equals(parsed.i2cCC));
+      expect(reparsed.isI2cEnabled, equals(parsed.isI2cEnabled));
+      expect(reparsed.isI2cSymmetric, equals(parsed.isI2cSymmetric));
+      expect(reparsed.i2cMin, equals(parsed.i2cMin));
+      expect(reparsed.i2cMax, equals(parsed.i2cMax));
+      expect(reparsed.perfPageIndex, equals(parsed.perfPageIndex));
+    });
+
+    test('data shorter than expected returns filler', () {
+      // Only 20 bytes, but v5 expects 26
+      final data = Uint8List(20);
+      final mapping = PackedMappingData.fromBytes(5, data);
+      expect(mapping.midiCC, equals(-1));
+      expect(mapping.version, equals(-1));
+    });
+  });
 }
