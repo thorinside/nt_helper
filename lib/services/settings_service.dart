@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/services/database_integrity_service.dart';
 import 'package:nt_helper/ui/widgets/rtt_stats_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -760,6 +761,55 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         contentPadding: EdgeInsets.zero,
                       ),
                     ],
+
+                    const SizedBox(height: 24),
+
+                    // Reset App Data section
+                    _SettingSection(
+                      title: 'Reset App Data',
+                      subtitle:
+                          'Delete all local data including cached algorithm metadata, '
+                          'presets, plugin records, and settings. '
+                          'Use this if you experience connection issues or data corruption. '
+                          'The app will close after reset.',
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogCtx) => AlertDialog(
+                              title: const Text('Reset App Data?'),
+                              content: const Text(
+                                'This will delete all local data:\n\n'
+                                '• Cached algorithm metadata\n'
+                                '• Saved presets\n'
+                                '• Plugin installation records\n'
+                                '• App settings and preferences\n\n'
+                                'Your Disting NT hardware is not affected.\n'
+                                'The app will close and you will need to reopen it.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogCtx).pop(false),
+                                  child: const Text('Cancel'),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogCtx).pop(true),
+                                  child: const Text('Reset'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true) {
+                            await DatabaseIntegrityService.resetAll();
+                            exit(0);
+                          }
+                        },
+                        icon: const Icon(Icons.delete_forever),
+                        label: const Text('Reset App Data'),
+                      ),
+                    ),
 
                     // Debug panel visibility setting (debug mode only)
                     if (kDebugMode)
