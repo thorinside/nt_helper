@@ -99,9 +99,14 @@ class PackedMappingData {
 
   // Decode from packed Uint8List with bounds checking
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
-    if (version < 1 || version > 5) {
+    if (version < 1) {
       return PackedMappingData.filler();
     }
+
+    // Forward-compatible: parse unknown versions as the highest known (v5).
+    // Newer firmware versions extend the format by appending fields, so the
+    // v5-compatible prefix is always safe to read.
+    final int parseVersion = version > 5 ? 5 : version;
 
     int offset = 0;
     final dataLength = data.length;
@@ -130,23 +135,25 @@ class PackedMappingData {
       return data[currentOffset];
     }
 
-    // Calculate expected total length based on version
-    int expectedLength = (version == 1)
+    // Calculate expected total length based on parseVersion
+    int expectedLength = (parseVersion == 1)
         ? 22 // 6 + 8 + 8 = CV(6) + MIDI(8) + I2C(8)
-        : (version == 2)
+        : (parseVersion == 2)
         ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
-        : (version == 3)
+        : (parseVersion == 3)
         ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
-        : (version == 4)
+        : (parseVersion == 4)
         ? 25 // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
         : 26; // 7 + 9 + 9 + 1 = CV(7) + MIDI(9) + I2C(9) + Perf(1)
 
-    if (dataLength != expectedLength) {
+    // Accept data that is at least the expected length — extra trailing bytes
+    // from newer firmware versions are ignored.
+    if (dataLength < expectedLength) {
       return PackedMappingData.filler();
     }
 
     // --- Decode CV Mapping ---
-    final source = (version >= 4) ? safeReadByte(offset++) : 0;
+    final source = (parseVersion >= 4) ? safeReadByte(offset++) : 0;
     final cvInput = safeReadByte(offset++);
     final cvFlags = safeReadByte(offset++);
     final isUnipolar = (cvFlags & 1) != 0;
@@ -158,7 +165,7 @@ class PackedMappingData {
     // --- Decode MIDI Mapping ---
     var midiCC = safeReadByte(offset++);
     final midiFlags = safeReadByte(offset++);
-    final midiFlags2 = version >= 2 ? safeReadByte(offset++) : 0;
+    final midiFlags2 = parseVersion >= 2 ? safeReadByte(offset++) : 0;
 
     // Handle aftertouch flag
     if (midiFlags & 4 != 0) {
@@ -188,7 +195,7 @@ class PackedMappingData {
 
     // --- Decode I2C Mapping ---
     var i2cCC = safeReadByte(offset++);
-    if (version >= 3) {
+    if (parseVersion >= 3) {
       i2cCC |= (safeReadByte(offset++) & 1) << 7;
     }
     final i2cFlags = safeReadByte(offset++);
@@ -200,14 +207,7 @@ class PackedMappingData {
     offset += 3;
 
     // --- Decode Performance Page ---
-    final perfPageIndex = (version >= 5) ? safeReadByte(offset++) : 0;
-
-    if (version < 5) {}
-
-    // Final validation: offset should equal expected length
-    if (offset != expectedLength) {
-      return PackedMappingData.filler();
-    }
+    final perfPageIndex = (parseVersion >= 5) ? safeReadByte(offset++) : 0;
 
     return PackedMappingData(
       source: source,
@@ -230,7 +230,7 @@ class PackedMappingData {
       i2cMin: i2cMin,
       i2cMax: i2cMax,
       perfPageIndex: perfPageIndex,
-      version: version,
+      version: parseVersion,
     );
   }
 
