@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/sysex_diagnostics_service.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:nt_helper/utils/app_directory.dart';
 import 'package:share_plus/share_plus.dart';
 
 class DebugDiagnosticsScreen extends StatefulWidget {
@@ -108,7 +108,7 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         );
       } else {
         // Save to file on desktop platforms
-        final directory = await getApplicationDocumentsDirectory();
+        final directory = await getAppDirectory();
         final timestamp = _currentReport!.timestamp
             .toIso8601String()
             .replaceAll(':', '-')
