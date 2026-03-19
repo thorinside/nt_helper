@@ -900,8 +900,8 @@ void main() {
       expect(mapping.perfPageIndex, equals(3));
       expect(mapping.source, equals(1));
       expect(mapping.cvInput, equals(2));
-      // Stored as v5 since that's the format we can encode
-      expect(mapping.version, equals(5));
+      // Preserves original firmware version
+      expect(mapping.version, equals(6));
     });
 
     test('version 0 returns filler', () {
@@ -973,6 +973,86 @@ void main() {
       expect(mapping.midiMin, equals(10));
       expect(mapping.midiMax, equals(100));
       expect(mapping.version, equals(5));
+    });
+
+    test('v6 round-trip preserves original version and data', () {
+      // Create v5-sized data (26 bytes) + 2 extra bytes for "v6"
+      final v6Data = Uint8List(28);
+      int offset = 0;
+
+      // CV Mapping (7 bytes)
+      v6Data[offset++] = 1; // source
+      v6Data[offset++] = 2; // cvInput
+      v6Data[offset++] = 1; // flags (unipolar)
+      v6Data[offset++] = 5; // volts
+      final deltaBytes = encode16(100);
+      v6Data[offset++] = deltaBytes[0];
+      v6Data[offset++] = deltaBytes[1];
+      v6Data[offset++] = deltaBytes[2];
+
+      // MIDI Mapping (9 bytes)
+      v6Data[offset++] = 42; // midiCC
+      v6Data[offset++] = 0x09; // flags: enabled=1, channel=1
+      v6Data[offset++] = 0x0C; // midiFlags2: type=3 (cc14BitLow)
+      final minBytes = encode16(10);
+      v6Data[offset++] = minBytes[0];
+      v6Data[offset++] = minBytes[1];
+      v6Data[offset++] = minBytes[2];
+      final maxBytes = encode16(200);
+      v6Data[offset++] = maxBytes[0];
+      v6Data[offset++] = maxBytes[1];
+      v6Data[offset++] = maxBytes[2];
+
+      // I2C Mapping (9 bytes)
+      v6Data[offset++] = 32;
+      v6Data[offset++] = 0;
+      v6Data[offset++] = 3; // enabled + symmetric
+      final i2cMinBytes = encode16(50);
+      v6Data[offset++] = i2cMinBytes[0];
+      v6Data[offset++] = i2cMinBytes[1];
+      v6Data[offset++] = i2cMinBytes[2];
+      final i2cMaxBytes = encode16(500);
+      v6Data[offset++] = i2cMaxBytes[0];
+      v6Data[offset++] = i2cMaxBytes[1];
+      v6Data[offset++] = i2cMaxBytes[2];
+
+      // Performance Page (1 byte)
+      v6Data[offset++] = 7;
+
+      // Extra trailing bytes from hypothetical v6
+      v6Data[offset++] = 0x55;
+      v6Data[offset++] = 0x66;
+
+      // Parse as v6
+      final parsed = PackedMappingData.fromBytes(6, v6Data);
+
+      // Version must be preserved as 6
+      expect(parsed.version, equals(6));
+
+      // Round-trip: toBytes encodes using v5 format (highest known)
+      final roundTripped = parsed.toBytes();
+      expect(roundTripped.length, equals(26)); // v5 encoding length
+
+      // Re-parse the round-tripped bytes as v6 to verify data integrity
+      final reparsed = PackedMappingData.fromBytes(6, roundTripped);
+      expect(reparsed.version, equals(6));
+      expect(reparsed.source, equals(parsed.source));
+      expect(reparsed.cvInput, equals(parsed.cvInput));
+      expect(reparsed.isUnipolar, equals(parsed.isUnipolar));
+      expect(reparsed.volts, equals(parsed.volts));
+      expect(reparsed.delta, equals(parsed.delta));
+      expect(reparsed.midiCC, equals(parsed.midiCC));
+      expect(reparsed.midiChannel, equals(parsed.midiChannel));
+      expect(reparsed.isMidiEnabled, equals(parsed.isMidiEnabled));
+      expect(reparsed.midiMappingType, equals(parsed.midiMappingType));
+      expect(reparsed.midiMin, equals(parsed.midiMin));
+      expect(reparsed.midiMax, equals(parsed.midiMax));
+      expect(reparsed.i2cCC, equals(parsed.i2cCC));
+      expect(reparsed.isI2cEnabled, equals(parsed.isI2cEnabled));
+      expect(reparsed.isI2cSymmetric, equals(parsed.isI2cSymmetric));
+      expect(reparsed.i2cMin, equals(parsed.i2cMin));
+      expect(reparsed.i2cMax, equals(parsed.i2cMax));
+      expect(reparsed.perfPageIndex, equals(parsed.perfPageIndex));
     });
 
     test('data shorter than expected returns filler', () {

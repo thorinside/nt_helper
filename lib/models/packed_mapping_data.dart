@@ -1,3 +1,4 @@
+import 'dart:math' show min;
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
@@ -230,17 +231,20 @@ class PackedMappingData {
       i2cMin: i2cMin,
       i2cMax: i2cMax,
       perfPageIndex: perfPageIndex,
-      version: parseVersion,
+      version: version,
     );
   }
 
   Uint8List encodeCVPackedData() {
+    // Encode using the highest known format (v5) for forward compatibility
+    final int encodeVersion = min(version, 5);
+
     // Compute the flags
     int flags = (isUnipolar ? 1 : 0) | (isGate ? 2 : 0);
 
     // Build the packed payload (starting after the version byte)
     final payload = [
-      if (version >= 4) source & 0x7F, // Source of the CV input
+      if (encodeVersion >= 4) source & 0x7F, // Source of the CV input
       cvInput & 0x7F, // CV input number
       flags & 0x7F, // Flags for unipolar/gate settings
       volts & 0x7F, // Voltage setting (0-127)
@@ -251,9 +255,10 @@ class PackedMappingData {
   }
 
   Uint8List encodeMIDIPackedData() {
+    // Encode using the highest known format (v5) for forward compatibility
+    final int encodeVersion = min(version, 5);
+
     var adjustedCC = midiCC;
-    var min = midiMin;
-    var max = midiMax;
 
     // Compute the flags
     int flags =
@@ -274,18 +279,19 @@ class PackedMappingData {
     final payload = [
       adjustedCC & 0x7F, // MIDI CC number or Note number
       flags & 0x7F, // Flags
-      if (version >= 2) midiFlags2 & 0x7F, // Flags2 (relative, toggle, is_note)
-      ...encode16(min), // Encode 'min' as 7-bit chunks
-      ...encode16(max), // Encode 'max' as 7-bit chunks
+      if (encodeVersion >= 2) midiFlags2 & 0x7F, // Flags2 (relative, toggle, is_note)
+      ...encode16(midiMin), // Encode 'min' as 7-bit chunks
+      ...encode16(midiMax), // Encode 'max' as 7-bit chunks
     ];
 
     return Uint8List.fromList(payload);
   }
 
   Uint8List encodeI2CPackedData() {
+    // Encode using the highest known format (v5) for forward compatibility
+    final int encodeVersion = min(version, 5);
+
     var adjustedCC = i2cCC;
-    var min = i2cMin;
-    var max = i2cMax;
 
     // Compute the flags
     int flags = (isI2cEnabled ? 1 : 0) | (isI2cSymmetric ? 2 : 0);
@@ -293,10 +299,10 @@ class PackedMappingData {
     // Build the packed payload (starting after the version byte)
     final payload = [
       adjustedCC & 0x7F, // I2C control code
-      if (version >= 3) (adjustedCC >> 7) & 0x7F,
+      if (encodeVersion >= 3) (adjustedCC >> 7) & 0x7F,
       flags & 0x7F, // Flags
-      ...encode16(min), // Encode 'min' as 7-bit chunks
-      ...encode16(max), // Encode 'max' as 7-bit chunks
+      ...encode16(i2cMin), // Encode 'min' as 7-bit chunks
+      ...encode16(i2cMax), // Encode 'max' as 7-bit chunks
     ];
 
     return Uint8List.fromList(payload);
@@ -304,6 +310,9 @@ class PackedMappingData {
 
   // Convert back to Uint8List (excluding the version byte itself)
   Uint8List toBytes() {
+    // Encode using the highest known format (v5) for forward compatibility
+    final int encodeVersion = min(version, 5);
+
     final cvBytes = encodeCVPackedData();
     final midiBytes = encodeMIDIPackedData();
     final i2cBytes = encodeI2CPackedData();
@@ -311,29 +320,12 @@ class PackedMappingData {
     final allBytes = [...cvBytes, ...midiBytes, ...i2cBytes];
 
     // Add performance page index for version 5+
-    if (version >= 5) {
-      // Validate and clamp perfPageIndex to valid range (0-30)
+    if (encodeVersion >= 5) {
       final clampedIndex = perfPageIndex.clamp(0, 30);
-      if (clampedIndex != perfPageIndex) {}
       allBytes.add(clampedIndex & 0x7F);
     }
 
-    final result = Uint8List.fromList(allBytes);
-
-    // Validate the output length matches expected length for this version
-    int expectedLength = (version == 1)
-        ? 22 // 6 + 8 + 8 = CV(6) + MIDI(8) + I2C(8)
-        : (version == 2)
-        ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
-        : (version == 3)
-        ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
-        : (version == 4)
-        ? 25 // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
-        : 26; // 7 + 9 + 9 + 1 = CV(7) + MIDI(9) + I2C(9) + Perf(1)
-
-    if (result.length != expectedLength) {}
-
-    return result;
+    return Uint8List.fromList(allBytes);
   }
 
   @override
