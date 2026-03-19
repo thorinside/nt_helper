@@ -6,6 +6,7 @@ import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/services/database_integrity_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
@@ -108,6 +109,12 @@ void main() async {
         await windowManager.setBounds(savedBounds);
       }
     });
+  }
+
+  // Check database integrity before opening
+  final integrityResult = await DatabaseIntegrityService.checkIntegrity();
+  if (integrityResult.isCorrupt) {
+    await DatabaseIntegrityService.deleteDatabase();
   }
 
   final database = AppDatabase();
