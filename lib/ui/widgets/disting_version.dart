@@ -6,12 +6,14 @@ class DistingVersion extends StatelessWidget {
     super.key,
     required this.distingVersion,
     required this.requiredVersion,
+    this.firmwareDate,
     this.onTap,
     this.onHelpTextChanged,
   });
 
   final String distingVersion;
   final String requiredVersion;
+  final String? firmwareDate;
   final VoidCallback? onTap;
   final ValueChanged<String?>? onHelpTextChanged;
 
@@ -23,14 +25,17 @@ class DistingVersion extends StatelessWidget {
       distingVersion,
     ).isSupported(requiredVersion);
 
-    final text = Text(
-      distingVersion,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: isNotSupported
-            ? Theme.of(context).colorScheme.error
-            : Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
+    final versionStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      color: isNotSupported
+          ? Theme.of(context).colorScheme.error
+          : Theme.of(context).colorScheme.onSurfaceVariant,
     );
+
+    final displayText = firmwareDate != null
+        ? '$distingVersion ($firmwareDate)'
+        : distingVersion;
+
+    final text = Text(displayText, style: versionStyle);
 
     // Only show tooltip if contextual help is not available
     final showTooltip = onHelpTextChanged == null;
@@ -45,10 +50,11 @@ class DistingVersion extends StatelessWidget {
       content = Tooltip(message: tooltipMessage, child: text);
     }
 
+    final dateLabel = firmwareDate != null ? ', date $firmwareDate' : '';
     final wrappedContent = Semantics(
       label: isNotSupported
-          ? 'Firmware version $distingVersion - update required, minimum $requiredVersion'
-          : 'Firmware version $distingVersion',
+          ? 'Firmware version $distingVersion$dateLabel - update required, minimum $requiredVersion'
+          : 'Firmware version $distingVersion$dateLabel',
       button: onTap != null,
       hint: onTap != null ? 'Tap to manage firmware updates' : null,
       excludeSemantics: true,

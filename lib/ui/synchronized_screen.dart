@@ -1491,6 +1491,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     DistingVersion(
                       distingVersion: widget.distingVersion,
                       requiredVersion: Constants.requiredDistingVersion,
+                      firmwareDate: widget.firmwareVersion.date,
                       onTap: isDesktop
                           ? () {
                               final distingCubit = context.read<DistingCubit>();
