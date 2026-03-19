@@ -154,14 +154,19 @@ class _ParameterFetchDelegate {
 
   Future<List<Slot>> fetchSlots(
     int numAlgorithmsInPreset,
-    IDistingMidiManager disting,
-  ) async {
+    IDistingMidiManager disting, {
+    void Function(int completed, int total)? onSlotProgress,
+  }) async {
     final stopwatch = Stopwatch()..start();
 
+    int completedCount = 0;
     final slotsFutures = List.generate(numAlgorithmsInPreset, (
       algorithmIndex,
     ) async {
-      return await fetchSlot(disting, algorithmIndex);
+      final slot = await fetchSlot(disting, algorithmIndex);
+      completedCount++;
+      onSlotProgress?.call(completedCount, numAlgorithmsInPreset);
+      return slot;
     });
 
     // Finish off the requests

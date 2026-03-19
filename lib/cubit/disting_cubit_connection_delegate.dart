@@ -167,6 +167,17 @@ class _ConnectionDelegate {
     _cubit._midiCommand = MidiCommand();
   }
 
+  static const _syncTimeout = Duration(seconds: 60);
+
+  void _emitSyncProgress(String status, {double? progress}) {
+    final currentState = _cubit.state;
+    if (currentState is DistingStateConnected) {
+      _cubit._emitState(
+        currentState.copyWith(syncStatus: status, syncProgress: progress),
+      );
+    }
+  }
+
   Future<void> performSyncAndEmit() async {
     final currentState = _cubit.state;
     MidiDevice? inputDevice; // Variables to hold devices from state
@@ -187,87 +198,122 @@ class _ConnectionDelegate {
     final IDistingMidiManager distingManager = _cubit.requireDisting();
 
     try {
-      // --- Fetch ALL data from device REGARDLESS ---
+      await Future(() async {
+        // --- Fetch ALL data from device REGARDLESS ---
 
-      // Load algorithm library (try cache first for fast startup)
-      List<AlgorithmInfo> algorithms = [];
-      int numInPreset = 0;
-      int numAlgorithms = 0;
-      try {
-        numAlgorithms = await distingManager.requestNumberOfAlgorithms() ?? 0;
-        numInPreset = await distingManager.requestNumAlgorithmsInPreset() ?? 0;
+        _emitSyncProgress('Querying device...', progress: 0.0);
 
-        // Try to load cached algorithms synchronously for fast startup
-        if (numAlgorithms > 0) {
-          final cacheFreshnessDays = SettingsService().algorithmCacheDays;
-          final cachedAlgorithms = await _cubit._metadataDao.getAlgorithmInfoCache(
-            numAlgorithms,
-            cacheFreshnessDays: cacheFreshnessDays,
-          );
-          if (cachedAlgorithms != null && cachedAlgorithms.length == numAlgorithms) {
-            // Cache hit - use cached data immediately
-            algorithms = cachedAlgorithms;
+        // Load algorithm library (try cache first for fast startup)
+        List<AlgorithmInfo> algorithms = [];
+        int numInPreset = 0;
+        int numAlgorithms = 0;
+        try {
+          numAlgorithms =
+              await distingManager.requestNumberOfAlgorithms() ?? 0;
+          numInPreset =
+              await distingManager.requestNumAlgorithmsInPreset() ?? 0;
+
+          // Try to load cached algorithms synchronously for fast startup
+          if (numAlgorithms > 0) {
+            final cacheFreshnessDays = SettingsService().algorithmCacheDays;
+            final cachedAlgorithms =
+                await _cubit._metadataDao.getAlgorithmInfoCache(
+              numAlgorithms,
+              cacheFreshnessDays: cacheFreshnessDays,
+            );
+            if (cachedAlgorithms != null &&
+                cachedAlgorithms.length == numAlgorithms) {
+              // Cache hit - use cached data immediately
+              algorithms = cachedAlgorithms;
+            }
           }
+        } catch (e, stackTrace) {
+          debugPrintStack(stackTrace: stackTrace);
         }
-      } catch (e, stackTrace) {
-        debugPrintStack(stackTrace: stackTrace);
-      }
 
-      final distingVersion = await distingManager.requestVersionString() ?? "";
-      final firmwareVersion = FirmwareVersion(distingVersion);
-      _cubit._lastKnownFirmwareVersion = firmwareVersion;
-      // Set the parameter unit scheme based on firmware version
-      ParameterEditorRegistry.setFirmwareVersion(firmwareVersion);
-      final presetName = await distingManager.requestPresetName() ?? "Default";
-      var unitStrings = await distingManager.requestUnitStrings() ?? [];
-      List<Slot> slots = await _cubit.fetchSlots(numInPreset, distingManager);
+        _emitSyncProgress('Reading firmware version...', progress: 0.15);
 
-      // Fetch performance page items if firmware supports them (v1.16+)
-      List<PerformancePageItem> perfPageItems = [];
-      if (firmwareVersion.hasPerfPageItems) {
-        perfPageItems = await _cubit._perfPageDelegate
-            .fetchAllPerfPageItems(distingManager);
-      }
+        final distingVersion =
+            await distingManager.requestVersionString() ?? "";
+        final firmwareVersion = FirmwareVersion(distingVersion);
+        _cubit._lastKnownFirmwareVersion = firmwareVersion;
+        // Set the parameter unit scheme based on firmware version
+        ParameterEditorRegistry.setFirmwareVersion(firmwareVersion);
 
-      // --- Emit final synchronized state --- (Ensure offline is false)
-      _cubit._emitState(
-        DistingState.synchronized(
-          disting: distingManager,
-          distingVersion: distingVersion,
-          firmwareVersion: firmwareVersion,
-          presetName: presetName,
-          algorithms: algorithms,
-          slots: slots,
-          unitStrings: unitStrings,
-          inputDevice: inputDevice,
-          outputDevice: outputDevice,
-          loading: false,
-          offline: false,
-          perfPageItems: perfPageItems,
-        ),
-      );
+        _emitSyncProgress('Reading preset...', progress: 0.25);
+        final presetName =
+            await distingManager.requestPresetName() ?? "Default";
 
-      // If cache miss, start background loading for algorithms
-      // (now that we're in synchronized state, background loading can update state)
-      if (algorithms.isEmpty && numAlgorithms > 0) {
-        _cubit._algorithmLibraryDelegate.loadAllAlgorithmsInBackground(
+        _emitSyncProgress('Loading unit strings...', progress: 0.30);
+        var unitStrings = await distingManager.requestUnitStrings() ?? [];
+
+        _emitSyncProgress('Loading slots...', progress: 0.35);
+        List<Slot> slots = await _cubit.fetchSlots(
+          numInPreset,
           distingManager,
-          numAlgorithms,
+          onSlotProgress: (completed, total) {
+            _emitSyncProgress(
+              'Loading slot $completed of $total...',
+              progress: 0.35 + (completed / total) * 0.55,
+            );
+          },
         );
-      }
 
-      // Start background retry processing for any failed parameter requests
-      if (_cubit._parameterFetchDelegate.hasQueuedRetries) {
-        _cubit._parameterFetchDelegate
-            .processParameterRetryQueue(distingManager)
-            .catchError((e) {});
-      }
+        // Fetch performance page items if firmware supports them (v1.16+)
+        List<PerformancePageItem> perfPageItems = [];
+        if (firmwareVersion.hasPerfPageItems) {
+          _emitSyncProgress('Loading performance pages...', progress: 0.90);
+          perfPageItems = await _cubit._perfPageDelegate
+              .fetchAllPerfPageItems(distingManager);
+        }
 
-      // Check for firmware updates in background (non-blocking, desktop only)
-      // This runs asynchronously and updates state if update is available
-      if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
-        _cubit.checkForFirmwareUpdate();
-      }
+        _emitSyncProgress('Finalizing...', progress: 0.95);
+
+        // --- Emit final synchronized state --- (Ensure offline is false)
+        _cubit._emitState(
+          DistingState.synchronized(
+            disting: distingManager,
+            distingVersion: distingVersion,
+            firmwareVersion: firmwareVersion,
+            presetName: presetName,
+            algorithms: algorithms,
+            slots: slots,
+            unitStrings: unitStrings,
+            inputDevice: inputDevice,
+            outputDevice: outputDevice,
+            loading: false,
+            offline: false,
+            perfPageItems: perfPageItems,
+          ),
+        );
+
+        // If cache miss, start background loading for algorithms
+        // (now that we're in synchronized state, background loading can update state)
+        if (algorithms.isEmpty && numAlgorithms > 0) {
+          _cubit._algorithmLibraryDelegate.loadAllAlgorithmsInBackground(
+            distingManager,
+            numAlgorithms,
+          );
+        }
+
+        // Start background retry processing for any failed parameter requests
+        if (_cubit._parameterFetchDelegate.hasQueuedRetries) {
+          _cubit._parameterFetchDelegate
+              .processParameterRetryQueue(distingManager)
+              .catchError((e) {});
+        }
+
+        // Check for firmware updates in background (non-blocking, desktop only)
+        // This runs asynchronously and updates state if update is available
+        if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+          _cubit.checkForFirmwareUpdate();
+        }
+      }).timeout(_syncTimeout);
+    } on TimeoutException {
+      _emitSyncProgress(
+        'Synchronization timed out. The device may not be responding.\n'
+        'Please check your MIDI connections and try again.',
+      );
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
       // Do NOT store connection details if sync fails

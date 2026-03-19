@@ -68,8 +68,9 @@ abstract class _DistingCubitBase extends Cubit<DistingState> {
   Future<Slot> fetchSlot(IDistingMidiManager disting, int algorithmIndex);
   Future<List<Slot>> fetchSlots(
     int numAlgorithmsInPreset,
-    IDistingMidiManager disting,
-  );
+    IDistingMidiManager disting, {
+    void Function(int completed, int total)? onSlotProgress,
+  });
   Future<void> _refreshStateFromManager({Duration delay});
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex);
   List<Slot> updateSlot(
@@ -598,9 +599,14 @@ class DistingCubit extends _DistingCubitBase
   @override
   Future<List<Slot>> fetchSlots(
     int numAlgorithmsInPreset,
-    IDistingMidiManager disting,
-  ) async {
-    return _parameterFetchDelegate.fetchSlots(numAlgorithmsInPreset, disting);
+    IDistingMidiManager disting, {
+    void Function(int completed, int total)? onSlotProgress,
+  }) async {
+    return _parameterFetchDelegate.fetchSlots(
+      numAlgorithmsInPreset,
+      disting,
+      onSlotProgress: onSlotProgress,
+    );
   }
 
   /// Get output mode usage data for a parameter.

@@ -108,7 +108,9 @@ class _StepSequencerViewState extends State<StepSequencerView> {
         builder: (context, state) {
           // Determine if we're offline
           final isOffline = state.maybeWhen(
-            connected: (disting, inputDevice, outputDevice, offline, loading) => offline,
+            connected: (disting, inputDevice, outputDevice, offline, loading,
+                    syncStatus, syncProgress) =>
+                offline,
             synchronized: (
               disting,
               distingVersion,

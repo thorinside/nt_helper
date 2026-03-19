@@ -94,7 +94,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       initial: () => emit(const RoutingEditorState.initial()),
       selectDevice: (inputDevices, outputDevices, canWorkOffline) =>
           emit(const RoutingEditorState.disconnected()),
-      connected: (disting, inputDevice, outputDevice, offline, loading) =>
+      connected: (disting, inputDevice, outputDevice, offline, loading,
+              syncStatus, syncProgress) =>
           emit(const RoutingEditorState.disconnected()),
       synchronized:
           (

@@ -296,32 +296,53 @@ class _DistingPageState extends State<DistingPage> {
                 canWorkOffline: state.canWorkOffline,
               );
             } else if (state is DistingStateConnected) {
+              final isTimeout =
+                  state.syncStatus?.contains('timed out') ?? false;
               return Center(
                 child: SingleChildScrollView(
                   child: Semantics(
                     liveRegion: true,
                     child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "Synchronizing...",
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: CircularProgressIndicator(
-                          semanticsLabel: 'Synchronizing with Disting NT',
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isTimeout
+                              ? "Synchronization Failed"
+                              : "Synchronizing...",
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
-                      ),
-                      OutlinedButton(
-                        onPressed: () {
-                          context.read<DistingCubit>().cancelSync();
-                        },
-                        child: Text("Cancel"),
-                      ),
-                    ],
-                  ),
+                        if (state.syncStatus != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              state.syncStatus!,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: isTimeout
+                              ? Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: Theme.of(context).colorScheme.error,
+                                )
+                              : CircularProgressIndicator(
+                                  value: state.syncProgress,
+                                  semanticsLabel: state.syncStatus ??
+                                      'Synchronizing with Disting NT',
+                                ),
+                        ),
+                        OutlinedButton(
+                          onPressed: () {
+                            context.read<DistingCubit>().cancelSync();
+                          },
+                          child: Text(isTimeout ? "Back" : "Cancel"),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

@@ -45,6 +45,8 @@ sealed class DistingState with _$DistingState {
     MidiDevice? outputDevice,
     @Default(false) bool offline,
     @Default(false) bool loading,
+    @Default(null) String? syncStatus,
+    @Default(null) double? syncProgress,
   }) = DistingStateConnected;
 
   const factory DistingState.synchronized({
