@@ -11,7 +11,7 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
+import 'package:nt_helper/utils/app_directory.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 /// GraphQL queries for the gallery
@@ -270,7 +270,7 @@ class GalleryService {
 
   /// Get the cache file path
   Future<File> _getCacheFile() async {
-    final directory = await getApplicationDocumentsDirectory();
+    final directory = await getAppDirectory();
     return File(path.join(directory.path, _cacheFileName));
   }
 

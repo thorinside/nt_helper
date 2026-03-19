@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:nt_helper/utils/app_directory.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -21,7 +21,7 @@ class DatabaseIntegrityService {
   static const _dbFileName = 'nt_helper_db.sqlite';
 
   static Future<File> getDatabaseFile() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
+    final dbFolder = await getAppDirectory();
     return File(p.join(dbFolder.path, _dbFileName));
   }
 
