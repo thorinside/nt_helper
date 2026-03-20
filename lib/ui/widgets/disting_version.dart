@@ -31,11 +31,16 @@ class DistingVersion extends StatelessWidget {
           : Theme.of(context).colorScheme.onSurfaceVariant,
     );
 
-    final displayText = firmwareDate != null
-        ? '$distingVersion ($firmwareDate)'
-        : distingVersion;
-
-    final text = Text(displayText, style: versionStyle);
+    final Widget text = firmwareDate != null
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(distingVersion, style: versionStyle),
+              Text(firmwareDate!, style: versionStyle),
+            ],
+          )
+        : Text(distingVersion, style: versionStyle);
 
     // Only show tooltip if contextual help is not available
     final showTooltip = onHelpTextChanged == null;
