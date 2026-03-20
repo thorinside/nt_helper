@@ -81,26 +81,32 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
     _data = widget.initialData;
 
-    // Auto-default MIDI min/max to the full parameter range for new mappings
+    // Auto-default MIDI fields for new mappings
     final bool isNewMidiMapping =
         (_data.midiMin == 0 && _data.midiMax == 0 && !_data.isMidiEnabled) ||
         (_data.midiMin == -1 && _data.midiMax == -1);
     if (isNewMidiMapping && widget.parameterMin < widget.parameterMax) {
       _data = _data.copyWith(
+        midiCC: _data.midiCC < 0 ? 0 : _data.midiCC,
         midiMin: widget.parameterMin,
         midiMax: widget.parameterMax,
       );
+    } else if (_data.midiCC < 0) {
+      _data = _data.copyWith(midiCC: 0);
     }
 
-    // Auto-default I2C min/max to the full parameter range for new mappings
+    // Auto-default I2C fields for new mappings
     final bool isNewI2cMapping =
         (_data.i2cMin == 0 && _data.i2cMax == 0 && !_data.isI2cEnabled) ||
         (_data.i2cMin == -1 && _data.i2cMax == -1);
     if (isNewI2cMapping && widget.parameterMin < widget.parameterMax) {
       _data = _data.copyWith(
+        i2cCC: _data.i2cCC < 0 ? 0 : _data.i2cCC,
         i2cMin: widget.parameterMin,
         i2cMax: widget.parameterMax,
       );
+    } else if (_data.i2cCC < 0) {
+      _data = _data.copyWith(i2cCC: 0);
     }
 
     // Auto-default CV range for new mappings
