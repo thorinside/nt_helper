@@ -1,11 +1,12 @@
 class FirmwareVersion {
   final String versionString;
+  final String? date;
   late final int major;
   late final int minor;
   late final int patch;
   late final List<int> _parts;
 
-  FirmwareVersion(this.versionString) {
+  FirmwareVersion(this.versionString, {this.date}) {
     try {
       final matches = RegExp(r'\d+').allMatches(versionString);
       _parts = matches.map((m) => int.tryParse(m.group(0)!) ?? 0).toList();

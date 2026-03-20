@@ -233,9 +233,14 @@ class _ConnectionDelegate {
 
         _emitSyncProgress('Reading firmware version...', progress: 0.15);
 
-        final distingVersion =
+        final versionResponse =
             await distingManager.requestVersionString() ?? "";
-        final firmwareVersion = FirmwareVersion(distingVersion);
+        final versionParts = versionResponse.split('\n');
+        final distingVersion = versionParts[0];
+        final firmwareDate =
+            versionParts.length > 1 ? versionParts[1] : null;
+        final firmwareVersion =
+            FirmwareVersion(distingVersion, date: firmwareDate);
         _cubit._lastKnownFirmwareVersion = firmwareVersion;
         // Set the parameter unit scheme based on firmware version
         ParameterEditorRegistry.setFirmwareVersion(firmwareVersion);
