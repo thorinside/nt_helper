@@ -711,4 +711,82 @@ void main() {
       expect(find.text('Performance'), findsOneWidget);
     });
   });
+
+  group('PackedMappingDataEditor - Filler CC defaults', () {
+    late MockDistingCubit mockCubit;
+
+    setUp(() {
+      mockCubit = MockDistingCubit();
+      when(() => mockCubit.state).thenReturn(DistingStateInitial());
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+    });
+
+    Widget createTestWidget({required PackedMappingData initialData}) {
+      return MaterialApp(
+        home: BlocProvider<DistingCubit>.value(
+          value: mockCubit,
+          child: Scaffold(
+            body: PackedMappingDataEditor(
+              initialData: initialData,
+              onSave: (_) async {},
+              slots: [],
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              parameterMin: 0,
+              parameterMax: 100,
+              powerOfTen: 0,
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('MIDI CC field shows 0 instead of -1 for filler data',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(initialData: PackedMappingData.filler()),
+      );
+
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      // The CC field should show "0", not "-1"
+      expect(find.text('-1'), findsNothing);
+      final ccField = find.widgetWithText(TextField, '0');
+      expect(ccField, findsWidgets);
+    });
+
+    testWidgets('I2C CC field shows 0 instead of -1 for filler data',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(initialData: PackedMappingData.filler()),
+      );
+
+      await tester.tap(find.text('I2C'));
+      await tester.pumpAndSettle();
+
+      // The CC field should show "0", not "-1"
+      expect(find.text('-1'), findsNothing);
+    });
+
+    testWidgets(
+        'MIDI CC preserves valid value when min/max are from hardware',
+        (tester) async {
+      final dataWithValidCC = PackedMappingData.filler().copyWith(
+        midiCC: 42,
+        midiMin: 10,
+        midiMax: 90,
+        isMidiEnabled: true,
+      );
+      await tester.pumpWidget(
+        createTestWidget(initialData: dataWithValidCC),
+      );
+
+      await tester.tap(find.text('MIDI'));
+      await tester.pumpAndSettle();
+
+      // CC field should show the original value
+      expect(find.widgetWithText(TextField, '42'), findsOneWidget);
+    });
+  });
 }
