@@ -921,37 +921,43 @@ class DistingCubit extends _DistingCubitBase
 
   /// Disposes a midi manager created by [createFirmwareMidiManager] and
   /// disconnects the devices.
+  ///
+  /// Device disconnection is wrapped in try-catch because the USB device may
+  /// no longer exist after a firmware update reboot.
   void disposeFirmwareMidiManager(
     IDistingMidiManager manager,
     MidiDevice inputDevice,
     MidiDevice outputDevice,
   ) {
-    manager.dispose();
-    _midiCommand.disconnectDevice(inputDevice);
-    if (inputDevice.id != outputDevice.id) {
-      _midiCommand.disconnectDevice(outputDevice);
-    }
+    try {
+      manager.dispose();
+    } catch (_) {}
+    try {
+      _midiCommand.disconnectDevice(inputDevice);
+      if (inputDevice.id != outputDevice.id) {
+        _midiCommand.disconnectDevice(outputDevice);
+      }
+    } catch (_) {}
     _midiSetupSubscription?.resume();
   }
 
-  /// Called after a successful firmware update to refresh device version
+  /// Called after a successful firmware update to refresh device version.
   ///
-  /// This clears the update indicator and triggers a re-sync to get the new
-  /// firmware version from the device.
+  /// When called from the synchronized state, disconnects and re-syncs to
+  /// pick up the new firmware version. When called from the device selection
+  /// state (firmware installed before connecting), just clears the cache and
+  /// refreshes the device list.
   Future<void> onFirmwareUpdateComplete() async {
-    final currentState = state;
-    if (currentState is! DistingStateSynchronized) return;
-
-    // Clear the update indicator immediately
-    _emitState(currentState.copyWith(availableFirmwareUpdate: null));
-
-    // Clear firmware version cache so next check fetches fresh data
     _firmwareVersionService.clearCache();
 
-    // Re-sync with device to get updated firmware version
-    // The device should report its new version after reboot
-    await cancelSync();
-    await refresh(fullRefresh: true);
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      _emitState(currentState.copyWith(availableFirmwareUpdate: null));
+      await cancelSync();
+      await refresh(fullRefresh: true);
+    } else {
+      await _connectionDelegate.loadDevices();
+    }
   }
 }
 
