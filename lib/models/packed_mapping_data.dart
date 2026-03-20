@@ -231,7 +231,7 @@ class PackedMappingData {
       i2cMin: i2cMin,
       i2cMax: i2cMax,
       perfPageIndex: perfPageIndex,
-      version: parseVersion,
+      version: version,
     );
   }
 
