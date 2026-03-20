@@ -71,6 +71,14 @@ flutter test             # Run before commits
 flutter run -d macos --print-dtd   # Run with DTD URL for MCP connection
 ```
 
+## Worktrees
+
+Generated files (mocks, freezed, drift) are gitignored. After `git worktree add`, run:
+```
+dart run build_runner build --delete-conflicting-outputs
+```
+before `flutter analyze` or `flutter test`.
+
 ## Release
 
 ```
