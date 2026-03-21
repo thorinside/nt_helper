@@ -2031,6 +2031,20 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               children: [Text('Offline Data'), Icon(Icons.sync_alt_rounded)],
             ),
           ),
+          // System submenu: Remount, Reboot, Rescan Algorithms
+          PopupMenuItem(
+            value: 'system',
+            enabled: !widget.loading && !isOffline,
+            onTap: widget.loading || isOffline
+                ? null
+                : () {
+                    _showSystemSubmenu(popupCtx, cubit);
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('System'), Icon(Icons.settings_applications)],
+            ),
+          ),
           // Firmware: Desktop only, disabled when loading
           if (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
             PopupMenuItem(
@@ -2323,6 +2337,109 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           _ => const Center(child: Text("Loading slots...")),
         };
       },
+    );
+  }
+
+  void _showSystemSubmenu(BuildContext context, DistingCubit cubit) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.settings_applications),
+            SizedBox(width: 8),
+            Text('System'),
+          ],
+        ),
+        children: [
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              cubit.remountSd();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('SD card remount requested'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const ListTile(
+              leading: Icon(Icons.sd_card),
+              title: Text('Remount SD Card'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _showRebootConfirmationDialog(context, cubit);
+            },
+            child: const ListTile(
+              leading: Icon(Icons.restart_alt),
+              title: Text('Reboot Device'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              cubit.refreshAlgorithms();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Rescanning algorithms...'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const ListTile(
+              leading: Icon(Icons.refresh),
+              title: Text('Rescan Algorithms'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRebootConfirmationDialog(
+    BuildContext context,
+    DistingCubit cubit,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.restart_alt, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Reboot Device'),
+          ],
+        ),
+        content: const Text(
+          'This will reboot your Disting NT. Any unsaved changes will be lost.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              cubit.reboot();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Reboot command sent'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            child: const Text('Reboot'),
+          ),
+        ],
+      ),
     );
   }
 
