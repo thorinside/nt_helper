@@ -1299,43 +1299,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
           const SizedBox(width: 24),
 
-          BlocBuilder<DistingCubit, DistingState>(
-            buildWhen: (previous, current) {
-              final prevOffline = previous is DistingStateSynchronized &&
-                  previous.offline;
-              final currOffline = current is DistingStateSynchronized &&
-                  current.offline;
-              return prevOffline != currOffline;
-            },
-            builder: (context, state) {
-              final isOffline = switch (state) {
-                DistingStateSynchronized(offline: final o) => o,
-                _ => false,
-              };
-
-              if (isOffline) {
-                return IconButton(
-                  tooltip: "Offline Data",
-                  icon: const Icon(
-                    Icons.sync_alt_rounded,
-                    semanticLabel: 'Offline Data',
-                  ),
-                  onPressed: () {
-                    final distingCubit = context.read<DistingCubit>();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            MetadataSyncPage(distingCubit: distingCubit),
-                      ),
-                    );
-                  },
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-
           // Quick-action buttons for frequently used features
           BlocBuilder<DistingCubit, DistingState>(
             buildWhen: (previous, current) {
@@ -1365,6 +1328,18 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         : () {
                             final cubit = context.read<DistingCubit>();
                             _handleBrowsePresets(cubit);
+                          },
+                  ),
+                  IconButton(
+                    tooltip: 'Video',
+                    icon: const Icon(
+                      Icons.videocam,
+                      semanticLabel: 'Video',
+                    ),
+                    onPressed: widget.loading || isOffline
+                        ? null
+                        : () {
+                            _showScreenshotOverlay(context);
                           },
                   ),
                   IconButton(

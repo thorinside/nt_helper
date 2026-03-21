@@ -96,14 +96,15 @@ void main() {
       expect(find.byTooltip('Plugin Manager'), findsOneWidget);
     });
 
-    testWidgets('Offline mode shows "Offline Data" button on desktop',
+    testWidgets(
+        'Offline mode does not show "Offline Data" button in bottom bar on desktop',
         (tester) async {
       await tester.pumpWidget(
         createTestWidget(isMobile: false, isOffline: true),
       );
 
-      // Verify offline button is present
-      expect(find.byTooltip('Offline Data'), findsOneWidget);
+      // Offline data button moved to overflow menu only
+      expect(find.byTooltip('Offline Data'), findsNothing);
 
       // Verify desktop display mode buttons are NOT present
       expect(find.byTooltip('Parameter View'), findsNothing);
@@ -115,14 +116,15 @@ void main() {
       expect(find.byTooltip('View Options'), findsNothing);
     });
 
-    testWidgets('Offline mode shows "Offline Data" button on mobile',
+    testWidgets(
+        'Offline mode does not show "Offline Data" button in bottom bar on mobile',
         (tester) async {
       await tester.pumpWidget(
         createTestWidget(isMobile: true, isOffline: true),
       );
 
-      // Verify offline button is present
-      expect(find.byTooltip('Offline Data'), findsOneWidget);
+      // Offline data button moved to overflow menu only
+      expect(find.byTooltip('Offline Data'), findsNothing);
 
       // Verify mobile "View Options" button is NOT present
       expect(find.byTooltip('View Options'), findsNothing);
