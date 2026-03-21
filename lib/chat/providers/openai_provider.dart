@@ -5,10 +5,11 @@ import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart'
     show LlmApiException;
+import 'package:nt_helper/chat/providers/llm_error_handling.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 /// OpenAI Chat Completions API provider.
-class OpenAIProvider implements LlmProvider {
+class OpenAIProvider with LlmErrorHandling implements LlmProvider {
   final String apiKey;
   final String model;
   final String baseUrl;
@@ -72,20 +73,7 @@ class OpenAIProvider implements LlmProvider {
       '(${response.body.length} bytes) from $baseUrl',
     );
 
-    if (response.statusCode != 200) {
-      String errorMessage;
-      try {
-        final errorBody = jsonDecode(response.body.trim());
-        errorMessage =
-            errorBody['error']?['message'] as String? ?? 'Unknown API error';
-      } on FormatException {
-        errorMessage = response.body;
-      }
-      DebugService().addLocalMessage('OpenAI API error: $errorMessage');
-      throw LlmApiException(
-        'OpenAI API error (${response.statusCode}): $errorMessage',
-      );
-    }
+    throwIfApiError(response, 'OpenAI API');
 
     final Map<String, dynamic> parsed;
     try {

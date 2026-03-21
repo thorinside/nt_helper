@@ -255,6 +255,21 @@ class ChatCubit extends Cubit<ChatState> {
                 currentState.totalOutputTokens + (usage?.outputTokens ?? 0),
           ),
         );
+      case ChatLoopRateLimited(
+        waitSeconds: final wait,
+        attempt: final attempt,
+        maxAttempts: final max,
+      ):
+        final msg = ChatMessage.system(
+          'Rate limited by the API (attempt $attempt of $max). '
+          'This happens when too many requests are made in a short period. '
+          'Retrying in $wait seconds...',
+        );
+        emit(
+          currentState.copyWith(
+            messages: [...currentState.messages, msg],
+          ),
+        );
       case ChatLoopError(message: final message):
         _truncateHistoryAfterCancellationPoint();
         final msg = ChatMessage.assistant('Error: $message');
