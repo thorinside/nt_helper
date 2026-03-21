@@ -102,8 +102,15 @@ class LlmResponse {
 class LlmUsage {
   final int inputTokens;
   final int outputTokens;
+  final int cacheCreationInputTokens;
+  final int cacheReadInputTokens;
 
-  const LlmUsage({required this.inputTokens, required this.outputTokens});
+  const LlmUsage({
+    required this.inputTokens,
+    required this.outputTokens,
+    this.cacheCreationInputTokens = 0,
+    this.cacheReadInputTokens = 0,
+  });
 
   int get totalTokens => inputTokens + outputTokens;
 }

@@ -56,11 +56,17 @@ class AnthropicSubscriptionProvider
     final fullSystemPrompt = systemPrompt != null
         ? '$_requiredSystemPrefix\n\n$systemPrompt'
         : _requiredSystemPrefix;
-    body['system'] = fullSystemPrompt;
+    body['system'] = [
+      {
+        'type': 'text',
+        'text': fullSystemPrompt,
+        'cache_control': {'type': 'ephemeral'},
+      },
+    ];
 
     if (tools.isNotEmpty) {
-      body['tools'] = tools
-          .map((t) => {
+      final toolsList = tools
+          .map((t) => <String, dynamic>{
                 'name': t.name,
                 'description': t.description,
                 'input_schema': {
@@ -69,6 +75,8 @@ class AnthropicSubscriptionProvider
                 },
               })
           .toList();
+      toolsList.last['cache_control'] = {'type': 'ephemeral'};
+      body['tools'] = toolsList;
     }
 
     final response = await _client.post(
