@@ -36,12 +36,18 @@ class AnthropicProvider implements LlmProvider {
     };
 
     if (systemPrompt != null) {
-      body['system'] = systemPrompt;
+      body['system'] = [
+        {
+          'type': 'text',
+          'text': systemPrompt,
+          'cache_control': {'type': 'ephemeral'},
+        },
+      ];
     }
 
     if (tools.isNotEmpty) {
-      body['tools'] = tools
-          .map((t) => {
+      final toolsList = tools
+          .map((t) => <String, dynamic>{
                 'name': t.name,
                 'description': t.description,
                 'input_schema': {
@@ -50,6 +56,8 @@ class AnthropicProvider implements LlmProvider {
                 },
               })
           .toList();
+      toolsList.last['cache_control'] = {'type': 'ephemeral'};
+      body['tools'] = toolsList;
     }
 
     final response = await _client.post(
@@ -182,6 +190,17 @@ class AnthropicProvider implements LlmProvider {
       }
     }
 
+    if (usage != null) {
+      final cacheCreation = usage['cache_creation_input_tokens'] as int? ?? 0;
+      final cacheRead = usage['cache_read_input_tokens'] as int? ?? 0;
+      if (cacheCreation > 0 || cacheRead > 0) {
+        DebugService().addLocalMessage(
+          'Cache: $cacheCreation created, $cacheRead read, '
+          '${usage['input_tokens'] ?? 0} uncached input',
+        );
+      }
+    }
+
     return LlmResponse(
       content: textContent,
       toolCalls: toolCalls,
@@ -190,6 +209,10 @@ class AnthropicProvider implements LlmProvider {
           ? LlmUsage(
               inputTokens: usage['input_tokens'] as int? ?? 0,
               outputTokens: usage['output_tokens'] as int? ?? 0,
+              cacheCreationInputTokens:
+                  usage['cache_creation_input_tokens'] as int? ?? 0,
+              cacheReadInputTokens:
+                  usage['cache_read_input_tokens'] as int? ?? 0,
             )
           : null,
     );
