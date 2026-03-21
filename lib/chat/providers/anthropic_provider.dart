@@ -2,11 +2,12 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
+import 'package:nt_helper/chat/providers/llm_error_handling.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 /// Anthropic Claude Messages API provider.
-class AnthropicProvider implements LlmProvider {
+class AnthropicProvider with LlmErrorHandling implements LlmProvider {
   final String apiKey;
   final String model;
   final http.Client _client;
@@ -67,20 +68,7 @@ class AnthropicProvider implements LlmProvider {
       '(${response.body.length} bytes)',
     );
 
-    if (response.statusCode != 200) {
-      String errorMessage;
-      try {
-        final errorBody = jsonDecode(response.body);
-        errorMessage =
-            errorBody['error']?['message'] as String? ?? 'Unknown API error';
-      } on FormatException {
-        errorMessage = response.body;
-      }
-      DebugService().addLocalMessage('Anthropic API error: $errorMessage');
-      throw LlmApiException(
-        'Anthropic API error (${response.statusCode}): $errorMessage',
-      );
-    }
+    throwIfApiError(response, 'Anthropic API');
 
     try {
       return parseResponse(jsonDecode(response.body));
@@ -203,7 +191,11 @@ class AnthropicProvider implements LlmProvider {
 
 class LlmApiException implements Exception {
   final String message;
-  LlmApiException(this.message);
+  final int? statusCode;
+  final int? retryAfterSeconds;
+  LlmApiException(this.message, {this.statusCode, this.retryAfterSeconds});
+
+  bool get isRateLimited => statusCode == 429;
 
   @override
   String toString() => message;

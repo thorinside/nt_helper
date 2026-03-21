@@ -386,11 +386,14 @@ void main() {
           tools: const [],
         ),
         throwsA(
-          isA<LlmApiException>().having(
-            (e) => e.message,
-            'message',
-            contains('Rate limit exceeded'),
-          ),
+          isA<LlmApiException>()
+              .having(
+                (e) => e.message,
+                'message',
+                contains('Rate limit exceeded'),
+              )
+              .having((e) => e.statusCode, 'statusCode', 429)
+              .having((e) => e.isRateLimited, 'isRateLimited', true),
         ),
       );
     });

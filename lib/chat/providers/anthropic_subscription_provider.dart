@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/chat/models/llm_types.dart';
 import 'package:nt_helper/chat/providers/anthropic_provider.dart';
+import 'package:nt_helper/chat/providers/llm_error_handling.dart';
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
@@ -10,7 +11,9 @@ import 'package:nt_helper/services/debug_service.dart';
 ///
 /// Uses Bearer token auth instead of x-api-key, with required beta headers
 /// for subscription access.
-class AnthropicSubscriptionProvider implements LlmProvider {
+class AnthropicSubscriptionProvider
+    with LlmErrorHandling
+    implements LlmProvider {
   final String token;
   final String model;
   final http.Client _client;
@@ -87,23 +90,7 @@ class AnthropicSubscriptionProvider implements LlmProvider {
       '(${response.body.length} bytes)',
     );
 
-    if (response.statusCode != 200) {
-      String errorMessage;
-      try {
-        final errorBody = jsonDecode(response.body);
-        errorMessage =
-            errorBody['error']?['message'] as String? ?? 'Unknown API error';
-      } on FormatException {
-        errorMessage = response.body;
-      }
-      DebugService().addLocalMessage(
-        'Anthropic Subscription API error: $errorMessage',
-      );
-      throw LlmApiException(
-        'Anthropic Subscription API error (${response.statusCode}): '
-        '$errorMessage',
-      );
-    }
+    throwIfApiError(response, 'Anthropic Subscription API');
 
     try {
       return _delegate.parseResponse(jsonDecode(response.body));

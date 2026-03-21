@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:math' show min;
 
 import 'package:nt_helper/chat/models/llm_types.dart';
+import 'package:nt_helper/chat/providers/anthropic_provider.dart'
+    show LlmApiException;
 import 'package:nt_helper/chat/providers/llm_provider.dart';
 import 'package:nt_helper/chat/services/tool_bridge_service.dart';
 import 'package:nt_helper/chat/utils/image_result_detector.dart';
@@ -42,6 +45,17 @@ class ChatLoopError extends ChatLoopEvent {
   ChatLoopError(this.message);
 }
 
+class ChatLoopRateLimited extends ChatLoopEvent {
+  final int waitSeconds;
+  final int attempt;
+  final int maxAttempts;
+  ChatLoopRateLimited({
+    required this.waitSeconds,
+    required this.attempt,
+    required this.maxAttempts,
+  });
+}
+
 /// Orchestrates the agentic tool-use loop.
 ///
 /// Sends messages to the LLM, executes tool calls, appends results, and loops
@@ -53,6 +67,8 @@ class ChatService {
   final String _systemPrompt;
 
   static const _maxIterations = 100;
+  static const _maxRateLimitRetries = 4;
+  static const _maxBackoffSeconds = 30;
 
   ChatService({
     required LlmProvider provider,
@@ -81,17 +97,43 @@ class ChatService {
     for (int i = 0; i < _maxIterations; i++) {
       yield ChatLoopThinking();
 
-      LlmResponse response;
-      try {
-        response = await _provider.sendMessages(
-          messages: currentMessages,
-          tools: tools,
-          systemPrompt: _systemPrompt,
-        );
-      } catch (e) {
-        yield ChatLoopError(e.toString());
-        return;
+      LlmResponse? response;
+      for (int retry = 0; retry <= _maxRateLimitRetries; retry++) {
+        try {
+          response = await _provider.sendMessages(
+            messages: currentMessages,
+            tools: tools,
+            systemPrompt: _systemPrompt,
+          );
+          break;
+        } on LlmApiException catch (e) {
+          if (!e.isRateLimited || retry == _maxRateLimitRetries) {
+            if (e.isRateLimited) {
+              yield ChatLoopError(
+                'Rate limited by the API after $_maxRateLimitRetries '
+                'retries. Please wait a few minutes before trying again.',
+              );
+            } else {
+              yield ChatLoopError(e.toString());
+            }
+            return;
+          }
+          final backoff = min(
+            e.retryAfterSeconds ?? (1 << retry),
+            _maxBackoffSeconds,
+          );
+          yield ChatLoopRateLimited(
+            waitSeconds: backoff,
+            attempt: retry + 1,
+            maxAttempts: _maxRateLimitRetries,
+          );
+          await Future<void>.delayed(Duration(seconds: backoff));
+        } catch (e) {
+          yield ChatLoopError(e.toString());
+          return;
+        }
       }
+      if (response == null) return;
 
       // Accumulate usage from every API call
       if (response.usage != null) {
