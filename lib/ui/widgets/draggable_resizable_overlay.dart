@@ -5,27 +5,27 @@ import 'package:nt_helper/services/settings_service.dart';
 
 class DraggableResizableOverlay extends StatefulWidget {
   final Widget child;
-  final Widget? bottomBar;
+  final Widget? topBar;
   final OverlayEntry overlayEntry;
   final double initialWidth;
   final double initialHeight;
   final double minWidth;
   final double maxWidth;
   final double aspectRatio; // width / height
-  final double bottomBarHeight;
+  final double topBarHeight;
   final Duration controlsHideDelay;
 
   const DraggableResizableOverlay({
     super.key,
     required this.child,
-    this.bottomBar,
+    this.topBar,
     required this.overlayEntry,
     this.initialWidth = 256.0,
     this.initialHeight = 64.0,
     this.minWidth = 128.0, // 0.5x scale (256 * 0.5)
     this.maxWidth = 1024.0, // 4x scale (256 * 4)
     this.aspectRatio = 4.0, // 4:1 aspect ratio for Disting NT display
-    this.bottomBarHeight = 36.0,
+    this.topBarHeight = 36.0,
     this.controlsHideDelay = const Duration(seconds: 10),
   });
 
@@ -115,7 +115,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
   }
 
   double get _totalHeight =>
-      _height + (widget.bottomBar != null ? widget.bottomBarHeight : 0);
+      _height + (widget.topBar != null ? widget.topBarHeight : 0);
 
   void _constrainToScreen() {
     final screenSize = MediaQuery.of(context).size;
@@ -186,8 +186,8 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     final isAccessible = MediaQuery.of(context).accessibleNavigation;
     final showControls = _controlsVisible || _isResizing || _isDragging || isAccessible;
 
-    final hasBottomBar = widget.bottomBar != null;
-    final barHeight = hasBottomBar ? widget.bottomBarHeight : 0.0;
+    final hasTopBar = widget.topBar != null;
+    final barHeight = hasTopBar ? widget.topBarHeight : 0.0;
 
     return Positioned(
       left: _x,
@@ -197,12 +197,52 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
         height: _totalHeight,
         child: Stack(
           children: [
+            // Top action bar with integrated close button
+            if (hasTopBar)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: barHeight,
+                child: AnimatedOpacity(
+                  opacity: showControls ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Row(
+                    children: [
+                      Expanded(child: widget.topBar!),
+                      Semantics(
+                        label: 'Close overlay',
+                        button: true,
+                        child: GestureDetector(
+                          onTap: () => widget.overlayEntry.remove(),
+                          child: Container(
+                            width: barHeight,
+                            height: barHeight,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(6),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             // Main content
             Positioned(
-              top: 0,
+              top: barHeight,
               left: 0,
               right: 0,
-              bottom: barHeight,
+              bottom: 0,
               child: GestureDetector(
                 onTap: _showControls,
                 onPanStart: _onPanStart,
@@ -232,51 +272,38 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
               ),
             ),
 
-            // Bottom toolbar
-            if (hasBottomBar)
+            // Close button (top-right corner) — only when no top bar
+            if (!hasTopBar)
               Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: barHeight,
+                top: 4,
+                right: 4,
                 child: AnimatedOpacity(
                   opacity: showControls ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 300),
-                  child: widget.bottomBar!,
-                ),
-              ),
-
-            // Close button (top-right corner)
-            Positioned(
-              top: 4,
-              right: 4,
-              child: AnimatedOpacity(
-                opacity: showControls ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Semantics(
-                  label: 'Close overlay',
-                  button: true,
-                  child: GestureDetector(
-                    onTap: () {
-                      widget.overlayEntry.remove();
-                    },
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        size: 16,
-                        color: Colors.white,
+                  child: Semantics(
+                    label: 'Close overlay',
+                    button: true,
+                    child: GestureDetector(
+                      onTap: () {
+                        widget.overlayEntry.remove();
+                      },
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
 
             // Resize handle (bottom-right corner)
             Positioned(
