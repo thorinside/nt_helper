@@ -91,8 +91,7 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.7),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(6),
-          bottomRight: Radius.circular(6),
+          topLeft: Radius.circular(6),
         ),
       ),
       child: Row(
@@ -141,7 +140,7 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   Widget build(BuildContext context) {
     return DraggableResizableOverlay(
       overlayEntry: widget.overlayEntry,
-      bottomBar: _buildDisplayModeBar(),
+      topBar: _buildDisplayModeBar(),
       child: FloatingVideoContent(
         cubit: widget.cubit,
         videoFrameCubit: widget.videoFrameCubit,
