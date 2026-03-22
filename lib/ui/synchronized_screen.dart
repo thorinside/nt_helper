@@ -1466,6 +1466,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     DistingVersion(
                       distingVersion: widget.distingVersion,
                       requiredVersion: Constants.requiredDistingVersion,
+                      firmwareVersion: widget.firmwareVersion,
                       firmwareDate: widget.firmwareVersion.date,
                       onTap: isDesktop
                           ? () {
