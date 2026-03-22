@@ -354,6 +354,9 @@ class _ConnectionDelegate {
     stopMidiSetupListener();
 
     try {
+      // Stop CC notifications before disconnecting (avoids callbacks on disposed manager)
+      _cubit._ccNotificationDelegate.stop();
+
       // Disconnect and dispose any existing managers first
       if (existingManager != null) {
         // Explicitly disconnect devices using devices read from the state

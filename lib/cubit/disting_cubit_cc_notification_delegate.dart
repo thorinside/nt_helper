@@ -13,6 +13,8 @@ class _CcNotificationDelegate {
   // Feedback suppression: key = (algorithmIndex * 10000 + parameterNumber)
   final Map<int, DateTime> _outboundTimestamps = {};
   static const _feedbackWindow = Duration(milliseconds: 150);
+  static const _maxOutboundEntries = 100;
+  static const _maxPending14BitEntries = 32;
 
   // Preset load detection
   final Set<int> _batchParams = {};
@@ -48,8 +50,15 @@ class _CcNotificationDelegate {
   }
 
   void markOutboundChange(int algorithmIndex, int parameterNumber) {
-    _outboundTimestamps[algorithmIndex * 10000 + parameterNumber] =
-        DateTime.now();
+    final now = DateTime.now();
+    _outboundTimestamps[algorithmIndex * 10000 + parameterNumber] = now;
+
+    // Periodically prune expired entries to prevent unbounded growth
+    if (_outboundTimestamps.length > _maxOutboundEntries) {
+      _outboundTimestamps.removeWhere(
+        (_, timestamp) => now.difference(timestamp) > _feedbackWindow,
+      );
+    }
   }
 
   void _onCcReceived(int channel, int cc, int value) {
@@ -74,7 +83,17 @@ class _CcNotificationDelegate {
     final pendingKey = channel * 256 + baseCc;
 
     if (isMsb) {
-      _pending14BitMsb[pendingKey] = _Pending14Bit(value, DateTime.now());
+      final now = DateTime.now();
+      _pending14BitMsb[pendingKey] = _Pending14Bit(value, now);
+
+      // Prune stale pending entries to prevent unbounded growth from
+      // orphaned MSBs that never received a matching LSB
+      if (_pending14BitMsb.length > _maxPending14BitEntries) {
+        _pending14BitMsb.removeWhere(
+          (_, pending) =>
+              now.difference(pending.timestamp).inMilliseconds > 500,
+        );
+      }
     } else {
       // LSB arrived — combine with pending MSB
       final pending = _pending14BitMsb.remove(pendingKey);
@@ -165,8 +184,9 @@ class _CcNotificationDelegate {
       // Trigger a full state refresh instead of individual updates.
       _batchParams.clear();
       _cubit._refreshStateFromManager();
+    } else {
+      _batchParams.clear();
     }
-    _batchParams.clear();
   }
 }
 

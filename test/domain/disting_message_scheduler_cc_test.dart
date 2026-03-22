@@ -3,6 +3,21 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/domain/disting_message_scheduler.dart';
 
+/// Simulates what _dispatchCcMessages does by extracting CC messages from raw bytes.
+void simulateCcDispatch(Uint8List raw, CcCallback callback) {
+  for (int i = 0; i < raw.length; i++) {
+    final byte = raw[i];
+    if (byte & 0xF0 == 0xB0 && i + 2 < raw.length) {
+      final data1 = raw[i + 1];
+      final data2 = raw[i + 2];
+      if (data1 < 0x80 && data2 < 0x80) {
+        callback(byte & 0x0F, data1, data2);
+        i += 2;
+      }
+    }
+  }
+}
+
 void main() {
   group('DistingMessageScheduler CC dispatch', () {
     test('_dispatchCcMessages extracts CC from raw bytes', () {
@@ -17,25 +32,11 @@ void main() {
       int? receivedCc;
       int? receivedValue;
 
-      // Create a minimal test by calling the callback type directly
-      final CcCallback callback = (channel, cc, value) {
+      simulateCcDispatch(raw, (channel, cc, value) {
         receivedChannel = channel;
         receivedCc = cc;
         receivedValue = value;
-      };
-
-      // Simulate what _dispatchCcMessages does
-      for (int i = 0; i < raw.length; i++) {
-        final byte = raw[i];
-        if (byte & 0xF0 == 0xB0 && i + 2 < raw.length) {
-          final data1 = raw[i + 1];
-          final data2 = raw[i + 2];
-          if (data1 < 0x80 && data2 < 0x80) {
-            callback(byte & 0x0F, data1, data2);
-            i += 2;
-          }
-        }
-      }
+      });
 
       expect(receivedChannel, 0);
       expect(receivedCc, 7);
@@ -50,21 +51,9 @@ void main() {
       ]);
 
       final received = <(int, int, int)>[];
-      final CcCallback callback = (channel, cc, value) {
+      simulateCcDispatch(raw, (channel, cc, value) {
         received.add((channel, cc, value));
-      };
-
-      for (int i = 0; i < raw.length; i++) {
-        final byte = raw[i];
-        if (byte & 0xF0 == 0xB0 && i + 2 < raw.length) {
-          final data1 = raw[i + 1];
-          final data2 = raw[i + 2];
-          if (data1 < 0x80 && data2 < 0x80) {
-            callback(byte & 0x0F, data1, data2);
-            i += 2;
-          }
-        }
-      }
+      });
 
       expect(received.length, 2);
       expect(received[0], (0, 1, 50));
@@ -76,21 +65,9 @@ void main() {
       final raw = Uint8List.fromList([0x90, 0x3C, 0x7F]);
 
       final received = <(int, int, int)>[];
-      final CcCallback callback = (channel, cc, value) {
+      simulateCcDispatch(raw, (channel, cc, value) {
         received.add((channel, cc, value));
-      };
-
-      for (int i = 0; i < raw.length; i++) {
-        final byte = raw[i];
-        if (byte & 0xF0 == 0xB0 && i + 2 < raw.length) {
-          final data1 = raw[i + 1];
-          final data2 = raw[i + 2];
-          if (data1 < 0x80 && data2 < 0x80) {
-            callback(byte & 0x0F, data1, data2);
-            i += 2;
-          }
-        }
-      }
+      });
 
       expect(received, isEmpty);
     });
@@ -100,21 +77,9 @@ void main() {
         final raw = Uint8List.fromList([0xB0 + ch, 0x01, 0x40]);
 
         int? receivedChannel;
-        final CcCallback callback = (channel, cc, value) {
+        simulateCcDispatch(raw, (channel, cc, value) {
           receivedChannel = channel;
-        };
-
-        for (int i = 0; i < raw.length; i++) {
-          final byte = raw[i];
-          if (byte & 0xF0 == 0xB0 && i + 2 < raw.length) {
-            final data1 = raw[i + 1];
-            final data2 = raw[i + 2];
-            if (data1 < 0x80 && data2 < 0x80) {
-              callback(byte & 0x0F, data1, data2);
-              i += 2;
-            }
-          }
-        }
+        });
 
         expect(receivedChannel, ch, reason: 'channel $ch not extracted');
       }
@@ -125,21 +90,9 @@ void main() {
       final raw = Uint8List.fromList([0xB0, 0x80, 0x40]);
 
       final received = <(int, int, int)>[];
-      final CcCallback callback = (channel, cc, value) {
+      simulateCcDispatch(raw, (channel, cc, value) {
         received.add((channel, cc, value));
-      };
-
-      for (int i = 0; i < raw.length; i++) {
-        final byte = raw[i];
-        if (byte & 0xF0 == 0xB0 && i + 2 < raw.length) {
-          final data1 = raw[i + 1];
-          final data2 = raw[i + 2];
-          if (data1 < 0x80 && data2 < 0x80) {
-            callback(byte & 0x0F, data1, data2);
-            i += 2;
-          }
-        }
-      }
+      });
 
       expect(received, isEmpty);
     });

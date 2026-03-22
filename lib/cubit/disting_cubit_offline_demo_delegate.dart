@@ -50,6 +50,9 @@ class _OfflineDemoDelegate {
     // Stop listening for MIDI setup changes when going offline
     _cubit._stopMidiSetupListener();
 
+    // Stop CC notifications before disconnecting (avoids callbacks on disposed manager)
+    _cubit._ccNotificationDelegate.stop();
+
     // Get devices and manager from CURRENT state before changing it
     MidiDevice? currentInputDevice;
     MidiDevice? currentOutputDevice;

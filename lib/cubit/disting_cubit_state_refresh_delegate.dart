@@ -39,6 +39,9 @@ class _StateRefreshDelegate {
           perfPageItems: perfPageItems ?? currentState.perfPageItems,
         ),
       );
+
+      // Rebuild CC notification lookup since slots may have changed
+      _cubit._ccNotificationDelegate.rebuildLookup();
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
       _cubit._emitState(currentState.copyWith(loading: false));
