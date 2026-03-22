@@ -148,13 +148,26 @@ class _ParameterRefreshDelegate {
   // Starts polling for each mapped parameter.
   void startPollingMappedParameters() {
     stopPollingMappedParameters(); // Clear any previous tasks.
-    if (_cubit.state is! DistingStateSynchronized) return;
-    final mappedParams = DistingCubit.buildMappedParameterList(_cubit.state);
-    for (final param in mappedParams) {
-      final key =
-          '${param.parameter.algorithmIndex}_${param.parameter.parameterNumber}';
-      _pollingTasks[key] = _PollingTask();
-      _pollIndividualParameter(param, key);
+    final state = _cubit.state;
+    if (state is! DistingStateSynchronized) return;
+
+    if (state.firmwareVersion.hasPerfPageItems &&
+        state.perfPageItems.isNotEmpty) {
+      for (final item in state.perfPageItems.where((i) => i.enabled)) {
+        final key = '${item.slotIndex}_${item.parameterNumber}';
+        if (!_pollingTasks.containsKey(key)) {
+          _pollingTasks[key] = _PollingTask();
+          _pollPerfPageItemParameter(item, key);
+        }
+      }
+    } else {
+      final mappedParams = DistingCubit.buildMappedParameterList(state);
+      for (final param in mappedParams) {
+        final key =
+            '${param.parameter.algorithmIndex}_${param.parameter.parameterNumber}';
+        _pollingTasks[key] = _PollingTask();
+        _pollIndividualParameter(param, key);
+      }
     }
   }
 
@@ -249,6 +262,72 @@ class _ParameterRefreshDelegate {
     // Continue polling this parameter if it's still active.
     if (_pollingTasks.containsKey(key)) {
       _pollIndividualParameter(mapped, key);
+    }
+  }
+
+  Future<void> _pollPerfPageItemParameter(
+    PerformancePageItem item,
+    String key,
+  ) async {
+    final task = _pollingTasks[key];
+    if (task == null || !task.active || _cubit.state is! DistingStateSynchronized) {
+      return;
+    }
+
+    const Duration fastInterval = Duration(milliseconds: 100);
+    const Duration slowInterval = Duration(milliseconds: 1000);
+    const int fastToSlowThreshold = 3;
+
+    try {
+      final disting = _cubit.requireDisting();
+      final newValue = await disting.requestParameterValue(
+        item.slotIndex,
+        item.parameterNumber,
+      );
+      if (newValue == null) return;
+
+      final currentState = _cubit.state;
+      if (currentState is DistingStateSynchronized) {
+        if (item.slotIndex >= currentState.slots.length) {
+          _pollingTasks.remove(key);
+          return;
+        }
+        final currentSlot = currentState.slots[item.slotIndex];
+        if (item.parameterNumber >= currentSlot.values.length) {
+          _pollingTasks.remove(key);
+          return;
+        }
+        final currentValue = currentSlot.values[item.parameterNumber];
+        if (newValue.value != currentValue.value ||
+            newValue.isDisabled != currentValue.isDisabled) {
+          final updatedSlots = _cubit.updateSlot(
+            item.slotIndex,
+            currentState.slots,
+            (slot) => slot.copyWith(
+              values: _cubit.replaceInList(
+                slot.values,
+                newValue,
+                index: item.parameterNumber,
+              ),
+            ),
+          );
+          _cubit._emitState(currentState.copyWith(slots: updatedSlots));
+          task.noChangeCount = 0;
+          await Future.delayed(fastInterval);
+        } else {
+          task.noChangeCount++;
+          final delay = (task.noChangeCount >= fastToSlowThreshold)
+              ? slowInterval
+              : fastInterval;
+          await Future.delayed(delay);
+        }
+      }
+    } catch (e) {
+      await Future.delayed(slowInterval);
+    }
+
+    if (_pollingTasks.containsKey(key)) {
+      _pollPerfPageItemParameter(item, key);
     }
   }
 }

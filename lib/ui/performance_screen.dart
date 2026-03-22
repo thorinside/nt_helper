@@ -348,6 +348,16 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       child: HardwarePreviewWidget(
                         parameters: sortedParams,
                         layoutMode: _layoutMode,
+                        slots: state.slots,
+                        onParameterChanged: (slotIndex, parameterNumber,
+                            value, userIsChanging) {
+                          context.read<DistingCubit>().updateParameterValue(
+                            algorithmIndex: slotIndex,
+                            parameterNumber: parameterNumber,
+                            value: value,
+                            userIsChangingTheValue: userIsChanging,
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -376,7 +386,19 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(
             flex: 2,
-            child: HardwarePreviewWidget(perfPageItems: enabledItems),
+            child: HardwarePreviewWidget(
+              perfPageItems: enabledItems,
+              slots: state.slots,
+              onParameterChanged: (slotIndex, parameterNumber, value,
+                  userIsChanging) {
+                context.read<DistingCubit>().updateParameterValue(
+                  algorithmIndex: slotIndex,
+                  parameterNumber: parameterNumber,
+                  value: value,
+                  userIsChangingTheValue: userIsChanging,
+                );
+              },
+            ),
           ),
         ],
       );
