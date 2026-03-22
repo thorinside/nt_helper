@@ -6,6 +6,7 @@ class DistingVersion extends StatelessWidget {
     super.key,
     required this.distingVersion,
     required this.requiredVersion,
+    this.firmwareVersion,
     this.firmwareDate,
     this.onTap,
     this.onHelpTextChanged,
@@ -13,6 +14,7 @@ class DistingVersion extends StatelessWidget {
 
   final String distingVersion;
   final String requiredVersion;
+  final FirmwareVersion? firmwareVersion;
   final String? firmwareDate;
   final VoidCallback? onTap;
   final ValueChanged<String?>? onHelpTextChanged;
@@ -21,9 +23,8 @@ class DistingVersion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNotSupported = !FirmwareVersion(
-      distingVersion,
-    ).isSupported(requiredVersion);
+    final versionToCheck = firmwareVersion ?? FirmwareVersion(distingVersion);
+    final isNotSupported = !versionToCheck.isSupported(requiredVersion);
 
     final versionStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
       color: isNotSupported
