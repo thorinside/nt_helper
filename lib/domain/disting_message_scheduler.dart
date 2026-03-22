@@ -853,16 +853,18 @@ class DistingMessageScheduler {
 
     while (searchStart < raw.length) {
       final startIndex = raw.indexOf(0xF0, searchStart);
-      if (startIndex == -1) {
-        break;
-      }
+      if (startIndex == -1) break;
 
       final endIndex = raw.indexOf(0xF7, startIndex);
-      if (endIndex == -1) {
-        break;
+      if (endIndex == -1) break;
+
+      // Per MIDI spec, a new F0 cancels any in-progress SysEx.
+      int actualStart = startIndex;
+      for (int i = startIndex + 1; i < endIndex; i++) {
+        if (raw[i] == 0xF0) actualStart = i;
       }
 
-      messages.add(raw.sublist(startIndex, endIndex + 1));
+      messages.add(raw.sublist(actualStart, endIndex + 1));
       searchStart = endIndex + 1;
     }
 
@@ -891,29 +893,39 @@ class DistingMessageScheduler {
 
     // If we're currently buffering a SysEx message
     if (_isBufferingSysEx) {
-      _sysExBuffer.addAll(raw);
-
-      if (hasF7) {
-        _isBufferingSysEx = false;
-        final completeMessage = Uint8List.fromList(_sysExBuffer);
+      if (hasF0 && (!hasF7 || raw.indexOf(0xF0) < raw.indexOf(0xF7))) {
+        // New F0 arrives before any F7 — interrupts our buffered SysEx.
+        // Discard buffer and fall through to process this packet normally.
         _sysExBuffer.clear();
-        _sysexPacketsReceived++;
-        _processExtractedSysEx(_extractSysExMessages(completeMessage));
+        _isBufferingSysEx = false;
+      } else if (raw.isNotEmpty && raw[0] >= 0x80 && raw[0] != 0xF7 && !hasF0) {
+        // Non-SysEx status byte (CC, Note, etc.) — skip entirely
+        _nonSysexPacketsReceived++;
+        return;
+      } else {
+        // SysEx continuation data (data bytes < 0x80, or F7 terminator)
+        _sysExBuffer.addAll(raw);
+        if (hasF7) {
+          _isBufferingSysEx = false;
+          final completeMessage = Uint8List.fromList(_sysExBuffer);
+          _sysExBuffer.clear();
+          _sysexPacketsReceived++;
+          _processExtractedSysEx(_extractSysExMessages(completeMessage));
 
-        // Check for a trailing F0 (start of next split SysEx)
-        final lastF7 = completeMessage.lastIndexOf(0xF7);
-        if (lastF7 < completeMessage.length - 1) {
-          final trailing = completeMessage.sublist(lastF7 + 1);
-          if (trailing.contains(0xF0)) {
-            final trailingF0 = trailing.indexOf(0xF0);
-            _sysExBuffer.addAll(trailing.sublist(trailingF0));
-            _isBufferingSysEx = true;
+          // Check for a trailing F0 (start of next split SysEx)
+          final lastF7 = completeMessage.lastIndexOf(0xF7);
+          if (lastF7 < completeMessage.length - 1) {
+            final trailing = completeMessage.sublist(lastF7 + 1);
+            if (trailing.contains(0xF0)) {
+              final trailingF0 = trailing.indexOf(0xF0);
+              _sysExBuffer.addAll(trailing.sublist(trailingF0));
+              _isBufferingSysEx = true;
+            }
           }
+          return;
         }
         return;
       }
-      // Still waiting for F7
-      return;
     }
 
     // Check if this starts a new SysEx that might be split
