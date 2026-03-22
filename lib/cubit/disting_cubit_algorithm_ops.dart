@@ -221,6 +221,8 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         // Emit optimistic state
         emit(syncstate.copyWith(slots: optimisticSlots, loading: false));
 
+        _rebuildCcLookup();
+
         // 2. Manager Request
         final disting = requireDisting();
         // Don't await here, let it run in the background
@@ -314,6 +316,8 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
 
     // Emit optimistic state
     emit(syncstate.copyWith(slots: optimisticSlotsCorrected, loading: false));
+
+    _rebuildCcLookup();
 
     // 2. Manager Request
     final disting = requireDisting();
@@ -429,6 +433,8 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
 
     // Emit optimistic state
     emit(syncstate.copyWith(slots: optimisticSlotsCorrected, loading: false));
+
+    _rebuildCcLookup();
 
     // 2. Manager Request
     final disting = requireDisting();

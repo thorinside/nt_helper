@@ -74,6 +74,7 @@ abstract class _DistingCubitBase extends Cubit<DistingState> {
     void Function(int completed, int total)? onSlotProgress,
   });
   Future<void> _refreshStateFromManager({Duration delay});
+  void _rebuildCcLookup();
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex);
   List<Slot> updateSlot(
     int algorithmIndex,
@@ -509,6 +510,11 @@ class DistingCubit extends _DistingCubitBase
     Duration delay = const Duration(milliseconds: 50), // Shorter default delay
   }) async {
     return _stateRefreshDelegate.refreshStateFromManager(delay: delay);
+  }
+
+  @override
+  void _rebuildCcLookup() {
+    _ccNotificationDelegate.rebuildLookup();
   }
 
   List<RoutingInformation> buildRoutingInformation() {

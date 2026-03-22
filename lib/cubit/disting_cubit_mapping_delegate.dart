@@ -14,8 +14,7 @@ class _MappingDelegate {
       case DistingStateSynchronized _:
         final disting = _cubit.requireDisting();
         await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
-        await _cubit._refreshStateFromManager(); // Refresh state from manager
-        _cubit._ccNotificationDelegate.rebuildLookup();
+        await _cubit._refreshStateFromManager();
         break;
       default:
       // Handle other cases or errors
