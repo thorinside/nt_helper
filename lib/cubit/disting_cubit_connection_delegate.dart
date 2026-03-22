@@ -151,6 +151,9 @@ class _ConnectionDelegate {
         break;
     }
 
+    // Stop CC notification processing before disconnecting
+    _cubit._ccNotificationDelegate.stop();
+
     // Disconnect MIDI devices FIRST (closes ALSA ports and stops isolate)
     // Must happen before manager.dispose() to avoid read/write on closed ports
     if (inputDevice != null) {
@@ -291,6 +294,9 @@ class _ConnectionDelegate {
             perfPageItems: perfPageItems,
           ),
         );
+
+        // Start CC notification processing for push updates
+        _cubit._ccNotificationDelegate.start();
 
         // If cache miss, start background loading for algorithms
         // (now that we're in synchronized state, background loading can update state)

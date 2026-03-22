@@ -134,6 +134,10 @@ abstract class IDistingMidiManager {
     void Function(double progress, String currentFile)? onProgress,
   });
 
+  // CC notification callback (optional - no-op for offline/mock managers)
+  void setCcCallback(void Function(int channel, int cc, int value)? callback) {}
+  void clearCcCallback() {}
+
   // Diagnostics (optional - returns null for offline/mock managers)
   /// Returns overall scheduler diagnostics including RTT stats.
   Map<String, dynamic>? getSchedulerDiagnostics() => null;

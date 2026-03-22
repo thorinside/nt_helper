@@ -34,6 +34,8 @@ enum ResponseExpectation {
 // Scheduler state
 // -----------------------------------------------------------------------------
 
+typedef CcCallback = void Function(int channel, int cc, int value);
+
 enum _SchedulerState { idle, sending, waitingForResponse }
 
 // -----------------------------------------------------------------------------
@@ -275,6 +277,17 @@ class DistingMessageScheduler {
 
   // Response demultiplexer
   final _ResponseDemux _demux = _ResponseDemux();
+
+  // CC callback for receiving MIDI CC messages from the device
+  CcCallback? _ccCallback;
+
+  void setCcCallback(CcCallback callback) {
+    _ccCallback = callback;
+  }
+
+  void clearCcCallback() {
+    _ccCallback = null;
+  }
 
   // Diagnostic counters
   int _totalPacketsReceived = 0;
@@ -899,7 +912,8 @@ class DistingMessageScheduler {
         _sysExBuffer.clear();
         _isBufferingSysEx = false;
       } else if (raw.isNotEmpty && raw[0] >= 0x80 && raw[0] != 0xF7 && !hasF0) {
-        // Non-SysEx status byte (CC, Note, etc.) — skip entirely
+        // Non-SysEx status byte (CC, Note, etc.) — dispatch CCs, skip rest
+        _dispatchCcMessages(raw);
         _nonSysexPacketsReceived++;
         return;
       } else {
@@ -942,6 +956,7 @@ class DistingMessageScheduler {
     // may be combined with SysEx responses by the MIDI library.
     final sysexMessages = _extractSysExMessages(raw);
     if (sysexMessages.isEmpty) {
+      _dispatchCcMessages(raw);
       _nonSysexPacketsReceived++;
       return;
     }
@@ -961,6 +976,22 @@ class DistingMessageScheduler {
     }
 
     _processExtractedSysEx(sysexMessages);
+  }
+
+  void _dispatchCcMessages(Uint8List raw) {
+    final callback = _ccCallback;
+    if (callback == null) return;
+    for (int i = 0; i < raw.length; i++) {
+      final byte = raw[i];
+      if (byte & 0xF0 == 0xB0 && i + 2 < raw.length) {
+        final data1 = raw[i + 1];
+        final data2 = raw[i + 2];
+        if (data1 < 0x80 && data2 < 0x80) {
+          callback(byte & 0x0F, data1, data2);
+          i += 2;
+        }
+      }
+    }
   }
 
   void _processExtractedSysEx(List<Uint8List> sysexMessages) {

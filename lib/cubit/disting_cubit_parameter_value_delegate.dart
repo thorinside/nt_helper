@@ -38,6 +38,10 @@ class _ParameterValueDelegate {
             needsStringUpdate: needsStringUpdate,
             isRealTimeUpdate: userIsChangingTheValue,
           );
+          _cubit._ccNotificationDelegate.markOutboundChange(
+            algorithmIndex,
+            parameterNumber,
+          );
 
           if (userIsChangingTheValue) {
             // Optimistic update during slider movement - just update the UI

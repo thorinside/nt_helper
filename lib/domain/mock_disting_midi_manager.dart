@@ -1372,6 +1372,12 @@ class MockDistingMidiManager implements IDistingMidiManager {
 
   @override
   Map<int, double>? getSlowAlgorithmInfo() => null;
+
+  @override
+  void setCcCallback(void Function(int channel, int cc, int value)? callback) {}
+
+  @override
+  void clearCcCallback() {}
 }
 
 // --- Private State Class ---

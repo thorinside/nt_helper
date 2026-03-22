@@ -110,7 +110,22 @@ class DistingMidiManager implements IDistingMidiManager {
 
   @override
   void dispose() {
+    _scheduler.clearCcCallback();
     _scheduler.dispose();
+  }
+
+  @override
+  void setCcCallback(void Function(int channel, int cc, int value)? callback) {
+    if (callback != null) {
+      _scheduler.setCcCallback(callback);
+    } else {
+      _scheduler.clearCcCallback();
+    }
+  }
+
+  @override
+  void clearCcCallback() {
+    _scheduler.clearCcCallback();
   }
 
   /// Sends a screenshot request and waits for the screenshot response

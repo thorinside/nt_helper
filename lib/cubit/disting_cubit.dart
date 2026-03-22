@@ -11,6 +11,7 @@ import 'package:nt_helper/core/routing/bus_spec.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart'; // Added
 import 'package:nt_helper/db/daos/presets_dao.dart'; // Added
 import 'package:nt_helper/db/database.dart'; // Added
+import 'package:nt_helper/domain/cc_reverse_lookup.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
@@ -59,6 +60,7 @@ part 'disting_cubit_hardware_commands_delegate.dart';
 part 'disting_cubit_state_helpers_delegate.dart';
 part 'disting_cubit_refresh_delegate.dart';
 part 'disting_cubit_perf_page_delegate.dart';
+part 'disting_cubit_cc_notification_delegate.dart';
 part 'disting_cubit_internal_types.dart';
 
 abstract class _DistingCubitBase extends Cubit<DistingState> {
@@ -123,6 +125,8 @@ class DistingCubit extends _DistingCubitBase
       _StateHelpersDelegate(this);
   late final _RefreshDelegate _refreshDelegate = _RefreshDelegate(this);
   late final _PerfPageDelegate _perfPageDelegate = _PerfPageDelegate(this);
+  late final _CcNotificationDelegate _ccNotificationDelegate =
+      _CcNotificationDelegate(this);
 
   /// Service for checking firmware updates
   final FirmwareVersionService _firmwareVersionService =
@@ -191,6 +195,7 @@ class DistingCubit extends _DistingCubitBase
 
   @override
   Future<void> close() async {
+    _ccNotificationDelegate.stop();
     disting()?.dispose();
     _offlineManager?.dispose();
     _parameterQueue?.dispose();
