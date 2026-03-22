@@ -347,6 +347,8 @@ class _KnobSlotState extends State<_KnobSlot> {
         oldKnob?.parameterNumber != newKnob?.parameterNumber) {
       _isDragging = false;
       _localFillFraction = null;
+    } else if (!_isDragging) {
+      _localFillFraction = null;
     }
   }
 
@@ -378,9 +380,8 @@ class _KnobSlotState extends State<_KnobSlot> {
 
     final delta = details.delta.dx / width;
     final newFill = (_localFillFraction! + delta).clamp(0.0, 1.0);
-    final value =
-        (knob.rangeMin! + (newFill * (knob.rangeMax! - knob.rangeMin!)))
-            .round();
+    final range = knob.rangeMax! - knob.rangeMin!;
+    final value = (knob.rangeMin! + (newFill * range)).round();
 
     setState(() {
       _localFillFraction = newFill;
@@ -409,8 +410,9 @@ class _KnobSlotState extends State<_KnobSlot> {
     }
 
     final fill = _localFillFraction ?? 0.0;
-    final value =
-        (knob.rangeMin! + (fill * (knob.rangeMax! - knob.rangeMin!))).round();
+    final range = knob.rangeMax! - knob.rangeMin!;
+    final value = (knob.rangeMin! + (fill * range)).round();
+    final snappedFill = (value - knob.rangeMin!) / range;
 
     widget.onParameterChanged!(
       knob.slotIndex!,
@@ -421,7 +423,7 @@ class _KnobSlotState extends State<_KnobSlot> {
 
     setState(() {
       _isDragging = false;
-      _localFillFraction = null;
+      _localFillFraction = snappedFill;
     });
   }
 
@@ -431,8 +433,7 @@ class _KnobSlotState extends State<_KnobSlot> {
     final knob = widget.knob;
     final isEmpty = knob == null || knob.isEmpty;
 
-    final displayFill =
-        _isDragging ? _localFillFraction : knob?.fillFraction;
+    final displayFill = _localFillFraction ?? knob?.fillFraction;
 
     final isInteractive =
         knob != null && knob.isInteractive && widget.onParameterChanged != null;
