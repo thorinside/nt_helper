@@ -46,7 +46,16 @@ class _CcNotificationDelegate {
     final state = _cubit.state;
     if (state is! DistingStateSynchronized) return;
 
+    final oldLookup = _lookup;
     _lookup = CcReverseLookup.build(state.slots);
+
+    // If we went from empty (no callback registered) to non-empty,
+    // register the callback now. This handles the case where start()
+    // returned early because no MIDI mappings existed at sync time,
+    // but a mapping was added later.
+    if ((oldLookup == null || oldLookup.isEmpty) && !_lookup!.isEmpty) {
+      _cubit.disting()?.setCcCallback(_onCcReceived);
+    }
   }
 
   void markOutboundChange(int algorithmIndex, int parameterNumber) {
@@ -68,16 +77,32 @@ class _CcNotificationDelegate {
     final targets = lookup.lookup(channel, cc);
     if (targets == null) return;
 
+    // Separate 14-bit and standard targets
+    final has14Bit = targets.any((t) => t.is14Bit);
+
+    if (has14Bit) {
+      // Handle 14-bit accumulation once for this (channel, cc), then
+      // dispatch the combined value to all 14-bit targets.
+      final combined = _accumulate14BitCc(channel, cc, value);
+      if (combined != null) {
+        for (final target in targets) {
+          if (target.is14Bit) {
+            _applyValue(target, combined);
+          }
+        }
+      }
+    }
+
     for (final target in targets) {
-      if (target.is14Bit) {
-        _handle14BitCc(channel, cc, value, target);
-      } else {
-        _handleStandardCc(value, target);
+      if (!target.is14Bit) {
+        _applyValue(target, value);
       }
     }
   }
 
-  void _handle14BitCc(int channel, int cc, int value, CcTarget target) {
+  /// Accumulates 14-bit CC values. Returns the combined 14-bit value when
+  /// both MSB and LSB have been received, or null if still waiting.
+  int? _accumulate14BitCc(int channel, int cc, int value) {
     final baseCc = cc < 32 ? cc : cc - 32;
     final isMsb = cc < 32;
     final pendingKey = channel * 256 + baseCc;
@@ -94,23 +119,19 @@ class _CcNotificationDelegate {
               now.difference(pending.timestamp).inMilliseconds > 500,
         );
       }
+      return null;
     } else {
       // LSB arrived — combine with pending MSB
       final pending = _pending14BitMsb.remove(pendingKey);
-      if (pending == null) return;
+      if (pending == null) return null;
 
       // Stale MSB check (500ms)
       if (DateTime.now().difference(pending.timestamp).inMilliseconds > 500) {
-        return;
+        return null;
       }
 
-      final combined = (pending.msb << 7) | value;
-      _applyValue(target, combined);
+      return (pending.msb << 7) | value;
     }
-  }
-
-  void _handleStandardCc(int value, CcTarget target) {
-    _applyValue(target, value);
   }
 
   void _applyValue(CcTarget target, int ccValue) {
@@ -151,10 +172,15 @@ class _CcNotificationDelegate {
 
     // Update cubit state
     if (target.algorithmIndex < state.slots.length) {
+      final slot = state.slots[target.algorithmIndex];
+      final currentPV = target.parameterNumber < slot.values.length
+          ? slot.values[target.parameterNumber]
+          : null;
       final newValue = ParameterValue(
         algorithmIndex: target.algorithmIndex,
         parameterNumber: target.parameterNumber,
         value: paramValue,
+        isDisabled: currentPV?.isDisabled ?? false,
       );
 
       _cubit._emitState(
