@@ -1947,6 +1947,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     final result = await popupCtx.showSettingsDialog(
                       midiManager: midiManager,
                       algorithms: algorithms,
+                      ccNotificationDiagnostics: cubit.ccNotificationDiagnostics,
                     );
 
                     // Logic copied and adapted from _DistingPageState._handleSettingsDialog

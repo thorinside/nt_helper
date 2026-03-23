@@ -42,6 +42,11 @@ class _CcNotificationDelegate {
     _batchTimer = null;
   }
 
+  Map<String, dynamic> get diagnostics => {
+        'lookupSize': _lookup?.size ?? 0,
+        'callbackRegistered': _cubit.disting()?.getSchedulerDiagnostics()?['ccCallbackRegistered'] ?? false,
+      };
+
   void rebuildLookup() {
     final state = _cubit.state;
     if (state is! DistingStateSynchronized) return;

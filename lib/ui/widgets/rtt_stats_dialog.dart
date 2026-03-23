@@ -9,8 +9,9 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 class RttStatsDialog extends StatefulWidget {
   final IDistingMidiManager? midiManager;
   final List<AlgorithmInfo>? algorithms;
+  final Map<String, dynamic>? ccNotificationDiagnostics;
 
-  const RttStatsDialog({super.key, this.midiManager, this.algorithms});
+  const RttStatsDialog({super.key, this.midiManager, this.algorithms, this.ccNotificationDiagnostics});
 
   @override
   State<RttStatsDialog> createState() => _RttStatsDialogState();
@@ -226,6 +227,28 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
                   Icons.schedule,
                   Colors.purple,
                 ),
+                _buildStatItem(
+                  'CC Dispatched',
+                  '${diag['ccMessagesDispatched'] ?? 0}',
+                  Icons.music_note,
+                  Colors.indigo,
+                ),
+                _buildStatItem(
+                  'CC Callback',
+                  diag['ccCallbackRegistered'] == true ? 'Yes' : 'No',
+                  Icons.link,
+                  diag['ccCallbackRegistered'] == true ? Colors.green : Colors.red,
+                ),
+                if (widget.ccNotificationDiagnostics != null) ...[
+                  _buildStatItem(
+                    'CC Lookup Size',
+                    '${widget.ccNotificationDiagnostics!['lookupSize'] ?? 0}',
+                    Icons.table_chart,
+                    (widget.ccNotificationDiagnostics!['lookupSize'] ?? 0) > 0
+                        ? Colors.green
+                        : Colors.red,
+                  ),
+                ],
               ],
             ),
           ],
@@ -346,12 +369,14 @@ extension RttStatsDialogExtension on BuildContext {
   Future<void> showRttStatsDialog(
     IDistingMidiManager? midiManager, {
     List<AlgorithmInfo>? algorithms,
+    Map<String, dynamic>? ccNotificationDiagnostics,
   }) {
     return showDialog<void>(
       context: this,
       builder: (context) => RttStatsDialog(
         midiManager: midiManager,
         algorithms: algorithms,
+        ccNotificationDiagnostics: ccNotificationDiagnostics,
       ),
     );
   }

@@ -186,6 +186,7 @@ class _DistingPageState extends State<DistingPage> {
     // Get the midi manager and algorithms for RTT stats if connected
     IDistingMidiManager? midiManager;
     List<AlgorithmInfo>? algorithms;
+    Map<String, dynamic>? ccDiag;
     try {
       final cubit = context.read<DistingCubit>();
       final state = cubit.state;
@@ -193,6 +194,7 @@ class _DistingPageState extends State<DistingPage> {
         midiManager = cubit.requireDisting();
         algorithms = state.algorithms;
       }
+      ccDiag = cubit.ccNotificationDiagnostics;
     } catch (_) {
       // Cubit not available
     }
@@ -200,6 +202,7 @@ class _DistingPageState extends State<DistingPage> {
     final result = await context.showSettingsDialog(
       midiManager: midiManager,
       algorithms: algorithms,
+      ccNotificationDiagnostics: ccDiag,
     );
 
     if (result == true) {

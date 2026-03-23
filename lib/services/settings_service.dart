@@ -397,8 +397,9 @@ class SettingsService {
 class SettingsDialog extends StatefulWidget {
   final IDistingMidiManager? midiManager;
   final List<AlgorithmInfo>? algorithms;
+  final Map<String, dynamic>? ccNotificationDiagnostics;
 
-  const SettingsDialog({super.key, this.midiManager, this.algorithms});
+  const SettingsDialog({super.key, this.midiManager, this.algorithms, this.ccNotificationDiagnostics});
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
@@ -601,6 +602,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                               context.showRttStatsDialog(
                                 widget.midiManager,
                                 algorithms: widget.algorithms,
+                                ccNotificationDiagnostics: widget.ccNotificationDiagnostics,
                               );
                             }
                           : null,
@@ -903,12 +905,14 @@ extension SettingsDialogExtension on BuildContext {
   Future<bool?> showSettingsDialog({
     IDistingMidiManager? midiManager,
     List<AlgorithmInfo>? algorithms,
+    Map<String, dynamic>? ccNotificationDiagnostics,
   }) {
     return showDialog<bool>(
       context: this,
       builder: (context) => SettingsDialog(
         midiManager: midiManager,
         algorithms: algorithms,
+        ccNotificationDiagnostics: ccNotificationDiagnostics,
       ),
     );
   }

@@ -293,6 +293,7 @@ class DistingMessageScheduler {
   int _totalPacketsReceived = 0;
   int _sysexPacketsReceived = 0;
   int _nonSysexPacketsReceived = 0;
+  int _ccMessagesDispatched = 0;
   int _packetsFromWrongDevice = 0;
   DateTime? _lastPacketTime;
   bool _subscriptionActive = true;
@@ -352,6 +353,8 @@ class DistingMessageScheduler {
       'totalPacketsReceived': _totalPacketsReceived,
       'sysexPacketsReceived': _sysexPacketsReceived,
       'nonSysexPacketsReceived': _nonSysexPacketsReceived,
+      'ccMessagesDispatched': _ccMessagesDispatched,
+      'ccCallbackRegistered': _ccCallback != null,
       'packetsFromWrongDevice': _packetsFromWrongDevice,
       'timeSinceLastPacketMs': timeSinceLastPacket,
       'currentState': _state.name,
@@ -481,6 +484,7 @@ class DistingMessageScheduler {
       _totalPacketsReceived = 0;
       _sysexPacketsReceived = 0;
       _nonSysexPacketsReceived = 0;
+      _ccMessagesDispatched = 0;
       _packetsFromWrongDevice = 0;
     }
   }
@@ -553,6 +557,7 @@ class DistingMessageScheduler {
       _totalPacketsReceived = 0;
       _sysexPacketsReceived = 0;
       _nonSysexPacketsReceived = 0;
+      _ccMessagesDispatched = 0;
       _packetsFromWrongDevice = 0;
     }
   }
@@ -997,6 +1002,7 @@ class DistingMessageScheduler {
         final data2 = raw[i + 2];
         if (data1 < 0x80 && data2 < 0x80) {
           callback(byte & 0x0F, data1, data2);
+          _ccMessagesDispatched++;
           i += 2;
         }
       }

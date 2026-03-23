@@ -104,10 +104,11 @@ class PackedMappingData {
       return PackedMappingData.filler();
     }
 
-    // Forward-compatible: parse unknown versions as the highest known (v5).
-    // Newer firmware versions extend the format by appending fields, so the
-    // v5-compatible prefix is always safe to read.
-    final int parseVersion = version > 5 ? 5 : version;
+    // Parse using the highest known feature set. Version-conditional reads
+    // below handle per-version field presence. For truly unknown future
+    // versions (> 6) we parse as v6 and let safe-read helpers handle any
+    // fields beyond the data boundary.
+    final int parseVersion = version.clamp(1, 6);
 
     int offset = 0;
     final dataLength = data.length;
@@ -136,19 +137,23 @@ class PackedMappingData {
       return data[currentOffset];
     }
 
-    // Calculate expected total length based on parseVersion
-    int expectedLength = (parseVersion == 1)
-        ? 22 // 6 + 8 + 8 = CV(6) + MIDI(8) + I2C(8)
-        : (parseVersion == 2)
-        ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
-        : (parseVersion == 3)
-        ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
-        : (parseVersion == 4)
-        ? 25 // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
-        : 26; // 7 + 9 + 9 + 1 = CV(7) + MIDI(9) + I2C(9) + Perf(1)
+    // Expected byte counts per version (from reference: dnt_preset_editor.html):
+    //   v1: CV(6) + MIDI(8) + I2C(8)           = 22
+    //   v2: CV(6) + MIDI(9) + I2C(8)           = 23
+    //   v3: CV(6) + MIDI(9) + I2C(9)           = 24
+    //   v4: CV(7) + MIDI(9) + I2C(9)           = 25
+    //   v5: CV(7) + MIDI(9) + I2C(9) + Perf(1) = 26
+    //   v6: CV(7) + MIDI(9) + I2C(9)           = 25  (perf page removed)
+    // For unknown future versions (> 6), require the v4 core (25 bytes).
+    final int expectedLength = switch (parseVersion) {
+      1 => 22,
+      2 => 23,
+      3 => 24,
+      4 => 25,
+      5 => 26,
+      _ => 25, // v6+ : same core as v4, no perf page byte
+    };
 
-    // Accept data that is at least the expected length — extra trailing bytes
-    // from newer firmware versions are ignored.
     if (dataLength < expectedLength) {
       return PackedMappingData.filler();
     }
@@ -208,7 +213,10 @@ class PackedMappingData {
     offset += 3;
 
     // --- Decode Performance Page ---
-    final perfPageIndex = (parseVersion >= 5) ? safeReadByte(offset++) : 0;
+    // Per reference (dnt_preset_editor.html): perf page byte is only present
+    // in version exactly 5. Version 6 removed it from the mapping data;
+    // perf page assignments are now managed via separate SysEx commands.
+    final perfPageIndex = (version == 5) ? safeReadByte(offset++) : 0;
 
     return PackedMappingData(
       source: source,
@@ -236,8 +244,7 @@ class PackedMappingData {
   }
 
   Uint8List encodeCVPackedData() {
-    // Encode using the highest known format (v5) for forward compatibility
-    final int encodeVersion = min(version, 5);
+    final int encodeVersion = min(version, 6);
 
     // Compute the flags
     int flags = (isUnipolar ? 1 : 0) | (isGate ? 2 : 0);
@@ -255,8 +262,7 @@ class PackedMappingData {
   }
 
   Uint8List encodeMIDIPackedData() {
-    // Encode using the highest known format (v5) for forward compatibility
-    final int encodeVersion = min(version, 5);
+    final int encodeVersion = min(version, 6);
 
     var adjustedCC = midiCC;
 
@@ -288,8 +294,7 @@ class PackedMappingData {
   }
 
   Uint8List encodeI2CPackedData() {
-    // Encode using the highest known format (v5) for forward compatibility
-    final int encodeVersion = min(version, 5);
+    final int encodeVersion = min(version, 6);
 
     var adjustedCC = i2cCC;
 
@@ -310,8 +315,7 @@ class PackedMappingData {
 
   // Convert back to Uint8List (excluding the version byte itself)
   Uint8List toBytes() {
-    // Encode using the highest known format (v5) for forward compatibility
-    final int encodeVersion = min(version, 5);
+    final int encodeVersion = min(version, 6);
 
     final cvBytes = encodeCVPackedData();
     final midiBytes = encodeMIDIPackedData();
@@ -319,8 +323,8 @@ class PackedMappingData {
 
     final allBytes = [...cvBytes, ...midiBytes, ...i2cBytes];
 
-    // Add performance page index for version 5+
-    if (encodeVersion >= 5) {
+    // Perf page byte only present in version exactly 5
+    if (encodeVersion == 5) {
       final clampedIndex = perfPageIndex.clamp(0, 30);
       allBytes.add(clampedIndex & 0x7F);
     }

@@ -642,11 +642,12 @@ F0 00 21 27 6D <id> 4B <slot>
   <min: 3 bytes>
   <max: 3 bytes>
   --- Performance page ---
-  [if version >= 5: <perfPage: 1 byte>]
+  [if version == 5: <perfPage: 1 byte>]
 F7
 ```
 
-**Mapping version** is currently `5`. The version field controls which optional fields are present.
+**Mapping version** is currently `6`. The version field controls which optional fields are present.
+Version 6 removed the perf page byte from mapping data; perf page assignments are managed via separate commands (0x54).
 
 ---
 

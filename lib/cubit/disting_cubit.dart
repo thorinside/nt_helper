@@ -351,6 +351,9 @@ class DistingCubit extends _DistingCubitBase
     };
   }
 
+  Map<String, dynamic> get ccNotificationDiagnostics =>
+      _ccNotificationDelegate.diagnostics;
+
   List<T> replaceInList<T>(List<T> original, T element, {required int index}) {
     if (index < 0 || index >= original.length) {
       throw RangeError.index(index, original, "index out of bounds");

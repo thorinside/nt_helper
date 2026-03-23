@@ -843,9 +843,9 @@ void main() {
   });
 
   group('Forward Compatibility', () {
-    test('unknown version > 5 parses as v5', () {
-      // Create v5-sized data (26 bytes) + 2 extra bytes for "v6"
-      final data = Uint8List(28);
+    test('version 6 parses 25 bytes without perf page', () {
+      // Version 6 removed the perf page byte: CV(7) + MIDI(9) + I2C(9) = 25
+      final data = Uint8List(25);
       int offset = 0;
 
       // CV Mapping (7 bytes)
@@ -884,12 +884,7 @@ void main() {
       data[offset++] = i2cMaxBytes[1];
       data[offset++] = i2cMaxBytes[2];
 
-      // Performance Page (1 byte)
-      data[offset++] = 3;
-
-      // Extra trailing bytes from hypothetical v6
-      data[offset++] = 0x55;
-      data[offset++] = 0x66;
+      // No perf page byte in v6
 
       final mapping = PackedMappingData.fromBytes(6, data);
 
@@ -897,10 +892,9 @@ void main() {
       expect(mapping.midiCC, equals(42));
       expect(mapping.isMidiEnabled, isTrue);
       expect(mapping.midiChannel, equals(1));
-      expect(mapping.perfPageIndex, equals(3));
+      expect(mapping.perfPageIndex, equals(0)); // No perf page in v6
       expect(mapping.source, equals(1));
       expect(mapping.cvInput, equals(2));
-      // Preserves original firmware version
       expect(mapping.version, equals(6));
     });
 
@@ -976,8 +970,8 @@ void main() {
     });
 
     test('v6 round-trip preserves original version and data', () {
-      // Create v5-sized data (26 bytes) + 2 extra bytes for "v6"
-      final v6Data = Uint8List(28);
+      // Version 6: CV(7) + MIDI(9) + I2C(9) = 25 bytes, no perf page
+      final v6Data = Uint8List(25);
       int offset = 0;
 
       // CV Mapping (7 bytes)
@@ -1016,22 +1010,16 @@ void main() {
       v6Data[offset++] = i2cMaxBytes[1];
       v6Data[offset++] = i2cMaxBytes[2];
 
-      // Performance Page (1 byte)
-      v6Data[offset++] = 7;
-
-      // Extra trailing bytes from hypothetical v6
-      v6Data[offset++] = 0x55;
-      v6Data[offset++] = 0x66;
-
       // Parse as v6
       final parsed = PackedMappingData.fromBytes(6, v6Data);
 
       // Version must be preserved as 6
       expect(parsed.version, equals(6));
+      expect(parsed.perfPageIndex, equals(0)); // No perf page in v6
 
-      // Round-trip: toBytes encodes using v5 format (highest known)
+      // Round-trip: toBytes encodes as v6 (no perf page byte)
       final roundTripped = parsed.toBytes();
-      expect(roundTripped.length, equals(26)); // v5 encoding length
+      expect(roundTripped.length, equals(25)); // v6 encoding: no perf page
 
       // Re-parse the round-tripped bytes as v6 to verify data integrity
       final reparsed = PackedMappingData.fromBytes(6, roundTripped);

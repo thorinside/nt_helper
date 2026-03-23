@@ -231,6 +231,7 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             context.showSettingsDialog(
               midiManager: midiManager,
               algorithms: algorithms,
+              ccNotificationDiagnostics: widget.distingCubit.ccNotificationDiagnostics,
             );
           },
           tooltip: 'Settings',

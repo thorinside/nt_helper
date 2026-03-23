@@ -86,6 +86,8 @@ class CcReverseLookup {
 
   bool get isEmpty => _lookup.isEmpty;
 
+  int get size => _lookup.length;
+
   static int convertCcToParamValue(
     CcTarget target,
     int ccValue, {
