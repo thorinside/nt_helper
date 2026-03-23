@@ -92,6 +92,7 @@ class _SlotMaintenanceDelegate {
       final newSlots = List<Slot>.from(currentState.slots);
       newSlots[algorithmIndex] = updatedSlot;
       _cubit._emitState(currentState.copyWith(slots: newSlots));
+      _cubit._rebuildCcLookup();
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
@@ -124,6 +125,7 @@ class _SlotMaintenanceDelegate {
       final newSlots = List<Slot>.from(currentState.slots);
       newSlots[algorithmIndex] = updatedSlot;
       _cubit._emitState(currentState.copyWith(slots: newSlots));
+      _cubit._rebuildCcLookup();
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
       // Optionally, clear the timestamp to allow immediate retry if fetch failed

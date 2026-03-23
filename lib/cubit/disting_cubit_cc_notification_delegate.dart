@@ -49,12 +49,16 @@ class _CcNotificationDelegate {
     final oldLookup = _lookup;
     _lookup = CcReverseLookup.build(state.slots);
 
-    // If we went from empty (no callback registered) to non-empty,
-    // register the callback now. This handles the case where start()
-    // returned early because no MIDI mappings existed at sync time,
-    // but a mapping was added later.
-    if ((oldLookup == null || oldLookup.isEmpty) && !_lookup!.isEmpty) {
+    final wasEmpty = oldLookup == null || oldLookup.isEmpty;
+    final isNowEmpty = _lookup!.isEmpty;
+
+    if (wasEmpty && !isNowEmpty) {
+      // Went from no CC mappings to having some — register callback.
       _cubit.disting()?.setCcCallback(_onCcReceived);
+    } else if (!wasEmpty && isNowEmpty) {
+      // All CC mappings removed — unregister callback to avoid
+      // unnecessary dispatch overhead.
+      _cubit.disting()?.clearCcCallback();
     }
   }
 
@@ -160,6 +164,8 @@ class _CcNotificationDelegate {
     }
 
     // Convert CC value to parameter value
+    // Re-read state fresh each time since prior _applyValue calls in the
+    // same dispatch loop may have emitted a new state.
     final state = _cubit.state;
     if (state is! DistingStateSynchronized) return;
 
@@ -185,9 +191,13 @@ class _CcNotificationDelegate {
     _batchTimer?.cancel();
     _batchTimer = Timer(_batchWindow, _checkBatch);
 
-    // Update cubit state
-    if (target.algorithmIndex < state.slots.length) {
-      final slot = state.slots[target.algorithmIndex];
+    // Re-read state again before emitting — another _applyValue in the same
+    // dispatch loop may have emitted between our read above and now.
+    final freshState = _cubit.state;
+    if (freshState is! DistingStateSynchronized) return;
+
+    if (target.algorithmIndex < freshState.slots.length) {
+      final slot = freshState.slots[target.algorithmIndex];
       final currentPV = target.parameterNumber < slot.values.length
           ? slot.values[target.parameterNumber]
           : null;
@@ -199,10 +209,10 @@ class _CcNotificationDelegate {
       );
 
       _cubit._emitState(
-        state.copyWith(
+        freshState.copyWith(
           slots: _cubit.updateSlot(
             target.algorithmIndex,
-            state.slots,
+            freshState.slots,
             (slot) {
               if (target.parameterNumber >= slot.values.length) return slot;
               return slot.copyWith(

@@ -119,6 +119,7 @@ class _ParameterRefreshDelegate {
           ),
         ),
       );
+      _cubit._rebuildCcLookup();
 
       // Clear the queue
       _programRefreshTimer = null;
