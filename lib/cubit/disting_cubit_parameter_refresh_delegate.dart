@@ -50,7 +50,8 @@ class _ParameterRefreshDelegate {
         if (allParameterValues != null) {
           // Get current state (might have changed since timer was scheduled)
           final currentState = _cubit.state;
-          if (currentState is DistingStateSynchronized) {
+          if (currentState is DistingStateSynchronized &&
+              algorithmIndex < currentState.slots.length) {
             // Update the slot with the refreshed parameter values
             final currentSlot = currentState.slots[algorithmIndex];
             final updatedSlot = currentSlot.copyWith(
@@ -103,9 +104,10 @@ class _ParameterRefreshDelegate {
         slotIndex,
       );
 
-      // Check if state is still synchronized
+      // Check if state is still synchronized and slot still exists
       final newState = _cubit.state;
-      if (newState is! DistingStateSynchronized) {
+      if (newState is! DistingStateSynchronized ||
+          slotIndex >= newState.slots.length) {
         return;
       }
 

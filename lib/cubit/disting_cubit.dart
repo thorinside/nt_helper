@@ -352,7 +352,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   List<T> replaceInList<T>(List<T> original, T element, {required int index}) {
-    if (index < 0 || index > original.length) {
+    if (index < 0 || index >= original.length) {
       throw RangeError.index(index, original, "index out of bounds");
     }
 

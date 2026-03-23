@@ -70,6 +70,9 @@ class _SlotStateDelegate {
 
     _cubit._emitState(currentState.copyWith(slots: updatedSlots));
 
+    // Rebuild CC lookup since parameter min/max may affect CC-to-param conversion
+    _cubit._rebuildCcLookup();
+
     // Automatically query output mode usage if parameter has isOutputMode flag
     if (info.isOutputMode && info.parameterNumber >= 0) {
       await _queryOutputModeUsage(slotIndex, info.parameterNumber);
@@ -191,6 +194,9 @@ class _SlotStateDelegate {
     updatedSlots[slotIndex] = updatedSlot;
 
     _cubit._emitState(currentState.copyWith(slots: updatedSlots));
+
+    // Rebuild CC lookup since mapping data (MIDI CC assignments) may have changed
+    _cubit._rebuildCcLookup();
   }
 
   Future<void> updateSlotParameterValueStrings(
