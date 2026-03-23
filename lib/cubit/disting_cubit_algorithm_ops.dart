@@ -170,6 +170,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               final updatedSlots =
                   updateSlot(newSlotIndex, verified.slots, (_) => fetched!);
               emit(verified.copyWith(slots: updatedSlots, loading: false));
+              _rebuildCcLookup();
               return;
             }
 
@@ -386,6 +387,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
                 offline: verificationState.offline,
               ),
             );
+            _rebuildCcLookup();
           } else {}
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);
@@ -498,6 +500,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
                 offline: verificationState.offline,
               ),
             );
+            _rebuildCcLookup();
           } else {}
         } catch (e, stackTrace) {
           debugPrintStack(stackTrace: stackTrace);

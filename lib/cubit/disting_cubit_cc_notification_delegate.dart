@@ -83,7 +83,13 @@ class _CcNotificationDelegate {
     if (has14Bit) {
       // Handle 14-bit accumulation once for this (channel, cc), then
       // dispatch the combined value to all 14-bit targets.
-      final combined = _accumulate14BitCc(channel, cc, value);
+      // Determine byte order from the first 14-bit target: cc14BitHigh
+      // means the higher CC number (32-63) carries the MSB.
+      final first14 = targets.firstWhere((t) => t.is14Bit);
+      final isHighFirst =
+          first14.midiMappingType == MidiMappingType.cc14BitHigh;
+      final combined =
+          _accumulate14BitCc(channel, cc, value, isHighFirst: isHighFirst);
       if (combined != null) {
         for (final target in targets) {
           if (target.is14Bit) {
@@ -102,9 +108,18 @@ class _CcNotificationDelegate {
 
   /// Accumulates 14-bit CC values. Returns the combined 14-bit value when
   /// both MSB and LSB have been received, or null if still waiting.
-  int? _accumulate14BitCc(int channel, int cc, int value) {
+  ///
+  /// When [isHighFirst] is false (cc14BitLow), cc 0-31 = MSB, cc 32-63 = LSB.
+  /// When [isHighFirst] is true (cc14BitHigh), cc 32-63 = MSB, cc 0-31 = LSB.
+  int? _accumulate14BitCc(
+    int channel,
+    int cc,
+    int value, {
+    required bool isHighFirst,
+  }) {
     final baseCc = cc < 32 ? cc : cc - 32;
-    final isMsb = cc < 32;
+    final isLowCc = cc < 32;
+    final isMsb = isHighFirst ? !isLowCc : isLowCc;
     final pendingKey = channel * 256 + baseCc;
 
     if (isMsb) {
