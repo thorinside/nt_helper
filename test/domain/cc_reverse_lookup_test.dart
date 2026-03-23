@@ -276,6 +276,24 @@ void main() {
       expect(CcReverseLookup.convertCcToParamValue(target, 127), 100);
     });
 
+    test('symmetric 14-bit: midpoint maps correctly', () {
+      final target = CcTarget(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        midiMappingType: MidiMappingType.cc14BitHigh,
+        midiMin: 0,
+        midiMax: 16383,
+        isMidiSymmetric: true,
+        isMidiRelative: false,
+        paramMin: -1000,
+        paramMax: 1000,
+      );
+
+      expect(CcReverseLookup.convertCcToParamValue(target, 8192), 0);
+      expect(CcReverseLookup.convertCcToParamValue(target, 0), -1000);
+      expect(CcReverseLookup.convertCcToParamValue(target, 16383), 1000);
+    });
+
     test('relative: positive delta from low values', () {
       final target = CcTarget(
         algorithmIndex: 0,

@@ -103,13 +103,18 @@ class CcReverseLookup {
     final paramMax = target.paramMax;
 
     if (target.isMidiSymmetric) {
-      // CC 64 maps to midpoint of param range
+      // Midpoint of the MIDI CC range maps to midpoint of param range.
+      // Use ceiling so that for a 0-127 range the integer midpoint (64)
+      // lands in the lower half and maps exactly to paramMid.
+      final midiMidInt = ((midiMin + midiMax + 1) / 2).ceil();
       final paramMid = (paramMin + paramMax) / 2.0;
-      if (ccValue <= 64) {
-        final t = ccValue / 64.0;
+      if (ccValue <= midiMidInt) {
+        final range = (midiMidInt - midiMin).toDouble();
+        final t = range == 0 ? 1.0 : (ccValue - midiMin) / range;
         return (paramMin + t * (paramMid - paramMin)).round().clamp(paramMin, paramMax);
       } else {
-        final t = (ccValue - 64) / 63.0;
+        final range = (midiMax - midiMidInt).toDouble();
+        final t = range == 0 ? 1.0 : (ccValue - midiMidInt) / range;
         return (paramMid + t * (paramMax - paramMid)).round().clamp(paramMin, paramMax);
       }
     }

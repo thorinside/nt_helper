@@ -944,10 +944,15 @@ class DistingMessageScheduler {
 
     // Check if this starts a new SysEx that might be split
     if (hasF0 && !hasF7) {
+      // Dispatch any CC messages that precede the SysEx start
+      final f0Index = raw.indexOf(0xF0);
+      if (f0Index > 0) {
+        _dispatchCcMessages(Uint8List.sublistView(raw, 0, f0Index));
+      }
       // Start of a split SysEx message
       _isBufferingSysEx = true;
       _sysExBuffer.clear();
-      _sysExBuffer.addAll(raw.sublist(raw.indexOf(0xF0)));
+      _sysExBuffer.addAll(raw.sublist(f0Index));
       return;
     }
 
@@ -962,6 +967,10 @@ class DistingMessageScheduler {
     }
 
     _sysexPacketsReceived++;
+
+    // Dispatch CC messages from any non-SysEx bytes in the packet.
+    // CC bytes may precede or follow the SysEx data.
+    _dispatchCcMessages(raw);
 
     // Check for trailing split SysEx start after the last complete message
     final lastMsgEnd = raw.lastIndexOf(0xF7);
