@@ -230,6 +230,7 @@ class _CcNotificationDelegate {
   }
 
   void _checkBatch() {
+    if (_cubit.isClosed) return;
     if (_batchParams.length > _batchThreshold) {
       // Many parameters changed at once — likely a preset load.
       // Trigger a full state refresh instead of individual updates.

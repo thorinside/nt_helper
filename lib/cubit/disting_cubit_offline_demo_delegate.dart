@@ -9,6 +9,9 @@ class _OfflineDemoDelegate {
     // Stop listening for MIDI setup changes when entering demo mode
     _cubit._stopMidiSetupListener();
 
+    // Stop CC notifications before replacing manager
+    _cubit._ccNotificationDelegate.stop();
+
     // --- Create Mock Manager and Fetch State ---
     final mockManager = MockDistingMidiManager();
     final distingVersion =
