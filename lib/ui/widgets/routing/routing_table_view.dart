@@ -26,13 +26,6 @@ class _RoutingTableViewState extends State<RoutingTableView> {
   static const double _cellWidth = 32;
   static const double _cellHeight = 28;
 
-  final ScrollController _pinnedVerticalController = ScrollController();
-
-  @override
-  void dispose() {
-    _pinnedVerticalController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -281,69 +274,46 @@ class _RoutingTableViewState extends State<RoutingTableView> {
       ],
     ));
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Pinned algorithm name column
-        Expanded(
-          flex: 0,
-          child: ScrollConfiguration(
-            behavior:
-                ScrollConfiguration.of(context).copyWith(scrollbars: false),
-            child: SingleChildScrollView(
-              controller: _pinnedVerticalController,
-              child: Table(
-                border: TableBorder(
-                  right: BorderSide(color: theme.dividerColor),
-                  horizontalInside:
-                      BorderSide(color: theme.dividerColor, width: 0.5),
-                ),
-                columnWidths: const {0: IntrinsicColumnWidth()},
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                children: pinnedRows,
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+      child: SingleChildScrollView(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Pinned algorithm name column — scrolls with the main table
+            Table(
+              border: TableBorder(
+                right: BorderSide(color: theme.dividerColor),
+                horizontalInside:
+                    BorderSide(color: theme.dividerColor, width: 0.5),
               ),
+              columnWidths: const {0: IntrinsicColumnWidth()},
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              children: pinnedRows,
             ),
-          ),
-        ),
-        // Scrollable bus columns
-        Expanded(
-          child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context)
-                .copyWith(overscroll: false),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (notification is ScrollUpdateNotification &&
-                      notification.metrics.axis == Axis.vertical &&
-                      _pinnedVerticalController.hasClients) {
-                    _pinnedVerticalController
-                        .jumpTo(notification.metrics.pixels);
-                  }
-                  return false;
-                },
-                child: SingleChildScrollView(
-                  child: Table(
-                    border: TableBorder(
-                      verticalInside:
-                          BorderSide(color: theme.dividerColor, width: 0.5),
-                      horizontalInside:
-                          BorderSide(color: theme.dividerColor, width: 0.5),
-                    ),
-                    columnWidths: {
-                      for (int i = 0; i < numBuses; i++)
-                        i: const FixedColumnWidth(_cellWidth),
-                    },
-                    defaultVerticalAlignment:
-                        TableCellVerticalAlignment.middle,
-                    children: mainRows,
+            // Bus columns — horizontal scroll only
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Table(
+                  border: TableBorder(
+                    verticalInside:
+                        BorderSide(color: theme.dividerColor, width: 0.5),
+                    horizontalInside:
+                        BorderSide(color: theme.dividerColor, width: 0.5),
                   ),
+                  columnWidths: {
+                    for (int i = 0; i < numBuses; i++)
+                      i: const FixedColumnWidth(_cellWidth),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: mainRows,
                 ),
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
