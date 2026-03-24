@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
-import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/models/routing_information.dart';
@@ -51,15 +51,64 @@ class RoutingTableView extends StatelessWidget {
             auxBusUsage,
             hasExtendedAuxBuses,
           ) =>
-              _buildTable(context, hasExtendedAuxBuses: hasExtendedAuxBuses),
+              _buildTable(
+            context,
+            algorithms: algorithms,
+            portOutputModes: portOutputModes,
+            hasExtendedAuxBuses: hasExtendedAuxBuses,
+          ),
         );
       },
     );
   }
 
-  Widget _buildTable(BuildContext context,
-      {required bool hasExtendedAuxBuses}) {
-    final routing = context.read<DistingCubit>().buildRoutingInformation();
+  /// Build [RoutingInformation] from the routing editor's algorithm/port data.
+  List<RoutingInformation> _buildRoutingFromEditorState(
+    List<RoutingAlgorithm> algorithms,
+    Map<String, OutputMode> portOutputModes,
+  ) {
+    final sorted = List<RoutingAlgorithm>.from(algorithms)
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    return sorted.map((algo) {
+      int inputMask = 0;
+      int outputMask = 0;
+      int replaceMask = 0;
+
+      for (final port in algo.inputPorts) {
+        final bus = port.busValue;
+        if (bus != null && bus > 0 && bus <= BusSpec.extendedMax) {
+          inputMask |= (1 << bus);
+        }
+      }
+
+      for (final port in algo.outputPorts) {
+        final bus = port.busValue;
+        if (bus != null && bus > 0 && bus <= BusSpec.extendedMax) {
+          outputMask |= (1 << bus);
+          final mode = portOutputModes[port.id] ?? port.outputMode;
+          if (mode == OutputMode.replace) {
+            replaceMask |= (1 << bus);
+          }
+        }
+      }
+
+      return RoutingInformation(
+        algorithmIndex: algo.index,
+        routingInfo: [inputMask, outputMask, replaceMask, 0, 0, 0],
+        algorithmName: algo.algorithm.name,
+      );
+    }).toList();
+  }
+
+  Widget _buildTable(
+    BuildContext context, {
+    required List<RoutingAlgorithm> algorithms,
+    required Map<String, OutputMode> portOutputModes,
+    required bool hasExtendedAuxBuses,
+  }) {
+    final routing =
+        _buildRoutingFromEditorState(algorithms, portOutputModes);
     if (routing.isEmpty) {
       return Center(
         child: Text(
@@ -76,28 +125,29 @@ class RoutingTableView extends StatelessWidget {
     final signals = analyzer.signals;
     final usageNeeded = analyzer.usageNeeded;
     final numBuses =
-        _computeVisibleBusCount(signals, hasExtendedAuxBuses: hasExtendedAuxBuses);
+        _computeVisibleBusCount(signals, routing,
+            hasExtendedAuxBuses: hasExtendedAuxBuses);
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final color1 = isDark ? _color1.withAlpha(180) : _color1;
-    final color2 = isDark ? _color2.withAlpha(180) : _color2;
+    // Dark mode: deeper, more saturated tones that read well on dark backgrounds
+    final color1 = isDark ? const Color(0xFF1A6B5C) : _color1;
+    final color2 = isDark ? const Color(0xFF8B4A3A) : _color2; // salmon
     final colours = [
       isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFFFFF), // level 0 even
       color1, // level 1 even
       color2, // level 2 even
-      isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFCFCFC), // level 0 odd
-      _darken(color1), // level 1 odd
-      _darken(color2), // level 2 odd
+      isDark ? const Color(0xFF252525) : const Color(0xFFFCFCFC), // level 0 odd
+      _darken(color1, isDark ? 0.8 : 0.9), // level 1 odd
+      _darken(color2, isDark ? 0.8 : 0.9), // level 2 odd
     ];
 
     final pinnedRows = <TableRow>[];
     final mainRows = <TableRow>[];
 
-    // Group header row
+    // Group header row (top)
     _addGroupHeaderRow(pinnedRows, mainRows, numBuses, theme);
-
-    // Column number header row
+    // Column number header row (top)
     _addColumnHeaderRow(pinnedRows, mainRows, numBuses, theme);
 
     for (int s = 0; s < slotCount; s++) {
@@ -105,82 +155,74 @@ class RoutingTableView extends StatelessWidget {
       final rowBefore = signals[s];
       final rowAfter = signals[s + 1];
 
-      // Signal-above row (arrows showing inputs)
       _addSignalAboveRow(
-        pinnedRows,
-        mainRows,
-        s,
-        numBuses,
-        rowBefore,
-        info,
-        analyzer,
-        colours,
-        theme,
+        pinnedRows, mainRows, s, numBuses, rowBefore, info, analyzer,
+        colours, theme,
       );
-
-      // Slot row (algorithm name + used buses)
       _addSlotRow(
-        pinnedRows,
-        mainRows,
-        s,
-        numBuses,
-        info,
-        rowBefore,
-        usageNeeded[s + 1],
-        colours,
-        theme,
+        pinnedRows, mainRows, s, numBuses, info, rowBefore,
+        usageNeeded[s + 1], colours, theme,
       );
-
-      // Signal-below row (output symbols)
       _addSignalBelowRow(
-        pinnedRows,
-        mainRows,
-        s,
-        numBuses,
-        rowAfter,
-        info,
-        colours,
-        theme,
+        pinnedRows, mainRows, s, numBuses, rowAfter, info, colours, theme,
       );
     }
 
-    // Repeat headers at bottom
+    // Column number header row (bottom)
     _addColumnHeaderRow(pinnedRows, mainRows, numBuses, theme);
+    // Group header row (bottom)
     _addGroupHeaderRow(pinnedRows, mainRows, numBuses, theme);
+
+    final verticalController = ScrollController();
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Pinned algorithm name column
-        SingleChildScrollView(
-          child: Table(
-            border: TableBorder(
-              right: BorderSide(color: theme.dividerColor),
-              horizontalInside: BorderSide(color: theme.dividerColor, width: 0.5),
+        // Pinned algorithm name column — synced vertical scroll
+        Expanded(
+          flex: 0,
+          child: SingleChildScrollView(
+            controller: verticalController,
+            child: Table(
+              border: TableBorder(
+                right: BorderSide(color: theme.dividerColor),
+                horizontalInside:
+                    BorderSide(color: theme.dividerColor, width: 0.5),
+              ),
+              columnWidths: const {0: IntrinsicColumnWidth()},
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              children: pinnedRows,
             ),
-            columnWidths: const {0: IntrinsicColumnWidth()},
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-            children: pinnedRows,
           ),
         ),
         // Scrollable bus columns
         Expanded(
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              child: Table(
-                border: TableBorder(
-                  verticalInside:
-                      BorderSide(color: theme.dividerColor, width: 0.5),
-                  horizontalInside:
-                      BorderSide(color: theme.dividerColor, width: 0.5),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                // Sync vertical scroll from main to pinned
+                if (notification is ScrollUpdateNotification &&
+                    notification.metrics.axis == Axis.vertical) {
+                  verticalController.jumpTo(notification.metrics.pixels);
+                }
+                return false;
+              },
+              child: SingleChildScrollView(
+                child: Table(
+                  border: TableBorder(
+                    verticalInside:
+                        BorderSide(color: theme.dividerColor, width: 0.5),
+                    horizontalInside:
+                        BorderSide(color: theme.dividerColor, width: 0.5),
+                  ),
+                  columnWidths: {
+                    for (int i = 0; i < numBuses; i++)
+                      i: const FixedColumnWidth(_cellWidth),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: mainRows,
                 ),
-                columnWidths: {
-                  for (int i = 0; i < numBuses; i++)
-                    i: const FixedColumnWidth(_cellWidth),
-                },
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                children: mainRows,
               ),
             ),
           ),
@@ -189,61 +231,82 @@ class RoutingTableView extends StatelessWidget {
     );
   }
 
-  int _computeVisibleBusCount(List<List<int>> signals,
-      {required bool hasExtendedAuxBuses}) {
+  int _computeVisibleBusCount(
+    List<List<int>> signals,
+    List<RoutingInformation> routing, {
+    required bool hasExtendedAuxBuses,
+  }) {
     final maxBus = hasExtendedAuxBuses ? BusSpec.extendedMax : BusSpec.max;
-    final last = signals.last;
-    int numBuses = maxBus;
-    // Trim unused aux buses from the right
-    final auxStart = BusSpec.auxMin;
-    for (int i = numBuses; i >= auxStart; i--) {
-      if (i < last.length && last[i] != 0) break;
-      numBuses = i - 1;
+
+    // Find highest bus used by any algorithm (input, output, or mapping mask)
+    int highestUsed = BusSpec.outputMax;
+    for (final info in routing) {
+      final usedMask =
+          info.routingInfo[0] | info.routingInfo[1] | info.routingInfo[5];
+      for (int ch = maxBus; ch > highestUsed; ch--) {
+        if ((usedMask & (1 << ch)) != 0) {
+          highestUsed = ch;
+          break;
+        }
+      }
     }
-    // Always show at least through the outputs
-    if (numBuses < BusSpec.outputMax) numBuses = BusSpec.outputMax;
-    return numBuses;
+
+    // Also check signal propagation for any active signals
+    final last = signals.last;
+    for (int i = maxBus; i > highestUsed; i--) {
+      if (i < last.length && last[i] != 0) {
+        highestUsed = i;
+        break;
+      }
+    }
+
+    return highestUsed;
   }
 
   void _addGroupHeaderRow(List<TableRow> pinnedRows, List<TableRow> mainRows,
       int numBuses, ThemeData theme) {
-    final inputCount = BusSpec.inputMax - BusSpec.inputMin + 1; // 12
-    final outputCount = BusSpec.outputMax - BusSpec.outputMin + 1; // 8
-    final auxCount = numBuses - BusSpec.outputMax; // remaining
-
     pinnedRows.add(TableRow(children: [
       SizedBox(height: _cellHeight),
     ]));
 
+    final inputMid = (BusSpec.inputMin + BusSpec.inputMax) ~/ 2;
+    final outputMid = (BusSpec.outputMin + BusSpec.outputMax) ~/ 2;
+    final auxMid = numBuses > BusSpec.outputMax
+        ? (BusSpec.outputMax + 1 + numBuses) ~/ 2
+        : -1;
+
     final cells = <Widget>[];
-    // Inputs group
-    cells.add(_groupHeaderCell('Inputs', inputCount, const Color(0xFFC0C0C0), theme));
-    // Outputs group
-    cells.add(_groupHeaderCell('Outputs', outputCount, const Color(0xFFE0E0E0), theme));
-    // Aux group
-    if (auxCount > 0) {
-      cells.add(_groupHeaderCell('Aux', auxCount, const Color(0xFFC0C0C0), theme));
+    for (int ch = 1; ch <= numBuses; ch++) {
+      Color bgColor;
+      String? label;
+      if (ch <= BusSpec.inputMax) {
+        bgColor = const Color(0xFFC0C0C0);
+        if (ch == inputMid) label = 'Inputs';
+      } else if (ch <= BusSpec.outputMax) {
+        bgColor = const Color(0xFFE0E0E0);
+        if (ch == outputMid) label = 'Outputs';
+      } else {
+        bgColor = const Color(0xFFC0C0C0);
+        if (ch == auxMid) label = 'Aux';
+      }
+      cells.add(Container(
+        width: _cellWidth,
+        height: _cellHeight,
+        alignment: Alignment.center,
+        color: _headerBg(bgColor, theme),
+        child: label != null
+            ? Text(
+                label,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : null,
+      ));
     }
-
     mainRows.add(TableRow(children: cells));
-  }
-
-  Widget _groupHeaderCell(
-      String label, int colSpan, Color bgColor, ThemeData theme) {
-    final isDark = theme.brightness == Brightness.dark;
-    final effectiveBg = isDark ? bgColor.withAlpha(60) : bgColor;
-    return Container(
-      width: _cellWidth * colSpan,
-      height: _cellHeight,
-      alignment: Alignment.center,
-      color: effectiveBg,
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
   }
 
   void _addColumnHeaderRow(List<TableRow> pinnedRows, List<TableRow> mainRows,
@@ -262,14 +325,11 @@ class RoutingTableView extends StatelessWidget {
       } else {
         bgColor = const Color(0xFFC0C0C0);
       }
-      final isDark = theme.brightness == Brightness.dark;
-      final effectiveBg = isDark ? bgColor.withAlpha(60) : bgColor;
-
       cells.add(Container(
         width: _cellWidth,
         height: _cellHeight,
         alignment: Alignment.center,
-        color: effectiveBg,
+        color: _headerBg(bgColor, theme),
         child: Text(
           _columnLabel(ch),
           style: theme.textTheme.labelSmall?.copyWith(
@@ -288,7 +348,7 @@ class RoutingTableView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       alignment: Alignment.centerLeft,
       color: theme.brightness == Brightness.dark
-          ? const Color(0xFF2A2A2A)
+          ? const Color(0xFF333333)
           : const Color(0xFFF0F0F0),
       child: Text(
         text,
@@ -460,6 +520,16 @@ class RoutingTableView extends StatelessWidget {
       }
     }
     return '$c';
+  }
+
+  Color _headerBg(Color lightColor, ThemeData theme) {
+    if (theme.brightness == Brightness.dark) {
+      // Map light grays to distinct dark tones
+      if (lightColor == const Color(0xFFC0C0C0)) return const Color(0xFF3A3A3A);
+      if (lightColor == const Color(0xFFE0E0E0)) return const Color(0xFF454545);
+      return const Color(0xFF3A3A3A);
+    }
+    return lightColor;
   }
 
   Color _darken(Color c, [double factor = 0.9]) {

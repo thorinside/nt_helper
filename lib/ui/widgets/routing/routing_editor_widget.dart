@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
@@ -36,7 +37,19 @@ import 'package:nt_helper/ui/widgets/routing/es5_node.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_table_view.dart';
 
-enum _RoutingViewMode { canvas, list, table }
+enum _RoutingViewMode {
+  canvas,
+  list,
+  table;
+
+  static const _prefsKey = 'routing_view_mode';
+
+  static _RoutingViewMode fromString(String? value) => switch (value) {
+        'list' => list,
+        'table' => table,
+        _ => canvas,
+      };
+}
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.
 /// It composes the routing canvas and exposes the same API for compatibility.
@@ -102,8 +115,27 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   bool _isFadingOut =
       false; // True during the final fade-out phase (not cancellable)
 
-  // View mode toggle (canvas, list, table)
+  // View mode toggle (canvas, list, table) — persisted via SharedPreferences
   _RoutingViewMode _viewMode = _RoutingViewMode.canvas;
+  bool _viewModeLoaded = false;
+
+  Future<void> _loadViewMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_RoutingViewMode._prefsKey);
+    if (mounted) {
+      setState(() {
+        if (saved != null) _viewMode = _RoutingViewMode.fromString(saved);
+        _viewModeLoaded = true;
+      });
+    }
+  }
+
+  void _setViewMode(_RoutingViewMode mode) {
+    setState(() => _viewMode = mode);
+    SharedPreferences.getInstance().then(
+      (prefs) => prefs.setString(_RoutingViewMode._prefsKey, mode.name),
+    );
+  }
 
   // Platform service for hover detection
   late final PlatformInteractionService _platformService;
@@ -149,6 +181,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   @override
   void initState() {
     super.initState();
+    _loadViewMode();
     _platformService = widget.platformService ?? PlatformInteractionService();
     _keyBindingService =
         widget.keyBindingService ??
@@ -992,6 +1025,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         return shouldRebuild;
       },
       builder: (context, state) {
+        if (!_viewModeLoaded) {
+          return SizedBox(
+            width: widget.canvasSize.width,
+            height: widget.canvasSize.height,
+          );
+        }
+
         // Auto-detect accessible navigation mode
         final effectiveMode =
             MediaQuery.of(context).accessibleNavigation
@@ -1519,7 +1559,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   Widget _buildViewModeButton() {
     return PopupMenuButton<_RoutingViewMode>(
       initialValue: _viewMode,
-      onSelected: (mode) => setState(() => _viewMode = mode),
+      onSelected: _setViewMode,
       itemBuilder: (context) => const [
         PopupMenuItem(
           value: _RoutingViewMode.canvas,
