@@ -269,11 +269,11 @@ class RoutingTableView extends StatelessWidget {
     for (int ch = 1; ch <= numBuses; ch++) {
       Color bgColor;
       if (ch <= BusSpec.inputMax) {
-        bgColor = const Color(0xFFC0C0C0);
+        bgColor = const Color(0xFFB8B8B8); // Inputs: darker
       } else if (ch <= BusSpec.outputMax) {
-        bgColor = const Color(0xFFE0E0E0);
+        bgColor = const Color(0xFFDCDCDC); // Outputs: lighter
       } else {
-        bgColor = const Color(0xFFC0C0C0);
+        bgColor = const Color(0xFFC8C8C8); // Aux: mid
       }
       cells.add(Container(
         width: _cellWidth,
@@ -474,10 +474,10 @@ class RoutingTableView extends StatelessWidget {
 
   Color _headerBg(Color lightColor, ThemeData theme) {
     if (theme.brightness == Brightness.dark) {
-      // Map light grays to distinct dark tones
-      if (lightColor == const Color(0xFFC0C0C0)) return const Color(0xFF3A3A3A);
-      if (lightColor == const Color(0xFFE0E0E0)) return const Color(0xFF454545);
-      return const Color(0xFF3A3A3A);
+      if (lightColor == const Color(0xFFB8B8B8)) return const Color(0xFF2E2E2E); // Inputs: darkest
+      if (lightColor == const Color(0xFFDCDCDC)) return const Color(0xFF484848); // Outputs: lightest
+      if (lightColor == const Color(0xFFC8C8C8)) return const Color(0xFF383838); // Aux: mid
+      return const Color(0xFF333333);
     }
     return lightColor;
   }
