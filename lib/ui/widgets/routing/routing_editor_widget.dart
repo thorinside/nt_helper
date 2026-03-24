@@ -3901,9 +3901,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     // Delete connections if confirmed
     if (shouldDelete == true && mounted) {
       final cubit = context.read<RoutingEditorCubit>();
-      for (final connection in portConnections) {
-        await cubit.deleteConnectionWithSmartBusLogic(connection.id);
-      }
+      await cubit.runBatched(() async {
+        for (final connection in portConnections) {
+          await cubit.deleteConnectionWithSmartBusLogic(connection.id);
+        }
+      });
     }
   }
 

@@ -31,6 +31,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   StreamSubscription<DistingState>? _distingStateSubscription;
   NodeLayoutAlgorithm? _layoutAlgorithm;
   List<Slot>? _lastProcessedSlots;
+  int _batchDepth = 0;
+  List<Slot>? _deferredSlots;
 
   RoutingEditorCubit(
     this._distingCubit, {
@@ -121,6 +123,22 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     );
   }
 
+  /// Run [operation] while suppressing intermediate routing rebuilds.
+  /// A single rebuild happens after the operation completes.
+  Future<T> runBatched<T>(Future<T> Function() operation) async {
+    _batchDepth++;
+    try {
+      return await operation();
+    } finally {
+      _batchDepth--;
+      if (_batchDepth == 0 && _deferredSlots != null) {
+        final slots = _deferredSlots!;
+        _deferredSlots = null;
+        _processSynchronizedState(slots);
+      }
+    }
+  }
+
   /// Check if ES-5 node should be displayed based on algorithm GUIDs
   bool shouldShowEs5Node(List<Slot> slots) {
     const es5AlgorithmGuids = {
@@ -151,6 +169,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   void _processSynchronizedState(List<Slot> slots) {
     // Identical reference means non-slot fields changed (loading, screenshot, etc.)
     if (identical(slots, _lastProcessedSlots)) return;
+
+    // During batch operations, stash the latest slots and skip rebuild
+    if (_batchDepth > 0) {
+      _deferredSlots = slots;
+      return;
+    }
 
     _lastProcessedSlots = slots;
 
@@ -1536,31 +1560,33 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Delete all connections for a specific port
   Future<void> deleteConnectionsForPort(String portId) async {
-    final currentState = state;
-    if (currentState is! RoutingEditorStateLoaded) {
-      return;
-    }
-
-    try {
-      final connectionsToDelete = currentState.connections
-          .where(
-            (connection) =>
-                connection.sourcePortId == portId ||
-                connection.destinationPortId == portId,
-          )
-          .toList();
-
-      if (connectionsToDelete.isEmpty) {
+    return runBatched(() async {
+      final currentState = state;
+      if (currentState is! RoutingEditorStateLoaded) {
         return;
       }
 
-      // Delete each connection (which will also clear bus assignments)
-      for (final connection in connectionsToDelete) {
-        await deleteConnection(connection.id);
+      try {
+        final connectionsToDelete = currentState.connections
+            .where(
+              (connection) =>
+                  connection.sourcePortId == portId ||
+                  connection.destinationPortId == portId,
+            )
+            .toList();
+
+        if (connectionsToDelete.isEmpty) {
+          return;
+        }
+
+        // Delete each connection (which will also clear bus assignments)
+        for (final connection in connectionsToDelete) {
+          await deleteConnection(connection.id);
+        }
+      } catch (e) {
+        // Intentionally empty
       }
-    } catch (e) {
-      // Intentionally empty
-    }
+    });
   }
 
   /// Reset all bus connections for a specific algorithm slot.
@@ -1569,43 +1595,45 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Parameters with `min > 0` are left unchanged.
   /// Returns the number of parameters reset, or -1 if state is not ready.
   Future<int> resetAllConnections(int algorithmIndex) async {
-    final distingState = _distingCubit?.state;
-    if (distingState is! DistingStateSynchronized) {
-      return -1;
-    }
-    if (algorithmIndex < 0 || algorithmIndex >= distingState.slots.length) {
-      return -1;
-    }
+    return runBatched(() async {
+      final distingState = _distingCubit?.state;
+      if (distingState is! DistingStateSynchronized) {
+        return -1;
+      }
+      if (algorithmIndex < 0 || algorithmIndex >= distingState.slots.length) {
+        return -1;
+      }
 
-    final slot = distingState.slots[algorithmIndex];
-    var resetCount = 0;
+      final slot = distingState.slots[algorithmIndex];
+      var resetCount = 0;
 
-    for (final param in slot.parameters) {
-      final isBusParameter =
-          param.unit == 1 &&
-          (param.min == 0 || param.min == 1) &&
-          BusSpec.isBusParameterMaxValue(param.max);
+      for (final param in slot.parameters) {
+        final isBusParameter =
+            param.unit == 1 &&
+            (param.min == 0 || param.min == 1) &&
+            BusSpec.isBusParameterMaxValue(param.max);
 
-      if (!isBusParameter) continue;
-      if (param.min > 0) continue;
+        if (!isBusParameter) continue;
+        if (param.min > 0) continue;
 
-      // Look up current value from slot.values
-      final currentValue = slot.values
-          .where((v) => v.parameterNumber == param.parameterNumber)
-          .firstOrNull
-          ?.value;
-      if (currentValue == null || currentValue == 0) continue;
+        // Look up current value from slot.values
+        final currentValue = slot.values
+            .where((v) => v.parameterNumber == param.parameterNumber)
+            .firstOrNull
+            ?.value;
+        if (currentValue == null || currentValue == 0) continue;
 
-      await _distingCubit!.updateParameterValue(
-        algorithmIndex: algorithmIndex,
-        parameterNumber: param.parameterNumber,
-        value: 0,
-        userIsChangingTheValue: false,
-      );
-      resetCount++;
-    }
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: param.parameterNumber,
+          value: 0,
+          userIsChangingTheValue: false,
+        );
+        resetCount++;
+      }
 
-    return resetCount;
+      return resetCount;
+    });
   }
 
   /// Move all bus parameter references from [sourceBus] to [destinationBus].
@@ -1614,51 +1642,53 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// [sourceBus], and rewrites them to [destinationBus]. The destination must
   /// be an empty (unused) AUX bus. Returns the number of parameters rewritten.
   Future<int> moveAuxBus(int sourceBus, int destinationBus) async {
-    final distingState = _distingCubit?.state;
-    if (distingState is! DistingStateSynchronized) return -1;
+    return runBatched(() async {
+      final distingState = _distingCubit?.state;
+      if (distingState is! DistingStateSynchronized) return -1;
 
-    // Guard: destination must be empty
-    final currentState = state;
-    if (currentState is RoutingEditorStateLoaded) {
-      final destInfo = currentState.auxBusUsage[destinationBus];
-      if (destInfo != null && destInfo.sessionCount > 0) return -1;
-    }
-
-    const paceDelay = Duration(milliseconds: 150);
-    var writeCount = 0;
-
-    for (int slotIdx = 0; slotIdx < distingState.slots.length; slotIdx++) {
-      final slot = distingState.slots[slotIdx];
-
-      for (final param in slot.parameters) {
-        final isBusParameter =
-            param.unit == 1 &&
-            (param.min == 0 || param.min == 1) &&
-            BusSpec.isBusParameterMaxValue(param.max);
-        if (!isBusParameter) continue;
-
-        final currentValue = slot.values
-            .where((v) => v.parameterNumber == param.parameterNumber)
-            .firstOrNull
-            ?.value;
-        if (currentValue != sourceBus) continue;
-
-        await _distingCubit!.updateParameterValue(
-          algorithmIndex: slotIdx,
-          parameterNumber: param.parameterNumber,
-          value: destinationBus,
-          userIsChangingTheValue: false,
-        );
-        writeCount++;
-        await Future.delayed(paceDelay);
+      // Guard: destination must be empty
+      final currentState = state;
+      if (currentState is RoutingEditorStateLoaded) {
+        final destInfo = currentState.auxBusUsage[destinationBus];
+        if (destInfo != null && destInfo.sessionCount > 0) return -1;
       }
-    }
 
-    if (writeCount > 0) {
-      await _autoSyncToHardware();
-    }
+      const paceDelay = Duration(milliseconds: 150);
+      var writeCount = 0;
 
-    return writeCount;
+      for (int slotIdx = 0; slotIdx < distingState.slots.length; slotIdx++) {
+        final slot = distingState.slots[slotIdx];
+
+        for (final param in slot.parameters) {
+          final isBusParameter =
+              param.unit == 1 &&
+              (param.min == 0 || param.min == 1) &&
+              BusSpec.isBusParameterMaxValue(param.max);
+          if (!isBusParameter) continue;
+
+          final currentValue = slot.values
+              .where((v) => v.parameterNumber == param.parameterNumber)
+              .firstOrNull
+              ?.value;
+          if (currentValue != sourceBus) continue;
+
+          await _distingCubit!.updateParameterValue(
+            algorithmIndex: slotIdx,
+            parameterNumber: param.parameterNumber,
+            value: destinationBus,
+            userIsChangingTheValue: false,
+          );
+          writeCount++;
+          await Future.delayed(paceDelay);
+        }
+      }
+
+      if (writeCount > 0) {
+        await _autoSyncToHardware();
+      }
+
+      return writeCount;
+    });
   }
 
   /// Returns a user-facing reason if the connection cannot be deleted, otherwise null.
