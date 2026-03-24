@@ -444,11 +444,34 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
         .firstOrNull;
   }
 
+  /// Preserve the user's current device selection if the devices are still
+  /// available in the updated list. Falls back to auto-selecting the first
+  /// disting device only if the current selection is no longer present.
+  void _preserveOrReselectDevices() {
+    final preservedInput = selectedInputDevice != null
+        ? widget.inputDevices
+            .where((d) => d.name == selectedInputDevice!.name)
+            .firstOrNull
+        : null;
+    final preservedOutput = selectedOutputDevice != null
+        ? widget.outputDevices
+            .where((d) => d.name == selectedOutputDevice!.name)
+            .firstOrNull
+        : null;
+
+    if (preservedInput != null && preservedOutput != null) {
+      selectedInputDevice = preservedInput;
+      selectedOutputDevice = preservedOutput;
+    } else {
+      selectFirstDisting();
+    }
+  }
+
   @override
   void didUpdateWidget(covariant _DeviceSelectionView oldWidget) {
     if (oldWidget.inputDevices != widget.inputDevices ||
         oldWidget.outputDevices != widget.outputDevices) {
-      selectFirstDisting();
+      _preserveOrReselectDevices();
       _maybeProbe();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {

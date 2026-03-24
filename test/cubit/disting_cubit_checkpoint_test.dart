@@ -47,7 +47,7 @@ void main() {
     await cubit.close();
   });
 
-  DistingStateSynchronized _makeSyncState({
+  DistingStateSynchronized makeSyncState({
     required List<Slot> slots,
     String presetName = 'Test Preset',
   }) {
@@ -63,7 +63,7 @@ void main() {
     );
   }
 
-  Slot _makeSlot({
+  Slot makeSlot({
     required int index,
     required String guid,
     required Map<int, int> values,
@@ -115,10 +115,10 @@ void main() {
     });
 
     test('createCheckpoint captures current state', () {
-      final state = _makeSyncState(
+      final state = makeSyncState(
         slots: [
-          _makeSlot(index: 0, guid: 'abcd', values: {0: 50, 1: 75}),
-          _makeSlot(index: 1, guid: 'efgh', values: {0: 10}),
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50, 1: 75}),
+          makeSlot(index: 1, guid: 'efgh', values: {0: 10}),
         ],
       );
       cubit.emit(state);
@@ -134,18 +134,18 @@ void main() {
 
     test('restoreCheckpoint writes back differing values', () async {
       // Set up initial state and create checkpoint
-      final initialState = _makeSyncState(
+      final initialState = makeSyncState(
         slots: [
-          _makeSlot(index: 0, guid: 'abcd', values: {0: 50, 1: 75}),
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50, 1: 75}),
         ],
       );
       cubit.emit(initialState);
       final checkpoint = cubit.createCheckpoint();
 
       // Simulate state change (parameter 0 changed from 50 to 99)
-      final changedState = _makeSyncState(
+      final changedState = makeSyncState(
         slots: [
-          _makeSlot(index: 0, guid: 'abcd', values: {0: 99, 1: 75}),
+          makeSlot(index: 0, guid: 'abcd', values: {0: 99, 1: 75}),
         ],
       );
       cubit.emit(changedState);
@@ -158,9 +158,9 @@ void main() {
     });
 
     test('restoreCheckpoint returns 0 when nothing changed', () async {
-      final state = _makeSyncState(
+      final state = makeSyncState(
         slots: [
-          _makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
         ],
       );
       cubit.emit(state);
@@ -172,18 +172,18 @@ void main() {
     });
 
     test('restoreCheckpoint fails when algorithm lineup changed', () async {
-      final state = _makeSyncState(
+      final state = makeSyncState(
         slots: [
-          _makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
         ],
       );
       cubit.emit(state);
       final checkpoint = cubit.createCheckpoint();
 
       // Change algorithm lineup
-      final newState = _makeSyncState(
+      final newState = makeSyncState(
         slots: [
-          _makeSlot(index: 0, guid: 'xxxx', values: {0: 50}),
+          makeSlot(index: 0, guid: 'xxxx', values: {0: 50}),
         ],
       );
       cubit.emit(newState);
@@ -193,19 +193,19 @@ void main() {
     });
 
     test('restoreCheckpoint fails when slot count changed', () async {
-      final state = _makeSyncState(
+      final state = makeSyncState(
         slots: [
-          _makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
         ],
       );
       cubit.emit(state);
       final checkpoint = cubit.createCheckpoint();
 
       // Add a slot
-      final newState = _makeSyncState(
+      final newState = makeSyncState(
         slots: [
-          _makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
-          _makeSlot(index: 1, guid: 'efgh', values: {0: 10}),
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
+          makeSlot(index: 1, guid: 'efgh', values: {0: 10}),
         ],
       );
       cubit.emit(newState);
@@ -215,8 +215,8 @@ void main() {
     });
 
     test('evicts oldest checkpoint when over limit', () {
-      final state = _makeSyncState(
-        slots: [_makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
+      final state = makeSyncState(
+        slots: [makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
       );
       cubit.emit(state);
 
@@ -232,8 +232,8 @@ void main() {
     });
 
     test('clearCheckpoints removes all', () {
-      final state = _makeSyncState(
-        slots: [_makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
+      final state = makeSyncState(
+        slots: [makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
       );
       cubit.emit(state);
 
@@ -246,8 +246,8 @@ void main() {
     });
 
     test('removeCheckpoint removes specific checkpoint', () {
-      final state = _makeSyncState(
-        slots: [_makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
+      final state = makeSyncState(
+        slots: [makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
       );
       cubit.emit(state);
 
