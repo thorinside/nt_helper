@@ -1172,6 +1172,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             },
                         orElse: () => const SizedBox.shrink(),
                       ),
+                      // Checkpoint
+                      _buildCheckpointButton(context, buttonStyle),
                       // Center View
                       IconButton(
                         icon: const Icon(
@@ -2437,6 +2439,157 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
 
     Overlay.of(context).insert(overlayEntry);
+  }
+
+  Widget _buildCheckpointButton(BuildContext context, ButtonStyle? buttonStyle) {
+    final distingCubit = context.read<DistingCubit>();
+    final checkpoints = distingCubit.checkpoints;
+
+    return PopupMenuButton<String>(
+      icon: Icon(
+        checkpoints.isEmpty ? Icons.bookmark_border : Icons.bookmark,
+        semanticLabel: 'Checkpoints',
+      ),
+      tooltip: 'Preset Checkpoints',
+      style: buttonStyle,
+      onSelected: (value) async {
+        if (value == 'create') {
+          final checkpoint = distingCubit.createCheckpoint();
+          if (checkpoint != null) {
+            setState(() {});
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Checkpoint created (${checkpoint.slotCount} slots)',
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          }
+        } else if (value.startsWith('restore:')) {
+          final index = int.parse(value.substring(8));
+          final checkpoint = distingCubit.checkpoints[index];
+          final messenger = ScaffoldMessenger.of(context);
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Restore Checkpoint?'),
+              content: Text(
+                'Restore to checkpoint from '
+                '${_formatCheckpointTime(checkpoint.createdAt)}?\n\n'
+                'This will revert all parameter values to the '
+                'checkpoint state (${checkpoint.slotCount} slots).',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(ctx).colorScheme.error,
+                  ),
+                  child: const Text('Restore'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true && mounted) {
+            final routingCubit = _routingEditorCubit;
+            final int result;
+            if (routingCubit != null) {
+              result = await routingCubit.runBatched(() async {
+                return distingCubit.restoreCheckpoint(checkpoint);
+              });
+            } else {
+              result = await distingCubit.restoreCheckpoint(checkpoint);
+            }
+            if (mounted) {
+              setState(() {});
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    result > 0
+                        ? 'Restored $result parameters'
+                        : result == 0
+                            ? 'Nothing to restore (no changes)'
+                            : 'Restore failed',
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          }
+        } else if (value == 'clear') {
+          distingCubit.clearCheckpoints();
+          setState(() {});
+        }
+      },
+      itemBuilder: (context) {
+        final items = <PopupMenuEntry<String>>[];
+
+        items.add(
+          const PopupMenuItem(
+            value: 'create',
+            child: ListTile(
+              leading: Icon(Icons.add_circle_outline),
+              title: Text('Create Checkpoint'),
+              dense: true,
+            ),
+          ),
+        );
+
+        if (checkpoints.isNotEmpty) {
+          items.add(const PopupMenuDivider());
+
+          for (int i = checkpoints.length - 1; i >= 0; i--) {
+            final cp = checkpoints[i];
+            items.add(
+              PopupMenuItem(
+                value: 'restore:$i',
+                child: ListTile(
+                  leading: const Icon(Icons.restore),
+                  title: Text(
+                    cp.label ?? _formatCheckpointTime(cp.createdAt),
+                  ),
+                  subtitle: Text(
+                    '${cp.slotCount} slots'
+                    '${cp.label != null ? ' - ${_formatCheckpointTime(cp.createdAt)}' : ''}',
+                  ),
+                  dense: true,
+                ),
+              ),
+            );
+          }
+
+          items.add(const PopupMenuDivider());
+          items.add(
+            const PopupMenuItem(
+              value: 'clear',
+              child: ListTile(
+                leading: Icon(Icons.delete_outline),
+                title: Text('Clear All Checkpoints'),
+                dense: true,
+              ),
+            ),
+          );
+        }
+
+        return items;
+      },
+    );
+  }
+
+  String _formatCheckpointTime(DateTime time) {
+    final now = DateTime.now();
+    final diff = now.difference(time);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${time.month}/${time.day} ${time.hour}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   double _findClosestZoomLevel(double currentZoom) {

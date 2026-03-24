@@ -61,6 +61,7 @@ part 'disting_cubit_state_helpers_delegate.dart';
 part 'disting_cubit_refresh_delegate.dart';
 part 'disting_cubit_perf_page_delegate.dart';
 part 'disting_cubit_cc_notification_delegate.dart';
+part 'disting_cubit_checkpoint_delegate.dart';
 part 'disting_cubit_internal_types.dart';
 
 abstract class _DistingCubitBase extends Cubit<DistingState> {
@@ -128,6 +129,8 @@ class DistingCubit extends _DistingCubitBase
   late final _PerfPageDelegate _perfPageDelegate = _PerfPageDelegate(this);
   late final _CcNotificationDelegate _ccNotificationDelegate =
       _CcNotificationDelegate(this);
+  late final _CheckpointDelegate _checkpointDelegate =
+      _CheckpointDelegate(this);
 
   /// Service for checking firmware updates
   final FirmwareVersionService _firmwareVersionService =
@@ -559,6 +562,27 @@ class DistingCubit extends _DistingCubitBase
   Future<void> remountSd() async {
     return _hardwareCommandsDelegate.remountSd();
   }
+
+  // --- Checkpoint API ---
+
+  List<PresetCheckpoint> get checkpoints => _checkpointDelegate.checkpoints;
+
+  PresetCheckpoint? createCheckpoint({String? label}) =>
+      _checkpointDelegate.createCheckpoint(label: label);
+
+  Future<int> restoreCheckpoint(
+    PresetCheckpoint checkpoint, {
+    void Function(int completed, int total)? onProgress,
+  }) =>
+      _checkpointDelegate.restoreCheckpoint(
+        checkpoint,
+        onProgress: onProgress,
+      );
+
+  void removeCheckpoint(PresetCheckpoint checkpoint) =>
+      _checkpointDelegate.removeCheckpoint(checkpoint);
+
+  void clearCheckpoints() => _checkpointDelegate.clearCheckpoints();
 
   static List<MappedParameter> buildMappedParameterList(DistingState state) {
     switch (state) {

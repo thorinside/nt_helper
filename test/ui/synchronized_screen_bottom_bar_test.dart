@@ -32,6 +32,7 @@ void main() {
       mockCubit = MockDistingCubit();
       mockMidiManager = MockDistingMidiManager();
       mockPlatformService = MockPlatformInteractionService();
+      when(() => mockCubit.checkpoints).thenReturn([]);
 
       // Initialize McpServerService with mock cubit
       McpServerService.initialize(distingCubit: mockCubit);
