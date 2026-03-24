@@ -34,7 +34,9 @@ import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/ui/widgets/routing/es5_node.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
-// Removed unused imports from previous canvas split
+import 'package:nt_helper/ui/widgets/routing/routing_table_view.dart';
+
+enum _RoutingViewMode { canvas, list, table }
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.
 /// It composes the routing canvas and exposes the same API for compatibility.
@@ -100,8 +102,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   bool _isFadingOut =
       false; // True during the final fade-out phase (not cancellable)
 
-  // Accessible list view toggle
-  bool _showAccessibleListView = false;
+  // View mode toggle (canvas, list, table)
+  _RoutingViewMode _viewMode = _RoutingViewMode.canvas;
 
   // Platform service for hover detection
   late final PlatformInteractionService _platformService;
@@ -991,11 +993,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       },
       builder: (context, state) {
         // Auto-detect accessible navigation mode
-        final useListView =
-            _showAccessibleListView ||
-            MediaQuery.of(context).accessibleNavigation;
+        final effectiveMode =
+            MediaQuery.of(context).accessibleNavigation
+                ? _RoutingViewMode.list
+                : _viewMode;
 
-        if (useListView) {
+        if (effectiveMode == _RoutingViewMode.list) {
           return Stack(
             children: [
               Container(
@@ -1014,12 +1017,32 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
               Positioned(
                 top: 8,
                 right: 8,
-                child: IconButton.filledTonal(
-                  icon: const Icon(Icons.grid_view),
-                  tooltip: 'Switch to canvas view',
-                  onPressed: () =>
-                      setState(() => _showAccessibleListView = false),
+                child: _buildViewModeButton(),
+              ),
+            ],
+          );
+        }
+
+        if (effectiveMode == _RoutingViewMode.table) {
+          return Stack(
+            children: [
+              Container(
+                width: widget.canvasSize.width,
+                height: widget.canvasSize.height,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor,
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: const RoutingTableView(),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: _buildViewModeButton(),
               ),
             ],
           );
@@ -1063,15 +1086,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                     : _buildCanvasContent(context, state),
               ),
             ),
-            // Accessible list view toggle button
             Positioned(
               top: 8,
               right: 8,
-              child: IconButton.filledTonal(
-                icon: const Icon(Icons.list_alt),
-                tooltip: 'Switch to accessible list view',
-                onPressed: () => setState(() => _showAccessibleListView = true),
-              ),
+              child: _buildViewModeButton(),
             ),
             // AUX bus usage + MiniMap in bottom-right corner
             if (state is RoutingEditorStateLoaded)
@@ -1497,6 +1515,66 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   // No longer used: previously pre-checked for aux-only availability.
   // The cubit now picks an appropriate internal bus (aux preferred),
   // so we skip rigid preflight here to avoid blocking valid cases.
+
+  Widget _buildViewModeButton() {
+    return PopupMenuButton<_RoutingViewMode>(
+      initialValue: _viewMode,
+      onSelected: (mode) => setState(() => _viewMode = mode),
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: _RoutingViewMode.canvas,
+          child: ListTile(
+            leading: Icon(Icons.grid_view),
+            title: Text('Canvas'),
+            dense: true,
+          ),
+        ),
+        PopupMenuItem(
+          value: _RoutingViewMode.table,
+          child: ListTile(
+            leading: Icon(Icons.table_chart),
+            title: Text('Signal Flow'),
+            dense: true,
+          ),
+        ),
+        PopupMenuItem(
+          value: _RoutingViewMode.list,
+          child: ListTile(
+            leading: Icon(Icons.list_alt),
+            title: Text('Accessible List'),
+            dense: true,
+          ),
+        ),
+      ],
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              switch (_viewMode) {
+                _RoutingViewMode.canvas => Icons.grid_view,
+                _RoutingViewMode.table => Icons.table_chart,
+                _RoutingViewMode.list => Icons.list_alt,
+              },
+              size: 20,
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildCanvasContent(BuildContext context, RoutingEditorState state) {
     return state.when(
