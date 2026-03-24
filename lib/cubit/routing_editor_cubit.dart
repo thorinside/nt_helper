@@ -131,7 +131,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return await operation();
     } finally {
       _batchDepth--;
-      if (_batchDepth == 0 && _deferredSlots != null) {
+      if (_batchDepth == 0 && _deferredSlots != null && !isClosed) {
         final slots = _deferredSlots!;
         _deferredSlots = null;
         _processSynchronizedState(slots);
