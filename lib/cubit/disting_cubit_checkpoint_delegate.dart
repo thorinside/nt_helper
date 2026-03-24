@@ -113,6 +113,9 @@ class _CheckpointDelegate {
       final currentSlot = state.slots[i];
 
       for (final entry in snapshot.parameterValues.entries) {
+        // Skip parameters that no longer exist in the current slot
+        if (entry.key >= currentSlot.parameters.length) continue;
+
         final currentValue = currentSlot.values
             .where((v) => v.parameterNumber == entry.key)
             .firstOrNull

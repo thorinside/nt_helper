@@ -1498,35 +1498,37 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     void Function(int mergeIndex, int stepIndex)? onStepComplete,
     void Function(int mergeIndex, int replaceModeIndex)? onReplaceModeSet,
   }) async {
-    const paceDelay = Duration(milliseconds: 150);
+    return runBatched(() async {
+      const paceDelay = Duration(milliseconds: 150);
 
-    for (int m = 0; m < plan.merges.length; m++) {
-      final merge = plan.merges[m];
+      for (int m = 0; m < plan.merges.length; m++) {
+        final merge = plan.merges[m];
 
-      for (int r = 0; r < merge.replaceModeSteps.length; r++) {
-        final rStep = merge.replaceModeSteps[r];
-        await _distingCubit!.updateParameterValue(
-          algorithmIndex: rStep.algorithmIndex,
-          parameterNumber: rStep.parameterNumber,
-          value: 1, // 1 = Replace
-          userIsChangingTheValue: false,
-        );
-        onReplaceModeSet?.call(m, r);
-        await Future.delayed(paceDelay);
+        for (int r = 0; r < merge.replaceModeSteps.length; r++) {
+          final rStep = merge.replaceModeSteps[r];
+          await _distingCubit!.updateParameterValue(
+            algorithmIndex: rStep.algorithmIndex,
+            parameterNumber: rStep.parameterNumber,
+            value: 1, // 1 = Replace
+            userIsChangingTheValue: false,
+          );
+          onReplaceModeSet?.call(m, r);
+          await Future.delayed(paceDelay);
+        }
+
+        for (int i = 0; i < merge.steps.length; i++) {
+          final step = merge.steps[i];
+          await _distingCubit!.updateParameterValue(
+            algorithmIndex: step.algorithmIndex,
+            parameterNumber: step.parameterNumber,
+            value: merge.keepBus,
+            userIsChangingTheValue: false,
+          );
+          onStepComplete?.call(m, i);
+          await Future.delayed(paceDelay);
+        }
       }
-
-      for (int i = 0; i < merge.steps.length; i++) {
-        final step = merge.steps[i];
-        await _distingCubit!.updateParameterValue(
-          algorithmIndex: step.algorithmIndex,
-          parameterNumber: step.parameterNumber,
-          value: merge.keepBus,
-          userIsChangingTheValue: false,
-        );
-        onStepComplete?.call(m, i);
-        await Future.delayed(paceDelay);
-      }
-    }
+    });
   }
 
   /// Delete an existing connection by ID

@@ -2470,7 +2470,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           }
         } else if (value.startsWith('restore:')) {
           final index = int.parse(value.substring(8));
-          final checkpoint = distingCubit.checkpoints[index];
+          final currentCheckpoints = distingCubit.checkpoints;
+          if (index >= currentCheckpoints.length) return;
+          final checkpoint = currentCheckpoints[index];
           final messenger = ScaffoldMessenger.of(context);
           final confirmed = await showDialog<bool>(
             context: context,
@@ -2529,6 +2531,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         }
       },
       itemBuilder: (context) {
+        final currentCheckpoints = distingCubit.checkpoints;
         final items = <PopupMenuEntry<String>>[];
 
         items.add(
@@ -2542,11 +2545,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           ),
         );
 
-        if (checkpoints.isNotEmpty) {
+        if (currentCheckpoints.isNotEmpty) {
           items.add(const PopupMenuDivider());
 
-          for (int i = checkpoints.length - 1; i >= 0; i--) {
-            final cp = checkpoints[i];
+          for (int i = currentCheckpoints.length - 1; i >= 0; i--) {
+            final cp = currentCheckpoints[i];
             items.add(
               PopupMenuItem(
                 value: 'restore:$i',
