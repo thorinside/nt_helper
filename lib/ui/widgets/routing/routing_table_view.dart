@@ -145,9 +145,7 @@ class RoutingTableView extends StatelessWidget {
     final pinnedRows = <TableRow>[];
     final mainRows = <TableRow>[];
 
-    // Group header row (top)
-    _addGroupHeaderRow(pinnedRows, mainRows, numBuses, theme);
-    // Column number header row (top)
+    // Column header row (top)
     _addColumnHeaderRow(pinnedRows, mainRows, numBuses, theme);
 
     for (int s = 0; s < slotCount; s++) {
@@ -168,10 +166,8 @@ class RoutingTableView extends StatelessWidget {
       );
     }
 
-    // Column number header row (bottom)
+    // Column header row (bottom)
     _addColumnHeaderRow(pinnedRows, mainRows, numBuses, theme);
-    // Group header row (bottom)
-    _addGroupHeaderRow(pinnedRows, mainRows, numBuses, theme);
 
     final verticalController = ScrollController();
 
@@ -261,52 +257,6 @@ class RoutingTableView extends StatelessWidget {
     }
 
     return highestUsed;
-  }
-
-  void _addGroupHeaderRow(List<TableRow> pinnedRows, List<TableRow> mainRows,
-      int numBuses, ThemeData theme) {
-    pinnedRows.add(TableRow(children: [
-      SizedBox(height: _cellHeight),
-    ]));
-
-    final inputMid = (BusSpec.inputMin + BusSpec.inputMax) ~/ 2;
-    final outputMid = (BusSpec.outputMin + BusSpec.outputMax) ~/ 2;
-    final auxMid = numBuses > BusSpec.outputMax
-        ? (BusSpec.outputMax + 1 + numBuses) ~/ 2
-        : -1;
-
-    final cells = <Widget>[];
-    for (int ch = 1; ch <= numBuses; ch++) {
-      Color bgColor;
-      String? label;
-      if (ch <= BusSpec.inputMax) {
-        bgColor = const Color(0xFFC0C0C0);
-        if (ch == inputMid) label = 'Inputs';
-      } else if (ch <= BusSpec.outputMax) {
-        bgColor = const Color(0xFFE0E0E0);
-        if (ch == outputMid) label = 'Outputs';
-      } else {
-        bgColor = const Color(0xFFC0C0C0);
-        if (ch == auxMid) label = 'Aux';
-      }
-      cells.add(Container(
-        width: _cellWidth,
-        height: _cellHeight,
-        alignment: Alignment.center,
-        color: _headerBg(bgColor, theme),
-        child: label != null
-            ? Text(
-                label,
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            : null,
-      ));
-    }
-    mainRows.add(TableRow(children: cells));
   }
 
   void _addColumnHeaderRow(List<TableRow> pinnedRows, List<TableRow> mainRows,
@@ -506,9 +456,9 @@ class RoutingTableView extends StatelessWidget {
   }
 
   String _columnLabel(int ch) {
-    if (ch <= BusSpec.inputMax) return '$ch';
-    if (ch <= BusSpec.outputMax) return '${ch - BusSpec.inputMax}';
-    return '${ch - BusSpec.outputMax}';
+    if (ch <= BusSpec.inputMax) return 'I$ch';
+    if (ch <= BusSpec.outputMax) return 'O${ch - BusSpec.inputMax}';
+    return 'A${ch - BusSpec.outputMax}';
   }
 
   String _condensedChannelLabel(int ch) {
