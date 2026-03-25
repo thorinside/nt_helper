@@ -2500,29 +2500,41 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             ),
           );
           if (confirmed == true && mounted) {
-            final routingCubit = _routingEditorCubit;
-            final int result;
-            if (routingCubit != null) {
-              result = await routingCubit.runBatched(() async {
-                return distingCubit.restoreCheckpoint(checkpoint);
-              });
-            } else {
-              result = await distingCubit.restoreCheckpoint(checkpoint);
-            }
-            if (mounted) {
-              setState(() {});
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    result > 0
-                        ? 'Restored $result parameters'
-                        : result == 0
-                            ? 'Nothing to restore (no changes)'
-                            : 'Restore failed',
+            try {
+              final routingCubit = _routingEditorCubit;
+              final int result;
+              if (routingCubit != null) {
+                result = await routingCubit.runBatched(() async {
+                  return distingCubit.restoreCheckpoint(checkpoint);
+                });
+              } else {
+                result = await distingCubit.restoreCheckpoint(checkpoint);
+              }
+              if (mounted) {
+                setState(() {});
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result > 0
+                          ? 'Restored $result parameters'
+                          : result == 0
+                              ? 'Nothing to restore (no changes)'
+                              : 'Restore failed',
+                    ),
+                    duration: const Duration(seconds: 2),
                   ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+                );
+              }
+            } catch (_) {
+              if (mounted) {
+                setState(() {});
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Restore failed unexpectedly'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
             }
           }
         } else if (value == 'clear') {

@@ -116,6 +116,11 @@ class _CheckpointDelegate {
         // Skip parameters that no longer exist in the current slot
         if (entry.key >= currentSlot.parameters.length) continue;
 
+        // Skip values outside the current parameter's valid range to avoid
+        // triggering anomaly-driven slot refreshes during restore
+        final paramInfo = currentSlot.parameters[entry.key];
+        if (entry.value < paramInfo.min || entry.value > paramInfo.max) continue;
+
         final currentValue = currentSlot.values
             .where((v) => v.parameterNumber == entry.key)
             .firstOrNull

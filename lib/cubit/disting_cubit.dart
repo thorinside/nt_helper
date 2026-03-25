@@ -260,6 +260,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   void disconnect() {
+    _checkpointDelegate.clearCheckpoints();
     return _connectionDelegate.disconnect();
   }
 
@@ -428,10 +429,12 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> newPreset() async {
+    _checkpointDelegate.clearCheckpoints();
     return newPresetImpl();
   }
 
   Future<void> loadPreset(String name, bool append) async {
+    _checkpointDelegate.clearCheckpoints();
     return loadPresetImpl(name, append);
   }
 
