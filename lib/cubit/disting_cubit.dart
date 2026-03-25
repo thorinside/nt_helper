@@ -226,6 +226,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> onDemo() async {
+    _checkpointDelegate.clearCheckpoints();
     return _offlineDemoDelegate.onDemo();
   }
 
@@ -284,6 +285,7 @@ class DistingCubit extends _DistingCubitBase
   // --- Offline Mode Handling ---
 
   Future<void> goOffline() async {
+    _checkpointDelegate.clearCheckpoints();
     return _offlineDemoDelegate.goOffline();
   }
 
@@ -296,6 +298,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> loadPresetOffline(FullPresetDetails presetDetails) async {
+    _checkpointDelegate.clearCheckpoints();
     return _offlineDemoDelegate.loadPresetOffline(presetDetails);
   }
 
@@ -434,7 +437,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   Future<void> loadPreset(String name, bool append) async {
-    _checkpointDelegate.clearCheckpoints();
+    if (!append) _checkpointDelegate.clearCheckpoints();
     return loadPresetImpl(name, append);
   }
 
