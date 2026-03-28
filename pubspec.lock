@@ -289,14 +289,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
-  dart_mcp:
-    dependency: "direct main"
-    description:
-      name: dart_mcp
-      sha256: "92a2ee1cca577ed54fa4f3d5ae0e80ce2dd61e1892e793bb4f951b30eab9c4b1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.0"
   dart_style:
     dependency: transitive
     description:
@@ -644,14 +636,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.11.0"
-  json_rpc_2:
-    dependency: transitive
-    description:
-      name: json_rpc_2
-      sha256: "82dfd37d3b2e5030ae4729e1d7f5538cbc45eb1c73d618b9272931facac3bec1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.1.0"
   json_serializable:
     dependency: "direct dev"
     description:
