@@ -264,6 +264,8 @@ class _KnobData {
       rangeMin != null &&
       rangeMax != null &&
       rangeMin != rangeMax;
+
+  bool get isBoolean => rangeMin == 0 && rangeMax == 1;
 }
 
 class _PageCard extends StatelessWidget {
@@ -350,6 +352,27 @@ class _KnobSlotState extends State<_KnobSlot> {
     } else if (!_isDragging) {
       _localFillFraction = null;
     }
+  }
+
+  void _onTap() {
+    final knob = widget.knob;
+    if (knob == null ||
+        !knob.isInteractive ||
+        !knob.isBoolean ||
+        widget.onParameterChanged == null) {
+      return;
+    }
+    final currentFill = _localFillFraction ?? knob.fillFraction ?? 0.0;
+    final newValue = currentFill >= 0.5 ? 0 : 1;
+    setState(() {
+      _localFillFraction = newValue.toDouble();
+    });
+    widget.onParameterChanged!(
+      knob.slotIndex!,
+      knob.parameterNumber!,
+      newValue,
+      false,
+    );
   }
 
   void _onDragStart(DragStartDetails details) {
@@ -495,16 +518,32 @@ class _KnobSlotState extends State<_KnobSlot> {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
             ),
+            if (knob.isBoolean) ...[
+              const SizedBox(height: 2),
+              Text(
+                (displayFill ?? 0.0) >= 0.5 ? 'On' : 'Off',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: (displayFill ?? 0.0) >= 0.5
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ],
         ],
       ),
     );
 
     if (isInteractive) {
+      final isBoolean = knob.isBoolean;
       container = GestureDetector(
-        onHorizontalDragStart: _onDragStart,
-        onHorizontalDragUpdate: _onDragUpdate,
-        onHorizontalDragEnd: _onDragEnd,
+        onTap: isBoolean ? _onTap : null,
+        onHorizontalDragStart: isBoolean ? null : _onDragStart,
+        onHorizontalDragUpdate: isBoolean ? null : _onDragUpdate,
+        onHorizontalDragEnd: isBoolean ? null : _onDragEnd,
         child: container,
       );
     }
