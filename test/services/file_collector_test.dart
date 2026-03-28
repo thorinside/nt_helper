@@ -223,4 +223,131 @@ void main() {
       verifyNever(() => mockMetadataDao.getPluginFilePathsByGuids(any()));
     });
   });
+
+  group('FileCollector - PackageConfig flags', () {
+    test('excludes wavetables when includeWavetables is false', () async {
+      final deps = PresetDependencies();
+      deps.wavetables.add('MySaw');
+
+      final config = const PackageConfig(includeWavetables: false);
+
+      final result = await fileCollector.collectDependencies(
+        deps,
+        config: config,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => mockFileSystem.readFile(any()));
+    });
+
+    test('excludes sample folders when includeSamples is false', () async {
+      final deps = PresetDependencies();
+      deps.sampleFolders.add('Drums');
+
+      final config = const PackageConfig(includeSamples: false);
+
+      final result = await fileCollector.collectDependencies(
+        deps,
+        config: config,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(
+        () => mockFileSystem.listFiles(any(), recursive: any(named: 'recursive')),
+      );
+    });
+
+    test('excludes multisample folders when includeSamples is false', () async {
+      final deps = PresetDependencies();
+      deps.multisampleFolders.add('Piano');
+
+      final config = const PackageConfig(includeSamples: false);
+
+      final result = await fileCollector.collectDependencies(
+        deps,
+        config: config,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(
+        () => mockFileSystem.listFiles(any(), recursive: any(named: 'recursive')),
+      );
+    });
+
+    test('excludes FM banks when includeFMBanks is false', () async {
+      final deps = PresetDependencies();
+      deps.fmBanks.add('bank.syx');
+
+      final config = const PackageConfig(includeFMBanks: false);
+
+      final result = await fileCollector.collectDependencies(
+        deps,
+        config: config,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => mockFileSystem.readFile(any()));
+    });
+
+    test('excludes Three Pot programs when includeThreePot is false', () async {
+      final deps = PresetDependencies();
+      deps.threePotPrograms.add('prog.pot');
+
+      final config = const PackageConfig(includeThreePot: false);
+
+      final result = await fileCollector.collectDependencies(
+        deps,
+        config: config,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => mockFileSystem.readFile(any()));
+    });
+
+    test('excludes Lua scripts when includeLua is false', () async {
+      final deps = PresetDependencies();
+      deps.luaScripts.add('script.lua');
+
+      final config = const PackageConfig(includeLua: false);
+
+      final result = await fileCollector.collectDependencies(
+        deps,
+        config: config,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => mockFileSystem.readFile(any()));
+    });
+
+    test('collects all non-plugin types when config is null', () async {
+      final deps = PresetDependencies();
+      deps.wavetables.add('MySaw');
+      deps.fmBanks.add('bank.syx');
+      deps.threePotPrograms.add('prog.pot');
+      deps.luaScripts.add('script.lua');
+
+      final wtBytes = Uint8List.fromList([1]);
+      final fmBytes = Uint8List.fromList([2]);
+      final potBytes = Uint8List.fromList([3]);
+      final luaBytes = Uint8List.fromList([4]);
+
+      when(() => mockFileSystem.readFile('wavetables/MySaw.wav'))
+          .thenAnswer((_) async => wtBytes);
+      when(() => mockFileSystem.readFile('FMSYX/bank.syx'))
+          .thenAnswer((_) async => fmBytes);
+      when(() => mockFileSystem.readFile('programs/three_pot/prog.pot'))
+          .thenAnswer((_) async => potBytes);
+      when(() => mockFileSystem.readFile('programs/lua/script.lua'))
+          .thenAnswer((_) async => luaBytes);
+
+      final result = await fileCollector.collectDependencies(deps);
+
+      expect(result.length, 4);
+      final paths = result.map((f) => f.relativePath).toSet();
+      expect(paths, contains('wavetables/MySaw.wav'));
+      expect(paths, contains('FMSYX/bank.syx'));
+      expect(paths, contains('programs/three_pot/prog.pot'));
+      expect(paths, contains('programs/lua/script.lua'));
+    });
+  });
 }

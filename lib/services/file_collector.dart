@@ -21,73 +21,82 @@ class FileCollector {
     const maxFileSize = 50 * 1024 * 1024; // 50MB limit per file
 
     // Collect wavetable files
-    for (final wavetable in dependencies.wavetables) {
-      final wavetablePath = 'wavetables/$wavetable.wav';
-      try {
-        (await fileSystem.readFile(wavetablePath))?.let((bytes) {
-          if (bytes.length > maxFileSize) {
-            warnings.add(
-              'Skipping large wavetable: $wavetable.wav (${_formatBytes(bytes.length)})',
-            );
-          }
-          files.add(CollectedFile(wavetablePath, bytes));
-        });
-      } catch (e) {
-        warnings.add('Error reading wavetable $wavetable.wav: $e');
+    if (config?.includeWavetables != false) {
+      for (final wavetable in dependencies.wavetables) {
+        final wavetablePath = 'wavetables/$wavetable.wav';
+        try {
+          (await fileSystem.readFile(wavetablePath))?.let((bytes) {
+            if (bytes.length > maxFileSize) {
+              warnings.add(
+                'Skipping large wavetable: $wavetable.wav (${_formatBytes(bytes.length)})',
+              );
+            }
+            files.add(CollectedFile(wavetablePath, bytes));
+          });
+        } catch (e) {
+          warnings.add('Error reading wavetable $wavetable.wav: $e');
+        }
       }
     }
 
-    // Collect sample folders
-    await _collectFolder(
-      dependencies.sampleFolders,
-      'samples',
-      files,
-      warnings,
-      maxFileSize,
-    );
+    // Collect sample and multisample folders
+    if (config?.includeSamples != false) {
+      await _collectFolder(
+        dependencies.sampleFolders,
+        'samples',
+        files,
+        warnings,
+        maxFileSize,
+      );
 
-    // Collect multisample folders
-    await _collectFolder(
-      dependencies.multisampleFolders,
-      'multisamples',
-      files,
-      warnings,
-      maxFileSize,
-    );
+      await _collectFolder(
+        dependencies.multisampleFolders,
+        'multisamples',
+        files,
+        warnings,
+        maxFileSize,
+      );
+    }
 
     // Collect FM bank files
-    for (final bank in dependencies.fmBanks) {
-      final bankPath = 'FMSYX/$bank';
-      try {
-        (await fileSystem.readFile(bankPath))?.let((bytes) {
-          files.add(CollectedFile(bankPath, bytes));
-        });
-      } catch (e) {
-        warnings.add('Error reading FM bank $bank: $e');
+    if (config?.includeFMBanks != false) {
+      for (final bank in dependencies.fmBanks) {
+        final bankPath = 'FMSYX/$bank';
+        try {
+          (await fileSystem.readFile(bankPath))?.let((bytes) {
+            files.add(CollectedFile(bankPath, bytes));
+          });
+        } catch (e) {
+          warnings.add('Error reading FM bank $bank: $e');
+        }
       }
     }
 
     // Collect Three Pot program files
-    for (final program in dependencies.threePotPrograms) {
-      final programPath = 'programs/three_pot/$program';
-      try {
-        (await fileSystem.readFile(programPath))?.let((bytes) {
-          files.add(CollectedFile(programPath, bytes));
-        });
-      } catch (e) {
-        warnings.add('Error reading Three Pot program $program: $e');
+    if (config?.includeThreePot != false) {
+      for (final program in dependencies.threePotPrograms) {
+        final programPath = 'programs/three_pot/$program';
+        try {
+          (await fileSystem.readFile(programPath))?.let((bytes) {
+            files.add(CollectedFile(programPath, bytes));
+          });
+        } catch (e) {
+          warnings.add('Error reading Three Pot program $program: $e');
+        }
       }
     }
 
     // Collect Lua script files
-    for (final script in dependencies.luaScripts) {
-      final scriptPath = 'programs/lua/$script';
-      try {
-        (await fileSystem.readFile(scriptPath))?.let((bytes) {
-          files.add(CollectedFile(scriptPath, bytes));
-        });
-      } catch (e) {
-        warnings.add('Error reading Lua script $script: $e');
+    if (config?.includeLua != false) {
+      for (final script in dependencies.luaScripts) {
+        final scriptPath = 'programs/lua/$script';
+        try {
+          (await fileSystem.readFile(scriptPath))?.let((bytes) {
+            files.add(CollectedFile(scriptPath, bytes));
+          });
+        } catch (e) {
+          warnings.add('Error reading Lua script $script: $e');
+        }
       }
     }
 

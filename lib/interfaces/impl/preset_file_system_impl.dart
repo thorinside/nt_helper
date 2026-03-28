@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/interfaces/preset_file_system.dart';
-import 'package:nt_helper/models/sd_card_file_system.dart';
 
 class PresetFileSystemImpl implements PresetFileSystem {
   final IDistingMidiManager manager;
@@ -13,30 +12,25 @@ class PresetFileSystemImpl implements PresetFileSystem {
     String directoryPath, {
     bool recursive = false,
   }) async {
-    final root = await manager.requestDirectoryListing(directoryPath);
+    final listing = await manager.requestDirectoryListing(directoryPath);
+    if (listing == null) return [];
 
-    if (root == null) {
-      return [];
+    final result = <String>[];
+    for (final entry in listing.entries) {
+      // Hardware appends '/' to directory names — strip it for path construction
+      final entryName = entry.name.endsWith('/')
+          ? entry.name.substring(0, entry.name.length - 1)
+          : entry.name;
+      final entryPath = '$directoryPath/$entryName';
+      if (entry.isDirectory) {
+        if (recursive) {
+          result.addAll(await listFiles(entryPath, recursive: true));
+        }
+      } else {
+        result.add(entryPath);
+      }
     }
-
-    return root.entries.fold<List<String>>(
-      [],
-      (list, DirectoryEntry entry) async {
-            if (entry.isDirectory) {
-              if (recursive) {
-                final subList = await listFiles(entry.name, recursive: true);
-                list.addAll(subList);
-              }
-            } else {
-              list.add(entry.name);
-            }
-            return list;
-          }
-          as List<String> Function(
-            List<String> previousValue,
-            DirectoryEntry element,
-          ),
-    );
+    return result;
   }
 
   @override
