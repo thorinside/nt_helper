@@ -71,6 +71,14 @@ flutter test             # Run before commits
 flutter run -d macos --print-dtd   # Run with DTD URL for MCP connection
 ```
 
+## Updating Flutter (fvm)
+
+```
+fvm releases                     # List versions; find latest stable at the bottom
+fvm install <VERSION>            # e.g. fvm install 3.41.6
+fvm global <VERSION>             # Set as global default
+```
+
 ## Worktrees
 
 Generated files (mocks, freezed, drift) are gitignored. After `git worktree add`, run:
