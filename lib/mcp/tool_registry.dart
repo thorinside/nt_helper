@@ -240,7 +240,7 @@ class ToolRegistry {
     _entries.add(ToolRegistryEntry(
       name: 'show_screen',
       description:
-          'Capture and return the current device screen as a base64 JPEG image.',
+          'Capture and return the current device screen as a base64 PNG image.',
       inputSchema: {
         'properties': {
           'display_mode': {

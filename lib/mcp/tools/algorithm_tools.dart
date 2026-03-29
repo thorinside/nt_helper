@@ -779,7 +779,7 @@ class MCPAlgorithmTools {
     }));
   }
 
-  /// Show current device screen as base64 JPEG image.
+  /// Show current device screen as base64 PNG image.
   Future<String> showScreen({dynamic displayMode}) async {
     try {
       // Validate display_mode parameter first, before checking device state
@@ -843,7 +843,7 @@ class MCPAlgorithmTools {
 
       return jsonEncode(
         convertToSnakeCaseKeys({
-          'type': 'image/jpeg',
+          'type': 'image/png',
           'data': base64Data,
           'size': screenshotData.length,
         }),
