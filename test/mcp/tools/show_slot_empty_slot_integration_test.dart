@@ -61,6 +61,8 @@ void main() {
 
         expect(json['slot_index'], equals(5));
         expect(json['parameters'], isEmpty);
+        expect(json['parameter_count'], equals(0));
+        expect(json['has_more'], isFalse);
         expect(json['algorithm'], isA<Map<String, dynamic>>());
         expect((json['algorithm'] as Map<String, dynamic>)['guid'], equals(''));
         expect((json['algorithm'] as Map<String, dynamic>)['name'], equals(''));

@@ -77,27 +77,60 @@ Search for parameters by name within the current preset or a specific slot.
 
 #### show_preset
 
-Show the complete preset with all slots, parameters, and enabled mappings.
+Show a compact preset overview: preset name and slot list with algorithm names and parameter counts. Does NOT include parameter values or mappings.
 
 **Parameters**: None
 
-**Returns**: Complete preset state including name, all slots, parameters, and enabled mappings.
+**Returns**: Preset name and array of slot summaries.
 
 ```json
 {"tool": "show_preset", "arguments": {}}
+```
+
+**Example response**:
+```json
+{
+  "name": "My Synth",
+  "slots": [
+    {"slot_index": 0, "algorithm": {"guid": "vcod", "name": "Dual VCO"}, "parameter_count": 18},
+    {"slot_index": 1, "algorithm": {"guid": "flt4", "name": "4-Pole Filter"}, "parameter_count": 8}
+  ]
+}
 ```
 
 ---
 
 #### show_slot
 
-Show a single slot with its algorithm, parameters, and enabled mappings.
+Show a slot with paginated parameter summaries. Each parameter shows its name, current value, and range (for numerics). Does NOT include enum value lists or full mapping detail — use `show_parameter` for those.
 
 **Parameters**:
 - `slot_index` (required, integer): Slot index (0-31)
+- `offset` (optional, integer): Start at this parameter index (default: 0)
+- `limit` (optional, integer): Max parameters to return (default: 10, max: 100)
 
 ```json
 {"tool": "show_slot", "arguments": {"slot_index": 0}}
+```
+
+```json
+{"tool": "show_slot", "arguments": {"slot_index": 0, "offset": 10, "limit": 10}}
+```
+
+**Example response**:
+```json
+{
+  "slot_index": 0,
+  "algorithm": {"guid": "vcod", "name": "Dual VCO"},
+  "parameter_count": 18,
+  "offset": 0,
+  "limit": 10,
+  "has_more": true,
+  "parameters": [
+    {"parameter_number": 0, "parameter_name": "Pitch", "is_disabled": false, "value": 60, "min": 0, "max": 127},
+    {"parameter_number": 1, "parameter_name": "Waveform", "is_disabled": false, "is_enum": true, "value": "Sawtooth", "has_mapping": true, "performance_page": 1}
+  ]
+}
 ```
 
 ---
@@ -530,6 +563,33 @@ Some algorithms support **specifications** that modify their behavior (e.g., cha
 ```
 
 The `show_slot` response includes specifications in the algorithm data so you can see how an algorithm was instantiated.
+
+---
+
+## Progressive Disclosure Workflow
+
+The show tools are designed for progressive disclosure — start broad, drill down only where needed.
+
+### Step 1: Get the overview
+```json
+{"tool": "show_preset", "arguments": {}}
+```
+Returns algorithm names and parameter counts per slot. No parameters fetched.
+
+### Step 2: Drill into a slot
+```json
+{"tool": "show_slot", "arguments": {"slot_index": 0}}
+```
+Returns first 10 parameter summaries (name, current value, range). If `has_more` is true, page through:
+```json
+{"tool": "show_slot", "arguments": {"slot_index": 0, "offset": 10}}
+```
+
+### Step 3: Inspect a specific parameter before editing
+```json
+{"tool": "show_parameter", "arguments": {"slot_index": 0, "parameter_number": 1}}
+```
+Returns full detail: `valid_enum_values` for enums, complete mapping configuration.
 
 ---
 

@@ -187,7 +187,8 @@ class ToolRegistry {
     _entries.add(ToolRegistryEntry(
       name: 'show_preset',
       description:
-          'Show the complete preset with all slots, parameters, and enabled mappings.',
+          'Show a compact preset overview: preset name and slot list with algorithm names and parameter counts. '
+          'Does NOT include parameter values or mappings. Use show_slot to drill into a specific slot.',
       inputSchema: {'properties': {}},
       handler: (_) => _algoTools.showPreset(),
     ));
@@ -195,7 +196,9 @@ class ToolRegistry {
     _entries.add(ToolRegistryEntry(
       name: 'show_slot',
       description:
-          'Show a single slot with its algorithm, parameters, and enabled mappings.',
+          'Show a slot with its algorithm info and a page of parameter summaries (name, current value, range). '
+          'Does NOT include enum value lists or full mapping details — use show_parameter for those. '
+          'Parameters with mappings show has_mapping: true. Supports pagination via offset/limit.',
       inputSchema: {
         'properties': {
           'slot_index': {
@@ -204,10 +207,25 @@ class ToolRegistry {
             'maximum': 31,
             'description': 'Slot index (0-31).',
           },
+          'offset': {
+            'type': 'integer',
+            'minimum': 0,
+            'description': 'Parameter offset for pagination (default: 0).',
+          },
+          'limit': {
+            'type': 'integer',
+            'minimum': 1,
+            'maximum': 100,
+            'description': 'Max parameters to return (default: 10, max: 100).',
+          },
         },
         'required': ['slot_index'],
       },
-      handler: (args) => _algoTools.showSlot(args['slot_index']),
+      handler: (args) => _algoTools.showSlot(
+        args['slot_index'],
+        offset: (args['offset'] as int?) ?? 0,
+        limit: (args['limit'] as int?) ?? 10,
+      ),
     ));
 
     _entries.add(ToolRegistryEntry(

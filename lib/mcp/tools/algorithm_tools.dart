@@ -5,7 +5,7 @@ import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, ParameterValue, Mapping, DisplayMode;
+    show ParameterInfo, ParameterValue, Mapping, DisplayMode;
 import 'package:nt_helper/util/case_converter.dart';
 import 'package:nt_helper/mcp/mcp_constants.dart';
 import 'package:nt_helper/mcp/utils/bus_mapping.dart';
@@ -556,7 +556,8 @@ class MCPAlgorithmTools {
     }
   }
 
-  /// Show complete preset with all slots, parameters, and enabled mappings.
+  /// Show compact preset overview: name, slot list with algorithm names and parameter counts.
+  /// Does NOT include parameter values or mappings. Use show_slot to drill into a specific slot.
   Future<String> showPreset() async {
     if (!_controller.isSynchronized) {
       return jsonEncode(
@@ -575,10 +576,14 @@ class MCPAlgorithmTools {
       final algorithm = allSlots[i];
       if (algorithm == null) continue;
       final parameters = await _controller.getParametersForSlot(i);
-      final values = await _controller.getValuesForSlot(i);
-      final mappings = await _controller.getMappingsForSlot(i);
-      final slotJson = await _buildSlotJson(i, algorithm, parameters, values, mappings);
-      slotsJson.add(slotJson);
+      slotsJson.add({
+        'slot_index': i,
+        'algorithm': {
+          'guid': algorithm.guid,
+          'name': algorithm.name,
+        },
+        'parameter_count': parameters.length,
+      });
     }
 
     return jsonEncode(
@@ -589,8 +594,9 @@ class MCPAlgorithmTools {
     );
   }
 
-  /// Show single slot with all parameters and enabled mappings.
-  Future<String> showSlot(dynamic identifier) async {
+  /// Show a slot with paginated parameter summaries.
+  /// Use show_parameter for full detail (enum value lists, mapping details).
+  Future<String> showSlot(dynamic identifier, {int offset = 0, int limit = 10}) async {
     if (identifier == null) {
       return jsonEncode(
         convertToSnakeCaseKeys({
@@ -632,13 +638,15 @@ class MCPAlgorithmTools {
 
     final algorithm = await _controller.getAlgorithmInSlot(slotIndex);
     if (algorithm == null) {
-      return jsonEncode(convertToSnakeCaseKeys(await _buildSlotJson(
-        slotIndex,
-        Algorithm(algorithmIndex: -1, guid: '', name: '', specifications: []),
-        [],
-        [],
-        [],
-      )));
+      return jsonEncode(convertToSnakeCaseKeys({
+        'slot_index': slotIndex,
+        'algorithm': {'guid': '', 'name': ''},
+        'parameter_count': 0,
+        'offset': 0,
+        'limit': limit,
+        'has_more': false,
+        'parameters': <dynamic>[],
+      }));
     }
 
     var parameters = await _controller.getParametersForSlot(slotIndex);
@@ -648,9 +656,34 @@ class MCPAlgorithmTools {
     }
     final values = await _controller.getValuesForSlot(slotIndex);
     final mappings = await _controller.getMappingsForSlot(slotIndex);
-    return jsonEncode(convertToSnakeCaseKeys(
-      await _buildSlotJson(slotIndex, algorithm, parameters, values, mappings),
-    ));
+
+    final totalCount = parameters.length;
+    final clampedOffset = offset.clamp(0, totalCount);
+    final endIndex = (clampedOffset + limit).clamp(0, totalCount);
+    final hasMore = endIndex < totalCount;
+
+    final parametersJson = <Map<String, dynamic>>[];
+    for (int i = clampedOffset; i < endIndex; i++) {
+      parametersJson.add(await _buildParameterSummaryJson(
+        slotIndex,
+        parameters[i],
+        values[i],
+        mappings[i],
+      ));
+    }
+
+    return jsonEncode(convertToSnakeCaseKeys({
+      'slot_index': slotIndex,
+      'algorithm': {
+        'guid': algorithm.guid,
+        'name': algorithm.name,
+      },
+      'parameter_count': totalCount,
+      'offset': clampedOffset,
+      'limit': limit,
+      'has_more': hasMore,
+      'parameters': parametersJson,
+    }));
   }
 
   /// Show single parameter with value and optional mapping.
@@ -883,32 +916,61 @@ class MCPAlgorithmTools {
     }
   }
 
-  /// Build JSON representation of a slot with all parameters and enabled mappings.
-  Future<Map<String, dynamic>> _buildSlotJson(
+  /// Build lightweight parameter summary for show_slot paginated output.
+  /// Omits valid_enum_values and full mapping objects to keep payload small.
+  /// Use show_parameter for full detail.
+  Future<Map<String, dynamic>> _buildParameterSummaryJson(
     int slotIndex,
-    Algorithm algorithm,
-    List<ParameterInfo> parameters,
-    List<ParameterValue> values,
-    List<Mapping> mappings,
+    ParameterInfo parameter,
+    ParameterValue value,
+    Mapping mapping,
   ) async {
-    final parametersJson = <Map<String, dynamic>>[];
-    for (int i = 0; i < parameters.length; i++) {
-      final param = parameters[i];
-      final value = values[i];
-      final mapping = mappings[i];
-      parametersJson.add(await _buildParameterJson(slotIndex, param.parameterNumber, param, value, mapping));
+    final isEnum = parameter.unit == 1;
+
+    final paramJson = <String, dynamic>{
+      'parameter_number': parameter.parameterNumber,
+      'parameter_name': parameter.name,
+      'is_disabled': value.isDisabled,
+    };
+
+    if (isEnum) {
+      final strings = await _controller.getParameterEnumStrings(
+        slotIndex,
+        parameter.parameterNumber,
+      );
+      final enumValues = strings?.values;
+      String? currentEnumValue;
+      if (enumValues != null &&
+          value.value >= 0 &&
+          value.value < enumValues.length) {
+        currentEnumValue = enumValues[value.value];
+      }
+      paramJson['is_enum'] = true;
+      paramJson['value'] = currentEnumValue ?? '';
+    } else {
+      paramJson['value'] =
+          MCPUtils.scaleForDisplay(value.value, parameter.powerOfTen);
+      paramJson['min'] =
+          MCPUtils.scaleForDisplay(parameter.min, parameter.powerOfTen);
+      paramJson['max'] =
+          MCPUtils.scaleForDisplay(parameter.max, parameter.powerOfTen);
     }
 
-    return {
-      'slot_index': slotIndex,
-      'algorithm': {
-        'guid': algorithm.guid,
-        'name': algorithm.name,
-      },
-      'parameters': parametersJson,
-    };
-  }
+    final data = mapping.packedMappingData;
+    final hasMapping = data.cvInput > 0 ||
+        data.source > 0 ||
+        data.isMidiEnabled ||
+        data.isI2cEnabled ||
+        data.perfPageIndex > 0;
+    if (hasMapping) {
+      paramJson['has_mapping'] = true;
+      if (data.perfPageIndex > 0) {
+        paramJson['performance_page'] = data.perfPageIndex;
+      }
+    }
 
+    return paramJson;
+  }
 
   /// Build JSON representation of a parameter with optional mapping.
   Future<Map<String, dynamic>> _buildParameterJson(
