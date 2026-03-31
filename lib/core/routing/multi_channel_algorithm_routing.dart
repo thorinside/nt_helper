@@ -833,39 +833,64 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
     // Check for Width parameter to determine channel count
     final channelCount = getWidthFromSlot(slot);
 
-    // Duplicate Audio input for width-based algorithms
+    // Duplicate I/O ports for width-based algorithms (all ports identified by ioFlags)
     if (channelCount > 1) {
-      // Find the original Audio input port
-      final audioInputIndex = inputPorts.indexWhere(
-        (port) => port['name'] == 'Audio input',
-      );
-
-      if (audioInputIndex >= 0) {
-        final audioInputPort = inputPorts[audioInputIndex];
-        final baseBusValue = audioInputPort['busValue'] as int? ?? 0;
-
-        // Only duplicate if the original Audio input has a valid bus assignment
+      // Collect insertions first to avoid index corruption during iteration
+      final inputInsertions = <int, List<Map<String, Object?>>>{};
+      for (int i = 0; i < inputPorts.length; i++) {
+        final port = inputPorts[i];
+        final baseBusValue = port['busValue'] as int? ?? 0;
         if (baseBusValue > 0) {
-          // Create virtual ports and insert them right after the original
+          final portName = port['name'] as String? ?? 'Input';
           final virtualPorts = <Map<String, Object?>>[];
           for (int channel = 2; channel <= channelCount; channel++) {
-            final virtualPort = {
-              'id': '${algorithmUuid ?? 'algo'}_audio_input_$channel',
-              'name': 'Audio input $channel',
-              'type': 'audio',
-              'busParam': null, // No actual parameter for virtual ports
+            virtualPorts.add({
+              'id': '${algorithmUuid ?? 'algo'}_input_${i}_$channel',
+              'name': '$portName $channel',
+              'type': port['type'],
+              'busParam': null,
               'busValue': baseBusValue + (channel - 1),
-              'parameterNumber': -channel, // Negative to indicate virtual port
+              'parameterNumber': -(i * 100 + channel),
               'isVirtualPort': true,
               'channelNumber': channel,
-              'basedOn': 'Audio input',
-            };
-            virtualPorts.add(virtualPort);
+              'basedOn': portName,
+            });
           }
-
-          // Insert all virtual ports right after the original Audio input
-          inputPorts.insertAll(audioInputIndex + 1, virtualPorts);
+          inputInsertions[i] = virtualPorts;
         }
+      }
+      for (final index in inputInsertions.keys.toList().reversed) {
+        inputPorts.insertAll(index + 1, inputInsertions[index]!);
+      }
+
+      final outputInsertions = <int, List<Map<String, Object?>>>{};
+      for (int i = 0; i < outputPorts.length; i++) {
+        final port = outputPorts[i];
+        final baseBusValue = port['busValue'] as int? ?? 0;
+        if (baseBusValue > 0) {
+          final portName = port['name'] as String? ?? 'Output';
+          final virtualPorts = <Map<String, Object?>>[];
+          for (int channel = 2; channel <= channelCount; channel++) {
+            virtualPorts.add({
+              'id': '${algorithmUuid ?? 'algo'}_output_${i}_$channel',
+              'name': '$portName $channel',
+              'type': port['type'],
+              'busParam': null,
+              'busValue': baseBusValue + (channel - 1),
+              'parameterNumber': -(i * 100 + channel + 50),
+              'isVirtualPort': true,
+              'channelNumber': channel,
+              'basedOn': portName,
+              if (port['outputMode'] != null) 'outputMode': port['outputMode'],
+              if (port['modeParameterNumber'] != null)
+                'modeParameterNumber': port['modeParameterNumber'],
+            });
+          }
+          outputInsertions[i] = virtualPorts;
+        }
+      }
+      for (final index in outputInsertions.keys.toList().reversed) {
+        outputPorts.insertAll(index + 1, outputInsertions[index]!);
       }
     }
 
