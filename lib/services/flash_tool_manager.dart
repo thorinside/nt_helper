@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:nt_helper/models/flash_progress.dart';
 import 'package:nt_helper/utils/sandbox_utils.dart';
+import 'package:nt_helper/utils/build_config.dart';
 
 /// Manages the nt-flash tool binary - auto-downloading from GitHub releases
 class FlashToolManager {
@@ -114,6 +115,7 @@ class FlashToolManager {
 
   /// Download and extract the tool from GitHub releases
   Future<void> _downloadTool(String toolDir, String binaryName) async {
+    if (kPlayStoreBuild) return;
     // Fetch latest release info from GitHub API
     final releaseResponse = await _httpClient.get(
       Uri.parse(_githubApiUrl),

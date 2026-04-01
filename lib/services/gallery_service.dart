@@ -13,6 +13,7 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
 import 'package:nt_helper/utils/app_directory.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:nt_helper/utils/build_config.dart';
 
 /// GraphQL queries for the gallery
 const String _getPluginsQuery = r'''
@@ -762,6 +763,7 @@ class GalleryService {
     GalleryPlugin plugin,
     String version,
   ) async {
+    if (kPlayStoreBuild) throw UnsupportedError('Not available on Play Store build');
     final release = plugin.getVersionTag(version);
     final downloadUrl = await _getDownloadUrl(plugin, release);
 

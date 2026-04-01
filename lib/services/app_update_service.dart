@@ -9,6 +9,7 @@ import 'package:nt_helper/utils/sandbox_utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:nt_helper/utils/build_config.dart';
 
 enum InstallOutcome { success, needsRestart, error }
 
@@ -45,6 +46,7 @@ class AppUpdateService {
     bool forceRefresh = false,
     bool skipVersionCheck = false,
   }) async {
+    if (kPlayStoreBuild) return null;
     if (!_isDesktop) return null;
     if (Platform.isMacOS && SandboxUtils.isSandboxed) return null;
 
@@ -89,6 +91,7 @@ class AppUpdateService {
     AppRelease release, {
     void Function(double progress)? onProgress,
   }) async {
+    if (kPlayStoreBuild) throw UnsupportedError('Not available on Play Store build');
     final platformKey = _getPlatformKeyword();
     final url = release.platformAssets[platformKey];
     if (url == null) {
