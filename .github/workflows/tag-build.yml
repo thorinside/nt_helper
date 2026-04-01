@@ -199,7 +199,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --dart-define=PLAY_STORE_BUILD=true
 
       - name: List build output (debug)
         run: ls -R build/app/outputs/bundle/release

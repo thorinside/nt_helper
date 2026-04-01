@@ -12,6 +12,7 @@ import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/utils/build_config.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
 class DistingApp extends StatefulWidget {
@@ -281,7 +282,7 @@ class _DistingPageState extends State<DistingPage> {
                 onOfflinePressed: () async {
                   context.read<DistingCubit>().goOffline();
                 },
-                onFirmwarePressed: (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
+                onFirmwarePressed: !kPlayStoreBuild && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
                     ? (String? probedVersion, MidiDevice? inputDevice, MidiDevice? outputDevice, int? sysExId) {
                         Navigator.of(context).push(
                           MaterialPageRoute(

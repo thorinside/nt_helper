@@ -62,6 +62,7 @@ import 'package:nt_helper/ui/widgets/app_update_dialog.dart';
 import 'package:nt_helper/ui/widgets/contextual_help_bar.dart';
 import 'package:nt_helper/models/app_release.dart';
 import 'package:nt_helper/services/app_update_service.dart';
+import 'package:nt_helper/utils/build_config.dart';
 
 enum EditMode { parameters, routing, both }
 
@@ -1371,28 +1372,29 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             );
                           },
                   ),
-                  IconButton(
-                    tooltip: 'Plugin Manager',
-                    icon: const Icon(
-                      Icons.extension_rounded,
-                      semanticLabel: 'Plugin Manager',
-                    ),
-                    onPressed: widget.loading
-                        ? null
-                        : () {
-                            final distingCubit =
-                                context.read<DistingCubit>();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => PluginGalleryScreen(
-                                  distingCubit: distingCubit,
-                                  database: distingCubit.database,
+                  if (!kPlayStoreBuild)
+                    IconButton(
+                      tooltip: 'Plugin Manager',
+                      icon: const Icon(
+                        Icons.extension_rounded,
+                        semanticLabel: 'Plugin Manager',
+                      ),
+                      onPressed: widget.loading
+                          ? null
+                          : () {
+                              final distingCubit =
+                                  context.read<DistingCubit>();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PluginGalleryScreen(
+                                    distingCubit: distingCubit,
+                                    database: distingCubit.database,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                  ),
+                              );
+                            },
+                    ),
                 ],
               );
             },
@@ -1435,7 +1437,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Firmware update indicator (desktop only)
-                    if (updateAvailable != null && isDesktop)
+                    if (!kPlayStoreBuild && updateAvailable != null && isDesktop)
                       Tooltip(
                         message:
                             'Update available: v${updateAvailable.version}',
@@ -1463,14 +1465,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           constraints: const BoxConstraints(),
                         ),
                       ),
-                    if (updateAvailable != null && isDesktop)
+                    if (!kPlayStoreBuild && updateAvailable != null && isDesktop)
                       const SizedBox(width: 4),
                     DistingVersion(
                       distingVersion: widget.distingVersion,
                       requiredVersion: Constants.requiredDistingVersion,
                       firmwareVersion: widget.firmwareVersion,
                       firmwareDate: widget.firmwareVersion.date,
-                      onTap: isDesktop
+                      onTap: kPlayStoreBuild
+                          ? null
+                          : isDesktop
                           ? () {
                               final distingCubit = context.read<DistingCubit>();
                               Navigator.push(
@@ -1891,29 +1895,33 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               children: [Text('Perform'), Icon(Icons.library_music)],
             ),
           ),
-          // Plugin Manager: Always enabled
-          PopupMenuItem(
-            value: 'plugin_manager',
-            enabled: !widget.loading,
-            onTap: widget.loading
-                ? null
-                : () {
-                    final distingCubit = popupCtx.read<DistingCubit>();
-                    Navigator.push(
-                      popupCtx,
-                      MaterialPageRoute(
-                        builder: (_) => PluginGalleryScreen(
-                          distingCubit: distingCubit,
-                          database: distingCubit.database,
+          // Plugin Manager: Always enabled (excluded from Play Store build)
+          if (!kPlayStoreBuild)
+            PopupMenuItem(
+              value: 'plugin_manager',
+              enabled: !widget.loading,
+              onTap: widget.loading
+                  ? null
+                  : () {
+                      final distingCubit = popupCtx.read<DistingCubit>();
+                      Navigator.push(
+                        popupCtx,
+                        MaterialPageRoute(
+                          builder: (_) => PluginGalleryScreen(
+                            distingCubit: distingCubit,
+                            database: distingCubit.database,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text('Plugin Manager'), Icon(Icons.extension_rounded)],
+                      );
+                    },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Plugin Manager'),
+                  Icon(Icons.extension_rounded),
+                ],
+              ),
             ),
-          ),
           // Switch Devices: Only disabled by loading (Fix context usage)
           PopupMenuItem(
             value: 'Switch Devices',
@@ -2024,8 +2032,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               children: [Text('System'), Icon(Icons.settings_applications)],
             ),
           ),
-          // Firmware: Desktop only, disabled when loading
-          if (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
+          // Firmware: Desktop only, disabled when loading (excluded from Play Store build)
+          if (!kPlayStoreBuild &&
+              (Platform.isMacOS || Platform.isWindows || Platform.isLinux))
             PopupMenuItem(
               value: 'firmware',
               enabled: !widget.loading,
