@@ -8,6 +8,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
@@ -23,9 +24,14 @@ class DistingApp extends StatefulWidget {
 }
 
 class _DistingAppState extends State<DistingApp> {
+  late final AppLifecycleListener _lifecycleListener;
+
   @override
   void initState() {
     super.initState();
+    _lifecycleListener = AppLifecycleListener(
+      onExitRequested: _onExitRequested,
+    );
     if (Platform.isWindows) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // Delay slightly to ensure the window is shown and initial rendering attempted
@@ -36,6 +42,23 @@ class _DistingAppState extends State<DistingApp> {
         });
       });
     }
+  }
+
+  Future<AppExitResponse> _onExitRequested() async {
+    try {
+      final db = context.read<AppDatabase>();
+      await db.close();
+    } catch (_) {}
+    try {
+      await RoutingServiceLocator.reset();
+    } catch (_) {}
+    return AppExitResponse.exit;
+  }
+
+  @override
+  void dispose() {
+    _lifecycleListener.dispose();
+    super.dispose();
   }
 
   ThemeData buildThemeData(ColorScheme baseColorScheme) {
