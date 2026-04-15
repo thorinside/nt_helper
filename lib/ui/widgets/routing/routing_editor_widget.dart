@@ -119,6 +119,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   _RoutingViewMode _viewMode = _RoutingViewMode.canvas;
   bool _viewModeLoaded = false;
   Timer? _scrollSaveTimer;
+  // Tracks the last known scroll offset so it can be restored when the canvas
+  // re-enters the tree (e.g. after switching away to list/table view).
+  Offset _lastScrollOffset = Offset.zero;
 
   Future<void> _loadViewMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -153,6 +156,29 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     SharedPreferences.getInstance().then(
       (prefs) => prefs.setString(_RoutingViewMode._prefsKey, mode.name),
     );
+    if (mode == _RoutingViewMode.canvas) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final target = _lastScrollOffset != Offset.zero
+            ? _lastScrollOffset
+            : (context.read<RoutingEditorCubit>().state
+                    is RoutingEditorStateLoaded
+                ? (context.read<RoutingEditorCubit>().state
+                        as RoutingEditorStateLoaded)
+                    .panOffset
+                : Offset.zero);
+        if (target != Offset.zero) {
+          if (_horizontalScrollController.hasClients) {
+            _horizontalScrollController.jumpTo(target.dx);
+          }
+          if (_verticalScrollController.hasClients) {
+            _verticalScrollController.jumpTo(target.dy);
+          }
+        } else {
+          _fitToView();
+        }
+      });
+    }
   }
 
   // Platform service for hover detection
@@ -323,16 +349,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   void _onScrollChanged() {
+    final h = _horizontalScrollController.hasClients
+        ? _horizontalScrollController.offset
+        : 0.0;
+    final v = _verticalScrollController.hasClients
+        ? _verticalScrollController.offset
+        : 0.0;
+    _lastScrollOffset = Offset(h, v);
     _scrollSaveTimer?.cancel();
     _scrollSaveTimer = Timer(const Duration(milliseconds: 500), () {
       if (!mounted) return;
-      final h = _horizontalScrollController.hasClients
-          ? _horizontalScrollController.offset
-          : 0.0;
-      final v = _verticalScrollController.hasClients
-          ? _verticalScrollController.offset
-          : 0.0;
-      context.read<RoutingEditorCubit>().updateViewport(Offset(h, v));
+      context.read<RoutingEditorCubit>().updateViewport(_lastScrollOffset);
     });
   }
 
