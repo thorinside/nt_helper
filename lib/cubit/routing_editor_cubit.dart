@@ -3104,6 +3104,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       for (final entry in currentState.nodePositions.entries) {
         positionsMap[entry.key] = {'x': entry.value.x, 'y': entry.value.y};
       }
+      positionsMap['_viewport'] = {
+        'scrollH': currentState.panOffset.dx,
+        'scrollV': currentState.panOffset.dy,
+        'zoom': currentState.zoomLevel,
+      };
 
       final json = jsonEncode(positionsMap);
       await prefs.setString(key, json);
@@ -3131,9 +3136,17 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (json != null) {
         final positionsMap = jsonDecode(json) as Map<String, dynamic>;
-        final nodePositions = <String, NodePosition>{};
 
+        // Extract viewport state before processing node positions
+        final viewportData =
+            positionsMap['_viewport'] as Map<String, dynamic>?;
+        final scrollH = (viewportData?['scrollH'] as num?)?.toDouble() ?? 0.0;
+        final scrollV = (viewportData?['scrollV'] as num?)?.toDouble() ?? 0.0;
+        final zoom = (viewportData?['zoom'] as num?)?.toDouble() ?? 1.0;
+
+        final nodePositions = <String, NodePosition>{};
         for (final entry in positionsMap.entries) {
+          if (entry.key == '_viewport') continue;
           final pos = entry.value as Map<String, dynamic>;
           nodePositions[entry.key] = NodePosition(
             x: (pos['x'] as num).toDouble(),
@@ -3141,7 +3154,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           );
         }
 
-        emit(currentState.copyWith(nodePositions: nodePositions));
+        emit(
+          currentState.copyWith(
+            nodePositions: nodePositions,
+            panOffset: Offset(scrollH, scrollV),
+            zoomLevel: zoom,
+          ),
+        );
       }
     } catch (e) {
       // Intentionally empty
@@ -3216,6 +3235,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final clampedZoom = zoomLevel.clamp(0.1, 2.0);
 
     emit(currentState.copyWith(zoomLevel: clampedZoom));
+    saveNodePositions();
   }
 
   /// Zoom in by a factor
@@ -3242,12 +3262,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     emit(currentState.copyWith(zoomLevel: 1.0));
   }
 
-  /// Update pan offset
-  void updatePanOffset(Offset offset) {
+  /// Update viewport scroll position and persist alongside node positions
+  Future<void> updateViewport(Offset scrollOffset) async {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) return;
 
-    emit(currentState.copyWith(panOffset: offset));
+    emit(currentState.copyWith(panOffset: scrollOffset));
+    await saveNodePositions();
   }
 
   /// Get available zoom levels for dropdown

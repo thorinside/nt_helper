@@ -118,6 +118,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   // View mode toggle (canvas, list, table) — persisted via SharedPreferences
   _RoutingViewMode _viewMode = _RoutingViewMode.canvas;
   bool _viewModeLoaded = false;
+  Timer? _scrollSaveTimer;
 
   Future<void> _loadViewMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -126,6 +127,23 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       setState(() {
         if (saved != null) _viewMode = _RoutingViewMode.fromString(saved);
         _viewModeLoaded = true;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final cubitState = context.read<RoutingEditorCubit>().state;
+        final pan = cubitState is RoutingEditorStateLoaded
+            ? cubitState.panOffset
+            : Offset.zero;
+        if (pan != Offset.zero) {
+          if (_horizontalScrollController.hasClients) {
+            _horizontalScrollController.jumpTo(pan.dx);
+          }
+          if (_verticalScrollController.hasClients) {
+            _verticalScrollController.jumpTo(pan.dy);
+          }
+        } else {
+          _fitToView();
+        }
       });
     }
   }
@@ -188,6 +206,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         KeyBindingService(platformInteractionService: _platformService);
     _horizontalScrollController = ScrollController();
     _verticalScrollController = ScrollController();
+    _horizontalScrollController.addListener(_onScrollChanged);
+    _verticalScrollController.addListener(_onScrollChanged);
 
     // Initialize delete animation controller (red → orange → white phase)
     _deleteAnimationController = AnimationController(
@@ -225,11 +245,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       showError: _showError,
     );
 
-    // Center the view on the canvas after the first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _centerCanvas();
-    });
-
     _initializeNodePositions();
 
     if (_platformService.usesCommandModifier()) {
@@ -254,37 +269,36 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   }
 
   void _initializeNodePositions() {
-    // Position nodes in the center area of the 5000x5000 canvas
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-
-    // Physical inputs on the left side (matching _buildPhysicalInputNodes)
-    _nodePositions['physical_inputs'] = const Offset(
-      centerX - 800,
-      centerY - 300,
-    );
-
-    // Physical outputs on the right side (matching _buildPhysicalOutputNodes)
-    _nodePositions['physical_outputs'] = const Offset(
-      centerX + 600,
-      centerY - 300,
-    );
-
-    // Algorithm nodes in the center area
-    // We'll initialize them when we have the actual algorithm IDs
     final routingState = context.read<RoutingEditorCubit>().state;
+    final saved = routingState is RoutingEditorStateLoaded
+        ? routingState.nodePositions
+        : const <String, NodePosition>{};
+
+    final savedIn = saved['physical_inputs'];
+    _nodePositions['physical_inputs'] = savedIn != null
+        ? Offset(savedIn.x, savedIn.y)
+        : const Offset(centerX - 800, centerY - 300);
+
+    final savedOut = saved['physical_outputs'];
+    _nodePositions['physical_outputs'] = savedOut != null
+        ? Offset(savedOut.x, savedOut.y)
+        : const Offset(centerX + 600, centerY - 300);
+
     if (routingState is RoutingEditorStateLoaded) {
       const double algorithmStartX = centerX - 250;
       const double algorithmSpacing = 300.0;
       const double algorithmRowSpacing = 200.0;
       for (int i = 0; i < routingState.algorithms.length && i < 8; i++) {
         final algo = routingState.algorithms[i];
-        final column = i % 2;
-        final row = i ~/ 2;
-        _nodePositions[algo.id] = Offset(
-          algorithmStartX + (column * algorithmSpacing),
-          centerY - 300 + (row * algorithmRowSpacing),
-        );
+        final savedPos = saved[algo.id];
+        _nodePositions[algo.id] = savedPos != null
+            ? Offset(savedPos.x, savedPos.y)
+            : Offset(
+                algorithmStartX + (i % 2) * algorithmSpacing,
+                centerY - 300 + (i ~/ 2) * algorithmRowSpacing,
+              );
       }
     }
   }
@@ -294,6 +308,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     _connectionHighlightTimer?.cancel();
     _errorDismissTimer?.cancel();
     _dragUpdateDebounceTimer?.cancel();
+    _scrollSaveTimer?.cancel();
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
     _zoomHotkeySubscription?.cancel();
@@ -305,6 +320,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     _fadeOutAnimationController.removeListener(_onDeleteAnimationTick);
     _fadeOutAnimationController.dispose();
     super.dispose();
+  }
+
+  void _onScrollChanged() {
+    _scrollSaveTimer?.cancel();
+    _scrollSaveTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      final h = _horizontalScrollController.hasClients
+          ? _horizontalScrollController.offset
+          : 0.0;
+      final v = _verticalScrollController.hasClients
+          ? _verticalScrollController.offset
+          : 0.0;
+      context.read<RoutingEditorCubit>().updateViewport(Offset(h, v));
+    });
   }
 
   /// Trigger rebuild on each animation frame
@@ -1212,7 +1241,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
   /// Remove stale node positions and ensure required defaults exist for the
   /// current routing structure (e.g., after loading a new preset).
   void _pruneAndInitNodePositions(RoutingEditorStateLoaded current) {
-    // Keep only physical nodes and current algorithm IDs
     final allowedKeys = <String>{
       'physical_inputs',
       'physical_outputs',
@@ -1221,30 +1249,36 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
 
     _nodePositions.removeWhere((key, value) => !allowedKeys.contains(key));
 
-    // Ensure physical nodes exist
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
+    final saved = current.nodePositions;
+
+    final savedIn = saved['physical_inputs'];
     _nodePositions.putIfAbsent(
       'physical_inputs',
-      () => const Offset(centerX - 800, centerY - 300),
+      () => savedIn != null
+          ? Offset(savedIn.x, savedIn.y)
+          : const Offset(centerX - 800, centerY - 300),
     );
+    final savedOut = saved['physical_outputs'];
     _nodePositions.putIfAbsent(
       'physical_outputs',
-      () => const Offset(centerX + 600, centerY - 300),
+      () => savedOut != null
+          ? Offset(savedOut.x, savedOut.y)
+          : const Offset(centerX + 600, centerY - 300),
     );
 
-    // Initialize missing algorithm nodes in reasonable default grid positions
     const double algorithmStartX = centerX - 250;
     const double algorithmSpacing = 300.0;
     const double algorithmRowSpacing = 200.0;
     for (int i = 0; i < current.algorithms.length && i < 8; i++) {
       final algo = current.algorithms[i];
+      final savedPos = saved[algo.id];
       _nodePositions.putIfAbsent(algo.id, () {
-        final column = i % 2;
-        final row = i ~/ 2;
+        if (savedPos != null) return Offset(savedPos.x, savedPos.y);
         return Offset(
-          algorithmStartX + (column * algorithmSpacing),
-          centerY - 300 + (row * algorithmRowSpacing),
+          algorithmStartX + (i % 2) * algorithmSpacing,
+          centerY - 300 + (i ~/ 2) * algorithmRowSpacing,
         );
       });
     }
