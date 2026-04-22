@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
@@ -10,8 +11,10 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/core/routing/routing_service_locator.dart';
+import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/services/zoom_hotkey_service.dart';
 import 'package:nt_helper/ui/firmware/firmware_update_screen.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
 import 'package:nt_helper/utils/build_config.dart';
@@ -26,12 +29,17 @@ class DistingApp extends StatefulWidget {
 
 class _DistingAppState extends State<DistingApp> {
   late final AppLifecycleListener _lifecycleListener;
+  final KeyBindingService _keyBindingService = KeyBindingService();
+  StreamSubscription<ZoomHotkeyAction>? _zoomHotkeySubscription;
 
   @override
   void initState() {
     super.initState();
     _lifecycleListener = AppLifecycleListener(
       onExitRequested: _onExitRequested,
+    );
+    _zoomHotkeySubscription = ZoomHotkeyService.instance.stream.listen(
+      _handleZoomHotkeyAction,
     );
     if (Platform.isWindows) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -42,6 +50,21 @@ class _DistingAppState extends State<DistingApp> {
           }
         });
       });
+    }
+  }
+
+  void _handleZoomHotkeyAction(ZoomHotkeyAction action) {
+    final settings = SettingsService();
+    switch (action) {
+      case ZoomHotkeyAction.zoomIn:
+        settings.zoomInUi();
+        break;
+      case ZoomHotkeyAction.zoomOut:
+        settings.zoomOutUi();
+        break;
+      case ZoomHotkeyAction.resetZoom:
+        settings.resetUiScale();
+        break;
     }
   }
 
@@ -58,6 +81,7 @@ class _DistingAppState extends State<DistingApp> {
 
   @override
   void dispose() {
+    _zoomHotkeySubscription?.cancel();
     _lifecycleListener.dispose();
     super.dispose();
   }
@@ -142,6 +166,36 @@ class _DistingAppState extends State<DistingApp> {
       highContrastDarkTheme: highContrastDarkTheme,
       themeMode: ThemeMode.system,
       // Follow system settings
+      builder: (context, child) {
+        return ValueListenableBuilder<double>(
+          valueListenable: SettingsService().uiScaleNotifier,
+          builder: (context, scale, _) {
+            final mediaQuery = MediaQuery.of(context);
+            return MediaQuery(
+              data: mediaQuery.copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: Shortcuts(
+                shortcuts: _keyBindingService.desktopZoomShortcuts,
+                child: Actions(
+                  actions: _keyBindingService.buildZoomActions(
+                    onZoomIn: () {
+                      SettingsService().zoomInUi();
+                    },
+                    onZoomOut: () {
+                      SettingsService().zoomOutUi();
+                    },
+                    onResetZoom: () {
+                      SettingsService().resetUiScale();
+                    },
+                  ),
+                  child: child ?? const SizedBox.shrink(),
+                ),
+              ),
+            );
+          },
+        );
+      },
       initialRoute: '/',
       routes: {
         '/': (context) => MultiBlocProvider(

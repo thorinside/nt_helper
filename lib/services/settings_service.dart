@@ -29,6 +29,9 @@ class SettingsService {
   /// Notifier for CPU monitor enabled state changes
   final cpuMonitorEnabledNotifier = ValueNotifier<bool>(defaultCpuMonitorEnabled);
 
+  /// Notifier for UI scale changes; listeners rebuild when scale updates.
+  final uiScaleNotifier = ValueNotifier<double>(defaultUiScale);
+
   // Keys for storing settings
   static const String _requestTimeoutKey = 'request_timeout_ms';
   static const String _interMessageDelayKey = 'inter_message_delay_ms';
@@ -58,6 +61,7 @@ class SettingsService {
   static const String _anthropicModelKey = 'anthropic_model';
   static const String _openaiModelKey = 'openai_model';
   static const String _openaiBaseUrlKey = 'openai_base_url';
+  static const String _uiScaleKey = 'ui_scale';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -85,12 +89,60 @@ class SettingsService {
   static const double defaultChatPanelWidth = 360;
   static const String defaultAnthropicModel = 'claude-haiku-4-5-20251001';
   static const String defaultOpenaiModel = 'gpt-5-nano';
+  static const double defaultUiScale = 1.0;
+  static const double minUiScale = 0.7;
+  static const double maxUiScale = 1.5;
+  static const double uiScaleStep = 0.1;
 
   /// Initialize the settings service
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     // Initialize notifier with stored value
     cpuMonitorEnabledNotifier.value = cpuMonitorEnabled;
+    uiScaleNotifier.value = uiScale;
+  }
+
+  /// Get the global UI scale factor, clamped to the allowed range.
+  double get uiScale {
+    final stored = _prefs?.getDouble(_uiScaleKey) ?? defaultUiScale;
+    return stored.clamp(minUiScale, maxUiScale);
+  }
+
+  /// Set the global UI scale factor. Value is clamped before storage and the
+  /// [uiScaleNotifier] is updated so listeners rebuild.
+  Future<bool> setUiScale(double value) async {
+    final clamped = _clampUiScale(value);
+    final result = await _prefs?.setDouble(_uiScaleKey, clamped) ?? false;
+    if (result) {
+      uiScaleNotifier.value = clamped;
+    }
+    return result;
+  }
+
+  /// Increase UI scale by [uiScaleStep] (clamped). Returns the new scale.
+  Future<double> zoomInUi() async {
+    final next = _clampUiScale(uiScale + uiScaleStep);
+    await setUiScale(next);
+    return next;
+  }
+
+  /// Decrease UI scale by [uiScaleStep] (clamped). Returns the new scale.
+  Future<double> zoomOutUi() async {
+    final next = _clampUiScale(uiScale - uiScaleStep);
+    await setUiScale(next);
+    return next;
+  }
+
+  /// Reset UI scale back to [defaultUiScale]. Returns the new scale.
+  Future<double> resetUiScale() async {
+    await setUiScale(defaultUiScale);
+    return defaultUiScale;
+  }
+
+  /// Clamp and round a scale value to one decimal place.
+  double _clampUiScale(double value) {
+    final clamped = value.clamp(minUiScale, maxUiScale);
+    return (clamped * 10).roundToDouble() / 10;
   }
 
   /// Get the request timeout in milliseconds
@@ -390,6 +442,7 @@ class SettingsService {
     await setAlgorithmCacheDays(defaultAlgorithmCacheDays);
     await setCpuMonitorEnabled(defaultCpuMonitorEnabled);
     await setSplitDividerPosition(defaultSplitDividerPosition);
+    await setUiScale(defaultUiScale);
   }
 }
 
@@ -418,6 +471,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _showDebugPanel;
   late bool _showContextualHelp;
   late bool _cpuMonitorEnabled;
+  late double _uiScale;
 
   @override
   void initState() {
@@ -439,6 +493,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _showDebugPanel = settings.showDebugPanel;
       _showContextualHelp = settings.showContextualHelp;
       _cpuMonitorEnabled = settings.cpuMonitorEnabled;
+      _uiScale = settings.uiScale;
     });
   }
 
@@ -462,6 +517,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setShowDebugPanel(_showDebugPanel);
       await settings.setShowContextualHelp(_showContextualHelp);
       await settings.setCpuMonitorEnabled(_cpuMonitorEnabled);
+      await settings.setUiScale(_uiScale);
 
       if (mounted) {
         Navigator.of(
@@ -619,6 +675,58 @@ class _SettingsDialogState extends State<SettingsDialog> {
                               ),
                         ),
                       ),
+
+                    const SizedBox(height: 24),
+
+                    // UI scale setting
+                    _SettingSection(
+                      title: 'UI Scale',
+                      subtitle:
+                          'Adjust interface size (shortcuts: ${Platform.isMacOS ? 'Cmd' : 'Ctrl'}+= to zoom in, ${Platform.isMacOS ? 'Cmd' : 'Ctrl'}+- to zoom out)',
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Slider(
+                              value: _uiScale,
+                              min: SettingsService.minUiScale,
+                              max: SettingsService.maxUiScale,
+                              divisions:
+                                  ((SettingsService.maxUiScale -
+                                              SettingsService.minUiScale) /
+                                          SettingsService.uiScaleStep)
+                                      .round(),
+                              label: '${(_uiScale * 100).round()}%',
+                              onChanged: (value) {
+                                setState(() {
+                                  _uiScale =
+                                      (value * 10).roundToDouble() / 10;
+                                });
+                              },
+                            ),
+                          ),
+                          SizedBox(
+                            width: 56,
+                            child: Text(
+                              '${(_uiScale * 100).round()}%',
+                              textAlign: TextAlign.end,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            tooltip: 'Reset to 100%',
+                            onPressed: _uiScale ==
+                                    SettingsService.defaultUiScale
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _uiScale = SettingsService.defaultUiScale;
+                                    });
+                                  },
+                          ),
+                        ],
+                      ),
+                    ),
 
                     const SizedBox(height: 24),
 
