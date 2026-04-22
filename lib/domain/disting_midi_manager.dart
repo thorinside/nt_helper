@@ -346,9 +346,6 @@ class DistingMidiManager implements IDistingMidiManager {
     int algorithmIndex,
     int parameterNumber,
   ) async {
-    // Currently can't do parameter numbers > 128
-    if (parameterNumber > 127) return null;
-
     final message = RequestMappingsMessage(
       sysExId: sysExId,
       algorithmIndex: algorithmIndex,
