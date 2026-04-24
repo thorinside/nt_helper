@@ -45,6 +45,7 @@ enum _DevelopmentState {
 
 class _FileParameterEditorState extends State<FileParameterEditor> {
   late TextEditingController _textController;
+  late final FocusNode _textInputFocusNode;
   String? _currentDisplayValue;
   bool _isEditingText = false;
   bool _isLoadingFiles = false;
@@ -65,6 +66,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   void initState() {
     super.initState();
     _textController = TextEditingController();
+    _textInputFocusNode = FocusNode(debugLabel: 'FileParameterEditor.textInput');
     _currentDirectory = widget.rule.baseDirectory;
     _updateDisplayValue();
     if (widget.rule.mode != FileSelectionMode.textInput) {
@@ -83,6 +85,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   @override
   void dispose() {
     _textController.dispose();
+    _textInputFocusNode.dispose();
     _fileWatchTimer?.cancel();
     _debounceTimer?.cancel();
     super.dispose();
@@ -657,6 +660,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               child: DigitShortcutBlocker(
                 child: TextField(
                   controller: _textController,
+                  focusNode: _textInputFocusNode,
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     isDense: true,
@@ -668,7 +672,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
                   onEditingComplete: () {
                     _onTextSubmitted(_textController.text);
                   },
-                  autofocus: true,
                   style: const TextStyle(fontSize: 16),
                   maxLength: 31, // Hardware limit for text parameters
                 ),
@@ -712,6 +715,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             _isEditingText = true;
             _textController.text = _currentDisplayValue ?? '';
           });
+          // autofocus is unreliable when an ancestor Focus already holds
+          // primary focus; explicitly grab it so key events stop here.
+          _textInputFocusNode.requestFocus();
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

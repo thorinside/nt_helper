@@ -23,6 +23,7 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
   bool _isEditing = false;
   bool _isSaving = false;
   late TextEditingController _textController;
+  late final FocusNode _editorFocusNode;
   final int _maxLinesCount = 7;
   final int _maxLineLength = 31;
 
@@ -30,11 +31,13 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
   void initState() {
     super.initState();
     _textController = TextEditingController(text: _getCurrentText());
+    _editorFocusNode = FocusNode(debugLabel: 'NotesAlgorithmView.editor');
   }
 
   @override
   void dispose() {
     _textController.dispose();
+    _editorFocusNode.dispose();
     super.dispose();
   }
 
@@ -288,6 +291,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                           setState(() {
                             _isEditing = true;
                           });
+                          // autofocus is unreliable when an ancestor Focus
+                          // already holds primary focus; grab it explicitly.
+                          _editorFocusNode.requestFocus();
                           SemanticsService.sendAnnouncement(
                             View.of(context),
                             'Editing mode. Enter your notes text.',
@@ -414,6 +420,7 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
             },
             child: TextField(
             controller: _textController,
+            focusNode: _editorFocusNode,
             maxLines: null,
             expands: true,
             textAlignVertical: TextAlignVertical.top,
