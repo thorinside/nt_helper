@@ -74,7 +74,7 @@ class SettingsService {
       'https://nt-gallery.nosuch.dev/api/gallery.json';
   static const String defaultGraphqlEndpoint =
       'https://nt-gallery-backend.fly.dev/api/graphql';
-  static const bool defaultIncludeCommunityPlugins = false;
+  static const bool defaultIncludeCommunityPlugins = true;
   static const double defaultOverlayPositionX =
       -1.0; // -1 means use default positioning
   static const double defaultOverlayPositionY =

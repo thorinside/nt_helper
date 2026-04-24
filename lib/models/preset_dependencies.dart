@@ -19,6 +19,7 @@ class PresetDependencies {
   int get totalCount =>
       wavetables.length +
       sampleFolders.length +
+      sampleFiles.length +
       multisampleFolders.length +
       fmBanks.length +
       granulatorSamples.length +

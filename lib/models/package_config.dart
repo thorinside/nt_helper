@@ -15,7 +15,10 @@ class PackageConfig {
     this.includeThreePot = true,
     this.includeLua = true,
     this.includeReadme = true,
-    this.includeCommunityPlugins = false,
+    // Community plugins are included by default so a packaged preset
+    // can be restored onto a blank SD card without separately tracking
+    // down each plugin binary. Users can opt out per-package.
+    this.includeCommunityPlugins = true,
   });
 
   PackageConfig copyWith({

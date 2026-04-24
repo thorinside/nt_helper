@@ -9,6 +9,20 @@ import 'package:nt_helper/db/database.dart';
 import 'preset_analyzer.dart';
 import 'file_collector.dart';
 
+/// Result of [PackageCreator.createPackage]: the serialized .zip plus any
+/// non-fatal warnings encountered while collecting dependency files
+/// (missing files, oversized files, read errors). The package is still
+/// usable when warnings are present but may be incomplete — the caller
+/// should surface them so the user can investigate.
+class PackageResult {
+  final Uint8List zipBytes;
+  final List<String> warnings;
+
+  const PackageResult({required this.zipBytes, required this.warnings});
+
+  bool get hasWarnings => warnings.isNotEmpty;
+}
+
 /// Creates preset packages with all dependencies
 class PackageCreator {
   final PresetFileSystem fileSystem;
@@ -16,7 +30,7 @@ class PackageCreator {
 
   PackageCreator(this.fileSystem, this.database);
 
-  Future<Uint8List> createPackage({
+  Future<PackageResult> createPackage({
     required String presetFilePath, // e.g., "presets/MyPreset.json"
     required PackageConfig config,
     void Function(String status)? onProgress,
@@ -49,10 +63,11 @@ class PackageCreator {
 
       // Collect dependency files
       final fileCollector = FileCollector(fileSystem, database);
-      final dependencyFiles = await fileCollector.collectDependencies(
+      final collection = await fileCollector.collectDependencies(
         dependencies,
         config: config,
       );
+      final dependencyFiles = collection.files;
 
       onProgress?.call('Creating package...');
 
@@ -112,10 +127,23 @@ class PackageCreator {
 
       onProgress?.call('Complete!');
 
-      // Print summary report
-      PresetAnalyzer.generatePackageReport(dependencies, dependencyFiles);
+      // Build a warnings list combining collector warnings and any
+      // missing-file findings from the package report. Both go to the
+      // caller (typically a dialog) so the user can see what was skipped.
+      final warnings = <String>[...collection.warnings];
+      final report = PresetAnalyzer.generatePackageReport(
+        dependencies,
+        dependencyFiles,
+      );
+      if (report.startsWith('Package created with') &&
+          report.contains('Missing:')) {
+        warnings.add(report);
+      }
 
-      return Uint8List.fromList(zipBytes);
+      return PackageResult(
+        zipBytes: Uint8List.fromList(zipBytes),
+        warnings: warnings,
+      );
     } catch (e) {
       onProgress?.call('Error: $e');
       rethrow;

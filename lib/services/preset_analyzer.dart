@@ -33,49 +33,67 @@ class PresetAnalyzer {
     return dependencies;
   }
 
-  static void _analyzeSlot(Map<String, dynamic> slot, PresetDependencies deps) {
-    final guid = slot['guid']?.toString();
-    if (guid == null) return;
+  /// Algorithm GUIDs (4-char, padded with trailing space) that use
+  /// `timbres[].folder` to reference a multisample folder under
+  /// `/multisamples/`. All other algorithms with a `timbres[].folder`
+  /// field reference a sample folder under `/samples/`.
+  static const _multisampleGuids = <String>{'pyms'};
 
-    // Check for community plugins (GUIDs with uppercase characters)
+  static void _analyzeSlot(Map<String, dynamic> slot, PresetDependencies deps) {
+    final rawGuid = slot['guid']?.toString();
+    if (rawGuid == null) return;
+    // Hardware GUIDs are 4 chars, padded with trailing spaces
+    // (e.g. 'lua ' for the Lua Scripter). Trim for comparisons but
+    // preserve the original for community-plugin path lookups.
+    final guid = rawGuid.trim();
+
+    // Check for community plugins (GUIDs with uppercase characters).
+    // Preserve the raw GUID as that is the key the file collector
+    // and database lookup match against.
     if (RegExp(r'[A-Z]').hasMatch(guid)) {
-      deps.communityPlugins.add(guid);
+      deps.communityPlugins.add(rawGuid);
     }
 
-    // Three Pot algorithm programs
+    // Three Pot algorithm programs (.3pot files in /programs/three_pot/).
     if (guid == 'spin' && slot['program'] != null) {
       deps.threePotPrograms.add(slot['program']);
     }
 
-    // Lua Script algorithm files
-    if (guid == 'lua' && slot['script'] != null) {
-      deps.luaScripts.add(slot['script']);
+    // Lua Script algorithm files (.lua in /programs/lua/).
+    // The slot field is `program` (not `script`), and the GUID is
+    // `'lua '` (with trailing space) before trimming.
+    if (guid == 'lua' && slot['program'] != null) {
+      deps.luaScripts.add(slot['program']);
     }
 
-    // Wavetables
+    // Wavetables (folder under /wavetables/).
     if (slot['wavetable'] != null) {
       deps.wavetables.add(slot['wavetable']);
     }
 
-    // Sample folders and FM banks from timbres
+    // Sample folders, multisample folders, and FM banks from timbres.
     if (slot['timbres'] != null) {
       for (final timbre in slot['timbres']) {
         if (timbre['folder'] != null) {
-          // Determine if it's a multisample or regular sample based on algorithm
-          if (guid == 'pyms') {
-            // Poly Multisample algorithm
+          if (_multisampleGuids.contains(guid)) {
             deps.multisampleFolders.add(timbre['folder']);
           } else {
             deps.sampleFolders.add(timbre['folder']);
           }
         }
         if (timbre['bank'] != null) {
-          deps.fmBanks.add(timbre['bank']);
+          final bank = timbre['bank'].toString();
+          // Built-in FM banks are firmware-synthesized (e.g. "<built-in 2>")
+          // and have no corresponding file under /FMSYX/.
+          if (!bank.startsWith('<built-in')) {
+            deps.fmBanks.add(bank);
+          }
         }
       }
     }
 
-    // Individual samples from triggers
+    // Individual samples from triggers (sample-player style algorithms).
+    // Stored as `<folder>/<sample>` relative to `/samples/`.
     if (slot['triggers'] != null) {
       for (final trigger in slot['triggers']) {
         if (trigger['folder'] != null && trigger['sample'] != null) {
@@ -84,7 +102,7 @@ class PresetAnalyzer {
       }
     }
 
-    // Granulator samples
+    // Granulator-style top-level sample reference (file under /samples/).
     if (slot['sample'] != null && slot['sample'].toString().trim().isNotEmpty) {
       deps.granulatorSamples.add(slot['sample']);
     }
@@ -109,6 +127,34 @@ class PresetAnalyzer {
     for (final program in dependencies.threePotPrograms) {
       if (!foundFiles.contains('programs/three_pot/$program')) {
         missing.add('programs/three_pot/$program');
+      }
+    }
+
+    // Check for missing Lua scripts
+    for (final script in dependencies.luaScripts) {
+      if (!foundFiles.contains('programs/lua/$script')) {
+        missing.add('programs/lua/$script');
+      }
+    }
+
+    // Check for missing trigger sample files
+    for (final relPath in dependencies.sampleFiles) {
+      if (!foundFiles.contains('samples/$relPath')) {
+        missing.add('samples/$relPath');
+      }
+    }
+
+    // Check for missing granulator samples
+    for (final sample in dependencies.granulatorSamples) {
+      if (!foundFiles.contains('samples/$sample')) {
+        missing.add('samples/$sample');
+      }
+    }
+
+    // Check for missing FM banks
+    for (final bank in dependencies.fmBanks) {
+      if (!foundFiles.contains('FMSYX/$bank')) {
+        missing.add('FMSYX/$bank');
       }
     }
 

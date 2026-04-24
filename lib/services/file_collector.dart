@@ -1,6 +1,7 @@
 import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/collected_file.dart';
+import 'package:nt_helper/models/collection_result.dart';
 import 'package:nt_helper/models/package_config.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/db/database.dart';
@@ -12,30 +13,25 @@ class FileCollector {
 
   FileCollector(this.fileSystem, this.database);
 
-  Future<List<CollectedFile>> collectDependencies(
+  /// 50 MB hard ceiling per file. Anything larger is skipped with a
+  /// warning — a Disting NT preset is unlikely to need files this big,
+  /// and including them blows out package size and SysEx upload time.
+  static const int maxFileSize = 50 * 1024 * 1024;
+
+  Future<CollectionResult> collectDependencies(
     PresetDependencies dependencies, {
     PackageConfig? config,
   }) async {
     final List<CollectedFile> files = [];
     final List<String> warnings = [];
-    const maxFileSize = 50 * 1024 * 1024; // 50MB limit per file
 
-    // Collect wavetable files
+    // Collect wavetable folders. Wavetables on the SD card live as
+    // directories under /wavetables/<name>/ that contain the actual
+    // .wav slices. The slot-level `wavetable` field is just the folder
+    // name. Recurse into the folder and pull every .wav file.
     if (config?.includeWavetables != false) {
       for (final wavetable in dependencies.wavetables) {
-        final wavetablePath = 'wavetables/$wavetable.wav';
-        try {
-          (await fileSystem.readFile(wavetablePath))?.let((bytes) {
-            if (bytes.length > maxFileSize) {
-              warnings.add(
-                'Skipping large wavetable: $wavetable.wav (${_formatBytes(bytes.length)})',
-              );
-            }
-            files.add(CollectedFile(wavetablePath, bytes));
-          });
-        } catch (e) {
-          warnings.add('Error reading wavetable $wavetable.wav: $e');
-        }
+        await _collectWavetableFolder(wavetable, files, warnings);
       }
     }
 
@@ -46,7 +42,6 @@ class FileCollector {
         'samples',
         files,
         warnings,
-        maxFileSize,
       );
 
       await _collectFolder(
@@ -54,21 +49,35 @@ class FileCollector {
         'multisamples',
         files,
         warnings,
-        maxFileSize,
       );
+
+      // Trigger-style sample-player files: each entry is `<folder>/<file>`
+      // relative to /samples/.
+      for (final relPath in dependencies.sampleFiles) {
+        final samplePath = 'samples/$relPath';
+        await _collectFile(samplePath, files, warnings, label: 'sample');
+      }
+
+      // Granulator and similar single-sample references. The slot-level
+      // `sample` field stores a value that may be either a bare filename
+      // (e.g. "kick.wav") or an already-relative path (e.g.
+      // "drums/kick.wav") under /samples/.
+      for (final sample in dependencies.granulatorSamples) {
+        final samplePath = 'samples/$sample';
+        await _collectFile(
+          samplePath,
+          files,
+          warnings,
+          label: 'granulator sample',
+        );
+      }
     }
 
     // Collect FM bank files
     if (config?.includeFMBanks != false) {
       for (final bank in dependencies.fmBanks) {
         final bankPath = 'FMSYX/$bank';
-        try {
-          (await fileSystem.readFile(bankPath))?.let((bytes) {
-            files.add(CollectedFile(bankPath, bytes));
-          });
-        } catch (e) {
-          warnings.add('Error reading FM bank $bank: $e');
-        }
+        await _collectFile(bankPath, files, warnings, label: 'FM bank');
       }
     }
 
@@ -76,13 +85,12 @@ class FileCollector {
     if (config?.includeThreePot != false) {
       for (final program in dependencies.threePotPrograms) {
         final programPath = 'programs/three_pot/$program';
-        try {
-          (await fileSystem.readFile(programPath))?.let((bytes) {
-            files.add(CollectedFile(programPath, bytes));
-          });
-        } catch (e) {
-          warnings.add('Error reading Three Pot program $program: $e');
-        }
+        await _collectFile(
+          programPath,
+          files,
+          warnings,
+          label: 'Three Pot program',
+        );
       }
     }
 
@@ -90,14 +98,19 @@ class FileCollector {
     if (config?.includeLua != false) {
       for (final script in dependencies.luaScripts) {
         final scriptPath = 'programs/lua/$script';
-        try {
-          (await fileSystem.readFile(scriptPath))?.let((bytes) {
-            files.add(CollectedFile(scriptPath, bytes));
-          });
-        } catch (e) {
-          warnings.add('Error reading Lua script $script: $e');
-        }
+        await _collectFile(
+          scriptPath,
+          files,
+          warnings,
+          label: 'Lua script',
+        );
       }
+    }
+
+    // Collect MIDI files (if any algorithm populates this)
+    for (final midi in dependencies.midiFiles) {
+      final midiPath = 'midi/$midi';
+      await _collectFile(midiPath, files, warnings, label: 'MIDI file');
     }
 
     // Collect community plugin files (if enabled)
@@ -111,8 +124,8 @@ class FileCollector {
       // Track which GUIDs we've already collected to avoid duplicates
       final collectedGuids = <String>{};
 
-      // Priority 1: Use direct paths from AlgorithmInfo (pluginPaths)
-      // These are more reliable as they come directly from the hardware
+      // Priority 1: Use direct paths from AlgorithmInfo (pluginPaths).
+      // These are more reliable as they come directly from the hardware.
       for (final entry in dependencies.pluginPaths.entries) {
         final pluginGuid = entry.key;
         final pluginPath = entry.value;
@@ -120,11 +133,19 @@ class FileCollector {
         try {
           final bytes = await fileSystem.readFile(pluginPath);
           if (bytes != null) {
-            files.add(CollectedFile(pluginPath, bytes));
-            collectedGuids.add(pluginGuid);
+            if (bytes.length > maxFileSize) {
+              warnings.add(
+                'Skipping oversized plugin: $pluginPath '
+                '(${_formatBytes(bytes.length)}, max ${_formatBytes(maxFileSize)})',
+              );
+            } else {
+              files.add(CollectedFile(pluginPath, bytes));
+              collectedGuids.add(pluginGuid);
+            }
           } else {
             warnings.add(
-              'Plugin file not found at path from hardware: $pluginPath (GUID: $pluginGuid)',
+              'Plugin file not found at path from hardware: $pluginPath '
+              '(GUID: $pluginGuid)',
             );
           }
         } catch (e) {
@@ -135,11 +156,10 @@ class FileCollector {
       }
 
       // Priority 2: Fall back to database lookup for remaining plugins
-      // (plugins identified by GUID but not in pluginPaths)
-      final remainingGuids =
-          allPluginGuids.difference(collectedGuids).intersection(
-                dependencies.communityPlugins,
-              );
+      // (plugins identified by GUID but not in pluginPaths).
+      final remainingGuids = allPluginGuids.difference(collectedGuids).intersection(
+            dependencies.communityPlugins,
+          );
 
       if (remainingGuids.isNotEmpty) {
         final guidToPathMap = await database.metadataDao
@@ -150,7 +170,14 @@ class FileCollector {
           if (pluginPath != null) {
             try {
               (await fileSystem.readFile(pluginPath))?.let((bytes) {
-                files.add(CollectedFile(pluginPath, bytes));
+                if (bytes.length > maxFileSize) {
+                  warnings.add(
+                    'Skipping oversized plugin: $pluginPath '
+                    '(${_formatBytes(bytes.length)})',
+                  );
+                } else {
+                  files.add(CollectedFile(pluginPath, bytes));
+                }
               });
             } catch (e) {
               warnings.add(
@@ -159,17 +186,76 @@ class FileCollector {
             }
           } else {
             warnings.add(
-              'Community plugin $pluginGuid not found locally. File path not available in database.',
+              'Community plugin $pluginGuid not found locally. '
+              'File path not available in database.',
             );
           }
         }
       }
     }
 
-    // Log warnings if any
-    if (warnings.isNotEmpty) {}
+    return CollectionResult(files: files, warnings: warnings);
+  }
 
-    return files;
+  Future<void> _collectFile(
+    String path,
+    List<CollectedFile> files,
+    List<String> warnings, {
+    required String label,
+  }) async {
+    try {
+      final bytes = await fileSystem.readFile(path);
+      if (bytes == null) {
+        warnings.add('$label not found on SD card: $path');
+        return;
+      }
+      if (bytes.length > maxFileSize) {
+        warnings.add(
+          'Skipping oversized $label: $path '
+          '(${_formatBytes(bytes.length)}, max ${_formatBytes(maxFileSize)})',
+        );
+        return;
+      }
+      files.add(CollectedFile(path, bytes));
+    } catch (e) {
+      warnings.add('Error reading $label $path: $e');
+    }
+  }
+
+  Future<void> _collectWavetableFolder(
+    String wavetable,
+    List<CollectedFile> files,
+    List<String> warnings,
+  ) async {
+    final folderPath = 'wavetables/$wavetable';
+    try {
+      // First try treating the wavetable as a folder of .wav slices
+      // (the format actually used by the Disting NT firmware).
+      final folderFiles = await fileSystem.listFiles(
+        folderPath,
+        recursive: true,
+      );
+      var collectedAny = false;
+      for (final filePath in folderFiles) {
+        if (_isAudioFile(filePath)) {
+          await _collectFile(
+            filePath,
+            files,
+            warnings,
+            label: 'wavetable file',
+          );
+          collectedAny = true;
+        }
+      }
+      if (collectedAny) return;
+
+      // Fallback: a single-file wavetable named <name>.wav at the
+      // /wavetables/ root.
+      final flatPath = '$folderPath.wav';
+      await _collectFile(flatPath, files, warnings, label: 'wavetable');
+    } catch (e) {
+      warnings.add('Error reading wavetable $wavetable: $e');
+    }
   }
 
   Future<void> _collectFolder(
@@ -177,7 +263,6 @@ class FileCollector {
     String basePath,
     List<CollectedFile> files,
     List<String> warnings,
-    int maxFileSize,
   ) async {
     for (final folder in folders) {
       final folderPath = '$basePath/$folder';
@@ -188,14 +273,12 @@ class FileCollector {
         );
         for (final filePath in folderFiles) {
           if (_isAudioFile(filePath)) {
-            (await fileSystem.readFile(filePath))?.let((bytes) {
-              if (bytes.length > maxFileSize) {
-                warnings.add(
-                  'Skipping large file: $filePath (${_formatBytes(bytes.length)})',
-                );
-              }
-              files.add(CollectedFile(filePath, bytes));
-            });
+            await _collectFile(
+              filePath,
+              files,
+              warnings,
+              label: 'sample',
+            );
           }
         }
       } catch (e) {

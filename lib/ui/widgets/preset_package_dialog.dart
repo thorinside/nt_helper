@@ -90,9 +90,13 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
   Future<void> _createPackage() async {
     setState(() => isPackaging = true);
 
-    // Save context references before async operations
+    // Save context references before async operations.
+    // `rootNavigator` is the parent that hosts this dialog — we use it
+    // to show a follow-up warnings dialog after this one closes (this
+    // dialog's own context will be defunct by then).
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
 
     try {
       final presetName = widget.presetFilePath
@@ -111,23 +115,35 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           widget.fileSystem,
           widget.database,
         );
-        final packageBytes = await packageCreator.createPackage(
+        final packageResult = await packageCreator.createPackage(
           presetFilePath: widget.presetFilePath,
           config: config,
           onProgress: (status) => setState(() => _status = status),
           pluginPaths: widget.pluginPaths,
         );
 
-        await File(outputPath).writeAsBytes(packageBytes);
+        await File(outputPath).writeAsBytes(packageResult.zipBytes);
 
         navigator.pop();
+
+        if (packageResult.hasWarnings && rootNavigator.mounted) {
+          // Show in a dialog rather than a snackbar — warning lists can be
+          // long (e.g. one entry per missing sample), and the user needs
+          // to be able to read them all.
+          await showDialog<void>(
+            context: rootNavigator.context,
+            builder: (ctx) => _PackageWarningsDialog(
+              warnings: packageResult.warnings,
+            ),
+          );
+        }
       }
     } catch (e) {
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('Error creating package: $e')),
       );
     } finally {
-      setState(() => isPackaging = false);
+      if (mounted) setState(() => isPackaging = false);
     }
   }
 
@@ -219,6 +235,12 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               Text('Wavetables: ${dependencies!.wavetables.length}'),
             if (dependencies!.sampleFolders.isNotEmpty)
               Text('Sample folders: ${dependencies!.sampleFolders.length}'),
+            if (dependencies!.sampleFiles.isNotEmpty)
+              Text('Sample files: ${dependencies!.sampleFiles.length}'),
+            if (dependencies!.granulatorSamples.isNotEmpty)
+              Text(
+                'Granulator samples: ${dependencies!.granulatorSamples.length}',
+              ),
             if (dependencies!.multisampleFolders.isNotEmpty)
               Text(
                 'Multisample folders: ${dependencies!.multisampleFolders.length}',
@@ -316,7 +338,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               CheckboxListTile(
                 title: const Text('Include Community Plugins'),
                 subtitle: const Text(
-                  'Package community plugins with preset (default: false)',
+                  'Package community plugins with preset (default: on)',
                 ),
                 value: config.includeCommunityPlugins,
                 onChanged: (value) {
@@ -333,6 +355,63 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Modal dialog that surfaces non-fatal warnings produced while
+/// collecting dependency files for a preset package (missing files,
+/// oversized files, read errors). The package was still written, but
+/// some referenced content could not be included — the user needs to
+/// see this so they know the package is incomplete.
+class _PackageWarningsDialog extends StatelessWidget {
+  final List<String> warnings;
+
+  const _PackageWarningsDialog({required this.warnings});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Semantics(
+        header: true,
+        child: const Text('Package created with warnings'),
+      ),
+      content: SizedBox(
+        width: 500,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'The package was saved, but ${warnings.length} '
+              '${warnings.length == 1 ? 'item was' : 'items were'} '
+              'skipped or missing:',
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: Scrollbar(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: warnings.length,
+                  itemBuilder: (context, i) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      '• ${warnings[i]}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('OK'),
+        ),
+      ],
     );
   }
 }
