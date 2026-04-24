@@ -11,8 +11,15 @@
 // file on disk under the expected SD folder, so we can catch presets
 // that reference files the user no longer has.
 //
+// `--census` adds a global GUID frequency report and, for each GUID,
+// the union of slot field paths the analyzer saw populated. Useful
+// when running against a real SD card with hundreds of presets — it
+// surfaces algorithms we haven't accounted for and slot shapes we
+// haven't seen.
+//
 // Run with:
 //   fvm dart run tool/diagnose_presets.dart "/Users/nealsanche/Desktop/DISTING NT"
+//   fvm dart run tool/diagnose_presets.dart --census "<sdcard-root>"
 
 import 'dart:convert';
 import 'dart:io';
@@ -58,11 +65,14 @@ bool _looksLikeFileRef(String value) {
   for (final ext in _fileExtensions) {
     if (lower.endsWith(ext)) return true;
   }
-  // Path-like: contains a slash and at least one alpha segment, but no
-  // whitespace runs typical of human-readable strings. A bare folder
-  // name (no slash, no extension) won't be flagged here — analyzer
-  // already pulls those out via `timbres[].folder` / `wavetable`.
-  if (value.contains('/') && !value.contains(' / ')) {
+  // Path-like: contains a slash. Reject obvious human-readable lines
+  // (multiple words separated by spaces) — those occur in the `note`
+  // algorithm's `lines` field, which contains user text like
+  // "4=Tri/Sw V 6=Sq V" or " triggers the piano by CV/gate.".
+  if (value.contains('/')) {
+    final hasSpaces = value.contains(' ');
+    final hasMultipleWords = value.split(RegExp(r'\s+')).length > 2;
+    if (hasSpaces && hasMultipleWords) return false;
     return true;
   }
   return false;
@@ -84,13 +94,17 @@ bool _isKnownDependency(
 }
 
 void main(List<String> args) async {
-  if (args.isEmpty) {
+  final positional = args.where((a) => !a.startsWith('--')).toList();
+  final flags = args.where((a) => a.startsWith('--')).toSet();
+  final census = flags.contains('--census');
+
+  if (positional.isEmpty) {
     stderr.writeln(
-      'Usage: dart run tool/diagnose_presets.dart <sdcard-root>',
+      'Usage: dart run tool/diagnose_presets.dart [--census] <sdcard-root>',
     );
     exit(64);
   }
-  final root = Directory(args.first);
+  final root = Directory(positional.first);
   if (!root.existsSync()) {
     stderr.writeln('Directory not found: ${root.path}');
     exit(66);
@@ -106,22 +120,52 @@ void main(List<String> args) async {
       .listSync(recursive: true)
       .whereType<File>()
       .where((f) => f.path.toLowerCase().endsWith('.json'))
+      // macOS AppleDouble metadata (`._foo.json`) — never preset content.
+      .where((f) => !f.uri.pathSegments.last.startsWith('._'))
       .toList()
     ..sort((a, b) => a.path.compareTo(b.path));
 
   stdout.writeln('Scanning ${presetFiles.length} preset(s) under ${presetsDir.path}\n');
 
+  var binaryFiles = 0;
+  var jsonParseErrors = 0;
+
   var presetsWithUnclassified = 0;
   var presetsWithMissingFiles = 0;
   final guidsWithUnclassified = <String, Set<String>>{};
+
+  // Census: per-GUID frequency, plus per-GUID set of slot fields whose
+  // values look like file references (file extension or path-like).
+  // Field paths are collapsed: `timbres[0].folder` → `timbres[].folder`.
+  // Plain UI strings like `ui.display: "params"` are intentionally
+  // excluded — we only care about fields the export pipeline might
+  // need to surface as a dependency.
+  final guidFrequency = <String, int>{};
+  final guidFileLikeFields = <String, Set<String>>{};
 
   for (final file in presetFiles) {
     final relName = file.path.replaceFirst('${root.path}/', '');
     Map<String, dynamic> json;
     try {
-      json = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+      // Read as bytes first so we can distinguish "not UTF-8" (likely
+      // a binary file misnamed `.json`) from "valid UTF-8 but invalid
+      // JSON" (a truncated or otherwise broken preset).
+      final bytes = file.readAsBytesSync();
+      String text;
+      try {
+        text = utf8.decode(bytes);
+      } on FormatException {
+        binaryFiles++;
+        stdout.writeln('!! $relName — not UTF-8 (binary content)');
+        continue;
+      }
+      json = jsonDecode(text) as Map<String, dynamic>;
+    } on FormatException catch (e) {
+      jsonParseErrors++;
+      stdout.writeln('!! $relName — JSON parse error: $e');
+      continue;
     } catch (e) {
-      stdout.writeln('!! $relName — failed to parse: $e');
+      stdout.writeln('!! $relName — unexpected: $e');
       continue;
     }
 
@@ -140,18 +184,26 @@ void main(List<String> args) async {
     };
 
     // Walk every slot looking for string-valued fields that look like
-    // file references but aren't in any dep set.
+    // file references but aren't in any dep set. Also feed the census.
     final unclassified = <String, ({String guid, String value})>{};
     final slots = json['slots'];
     if (slots is List) {
       for (final slot in slots) {
         if (slot is! Map) continue;
         final guid = (slot['guid']?.toString() ?? '').trim();
+        if (guid.isNotEmpty) {
+          guidFrequency[guid] = (guidFrequency[guid] ?? 0) + 1;
+        }
         for (final entry in _walkStrings(slot)) {
           // Skip the GUID itself and the algorithm name.
           if (entry.key == 'guid' || entry.key == 'name') continue;
           final value = entry.value;
           if (!_looksLikeFileRef(value)) continue;
+          // Census: track which slot fields hold file-ish values,
+          // collapsing list indexes (`timbres[0].folder` →
+          // `timbres[].folder`).
+          final collapsed = entry.key.replaceAll(RegExp(r'\[\d+\]'), '[]');
+          guidFileLikeFields.putIfAbsent(guid, () => {}).add(collapsed);
           if (_isKnownDependency(value, allDeps)) continue;
           unclassified[entry.key] = (guid: guid, value: value);
         }
@@ -239,6 +291,18 @@ void main(List<String> args) async {
     'presets with missing-on-disk deps:    $presetsWithMissingFiles '
     '/ ${presetFiles.length}',
   );
+  if (binaryFiles > 0) {
+    stdout.writeln(
+      'binary files masquerading as .json:   $binaryFiles '
+      '/ ${presetFiles.length}',
+    );
+  }
+  if (jsonParseErrors > 0) {
+    stdout.writeln(
+      'JSON parse errors (truncated/etc):    $jsonParseErrors '
+      '/ ${presetFiles.length}',
+    );
+  }
   if (guidsWithUnclassified.isNotEmpty) {
     stdout.writeln('\nunclassified-by-guid (these need analyzer support):');
     final sorted = guidsWithUnclassified.entries.toList()
@@ -248,5 +312,56 @@ void main(List<String> args) async {
         "  '${entry.key}': ${entry.value.toList()..sort()}",
       );
     }
+  }
+
+  if (census) {
+    stdout.writeln('\n=== GUID census ===');
+    stdout.writeln('${guidFrequency.length} unique GUID(s) seen.\n');
+
+    // Slot fields the analyzer already consumes. If a GUID has a
+    // file-like value at a path *not* in this set, the analyzer is
+    // missing it.
+    const handledFields = <String>{
+      'wavetable',
+      'program',
+      'sample',
+      'timbres[].folder',
+      'timbres[].bank',
+      'triggers[].folder',
+      'triggers[].sample',
+    };
+
+    // Sort by frequency descending, then GUID ascending.
+    final byFreq = guidFrequency.entries.toList()
+      ..sort((a, b) {
+        final cmp = b.value.compareTo(a.value);
+        return cmp != 0 ? cmp : a.key.compareTo(b.key);
+      });
+
+    var unhandled = 0;
+    for (final entry in byFreq) {
+      final guid = entry.key;
+      final fileFields = guidFileLikeFields[guid] ?? <String>{};
+      final unknownFields =
+          fileFields.where((f) => !handledFields.contains(f)).toList()
+            ..sort();
+      final marker = RegExp(r'[A-Z]').hasMatch(guid) ? ' [community]' : '';
+      final suffix = fileFields.isEmpty
+          ? ' (no file-valued fields)'
+          : ' fields=${fileFields.toList()..sort()}';
+      stdout.writeln(
+        "  '${guid.padRight(6)}' ×${entry.value}$marker$suffix",
+      );
+      if (unknownFields.isNotEmpty) {
+        unhandled++;
+        stdout.writeln(
+          '     ! analyzer does not consume: $unknownFields',
+        );
+      }
+    }
+    stdout.writeln(
+      '\n$unhandled / ${guidFrequency.length} GUID(s) have file-like '
+      'fields the analyzer does not consume.',
+    );
   }
 }

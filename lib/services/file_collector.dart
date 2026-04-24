@@ -249,9 +249,10 @@ class FileCollector {
       }
       if (collectedAny) return;
 
-      // Fallback: a single-file wavetable named <name>.wav at the
-      // /wavetables/ root.
-      final flatPath = '$folderPath.wav';
+      // Fallback: a single-file wavetable at the /wavetables/ root.
+      // The slot field may already include the extension (e.g.
+      // `"wavetable": "01-Gentle Speech.wav"`) — don't double it up.
+      final flatPath = _isAudioFile(folderPath) ? folderPath : '$folderPath.wav';
       await _collectFile(flatPath, files, warnings, label: 'wavetable');
     } catch (e) {
       warnings.add('Error reading wavetable $wavetable: $e');

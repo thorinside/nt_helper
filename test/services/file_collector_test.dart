@@ -387,6 +387,38 @@ void main() {
       expect(result.warnings, isEmpty);
     });
 
+    test('wavetable name with .wav extension is not double-extended',
+        () async {
+      // Real preset (Multi_switch test.json) has
+      //   "wavetable": "01-Gentle Speech.wav"
+      // The slot field already includes the audio extension. The
+      // single-file fallback must not produce `<name>.wav.wav`.
+      final deps = PresetDependencies();
+      deps.wavetables.add('01-Gentle Speech.wav');
+
+      // Folder enumeration returns nothing → fall through to single-file.
+      when(
+        () => mockFileSystem.listFiles(
+          'wavetables/01-Gentle Speech.wav',
+          recursive: any(named: 'recursive'),
+        ),
+      ).thenAnswer((_) async => <String>[]);
+      when(
+        () => mockFileSystem.readFile('wavetables/01-Gentle Speech.wav'),
+      ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+
+      final result = await fileCollector.collectDependencies(deps);
+
+      expect(
+        result.files.map((f) => f.relativePath),
+        contains('wavetables/01-Gentle Speech.wav'),
+      );
+      // Critical: must NOT have asked for the double-extension path.
+      verifyNever(
+        () => mockFileSystem.readFile('wavetables/01-Gentle Speech.wav.wav'),
+      );
+    });
+
     test('collects granulator samples under /samples/', () async {
       final deps = PresetDependencies();
       deps.granulatorSamples.add('kick.wav');
