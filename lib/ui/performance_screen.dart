@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/performance/hardware_preview_widget.dart';
 
 class PerformanceScreen extends StatefulWidget {
@@ -865,24 +866,28 @@ class _PerfPageItemListTileState extends State<_PerfPageItemListTile> {
                   Text('Range', style: Theme.of(context).textTheme.labelLarge),
                   _buildRangeSlider(),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: _upperLabelController,
-                    decoration: const InputDecoration(
-                      labelText: 'Upper Label',
-                      border: OutlineInputBorder(),
-                      isDense: true,
+                  DigitShortcutBlocker(
+                    child: TextField(
+                      controller: _upperLabelController,
+                      decoration: const InputDecoration(
+                        labelText: 'Upper Label',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: (_) => _triggerOptimisticSave(),
                     ),
-                    onChanged: (_) => _triggerOptimisticSave(),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: _lowerLabelController,
-                    decoration: const InputDecoration(
-                      labelText: 'Lower Label',
-                      border: OutlineInputBorder(),
-                      isDense: true,
+                  DigitShortcutBlocker(
+                    child: TextField(
+                      controller: _lowerLabelController,
+                      decoration: const InputDecoration(
+                        labelText: 'Lower Label',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: (_) => _triggerOptimisticSave(),
                     ),
-                    onChanged: (_) => _triggerOptimisticSave(),
                   ),
                 ],
               ),

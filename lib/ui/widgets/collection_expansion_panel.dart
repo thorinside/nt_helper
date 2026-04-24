@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/models/gallery_models.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 
 class CollectionExpansionPanel extends StatefulWidget {
   final CollectionExpansion expansion;
@@ -127,19 +128,21 @@ class _CollectionExpansionPanelState extends State<CollectionExpansionPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (showSearch) ...[
-            TextField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              decoration: InputDecoration(
-                hintText: 'Search in collection...',
-                prefixIcon: const Icon(Icons.search, size: 20),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+            DigitShortcutBlocker(
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Search in collection...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),

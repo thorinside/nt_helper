@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/step_sequencer_params.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/util/parameter_write_debouncer.dart';
 
 /// Playback controls for Step Sequencer algorithm
@@ -367,29 +368,30 @@ class _PlaybackControlsState extends State<PlaybackControls> {
       return const SizedBox.shrink();
     }
 
-    return TextFormField(
-      controller: _startStepController,
-      decoration: const InputDecoration(
-        labelText: 'Start',
-        border: OutlineInputBorder(),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return DigitShortcutBlocker(
+      child: TextFormField(
+        controller: _startStepController,
+        decoration: const InputDecoration(
+          labelText: 'Start',
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        ),
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        onFieldSubmitted: (value) {
+          final intValue = int.tryParse(value);
+          if (intValue != null && intValue >= 1 && intValue <= 16) {
+            _updateParameter(startStepParam, intValue);
+          } else {
+            final current = startStepParam < slot.values.length
+                ? slot.values[startStepParam].value
+                : 1;
+            _startStepController.text = current.toString();
+          }
+        },
       ),
-      keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-      ],
-      onFieldSubmitted: (value) {
-        final intValue = int.tryParse(value);
-        if (intValue != null && intValue >= 1 && intValue <= 16) {
-          _updateParameter(startStepParam, intValue);
-        } else {
-          // Invalid - revert to current
-          final current = startStepParam < slot.values.length
-              ? slot.values[startStepParam].value
-              : 1;
-          _startStepController.text = current.toString();
-        }
-      },
     );
   }
 
@@ -404,29 +406,30 @@ class _PlaybackControlsState extends State<PlaybackControls> {
         ? slot.values[startStepParam].value
         : 1;
 
-    return TextFormField(
-      controller: _endStepController,
-      decoration: const InputDecoration(
-        labelText: 'End',
-        border: OutlineInputBorder(),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return DigitShortcutBlocker(
+      child: TextFormField(
+        controller: _endStepController,
+        decoration: const InputDecoration(
+          labelText: 'End',
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        ),
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        onFieldSubmitted: (value) {
+          final intValue = int.tryParse(value);
+          if (intValue != null && intValue >= 1 && intValue <= 16 && intValue >= startValue) {
+            _updateParameter(endStepParam, intValue);
+          } else {
+            final current = endStepParam < slot.values.length
+                ? slot.values[endStepParam].value
+                : 16;
+            _endStepController.text = current.toString();
+          }
+        },
       ),
-      keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-      ],
-      onFieldSubmitted: (value) {
-        final intValue = int.tryParse(value);
-        if (intValue != null && intValue >= 1 && intValue <= 16 && intValue >= startValue) {
-          _updateParameter(endStepParam, intValue);
-        } else {
-          // Invalid - revert to current
-          final current = endStepParam < slot.values.length
-              ? slot.values[endStepParam].value
-              : 16;
-          _endStepController.text = current.toString();
-        }
-      },
     );
   }
 

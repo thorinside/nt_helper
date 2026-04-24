@@ -13,6 +13,7 @@ import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/debug_metadata_export_dialog.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/template_preview_dialog.dart';
 
 class MetadataSyncAnnouncementListener extends StatelessWidget {
@@ -1563,26 +1564,28 @@ class _AlgorithmMetadataListViewState
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: TextField(
-            controller: _filterController,
-            decoration: InputDecoration(
-              labelText: "Filter Algorithms",
-              hintText: "Enter algorithm name...",
-              prefixIcon: const Icon(Icons.search),
-              border: const OutlineInputBorder(),
-              // Add clear button
-              suffixIcon: _filterController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(
-                        Icons.clear,
-                        semanticLabel: 'Clear filter',
-                      ),
-                      onPressed: () {
-                        _filterController.clear();
-                        // _filterList will be called by the listener
-                      },
-                    )
-                  : null,
+          child: DigitShortcutBlocker(
+            child: TextField(
+              controller: _filterController,
+              decoration: InputDecoration(
+                labelText: "Filter Algorithms",
+                hintText: "Enter algorithm name...",
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
+                // Add clear button
+                suffixIcon: _filterController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.clear,
+                          semanticLabel: 'Clear filter',
+                        ),
+                        onPressed: () {
+                          _filterController.clear();
+                          // _filterList will be called by the listener
+                        },
+                      )
+                    : null,
+              ),
             ),
           ),
         ),

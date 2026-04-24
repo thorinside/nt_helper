@@ -8,6 +8,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show ParameterInfo;
 import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:path/path.dart' as path;
 
 /// Enhanced file parameter editor widget that provides context-aware file browsing
@@ -653,22 +654,24 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: _textController,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  hintText: 'Enter name...',
-                  counterText: '', // Hide the character counter
+              child: DigitShortcutBlocker(
+                child: TextField(
+                  controller: _textController,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: 'Enter name...',
+                    counterText: '', // Hide the character counter
+                  ),
+                  onSubmitted: _onTextSubmitted,
+                  onEditingComplete: () {
+                    _onTextSubmitted(_textController.text);
+                  },
+                  autofocus: true,
+                  style: const TextStyle(fontSize: 16),
+                  maxLength: 31, // Hardware limit for text parameters
                 ),
-                onSubmitted: _onTextSubmitted,
-                onEditingComplete: () {
-                  _onTextSubmitted(_textController.text);
-                },
-                autofocus: true,
-                style: const TextStyle(fontSize: 16),
-                maxLength: 31, // Hardware limit for text parameters
               ),
             ),
             const SizedBox(width: 4),
@@ -1297,16 +1300,18 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
         height: 400,
         child: Column(
           children: [
-            TextField(
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: Icon(Icons.search, size: 20),
-                isDense: true,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            DigitShortcutBlocker(
+              child: TextField(
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search...',
+                  prefixIcon: Icon(Icons.search, size: 20),
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value),
               ),
-              onChanged: (value) => setState(() => _searchQuery = value),
             ),
             const SizedBox(height: 8),
             Expanded(

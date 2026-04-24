@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 
 /// View modes for displaying algorithms in the Add Algorithm screen
 enum AlgorithmViewMode { chipGrid, list }
@@ -563,25 +564,27 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 // --- Search Row ---
-                                TextField(
-                                  controller: _searchController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Search Algorithms',
-                                    hintText: _showFavoritesOnly
-                                        ? 'Search within favorites...'
-                                        : 'Enter algorithm name...',
-                                    prefixIcon: const Icon(Icons.search),
-                                    suffixIcon:
-                                        _searchController.text.isNotEmpty
-                                        ? IconButton(
-                                            icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
-                                            tooltip: 'Clear search',
-                                            onPressed: () {
-                                              _searchController.clear();
-                                            },
-                                          )
-                                        : null,
-                                    border: const OutlineInputBorder(),
+                                DigitShortcutBlocker(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Search Algorithms',
+                                      hintText: _showFavoritesOnly
+                                          ? 'Search within favorites...'
+                                          : 'Enter algorithm name...',
+                                      prefixIcon: const Icon(Icons.search),
+                                      suffixIcon:
+                                          _searchController.text.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
+                                              tooltip: 'Clear search',
+                                              onPressed: () {
+                                                _searchController.clear();
+                                              },
+                                            )
+                                          : null,
+                                      border: const OutlineInputBorder(),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -1359,14 +1362,16 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             autovalidateMode: AutovalidateMode.onUserInteraction,
           );
 
+          final blockedField = DigitShortcutBlocker(child: textField);
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
             child: isOffline
                 ? Tooltip(
                     message: 'Defaults are used in offline mode',
-                    child: textField,
+                    child: blockedField,
                   )
-                : textField,
+                : blockedField,
           );
         }),
       ],

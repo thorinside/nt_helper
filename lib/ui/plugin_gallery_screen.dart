@@ -16,6 +16,7 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:nt_helper/ui/widgets/collection_expansion_panel.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/linkified_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nt_helper/utils/responsive.dart';
@@ -350,27 +351,29 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
       child: Column(
         children: [
           if (isMobile) ...[
-            TextField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              decoration: InputDecoration(
-                hintText: 'Search plugins...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
-                        onPressed: () {
-                          _searchController.clear();
-                          context.read<GalleryCubit>().clearFilters();
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+            DigitShortcutBlocker(
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Search plugins...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
+                          onPressed: () {
+                            _searchController.clear();
+                            context.read<GalleryCubit>().clearFilters();
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -398,27 +401,29 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    decoration: InputDecoration(
-                      hintText: 'Search plugins...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
-                              onPressed: () {
-                                _searchController.clear();
-                                context.read<GalleryCubit>().clearFilters();
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                  child: DigitShortcutBlocker(
+                    child: TextField(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      decoration: InputDecoration(
+                        hintText: 'Search plugins...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  context.read<GalleryCubit>().clearFilters();
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -1305,14 +1310,16 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           children: [
             const Text('Enter a name for the new backup folder:'),
             const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Folder Name',
-                border: OutlineInputBorder(),
+            DigitShortcutBlocker(
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Folder Name',
+                  border: OutlineInputBorder(),
+                ),
+                onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
               ),
-              onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
             ),
           ],
         ),

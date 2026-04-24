@@ -10,6 +10,7 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
@@ -1215,18 +1216,20 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: TextField(
-        keyboardType: signed
-            ? const TextInputType.numberWithOptions(signed: true)
-            : TextInputType.number,
-        textInputAction: TextInputAction.done,
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
+      child: DigitShortcutBlocker(
+        child: TextField(
+          keyboardType: signed
+              ? const TextInputType.numberWithOptions(signed: true)
+              : TextInputType.number,
+          textInputAction: TextInputAction.done,
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+          ),
+          onSubmitted: (_) => onSubmit(),
+          onChanged: onChanged != null ? (_) => onChanged() : null,
         ),
-        onSubmitted: (_) => onSubmit(),
-        onChanged: onChanged != null ? (_) => onChanged() : null,
       ),
     );
   }

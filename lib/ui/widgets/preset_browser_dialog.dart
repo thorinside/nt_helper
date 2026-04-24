@@ -18,6 +18,7 @@ import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/services/file_conflict_detector.dart';
 import 'package:nt_helper/services/preset_package_analyzer.dart';
 import 'package:nt_helper/models/preset_action.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/mobile_drill_down_navigator.dart';
 import 'package:nt_helper/ui/widgets/package_install_dialog.dart';
 import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
@@ -701,14 +702,16 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
           header: true,
           child: const Text('New Folder'),
         ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Folder name',
-            hintText: 'Enter folder name',
+        content: DigitShortcutBlocker(
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Folder name',
+              hintText: 'Enter folder name',
+            ),
+            onSubmitted: (value) => Navigator.of(context).pop(value),
           ),
-          onSubmitted: (value) => Navigator.of(context).pop(value),
         ),
         actions: [
           TextButton(
@@ -761,13 +764,15 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
           header: true,
           child: const Text('Rename'),
         ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'New name',
+        content: DigitShortcutBlocker(
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'New name',
+            ),
+            onSubmitted: (value) => Navigator.of(context).pop(value),
           ),
-          onSubmitted: (value) => Navigator.of(context).pop(value),
         ),
         actions: [
           TextButton(

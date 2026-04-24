@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 
 class ChatSettingsDialog extends StatefulWidget {
   const ChatSettingsDialog({super.key});
@@ -133,21 +134,23 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                 style: theme.textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              TextField(
-                key: ValueKey('apikey_${_effectiveProvider.name}'),
-                controller: _isOpenAI
-                    ? _openaiKeyController
-                    : _anthropicKeyController,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: _isOpenAI
-                      ? 'sk-...'
-                      : _useSubscription
-                          ? 'sk-ant-oat...'
-                          : 'sk-ant-...',
-                  isDense: true,
+              DigitShortcutBlocker(
+                child: TextField(
+                  key: ValueKey('apikey_${_effectiveProvider.name}'),
+                  controller: _isOpenAI
+                      ? _openaiKeyController
+                      : _anthropicKeyController,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    hintText: _isOpenAI
+                        ? 'sk-...'
+                        : _useSubscription
+                            ? 'sk-ant-oat...'
+                            : 'sk-ant-...',
+                    isDense: true,
+                  ),
+                  obscureText: true,
                 ),
-                obscureText: true,
               ),
               if (_useSubscription && !_isOpenAI) ...[
                 const SizedBox(height: 4),
@@ -188,17 +191,19 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
               const SizedBox(height: 16),
               Text('Model', style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
-              TextField(
-                key: ValueKey('model_${_provider.name}'),
-                controller: _isOpenAI
-                    ? _openaiModelController
-                    : _anthropicModelController,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: _isOpenAI
-                      ? 'gpt-5-nano'
-                      : 'claude-haiku-4-5-20251001',
-                  isDense: true,
+              DigitShortcutBlocker(
+                child: TextField(
+                  key: ValueKey('model_${_provider.name}'),
+                  controller: _isOpenAI
+                      ? _openaiModelController
+                      : _anthropicModelController,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    hintText: _isOpenAI
+                        ? 'gpt-5-nano'
+                        : 'claude-haiku-4-5-20251001',
+                    isDense: true,
+                  ),
                 ),
               ),
               if (_isOpenAI) ...[
@@ -228,15 +233,17 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                   const SizedBox(height: 12),
                   Text('Base URL', style: theme.textTheme.titleSmall),
                   const SizedBox(height: 8),
-                  TextField(
-                    controller: _openaiBaseUrlController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText:
-                          'https://api.openai.com/v1/chat/completions',
-                      isDense: true,
+                  DigitShortcutBlocker(
+                    child: TextField(
+                      controller: _openaiBaseUrlController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText:
+                            'https://api.openai.com/v1/chat/completions',
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.url,
                     ),
-                    keyboardType: TextInputType.url,
                   ),
                   const SizedBox(height: 4),
                   Text(

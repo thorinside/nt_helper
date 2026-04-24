@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 
 class RenameSlotDialog extends StatefulWidget {
   final String initialName;
@@ -38,11 +39,13 @@ class _RenameSlotDialogState extends State<RenameSlotDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Rename Slot'),
-      content: TextField(
-        controller: _controller,
-        decoration: const InputDecoration(labelText: 'Name'),
-        autofocus: true,
-        onSubmitted: (_) => _onConfirm(),
+      content: DigitShortcutBlocker(
+        child: TextField(
+          controller: _controller,
+          decoration: const InputDecoration(labelText: 'Name'),
+          autofocus: true,
+          onSubmitted: (_) => _onConfirm(),
+        ),
       ),
       actions: [
         TextButton(onPressed: _onCancel, child: const Text('CANCEL')),

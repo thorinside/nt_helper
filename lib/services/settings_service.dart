@@ -4,6 +4,7 @@ import 'package:nt_helper/chat/models/chat_settings.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/database_integrity_service.dart';
+import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/rtt_stats_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -557,30 +558,32 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     _SettingSection(
                       title: 'Request Timeout',
                       subtitle: 'Default timeout for requests',
-                      child: TextFormField(
-                        controller: _requestTimeoutController,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                      child: DigitShortcutBlocker(
+                        child: TextFormField(
+                          controller: _requestTimeoutController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            suffixText: 'ms',
                           ),
-                          suffixText: 'ms',
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a value';
+                            }
+                            final number = int.tryParse(value);
+                            if (number == null) {
+                              return 'Please enter a valid number';
+                            }
+                            if (number <= 0) {
+                              return 'Value must be greater than 0';
+                            }
+                            return null;
+                          },
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a value';
-                          }
-                          final number = int.tryParse(value);
-                          if (number == null) {
-                            return 'Please enter a valid number';
-                          }
-                          if (number <= 0) {
-                            return 'Value must be greater than 0';
-                          }
-                          return null;
-                        },
                       ),
                     ),
 
@@ -590,30 +593,32 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     _SettingSection(
                       title: 'Inter-Message Delay',
                       subtitle: 'Minimum time between messages',
-                      child: TextFormField(
-                        controller: _interMessageDelayController,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                      child: DigitShortcutBlocker(
+                        child: TextFormField(
+                          controller: _interMessageDelayController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            suffixText: 'ms',
                           ),
-                          suffixText: 'ms',
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a value';
+                            }
+                            final number = int.tryParse(value);
+                            if (number == null) {
+                              return 'Please enter a valid number';
+                            }
+                            if (number < 0) {
+                              return 'Value must be 0 or greater';
+                            }
+                            return null;
+                          },
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a value';
-                          }
-                          final number = int.tryParse(value);
-                          if (number == null) {
-                            return 'Please enter a valid number';
-                          }
-                          if (number < 0) {
-                            return 'Value must be 0 or greater';
-                          }
-                          return null;
-                        },
                       ),
                     ),
 
@@ -623,30 +628,32 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     _SettingSection(
                       title: 'Algorithm Cache Duration',
                       subtitle: 'How long to cache algorithm info before refreshing',
-                      child: TextFormField(
-                        controller: _algorithmCacheDaysController,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                      child: DigitShortcutBlocker(
+                        child: TextFormField(
+                          controller: _algorithmCacheDaysController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            suffixText: 'days',
                           ),
-                          suffixText: 'days',
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a value';
+                            }
+                            final number = int.tryParse(value);
+                            if (number == null) {
+                              return 'Please enter a valid number';
+                            }
+                            if (number < 0) {
+                              return 'Value must be 0 or greater';
+                            }
+                            return null;
+                          },
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a value';
-                          }
-                          final number = int.tryParse(value);
-                          if (number == null) {
-                            return 'Please enter a valid number';
-                          }
-                          if (number < 0) {
-                            return 'Value must be 0 or greater';
-                          }
-                          return null;
-                        },
                       ),
                     ),
 
@@ -808,27 +815,29 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     _SettingSection(
                       title: 'Gallery URL',
                       subtitle: 'URL for the plugin gallery JSON feed',
-                      child: TextFormField(
-                        controller: _galleryUrlController,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                      child: DigitShortcutBlocker(
+                        child: TextFormField(
+                          controller: _galleryUrlController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            hintText: 'https://...',
                           ),
-                          hintText: 'https://...',
+                          keyboardType: TextInputType.url,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter a URL';
+                            }
+                            final uri = Uri.tryParse(value.trim());
+                            if (uri == null || !uri.hasScheme) {
+                              return 'Please enter a valid URL';
+                            }
+                            return null;
+                          },
                         ),
-                        keyboardType: TextInputType.url,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a URL';
-                          }
-                          final uri = Uri.tryParse(value.trim());
-                          if (uri == null || !uri.hasScheme) {
-                            return 'Please enter a valid URL';
-                          }
-                          return null;
-                        },
                       ),
                     ),
 
