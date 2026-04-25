@@ -15,6 +15,7 @@ import 'package:nt_helper/core/routing/services/connection_validator.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_validator.dart'
     as ui_validator;
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
+import 'package:nt_helper/services/settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/core/routing/models/es5_hardware_node.dart';
 import 'package:nt_helper/core/routing/bus_spec.dart';
@@ -3315,10 +3316,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) return;
 
-    final nodePos = currentState.nodePositions[algorithmId];
-    final scrollTarget = nodePos != null
-        ? Offset(nodePos.x + nodePos.width / 2, nodePos.y + nodePos.height / 2)
-        : null;
+    Offset? scrollTarget;
+    if (SettingsService().autoCenterOnSelection) {
+      final nodePos = currentState.nodePositions[algorithmId];
+      scrollTarget = nodePos != null
+          ? Offset(
+              nodePos.x + nodePos.width / 2,
+              nodePos.y + nodePos.height / 2,
+            )
+          : null;
+    }
 
     emit(currentState.copyWith(
       focusedAlgorithmIds: {algorithmId},

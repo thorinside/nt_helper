@@ -63,6 +63,50 @@ class SettingsService {
   static const String _openaiModelKey = 'openai_model';
   static const String _openaiBaseUrlKey = 'openai_base_url';
   static const String _uiScaleKey = 'ui_scale';
+  static const String _autoCenterOnSelectionKey = 'auto_center_on_selection';
+
+  /// Single source of truth for every persisted setting key owned by this
+  /// service. `resetToDefaults()` clears every entry here so getters fall back
+  /// to their declared defaults. Adding a new persisted setting REQUIRES adding
+  /// its storage key here; the test in
+  /// `test/services/settings_service_test.dart` enforces this by source-scanning
+  /// `_xxxKey` constants and comparing against this list.
+  static const List<String> _persistedKeys = [
+    _requestTimeoutKey,
+    _interMessageDelayKey,
+    _hapticsEnabledKey,
+    _mcpEnabledKey,
+    _startPagesCollapsedKey,
+    _galleryUrlKey,
+    _graphqlEndpointKey,
+    _includeCommunityPluginsKey,
+    _overlayPositionXKey,
+    _overlayPositionYKey,
+    _overlaySizeScaleKey,
+    _showDebugPanelKey,
+    _showContextualHelpKey,
+    _algorithmCacheDaysKey,
+    _cpuMonitorEnabledKey,
+    _dismissedUpdateVersionKey,
+    _lastUpdateCheckTimestampKey,
+    _splitDividerPositionKey,
+    _mcpRemoteConnectionsKey,
+    _chatEnabledKey,
+    _chatPanelWidthKey,
+    _chatLlmProviderKey,
+    _anthropicApiKeyKey,
+    _openaiApiKeyKey,
+    _anthropicModelKey,
+    _openaiModelKey,
+    _openaiBaseUrlKey,
+    _uiScaleKey,
+    _autoCenterOnSelectionKey,
+  ];
+
+  /// The set of persisted setting keys owned by this service. Test-only.
+  @visibleForTesting
+  static List<String> get debugPersistedKeys =>
+      List.unmodifiable(_persistedKeys);
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -94,6 +138,7 @@ class SettingsService {
   static const double minUiScale = 0.7;
   static const double maxUiScale = 1.5;
   static const double uiScaleStep = 0.1;
+  static const bool defaultAutoCenterOnSelection = true;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -281,6 +326,16 @@ class SettingsService {
     return await _prefs?.setInt(_algorithmCacheDaysKey, value) ?? false;
   }
 
+  /// Check if the routing canvas should auto-center on the selected algorithm
+  bool get autoCenterOnSelection =>
+      _prefs?.getBool(_autoCenterOnSelectionKey) ??
+      defaultAutoCenterOnSelection;
+
+  /// Set whether the routing canvas should auto-center on the selected algorithm
+  Future<bool> setAutoCenterOnSelection(bool value) async {
+    return await _prefs?.setBool(_autoCenterOnSelectionKey, value) ?? false;
+  }
+
   /// Check if CPU monitor is enabled
   bool get cpuMonitorEnabled =>
       _prefs?.getBool(_cpuMonitorEnabledKey) ?? defaultCpuMonitorEnabled;
@@ -424,26 +479,21 @@ class SettingsService {
     return await _prefs?.setInt(_lastUpdateCheckTimestampKey, value) ?? false;
   }
 
-  /// Reset all settings to their default values
+  /// Reset every persisted setting owned by [SettingsService] to its declared
+  /// default. Implemented as a bulk-remove of every key in [_persistedKeys] —
+  /// getters then fall back to their declared defaults via the `?? default`
+  /// pattern, so there is no risk of the reset site duplicating (and
+  /// drifting from) the canonical default. Keys outside the registry — for
+  /// example window-bounds or routing-editor state stored elsewhere in
+  /// [SharedPreferences] — are intentionally untouched.
   Future<void> resetToDefaults() async {
-    await setRequestTimeout(defaultRequestTimeout);
-    await setInterMessageDelay(defaultInterMessageDelay);
-    await setHapticsEnabled(defaultHapticsEnabled);
-    await setMcpEnabled(defaultMcpEnabled);
-    await setMcpRemoteConnections(defaultMcpRemoteConnections);
-    await setStartPagesCollapsed(defaultStartPagesCollapsed);
-    await setGalleryUrl(defaultGalleryUrl);
-    await setGraphqlEndpoint(defaultGraphqlEndpoint);
-    await setIncludeCommunityPlugins(defaultIncludeCommunityPlugins);
-    await setOverlayPositionX(defaultOverlayPositionX);
-    await setOverlayPositionY(defaultOverlayPositionY);
-    await setOverlaySizeScale(defaultOverlaySizeScale);
-    await setShowDebugPanel(defaultShowDebugPanel);
-    await setShowContextualHelp(defaultShowContextualHelp);
-    await setAlgorithmCacheDays(defaultAlgorithmCacheDays);
-    await setCpuMonitorEnabled(defaultCpuMonitorEnabled);
-    await setSplitDividerPosition(defaultSplitDividerPosition);
-    await setUiScale(defaultUiScale);
+    final prefs = _prefs;
+    if (prefs == null) return;
+    for (final key in _persistedKeys) {
+      await prefs.remove(key);
+    }
+    cpuMonitorEnabledNotifier.value = defaultCpuMonitorEnabled;
+    uiScaleNotifier.value = defaultUiScale;
   }
 }
 
@@ -472,6 +522,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _showDebugPanel;
   late bool _showContextualHelp;
   late bool _cpuMonitorEnabled;
+  late bool _autoCenterOnSelection;
   late double _uiScale;
 
   @override
@@ -494,6 +545,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _showDebugPanel = settings.showDebugPanel;
       _showContextualHelp = settings.showContextualHelp;
       _cpuMonitorEnabled = settings.cpuMonitorEnabled;
+      _autoCenterOnSelection = settings.autoCenterOnSelection;
       _uiScale = settings.uiScale;
     });
   }
@@ -518,6 +570,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setShowDebugPanel(_showDebugPanel);
       await settings.setShowContextualHelp(_showContextualHelp);
       await settings.setCpuMonitorEnabled(_cpuMonitorEnabled);
+      await settings.setAutoCenterOnSelection(_autoCenterOnSelection);
       await settings.setUiScale(_uiScale);
 
       if (mounted) {
@@ -804,6 +857,24 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       onChanged: (value) {
                         setState(() {
                           _showContextualHelp = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    // Auto-center on algorithm selection setting
+                    SwitchListTile(
+                      title: Text(
+                        'Auto-Center on Algorithm Selection',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                        'Automatically scroll the routing canvas to the selected algorithm',
+                      ),
+                      value: _autoCenterOnSelection,
+                      onChanged: (value) {
+                        setState(() {
+                          _autoCenterOnSelection = value;
                         });
                       },
                       contentPadding: EdgeInsets.zero,
