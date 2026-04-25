@@ -141,6 +141,93 @@ void main() {
       // Assert
       expect(result, isEmpty);
     });
+
+    test(
+      'normalizes bare filenames into the correct plugin directory',
+      () {
+        // The firmware returns bare filenames (no directory prefix) for some
+        // plugins. We have to prepend the canonical directory based on the
+        // file extension or readFile() will fail at the SD card root.
+        final algorithmInfos = [
+          AlgorithmInfo(
+            algorithmIndex: 0,
+            guid: 'Th26',
+            name: 'ARP 2600',
+            specifications: const [],
+            isPlugin: true,
+            filename: 'arp2600.o',
+          ),
+          AlgorithmInfo(
+            algorithmIndex: 1,
+            guid: 'LUAX',
+            name: 'Lua plugin',
+            specifications: const [],
+            isPlugin: true,
+            filename: 'my_script.lua',
+          ),
+          AlgorithmInfo(
+            algorithmIndex: 2,
+            guid: 'TPOT',
+            name: 'Three Pot plugin',
+            specifications: const [],
+            isPlugin: true,
+            filename: 'knob_demo.3pot',
+          ),
+        ];
+
+        final result = PresetAnalyzer.extractPluginPaths(algorithmInfos);
+
+        expect(result, {
+          'Th26': 'programs/plug-ins/arp2600.o',
+          'LUAX': 'programs/lua/my_script.lua',
+          'TPOT': 'programs/three_pot/knob_demo.3pot',
+        });
+      },
+    );
+
+    test('prepends plug-ins dir even when filename has a subfolder', () {
+      // Firmware returns filenames relative to the plugin directory, so
+      // `corrupter/corrupter.o` means `/programs/plug-ins/corrupter/corrupter.o`
+      // — the firmware strips the common `programs/plug-ins/` prefix to
+      // save null-terminated string bytes in the SysEx payload.
+      final algorithmInfos = [
+        AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: 'ThCo',
+          name: 'Corrupter',
+          specifications: const [],
+          isPlugin: true,
+          filename: 'corrupter/corrupter.o',
+        ),
+      ];
+
+      final result = PresetAnalyzer.extractPluginPaths(algorithmInfos);
+
+      expect(result, {
+        'ThCo': 'programs/plug-ins/corrupter/corrupter.o',
+      });
+    });
+
+    test('trusts filenames that already start with programs/', () {
+      // If the firmware does return a full SD-rooted path (e.g. on newer
+      // firmware), leave it alone.
+      final algorithmInfos = [
+        AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: 'PLUGIN_C',
+          name: 'Already fully qualified',
+          specifications: const [],
+          isPlugin: true,
+          filename: 'programs/plug-ins/subfolder/PluginC.o',
+        ),
+      ];
+
+      final result = PresetAnalyzer.extractPluginPaths(algorithmInfos);
+
+      expect(result, {
+        'PLUGIN_C': 'programs/plug-ins/subfolder/PluginC.o',
+      });
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -258,6 +345,32 @@ void main() {
       final deps = PresetAnalyzer.analyzeDependencies(preset);
 
       expect(deps.luaScripts, {'my_script.lua'});
+    });
+
+    test('pymu collects top-level folder as multisample folder', () {
+      // `pymu` (current Poly Multisample, firmware >= 1.10) has no
+      // `timbres[]` array — one folder per slot, stored top-level. The
+      // `saveFolder`/`saveFilename` fields are the recording destination
+      // and must NOT be treated as dependencies.
+      final preset = {
+        'slots': [
+          {
+            'guid': 'pymu',
+            'folder': '!CORec_Modular Percussion Stereo',
+            'saveFolder': 'untitled',
+            'saveFilename': 'sample',
+          },
+        ],
+      };
+
+      final deps = PresetAnalyzer.analyzeDependencies(preset);
+
+      expect(
+        deps.multisampleFolders,
+        {'!CORec_Modular Percussion Stereo'},
+      );
+      // saveFolder is a record destination, not a dependency.
+      expect(deps.sampleFolders, isEmpty);
     });
 
     test('granulator slot collects sample when populated', () {

@@ -2,8 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nt_helper/db/database.dart';
-import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/package_config.dart';
 import 'package:nt_helper/models/preset_dependencies.dart';
@@ -11,24 +9,13 @@ import 'package:nt_helper/services/file_collector.dart';
 
 class MockPresetFileSystem extends Mock implements PresetFileSystem {}
 
-class MockAppDatabase extends Mock implements AppDatabase {}
-
-class MockMetadataDao extends Mock implements MetadataDao {}
-
 void main() {
   late MockPresetFileSystem mockFileSystem;
-  late MockAppDatabase mockDatabase;
-  late MockMetadataDao mockMetadataDao;
   late FileCollector fileCollector;
 
   setUp(() {
     mockFileSystem = MockPresetFileSystem();
-    mockDatabase = MockAppDatabase();
-    mockMetadataDao = MockMetadataDao();
-
-    when(() => mockDatabase.metadataDao).thenReturn(mockMetadataDao);
-
-    fileCollector = FileCollector(mockFileSystem, mockDatabase);
+    fileCollector = FileCollector(mockFileSystem);
   });
 
   group('FileCollector - pluginPaths', () {
@@ -36,6 +23,10 @@ void main() {
       // Arrange
       final deps = PresetDependencies();
       deps.pluginPaths['MYPLUGIN'] = 'programs/plug-ins/MyPlugin.elf';
+      // The preset must reference the plugin by GUID or we skip it (the
+      // pluginPaths map is the full NT library; we only package plugins
+      // the preset actually uses).
+      deps.communityPlugins.add('MYPLUGIN');
 
       final pluginBytes = Uint8List.fromList([0x7F, 0x45, 0x4C, 0x46]); // ELF
       when(
@@ -54,51 +45,35 @@ void main() {
       expect(result.files.length, 1);
       expect(result.files.first.relativePath, 'programs/plug-ins/MyPlugin.elf');
       expect(result.files.first.bytes, pluginBytes);
-
-      // Should NOT call database lookup since we have direct paths
-      verifyNever(
-        () => mockMetadataDao.getPluginFilePathsByGuids(any()),
-      );
     });
 
-    test('falls back to database for plugins not in pluginPaths', () async {
-      // Arrange
+    test('warns about community plugins missing from pluginPaths', () async {
+      // Community-plugin GUID detected in the preset but no path supplied
+      // (e.g. plugin is referenced but not installed on the connected NT).
       final deps = PresetDependencies();
       deps.communityPlugins.add('OTHERPLUGIN');
-      // Note: pluginPaths is empty, so database lookup should be used
-
-      final pluginBytes = Uint8List.fromList([0x7F, 0x45, 0x4C, 0x46]);
-      when(
-        () => mockMetadataDao.getPluginFilePathsByGuids({'OTHERPLUGIN'}),
-      ).thenAnswer(
-        (_) async => {'OTHERPLUGIN': 'programs/plug-ins/Other.elf'},
-      );
-      when(
-        () => mockFileSystem.readFile('programs/plug-ins/Other.elf'),
-      ).thenAnswer((_) async => pluginBytes);
 
       final config = const PackageConfig(includeCommunityPlugins: true);
 
-      // Act
       final result = await fileCollector.collectDependencies(
         deps,
         config: config,
       );
 
-      // Assert
-      expect(result.files.length, 1);
-      expect(result.files.first.relativePath, 'programs/plug-ins/Other.elf');
+      expect(result.files, isEmpty);
+      expect(result.warnings, hasLength(1));
+      expect(result.warnings.first, contains('OTHERPLUGIN'));
+      expect(result.warnings.first, contains('not installed'));
 
-      // Should call database lookup for plugins without direct paths
-      verify(
-        () => mockMetadataDao.getPluginFilePathsByGuids({'OTHERPLUGIN'}),
-      ).called(1);
+      // No file reads — there's nothing to read.
+      verifyNever(() => mockFileSystem.readFile(any()));
     });
 
     test('handles missing plugin file gracefully (returns null)', () async {
       // Arrange
       final deps = PresetDependencies();
       deps.pluginPaths['MISSING'] = 'programs/plug-ins/Missing.elf';
+      deps.communityPlugins.add('MISSING');
 
       when(
         () => mockFileSystem.readFile('programs/plug-ins/Missing.elf'),
@@ -120,6 +95,7 @@ void main() {
       // Arrange
       final deps = PresetDependencies();
       deps.pluginPaths['ERROR'] = 'programs/plug-ins/Error.elf';
+      deps.communityPlugins.add('ERROR');
 
       when(
         () => mockFileSystem.readFile('programs/plug-ins/Error.elf'),
@@ -137,43 +113,35 @@ void main() {
       expect(result.files, isEmpty);
     });
 
-    test('collects from both pluginPaths and communityPlugins', () async {
-      // Arrange
-      final deps = PresetDependencies();
-      deps.pluginPaths['DIRECT_PLUGIN'] = 'programs/plug-ins/Direct.elf';
-      deps.communityPlugins.add('DB_PLUGIN');
+    test(
+      'collects pluginPaths and warns for unmatched communityPlugins',
+      () async {
+        // Mixed scenario: one plugin is referenced AND has a direct path,
+        // another is referenced but not in pluginPaths. The first should
+        // package; the second should produce a "not installed" warning.
+        final deps = PresetDependencies();
+        deps.pluginPaths['DIRECT_PLUGIN'] = 'programs/plug-ins/Direct.elf';
+        deps.communityPlugins.add('DIRECT_PLUGIN');
+        deps.communityPlugins.add('NOT_INSTALLED');
 
-      final directBytes = Uint8List.fromList([1, 2, 3, 4]);
-      final dbBytes = Uint8List.fromList([5, 6, 7, 8]);
+        final directBytes = Uint8List.fromList([1, 2, 3, 4]);
+        when(
+          () => mockFileSystem.readFile('programs/plug-ins/Direct.elf'),
+        ).thenAnswer((_) async => directBytes);
 
-      when(
-        () => mockFileSystem.readFile('programs/plug-ins/Direct.elf'),
-      ).thenAnswer((_) async => directBytes);
+        final config = const PackageConfig(includeCommunityPlugins: true);
 
-      when(
-        () => mockMetadataDao.getPluginFilePathsByGuids({'DB_PLUGIN'}),
-      ).thenAnswer(
-        (_) async => {'DB_PLUGIN': 'programs/plug-ins/DbPlugin.elf'},
-      );
-      when(
-        () => mockFileSystem.readFile('programs/plug-ins/DbPlugin.elf'),
-      ).thenAnswer((_) async => dbBytes);
+        final result = await fileCollector.collectDependencies(
+          deps,
+          config: config,
+        );
 
-      final config = const PackageConfig(includeCommunityPlugins: true);
-
-      // Act
-      final result = await fileCollector.collectDependencies(
-        deps,
-        config: config,
-      );
-
-      // Assert
-      expect(result.files.length, 2);
-
-      final paths = result.files.map((f) => f.relativePath).toSet();
-      expect(paths, contains('programs/plug-ins/Direct.elf'));
-      expect(paths, contains('programs/plug-ins/DbPlugin.elf'));
-    });
+        expect(result.files, hasLength(1));
+        expect(result.files.first.relativePath, 'programs/plug-ins/Direct.elf');
+        expect(result.warnings, hasLength(1));
+        expect(result.warnings.first, contains('NOT_INSTALLED'));
+      },
+    );
 
     test('skips plugin collection when includeCommunityPlugins is false', () async {
       // Arrange
@@ -218,9 +186,70 @@ void main() {
       // Assert - should only collect once
       expect(result.files.length, 1);
       expect(result.files.first.relativePath, 'programs/plug-ins/Same.elf');
+      // No "not installed" warning — the GUID is in pluginPaths so it's
+      // considered resolved.
+      expect(result.warnings, isEmpty);
+    });
 
-      // Should NOT call database lookup since direct path was used
-      verifyNever(() => mockMetadataDao.getPluginFilePathsByGuids(any()));
+    test(
+      'does not package plugins that are in pluginPaths but not referenced '
+      'by the preset',
+      () async {
+        // Regression: `pluginPaths` is the full NT library, not just the
+        // plugins the preset uses. We must only package plugins whose
+        // GUID appears in `communityPlugins`.
+        final deps = PresetDependencies();
+        deps.pluginPaths['USED'] = 'programs/plug-ins/Used.o';
+        deps.pluginPaths['UNUSED_A'] = 'programs/plug-ins/UnusedA.o';
+        deps.pluginPaths['UNUSED_B'] = 'programs/plug-ins/UnusedB.o';
+        deps.communityPlugins.add('USED');
+
+        when(
+          () => mockFileSystem.readFile('programs/plug-ins/Used.o'),
+        ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+
+        final result = await fileCollector.collectDependencies(
+          deps,
+          config: const PackageConfig(includeCommunityPlugins: true),
+        );
+
+        expect(result.files, hasLength(1));
+        expect(result.files.first.relativePath, 'programs/plug-ins/Used.o');
+        expect(result.warnings, isEmpty);
+
+        // Unused plugins must not be read from the SD card.
+        verifyNever(
+          () => mockFileSystem.readFile('programs/plug-ins/UnusedA.o'),
+        );
+        verifyNever(
+          () => mockFileSystem.readFile('programs/plug-ins/UnusedB.o'),
+        );
+      },
+    );
+
+    test('matches community plugin GUIDs with trailing-space padding', () {
+      // Analyzer preserves trailing spaces on raw GUIDs
+      // (see preset_analyzer.dart), while AlgorithmInfo may return the
+      // trimmed form. The collector must match them regardless of padding.
+      final deps = PresetDependencies();
+      // pluginPaths uses trimmed GUID
+      deps.pluginPaths['MyPl'] = 'programs/plug-ins/MyPlugin.o';
+      // communityPlugins stores the padded form
+      deps.communityPlugins.add('MyPl');
+
+      when(
+        () => mockFileSystem.readFile('programs/plug-ins/MyPlugin.o'),
+      ).thenAnswer((_) async => Uint8List.fromList([1]));
+
+      return fileCollector
+          .collectDependencies(
+            deps,
+            config: const PackageConfig(includeCommunityPlugins: true),
+          )
+          .then((result) {
+        expect(result.files, hasLength(1));
+        expect(result.warnings, isEmpty);
+      });
     });
   });
 

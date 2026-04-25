@@ -63,6 +63,7 @@ class SettingsService {
   static const String _openaiModelKey = 'openai_model';
   static const String _openaiBaseUrlKey = 'openai_base_url';
   static const String _uiScaleKey = 'ui_scale';
+  static const String _autoCenterOnSelectionKey = 'auto_center_on_selection';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -94,6 +95,7 @@ class SettingsService {
   static const double minUiScale = 0.7;
   static const double maxUiScale = 1.5;
   static const double uiScaleStep = 0.1;
+  static const bool defaultAutoCenterOnSelection = true;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -281,6 +283,16 @@ class SettingsService {
     return await _prefs?.setInt(_algorithmCacheDaysKey, value) ?? false;
   }
 
+  /// Check if the routing canvas should auto-center on the selected algorithm
+  bool get autoCenterOnSelection =>
+      _prefs?.getBool(_autoCenterOnSelectionKey) ??
+      defaultAutoCenterOnSelection;
+
+  /// Set whether the routing canvas should auto-center on the selected algorithm
+  Future<bool> setAutoCenterOnSelection(bool value) async {
+    return await _prefs?.setBool(_autoCenterOnSelectionKey, value) ?? false;
+  }
+
   /// Check if CPU monitor is enabled
   bool get cpuMonitorEnabled =>
       _prefs?.getBool(_cpuMonitorEnabledKey) ?? defaultCpuMonitorEnabled;
@@ -444,6 +456,7 @@ class SettingsService {
     await setCpuMonitorEnabled(defaultCpuMonitorEnabled);
     await setSplitDividerPosition(defaultSplitDividerPosition);
     await setUiScale(defaultUiScale);
+    await setAutoCenterOnSelection(defaultAutoCenterOnSelection);
   }
 }
 
@@ -472,6 +485,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _showDebugPanel;
   late bool _showContextualHelp;
   late bool _cpuMonitorEnabled;
+  late bool _autoCenterOnSelection;
   late double _uiScale;
 
   @override
@@ -494,6 +508,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _showDebugPanel = settings.showDebugPanel;
       _showContextualHelp = settings.showContextualHelp;
       _cpuMonitorEnabled = settings.cpuMonitorEnabled;
+      _autoCenterOnSelection = settings.autoCenterOnSelection;
       _uiScale = settings.uiScale;
     });
   }
@@ -518,6 +533,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setShowDebugPanel(_showDebugPanel);
       await settings.setShowContextualHelp(_showContextualHelp);
       await settings.setCpuMonitorEnabled(_cpuMonitorEnabled);
+      await settings.setAutoCenterOnSelection(_autoCenterOnSelection);
       await settings.setUiScale(_uiScale);
 
       if (mounted) {
@@ -804,6 +820,24 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       onChanged: (value) {
                         setState(() {
                           _showContextualHelp = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    // Auto-center on algorithm selection setting
+                    SwitchListTile(
+                      title: Text(
+                        'Auto-Center on Algorithm Selection',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                        'Automatically scroll the routing canvas to the selected algorithm',
+                      ),
+                      value: _autoCenterOnSelection,
+                      onChanged: (value) {
+                        setState(() {
+                          _autoCenterOnSelection = value;
                         });
                       },
                       contentPadding: EdgeInsets.zero,

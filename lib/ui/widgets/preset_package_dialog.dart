@@ -8,24 +8,21 @@ import 'package:nt_helper/models/package_config.dart';
 import 'package:nt_helper/services/preset_analyzer.dart';
 import 'package:nt_helper/services/package_creator.dart';
 import 'package:nt_helper/services/settings_service.dart';
-import 'package:nt_helper/db/database.dart';
 
 /// Dialog for creating preset packages
 class PresetPackageDialog extends StatefulWidget {
   final String presetFilePath; // e.g., "presets/MyPreset.json"
   final PresetFileSystem fileSystem;
-  final AppDatabase database;
 
-  /// Optional plugin paths from AlgorithmInfo for direct SD card reads.
-  /// Map of plugin GUID to file path. If provided, these paths are used
-  /// for plugin file collection instead of database lookup.
+  /// Plugin GUID → SD-card file path map, sourced from live AlgorithmInfo.
+  /// Required for community-plugin packaging — without it, plugin binaries
+  /// cannot be located.
   final Map<String, String>? pluginPaths;
 
   const PresetPackageDialog({
     super.key,
     required this.presetFilePath,
     required this.fileSystem,
-    required this.database,
     this.pluginPaths,
   });
 
@@ -111,10 +108,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
       );
 
       if (outputPath != null) {
-        final packageCreator = PackageCreator(
-          widget.fileSystem,
-          widget.database,
-        );
+        final packageCreator = PackageCreator(widget.fileSystem);
         final packageResult = await packageCreator.createPackage(
           presetFilePath: widget.presetFilePath,
           config: config,

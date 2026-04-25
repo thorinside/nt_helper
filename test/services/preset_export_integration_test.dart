@@ -15,16 +15,9 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:nt_helper/db/database.dart';
-import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/package_config.dart';
 import 'package:nt_helper/services/package_creator.dart';
-
-class MockAppDatabase extends Mock implements AppDatabase {}
-
-class MockMetadataDao extends Mock implements MetadataDao {}
 
 /// In-memory fake of [PresetFileSystem] driven by a map of relative path
 /// to bytes. Directory listings are derived from the map's keyspace.
@@ -51,17 +44,6 @@ class _FakeFileSystem implements PresetFileSystem {
 }
 
 void main() {
-  late MockAppDatabase mockDatabase;
-  late MockMetadataDao mockMetadataDao;
-
-  setUp(() {
-    mockDatabase = MockAppDatabase();
-    mockMetadataDao = MockMetadataDao();
-    when(() => mockDatabase.metadataDao).thenReturn(mockMetadataDao);
-    when(() => mockMetadataDao.getPluginFilePathsByGuids(any()))
-        .thenAnswer((_) async => <String, String>{});
-  });
-
   test('SyncLatchDemo round-trip captures lua + samp triggers + pyms folder',
       () async {
     final presetJson = File('test/fixtures/presets/sync_latch_demo.json')
@@ -86,7 +68,7 @@ void main() {
       'multisamples/LABS Soft Pno - PedOn/C2.aif': aif,
     });
 
-    final creator = PackageCreator(fs, mockDatabase);
+    final creator = PackageCreator(fs);
     final result = await creator.createPackage(
       presetFilePath: 'presets/SyncLatchDemo.json',
       config: const PackageConfig(),
@@ -142,7 +124,7 @@ void main() {
       'presets/SyncLatchDemo.json': presetBytes,
     });
 
-    final creator = PackageCreator(fs, mockDatabase);
+    final creator = PackageCreator(fs);
     final result = await creator.createPackage(
       presetFilePath: 'presets/SyncLatchDemo.json',
       config: const PackageConfig(),
