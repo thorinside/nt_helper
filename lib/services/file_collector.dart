@@ -3,15 +3,12 @@ import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/collected_file.dart';
 import 'package:nt_helper/models/collection_result.dart';
 import 'package:nt_helper/models/package_config.dart';
-import 'package:nt_helper/util/extensions.dart';
-import 'package:nt_helper/db/database.dart';
 
 /// Collects dependency files from the file system
 class FileCollector {
   final PresetFileSystem fileSystem;
-  final AppDatabase database;
 
-  FileCollector(this.fileSystem, this.database);
+  FileCollector(this.fileSystem);
 
   /// 50 MB hard ceiling per file. Anything larger is skipped with a
   /// warning — a Disting NT preset is unlikely to need files this big,
@@ -113,21 +110,27 @@ class FileCollector {
       await _collectFile(midiPath, files, warnings, label: 'MIDI file');
     }
 
-    // Collect community plugin files (if enabled)
+    // Collect community plugin files (if enabled).
+    //
+    // Plugin paths come from live AlgorithmInfo records (see
+    // PresetAnalyzer.extractPluginPaths). The full library is passed in,
+    // so `pluginPaths` contains every plugin installed on the NT — we
+    // only package the subset that the preset actually references
+    // (dependencies.communityPlugins), otherwise every export would try
+    // to read every plugin.
+    //
+    // Matching is done on trimmed GUIDs since the preset JSON can store
+    // a trailing-space-padded 4-char GUID while AlgorithmInfo may return
+    // the trimmed form (or vice versa).
     if (config?.includeCommunityPlugins == true) {
-      // First, collect all plugin GUIDs that need paths
-      final allPluginGuids = <String>{
-        ...dependencies.communityPlugins,
-        ...dependencies.pluginPaths.keys,
+      final referenced = {
+        for (final g in dependencies.communityPlugins) g.trim(): g,
       };
+      final collectedRefs = <String>{};
 
-      // Track which GUIDs we've already collected to avoid duplicates
-      final collectedGuids = <String>{};
-
-      // Priority 1: Use direct paths from AlgorithmInfo (pluginPaths).
-      // These are more reliable as they come directly from the hardware.
       for (final entry in dependencies.pluginPaths.entries) {
-        final pluginGuid = entry.key;
+        final trimmed = entry.key.trim();
+        if (!referenced.containsKey(trimmed)) continue;
         final pluginPath = entry.value;
 
         try {
@@ -140,57 +143,37 @@ class FileCollector {
               );
             } else {
               files.add(CollectedFile(pluginPath, bytes));
-              collectedGuids.add(pluginGuid);
+              collectedRefs.add(trimmed);
             }
           } else {
             warnings.add(
               'Plugin file not found at path from hardware: $pluginPath '
-              '(GUID: $pluginGuid)',
+              '(GUID: ${entry.key})',
             );
           }
         } catch (e) {
           warnings.add(
-            'Error reading plugin $pluginGuid at $pluginPath: $e',
+            'Error reading plugin ${entry.key} at $pluginPath: $e',
           );
         }
       }
 
-      // Priority 2: Fall back to database lookup for remaining plugins
-      // (plugins identified by GUID but not in pluginPaths).
-      final remainingGuids = allPluginGuids.difference(collectedGuids).intersection(
-            dependencies.communityPlugins,
-          );
-
-      if (remainingGuids.isNotEmpty) {
-        final guidToPathMap = await database.metadataDao
-            .getPluginFilePathsByGuids(remainingGuids);
-
-        for (final pluginGuid in remainingGuids) {
-          final pluginPath = guidToPathMap[pluginGuid];
-          if (pluginPath != null) {
-            try {
-              (await fileSystem.readFile(pluginPath))?.let((bytes) {
-                if (bytes.length > maxFileSize) {
-                  warnings.add(
-                    'Skipping oversized plugin: $pluginPath '
-                    '(${_formatBytes(bytes.length)})',
-                  );
-                } else {
-                  files.add(CollectedFile(pluginPath, bytes));
-                }
-              });
-            } catch (e) {
-              warnings.add(
-                'Error reading community plugin $pluginGuid at $pluginPath: $e',
-              );
-            }
-          } else {
-            warnings.add(
-              'Community plugin $pluginGuid not found locally. '
-              'File path not available in database.',
-            );
-          }
+      // Warn about any community-plugin GUID referenced by the preset
+      // that we didn't package. Either the plugin isn't installed on
+      // the connected NT, or its filename path failed to resolve above.
+      for (final entry in referenced.entries) {
+        if (collectedRefs.contains(entry.key)) continue;
+        final originalGuid = entry.value;
+        // Skip if a "not found" warning already exists for this GUID
+        // (we'd have emitted one during the loop above).
+        if (dependencies.pluginPaths.keys
+            .any((k) => k.trim() == entry.key)) {
+          continue;
         }
+        warnings.add(
+          'Community plugin $originalGuid is not installed on the '
+          'connected Disting NT — cannot include it in the package.',
+        );
       }
     }
 

@@ -256,15 +256,14 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                             Map<String, String>? pluginPaths;
                             final state = widget.distingCubit.state;
                             if (state is DistingStateSynchronized) {
-                              final slotAlgorithmIndices = state.slots
-                                  .map((s) => s.algorithm.algorithmIndex)
-                                  .toSet();
-                              final slotAlgorithms = state.algorithms
-                                  .where((a) =>
-                                      slotAlgorithmIndices.contains(a.algorithmIndex))
-                                  .toList();
-                              pluginPaths =
-                                  PresetAnalyzer.extractPluginPaths(slotAlgorithms);
+                              // Use the full algorithm library, not just the
+                              // currently-loaded slots. The preset being
+                              // exported may reference plugins that aren't
+                              // currently in any slot — those still need
+                              // their filenames resolved for packaging.
+                              pluginPaths = PresetAnalyzer.extractPluginPaths(
+                                state.algorithms,
+                              );
                             }
 
                             await showDialog<void>(
@@ -274,7 +273,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                                 fileSystem: PresetFileSystemImpl(
                                   widget.distingCubit.requireDisting(),
                                 ),
-                                database: widget.distingCubit.database,
                                 pluginPaths: pluginPaths,
                               ),
                             );

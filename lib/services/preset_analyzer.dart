@@ -6,17 +6,39 @@ import '../domain/disting_nt_sysex.dart';
 class PresetAnalyzer {
   /// Extracts plugin file paths from AlgorithmInfo objects.
   /// Call this with live slot data to populate pluginPaths for direct SD card reads.
-  /// Returns a map of plugin GUID to SD card file path.
+  /// Returns a map of plugin GUID to SD card file path (normalized to include
+  /// the plugin directory prefix if the firmware returned a bare filename).
   static Map<String, String> extractPluginPaths(
     List<AlgorithmInfo> algorithmInfos,
   ) {
     final paths = <String, String>{};
     for (final info in algorithmInfos) {
       if (info.isPlugin && info.filename != null && info.filename!.isNotEmpty) {
-        paths[info.guid] = info.filename!;
+        paths[info.guid] = _normalizePluginPath(info.filename!);
       }
     }
     return paths;
+  }
+
+  /// Normalizes `AlgorithmInfo.filename` into a full SD-card-relative
+  /// path. The firmware strips the standard directory prefix
+  /// (`programs/plug-ins/`, `programs/lua/`, `programs/three_pot/`) from
+  /// the filename to save null-terminated-string bytes in the SysEx
+  /// payload, so we have to add it back. A filename may still contain
+  /// subfolder components (e.g. `corrupter/corrupter.o`), which we treat
+  /// as relative to the canonical plugin directory.
+  static String _normalizePluginPath(String filename) {
+    final lower = filename.toLowerCase();
+
+    // If the firmware did return a full path from the SD root, trust it.
+    if (lower.startsWith('programs/')) return filename;
+
+    if (lower.endsWith('.lua')) return 'programs/lua/$filename';
+    if (lower.endsWith('.3pot')) return 'programs/three_pot/$filename';
+    // Default: compiled C++ plugins (.o) and anything unknown live in
+    // /programs/plug-ins/. Subfolder paths like `corrupter/corrupter.o`
+    // are relative to plug-ins.
+    return 'programs/plug-ins/$filename';
   }
 
   static PresetDependencies analyzeDependencies(
@@ -38,6 +60,12 @@ class PresetAnalyzer {
   /// `/multisamples/`. All other algorithms with a `timbres[].folder`
   /// field reference a sample folder under `/samples/`.
   static const _multisampleGuids = <String>{'pyms'};
+
+  /// Algorithm GUIDs that use a top-level `folder` field to reference a
+  /// multisample folder under `/multisamples/`. `pymu` is the current
+  /// Poly Multisample (firmware >= 1.10); unlike `pyms` it has no
+  /// `timbres[]` array — just one folder per slot.
+  static const _topLevelMultisampleGuids = <String>{'pymu'};
 
   static void _analyzeSlot(Map<String, dynamic> slot, PresetDependencies deps) {
     final rawGuid = slot['guid']?.toString();
@@ -105,6 +133,16 @@ class PresetAnalyzer {
     // Granulator-style top-level sample reference (file under /samples/).
     if (slot['sample'] != null && slot['sample'].toString().trim().isNotEmpty) {
       deps.granulatorSamples.add(slot['sample']);
+    }
+
+    // Top-level `folder` field for algorithms that reference a single
+    // multisample folder per slot (e.g. `pymu` Poly Multisample).
+    // The `saveFolder` / `saveFilename` fields on the same slot are the
+    // *record destination*, not an existing dependency, so we skip them.
+    if (_topLevelMultisampleGuids.contains(guid) &&
+        slot['folder'] != null &&
+        slot['folder'].toString().trim().isNotEmpty) {
+      deps.multisampleFolders.add(slot['folder']);
     }
   }
 

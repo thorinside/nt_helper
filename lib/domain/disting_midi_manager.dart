@@ -1061,9 +1061,12 @@ class DistingMidiManager implements IDistingMidiManager {
   @override
   Future<DirectoryListing?> requestDirectoryListing(String path) async {
     await _checkSdCardSupport();
+    // SD card operations require absolute paths (see installFileToPath
+    // in disting_cubit_plugin_delegate.dart for the same normalization).
+    final absolutePath = path.startsWith('/') ? path : '/$path';
     final message = RequestDirectoryListingMessage(
       sysExId: sysExId,
-      path: path,
+      path: absolutePath,
     );
     final packet = message.encode();
     return _scheduler.sendRequest<DirectoryListing>(
@@ -1097,21 +1100,45 @@ class DistingMidiManager implements IDistingMidiManager {
   @override
   Future<Uint8List?> requestFileDownload(String path) async {
     await _checkSdCardSupport();
-    final message = RequestFileDownloadMessage(sysExId: sysExId, path: path);
+    // SD card operations require absolute paths (see installFileToPath
+    // in disting_cubit_plugin_delegate.dart for the same normalization).
+    // Without a leading '/' the firmware can't locate the file and
+    // responds with a directory listing of the root, which surfaces as
+    // a type-mismatch error rather than useful file bytes.
+    final absolutePath = path.startsWith('/') ? path : '/$path';
+    final message = RequestFileDownloadMessage(
+      sysExId: sysExId,
+      path: absolutePath,
+    );
     final packet = message.encode();
 
-    // File downloads return the entire file in a single response
-    // According to Python reference, file downloads respond with 0x7A (same as directory listing)
-    final chunk = await _scheduler.sendRequest<FileChunk>(
-      packet,
-      RequestKey(
-        sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respDirectoryListing, // 0x7A
-      ),
-      responseExpectation: ResponseExpectation.required,
-      timeout: const Duration(seconds: 10), // Longer timeout for large files
-    );
-    return chunk?.data;
+    // File downloads return the entire file in a single response.
+    // The NT reuses message type 0x7A for both directory listings and
+    // file download responses, differentiated by the operation byte
+    // (1 = listing, 2 = file chunk — see response_factory.dart).
+    //
+    // When the path doesn't resolve to a readable file the firmware can
+    // respond with a directory listing instead of a FileChunk; the
+    // scheduler's type-checked complete() rejects the DirectoryListing
+    // value and surfaces a StateError. Catch it here and treat it as a
+    // clean "file not found" (null), matching the contract documented
+    // on the interface.
+    try {
+      final chunk = await _scheduler.sendRequest<FileChunk>(
+        packet,
+        RequestKey(
+          sysExId: sysExId,
+          messageType: DistingNTRespMessageType.respDirectoryListing, // 0x7A
+        ),
+        responseExpectation: ResponseExpectation.required,
+        timeout: const Duration(seconds: 10), // Longer timeout for large files
+      );
+      return chunk?.data;
+    } on StateError {
+      // Firmware returned an unexpected shape (typically a directory
+      // listing for a missing/invalid file path). Treat as not found.
+      return null;
+    }
   }
 
   @override
