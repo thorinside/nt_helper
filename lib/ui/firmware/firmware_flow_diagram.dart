@@ -163,33 +163,120 @@ class _FlowDiagramPainter extends CustomPainter {
   }
 
   void _drawDistingIcon(Canvas canvas, Offset center, double size) {
-    final paint = Paint()
+    final strokePaint = Paint()
       ..color = theme.colorScheme.onSurface
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-
-    // Module body (tall rectangle like a Eurorack module)
-    final moduleRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center, width: size * 0.5, height: size),
-      const Radius.circular(3),
-    );
-    canvas.drawRRect(moduleRect, paint);
-
-    // Screen/display area
-    final screenRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center.translate(0, -size * 0.2), width: size * 0.35, height: size * 0.25),
-      const Radius.circular(2),
-    );
-    canvas.drawRRect(screenRect, paint);
-
-    // Knobs (3 circles)
-    final knobPaint = Paint()
+    final fillPaint = Paint()
       ..color = theme.colorScheme.onSurface
       ..style = PaintingStyle.fill;
+    final screenFill = Paint()
+      ..color = theme.colorScheme.surface
+      ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(center.translate(0, size * 0.15), 4, knobPaint);
-    canvas.drawCircle(center.translate(-8, size * 0.35), 3, knobPaint);
-    canvas.drawCircle(center.translate(8, size * 0.35), 3, knobPaint);
+    final bodyWidth = size * 0.85;
+    final bodyHeight = size;
+    final left = center.dx - bodyWidth / 2;
+    final top = center.dy - bodyHeight / 2;
+
+    final moduleRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(left, top, bodyWidth, bodyHeight),
+      const Radius.circular(3),
+    );
+    canvas.drawRRect(moduleRect, strokePaint);
+
+    final screenRect = Rect.fromLTWH(
+      left + bodyWidth * 0.10,
+      top + bodyHeight * 0.06,
+      bodyWidth * 0.80,
+      bodyHeight * 0.20,
+    );
+    final screenRRect = RRect.fromRectAndRadius(
+      screenRect,
+      const Radius.circular(1.5),
+    );
+    canvas.drawRRect(screenRRect, screenFill);
+    canvas.drawRRect(screenRRect, strokePaint);
+
+    final hintPaint = Paint()
+      ..color = theme.colorScheme.onSurface.withValues(alpha: 0.6)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+    final hintY1 = screenRect.top + screenRect.height * 0.35;
+    final hintY2 = screenRect.top + screenRect.height * 0.70;
+    canvas.drawLine(
+      Offset(screenRect.left + screenRect.width * 0.12, hintY1),
+      Offset(screenRect.left + screenRect.width * 0.55, hintY1),
+      hintPaint,
+    );
+    canvas.drawLine(
+      Offset(screenRect.left + screenRect.width * 0.18, hintY2),
+      Offset(screenRect.left + screenRect.width * 0.78, hintY2),
+      hintPaint,
+    );
+
+    final encoderY = top + bodyHeight * 0.36;
+    final encoderRadius = size * 0.04;
+    final encoderXs = [
+      center.dx - bodyWidth * 0.26,
+      center.dx,
+      center.dx + bodyWidth * 0.26,
+    ];
+    for (final x in encoderXs) {
+      canvas.drawCircle(Offset(x, encoderY), encoderRadius, fillPaint);
+    }
+
+    final buttonY = top + bodyHeight * 0.50;
+    final buttonRadius = size * 0.05;
+    canvas.drawCircle(
+      Offset(center.dx - bodyWidth * 0.26, buttonY),
+      buttonRadius,
+      fillPaint,
+    );
+    canvas.drawCircle(
+      Offset(center.dx + bodyWidth * 0.26, buttonY),
+      buttonRadius,
+      fillPaint,
+    );
+
+    final dividerPaint = Paint()
+      ..color = theme.colorScheme.onSurface.withValues(alpha: 0.3)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+    final dividerY = top + bodyHeight * 0.59;
+    canvas.drawLine(
+      Offset(left + bodyWidth * 0.10, dividerY),
+      Offset(left + bodyWidth - bodyWidth * 0.10, dividerY),
+      dividerPaint,
+    );
+
+    final jackRadius = size * 0.022;
+    final inputLeft = left + bodyWidth * 0.08;
+    final inputRight = left + bodyWidth * 0.44;
+    final inputTop = top + bodyHeight * 0.66;
+    final inputBottom = top + bodyHeight * 0.94;
+    for (int row = 0; row < 4; row++) {
+      for (int col = 0; col < 3; col++) {
+        final x = inputLeft +
+            (inputRight - inputLeft) * (col / 2);
+        final y = inputTop +
+            (inputBottom - inputTop) * (row / 3);
+        canvas.drawCircle(Offset(x, y), jackRadius, fillPaint);
+      }
+    }
+
+    final outputLeft = left + bodyWidth * 0.58;
+    final outputRight = left + bodyWidth - bodyWidth * 0.10;
+    final outputTop = top + bodyHeight * 0.68;
+    final outputBottom = top + bodyHeight * 0.90;
+    for (int row = 0; row < 3; row++) {
+      for (int col = 0; col < 2; col++) {
+        final x = outputLeft + (outputRight - outputLeft) * col;
+        final y = outputTop +
+            (outputBottom - outputTop) * (row / 2);
+        canvas.drawCircle(Offset(x, y), jackRadius, fillPaint);
+      }
+    }
   }
 
   void _drawConnectionLine(Canvas canvas, double startX, double endX, double y) {
