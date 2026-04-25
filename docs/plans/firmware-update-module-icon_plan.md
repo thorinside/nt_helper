@@ -147,9 +147,33 @@ Five Haiku gap-analysis subagents reviewed the initial draft of this plan in par
 
 **Resolution (already in plan).** The widget test now exercises **multiple `FlashStage` values plus the `isError = true` case**, asserting (a) the `CustomPaint` is laid out at its documented size and (b) `tester.takeException()` is null after each pump. Implementation note for Step 3: `FirmwareFlowDiagram` starts a `repeat()` `AnimationController`, so tests must use `pump(Duration)` rather than `pumpAndSettle()` (which would spin forever) and dispose between cases.
 
+### Gap D — 1× DPR readability of small features (raised in round-2 audit by Agent #5)
+
+**Finding.** Even with the wider body, the round-2 readability audit noted that at 1× device pixel ratio:
+- jack circles at radius `size * 0.022` (≈ 1.1 px) antialias toward gray mush;
+- encoder vs. button radius distinction (`0.04` vs. `0.05` → 2.0 vs. 2.5 px) reads as "two same-size dots";
+- screen "text" hint strokes at strokeWidth 1, alpha 0.6 are nearly invisible on light themes.
+
+**Resolution.** Implementation tweaks (no signature, size, or call-site changes):
+- `jackRadius`: `size * 0.022` → `size * 0.026` (≈ 1.3 px) — small bump above the antialias floor.
+- `encoderRadius`: `size * 0.04` → `size * 0.035`; `buttonRadius`: `size * 0.05` → `size * 0.055`. Buttons are now ~57% larger than encoders (was ~25%) — the "large round push-button" cue from the spec is now visually unmissable at 1× DPR.
+- Hint stroke: alpha `0.6` → `0.7`, strokeWidth `1` → `1.2`. Still subordinate to the screen border, but legible on light themes.
+
+### Gap E — Test coverage breadth (raised in round-2 audit by Agent #3 and Agent #4)
+
+**Finding.** The first-pass test only exercised the default light theme at 600×150. Two recurring asks:
+1. Verify the icon also renders cleanly under a dark theme (the `screen` interior fills with `theme.colorScheme.surface`, which behaves differently in dark mode).
+2. Verify a narrower width (e.g. 300×150) does not cause overflow — desktop windows can be resized below 600 px.
+
+**Resolution.** Added two test cases in `test/ui/firmware/firmware_flow_diagram_test.dart`:
+- `renders under a dark theme without throwing` — pumps with `ThemeData(brightness: Brightness.dark)`.
+- `renders at a narrower width without overflow` — pumps inside a 300×150 SizedBox.
+The pump helper now accepts `brightness` and `width` parameters.
+
 ### Confirmations from the audit (no action needed)
 
 - **Single call site.** `FirmwareFlowDiagram` is referenced only at `firmware_update_screen.dart:783-787`. `iconSize = 50.0` is a single constant inside the painter. No hidden instantiation elsewhere — verified by grep.
 - **No other module depictions.** Searches for `drawDisting`, `_drawDistingIcon`, `module_icon`, `nt_module`, `NTModule`, `DistingIcon` returned only `firmware_flow_diagram.dart`. `lib/ui/widgets/performance/hardware_preview_widget.dart` was inspected and is a parameter-overlay widget, not a module-faceplate depiction. No consistency updates needed elsewhere.
 - **Theme integration.** Every colour in the painter resolves through `theme.colorScheme.*`; no hardcoded hex values exist or are introduced.
-- **Test directory.** `test/ui/firmware/` does not exist yet; writing the new test file creates it implicitly.
+- **Test directory.** `test/ui/firmware/` did not exist before this work — writing the new test file creates it implicitly.
+- **Golden-file tests.** The repo has no `goldens/` directory and no precedent for golden-file tests; not introduced here.

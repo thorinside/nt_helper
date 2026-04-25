@@ -8,15 +8,18 @@ Future<void> _pump(
   WidgetTester tester, {
   required FlashProgress progress,
   bool reduceMotion = false,
+  Brightness brightness = Brightness.light,
+  double width = 600,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      theme: ThemeData(brightness: brightness),
       home: MediaQuery(
         data: MediaQueryData(disableAnimations: reduceMotion),
         child: Scaffold(
           body: Center(
             child: SizedBox(
-              width: 600,
+              width: width,
               height: 150,
               child: FirmwareFlowDiagram(progress: progress),
             ),
@@ -90,6 +93,44 @@ void main() {
       expect(
         tester.getSize(find.byType(FirmwareFlowDiagram)),
         const Size(600, 150),
+      );
+    });
+
+    testWidgets('renders under a dark theme without throwing',
+        (tester) async {
+      await _pump(
+        tester,
+        progress: FlashProgress(
+          stage: FlashStage.write,
+          percent: 50,
+          message: '',
+        ),
+        brightness: Brightness.dark,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byType(FirmwareFlowDiagram)),
+        const Size(600, 150),
+      );
+    });
+
+    testWidgets('renders at a narrower width without overflow',
+        (tester) async {
+      await _pump(
+        tester,
+        progress: FlashProgress(
+          stage: FlashStage.complete,
+          percent: 100,
+          message: '',
+        ),
+        width: 300,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byType(FirmwareFlowDiagram)),
+        const Size(300, 150),
       );
     });
   });

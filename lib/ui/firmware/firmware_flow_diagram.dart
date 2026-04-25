@@ -199,8 +199,8 @@ class _FlowDiagramPainter extends CustomPainter {
     canvas.drawRRect(screenRRect, strokePaint);
 
     final hintPaint = Paint()
-      ..color = theme.colorScheme.onSurface.withValues(alpha: 0.6)
-      ..strokeWidth = 1
+      ..color = theme.colorScheme.onSurface.withValues(alpha: 0.7)
+      ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
     final hintY1 = screenRect.top + screenRect.height * 0.35;
     final hintY2 = screenRect.top + screenRect.height * 0.70;
@@ -216,7 +216,7 @@ class _FlowDiagramPainter extends CustomPainter {
     );
 
     final encoderY = top + bodyHeight * 0.36;
-    final encoderRadius = size * 0.04;
+    final encoderRadius = size * 0.035;
     final encoderXs = [
       center.dx - bodyWidth * 0.26,
       center.dx,
@@ -227,7 +227,7 @@ class _FlowDiagramPainter extends CustomPainter {
     }
 
     final buttonY = top + bodyHeight * 0.50;
-    final buttonRadius = size * 0.05;
+    final buttonRadius = size * 0.055;
     canvas.drawCircle(
       Offset(center.dx - bodyWidth * 0.26, buttonY),
       buttonRadius,
@@ -250,7 +250,7 @@ class _FlowDiagramPainter extends CustomPainter {
       dividerPaint,
     );
 
-    final jackRadius = size * 0.022;
+    final jackRadius = size * 0.026;
     final inputLeft = left + bodyWidth * 0.08;
     final inputRight = left + bodyWidth * 0.44;
     final inputTop = top + bodyHeight * 0.66;
