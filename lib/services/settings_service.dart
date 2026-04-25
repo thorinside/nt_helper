@@ -63,6 +63,7 @@ class SettingsService {
   static const String _openaiModelKey = 'openai_model';
   static const String _openaiBaseUrlKey = 'openai_base_url';
   static const String _uiScaleKey = 'ui_scale';
+  static const String _autoCenterOnSelectionKey = 'auto_center_on_selection';
 
   // Default values
   static const int defaultRequestTimeout = 200;
@@ -94,6 +95,7 @@ class SettingsService {
   static const double minUiScale = 0.7;
   static const double maxUiScale = 1.5;
   static const double uiScaleStep = 0.1;
+  static const bool defaultAutoCenterOnSelection = true;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -281,6 +283,16 @@ class SettingsService {
     return await _prefs?.setInt(_algorithmCacheDaysKey, value) ?? false;
   }
 
+  /// Check if the routing canvas should auto-center on the selected algorithm
+  bool get autoCenterOnSelection =>
+      _prefs?.getBool(_autoCenterOnSelectionKey) ??
+      defaultAutoCenterOnSelection;
+
+  /// Set whether the routing canvas should auto-center on the selected algorithm
+  Future<bool> setAutoCenterOnSelection(bool value) async {
+    return await _prefs?.setBool(_autoCenterOnSelectionKey, value) ?? false;
+  }
+
   /// Check if CPU monitor is enabled
   bool get cpuMonitorEnabled =>
       _prefs?.getBool(_cpuMonitorEnabledKey) ?? defaultCpuMonitorEnabled;
@@ -444,6 +456,7 @@ class SettingsService {
     await setCpuMonitorEnabled(defaultCpuMonitorEnabled);
     await setSplitDividerPosition(defaultSplitDividerPosition);
     await setUiScale(defaultUiScale);
+    await setAutoCenterOnSelection(defaultAutoCenterOnSelection);
   }
 }
 
