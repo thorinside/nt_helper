@@ -96,6 +96,7 @@ dependencies:
       path: flutter
   html: ^0.15.6
   flutter_markdown: ^0.7.6
+  flutter_svg: ^2.2.4
 
 dev_dependencies:
   flutter_test:
@@ -168,6 +169,7 @@ flutter:
     - docs/features/
     - assets/metadata/
     - assets/linux/
+    - assets/icons/
 
 flutter_launcher_icons:
   # ... (Keep existing launcher icon config)

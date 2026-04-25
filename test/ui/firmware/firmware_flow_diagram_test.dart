@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/models/flash_progress.dart';
 import 'package:nt_helper/models/flash_stage.dart';
@@ -52,8 +53,14 @@ void main() {
         expect(paintFinder, findsWidgets,
             reason: 'CustomPaint should be present for stage $stage');
 
-        final size =
-            tester.getSize(find.byType(FirmwareFlowDiagram));
+        final svgFinder = find.descendant(
+          of: find.byType(FirmwareFlowDiagram),
+          matching: find.byType(SvgPicture),
+        );
+        expect(svgFinder, findsOneWidget,
+            reason: 'SvgPicture should render disting NT icon for stage $stage');
+
+        final size = tester.getSize(find.byType(FirmwareFlowDiagram));
         expect(size, const Size(600, 150),
             reason: 'widget should fill its 600x150 container for stage $stage');
       }
@@ -75,6 +82,13 @@ void main() {
         tester.getSize(find.byType(FirmwareFlowDiagram)),
         const Size(600, 150),
       );
+      expect(
+        find.descendant(
+          of: find.byType(FirmwareFlowDiagram),
+          matching: find.byType(SvgPicture),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders the reduced-motion (static) variant',
@@ -93,6 +107,13 @@ void main() {
       expect(
         tester.getSize(find.byType(FirmwareFlowDiagram)),
         const Size(600, 150),
+      );
+      expect(
+        find.descendant(
+          of: find.byType(FirmwareFlowDiagram),
+          matching: find.byType(SvgPicture),
+        ),
+        findsOneWidget,
       );
     });
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nt_helper/models/flash_progress.dart';
 import 'package:nt_helper/models/flash_stage.dart';
 
@@ -17,6 +18,9 @@ class FirmwareFlowDiagram extends StatefulWidget {
 
 class _FirmwareFlowDiagramState extends State<FirmwareFlowDiagram>
     with SingleTickerProviderStateMixin {
+  static const double _iconSize = 50.0;
+  static const double _padding = 40.0;
+
   late AnimationController _controller;
 
   @override
@@ -58,44 +62,50 @@ class _FirmwareFlowDiagramState extends State<FirmwareFlowDiagram>
 
   @override
   Widget build(BuildContext context) {
-    // Check if animations should be disabled
     final reduceMotion = MediaQuery.of(context).disableAnimations;
-
     final semanticDescription = _getStageDescription();
+    final theme = Theme.of(context);
 
-    if (reduceMotion) {
-      // Static version for reduced motion
-      return Semantics(
-        label: 'Firmware update diagram: $semanticDescription',
-        liveRegion: true,
-        child: CustomPaint(
-          painter: _FlowDiagramPainter(
-            stage: widget.progress.stage,
-            isError: widget.progress.isError,
-            animationValue: 0.5,
-            theme: Theme.of(context),
-          ),
-          size: const Size(double.infinity, 150),
+    Widget paint(double animationValue) {
+      return CustomPaint(
+        painter: _FlowDiagramPainter(
+          stage: widget.progress.stage,
+          isError: widget.progress.isError,
+          animationValue: animationValue,
+          theme: theme,
+          iconSize: _iconSize,
+          padding: _padding,
         ),
+        size: const Size(double.infinity, 150),
       );
     }
 
     return Semantics(
       label: 'Firmware update diagram: $semanticDescription',
       liveRegion: true,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return CustomPaint(
-            painter: _FlowDiagramPainter(
-              stage: widget.progress.stage,
-              isError: widget.progress.isError,
-              animationValue: _controller.value,
-              theme: Theme.of(context),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: reduceMotion
+                ? paint(0.5)
+                : AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, _) => paint(_controller.value),
+                  ),
+          ),
+          Positioned(
+            top: (150 - _iconSize) / 2,
+            right: _padding,
+            width: _iconSize,
+            height: _iconSize,
+            child: SvgPicture.asset(
+              'assets/icons/disting_nt_module.svg',
+              width: _iconSize,
+              height: _iconSize,
+              semanticsLabel: 'disting NT module',
             ),
-            size: const Size(double.infinity, 150),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -106,36 +116,29 @@ class _FlowDiagramPainter extends CustomPainter {
   final bool isError;
   final double animationValue;
   final ThemeData theme;
+  final double iconSize;
+  final double padding;
 
   _FlowDiagramPainter({
     required this.stage,
     required this.isError,
     required this.animationValue,
     required this.theme,
+    required this.iconSize,
+    required this.padding,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final centerY = size.height / 2;
-    final iconSize = 50.0;
-    final padding = 40.0;
 
-    // Positions
     final computerX = padding + iconSize / 2;
     final distingX = size.width - padding - iconSize / 2;
     final lineStart = computerX + iconSize / 2 + 10;
     final lineEnd = distingX - iconSize / 2 - 10;
 
-    // Draw computer icon
     _drawComputerIcon(canvas, Offset(computerX, centerY), iconSize);
-
-    // Draw connection line
     _drawConnectionLine(canvas, lineStart, lineEnd, centerY);
-
-    // Draw Disting NT icon
-    _drawDistingIcon(canvas, Offset(distingX, centerY), iconSize);
-
-    // Draw status indicator on line
     _drawStatusIndicator(canvas, lineStart, lineEnd, centerY);
   }
 
@@ -145,14 +148,16 @@ class _FlowDiagramPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
-    // Monitor body
     final monitorRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center.translate(0, -5), width: size, height: size * 0.7),
+      Rect.fromCenter(
+        center: center.translate(0, -5),
+        width: size,
+        height: size * 0.7,
+      ),
       const Radius.circular(4),
     );
     canvas.drawRRect(monitorRect, paint);
 
-    // Monitor stand
     final standPath = Path()
       ..moveTo(center.dx - 8, center.dy + size * 0.35 - 5)
       ..lineTo(center.dx + 8, center.dy + size * 0.35 - 5)
@@ -162,144 +167,24 @@ class _FlowDiagramPainter extends CustomPainter {
     canvas.drawPath(standPath, paint);
   }
 
-  void _drawDistingIcon(Canvas canvas, Offset center, double size) {
-    final strokePaint = Paint()
-      ..color = theme.colorScheme.onSurface
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    final fillPaint = Paint()
-      ..color = theme.colorScheme.onSurface
-      ..style = PaintingStyle.fill;
-    final screenFill = Paint()
-      ..color = theme.colorScheme.surface
-      ..style = PaintingStyle.fill;
-
-    final bodyWidth = size * 0.85;
-    final bodyHeight = size;
-    final left = center.dx - bodyWidth / 2;
-    final top = center.dy - bodyHeight / 2;
-
-    final moduleRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(left, top, bodyWidth, bodyHeight),
-      const Radius.circular(3),
-    );
-    canvas.drawRRect(moduleRect, strokePaint);
-
-    final screenRect = Rect.fromLTWH(
-      left + bodyWidth * 0.10,
-      top + bodyHeight * 0.06,
-      bodyWidth * 0.80,
-      bodyHeight * 0.20,
-    );
-    final screenRRect = RRect.fromRectAndRadius(
-      screenRect,
-      const Radius.circular(1.5),
-    );
-    canvas.drawRRect(screenRRect, screenFill);
-    canvas.drawRRect(screenRRect, strokePaint);
-
-    final hintPaint = Paint()
-      ..color = theme.colorScheme.onSurface.withValues(alpha: 0.7)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-    final hintY1 = screenRect.top + screenRect.height * 0.35;
-    final hintY2 = screenRect.top + screenRect.height * 0.70;
-    canvas.drawLine(
-      Offset(screenRect.left + screenRect.width * 0.12, hintY1),
-      Offset(screenRect.left + screenRect.width * 0.55, hintY1),
-      hintPaint,
-    );
-    canvas.drawLine(
-      Offset(screenRect.left + screenRect.width * 0.18, hintY2),
-      Offset(screenRect.left + screenRect.width * 0.78, hintY2),
-      hintPaint,
-    );
-
-    final encoderY = top + bodyHeight * 0.36;
-    final encoderRadius = size * 0.035;
-    final encoderXs = [
-      center.dx - bodyWidth * 0.26,
-      center.dx,
-      center.dx + bodyWidth * 0.26,
-    ];
-    for (final x in encoderXs) {
-      canvas.drawCircle(Offset(x, encoderY), encoderRadius, fillPaint);
-    }
-
-    final buttonY = top + bodyHeight * 0.50;
-    final buttonRadius = size * 0.055;
-    canvas.drawCircle(
-      Offset(center.dx - bodyWidth * 0.26, buttonY),
-      buttonRadius,
-      fillPaint,
-    );
-    canvas.drawCircle(
-      Offset(center.dx + bodyWidth * 0.26, buttonY),
-      buttonRadius,
-      fillPaint,
-    );
-
-    final dividerPaint = Paint()
-      ..color = theme.colorScheme.onSurface.withValues(alpha: 0.3)
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
-    final dividerY = top + bodyHeight * 0.59;
-    canvas.drawLine(
-      Offset(left + bodyWidth * 0.10, dividerY),
-      Offset(left + bodyWidth - bodyWidth * 0.10, dividerY),
-      dividerPaint,
-    );
-
-    final jackRadius = size * 0.026;
-    final inputLeft = left + bodyWidth * 0.08;
-    final inputRight = left + bodyWidth * 0.44;
-    final inputTop = top + bodyHeight * 0.66;
-    final inputBottom = top + bodyHeight * 0.94;
-    for (int row = 0; row < 4; row++) {
-      for (int col = 0; col < 3; col++) {
-        final x = inputLeft +
-            (inputRight - inputLeft) * (col / 2);
-        final y = inputTop +
-            (inputBottom - inputTop) * (row / 3);
-        canvas.drawCircle(Offset(x, y), jackRadius, fillPaint);
-      }
-    }
-
-    final outputLeft = left + bodyWidth * 0.58;
-    final outputRight = left + bodyWidth - bodyWidth * 0.10;
-    final outputTop = top + bodyHeight * 0.68;
-    final outputBottom = top + bodyHeight * 0.90;
-    for (int row = 0; row < 3; row++) {
-      for (int col = 0; col < 2; col++) {
-        final x = outputLeft + (outputRight - outputLeft) * col;
-        final y = outputTop +
-            (outputBottom - outputTop) * (row / 2);
-        canvas.drawCircle(Offset(x, y), jackRadius, fillPaint);
-      }
-    }
-  }
-
-  void _drawConnectionLine(Canvas canvas, double startX, double endX, double y) {
-    final lineColor = isError
-        ? theme.colorScheme.error
-        : _getLineColor();
+  void _drawConnectionLine(
+      Canvas canvas, double startX, double endX, double y) {
+    final lineColor = isError ? theme.colorScheme.error : _getLineColor();
 
     final linePaint = Paint()
       ..color = lineColor
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
 
-    // Determine line style based on stage
     if (stage == FlashStage.sdpConnect) {
-      // Dashed line while connecting
       _drawDashedLine(canvas, startX, endX, y, linePaint);
     } else {
-      // Solid line once connected
       canvas.drawLine(Offset(startX, y), Offset(endX, y), linePaint);
     }
   }
 
-  void _drawDashedLine(Canvas canvas, double startX, double endX, double y, Paint paint) {
+  void _drawDashedLine(
+      Canvas canvas, double startX, double endX, double y, Paint paint) {
     const dashWidth = 8.0;
     const dashSpace = 6.0;
     double currentX = startX;
@@ -311,29 +196,27 @@ class _FlowDiagramPainter extends CustomPainter {
     }
   }
 
-  void _drawStatusIndicator(Canvas canvas, double lineStart, double lineEnd, double y) {
+  void _drawStatusIndicator(
+      Canvas canvas, double lineStart, double lineEnd, double y) {
     if (isError) {
-      // Error X mark
       _drawErrorMark(canvas, (lineStart + lineEnd) / 2, y);
       return;
     }
 
     if (stage == FlashStage.complete) {
-      // Checkmark for complete
       _drawCheckmark(canvas, (lineStart + lineEnd) / 2, y);
       return;
     }
 
-    // Animated flow dots for uploading/writing
     if (stage == FlashStage.sdpUpload || stage == FlashStage.write) {
       _drawFlowDots(canvas, lineStart, lineEnd, y);
     } else if (stage == FlashStage.sdpConnect) {
-      // Pulsing dot for connecting
       _drawPulsingDot(canvas, (lineStart + lineEnd) / 2, y);
     }
   }
 
-  void _drawFlowDots(Canvas canvas, double lineStart, double lineEnd, double y) {
+  void _drawFlowDots(
+      Canvas canvas, double lineStart, double lineEnd, double y) {
     final dotPaint = Paint()
       ..color = theme.colorScheme.primary
       ..style = PaintingStyle.fill;
@@ -346,7 +229,6 @@ class _FlowDiagramPainter extends CustomPainter {
       final basePosition = (animationValue + i / numDots) % 1.0;
       final x = lineStart + basePosition * lineLength;
 
-      // Fade in/out at edges
       double opacity = 1.0;
       final edgeFade = lineLength * 0.15;
       if (x - lineStart < edgeFade) {
@@ -358,7 +240,8 @@ class _FlowDiagramPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(x, y),
         dotRadius,
-        dotPaint..color = theme.colorScheme.primary.withValues(alpha: opacity),
+        dotPaint
+          ..color = theme.colorScheme.primary.withValues(alpha: opacity),
       );
     }
   }
@@ -381,13 +264,11 @@ class _FlowDiagramPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Draw circle background
     final bgPaint = Paint()
       ..color = theme.colorScheme.primaryContainer
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(x, y), 16, bgPaint);
 
-    // Draw checkmark
     final path = Path()
       ..moveTo(x - 8, y)
       ..lineTo(x - 2, y + 6)
@@ -402,13 +283,11 @@ class _FlowDiagramPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Draw circle background
     final bgPaint = Paint()
       ..color = theme.colorScheme.errorContainer
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(x, y), 16, bgPaint);
 
-    // Draw X
     canvas.drawLine(Offset(x - 6, y - 6), Offset(x + 6, y + 6), paint);
     canvas.drawLine(Offset(x + 6, y - 6), Offset(x - 6, y + 6), paint);
   }
