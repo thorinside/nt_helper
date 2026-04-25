@@ -485,6 +485,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _showDebugPanel;
   late bool _showContextualHelp;
   late bool _cpuMonitorEnabled;
+  late bool _autoCenterOnSelection;
   late double _uiScale;
 
   @override
@@ -507,6 +508,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _showDebugPanel = settings.showDebugPanel;
       _showContextualHelp = settings.showContextualHelp;
       _cpuMonitorEnabled = settings.cpuMonitorEnabled;
+      _autoCenterOnSelection = settings.autoCenterOnSelection;
       _uiScale = settings.uiScale;
     });
   }
@@ -531,6 +533,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setShowDebugPanel(_showDebugPanel);
       await settings.setShowContextualHelp(_showContextualHelp);
       await settings.setCpuMonitorEnabled(_cpuMonitorEnabled);
+      await settings.setAutoCenterOnSelection(_autoCenterOnSelection);
       await settings.setUiScale(_uiScale);
 
       if (mounted) {
@@ -817,6 +820,24 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       onChanged: (value) {
                         setState(() {
                           _showContextualHelp = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    // Auto-center on algorithm selection setting
+                    SwitchListTile(
+                      title: Text(
+                        'Auto-Center on Algorithm Selection',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                        'Automatically scroll the routing canvas to the selected algorithm',
+                      ),
+                      value: _autoCenterOnSelection,
+                      onChanged: (value) {
+                        setState(() {
+                          _autoCenterOnSelection = value;
                         });
                       },
                       contentPadding: EdgeInsets.zero,
