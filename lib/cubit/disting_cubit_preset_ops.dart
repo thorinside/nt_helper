@@ -40,7 +40,10 @@ mixin _DistingCubitPresetOps on _DistingCubitBase {
 
       // 2) Send request in background (works for online + offline managers)
       final disting = currentState.disting;
-      disting.requestSetPresetName(trimmed).catchError((e, s) {
+      disting.requestSetPresetName(trimmed).then((_) {
+        // Auto-save via the same path as the manual "Save Preset" action.
+        disting.requestSavePreset().catchError((_) {});
+      }, onError: (e, s) {
         // If rename fails, fall back to device truth via a lightweight read.
         _renamePresetVerificationOperation?.cancel();
         _renamePresetVerificationOperation = CancelableOperation.fromFuture(
