@@ -2,7 +2,7 @@ part of 'disting_cubit.dart';
 
 class _MonitoringDelegate {
   _MonitoringDelegate(this._cubit) {
-    _cpuUsageController = StreamController<CpuUsage>.broadcast(
+    _cpuUsageController = StreamController<CpuUsage?>.broadcast(
       onListen: _startCpuUsagePolling,
       onCancel: _checkStopCpuUsagePolling,
     );
@@ -11,7 +11,7 @@ class _MonitoringDelegate {
   final DistingCubit _cubit;
 
   // CPU Usage Streaming
-  late final StreamController<CpuUsage> _cpuUsageController;
+  late final StreamController<CpuUsage?> _cpuUsageController;
   Timer? _cpuUsageTimer;
   static const Duration _cpuUsagePollingInterval = Duration(seconds: 10);
 
@@ -19,7 +19,7 @@ class _MonitoringDelegate {
   UsbVideoManager? _videoManager;
   StreamSubscription<VideoStreamState>? _videoStateSubscription;
 
-  Stream<CpuUsage> get cpuUsageStream => _cpuUsageController.stream;
+  Stream<CpuUsage?> get cpuUsageStream => _cpuUsageController.stream;
   VideoStreamState? get currentVideoState => _videoManager?.currentState;
   UsbVideoManager? get videoManager => _videoManager;
 
@@ -117,12 +117,14 @@ class _MonitoringDelegate {
   Future<void> _pollCpuUsageOnce() async {
     try {
       final cpuUsage = await getCpuUsage();
-      if (cpuUsage != null && !_cpuUsageController.isClosed) {
+      if (!_cpuUsageController.isClosed) {
         _cpuUsageController.add(cpuUsage);
       }
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
-      // Don't add error to stream, just log it
+      if (!_cpuUsageController.isClosed) {
+        _cpuUsageController.add(null);
+      }
     }
   }
 
