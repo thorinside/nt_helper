@@ -12,10 +12,19 @@ class PresetFileSystemImpl implements PresetFileSystem {
     String directoryPath, {
     bool recursive = false,
   }) async {
+    final entries = await listEntries(directoryPath, recursive: recursive);
+    return [for (final e in entries) e.path];
+  }
+
+  @override
+  Future<List<FileEntryInfo>> listEntries(
+    String directoryPath, {
+    bool recursive = false,
+  }) async {
     final listing = await manager.requestDirectoryListing(directoryPath);
     if (listing == null) return [];
 
-    final result = <String>[];
+    final result = <FileEntryInfo>[];
     for (final entry in listing.entries) {
       // Hardware appends '/' to directory names — strip it for path construction
       final entryName = entry.name.endsWith('/')
@@ -24,13 +33,25 @@ class PresetFileSystemImpl implements PresetFileSystem {
       final entryPath = '$directoryPath/$entryName';
       if (entry.isDirectory) {
         if (recursive) {
-          result.addAll(await listFiles(entryPath, recursive: true));
+          result.addAll(await listEntries(entryPath, recursive: true));
         }
       } else {
-        result.add(entryPath);
+        result.add(FileEntryInfo(path: entryPath, size: entry.size));
       }
     }
     return result;
+  }
+
+  @override
+  Future<int?> getFileSize(String relativePath) async {
+    final slash = relativePath.lastIndexOf('/');
+    if (slash <= 0) return null;
+    final parent = relativePath.substring(0, slash);
+    final entries = await listEntries(parent);
+    for (final e in entries) {
+      if (e.path == relativePath) return e.size;
+    }
+    return null;
   }
 
   @override

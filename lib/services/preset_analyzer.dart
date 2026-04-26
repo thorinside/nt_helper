@@ -67,6 +67,25 @@ class PresetAnalyzer {
   /// `timbres[]` array — just one folder per slot.
   static const _topLevelMultisampleGuids = <String>{'pymu'};
 
+  /// Algorithm GUIDs that consume MIDI files from `/MIDI/`. Selection is
+  /// by parameter-array index into a runtime directory listing, so we
+  /// bundle the entire `MIDI/` tree and let the destination NT pick the
+  /// same index.
+  static const _midiUsingGuids = <String>{'midp'};
+
+  /// Algorithm GUIDs that consume Scala / KBM tuning files from `/scl/`
+  /// and `/kbm/`. Same indexed-selection rationale as `_midiUsingGuids`.
+  /// Verified by scanning `docs/algorithms/*.json` for `Microtuning` /
+  /// `Scala .scl` / `Scala .kbm` parameters.
+  static const _scaleUsingGuids = <String>{
+    'quan', // Quantizer
+    'trak', // Tracker
+    'ssjw', // Seaside Jawari
+    'pyfm', // Poly FM
+    'tuns', // Tuner (simple)
+    'tunf', // Tuner (fancy)
+  };
+
   static void _analyzeSlot(Map<String, dynamic> slot, PresetDependencies deps) {
     final rawGuid = slot['guid']?.toString();
     if (rawGuid == null) return;
@@ -122,10 +141,22 @@ class PresetAnalyzer {
 
     // Individual samples from triggers (sample-player style algorithms).
     // Stored as `<folder>/<sample>` relative to `/samples/`.
+    //
+    // The `sample` field can also hold a firmware token like `<MULTISAMPLE>`
+    // — in that case the algorithm picks a file from the folder at runtime
+    // by pitch/velocity/round-robin, and the destination NT needs the
+    // whole folder to do the same. We treat any `<…>` token as a folder
+    // reference rather than a single-file reference.
     if (slot['triggers'] != null) {
       for (final trigger in slot['triggers']) {
-        if (trigger['folder'] != null && trigger['sample'] != null) {
-          deps.sampleFiles.add('${trigger['folder']}/${trigger['sample']}');
+        final folder = trigger['folder']?.toString().trim();
+        final sample = trigger['sample']?.toString().trim();
+        if (folder == null || folder.isEmpty) continue;
+
+        if (sample == null || sample.isEmpty || sample.startsWith('<')) {
+          deps.sampleFolders.add(folder);
+        } else {
+          deps.sampleFiles.add('$folder/$sample');
         }
       }
     }
@@ -143,6 +174,16 @@ class PresetAnalyzer {
         slot['folder'] != null &&
         slot['folder'].toString().trim().isNotEmpty) {
       deps.multisampleFolders.add(slot['folder']);
+    }
+
+    // Whole-tree bundling for algorithms that reference files by
+    // parameter-array index (no name strings in the JSON to resolve).
+    if (_midiUsingGuids.contains(guid)) {
+      deps.bundleMidiTree = true;
+    }
+    if (_scaleUsingGuids.contains(guid)) {
+      deps.bundleSclTree = true;
+      deps.bundleKbmTree = true;
     }
   }
 
@@ -175,11 +216,30 @@ class PresetAnalyzer {
       }
     }
 
-    // Check for missing trigger sample files
+    // Check for missing trigger sample files. After the `<MULTISAMPLE>`
+    // fix, `sampleFiles` only contains explicit-filename triggers, so a
+    // path-presence check is the right shape here.
     for (final relPath in dependencies.sampleFiles) {
       if (!foundFiles.contains('samples/$relPath')) {
         missing.add('samples/$relPath');
       }
+    }
+
+    // Check for missing sample folders. Folder-style deps (including
+    // `<MULTISAMPLE>` triggers) need at least one collected file under the
+    // canonical path; if none arrived, the folder genuinely doesn't exist
+    // on the SD card.
+    for (final folder in dependencies.sampleFolders) {
+      final hasAny = foundFiles.any((p) => p.startsWith('samples/$folder/'));
+      if (!hasAny) missing.add('samples/$folder/');
+    }
+
+    // Check for missing multisample folders.
+    for (final folder in dependencies.multisampleFolders) {
+      final hasAny = foundFiles.any(
+        (p) => p.startsWith('multisamples/$folder/'),
+      );
+      if (!hasAny) missing.add('multisamples/$folder/');
     }
 
     // Check for missing granulator samples

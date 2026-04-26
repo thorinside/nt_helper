@@ -32,6 +32,9 @@ class PackageCreator {
     required String presetFilePath, // e.g., "presets/MyPreset.json"
     required PackageConfig config,
     void Function(String status)? onProgress,
+    void Function(FileProgressUpdate update)? onFileProgress,
+    int? estimatedFileCount,
+    int? estimatedTotalBytes,
     Map<String, String>? pluginPaths,
   }) async {
     try {
@@ -64,6 +67,9 @@ class PackageCreator {
       final collection = await fileCollector.collectDependencies(
         dependencies,
         config: config,
+        onProgress: onFileProgress,
+        filesTotal: estimatedFileCount,
+        bytesTotal: estimatedTotalBytes,
       );
       final dependencyFiles = collection.files;
 

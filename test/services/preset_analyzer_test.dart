@@ -384,5 +384,95 @@ void main() {
 
       expect(deps.granulatorSamples, {'kick.wav'});
     });
+
+    test('<MULTISAMPLE> trigger maps to folder, not file', () {
+      // The firmware token `<MULTISAMPLE>` means "the algorithm picks a
+      // file from this folder by pitch/velocity at runtime". The whole
+      // folder must travel; no single-file path should be added.
+      final preset = {
+        'slots': [
+          {
+            'guid': 'samp',
+            'triggers': [
+              {'folder': 'MD16_Kit', 'sample': '<MULTISAMPLE>'},
+            ],
+          },
+        ],
+      };
+
+      final deps = PresetAnalyzer.analyzeDependencies(preset);
+
+      expect(deps.sampleFolders, contains('MD16_Kit'));
+      expect(
+        deps.sampleFiles.any((p) => p.contains('<MULTISAMPLE>')),
+        isFalse,
+      );
+    });
+
+    test('explicit-filename trigger still maps to single-file', () {
+      final preset = {
+        'slots': [
+          {
+            'guid': 'samp',
+            'triggers': [
+              {'folder': 'MD16_Kit', 'sample': 'kick.wav'},
+            ],
+          },
+        ],
+      };
+
+      final deps = PresetAnalyzer.analyzeDependencies(preset);
+
+      expect(deps.sampleFiles, contains('MD16_Kit/kick.wav'));
+      expect(deps.sampleFolders, isNot(contains('MD16_Kit')));
+    });
+
+    test('trigger with no folder is silently skipped', () {
+      final preset = {
+        'slots': [
+          {
+            'guid': 'samp',
+            'triggers': [
+              {'sample': 'kick.wav'},
+              {'folder': '', 'sample': 'snare.wav'},
+            ],
+          },
+        ],
+      };
+
+      final deps = PresetAnalyzer.analyzeDependencies(preset);
+
+      expect(deps.sampleFiles, isEmpty);
+      expect(deps.sampleFolders, isEmpty);
+    });
+
+    test('midp slot triggers MIDI-tree bundling', () {
+      // MIDI Player references files by parameter-array index, not by
+      // name string — we bundle the whole tree.
+      final preset = {
+        'slots': [
+          {'guid': 'midp', 'parameters': [0, 1, 1, 1, 0]},
+        ],
+      };
+
+      final deps = PresetAnalyzer.analyzeDependencies(preset);
+
+      expect(deps.bundleMidiTree, isTrue);
+      expect(deps.bundleSclTree, isFalse);
+    });
+
+    test('quan slot triggers scl + kbm bundling', () {
+      final preset = {
+        'slots': [
+          {'guid': 'quan', 'parameters': [0]},
+        ],
+      };
+
+      final deps = PresetAnalyzer.analyzeDependencies(preset);
+
+      expect(deps.bundleSclTree, isTrue);
+      expect(deps.bundleKbmTree, isTrue);
+      expect(deps.bundleMidiTree, isFalse);
+    });
   });
 }

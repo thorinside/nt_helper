@@ -5,6 +5,8 @@ class PackageConfig {
   final bool includeFMBanks;
   final bool includeThreePot;
   final bool includeLua;
+  final bool includeMidiTree;
+  final bool includeScales;
   final bool includeReadme;
   final bool includeCommunityPlugins;
 
@@ -14,6 +16,12 @@ class PackageConfig {
     this.includeFMBanks = true,
     this.includeThreePot = true,
     this.includeLua = true,
+    // MIDI Player and Quantizer/microtuning algorithms reference files by
+    // index into a runtime directory listing, not by name. We bundle the
+    // whole `MIDI/`, `scl/`, `kbm/` trees so the destination NT can resolve
+    // the same index. Trees are small in practice; user may opt out.
+    this.includeMidiTree = true,
+    this.includeScales = true,
     this.includeReadme = true,
     // Community plugins are included by default so a packaged preset
     // can be restored onto a blank SD card without separately tracking
@@ -27,6 +35,8 @@ class PackageConfig {
     bool? includeFMBanks,
     bool? includeThreePot,
     bool? includeLua,
+    bool? includeMidiTree,
+    bool? includeScales,
     bool? includeReadme,
     bool? includeCommunityPlugins,
   }) {
@@ -36,6 +46,8 @@ class PackageConfig {
       includeFMBanks: includeFMBanks ?? this.includeFMBanks,
       includeThreePot: includeThreePot ?? this.includeThreePot,
       includeLua: includeLua ?? this.includeLua,
+      includeMidiTree: includeMidiTree ?? this.includeMidiTree,
+      includeScales: includeScales ?? this.includeScales,
       includeReadme: includeReadme ?? this.includeReadme,
       includeCommunityPlugins:
           includeCommunityPlugins ?? this.includeCommunityPlugins,

@@ -511,4 +511,141 @@ void main() {
       verifyNever(() => mockFileSystem.readFile(any()));
     });
   });
+
+  group('FileCollector - de-dup guard', () {
+    test('does not double-collect a file referenced via folder + path',
+        () async {
+      // Folder copy includes `kick.wav`; explicit `sampleFiles` entry also
+      // points at it. The single-file pass should short-circuit on the
+      // already-collected path.
+      final deps = PresetDependencies();
+      deps.sampleFolders.add('MD16_Kit');
+      deps.sampleFiles.add('MD16_Kit/kick.wav');
+
+      when(
+        () => mockFileSystem.listFiles(
+          'samples/MD16_Kit',
+          recursive: any(named: 'recursive'),
+        ),
+      ).thenAnswer(
+        (_) async => ['samples/MD16_Kit/kick.wav', 'samples/MD16_Kit/snare.wav'],
+      );
+      when(() => mockFileSystem.readFile('samples/MD16_Kit/kick.wav'))
+          .thenAnswer((_) async => Uint8List.fromList([1]));
+      when(() => mockFileSystem.readFile('samples/MD16_Kit/snare.wav'))
+          .thenAnswer((_) async => Uint8List.fromList([2]));
+
+      final result = await fileCollector.collectDependencies(deps);
+
+      final paths = result.files.map((f) => f.relativePath).toList();
+      expect(paths, hasLength(2));
+      // Each path appears exactly once.
+      expect(paths.toSet().length, 2);
+      expect(paths, contains('samples/MD16_Kit/kick.wav'));
+      expect(paths, contains('samples/MD16_Kit/snare.wav'));
+    });
+
+    test('wavetable folder with many slices collects all of them', () async {
+      // Regression guard: wavetables are folders of WAV slices. Earlier
+      // implementations only grabbed the first file or fell back to a
+      // single-file at the root.
+      final deps = PresetDependencies();
+      deps.wavetables.add('BigTable');
+
+      final slicePaths = [
+        for (var i = 1; i <= 64; i++)
+          'wavetables/BigTable/${i.toString().padLeft(2, '0')}.wav',
+      ];
+      when(
+        () => mockFileSystem.listFiles(
+          'wavetables/BigTable',
+          recursive: any(named: 'recursive'),
+        ),
+      ).thenAnswer((_) async => slicePaths);
+      for (final p in slicePaths) {
+        when(() => mockFileSystem.readFile(p))
+            .thenAnswer((_) async => Uint8List.fromList([0x52, 0x49, 0x46, 0x46]));
+      }
+
+      final result = await fileCollector.collectDependencies(deps);
+
+      expect(result.files, hasLength(64));
+      expect(result.warnings, isEmpty);
+    });
+  });
+
+  group('FileCollector - whole-tree bundling', () {
+    test('bundleMidiTree collects every MIDI file under /MIDI/', () async {
+      final deps = PresetDependencies();
+      deps.bundleMidiTree = true;
+
+      when(
+        () => mockFileSystem.listFiles(
+          'MIDI',
+          recursive: any(named: 'recursive'),
+        ),
+      ).thenAnswer((_) async => [
+            'MIDI/Demo/song1.mid',
+            'MIDI/Demo/song2.mid',
+            'MIDI/Demo/notes.txt', // wrong extension — must be skipped
+          ]);
+      when(() => mockFileSystem.readFile('MIDI/Demo/song1.mid'))
+          .thenAnswer((_) async => Uint8List.fromList([0x4D, 0x54, 0x68, 0x64]));
+      when(() => mockFileSystem.readFile('MIDI/Demo/song2.mid'))
+          .thenAnswer((_) async => Uint8List.fromList([0x4D, 0x54, 0x68, 0x64]));
+
+      final result = await fileCollector.collectDependencies(deps);
+
+      final paths = result.files.map((f) => f.relativePath).toSet();
+      expect(paths, contains('MIDI/Demo/song1.mid'));
+      expect(paths, contains('MIDI/Demo/song2.mid'));
+      expect(paths, isNot(contains('MIDI/Demo/notes.txt')));
+    });
+
+    test('includeMidiTree=false skips MIDI tree even if flag is set',
+        () async {
+      final deps = PresetDependencies();
+      deps.bundleMidiTree = true;
+
+      final result = await fileCollector.collectDependencies(
+        deps,
+        config: const PackageConfig(includeMidiTree: false),
+      );
+
+      expect(result.files, isEmpty);
+      verifyNever(
+        () => mockFileSystem.listFiles('MIDI', recursive: any(named: 'recursive')),
+      );
+    });
+
+    test('bundleSclTree + bundleKbmTree collect their respective trees',
+        () async {
+      final deps = PresetDependencies();
+      deps.bundleSclTree = true;
+      deps.bundleKbmTree = true;
+
+      when(
+        () => mockFileSystem.listFiles(
+          'scl',
+          recursive: any(named: 'recursive'),
+        ),
+      ).thenAnswer((_) async => ['scl/12tone.scl', 'scl/19tone.scl']);
+      when(
+        () => mockFileSystem.listFiles(
+          'kbm',
+          recursive: any(named: 'recursive'),
+        ),
+      ).thenAnswer((_) async => ['kbm/standard.kbm']);
+      when(() => mockFileSystem.readFile(any())).thenAnswer(
+        (_) async => Uint8List.fromList([0x21]),
+      );
+
+      final result = await fileCollector.collectDependencies(deps);
+
+      final paths = result.files.map((f) => f.relativePath).toSet();
+      expect(paths, contains('scl/12tone.scl'));
+      expect(paths, contains('scl/19tone.scl'));
+      expect(paths, contains('kbm/standard.kbm'));
+    });
+  });
 }

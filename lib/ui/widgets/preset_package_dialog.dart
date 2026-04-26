@@ -5,6 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/package_config.dart';
+import 'package:nt_helper/services/file_collector.dart';
+import 'package:nt_helper/services/package_estimator.dart';
 import 'package:nt_helper/services/preset_analyzer.dart';
 import 'package:nt_helper/services/package_creator.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -32,9 +34,12 @@ class PresetPackageDialog extends StatefulWidget {
 
 class _PresetPackageDialogState extends State<PresetPackageDialog> {
   PresetDependencies? dependencies;
+  PackageSizeEstimate? estimate;
   bool isAnalyzing = false;
+  bool isEstimating = false;
   bool isPackaging = false;
   String _status = '';
+  FileProgressUpdate? _fileProgress;
   PackageConfig config = const PackageConfig();
 
   @override
@@ -73,19 +78,49 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
 
       setState(() {
         dependencies = deps;
+        isAnalyzing = false;
       });
+
+      // Kick off size estimate now that we know the deps. This is
+      // advisory only — the actual zip is built fresh when the user
+      // clicks Export.
+      _runEstimate();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error analyzing preset: $e')));
-    } finally {
       setState(() => isAnalyzing = false);
     }
   }
 
+  Future<void> _runEstimate() async {
+    final deps = dependencies;
+    if (deps == null) return;
+    setState(() => isEstimating = true);
+    try {
+      final estimator = PackageEstimator(widget.fileSystem);
+      final result = await estimator.estimate(deps, config: config);
+      if (!mounted) return;
+      setState(() {
+        estimate = result;
+        isEstimating = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      // Failure is non-fatal: dialog just shows "Size unknown".
+      setState(() {
+        estimate = null;
+        isEstimating = false;
+      });
+    }
+  }
+
   Future<void> _createPackage() async {
-    setState(() => isPackaging = true);
+    setState(() {
+      isPackaging = true;
+      _fileProgress = null;
+    });
 
     // Save context references before async operations.
     // `rootNavigator` is the parent that hosts this dialog — we use it
@@ -113,6 +148,10 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           presetFilePath: widget.presetFilePath,
           config: config,
           onProgress: (status) => setState(() => _status = status),
+          onFileProgress: (update) =>
+              setState(() => _fileProgress = update),
+          estimatedFileCount: estimate?.fileCount,
+          estimatedTotalBytes: estimate?.totalBytes,
           pluginPaths: widget.pluginPaths,
         );
 
@@ -151,43 +190,36 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
         child: Text('Package: $presetName'),
       ),
       content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (isAnalyzing) ...[
-              Center(
-                child: Semantics(
-                  label: 'Analyzing preset dependencies',
-                  child: const CircularProgressIndicator(),
+        width: 480,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isAnalyzing) ...[
+                Center(
+                  child: Semantics(
+                    label: 'Analyzing preset dependencies',
+                    child: const CircularProgressIndicator(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Analyzing preset dependencies...'),
-            ] else if (dependencies != null) ...[
-              Text('Dependencies found: ${dependencies!.totalCount}'),
-              const SizedBox(height: 16),
-              _buildDependencyList(),
-              const SizedBox(height: 16),
-              _buildConfigOptions(),
+                const SizedBox(height: 16),
+                const Text('Analyzing preset dependencies...'),
+              ] else if (dependencies != null) ...[
+                Text('Dependencies found: ${dependencies!.totalCount}'),
+                const SizedBox(height: 16),
+                _buildDependencyList(),
+                const SizedBox(height: 12),
+                _buildSizeEstimate(),
+                const SizedBox(height: 12),
+                _buildConfigOptions(),
+              ],
+              if (isPackaging) ...[
+                const SizedBox(height: 16),
+                _buildPackagingProgress(),
+              ],
             ],
-            if (isPackaging) ...[
-              const SizedBox(height: 16),
-              Center(
-                child: Semantics(
-                  label: 'Creating package: $_status',
-                  child: const CircularProgressIndicator(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _status,
-                style: const TextStyle(fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
       actions: [
@@ -208,6 +240,107 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               : const Text('Create Package'),
         ),
       ],
+    );
+  }
+
+  Widget _buildPackagingProgress() {
+    final fp = _fileProgress;
+    final totalFiles = fp?.filesTotal ?? estimate?.fileCount;
+    final totalBytes = fp?.bytesTotal ?? estimate?.totalBytes;
+    double? fraction;
+    if (fp != null && totalBytes != null && totalBytes > 0) {
+      fraction = (fp.bytesCompleted / totalBytes).clamp(0.0, 1.0);
+    } else if (fp != null && totalFiles != null && totalFiles > 0) {
+      fraction = (fp.filesCompleted / totalFiles).clamp(0.0, 1.0);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinearProgressIndicator(value: fraction),
+        const SizedBox(height: 8),
+        if (fp != null) ...[
+          Text(
+            'Reading: ${fp.currentPath}',
+            style: const TextStyle(fontSize: 12),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            totalFiles != null
+                ? '${fp.filesCompleted}/$totalFiles files · '
+                    '${_formatBytes(fp.bytesCompleted)}'
+                    '${totalBytes != null ? ' / ${_formatBytes(totalBytes)}' : ''}'
+                : '${fp.filesCompleted} files · ${_formatBytes(fp.bytesCompleted)}',
+            style: const TextStyle(fontSize: 12),
+          ),
+        ] else ...[
+          Text(
+            _status,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSizeEstimate() {
+    if (isEstimating) {
+      return Row(
+        children: const [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 8),
+          Text('Estimating package size...', style: TextStyle(fontSize: 12)),
+        ],
+      );
+    }
+    final est = estimate;
+    if (est == null) {
+      return const Text(
+        'Estimated package size: unknown',
+        style: TextStyle(fontSize: 12),
+      );
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Estimated package size: ${_formatBytes(est.totalBytes)} '
+              '(${est.fileCount} files)',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            if (est.warnings.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${est.warnings.length} item(s) could not be sized — '
+                'estimate is a lower bound.',
+                style: const TextStyle(fontSize: 11, color: Colors.orange),
+              ),
+            ],
+            if (est.folders.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              for (final f in est.folders.take(8))
+                Text(
+                  '  ${f.path}: ${_formatBytes(f.bytes)} '
+                  '(${f.fileCount} ${f.fileCount == 1 ? 'file' : 'files'})',
+                  style: const TextStyle(fontSize: 11),
+                ),
+              if (est.folders.length > 8)
+                Text(
+                  '  …and ${est.folders.length - 8} more',
+                  style: const TextStyle(fontSize: 11),
+                ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -247,6 +380,10 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               ),
             if (dependencies!.luaScripts.isNotEmpty)
               Text('Lua scripts: ${dependencies!.luaScripts.length}'),
+            if (dependencies!.bundleMidiTree)
+              const Text('MIDI files: bundling /MIDI tree'),
+            if (dependencies!.bundleSclTree || dependencies!.bundleKbmTree)
+              const Text('Tuning files: bundling /scl + /kbm trees'),
             if (dependencies!.communityPlugins.isNotEmpty) ...[
               Text(
                 'Community plugins: ${dependencies!.communityPlugins.length}',
@@ -284,32 +421,32 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
             CheckboxListTile(
               title: const Text('Include Wavetables'),
               value: config.includeWavetables,
-              onChanged: (value) => setState(
-                () => config = config.copyWith(includeWavetables: value),
+              onChanged: (value) => _updateConfig(
+                config.copyWith(includeWavetables: value),
               ),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include Samples & Multisamples'),
               value: config.includeSamples,
-              onChanged: (value) => setState(
-                () => config = config.copyWith(includeSamples: value),
+              onChanged: (value) => _updateConfig(
+                config.copyWith(includeSamples: value),
               ),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include FM Banks'),
               value: config.includeFMBanks,
-              onChanged: (value) => setState(
-                () => config = config.copyWith(includeFMBanks: value),
+              onChanged: (value) => _updateConfig(
+                config.copyWith(includeFMBanks: value),
               ),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include Three Pot Programs'),
               value: config.includeThreePot,
-              onChanged: (value) => setState(
-                () => config = config.copyWith(includeThreePot: value),
+              onChanged: (value) => _updateConfig(
+                config.copyWith(includeThreePot: value),
               ),
               dense: true,
             ),
@@ -317,14 +454,39 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               title: const Text('Include Lua Scripts'),
               value: config.includeLua,
               onChanged: (value) =>
-                  setState(() => config = config.copyWith(includeLua: value)),
+                  _updateConfig(config.copyWith(includeLua: value)),
               dense: true,
             ),
+            if (dependencies?.bundleMidiTree == true)
+              CheckboxListTile(
+                title: const Text('Include MIDI Files'),
+                subtitle: const Text(
+                  'Bundles entire /MIDI/ tree (firmware selects by index)',
+                ),
+                value: config.includeMidiTree,
+                onChanged: (value) => _updateConfig(
+                  config.copyWith(includeMidiTree: value),
+                ),
+                dense: true,
+              ),
+            if (dependencies?.bundleSclTree == true ||
+                dependencies?.bundleKbmTree == true)
+              CheckboxListTile(
+                title: const Text('Include Scales (.scl / .kbm)'),
+                subtitle: const Text(
+                  'Bundles entire /scl/ and /kbm/ trees',
+                ),
+                value: config.includeScales,
+                onChanged: (value) => _updateConfig(
+                  config.copyWith(includeScales: value),
+                ),
+                dense: true,
+              ),
             CheckboxListTile(
               title: const Text('Include README'),
               value: config.includeReadme,
-              onChanged: (value) => setState(
-                () => config = config.copyWith(includeReadme: value),
+              onChanged: (value) => _updateConfig(
+                config.copyWith(includeReadme: value),
               ),
               dense: true,
             ),
@@ -336,10 +498,8 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
                 ),
                 value: config.includeCommunityPlugins,
                 onChanged: (value) {
-                  setState(
-                    () => config = config.copyWith(
-                      includeCommunityPlugins: value,
-                    ),
+                  _updateConfig(
+                    config.copyWith(includeCommunityPlugins: value),
                   );
                   // Save preference for future exports
                   SettingsService().setIncludeCommunityPlugins(value ?? false);
@@ -350,6 +510,24 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
         ),
       ),
     );
+  }
+
+  void _updateConfig(PackageConfig next) {
+    setState(() => config = next);
+    // Re-estimate when toggles change so the size summary stays in sync
+    // with what the user actually plans to export.
+    _runEstimate();
+  }
+
+  static String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }
 

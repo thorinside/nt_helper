@@ -4,6 +4,25 @@ import 'package:nt_helper/models/collected_file.dart';
 import 'package:nt_helper/models/collection_result.dart';
 import 'package:nt_helper/models/package_config.dart';
 
+/// Streaming progress emitted by [FileCollector] as it copies dependency
+/// files off the SD card. The dialog uses these to drive a per-file
+/// progress label and a determinate bar (when the total is known).
+class FileProgressUpdate {
+  final String currentPath;
+  final int filesCompleted;
+  final int? filesTotal;
+  final int bytesCompleted;
+  final int? bytesTotal;
+
+  const FileProgressUpdate({
+    required this.currentPath,
+    required this.filesCompleted,
+    this.filesTotal,
+    required this.bytesCompleted,
+    this.bytesTotal,
+  });
+}
+
 /// Collects dependency files from the file system
 class FileCollector {
   final PresetFileSystem fileSystem;
@@ -18,9 +37,30 @@ class FileCollector {
   Future<CollectionResult> collectDependencies(
     PresetDependencies dependencies, {
     PackageConfig? config,
+    void Function(FileProgressUpdate)? onProgress,
+    int? filesTotal,
+    int? bytesTotal,
   }) async {
     final List<CollectedFile> files = [];
     final List<String> warnings = [];
+    // De-dup guard: a folder copy may already include a file that's also
+    // referenced by a single-file path (e.g. `<MULTISAMPLE>` folder + an
+    // explicit-filename trigger pointing at one of its siblings).
+    final Set<String> collectedPaths = <String>{};
+
+    int bytesCompleted = 0;
+    void emit(String path, int bytesAdded) {
+      bytesCompleted += bytesAdded;
+      onProgress?.call(
+        FileProgressUpdate(
+          currentPath: path,
+          filesCompleted: files.length,
+          filesTotal: filesTotal,
+          bytesCompleted: bytesCompleted,
+          bytesTotal: bytesTotal,
+        ),
+      );
+    }
 
     // Collect wavetable folders. Wavetables on the SD card live as
     // directories under /wavetables/<name>/ that contain the actual
@@ -28,7 +68,13 @@ class FileCollector {
     // name. Recurse into the folder and pull every .wav file.
     if (config?.includeWavetables != false) {
       for (final wavetable in dependencies.wavetables) {
-        await _collectWavetableFolder(wavetable, files, warnings);
+        await _collectWavetableFolder(
+          wavetable,
+          files,
+          warnings,
+          collectedPaths,
+          emit,
+        );
       }
     }
 
@@ -39,6 +85,8 @@ class FileCollector {
         'samples',
         files,
         warnings,
+        collectedPaths,
+        emit,
       );
 
       await _collectFolder(
@@ -46,13 +94,22 @@ class FileCollector {
         'multisamples',
         files,
         warnings,
+        collectedPaths,
+        emit,
       );
 
       // Trigger-style sample-player files: each entry is `<folder>/<file>`
       // relative to /samples/.
       for (final relPath in dependencies.sampleFiles) {
         final samplePath = 'samples/$relPath';
-        await _collectFile(samplePath, files, warnings, label: 'sample');
+        await _collectFile(
+          samplePath,
+          files,
+          warnings,
+          collectedPaths,
+          emit,
+          label: 'sample',
+        );
       }
 
       // Granulator and similar single-sample references. The slot-level
@@ -65,6 +122,8 @@ class FileCollector {
           samplePath,
           files,
           warnings,
+          collectedPaths,
+          emit,
           label: 'granulator sample',
         );
       }
@@ -74,7 +133,14 @@ class FileCollector {
     if (config?.includeFMBanks != false) {
       for (final bank in dependencies.fmBanks) {
         final bankPath = 'FMSYX/$bank';
-        await _collectFile(bankPath, files, warnings, label: 'FM bank');
+        await _collectFile(
+          bankPath,
+          files,
+          warnings,
+          collectedPaths,
+          emit,
+          label: 'FM bank',
+        );
       }
     }
 
@@ -86,6 +152,8 @@ class FileCollector {
           programPath,
           files,
           warnings,
+          collectedPaths,
+          emit,
           label: 'Three Pot program',
         );
       }
@@ -99,6 +167,8 @@ class FileCollector {
           scriptPath,
           files,
           warnings,
+          collectedPaths,
+          emit,
           label: 'Lua script',
         );
       }
@@ -107,7 +177,52 @@ class FileCollector {
     // Collect MIDI files (if any algorithm populates this)
     for (final midi in dependencies.midiFiles) {
       final midiPath = 'midi/$midi';
-      await _collectFile(midiPath, files, warnings, label: 'MIDI file');
+      await _collectFile(
+        midiPath,
+        files,
+        warnings,
+        collectedPaths,
+        emit,
+        label: 'MIDI file',
+      );
+    }
+
+    // Whole-tree bundles for index-by-parameter algorithms (midp, quan, …).
+    // Bundling the whole tree is correct because the firmware selects by
+    // index into a sorted directory listing — replicating that on the
+    // destination NT only works if the listing is identical.
+    if (dependencies.bundleMidiTree && config?.includeMidiTree != false) {
+      await _collectTree(
+        'MIDI',
+        files,
+        warnings,
+        collectedPaths,
+        emit,
+        extensions: const {'mid', 'midi'},
+        label: 'MIDI file',
+      );
+    }
+    if (dependencies.bundleSclTree && config?.includeScales != false) {
+      await _collectTree(
+        'scl',
+        files,
+        warnings,
+        collectedPaths,
+        emit,
+        extensions: const {'scl'},
+        label: 'Scala file',
+      );
+    }
+    if (dependencies.bundleKbmTree && config?.includeScales != false) {
+      await _collectTree(
+        'kbm',
+        files,
+        warnings,
+        collectedPaths,
+        emit,
+        extensions: const {'kbm'},
+        label: 'KBM file',
+      );
     }
 
     // Collect community plugin files (if enabled).
@@ -132,6 +247,10 @@ class FileCollector {
         final trimmed = entry.key.trim();
         if (!referenced.containsKey(trimmed)) continue;
         final pluginPath = entry.value;
+        if (collectedPaths.contains(pluginPath)) {
+          collectedRefs.add(trimmed);
+          continue;
+        }
 
         try {
           final bytes = await fileSystem.readFile(pluginPath);
@@ -143,7 +262,9 @@ class FileCollector {
               );
             } else {
               files.add(CollectedFile(pluginPath, bytes));
+              collectedPaths.add(pluginPath);
               collectedRefs.add(trimmed);
+              emit(pluginPath, bytes.length);
             }
           } else {
             warnings.add(
@@ -183,9 +304,12 @@ class FileCollector {
   Future<void> _collectFile(
     String path,
     List<CollectedFile> files,
-    List<String> warnings, {
+    List<String> warnings,
+    Set<String> collectedPaths,
+    void Function(String path, int bytesAdded) emit, {
     required String label,
   }) async {
+    if (collectedPaths.contains(path)) return;
     try {
       final bytes = await fileSystem.readFile(path);
       if (bytes == null) {
@@ -200,6 +324,8 @@ class FileCollector {
         return;
       }
       files.add(CollectedFile(path, bytes));
+      collectedPaths.add(path);
+      emit(path, bytes.length);
     } catch (e) {
       warnings.add('Error reading $label $path: $e');
     }
@@ -209,6 +335,8 @@ class FileCollector {
     String wavetable,
     List<CollectedFile> files,
     List<String> warnings,
+    Set<String> collectedPaths,
+    void Function(String path, int bytesAdded) emit,
   ) async {
     final folderPath = 'wavetables/$wavetable';
     try {
@@ -225,6 +353,8 @@ class FileCollector {
             filePath,
             files,
             warnings,
+            collectedPaths,
+            emit,
             label: 'wavetable file',
           );
           collectedAny = true;
@@ -236,7 +366,14 @@ class FileCollector {
       // The slot field may already include the extension (e.g.
       // `"wavetable": "01-Gentle Speech.wav"`) — don't double it up.
       final flatPath = _isAudioFile(folderPath) ? folderPath : '$folderPath.wav';
-      await _collectFile(flatPath, files, warnings, label: 'wavetable');
+      await _collectFile(
+        flatPath,
+        files,
+        warnings,
+        collectedPaths,
+        emit,
+        label: 'wavetable',
+      );
     } catch (e) {
       warnings.add('Error reading wavetable $wavetable: $e');
     }
@@ -247,6 +384,8 @@ class FileCollector {
     String basePath,
     List<CollectedFile> files,
     List<String> warnings,
+    Set<String> collectedPaths,
+    void Function(String path, int bytesAdded) emit,
   ) async {
     for (final folder in folders) {
       final folderPath = '$basePath/$folder';
@@ -261,6 +400,8 @@ class FileCollector {
               filePath,
               files,
               warnings,
+              collectedPaths,
+              emit,
               label: 'sample',
             );
           }
@@ -268,6 +409,41 @@ class FileCollector {
       } catch (e) {
         warnings.add('Error reading folder $folder: $e');
       }
+    }
+  }
+
+  /// Recursively bundle every file under [basePath] whose extension is in
+  /// [extensions]. Used for whole-tree dependencies (`MIDI/`, `scl/`,
+  /// `kbm/`) that the firmware references by directory-listing index
+  /// rather than by name.
+  Future<void> _collectTree(
+    String basePath,
+    List<CollectedFile> files,
+    List<String> warnings,
+    Set<String> collectedPaths,
+    void Function(String path, int bytesAdded) emit, {
+    required Set<String> extensions,
+    required String label,
+  }) async {
+    try {
+      final folderFiles = await fileSystem.listFiles(
+        basePath,
+        recursive: true,
+      );
+      for (final filePath in folderFiles) {
+        final ext = filePath.toLowerCase().split('.').last;
+        if (!extensions.contains(ext)) continue;
+        await _collectFile(
+          filePath,
+          files,
+          warnings,
+          collectedPaths,
+          emit,
+          label: label,
+        );
+      }
+    } catch (e) {
+      warnings.add('Error reading $basePath tree: $e');
     }
   }
 
