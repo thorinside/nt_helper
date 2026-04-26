@@ -72,7 +72,7 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
             // Resume monitoring when visible
             _updateVisibility(true);
 
-            return StreamBuilder<CpuUsage>(
+            return StreamBuilder<CpuUsage?>(
               stream: _distingCubit.cpuUsageStream,
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -86,12 +86,12 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
                   );
                 }
 
-                final cpuUsage = snapshot.data!;
+                final cpuUsage = snapshot.data;
                 return _buildCpuDisplay(
                   context: context,
-                  cpu1: cpuUsage.cpu1,
-                  cpu2: cpuUsage.cpu2,
-                  slotUsages: cpuUsage.slotUsages,
+                  cpu1: cpuUsage?.cpu1,
+                  cpu2: cpuUsage?.cpu2,
+                  slotUsages: cpuUsage?.slotUsages ?? [],
                   isLoading: false,
                 );
               },

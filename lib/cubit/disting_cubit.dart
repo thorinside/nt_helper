@@ -164,7 +164,7 @@ class DistingCubit extends _DistingCubitBase
   }
 
   /// Stream of CPU usage updates that polls every 10 seconds when listeners are active
-  Stream<CpuUsage> get cpuUsageStream => _monitoringDelegate.cpuUsageStream;
+  Stream<CpuUsage?> get cpuUsageStream => _monitoringDelegate.cpuUsageStream;
 
   /// Stream of video state updates from the cubit's state
   Stream<VideoStreamState?> get videoStreamState => stream.map(
