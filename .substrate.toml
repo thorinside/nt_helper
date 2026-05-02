@@ -1,0 +1,20 @@
+# Substrate job defaults for nt_helper. Read by /queue.
+
+[project]
+name = "nt_helper"
+cwd = "/Users/nealsanche/nosuch/nt_helper"
+
+[job]
+harness = "claude"
+runner_labels = ["macos"]
+max_attempts = 3
+
+[template]
+artifact_name = "nt_helper_feature_template"
+placeholders = ["SLUG", "TITLE", "BRANCH", "DESCRIPTION", "ACCEPTANCE_BULLETS"]
+
+[conventions]
+title_prefix_pattern  = "^(feat|fix|docs|refactor|test|chore|perf|style):"
+branch_prefix_pattern = "^(feat|fix|docs|refactor|test|chore|perf|style)/"
+# Template's Step 0 cuts a worktree at this path from origin/main; documented for tooling.
+worktree_path = ".claude/worktrees/{slug}"
