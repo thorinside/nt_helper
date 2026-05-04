@@ -75,6 +75,7 @@ class SynchronizedScreen extends StatefulWidget {
   final List<AlgorithmInfo> algorithms;
   final List<String> units;
   final String presetName;
+  final bool isDirty;
   final String distingVersion;
   final FirmwareVersion firmwareVersion;
   final Uint8List? screenshot;
@@ -87,6 +88,7 @@ class SynchronizedScreen extends StatefulWidget {
     required this.algorithms,
     required this.units,
     required this.presetName,
+    this.isDirty = false,
     required this.distingVersion,
     required this.firmwareVersion,
     required this.screenshot,
@@ -2118,7 +2120,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         children: [
           Semantics(
             button: true,
-            label: 'Preset: ${widget.presetName.trim()}',
+            label: widget.isDirty
+                ? 'Preset: ${widget.presetName.trim()}, unsaved changes'
+                : 'Preset: ${widget.presetName.trim()}',
             hint: 'Double tap to rename preset',
             child: InkWell(
               onTap: () async {
@@ -2140,30 +2144,31 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ExcludeSemantics(
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Preset:\u2007',
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                          TextSpan(
-                            text: widget.presetName.trim(),
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Preset:\u2007',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                        Text(
+                          widget.isDirty
+                              ? '${widget.presetName.trim()} *'
+                              : widget.presetName.trim(),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
