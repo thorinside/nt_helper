@@ -533,6 +533,49 @@ void main() {
           expect(edge.outputMode, core.OutputMode.add);
         },
       );
+
+      test(
+        'Replace + forward: writer in lower slot produces forward edge',
+        () {
+          // Routings list [writer, reader]: writer.algorithmIndex == 0,
+          // reader.algorithmIndex == 1. Writer uses Replace. Confirms the
+          // fix didn't accidentally re-classify forward connections.
+          final writer = _FakeRouting(
+            id: 'algo_writer',
+            outputs: [
+              _outPort(
+                'writer_out_b25',
+                25,
+                mode: core.OutputMode.replace,
+              ),
+            ],
+          );
+          final reader = _FakeRouting(
+            id: 'algo_reader',
+            inputs: [_inPort('reader_in_b25', 25)],
+          );
+
+          final conns = ConnectionDiscoveryService.discoverConnections([
+            writer,
+            reader,
+          ]);
+
+          final forwardConns = conns
+              .where(
+                (c) =>
+                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                    c.sourcePortId == 'writer_out_b25' &&
+                    c.destinationPortId == 'reader_in_b25',
+              )
+              .toList();
+
+          expect(forwardConns, hasLength(1));
+          final edge = forwardConns.single;
+          expect(edge.isBackwardEdge, isFalse);
+          expect(edge.isPartial, isFalse);
+          expect(edge.outputMode, core.OutputMode.replace);
+        },
+      );
     });
   });
 }
