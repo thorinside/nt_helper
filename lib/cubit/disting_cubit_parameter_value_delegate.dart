@@ -67,6 +67,7 @@ class _ParameterValueDelegate {
                     ),
                   );
                 }),
+                isDirty: true,
               ),
             );
           } else {
@@ -115,6 +116,7 @@ class _ParameterValueDelegate {
                     ),
                   );
                 }),
+                isDirty: true,
               ),
             );
 

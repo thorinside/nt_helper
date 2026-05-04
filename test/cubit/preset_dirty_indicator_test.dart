@@ -3,8 +3,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_helpers/mock_midi_command.dart';
@@ -46,9 +48,70 @@ void main() {
     await cubit.close();
   });
 
+  Slot makeSlot({int algorithmIndex = 0, int paramCount = 1}) {
+    return Slot(
+      algorithm: Algorithm(
+        algorithmIndex: algorithmIndex,
+        guid: 'test',
+        name: 'Test',
+      ),
+      routing: RoutingInfo.filler(),
+      pages: ParameterPages(
+        algorithmIndex: algorithmIndex,
+        pages: const [],
+      ),
+      parameters: List.generate(
+        paramCount,
+        (i) => ParameterInfo(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: i,
+          min: 0,
+          max: 100,
+          defaultValue: 0,
+          unit: 0,
+          name: 'p$i',
+          powerOfTen: 0,
+        ),
+      ),
+      values: List.generate(
+        paramCount,
+        (i) => ParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: i,
+          value: 0,
+        ),
+      ),
+      enums: List.generate(
+        paramCount,
+        (i) => ParameterEnumStrings(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: i,
+          values: const [],
+        ),
+      ),
+      mappings: List.generate(
+        paramCount,
+        (i) => Mapping(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: i,
+          packedMappingData: PackedMappingData.filler(),
+        ),
+      ),
+      valueStrings: List.generate(
+        paramCount,
+        (i) => ParameterValueString(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: i,
+          value: '',
+        ),
+      ),
+    );
+  }
+
   DistingStateSynchronized makeSyncState({
     String presetName = 'Test Preset',
     bool isDirty = false,
+    List<Slot>? slots,
   }) {
     return DistingStateSynchronized(
       disting: mockDisting,
@@ -56,7 +119,7 @@ void main() {
       firmwareVersion: FirmwareVersion('1.14.0'),
       presetName: presetName,
       algorithms: const [],
-      slots: const [],
+      slots: slots ?? const [],
       unitStrings: const [],
       offline: false,
       isDirty: isDirty,
@@ -80,6 +143,36 @@ void main() {
     test('makeSyncState helper still respects explicit isDirty values', () {
       expect(makeSyncState().isDirty, isFalse);
       expect(makeSyncState(isDirty: true).isDirty, isTrue);
+    });
+  });
+
+  group('cubit.updateParameterValue()', () {
+    test('marks state dirty (real-time slider scrub)', () async {
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+      expect((cubit.state as DistingStateSynchronized).isDirty, isFalse);
+
+      await cubit.updateParameterValue(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        value: 42,
+        userIsChangingTheValue: true,
+      );
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+
+    test('marks state dirty (slider release)', () async {
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+      expect((cubit.state as DistingStateSynchronized).isDirty, isFalse);
+
+      await cubit.updateParameterValue(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        value: 50,
+        userIsChangingTheValue: false,
+      );
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
     });
   });
 
