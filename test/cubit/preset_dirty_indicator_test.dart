@@ -314,6 +314,36 @@ void main() {
     });
   });
 
+  group('cubit.refresh()', () {
+    test('clears isDirty when state refresh from device succeeds', () async {
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockDisting.requestPresetName(),
+      ).thenAnswer((_) async => 'Refreshed');
+
+      // Offline avoids the background algorithm refresh side-effect.
+      cubit.emit(
+        DistingStateSynchronized(
+          disting: mockDisting,
+          distingVersion: '1.10.0',
+          firmwareVersion: FirmwareVersion('1.14.0'),
+          presetName: 'Test Preset',
+          algorithms: const [],
+          slots: const [],
+          unitStrings: const [],
+          offline: true,
+          isDirty: true,
+        ),
+      );
+
+      await cubit.refresh();
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isFalse);
+    });
+  });
+
   group('cubit.savePreset()', () {
     test('clears isDirty on success', () async {
       when(() => mockDisting.requestSavePreset()).thenAnswer((_) async {});
