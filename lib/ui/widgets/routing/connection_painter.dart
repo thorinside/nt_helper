@@ -112,6 +112,22 @@ class ConnectionPainter extends CustomPainter {
     this.hasExtendedAuxBuses = false,
   });
 
+  /// Classify a connection into the visual style bucket used for batching.
+  ///
+  /// Precedence (highest first): selected, partial, invalid (backward edge),
+  /// ghost, regular. Selection is a transient user-driven highlight and wins
+  /// over backward-edge styling. A backward edge that is also partial renders
+  /// as partial, because an incomplete connection is the more important
+  /// signal than a deferred-bus warning.
+  @visibleForTesting
+  static ConnectionVisualType classifyVisualType(ConnectionData conn) {
+    if (conn.isSelected) return ConnectionVisualType.selected;
+    if (conn.isPartial) return ConnectionVisualType.partial;
+    if (conn.isInvalidOrder) return ConnectionVisualType.invalid;
+    if (conn.isGhostConnection) return ConnectionVisualType.ghost;
+    return ConnectionVisualType.regular;
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     if (connections.isEmpty) return;
@@ -126,16 +142,22 @@ class ConnectionPainter extends CustomPainter {
     final selectedConnections = <ConnectionData>[];
     final partialConnections = <ConnectionData>[];
     for (final conn in connections) {
-      if (conn.isSelected) {
-        selectedConnections.add(conn);
-      } else if (conn.isPartial) {
-        partialConnections.add(conn);
-      } else if (conn.isInvalidOrder) {
-        invalidConnections.add(conn);
-      } else if (conn.isGhostConnection) {
-        ghostConnections.add(conn);
-      } else {
-        regularConnections.add(conn);
+      switch (classifyVisualType(conn)) {
+        case ConnectionVisualType.selected:
+          selectedConnections.add(conn);
+          break;
+        case ConnectionVisualType.partial:
+          partialConnections.add(conn);
+          break;
+        case ConnectionVisualType.invalid:
+          invalidConnections.add(conn);
+          break;
+        case ConnectionVisualType.ghost:
+          ghostConnections.add(conn);
+          break;
+        case ConnectionVisualType.regular:
+          regularConnections.add(conn);
+          break;
       }
     }
 

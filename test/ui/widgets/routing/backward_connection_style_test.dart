@@ -32,5 +32,48 @@ void main() {
     test('kBackwardEdgeColor is the agreed bright orange (#FF8800)', () {
       expect(kBackwardEdgeColor, const Color(0xFFFF8800));
     });
+
+    group('classifyVisualType precedence', () {
+      test('backward edge classifies as invalid', () {
+        expect(
+          ConnectionPainter.classifyVisualType(
+            _connData(isBackwardEdge: true),
+          ),
+          ConnectionVisualType.invalid,
+        );
+      });
+
+      test('partial backward edge classifies as partial (not invalid)', () {
+        expect(
+          ConnectionPainter.classifyVisualType(
+            _connData(isBackwardEdge: true, isPartial: true),
+          ),
+          ConnectionVisualType.partial,
+        );
+      });
+
+      test('selected backward edge classifies as selected', () {
+        expect(
+          ConnectionPainter.classifyVisualType(
+            _connData(isBackwardEdge: true, isSelected: true),
+          ),
+          ConnectionVisualType.selected,
+        );
+      });
+
+      test('ghost connection classifies as ghost', () {
+        expect(
+          ConnectionPainter.classifyVisualType(_connData(isGhost: true)),
+          ConnectionVisualType.ghost,
+        );
+      });
+
+      test('plain connection classifies as regular', () {
+        expect(
+          ConnectionPainter.classifyVisualType(_connData()),
+          ConnectionVisualType.regular,
+        );
+      });
+    });
   });
 }
