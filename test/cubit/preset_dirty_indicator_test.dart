@@ -290,6 +290,30 @@ void main() {
     });
   });
 
+  group('device-truth refreshes preserve isDirty', () {
+    test('refreshRouting (slot state delegate) preserves dirty flag', () async {
+      when(
+        () => mockDisting.requestRoutingInformation(any()),
+      ).thenAnswer((_) async => RoutingInfo.filler());
+
+      cubit.emit(makeSyncState(isDirty: true, slots: [makeSlot()]));
+      await cubit.refreshRouting();
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+
+    test('refreshRouting does not falsely mark dirty when clean', () async {
+      when(
+        () => mockDisting.requestRoutingInformation(any()),
+      ).thenAnswer((_) async => RoutingInfo.filler());
+
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+      await cubit.refreshRouting();
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isFalse);
+    });
+  });
+
   group('cubit.savePreset()', () {
     test('clears isDirty on success', () async {
       when(() => mockDisting.requestSavePreset()).thenAnswer((_) async {});
