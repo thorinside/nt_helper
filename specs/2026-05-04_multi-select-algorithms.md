@@ -32,9 +32,11 @@ Inside `_buildActionButton` (or in the widget tree just above/beside it), place 
 
 #### Option A — Split-button dropdown (preferred)
 
-Replace the single `ElevatedButton` with a `MenuAnchor` / `SplitButton` (`ElevatedButton` + `MenuAnchor` dropdown) or a plain `ElevatedButton` paired with a small adjacent `IconButton` that opens a menu:
+Mirror the existing split-button pattern in `_DeviceSelectionView` (`lib/disting_app.dart` lines ~700–780). There, an `ElevatedButton` is paired with an adjacent `IconButton` (keyed via `_splitButtonKey`) that calls `showMenu` to reveal alternate actions.
 
-- **Primary action (top/left):** `Add to Preset` → pops the route, identical to today.
+Apply the same layout in `_buildActionButton`:
+
+- **Primary action:** `Add to Preset` → pops the route, identical to today.
 - **Menu item:** `Add and select another` → adds, clears state, stays open.
 
 The menu item is disabled when `_currentAlgoInfo == null || specValues == null` or when `_needsLoading(algorithm) && !isOffline`.
