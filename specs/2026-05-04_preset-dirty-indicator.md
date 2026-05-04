@@ -181,6 +181,41 @@ refactoring (e.g., if someone adds a default constructor that emits
 `isDirty: false`). Where a site already passes other unrelated fields
 forward, this is a one-line change.
 
+#### Bare positional `DistingState.synchronized(...)` calls
+
+Two sites in `disting_cubit_algorithm_ops.dart` (lines 370–388,
+483–501, the move-up and move-down verification corrections) currently
+build the synchronized state with a positional/named constructor call
+rather than `copyWith`. They omit several existing defaulted fields
+(`videoStream`, `availableFirmwareUpdate`, `perfPageItems`) and would
+similarly default the new `isDirty` to `false` — silently clearing the
+indicator after a verified-but-corrected move.
+
+**Required change**: replace each with
+`verificationState.copyWith(slots: actualSlots, loading: false)`.
+`copyWith` preserves every other field, including `isDirty`, and
+removes a maintenance hazard for any future field on
+`DistingStateSynchronized`. This is a small drive-by correctness fix
+that the dirty-indicator change forces; it is in scope.
+
+#### Optimistic-rollback emits
+
+Several lines in `disting_cubit_algorithm_ops.dart` (e.g., line 126,
+the rollback path that pops the optimistically-added slot when the
+device add fails) emit a `copyWith` that *un-does* a user-initiated
+mutation. The emit's slot list is the pre-mutation state, but we have
+no record of whether other slots had unsaved edits before. The
+pragmatic rule:
+
+- **Rollback emits leave `isDirty` unchanged** (omit `isDirty` from the
+  `copyWith` argument list — Freezed preserves it). The user may have
+  had prior unsaved changes; rolling back a single failed mutation
+  does not magically save them.
+
+This applies symmetrically to any future rollback path. The mutation
+table entries for these lines describe the *successful* optimistic
+emit; rollback emits inherit `isDirty` via Freezed's preserve.
+
 ### Mutation site reference (illustrative, not authoritative)
 
 The following table is a **starting point** derived from the codebase
@@ -443,6 +478,24 @@ existing semantic-label patterns in the screen.
   has `isDirty`. Reconnecting goes through the sync flow which builds
   a fresh `DistingStateSynchronized` (clean). Any unsaved edits are
   lost — that's existing behaviour, unchanged.
+- **Connection loss mid-save**: `cubit.savePreset()` re-reads `state`
+  after the `await` and only emits the clear if state is still
+  `DistingStateSynchronized`. If the device disconnects mid-save, the
+  emit is skipped and state has already transitioned away — the dirty
+  flag is moot until reconnect, where a fresh sync produces a clean
+  state. Acceptable; matches the existing "connection-lost wipes
+  in-memory edits" model.
+- **Checkpoint undo/redo back to original state**
+  (`_CheckpointDelegate.restoreCheckpoint`): restoring a checkpoint
+  re-issues parameter writes via the standard write path, each of
+  which sets `isDirty: true`. If the user undoes back to a checkpoint
+  taken at a clean baseline, the in-memory preset matches the device's
+  saved copy but the flag stays dirty. This is consistent with the
+  documented non-goal ("we track *whether mutations occurred*, not
+  *whether they round-trip to the same bytes*") and matches the
+  text-editor convention. A future "discard / revert" feature could
+  layer a clean-flag clear on top of checkpoint restore — out of scope
+  here.
 - **MCP server tool calls** that mutate state (`add_algorithm`,
   `set_parameter_value`, etc.) flow through the same cubit methods, so
   they correctly mark dirty. MCP-driven save is fixed via the
