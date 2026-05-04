@@ -10,6 +10,11 @@ import 'ghost_connection_tooltip.dart';
 import 'connection_theme.dart';
 import 'bus_label_formatter.dart';
 
+/// Bright orange used to flag backward-edge ("uphill") connections.
+/// Theme-independent so the warning meaning is uniform in light and dark mode.
+@visibleForTesting
+const Color kBackwardEdgeColor = Color(0xFFFF8800);
+
 /// Represents connection data with bus and output mode information
 class ConnectionData {
   final Connection connection;
