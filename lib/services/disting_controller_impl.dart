@@ -326,7 +326,7 @@ class DistingControllerImpl implements DistingController {
   @override
   Future<void> savePreset() async {
     _getSynchronizedState();
-    await _getManager().requestSavePreset();
+    await _distingCubit.savePreset();
   }
 
   @override
