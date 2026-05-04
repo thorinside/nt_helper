@@ -275,6 +275,21 @@ void main() {
     });
   });
 
+  group('cubit slot ops', () {
+    test('renameSlot marks state dirty', () async {
+      when(
+        () => mockDisting.requestSendSlotName(any(), any()),
+      ).thenAnswer((_) async {});
+
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+      cubit.renameSlot(0, 'New Name');
+      // Allow microtask queue to flush so the optimistic emit lands.
+      await Future<void>.delayed(Duration.zero);
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+  });
+
   group('cubit.savePreset()', () {
     test('clears isDirty on success', () async {
       when(() => mockDisting.requestSavePreset()).thenAnswer((_) async {});
