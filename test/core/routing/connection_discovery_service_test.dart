@@ -63,6 +63,7 @@ core.Port _inPort(
 core.Port _outPort(
   String id,
   int bus, {
+  core.OutputMode? mode,
   core.PortType type = core.PortType.audio,
 }) {
   return core.Port(
@@ -72,6 +73,7 @@ core.Port _outPort(
     direction: core.PortDirection.output,
     busValue: bus,
     parameterNumber: 2,
+    outputMode: mode,
   );
 }
 
@@ -432,6 +434,66 @@ void main() {
               c.destinationPortId == 'es5_L' || c.destinationPortId == 'es5_R',
         ),
         isFalse,
+      );
+    });
+
+    group('backward-edge discovery', () {
+      test(
+        'Replace + backward: writer in higher slot produces single backward edge',
+        () {
+          // Reader in slot 0, writer in slot 1 on aux bus 25 (non-physical).
+          // Writer uses Replace mode. Bus values persist across audio frames,
+          // so the reader sees the writer's value one block later — this is
+          // a backward edge regardless of OutputMode.
+          final reader = _FakeRouting(
+            id: 'algo_reader',
+            inputs: [_inPort('reader_in_b25', 25)],
+          );
+          final writer = _FakeRouting(
+            id: 'algo_writer',
+            outputs: [
+              _outPort(
+                'writer_out_b25',
+                25,
+                mode: core.OutputMode.replace,
+              ),
+            ],
+          );
+
+          final conns = ConnectionDiscoveryService.discoverConnections([
+            reader,
+            writer,
+          ]);
+
+          final backwardConns = conns
+              .where(
+                (c) =>
+                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                    c.sourcePortId == 'writer_out_b25' &&
+                    c.destinationPortId == 'reader_in_b25',
+              )
+              .toList();
+
+          expect(backwardConns, hasLength(1));
+          final edge = backwardConns.single;
+          expect(edge.isBackwardEdge, isTrue);
+          expect(edge.isPartial, isFalse);
+          expect(edge.outputMode, core.OutputMode.replace);
+          expect(edge.busNumber, 25);
+
+          // No partial chip connections should exist for either port.
+          expect(
+            conns.any(
+              (c) =>
+                  c.isPartial &&
+                  (c.sourcePortId == 'writer_out_b25' ||
+                      c.destinationPortId == 'writer_out_b25' ||
+                      c.sourcePortId == 'reader_in_b25' ||
+                      c.destinationPortId == 'reader_in_b25'),
+            ),
+            isFalse,
+          );
+        },
       );
     });
   });
