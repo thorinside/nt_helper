@@ -495,6 +495,44 @@ void main() {
           );
         },
       );
+
+      test(
+        'Add + backward: writer in higher slot produces single backward edge',
+        () {
+          // Same topology as the Replace case, but writer uses Add. This
+          // case worked before the fix — it locks in non-regression.
+          final reader = _FakeRouting(
+            id: 'algo_reader',
+            inputs: [_inPort('reader_in_b25', 25)],
+          );
+          final writer = _FakeRouting(
+            id: 'algo_writer',
+            outputs: [
+              _outPort('writer_out_b25', 25, mode: core.OutputMode.add),
+            ],
+          );
+
+          final conns = ConnectionDiscoveryService.discoverConnections([
+            reader,
+            writer,
+          ]);
+
+          final backwardConns = conns
+              .where(
+                (c) =>
+                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                    c.sourcePortId == 'writer_out_b25' &&
+                    c.destinationPortId == 'reader_in_b25',
+              )
+              .toList();
+
+          expect(backwardConns, hasLength(1));
+          final edge = backwardConns.single;
+          expect(edge.isBackwardEdge, isTrue);
+          expect(edge.isPartial, isFalse);
+          expect(edge.outputMode, core.OutputMode.add);
+        },
+      );
     });
   });
 }
