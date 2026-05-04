@@ -374,6 +374,23 @@ void main() {
     });
   });
 
+  group('cubit preset rename', () {
+    test('renamePreset marks state dirty (optimistic)', () async {
+      when(
+        () => mockDisting.requestSetPresetName(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestSavePreset(),
+      ).thenAnswer((_) async {});
+
+      cubit.emit(makeSyncState(presetName: 'Old'));
+      cubit.renamePreset('New');
+      await Future<void>.delayed(Duration.zero);
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+  });
+
   group('cubit perf page ops', () {
     test('setPerfPageItem marks state dirty (optimistic)', () async {
       when(
