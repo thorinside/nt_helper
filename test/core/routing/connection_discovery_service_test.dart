@@ -534,6 +534,32 @@ void main() {
         },
       );
 
+      test('self-write: same-algorithm in/out on same bus is not connected',
+          () {
+        // A single algorithm with both an input port and an output port on
+        // bus 25. The output.algorithmId == input.algorithmId guard must
+        // skip the pair, even with the backward-edge guard relaxed.
+        final self = _FakeRouting(
+          id: 'algo_self',
+          inputs: [_inPort('self_in_b25', 25)],
+          outputs: [
+            _outPort('self_out_b25', 25, mode: core.OutputMode.replace),
+          ],
+        );
+
+        final conns = ConnectionDiscoveryService.discoverConnections([self]);
+
+        expect(
+          conns.any(
+            (c) =>
+                c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                c.sourcePortId == 'self_out_b25' &&
+                c.destinationPortId == 'self_in_b25',
+          ),
+          isFalse,
+        );
+      });
+
       test(
         'Replace + forward: writer in lower slot produces forward edge',
         () {
