@@ -75,5 +75,33 @@ void main() {
         );
       });
     });
+
+    group('resolved style color', () {
+      ConnectionPainter painterFor(ConnectionData conn, {ThemeData? theme}) {
+        return ConnectionPainter(
+          connections: [conn],
+          theme: theme ?? ThemeData.light(),
+          showLabels: false,
+        );
+      }
+
+      test('backward edge uses kBackwardEdgeColor in light theme', () {
+        final conn = _connData(isBackwardEdge: true);
+        final painter = painterFor(conn);
+        expect(
+          painter.debugResolveStyleColor(conn).toARGB32(),
+          kBackwardEdgeColor.toARGB32(),
+        );
+      });
+
+      test('backward edge uses kBackwardEdgeColor in dark theme', () {
+        final conn = _connData(isBackwardEdge: true);
+        final painter = painterFor(conn, theme: ThemeData.dark());
+        expect(
+          painter.debugResolveStyleColor(conn).toARGB32(),
+          kBackwardEdgeColor.toARGB32(),
+        );
+      });
+    });
   });
 }

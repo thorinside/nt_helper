@@ -401,11 +401,14 @@ class ConnectionPainter extends CustomPainter {
     ConnectionData conn,
     ConnectionVisualType type,
   ) {
-    // Handle backward connections (wrong slot order) with tertiary color
+    // Handle backward edges (source slot index higher than destination)
+    // with a theme-independent bright orange so the warning reads the same
+    // in light and dark mode and is visually distinct from the muted-grey
+    // dashed style used for partial/disconnected connections.
     if (type == ConnectionVisualType.invalid) {
       paint
         ..strokeWidth = 2.0
-        ..color = theme.colorScheme.tertiary;
+        ..color = kBackwardEdgeColor;
       return;
     }
 
@@ -983,6 +986,15 @@ class ConnectionPainter extends CustomPainter {
       return colors.clockPortColor;
     }
     return theme.colorScheme.outline;
+  }
+
+  /// Resolve the stroke color a given connection would receive when painted.
+  /// Exposes the result of `_applyConnectionStyle()` for unit tests.
+  @visibleForTesting
+  Color debugResolveStyleColor(ConnectionData conn) {
+    final paint = Paint();
+    _applyConnectionStyle(paint, conn, classifyVisualType(conn));
+    return paint.color;
   }
 
   /// Get current label bounds for testing purposes
