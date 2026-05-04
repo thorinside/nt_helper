@@ -47,82 +47,70 @@ a new preset, or refreshes state from the device.
 - No change to the existing "New Preset" save-prompt dialog logic. We
   could later make it conditional on `isDirty`, but that's a separate
   PR.
-- No change to the rename autosave behaviour itself — we only piggyback
-  on the existing autosave to clear the flag when it succeeds.
-
-## Naming
-
-Use `isDirty` as the field name. This matches the existing
-`DistingStateSynchronized` convention (`loading`, `offline`, `demo`,
-no `is*` prefix on most booleans, but `isDirty` is the one widely
-recognised text-editor term and reads better than `dirty` alone).
-"Dirty" is the standard term in Cocoa, Qt, Flutter and most editor
-codebases for "in-memory differs from persisted." `hasUnsavedChanges`
-is the user-facing phrase and is what we put in semantic labels, not
-the field name.
+- No restructuring of the existing rename autosave path. The autosave
+  is best-effort and the dirty flag will simply remain set during the
+  rename-and-autosave window and clear on the next save / refresh /
+  load (see "Edge cases").
 
 ## Affected files
 
 ### State
 
-- `lib/cubit/disting_state.dart` — add field to `DistingStateSynchronized`.
+- `lib/cubit/disting_state.dart` — add `isDirty` field to
+  `DistingStateSynchronized`.
 
 ### Cubit / delegates
 
 - `lib/cubit/disting_cubit.dart` — add facade `savePreset()` method.
-- `lib/cubit/disting_cubit_preset_ops.dart` — `loadPresetImpl`,
-  `newPresetImpl`, `renamePresetImpl`, plus the rename-driven
-  autosave clear.
-- `lib/cubit/disting_cubit_state_refresh_delegate.dart` — clear the
-  flag after a refresh from device.
-- `lib/cubit/disting_cubit_connection_delegate.dart` — initial sync
-  emit (line 281) constructs a fresh state with default `isDirty: false`;
-  no explicit field needed but verify the freezed default fires.
+- `lib/cubit/disting_cubit_preset_ops.dart` — `renamePresetImpl`
+  optimistic emit (line 39) sets `isDirty: true`.
+- `lib/cubit/disting_cubit_state_refresh_delegate.dart` — explicitly
+  emit `isDirty: false` after a refresh from device (line 34).
 - `lib/cubit/disting_cubit_parameter_value_delegate.dart` — set on
-  parameter writes (both real-time and release paths).
+  parameter writes (lines 59, 107).
 - `lib/cubit/disting_cubit_parameter_string_delegate.dart` — set on
-  string parameter writes.
+  string parameter writes (lines 43, 93, 131).
 - `lib/cubit/disting_cubit_algorithm_ops.dart` — set on add / remove /
-  move-up / move-down (both optimistic and verification emits).
+  move-up / move-down optimistic emits (lines 110, 126, 223, 319, 437).
+  Verification emits (lines 172, 185, 370, 483) preserve current
+  `isDirty` (don't reset it).
 - `lib/cubit/disting_cubit_slot_ops.dart` — set on slot custom-name
-  changes.
+  changes (lines 33, 69).
 - `lib/cubit/disting_cubit_slot_state_delegate.dart` — set on
-  slot-state mutations (parameter pages, etc.).
+  slot-state mutations (lines 71, 128, 170, 196, 227, 248).
 - `lib/cubit/disting_cubit_mapping_delegate.dart` — set on CV / MIDI /
-  i2c mapping changes.
+  i2c / performance mapping changes (lines 84, 135, 175).
 - `lib/cubit/disting_cubit_perf_page_delegate.dart` — set on perf page
-  item edits (preserve current `isDirty` on perf page fetch inside
-  refresh).
-- `lib/cubit/disting_cubit_offline_demo_delegate.dart` — fresh
-  constructions get default `isDirty: false`; verify no copy paths
-  preserve a stale dirty flag.
+  item edits (lines 34, 62). Perf page item edits *are* preset
+  mutations; they persist in the preset bytes alongside slot data.
 - `lib/cubit/disting_cubit_slot_maintenance_delegate.dart` — set on
-  slot repair (these mutate slot contents).
-- `lib/cubit/disting_cubit_lua_reload_delegate.dart` — Lua reload
-  restores parameter values via the same parameter-write path; that
-  path will already mark dirty, but verify the success-path emit (if
-  any) preserves dirty.
+  slot repair (lines 98, 135).
+- `lib/cubit/disting_cubit_offline_demo_delegate.dart` — fresh
+  construction; `@Default(false) isDirty` applies, no change needed.
+- `lib/cubit/disting_cubit_connection_delegate.dart` — initial sync
+  construction; `@Default(false) isDirty` applies, no change needed.
 
 ### UI
 
-- `lib/disting_app.dart` — pass `state.isDirty` to `SynchronizedScreen`.
+- `lib/disting_app.dart` — pass `state.isDirty` to `SynchronizedScreen`
+  (construction site at line 432).
 - `lib/ui/synchronized_screen.dart` — accept `isDirty` constructor
   argument; render asterisk in `_buildPresetInfoEditor` and in the
-  semantic label; switch the three direct `requireDisting().requestSavePreset()`
-  call sites to a new `cubit.savePreset()` facade so the flag clears
-  on save.
+  semantic label; switch the three direct
+  `requireDisting().requestSavePreset()` call sites (lines 503, 1828,
+  1851) to a new `cubit.savePreset()` facade so the flag clears on
+  save.
 
-### Controller / external
+### Services
 
-- `lib/services/disting_controller_impl.dart` line 327 — change
-  `savePreset()` to call `_distingCubit.savePreset()` instead of
-  `_getManager().requestSavePreset()`, so MCP-driven saves clear the
-  flag.
+- `lib/services/disting_controller_impl.dart` — route the MCP-driven
+  `savePreset` (line 329) through the cubit's `savePreset()` facade so
+  external saves also clear the flag.
 
 ### Tests
 
-- `test/cubit/preset_dirty_indicator_test.dart` — new file. See
-  *Test plan* below.
+- `test/cubit/preset_dirty_indicator_test.dart` — new file. See *Test
+  plan* below.
 - `test/ui/synchronized_screen_dirty_indicator_test.dart` — new file.
 
 ## Design
@@ -140,146 +128,72 @@ const factory DistingState.synchronized({
 ```
 
 Freezed regenerates `copyWith` automatically. Default `false` means
-freshly-synchronized state is clean, which matches the data flow:
-every path that constructs a `DistingStateSynchronized` from scratch
-(initial sync, offline load, demo init, refresh-from-device) reflects
-device truth and is by definition clean.
+freshly-synchronized state is clean, which matches the data flow: every
+path that creates a `DistingStateSynchronized` either reads from device
+(clean) or constructs from a freshly-loaded preset (clean).
 
-### Mutation rule
+### Mutation rule (cubit-side)
 
-This is the **authoritative rule** the implementer follows:
+**Every site that emits state reflecting a *user-initiated* change to
+`slots`, `presetName`, in-slot mapping data, or perf page items sets
+`isDirty: true`.**
 
-> An emit of `DistingStateSynchronized` must set `isDirty: true` if and
-> only if the emit reflects a **user-initiated change** to preset
-> contents — `slots`, `presetName`, or in-slot mappings — that has not
-> yet been saved.
->
-> Emits that reflect **device truth** (live polling, CC notifications,
-> verification reads, full refreshes, screenshots, video, firmware
-> update notices) **preserve** the current `isDirty` value via
-> `state.isDirty` in the `copyWith` argument list. They do not flip it
-> in either direction.
->
-> Emits that *replace* state from a fresh device read (full
-> `_refreshStateFromManager`, initial sync, preset load) explicitly set
-> `isDirty: false`.
+The codebase has two emission patterns: most delegates call
+`_emitState(...)` (the wrapper at `disting_cubit.dart:305`); a few
+files (notably `disting_cubit_algorithm_ops.dart`) call `emit(...)`
+directly. The wrapper is a thin pass-through; both patterns behave
+identically with respect to `copyWith(isDirty: true)`.
 
-Implementation pattern for the "preserve" case:
-
-```dart
-_cubit._emitState(
-  currentState.copyWith(
-    slots: updatedSlots,
-    isDirty: currentState.isDirty,  // explicit, even though Dart would default it
-  ),
-);
-```
-
-The explicit `isDirty: currentState.isDirty` is required at every
-device-truth emit site. It documents intent and survives future
-refactoring (e.g., if someone adds a default constructor that emits
-`isDirty: false`). Where a site already passes other unrelated fields
-forward, this is a one-line change.
-
-#### Bare positional `DistingState.synchronized(...)` calls
-
-Two sites in `disting_cubit_algorithm_ops.dart` (lines 370–388,
-483–501, the move-up and move-down verification corrections) currently
-build the synchronized state with a positional/named constructor call
-rather than `copyWith`. They omit several existing defaulted fields
-(`videoStream`, `availableFirmwareUpdate`, `perfPageItems`) and would
-similarly default the new `isDirty` to `false` — silently clearing the
-indicator after a verified-but-corrected move.
-
-**Required change**: replace each with
-`verificationState.copyWith(slots: actualSlots, loading: false)`.
-`copyWith` preserves every other field, including `isDirty`, and
-removes a maintenance hazard for any future field on
-`DistingStateSynchronized`. This is a small drive-by correctness fix
-that the dirty-indicator change forces; it is in scope.
-
-#### Optimistic-rollback emits
-
-Several lines in `disting_cubit_algorithm_ops.dart` (e.g., line 126,
-the rollback path that pops the optimistically-added slot when the
-device add fails) emit a `copyWith` that *un-does* a user-initiated
-mutation. The emit's slot list is the pre-mutation state, but we have
-no record of whether other slots had unsaved edits before. The
-pragmatic rule:
-
-- **Rollback emits leave `isDirty` unchanged** (omit `isDirty` from the
-  `copyWith` argument list — Freezed preserves it). The user may have
-  had prior unsaved changes; rolling back a single failed mutation
-  does not magically save them.
-
-This applies symmetrically to any future rollback path. The mutation
-table entries for these lines describe the *successful* optimistic
-emit; rollback emits inherit `isDirty` via Freezed's preserve.
-
-### Mutation site reference (illustrative, not authoritative)
-
-The following table is a **starting point** derived from the codebase
-at the spec's commit. The mutation rule above is what the implementer
-follows; this table accelerates the first pass but should be
-re-validated against `git grep` results during implementation since
-line numbers drift.
-
-User-initiated mutation emits — set `isDirty: true`:
+Concretely, the following call sites add `isDirty: true` to their
+`copyWith(...)` argument lists (line numbers from current `main`):
 
 | File | Line | Operation |
 |------|------|-----------|
 | `disting_cubit_parameter_value_delegate.dart` | 59, 107 | parameter write (real-time + release) |
 | `disting_cubit_parameter_string_delegate.dart` | 43, 93, 131 | string parameter write |
-| `disting_cubit_algorithm_ops.dart` | 110, 126, 223, 319, 437 | add / remove / move algorithms (optimistic emits) |
-| `disting_cubit_algorithm_ops.dart` | 172, 185, 370, 483 | add / move verification emits — preserve `isDirty` (the optimistic emit already set it) |
-| `disting_cubit_slot_ops.dart` | 33 | slot custom-name optimistic |
-| `disting_cubit_slot_ops.dart` | 69 | slot custom-name verification — preserve |
-| `disting_cubit_slot_state_delegate.dart` | 71, 128, 170, 196, 227, 248 | slot state updates (parameter pages, output modes) |
+| `disting_cubit_algorithm_ops.dart` | 110, 126, 223, 319, 437 | add / remove / move algorithms — optimistic emits |
+| `disting_cubit_slot_ops.dart` | 33, 69 | slot custom name |
+| `disting_cubit_slot_state_delegate.dart` | 71, 128, 170, 196, 227, 248 | slot state updates |
 | `disting_cubit_slot_maintenance_delegate.dart` | 98, 135 | slot repair |
 | `disting_cubit_mapping_delegate.dart` | 84, 135, 175 | CV / MIDI / i2c / performance mapping |
 | `disting_cubit_perf_page_delegate.dart` | 34, 62 | perf page item edits |
 | `disting_cubit_preset_ops.dart` | 39 | preset rename optimistic emit |
 
-Device-truth emits — preserve current `isDirty`:
+The following call sites are **not user mutations** and must **not**
+set `isDirty: true`. They preserve the current `isDirty` value
+(omit the field from `copyWith` so it stays unchanged) — they reflect
+device truth or non-preset state:
 
 | File | Line | Why |
 |------|------|-----|
-| `disting_cubit_parameter_refresh_delegate.dart` | 66, 115, 247, 317 | live polling reflects device truth |
+| `disting_cubit_parameter_refresh_delegate.dart` | 66, 115, 247, 317 | live polling — device truth, not user changes |
 | `disting_cubit_cc_notification_delegate.dart` | 216 | CC value reflection from device |
+| `disting_cubit_state_refresh_delegate.dart` | 16, 47 | loading/error paths (the success path explicitly clears — see below) |
 | `disting_cubit_hardware_commands_delegate.dart` | 20 | screenshot only |
-| `disting_cubit_monitoring_delegate.dart` | 74, 90 | video stream state |
-| `disting_cubit_preset_ops.dart` | 56, 74 | rename verification correction (device truth) |
-| `disting_cubit.dart` | 893, 999 | firmware-update notice |
-
-Full-refresh emits — explicitly set `isDirty: false`:
-
-| File | Line | Why |
-|------|------|-----|
-| `disting_cubit_state_refresh_delegate.dart` | 34 | refreshed from device |
-| `disting_cubit_connection_delegate.dart` | 281 | initial sync emit (relies on Freezed default) |
-| `disting_cubit_offline_demo_delegate.dart` | 30, 72, 107, 193 | fresh state constructions |
-
-Out-of-scope (non-preset state) — pass through:
-
-| File | Line | Why |
-|------|------|-----|
-| `disting_cubit_state_refresh_delegate.dart` | 16, 47 | loading/error transitions |
-| `disting_cubit_algorithm_library_delegate.dart` | all | algorithm library cache, not preset |
-| `disting_cubit_connection_delegate.dart` | (other lines) | connection lifecycle |
-| `disting_cubit_plugin_delegate.dart` | 663 | algorithm library, not preset |
+| `disting_cubit_monitoring_delegate.dart` | 74, 90 | video/CPU stream state |
+| `disting_cubit_algorithm_library_delegate.dart` | all | algorithm library cache, not preset content |
+| `disting_cubit_connection_delegate.dart` | all | connection lifecycle (initial sync uses default `false`) |
+| `disting_cubit_plugin_delegate.dart` | 663 | algorithm library, not preset content |
+| `disting_cubit_algorithm_ops.dart` | 172, 185, 370, 483 | post-add/move *verification* refreshes — preserve isDirty (the optimistic emit already set it; these refreshes only correct slot details) |
 
 Routing changes flow through the existing `RoutingEditorCubit`, which
-calls back into `DistingCubit` via parameter writes — covered by the
-parameter-write path automatically.
+calls back into `DistingCubit` via parameter writes — so they're
+covered by the parameter-write path automatically.
 
 ### Clear rule
 
 `isDirty` is set back to `false` at exactly the points where the
 in-memory preset is fully resynchronised with a known clean baseline:
 
-1. **Save completes** — see "Save flow" below.
-2. **State refresh from device** — `_StateRefreshDelegate.refreshStateFromManager`
-   line 34: explicitly add `isDirty: false` to the `copyWith`.
+1. **Save completes** — `cubit.savePreset()` emits `isDirty: false`
+   on success (see "Save flow" below).
+2. **State refresh from device** —
+   `_StateRefreshDelegate.refreshStateFromManager` line 34 explicitly
+   sets `isDirty: false`. Refreshing pulls fresh slots and preset
+   name from the device, so the in-memory copy *is* the device copy.
+   We set this **explicitly** rather than relying on Freezed's
+   default, because the existing emit chains a `copyWith` from the
+   prior (possibly dirty) state.
 3. **New preset** — `newPresetImpl` calls `requestNewPreset()` then
    `_refreshStateFromManager()`, which resets via #2.
 4. **Load preset (online)** — `loadPresetImpl` calls
@@ -287,15 +201,13 @@ in-memory preset is fully resynchronised with a known clean baseline:
    resets via #2.
 5. **Load preset (offline)** — `_OfflineDemoDelegate.loadPresetOffline`
    constructs a fresh `DistingStateSynchronized`; default
-   `isDirty: false` applies. Verify no `copyWith` paths in this
-   delegate inadvertently preserve a stale dirty flag from a prior
-   state.
-6. **Demo init** — same as #5.
-7. **Initial sync** — `performSyncAndEmit` (connection delegate
-   line 281) constructs `DistingState.synchronized(...)` without
-   passing `isDirty`; the Freezed `@Default(false)` applies. No code
-   change needed if Freezed's defaults work as expected. Verify by
-   inspecting generated `disting_state.freezed.dart` after build_runner.
+   `isDirty: false` applies.
+6. **Demo / offline init** — same as #5.
+
+The rename verification path (`disting_cubit_preset_ops.dart` lines
+56, 74) corrects the preset name to device truth if the rename failed.
+These corrections **preserve the existing `isDirty` value** — they're
+neither a fresh mutation by the user nor a full refresh.
 
 ### Save flow
 
@@ -308,61 +220,64 @@ The current save path bypasses the cubit: three sites in
 Future<void> savePreset() async {
   final s = state;
   if (s is! DistingStateSynchronized) return;
-  final disting = s.disting;
   try {
-    await disting.requestSavePreset();
+    await s.disting.requestSavePreset();
+    final cur = state;
+    if (cur is DistingStateSynchronized) {
+      _emitState(cur.copyWith(isDirty: false));
+    }
   } catch (_) {
-    rethrow;  // Leave isDirty as-is; a failed save did not actually persist.
-  }
-  // Re-check state after the await: connection could have dropped.
-  final after = state;
-  if (after is DistingStateSynchronized) {
-    _emitState(after.copyWith(isDirty: false));
+    // Leave isDirty as-is; a failed save did not actually persist.
+    rethrow;
   }
 }
 ```
 
-The two-step (snapshot before await, re-read after) is intentional:
-between the `await` and the emit, state could have transitioned to
-`DistingStateConnected` or `DistingStateInitial` (e.g., disconnect).
-Re-reading `state` after the await catches that.
+Re-reading `state` after the `await` is deliberate: a parameter write
+or refresh may have landed during the save. We always re-check the
+current state class before emitting.
 
-Update the three UI call sites to use `cubit.savePreset()`. The
-keyboard shortcut path (line 503) and the popup-menu path (line 1851)
-both go through cleanly. The "Save First & New" path (line 1828) also
-calls `cubit.newPreset()` immediately after; reorder to
-`await cubit.savePreset(); cubit.newPreset();` so the save resolves
-before the new-preset state machine runs (which would otherwise also
-clear the flag via the refresh path, but the explicit ordering avoids
-a race).
-
-The auto-save inside `renamePresetImpl` (line 45) — `disting.requestSavePreset().catchError((_) {})`
-— must also clear the flag. Replace it with a deferred clear:
+Update the three call sites in `synchronized_screen.dart` to use
+`cubit.savePreset()`. The "Save First & New" path (line 1828) becomes:
 
 ```dart
-disting.requestSavePreset().then((_) {
-  final cur = state;
-  if (cur is DistingStateSynchronized) {
-    _emitState(cur.copyWith(isDirty: false));
-  }
-}).catchError((_) {});
+try {
+  await cubit.savePreset();
+  cubit.newPreset();
+} catch (e) {
+  // existing error UI
+}
 ```
 
-This is the only change to rename behaviour; otherwise the rename flow
-is untouched. Justification: the rename path already triggers a save,
-so the flag must clear when that save resolves — otherwise rename
-would leave a misleading `*` until the user manually saved again.
+so `newPreset()` only runs on a successful save.
 
-The `disting_controller_impl.dart` line 327 `savePreset()` (used by
-MCP) currently calls `_getManager().requestSavePreset()` directly.
-Change to `await _distingCubit.savePreset();` so MCP-driven saves also
-clear the flag. The `_getSynchronizedState()` precondition check
-remains; it will throw before `_distingCubit.savePreset()` if state
-isn't synchronized.
+The auto-save inside `renamePresetImpl` (line 45) — `disting.requestSavePreset().catchError((_) {})`
+— is **out of scope for this change**. It's a fire-and-forget best-effort
+operation; the dirty flag will simply remain set until the next save /
+refresh / load. (The user-visible behaviour: rename a preset and the
+asterisk will appear briefly until the next refresh or save.) This is
+acceptable and avoids touching the rename verification machinery in
+this PR.
 
-The `metadata_sync_cubit.dart` line 329 save is part of an internal
-sync orchestration that already calls back into `_refreshStateFromManager()`,
-which will clear the flag via the refresh rule. No change needed.
+### MCP / external save paths
+
+`DistingControllerImpl.savePreset`
+(`lib/services/disting_controller_impl.dart` line 329) currently calls
+`_getManager().requestSavePreset()` directly, bypassing the cubit. To
+keep the dirty flag in sync for MCP-driven saves, route through the
+cubit:
+
+```dart
+await _distingCubit.savePreset();
+```
+
+If the controller cannot reach a cubit instance in some test paths,
+fall back to the existing direct-manager call — the contract is "if a
+cubit is reachable, clear the flag through it."
+
+The `metadata_sync_cubit.dart` line 329 save is a different flow that
+already orchestrates `_refreshStateFromManager()` itself, which clears
+the flag via the refresh rule. No change needed.
 
 ### UI change
 
@@ -405,109 +320,74 @@ Semantics(
 ```
 
 The asterisk uses the same text style as the preset name — no separate
-icon, no colour change. We use an asterisk because it is the universally
-recognised "modified document" marker across editors (Vim, VSCode,
-Sublime, Xcode, etc.); Material Design has no specific guidance for
-in-text "modified" indicators on preset/document headers, so the
-text-editor convention applies. Spoken accessibility uses the phrase
-"unsaved changes" rather than reading "asterisk" aloud, matching the
-existing semantic-label patterns in the screen.
+icon, no colour change. Spoken accessibility uses the phrase "unsaved
+changes" rather than reading "asterisk" aloud. (Convention: VS Code,
+Vim, Sublime, Xcode all use a trailing asterisk or modified-dot for
+unsaved documents.)
 
 ## Edge cases
 
 - **Rename to the same name**: `renamePresetImpl` early-returns
   (line 36) before emitting, so `isDirty` is unchanged. Correct.
-- **Rename verification correction**: lines 56 and 74 emit
-  `verificationState.copyWith(presetName: actual)` after a rename
-  failure or device-truth correction. These must explicitly preserve
-  `isDirty` (`isDirty: verificationState.isDirty`) — otherwise the
-  freezed `copyWith` keeps the existing value, but adding the
-  explicit pass is required by the mutation rule and prevents
-  silent regressions.
-- **Rename succeeds + autosave fires + user mutates before autosave
-  resolves**: window of milliseconds; the autosave clear may
-  overwrite a fresh user mutation's `isDirty: true`. Mitigated by the
-  fact that the autosave clear re-reads `state` and sets
-  `isDirty: false` — but a user write that lands between the autosave
-  resolving and the clear emitting would be lost. Acceptable: the
-  window is tens of milliseconds and the user's next mutation will
-  immediately re-mark dirty.
 - **Parameter slider scrubbing back to original value**: marks dirty.
   Acceptable per non-goals.
 - **Failed save**: the `await disting.requestSavePreset()` may throw or
   silently fail; the cubit's `try/rethrow` keeps `isDirty: true` so
-  the user retains the indicator. UI call sites that previously
-  didn't await the save now have a future to consider — the new
-  `savePreset()` returns `Future<void>` and may throw. The popup-menu
-  and shortcut handlers should ignore failures (existing behaviour);
-  the "Save First & New" handler awaits before calling `newPreset()`.
-- **Live parameter polling races user mutation**: polling emits
-  preserve `isDirty: currentState.isDirty`, so a poll landing right
-  after a user mutation keeps the dirty flag set. Without the explicit
-  preserve, freezed's `copyWith` would also keep it (since the field
-  isn't passed), but the rule requires explicit pass-through.
-- **CC notification reflections** likewise reflect device-side changes;
-  preserve dirty.
-- **External save (auto-save during rename, MCP-driven save, sync
-  flow save)**: covered via the rename autosave change, the MCP
-  controller change, and the refresh path for sync-driven flows.
-- **Lua reload** (`disting_cubit_lua_reload_delegate.dart`): the
-  reload flow re-issues parameter writes via the standard parameter
-  delegate, which will mark dirty. The reload itself does not emit a
-  state directly (it issues SysEx writes that trigger downstream
-  refresh paths). No additional code change needed; verify by
-  triggering a reload and watching the indicator.
-- **Algorithm-add verification** (`algorithm_ops.dart` line 172): the
-  verification re-fetches the slot from the device and emits with the
-  fresh slot. Optimistic emit at line 110 already set `isDirty: true`;
-  the verify emit must `copyWith(slots: ..., isDirty: state.isDirty)`
-  to preserve.
-- **Initial sync** (`connection_delegate.dart` line 281): builds a
-  fresh `DistingState.synchronized(...)`. `isDirty` is omitted, so
-  Freezed's `@Default(false)` applies. Verify the generated freezed
-  file actually emits the default after `build_runner` runs.
+  the user retains the indicator. Acceptable; matches user mental
+  model ("the save didn't work, my changes are still unsaved").
+- **Save succeeds but device disconnects mid-save** (state machine
+  transitions out of `DistingStateSynchronized` between the await and
+  the emit): the post-save emit is skipped because the state class
+  no longer matches. On reconnect, the sync flow builds a fresh
+  `DistingStateSynchronized` (default `isDirty: false`). This is
+  correct — the device persisted, and the new state reflects device
+  truth.
+- **User mutation lands during a save**: the `await` in `savePreset`
+  yields the event loop. If the user moves a slider during the save,
+  the slider write emits `isDirty: true` first, then `savePreset`
+  re-reads `state` and emits `isDirty: false`. The newer mutation is
+  silently re-marked clean. **This is a known small race window**
+  measured in tens of milliseconds (one MIDI request/response). It is
+  not worth a counter or sequence number for this feature; the next
+  user mutation will mark it dirty again.
+- **User mutation lands during a refresh**: same race shape — refresh
+  emits `isDirty: false`, the mutation lands and emits `true`. Order
+  on the event queue determines outcome. Acceptable; matches the
+  existing optimistic-emit-then-verify pattern used throughout the
+  cubit.
+- **Live parameter polling** (`_parameter_refresh_delegate`) updates
+  `slots` from device truth. These must **not** flip `isDirty: true`
+  even though they emit slot changes. The mutation table above
+  explicitly excludes them; they preserve current `isDirty`.
+- **CC notification reflections** (`_cc_notification_delegate`) likewise
+  reflect device-side changes; excluded.
+- **Algorithm-op verification refreshes** (`_algorithm_ops` lines 172,
+  185, 370, 483) re-emit slot details a beat after the optimistic
+  emit. The optimistic emit already set dirty; verification preserves
+  it (omit `isDirty` from `copyWith`).
+- **Plugin install** doesn't directly mutate preset content. If
+  installing a plugin causes a `_refreshStateFromManager()` to fire,
+  the refresh path correctly clears the flag — same code path as a
+  manual refresh. Consistent.
+- **Lua reload** (`disting_cubit_lua_reload_delegate.dart`) restores
+  parameter values on the device by replaying parameter writes. Each
+  parameter write goes through the standard parameter-write path,
+  which marks dirty. This matches user mental model: a Lua reload
+  that re-applies values *is* a mutation from the device's
+  saved-preset perspective until the next explicit save.
+- **Checkpoint restore** likewise replays parameter writes; marks
+  dirty. Correct.
 - **Offline mode**: parameter writes still queue to the
   `OfflineDistingMidiManager`, which persists to local storage on
   `requestSavePreset()`. The dirty flag behaves identically.
-- **Demo mode**: in demo mode there's no real persistence, but mutations
-  still emit slot changes and `requestSavePreset()` is a no-op on the
-  mock manager. The flag still flips to true on mutation and clears on
-  the no-op save. Harmless.
+- **Demo mode**: `requestSavePreset()` is a no-op on the mock manager.
+  The flag still flips to true on mutation and clears on the no-op
+  save. Harmless.
 - **Connection loss mid-edit**: state transitions back to
   `DistingStateConnected` or `DistingStateInitial`, neither of which
   has `isDirty`. Reconnecting goes through the sync flow which builds
   a fresh `DistingStateSynchronized` (clean). Any unsaved edits are
   lost — that's existing behaviour, unchanged.
-- **Connection loss mid-save**: `cubit.savePreset()` re-reads `state`
-  after the `await` and only emits the clear if state is still
-  `DistingStateSynchronized`. If the device disconnects mid-save, the
-  emit is skipped and state has already transitioned away — the dirty
-  flag is moot until reconnect, where a fresh sync produces a clean
-  state. Acceptable; matches the existing "connection-lost wipes
-  in-memory edits" model.
-- **Checkpoint undo/redo back to original state**
-  (`_CheckpointDelegate.restoreCheckpoint`): restoring a checkpoint
-  re-issues parameter writes via the standard write path, each of
-  which sets `isDirty: true`. If the user undoes back to a checkpoint
-  taken at a clean baseline, the in-memory preset matches the device's
-  saved copy but the flag stays dirty. This is consistent with the
-  documented non-goal ("we track *whether mutations occurred*, not
-  *whether they round-trip to the same bytes*") and matches the
-  text-editor convention. A future "discard / revert" feature could
-  layer a clean-flag clear on top of checkpoint restore — out of scope
-  here.
-- **MCP server tool calls** that mutate state (`add_algorithm`,
-  `set_parameter_value`, etc.) flow through the same cubit methods, so
-  they correctly mark dirty. MCP-driven save is fixed via the
-  controller change above.
-- **`loadPresetOffline`** (cubit.dart line 300): clears checkpoints and
-  delegates to `_offlineDemoDelegate.loadPresetOffline`, which builds
-  a fresh `DistingStateSynchronized`. Default `isDirty: false` applies.
-- **Plugin install** (`plugin_delegate.dart` line 663): updates the
-  algorithm *library*, not preset contents. Out of scope; preserve
-  dirty.
-- **SD card preset operations**: scanning is read-only; loading goes
-  through `loadPresetImpl` which clears via refresh.
 - **Build-runner**: the freezed change requires regenerating
   `disting_state.freezed.dart`. Run
   `dart run build_runner build --delete-conflicting-outputs` per
@@ -517,48 +397,47 @@ existing semantic-label patterns in the screen.
 
 New file `test/cubit/preset_dirty_indicator_test.dart`:
 
-1. Fresh synchronized state has `isDirty == false`.
+1. Fresh sync state has `isDirty == false`.
 2. After `updateParameterValue(...)`, state is dirty.
 3. After `onAddAlgorithm(...)`, state is dirty.
 4. After `onRemoveAlgorithm(...)`, state is dirty.
 5. After `moveAlgorithmUp/Down(...)`, state is dirty.
-6. After `renamePreset(...)` to a new name, state is dirty until the
-   autosave resolves, then becomes clean.
+6. After `renamePreset(...)` to a new name, optimistic state is dirty.
 7. After `saveMapping(...)`, state is dirty.
-8. After a parameter-refresh emit (simulated via the live polling
-   delegate), the prior `isDirty` is **preserved** — true stays true,
-   false stays false.
-9. After a rename verification correction emit, prior `isDirty` is
-   preserved.
-10. `cubit.savePreset()` clears the flag on success.
-11. `cubit.savePreset()` leaves the flag set on failure (manager
-    throws).
-12. `cubit.savePreset()` is a no-op when state is not
-    `DistingStateSynchronized`.
+8. After `setPerfPageItem(...)`, state is dirty.
+9. After a parameter-refresh emit (simulated via the live polling
+   delegate), state preserves dirty (still true if it was true; still
+   false if it was false).
+10. `savePreset()` clears the flag on success.
+11. `savePreset()` leaves the flag set on failure (manager throws).
+12. `savePreset()` does not crash if state is not synchronized (early
+    return).
 13. `loadPreset(...)` clears the flag (via refresh path).
 14. `newPreset()` clears the flag (via refresh path).
 15. `refresh()` clears the flag.
-16. `disting_controller_impl.savePreset()` (MCP path) clears the flag.
+16. Algorithm-op verification refresh preserves prior dirty state.
 
 Widget test in `test/ui/synchronized_screen_dirty_indicator_test.dart`:
 
 1. With `isDirty: false`, header text is `Preset: <name>`.
 2. With `isDirty: true`, header text is `Preset: <name> *`.
-3. Semantic label includes "unsaved changes" when dirty.
+3. Semantic label includes "unsaved changes" when dirty; does not
+   include it when clean.
 
 Manual smoke (cannot run from CI):
 
 - Connect to hardware (or use demo mode).
 - Move a parameter slider; observe asterisk appears.
 - Hit Save Preset; observe asterisk clears.
-- Rename preset; observe asterisk appears momentarily then clears
-  (autosave).
+- Add an algorithm; observe asterisk appears, persists across
+  verification refresh.
 - Load a different preset; observe asterisk clears.
-- Trigger MCP save via the controller; observe asterisk clears.
+- Trigger a refresh; observe asterisk clears.
 
 ## Rollout
 
 Single PR. No feature flag — the indicator is purely additive UI and
 the new cubit field is free for any code path that ignores it. Run
-`flutter analyze` (must pass with zero warnings) and `flutter test`
-before opening the PR.
+`dart run build_runner build --delete-conflicting-outputs` first
+because the freezed state class changes. Then `flutter analyze` (must
+pass with zero warnings) and `flutter test` before opening the PR.
