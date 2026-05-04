@@ -403,6 +403,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
                 loading: false,
                 demo: verificationState.demo,
                 offline: verificationState.offline,
+                isDirty: verificationState.isDirty,
               ),
             );
             _rebuildCcLookup();
@@ -522,6 +523,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
                 loading: false,
                 demo: verificationState.demo,
                 offline: verificationState.offline,
+                isDirty: verificationState.isDirty,
               ),
             );
             _rebuildCcLookup();
