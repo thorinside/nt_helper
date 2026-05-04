@@ -112,7 +112,7 @@ void main() {
       const h = 100;
       const yScan = 50.0;
 
-      bool _isOrangeIsh(int r, int g, int b, int a) {
+      bool isOrangeIsh(int r, int g, int b, int a) {
         // Tolerance band for kBackwardEdgeColor (#FF8800), accounting for
         // anti-aliased / partially-covered pixels at the edges of round dots
         // and dashed segments. Output buffer is premultiplied, so partial-
@@ -158,7 +158,7 @@ void main() {
           int currentRun = 0;
           for (int x = 0; x < w; x++) {
             final i = (y * w + x) * 4;
-            if (_isOrangeIsh(
+            if (isOrangeIsh(
                 bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3])) {
               currentRun++;
               if (currentRun > maxRun) maxRun = currentRun;
@@ -225,7 +225,7 @@ void main() {
         return byteData.buffer.asUint8List();
       }
 
-      bool _hasOpaqueNonOrange(
+      bool hasOpaqueNonOrange(
         Uint8List bytes,
         Offset position, {
         int radius = 3,
@@ -244,7 +244,7 @@ void main() {
             final a = bytes[i + 3];
             // Pixel is opaque enough that we'd notice it as a drawn shape.
             if (a < 0x80) continue;
-            if (_isOrangeIsh(r, g, b, a)) continue;
+            if (isOrangeIsh(r, g, b, a)) continue;
             return true;
           }
         }
@@ -272,7 +272,7 @@ void main() {
 
           final bytes = await renderToBytes(conn, tester);
           expect(
-            _hasOpaqueNonOrange(bytes, const Offset(20, yScan)),
+            hasOpaqueNonOrange(bytes, const Offset(20, yScan)),
             isFalse,
             reason:
                 'an opaque non-orange pixel near the source endpoint means '
@@ -280,7 +280,7 @@ void main() {
                 'must not draw endpoint circles',
           );
           expect(
-            _hasOpaqueNonOrange(bytes, const Offset(180, yScan)),
+            hasOpaqueNonOrange(bytes, const Offset(180, yScan)),
             isFalse,
             reason:
                 'an opaque non-orange pixel near the destination endpoint '
