@@ -502,7 +502,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       child: Actions(
         actions: _keyBindingService.buildGlobalActions(
           onSavePreset: () {
-            cubit.requireDisting().requestSavePreset();
+            cubit.savePreset();
             SemanticsService.sendAnnouncement(
               View.of(context),
               'Preset saved',
@@ -1827,11 +1827,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       if (result == 'new_discard') {
                         cubit.newPreset();
                       } else if (result == 'save_first_new') {
-                        cubit.requireDisting().requestSavePreset();
-                        // It's generally okay to call newPreset() immediately after
-                        // requestSavePreset() for MIDI operations. The device handles
-                        // commands sequentially.
-                        cubit.newPreset();
+                        try {
+                          await cubit.savePreset();
+                          cubit.newPreset();
+                        } catch (_) {}
                       }
                       // If 'cancel' or dialog dismissed, do nothing.
                     } else {
@@ -1850,7 +1849,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             onTap: widget.loading
                 ? null
                 : () {
-                    cubit.requireDisting().requestSavePreset();
+                    cubit.savePreset();
                   },
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
