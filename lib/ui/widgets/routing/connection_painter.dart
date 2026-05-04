@@ -229,7 +229,7 @@ class ConnectionPainter extends CustomPainter {
         _drawDashedPath(canvas, path, paint);
 
       } else if (type == ConnectionVisualType.invalid) {
-        _drawDashedPath(canvas, path, paint);
+        _drawDottedPath(canvas, path, paint);
       } else if (type == ConnectionVisualType.partial) {
         _drawDashedPath(canvas, path, paint);
 
@@ -507,6 +507,27 @@ class ConnectionPainter extends CustomPainter {
       // Orange to white (0.5 - 1.0)
       final t = (dp - 0.5) / 0.5;
       return Color.lerp(Colors.orange, Colors.white, t)!;
+    }
+  }
+
+  /// Draw a stroked path as a sequence of round dots, used for backward-edge
+  /// (uphill) connections. Visually distinct from the dashed pattern used for
+  /// ghost/partial connections because each dot is a small filled circle, so
+  /// the pattern reads as "warning" rather than "broken".
+  void _drawDottedPath(Canvas canvas, Path path, Paint paint) {
+    final dotPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = paint.color;
+    final dotRadius = paint.strokeWidth / 2;
+    const dotSpacing = 6.0;
+
+    for (final metric in path.computeMetrics()) {
+      for (double d = 0.0; d <= metric.length; d += dotSpacing) {
+        final tangent = metric.getTangentForOffset(d);
+        if (tangent != null) {
+          canvas.drawCircle(tangent.position, dotRadius, dotPaint);
+        }
+      }
     }
   }
 
