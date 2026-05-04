@@ -82,4 +82,37 @@ void main() {
       expect(makeSyncState(isDirty: true).isDirty, isTrue);
     });
   });
+
+  group('cubit.savePreset()', () {
+    test('clears isDirty on success', () async {
+      when(() => mockDisting.requestSavePreset()).thenAnswer((_) async {});
+      cubit.emit(makeSyncState(isDirty: true));
+
+      await cubit.savePreset();
+
+      verify(() => mockDisting.requestSavePreset()).called(1);
+      final s = cubit.state as DistingStateSynchronized;
+      expect(s.isDirty, isFalse);
+    });
+
+    test('leaves isDirty set when save throws', () async {
+      when(
+        () => mockDisting.requestSavePreset(),
+      ).thenAnswer((_) async => throw Exception('save failed'));
+      cubit.emit(makeSyncState(isDirty: true));
+
+      await expectLater(cubit.savePreset(), throwsA(isA<Exception>()));
+
+      final s = cubit.state as DistingStateSynchronized;
+      expect(s.isDirty, isTrue);
+    });
+
+    test('is a no-op when state is not synchronized', () async {
+      // Initial state is DistingStateInitial; no synchronized state present.
+      await cubit.savePreset();
+
+      verifyNever(() => mockDisting.requestSavePreset());
+      expect(cubit.state, isA<DistingStateInitial>());
+    });
+  });
 }

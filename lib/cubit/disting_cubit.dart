@@ -437,6 +437,20 @@ class DistingCubit extends _DistingCubitBase
     return newPresetImpl();
   }
 
+  /// Save the current preset to persistent device storage and clear
+  /// the in-memory dirty flag on success. A failed save leaves the
+  /// flag set so the user retains the unsaved-changes indicator.
+  Future<void> savePreset() async {
+    final s = state;
+    if (s is! DistingStateSynchronized) return;
+    final disting = s.disting;
+    await disting.requestSavePreset();
+    final after = state;
+    if (after is DistingStateSynchronized) {
+      _emitState(after.copyWith(isDirty: false));
+    }
+  }
+
   Future<void> loadPreset(String name, bool append) async {
     if (!append) _checkpointDelegate.clearCheckpoints();
     return loadPresetImpl(name, append);
