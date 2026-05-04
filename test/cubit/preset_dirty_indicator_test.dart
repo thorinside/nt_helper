@@ -176,6 +176,31 @@ void main() {
     });
   });
 
+  group('cubit.updateParameterString()', () {
+    test('marks state dirty after setting and refreshing string', () async {
+      when(
+        () => mockDisting.setParameterString(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestParameterValueString(any(), any()),
+      ).thenAnswer((_) async => ParameterValueString(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 'hi',
+          ));
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+      expect((cubit.state as DistingStateSynchronized).isDirty, isFalse);
+
+      await cubit.updateParameterString(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        value: 'hi',
+      );
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+  });
+
   group('cubit.savePreset()', () {
     test('clears isDirty on success', () async {
       when(() => mockDisting.requestSavePreset()).thenAnswer((_) async {});
