@@ -9,6 +9,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/models/performance_page_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_helpers/mock_midi_command.dart';
@@ -39,6 +40,7 @@ void main() {
       ),
     );
     registerFallbackValue(PackedMappingData.filler());
+    registerFallbackValue(PerformancePageItem.empty(0));
   });
 
   setUp(() {
@@ -366,6 +368,24 @@ void main() {
       // the optimistic emit.
       unawaited(cubit.setPerformancePageMapping(0, 0, 1));
       // Allow microtask queue to flush so the optimistic emit lands.
+      await Future<void>.delayed(Duration.zero);
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+  });
+
+  group('cubit perf page ops', () {
+    test('setPerfPageItem marks state dirty (optimistic)', () async {
+      when(
+        () => mockDisting.setPerfPageItem(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestPerfPageItem(any()),
+      ).thenAnswer((_) async => PerformancePageItem.empty(0));
+
+      cubit.emit(makeSyncState());
+      // Don't await — verification retries take seconds.
+      unawaited(cubit.setPerfPageItem(PerformancePageItem.empty(0)));
       await Future<void>.delayed(Duration.zero);
 
       expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
