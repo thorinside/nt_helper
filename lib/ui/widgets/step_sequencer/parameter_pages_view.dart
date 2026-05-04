@@ -252,6 +252,7 @@ class _ParameterPageContent extends StatelessWidget {
             videoStream,
             availableFirmwareUpdate,
             perfPageItems,
+            isDirty,
           ) {
             final currentSlot = slotIndex < slots.length ? slots[slotIndex] : slot;
             return (currentSlot, unitStrings);
