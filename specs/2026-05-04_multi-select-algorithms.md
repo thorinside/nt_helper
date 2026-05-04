@@ -140,9 +140,15 @@ final Set<String> _selectedGuids = {};
 Add an `IconButton` to the AppBar `actions` (between the `Refresh` and `Help`
 buttons, ~line 478) that toggles `_multiSelectMode`. Icon: `Icons.checklist`
 when off, filled accent when on. Tooltip: "Multi-select" / "Exit
-multi-select". Toggling **off** clears `_selectedGuids` and re-runs
-`_filterAlgorithms()`; toggling **on** clears the single-select state via
-`_clearSelection()` (line 337).
+multi-select". Toggling **off** clears `_selectedGuids` (no need to re-run
+`_filterAlgorithms` — the filter is unaffected by selection state); toggling
+**on** clears the single-select state via `_clearSelection()` (line 337).
+
+When the preset is already at cap (`slots.length >= MCPConstants.maxSlots`),
+the toggle button is rendered with `onPressed: null` and a tooltip
+explaining "Preset full · remove an algorithm to enable multi-select." This
+prevents the user from entering multi-select only to be hit with a cap
+SnackBar on every tick attempt.
 
 `_multiSelectMode` and `_selectedGuids` are **in-memory only**. The mode
 resets to off each time the screen opens. Persisting the toggle and not the
@@ -331,6 +337,25 @@ if (result is Map) {
   }
 }
 ```
+
+Notes on the record-typed payload:
+
+- `Navigator.pop` keeps Dart objects in-memory; there is no
+  serialization round-trip. Dart records survive the boundary as ordinary
+  objects, just like the existing `_currentAlgoInfo` (an `AlgorithmInfo`
+  object) does today.
+- The `(result['algorithms'] as List).cast<({...})>()` pattern relies on
+  the producer side returning a properly-typed `List<({...})>` (which
+  `_selectedAlgorithmsInDisplayOrder` does — the comprehension yields a
+  list whose static type is the record-typed list). If the producer ever
+  changes to return `List<dynamic>`, the cast becomes a checked view that
+  may throw on element access. Keep `_selectedAlgorithmsInDisplayOrder`'s
+  return type explicit.
+- Implementer convention: if record-cast turns out to be brittle in
+  practice (e.g., compiler upgrade changes inference), an equally
+  acceptable shape is `List<Map<String, dynamic>>` with `'algorithm'` and
+  `'specifications'` keys, unpacked on the receiving side. Prefer records
+  unless that brittleness materialises.
 
 ### 5. Unloaded-plugin handling, help text
 
