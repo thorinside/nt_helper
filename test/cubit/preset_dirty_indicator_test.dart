@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -36,6 +38,7 @@ void main() {
         specifications: const [],
       ),
     );
+    registerFallbackValue(PackedMappingData.filler());
   });
 
   setUp(() {
@@ -311,6 +314,61 @@ void main() {
       await cubit.refreshRouting();
 
       expect((cubit.state as DistingStateSynchronized).isDirty, isFalse);
+    });
+  });
+
+  group('cubit mapping ops', () {
+    test('saveMapping marks state dirty (after device-refresh sweep)',
+        () async {
+      when(
+        () => mockDisting.requestSetMapping(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockDisting.requestPresetName(),
+      ).thenAnswer((_) async => 'Test Preset');
+
+      cubit.emit(
+        DistingStateSynchronized(
+          disting: mockDisting,
+          distingVersion: '1.10.0',
+          firmwareVersion: FirmwareVersion('1.14.0'),
+          presetName: 'Test Preset',
+          algorithms: const [],
+          slots: const [],
+          unitStrings: const [],
+          offline: true,
+        ),
+      );
+
+      await cubit.saveMapping(0, 0, PackedMappingData.filler());
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+
+    test('setPerformancePageMapping marks state dirty (optimistic)', () async {
+      when(
+        () => mockDisting.setPerformancePageMapping(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestMappings(any(), any()),
+      ).thenAnswer((_) async => Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData:
+                PackedMappingData.filler().copyWith(perfPageIndex: 1),
+          ));
+
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+      // Don't await — verification retries take seconds. We only care about
+      // the optimistic emit.
+      unawaited(cubit.setPerformancePageMapping(0, 0, 1));
+      // Allow microtask queue to flush so the optimistic emit lands.
+      await Future<void>.delayed(Duration.zero);
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
     });
   });
 
