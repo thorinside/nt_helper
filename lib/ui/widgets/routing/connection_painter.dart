@@ -10,6 +10,11 @@ import 'ghost_connection_tooltip.dart';
 import 'connection_theme.dart';
 import 'bus_label_formatter.dart';
 
+/// Bright orange used to flag backward-edge ("uphill") connections.
+/// Theme-independent so the warning meaning is uniform in light and dark mode.
+@visibleForTesting
+const Color kBackwardEdgeColor = Color(0xFFFF8800);
+
 /// Represents connection data with bus and output mode information
 class ConnectionData {
   final Connection connection;
@@ -107,6 +112,22 @@ class ConnectionPainter extends CustomPainter {
     this.hasExtendedAuxBuses = false,
   });
 
+  /// Classify a connection into the visual style bucket used for batching.
+  ///
+  /// Precedence (highest first): selected, partial, invalid (backward edge),
+  /// ghost, regular. Selection is a transient user-driven highlight and wins
+  /// over backward-edge styling. A backward edge that is also partial renders
+  /// as partial, because an incomplete connection is the more important
+  /// signal than a deferred-bus warning.
+  @visibleForTesting
+  static ConnectionVisualType classifyVisualType(ConnectionData conn) {
+    if (conn.isSelected) return ConnectionVisualType.selected;
+    if (conn.isPartial) return ConnectionVisualType.partial;
+    if (conn.isInvalidOrder) return ConnectionVisualType.invalid;
+    if (conn.isGhostConnection) return ConnectionVisualType.ghost;
+    return ConnectionVisualType.regular;
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     if (connections.isEmpty) return;
@@ -121,16 +142,22 @@ class ConnectionPainter extends CustomPainter {
     final selectedConnections = <ConnectionData>[];
     final partialConnections = <ConnectionData>[];
     for (final conn in connections) {
-      if (conn.isSelected) {
-        selectedConnections.add(conn);
-      } else if (conn.isPartial) {
-        partialConnections.add(conn);
-      } else if (conn.isInvalidOrder) {
-        invalidConnections.add(conn);
-      } else if (conn.isGhostConnection) {
-        ghostConnections.add(conn);
-      } else {
-        regularConnections.add(conn);
+      switch (classifyVisualType(conn)) {
+        case ConnectionVisualType.selected:
+          selectedConnections.add(conn);
+          break;
+        case ConnectionVisualType.partial:
+          partialConnections.add(conn);
+          break;
+        case ConnectionVisualType.invalid:
+          invalidConnections.add(conn);
+          break;
+        case ConnectionVisualType.ghost:
+          ghostConnections.add(conn);
+          break;
+        case ConnectionVisualType.regular:
+          regularConnections.add(conn);
+          break;
       }
     }
 
@@ -202,7 +229,7 @@ class ConnectionPainter extends CustomPainter {
         _drawDashedPath(canvas, path, paint);
 
       } else if (type == ConnectionVisualType.invalid) {
-        _drawDashedPath(canvas, path, paint);
+        _drawDottedPath(canvas, path, paint);
       } else if (type == ConnectionVisualType.partial) {
         _drawDashedPath(canvas, path, paint);
 
@@ -240,8 +267,11 @@ class ConnectionPainter extends CustomPainter {
         }
       }
 
-      // Draw endpoints (skip for partial connections)
-      if (type != ConnectionVisualType.partial) {
+      // Draw endpoints (skip for partial and invalid connections; the latter
+      // because port-color circles over an orange dot read as a
+      // "double-ended broken connection").
+      if (type != ConnectionVisualType.partial &&
+          type != ConnectionVisualType.invalid) {
         _drawEndpoints(canvas, conn);
       }
     }
@@ -374,11 +404,14 @@ class ConnectionPainter extends CustomPainter {
     ConnectionData conn,
     ConnectionVisualType type,
   ) {
-    // Handle backward connections (wrong slot order) with tertiary color
+    // Handle backward edges (source slot index higher than destination)
+    // with a theme-independent bright orange so the warning reads the same
+    // in light and dark mode and is visually distinct from the muted-grey
+    // dashed style used for partial/disconnected connections.
     if (type == ConnectionVisualType.invalid) {
       paint
         ..strokeWidth = 2.0
-        ..color = theme.colorScheme.tertiary;
+        ..color = kBackwardEdgeColor;
       return;
     }
 
@@ -477,6 +510,27 @@ class ConnectionPainter extends CustomPainter {
       // Orange to white (0.5 - 1.0)
       final t = (dp - 0.5) / 0.5;
       return Color.lerp(Colors.orange, Colors.white, t)!;
+    }
+  }
+
+  /// Draw a stroked path as a sequence of round dots, used for backward-edge
+  /// (uphill) connections. Visually distinct from the dashed pattern used for
+  /// ghost/partial connections because each dot is a small filled circle, so
+  /// the pattern reads as "warning" rather than "broken".
+  void _drawDottedPath(Canvas canvas, Path path, Paint paint) {
+    final dotPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = paint.color;
+    final dotRadius = paint.strokeWidth / 2;
+    const dotSpacing = 6.0;
+
+    for (final metric in path.computeMetrics()) {
+      for (double d = 0.0; d <= metric.length; d += dotSpacing) {
+        final tangent = metric.getTangentForOffset(d);
+        if (tangent != null) {
+          canvas.drawCircle(tangent.position, dotRadius, dotPaint);
+        }
+      }
     }
   }
 
@@ -956,6 +1010,15 @@ class ConnectionPainter extends CustomPainter {
       return colors.clockPortColor;
     }
     return theme.colorScheme.outline;
+  }
+
+  /// Resolve the stroke color a given connection would receive when painted.
+  /// Exposes the result of `_applyConnectionStyle()` for unit tests.
+  @visibleForTesting
+  Color debugResolveStyleColor(ConnectionData conn) {
+    final paint = Paint();
+    _applyConnectionStyle(paint, conn, classifyVisualType(conn));
+    return paint.color;
   }
 
   /// Get current label bounds for testing purposes
