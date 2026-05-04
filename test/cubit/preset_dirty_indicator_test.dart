@@ -28,6 +28,14 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
     registerFallbackValue(DistingState.initial());
+    registerFallbackValue(
+      AlgorithmInfo(
+        algorithmIndex: 0,
+        name: 'fallback',
+        guid: 'fallback',
+        specifications: const [],
+      ),
+    );
   });
 
   setUp(() {
@@ -196,6 +204,72 @@ void main() {
         parameterNumber: 0,
         value: 'hi',
       );
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+  });
+
+  group('cubit algorithm ops', () {
+    test('onAlgorithmSelected marks state dirty', () async {
+      final algorithmInfo = AlgorithmInfo(
+        algorithmIndex: 0,
+        name: 'Test Algo',
+        guid: 'test',
+        specifications: const [],
+      );
+      when(
+        () => mockDisting.requestAddAlgorithm(any(), any()),
+      ).thenAnswer((_) async {});
+
+      cubit.emit(makeSyncState());
+      await cubit.onAlgorithmSelected(algorithmInfo, const []);
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+
+    test('onRemoveAlgorithm marks state dirty', () async {
+      when(
+        () => mockDisting.requestRemoveAlgorithm(any()),
+      ).thenAnswer((_) async {});
+
+      cubit.emit(makeSyncState(slots: [makeSlot()]));
+      await cubit.onRemoveAlgorithm(0);
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+
+    test('moveAlgorithmUp marks state dirty', () async {
+      when(
+        () => mockDisting.requestMoveAlgorithmUp(any()),
+      ).thenAnswer((_) async {});
+
+      cubit.emit(
+        makeSyncState(
+          slots: [
+            makeSlot(algorithmIndex: 0),
+            makeSlot(algorithmIndex: 1),
+          ],
+        ),
+      );
+      await cubit.moveAlgorithmUp(1);
+
+      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+    });
+
+    test('moveAlgorithmDown marks state dirty', () async {
+      when(
+        () => mockDisting.requestMoveAlgorithmDown(any()),
+      ).thenAnswer((_) async {});
+
+      cubit.emit(
+        makeSyncState(
+          slots: [
+            makeSlot(algorithmIndex: 0),
+            makeSlot(algorithmIndex: 1),
+          ],
+        ),
+      );
+      await cubit.moveAlgorithmDown(0);
 
       expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
     });

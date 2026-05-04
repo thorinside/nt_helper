@@ -111,6 +111,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           syncstate.copyWith(
             slots: [...syncstate.slots, placeholder],
             loading: false,
+            isDirty: true,
           ),
         );
 
@@ -123,7 +124,12 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           final st = state;
           if (st is DistingStateSynchronized &&
               st.slots.length == syncstate.slots.length + 1) {
-            emit(st.copyWith(slots: List<Slot>.from(st.slots)..removeLast()));
+            emit(
+              st.copyWith(
+                slots: List<Slot>.from(st.slots)..removeLast(),
+                isDirty: true,
+              ),
+            );
           }
           return;
         }
@@ -220,7 +226,13 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         }
 
         // Emit optimistic state
-        emit(syncstate.copyWith(slots: optimisticSlots, loading: false));
+        emit(
+          syncstate.copyWith(
+            slots: optimisticSlots,
+            loading: false,
+            isDirty: true,
+          ),
+        );
 
         _rebuildCcLookup();
 
@@ -316,7 +328,13 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         correctedSwappedSlot; // Swapped slot goes to the lower position
 
     // Emit optimistic state
-    emit(syncstate.copyWith(slots: optimisticSlotsCorrected, loading: false));
+    emit(
+      syncstate.copyWith(
+        slots: optimisticSlotsCorrected,
+        loading: false,
+        isDirty: true,
+      ),
+    );
 
     _rebuildCcLookup();
 
@@ -434,7 +452,13 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         correctedMovedSlot; // Moved slot goes to the lower position
 
     // Emit optimistic state
-    emit(syncstate.copyWith(slots: optimisticSlotsCorrected, loading: false));
+    emit(
+      syncstate.copyWith(
+        slots: optimisticSlotsCorrected,
+        loading: false,
+        isDirty: true,
+      ),
+    );
 
     _rebuildCcLookup();
 
