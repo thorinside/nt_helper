@@ -602,6 +602,57 @@ void main() {
           expect(edge.outputMode, core.OutputMode.replace);
         },
       );
+
+      test(
+        'multiple Replace writers in higher slots produce one backward edge per writer',
+        () {
+          // Reader in slot 0, two Replace writers in slots 1 and 2 on bus 25.
+          // Discovery is per (writer, reader) pair — matches dd7811d's
+          // original behavior. A future contribution-aware filter on the
+          // backward branch would be a deliberate, test-visible change.
+          final reader = _FakeRouting(
+            id: 'algo_reader',
+            inputs: [_inPort('reader_in_b25', 25)],
+          );
+          final writer1 = _FakeRouting(
+            id: 'algo_writer1',
+            outputs: [
+              _outPort('writer1_out_b25', 25, mode: core.OutputMode.replace),
+            ],
+          );
+          final writer2 = _FakeRouting(
+            id: 'algo_writer2',
+            outputs: [
+              _outPort('writer2_out_b25', 25, mode: core.OutputMode.replace),
+            ],
+          );
+
+          final conns = ConnectionDiscoveryService.discoverConnections([
+            reader,
+            writer1,
+            writer2,
+          ]);
+
+          final backwardConns = conns
+              .where(
+                (c) =>
+                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                    c.destinationPortId == 'reader_in_b25' &&
+                    c.isBackwardEdge,
+              )
+              .toList();
+
+          expect(backwardConns, hasLength(2));
+          for (final edge in backwardConns) {
+            expect(edge.isPartial, isFalse);
+            expect(edge.outputMode, core.OutputMode.replace);
+          }
+          expect(
+            backwardConns.map((c) => c.sourcePortId).toSet(),
+            {'writer1_out_b25', 'writer2_out_b25'},
+          );
+        },
+      );
     });
   });
 }
