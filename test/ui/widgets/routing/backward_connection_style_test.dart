@@ -113,13 +113,20 @@ void main() {
       const yScan = 50.0;
 
       bool _isOrangeIsh(int r, int g, int b, int a) {
-        // Tolerance band for kBackwardEdgeColor (#FF8800) accounting for
-        // anti-aliased edges of round dots / dashed segments.
-        return a >= 0x80 &&
-            r >= 0xC0 &&
-            g >= 0x40 &&
-            g <= 0xB0 &&
-            b <= 0x40;
+        // Tolerance band for kBackwardEdgeColor (#FF8800), accounting for
+        // anti-aliased / partially-covered pixels at the edges of round dots
+        // and dashed segments. Output buffer is premultiplied, so partial-
+        // coverage pixels show R≈191/G≈102/A≈191 instead of full intensity;
+        // we therefore unpremultiply against alpha to recover the source
+        // color and assert that against #FF8800 with a generous tolerance.
+        if (a < 0x40) return false;
+        final rNorm = (r * 255) ~/ a;
+        final gNorm = (g * 255) ~/ a;
+        final bNorm = (b * 255) ~/ a;
+        return rNorm >= 0xE0 &&
+            gNorm >= 0x60 &&
+            gNorm <= 0xA8 &&
+            bNorm <= 0x20;
       }
 
       Future<int> maxOrangeRunOnScanlineFor(
@@ -194,6 +201,93 @@ void main() {
               'not 8 px dashes',
         );
       });
+
+      Future<Uint8List> renderToBytes(
+        ConnectionData conn,
+        WidgetTester tester,
+      ) async {
+        late ByteData byteData;
+        await tester.runAsync(() async {
+          final painter = ConnectionPainter(
+            connections: [conn],
+            theme: ThemeData.light(),
+            showLabels: false,
+            enableAntiOverlap: false,
+          );
+          final recorder = dart_ui.PictureRecorder();
+          final canvas = Canvas(recorder);
+          painter.paint(canvas, const Size(w * 1.0, h * 1.0));
+          final picture = recorder.endRecording();
+          final image = await picture.toImage(w, h);
+          byteData =
+              (await image.toByteData(format: dart_ui.ImageByteFormat.rawRgba))!;
+        });
+        return byteData.buffer.asUint8List();
+      }
+
+      bool _hasOpaqueNonOrange(
+        Uint8List bytes,
+        Offset position, {
+        int radius = 3,
+      }) {
+        final px = position.dx.toInt();
+        final py = position.dy.toInt();
+        for (int dy = -radius; dy <= radius; dy++) {
+          for (int dx = -radius; dx <= radius; dx++) {
+            final x = px + dx;
+            final y = py + dy;
+            if (x < 0 || x >= w || y < 0 || y >= h) continue;
+            final i = (y * w + x) * 4;
+            final r = bytes[i];
+            final g = bytes[i + 1];
+            final b = bytes[i + 2];
+            final a = bytes[i + 3];
+            // Pixel is opaque enough that we'd notice it as a drawn shape.
+            if (a < 0x80) continue;
+            if (_isOrangeIsh(r, g, b, a)) continue;
+            return true;
+          }
+        }
+        return false;
+      }
+
+      testWidgets(
+        'backward edge does not draw port-color endpoint circles',
+        (tester) async {
+          // Use a port id that maps to the audio accessible port color
+          // (a blue, non-orange color); a 3px-radius endpoint circle in
+          // that color would be the only thing visible at the source/dest
+          // endpoint area when endpoints are drawn.
+          final conn = ConnectionData(
+            connection: Connection(
+              id: 'be_audio',
+              sourcePortId: 'algA_audio_out_1',
+              destinationPortId: 'algB_audio_in_1',
+              connectionType: ConnectionType.algorithmToAlgorithm,
+              isBackwardEdge: true,
+            ),
+            sourcePosition: const Offset(20, yScan),
+            destinationPosition: const Offset(180, yScan),
+          );
+
+          final bytes = await renderToBytes(conn, tester);
+          expect(
+            _hasOpaqueNonOrange(bytes, const Offset(20, yScan)),
+            isFalse,
+            reason:
+                'an opaque non-orange pixel near the source endpoint means '
+                'the port-color endpoint circle was drawn — backward edges '
+                'must not draw endpoint circles',
+          );
+          expect(
+            _hasOpaqueNonOrange(bytes, const Offset(180, yScan)),
+            isFalse,
+            reason:
+                'an opaque non-orange pixel near the destination endpoint '
+                'means the port-color endpoint circle was drawn',
+          );
+        },
+      );
     });
   });
 }

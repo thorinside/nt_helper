@@ -267,8 +267,11 @@ class ConnectionPainter extends CustomPainter {
         }
       }
 
-      // Draw endpoints (skip for partial connections)
-      if (type != ConnectionVisualType.partial) {
+      // Draw endpoints (skip for partial and invalid connections; the latter
+      // because port-color circles over an orange dot read as a
+      // "double-ended broken connection").
+      if (type != ConnectionVisualType.partial &&
+          type != ConnectionVisualType.invalid) {
         _drawEndpoints(canvas, conn);
       }
     }
