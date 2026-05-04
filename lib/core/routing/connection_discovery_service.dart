@@ -119,11 +119,14 @@ class ConnectionDiscoveryService {
 
               matchedPorts.add(output.portId);
               matchedPorts.add(input.portId);
-            } else if (!isForward &&
-                       output.outputMode != OutputMode.replace) {
-              // Backward connection: writer is in a higher slot than reader.
-              // Skip when the writer uses Replace — the replaced value won't
-              // propagate upward, so the backward edge is irrelevant.
+            } else if (!isForward) {
+              // Backward edge: a non-physical shared bus where the writer's
+              // slot index is greater than the reader's, between distinct
+              // algorithms. Disting NT bus values persist across audio
+              // frames, so the reader sees the writer's value one block
+              // later regardless of OutputMode (Add vs Replace only changes
+              // how the writer combines with the bus contents in the
+              // current frame).
               connections.add(
                 Connection(
                   id: 'conn_${output.portId}_to_${input.portId}_backward',

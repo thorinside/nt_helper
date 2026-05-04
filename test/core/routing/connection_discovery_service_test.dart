@@ -63,6 +63,7 @@ core.Port _inPort(
 core.Port _outPort(
   String id,
   int bus, {
+  core.OutputMode? mode,
   core.PortType type = core.PortType.audio,
 }) {
   return core.Port(
@@ -72,6 +73,7 @@ core.Port _outPort(
     direction: core.PortDirection.output,
     busValue: bus,
     parameterNumber: 2,
+    outputMode: mode,
   );
 }
 
@@ -432,6 +434,224 @@ void main() {
               c.destinationPortId == 'es5_L' || c.destinationPortId == 'es5_R',
         ),
         isFalse,
+      );
+    });
+
+    group('backward-edge discovery', () {
+      test(
+        'Replace + backward: writer in higher slot produces single backward edge',
+        () {
+          // Reader in slot 0, writer in slot 1 on aux bus 25 (non-physical).
+          // Writer uses Replace mode. Bus values persist across audio frames,
+          // so the reader sees the writer's value one block later — this is
+          // a backward edge regardless of OutputMode.
+          final reader = _FakeRouting(
+            id: 'algo_reader',
+            inputs: [_inPort('reader_in_b25', 25)],
+          );
+          final writer = _FakeRouting(
+            id: 'algo_writer',
+            outputs: [
+              _outPort(
+                'writer_out_b25',
+                25,
+                mode: core.OutputMode.replace,
+              ),
+            ],
+          );
+
+          final conns = ConnectionDiscoveryService.discoverConnections([
+            reader,
+            writer,
+          ]);
+
+          final backwardConns = conns
+              .where(
+                (c) =>
+                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                    c.sourcePortId == 'writer_out_b25' &&
+                    c.destinationPortId == 'reader_in_b25',
+              )
+              .toList();
+
+          expect(backwardConns, hasLength(1));
+          final edge = backwardConns.single;
+          expect(edge.isBackwardEdge, isTrue);
+          expect(edge.isPartial, isFalse);
+          expect(edge.outputMode, core.OutputMode.replace);
+          expect(edge.busNumber, 25);
+
+          // No partial chip connections should exist for either port.
+          expect(
+            conns.any(
+              (c) =>
+                  c.isPartial &&
+                  (c.sourcePortId == 'writer_out_b25' ||
+                      c.destinationPortId == 'writer_out_b25' ||
+                      c.sourcePortId == 'reader_in_b25' ||
+                      c.destinationPortId == 'reader_in_b25'),
+            ),
+            isFalse,
+          );
+        },
+      );
+
+      test(
+        'Add + backward: writer in higher slot produces single backward edge',
+        () {
+          // Same topology as the Replace case, but writer uses Add. This
+          // case worked before the fix — it locks in non-regression.
+          final reader = _FakeRouting(
+            id: 'algo_reader',
+            inputs: [_inPort('reader_in_b25', 25)],
+          );
+          final writer = _FakeRouting(
+            id: 'algo_writer',
+            outputs: [
+              _outPort('writer_out_b25', 25, mode: core.OutputMode.add),
+            ],
+          );
+
+          final conns = ConnectionDiscoveryService.discoverConnections([
+            reader,
+            writer,
+          ]);
+
+          final backwardConns = conns
+              .where(
+                (c) =>
+                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                    c.sourcePortId == 'writer_out_b25' &&
+                    c.destinationPortId == 'reader_in_b25',
+              )
+              .toList();
+
+          expect(backwardConns, hasLength(1));
+          final edge = backwardConns.single;
+          expect(edge.isBackwardEdge, isTrue);
+          expect(edge.isPartial, isFalse);
+          expect(edge.outputMode, core.OutputMode.add);
+        },
+      );
+
+      test('self-write: same-algorithm in/out on same bus is not connected',
+          () {
+        // A single algorithm with both an input port and an output port on
+        // bus 25. The output.algorithmId == input.algorithmId guard must
+        // skip the pair, even with the backward-edge guard relaxed.
+        final self = _FakeRouting(
+          id: 'algo_self',
+          inputs: [_inPort('self_in_b25', 25)],
+          outputs: [
+            _outPort('self_out_b25', 25, mode: core.OutputMode.replace),
+          ],
+        );
+
+        final conns = ConnectionDiscoveryService.discoverConnections([self]);
+
+        expect(
+          conns.any(
+            (c) =>
+                c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                c.sourcePortId == 'self_out_b25' &&
+                c.destinationPortId == 'self_in_b25',
+          ),
+          isFalse,
+        );
+      });
+
+      test(
+        'Replace + forward: writer in lower slot produces forward edge',
+        () {
+          // Routings list [writer, reader]: writer.algorithmIndex == 0,
+          // reader.algorithmIndex == 1. Writer uses Replace. Confirms the
+          // fix didn't accidentally re-classify forward connections.
+          final writer = _FakeRouting(
+            id: 'algo_writer',
+            outputs: [
+              _outPort(
+                'writer_out_b25',
+                25,
+                mode: core.OutputMode.replace,
+              ),
+            ],
+          );
+          final reader = _FakeRouting(
+            id: 'algo_reader',
+            inputs: [_inPort('reader_in_b25', 25)],
+          );
+
+          final conns = ConnectionDiscoveryService.discoverConnections([
+            writer,
+            reader,
+          ]);
+
+          final forwardConns = conns
+              .where(
+                (c) =>
+                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                    c.sourcePortId == 'writer_out_b25' &&
+                    c.destinationPortId == 'reader_in_b25',
+              )
+              .toList();
+
+          expect(forwardConns, hasLength(1));
+          final edge = forwardConns.single;
+          expect(edge.isBackwardEdge, isFalse);
+          expect(edge.isPartial, isFalse);
+          expect(edge.outputMode, core.OutputMode.replace);
+        },
+      );
+
+      test(
+        'multiple Replace writers in higher slots produce one backward edge per writer',
+        () {
+          // Reader in slot 0, two Replace writers in slots 1 and 2 on bus 25.
+          // Discovery is per (writer, reader) pair — matches dd7811d's
+          // original behavior. A future contribution-aware filter on the
+          // backward branch would be a deliberate, test-visible change.
+          final reader = _FakeRouting(
+            id: 'algo_reader',
+            inputs: [_inPort('reader_in_b25', 25)],
+          );
+          final writer1 = _FakeRouting(
+            id: 'algo_writer1',
+            outputs: [
+              _outPort('writer1_out_b25', 25, mode: core.OutputMode.replace),
+            ],
+          );
+          final writer2 = _FakeRouting(
+            id: 'algo_writer2',
+            outputs: [
+              _outPort('writer2_out_b25', 25, mode: core.OutputMode.replace),
+            ],
+          );
+
+          final conns = ConnectionDiscoveryService.discoverConnections([
+            reader,
+            writer1,
+            writer2,
+          ]);
+
+          final backwardConns = conns
+              .where(
+                (c) =>
+                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                    c.destinationPortId == 'reader_in_b25' &&
+                    c.isBackwardEdge,
+              )
+              .toList();
+
+          expect(backwardConns, hasLength(2));
+          for (final edge in backwardConns) {
+            expect(edge.isPartial, isFalse);
+            expect(edge.outputMode, core.OutputMode.replace);
+          }
+          expect(
+            backwardConns.map((c) => c.sourcePortId).toSet(),
+            {'writer1_out_b25', 'writer2_out_b25'},
+          );
+        },
       );
     });
   });
