@@ -146,7 +146,8 @@ void main() {
 
       // Assert
       expect(find.text('Load Plugin'), findsOneWidget);
-      expect(find.text('Add to Preset'), findsNothing);
+      expect(
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsNothing);
 
       // Verify button is enabled
       final button = tester.widget<ElevatedButton>(
@@ -155,7 +156,7 @@ void main() {
       expect(button.onPressed, isNotNull);
     });
 
-    testWidgets('displays Add to Preset button for loaded plugin', (
+    testWidgets('displays Add Algorithm button for loaded plugin', (
       tester,
     ) async {
       // Arrange
@@ -188,17 +189,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Add to Preset'), findsOneWidget);
+      expect(
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
       expect(find.text('Load Plugin'), findsNothing);
 
       // Verify button is enabled
       final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Add to Preset'),
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
       );
       expect(button.onPressed, isNotNull);
     });
 
-    testWidgets('displays Add to Preset button for factory algorithm', (
+    testWidgets('displays Add Algorithm button for factory algorithm', (
       tester,
     ) async {
       // Arrange
@@ -231,12 +233,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Add to Preset'), findsOneWidget);
+      expect(
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
       expect(find.text('Load Plugin'), findsNothing);
     });
 
     group('Plugin Loading Workflow', () {
-      testWidgets('button changes to Add to Preset after successful plugin load', (
+      testWidgets('button changes to Add Algorithm after successful plugin load', (
         tester,
       ) async {
         // This is the key test for the bug fix
@@ -327,8 +330,9 @@ void main() {
 
         await tester.pumpAndSettle(); // Process the state update
 
-        // Assert: Button should now show "Add to Preset" without requiring another press
-        expect(find.text('Add to Preset'), findsOneWidget);
+        // Assert: Button should now show "Add Algorithm" without requiring another press
+        expect(
+            find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
         expect(find.text('Load Plugin'), findsNothing);
 
         // Verify loadPlugin was called
@@ -379,7 +383,8 @@ void main() {
 
         // Assert: Button should still show "Load Plugin" since loading failed
         expect(find.text('Load Plugin'), findsOneWidget);
-        expect(find.text('Add to Preset'), findsNothing);
+        expect(
+            find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsNothing);
 
         // Check for error snackbar
         expect(find.text('Failed to load Test Plugin'), findsOneWidget);
@@ -474,7 +479,8 @@ void main() {
         // Factory algorithm (lowercase GUID) should show extension icon for community plugins only
         await tester.tap(find.text('Clock'));
         await tester.pumpAndSettle();
-        expect(find.text('Add to Preset'), findsOneWidget);
+        expect(
+            find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
 
         // Plugin (uppercase GUID) should show load button when unloaded
         await tester.tap(find.text('Test Plugin'));
@@ -521,7 +527,7 @@ void main() {
       );
     }
 
-    testWidgets('split-button menu offers Add and select another '
+    testWidgets('Add Another button appears alongside Add Algorithm '
         'after a loaded algorithm is selected', (tester) async {
       when(() => mockCubit.state)
           .thenReturn(synchronizedWith([mockFactoryAlgorithm]));
@@ -530,21 +536,20 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // No menu visible before selecting
-      expect(find.text('Add and select another'), findsNothing);
+      // No Add Another button visible before selecting
+      expect(find.widgetWithText(ElevatedButton, 'Add Another'), findsNothing);
 
       // Select algorithm
       await tester.tap(find.text('Clock'));
       await tester.pumpAndSettle();
 
-      // Open the split-button menu
-      await tester.tap(find.byTooltip('More add options'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Add and select another'), findsOneWidget);
+      expect(
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+      expect(
+          find.widgetWithText(ElevatedButton, 'Add Another'), findsOneWidget);
     });
 
-    testWidgets('Add and select another adds, clears selection, '
+    testWidgets('Add Another adds, clears selection, '
         'shows SnackBar, and stays open', (tester) async {
       when(() => mockCubit.state)
           .thenReturn(synchronizedWith([mockFactoryAlgorithm]));
@@ -558,12 +563,10 @@ void main() {
       await tester.tap(find.text('Clock'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Add to Preset'), findsOneWidget);
+      expect(
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('More add options'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Add and select another'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Another'));
       await tester.pumpAndSettle();
 
       // Cubit add was invoked exactly once
@@ -573,7 +576,8 @@ void main() {
           )).called(1);
 
       // Selection was cleared (button reverts to disabled "Select Algorithm")
-      expect(find.text('Add to Preset'), findsNothing);
+      expect(
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsNothing);
       expect(find.text('Select Algorithm'), findsOneWidget);
 
       // SnackBar confirms the add
@@ -583,7 +587,7 @@ void main() {
       expect(find.text('Add Algorithm'), findsOneWidget);
     });
 
-    testWidgets('split-button menu hidden when slot cap is reached',
+    testWidgets('Add Another button hidden when slot cap is reached',
         (tester) async {
       when(() => mockCubit.state).thenReturn(
         synchronizedWith([mockFactoryAlgorithm], slotCount: 32),
@@ -596,10 +600,11 @@ void main() {
       await tester.tap(find.text('Clock'));
       await tester.pumpAndSettle();
 
-      // Add to Preset is still rendered (existing behavior unchanged)
-      expect(find.text('Add to Preset'), findsOneWidget);
-      // But the split-button arrow is gone
-      expect(find.byTooltip('More add options'), findsNothing);
+      // Add Algorithm is still rendered (existing behavior unchanged)
+      expect(
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+      // But the Add Another button is gone
+      expect(find.widgetWithText(ElevatedButton, 'Add Another'), findsNothing);
     });
   });
 }

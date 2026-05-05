@@ -369,7 +369,7 @@ void main() {
         expect(currentState.algorithms[0].specifications.length, equals(2));
 
         // This updated state should cause the widget to rebuild and show
-        // the "Add to Preset" button without requiring a second button press
+        // the "Add Algorithm" button without requiring a second button press
       });
     });
   });

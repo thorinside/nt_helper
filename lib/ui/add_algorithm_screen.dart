@@ -73,9 +73,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   AlgorithmInfo? _currentAlgoInfo;
   List<int>? specValues;
 
-  // Used to anchor the split-button popup menu in `_buildActionButton`.
-  final GlobalKey _splitButtonKey = GlobalKey();
-
   @override
   void initState() {
     super.initState();
@@ -1410,7 +1407,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               });
             }
           : null,
-      child: const Text('Add to Preset'),
+      child: const Text('Add Algorithm'),
     );
 
     if (!canAdd || !_canStayOpen()) {
@@ -1418,18 +1415,13 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     }
 
     return Row(
-      key: _splitButtonKey,
-      mainAxisSize: MainAxisSize.min,
       children: [
-        addButton,
-        const SizedBox(width: 4),
-        Tooltip(
-          message: 'More add options',
-          child: IconButton(
-            icon: const Icon(Icons.arrow_drop_down,
-                semanticLabel: 'More add options'),
-            onPressed: _showAddMenu,
-            visualDensity: VisualDensity.compact,
+        Expanded(child: addButton),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _addAndStayOpen,
+            child: const Text('Add Another'),
           ),
         ),
       ],
@@ -1440,38 +1432,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final state = context.read<DistingCubit>().state;
     if (state is! DistingStateSynchronized) return false;
     return state.slots.length < MCPConstants.maxSlots;
-  }
-
-  void _showAddMenu() {
-    final renderBox =
-        _splitButtonKey.currentContext!.findRenderObject()! as RenderBox;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        offset.dx,
-        offset.dy + size.height,
-        offset.dx + size.width,
-        offset.dy + size.height,
-      ),
-      items: const [
-        PopupMenuItem<String>(
-          value: 'stay_open',
-          child: ListTile(
-            leading: Icon(Icons.playlist_add),
-            title: Text('Add and select another'),
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-      ],
-    ).then((value) {
-      if (value == 'stay_open') {
-        _addAndStayOpen();
-      }
-    });
   }
 
   Future<void> _addAndStayOpen() async {
