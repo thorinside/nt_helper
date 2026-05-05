@@ -68,5 +68,8 @@ sealed class DistingState with _$DistingState {
     @Default(null) FirmwareRelease? availableFirmwareUpdate,
     /// Performance page items (firmware v1.16+, populated via SysEx 0x57/0x58)
     @Default([]) List<PerformancePageItem> perfPageItems,
+    /// True when the in-memory preset has been mutated since the last
+    /// save / load / new / device refresh. Cleared on save/load/new/refresh.
+    @Default(false) bool isDirty,
   }) = DistingStateSynchronized;
 }

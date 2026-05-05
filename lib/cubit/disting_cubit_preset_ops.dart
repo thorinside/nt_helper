@@ -36,7 +36,13 @@ mixin _DistingCubitPresetOps on _DistingCubitBase {
       if (trimmed.isEmpty || trimmed == currentState.presetName) return;
 
       // 1) Optimistic update for instant UI response
-      emit(currentState.copyWith(presetName: trimmed, loading: false));
+      emit(
+        currentState.copyWith(
+          presetName: trimmed,
+          loading: false,
+          isDirty: true,
+        ),
+      );
 
       // 2) Send request in background (works for online + offline managers)
       final disting = currentState.disting;

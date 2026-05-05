@@ -37,6 +37,7 @@ class _StateRefreshDelegate {
           presetName: presetName,
           slots: slots,
           perfPageItems: perfPageItems ?? currentState.perfPageItems,
+          isDirty: false,
         ),
       );
 

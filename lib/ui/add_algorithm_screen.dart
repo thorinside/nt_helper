@@ -10,6 +10,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:collection/collection.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nt_helper/mcp/mcp_constants.dart';
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
@@ -71,6 +72,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   String? selectedAlgorithmGuid;
   AlgorithmInfo? _currentAlgoInfo;
   List<int>? specValues;
+
+  // Used to anchor the split-button popup menu in `_buildActionButton`.
+  final GlobalKey _splitButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -1396,9 +1400,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       );
     }
 
-    // Show Add button for loaded algorithms (factory or loaded plugins)
-    return ElevatedButton(
-      onPressed: _currentAlgoInfo != null && specValues != null
+    final canAdd = specValues != null;
+    final addButton = ElevatedButton(
+      onPressed: canAdd
           ? () {
               Navigator.pop(context, {
                 'algorithm': _currentAlgoInfo,
@@ -1408,5 +1412,87 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           : null,
       child: const Text('Add to Preset'),
     );
+
+    if (!canAdd || !_canStayOpen()) {
+      return addButton;
+    }
+
+    return Row(
+      key: _splitButtonKey,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        addButton,
+        const SizedBox(width: 4),
+        Tooltip(
+          message: 'More add options',
+          child: IconButton(
+            icon: const Icon(Icons.arrow_drop_down,
+                semanticLabel: 'More add options'),
+            onPressed: _showAddMenu,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _canStayOpen() {
+    final state = context.read<DistingCubit>().state;
+    if (state is! DistingStateSynchronized) return false;
+    return state.slots.length < MCPConstants.maxSlots;
+  }
+
+  void _showAddMenu() {
+    final renderBox =
+        _splitButtonKey.currentContext!.findRenderObject()! as RenderBox;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + size.height,
+        offset.dx + size.width,
+        offset.dy + size.height,
+      ),
+      items: const [
+        PopupMenuItem<String>(
+          value: 'stay_open',
+          child: ListTile(
+            leading: Icon(Icons.playlist_add),
+            title: Text('Add and select another'),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'stay_open') {
+        _addAndStayOpen();
+      }
+    });
+  }
+
+  Future<void> _addAndStayOpen() async {
+    final algorithm = _currentAlgoInfo;
+    final specs = specValues;
+    if (algorithm == null || specs == null) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final name = algorithm.name;
+    await context
+        .read<DistingCubit>()
+        .onAlgorithmSelected(algorithm, List<int>.from(specs));
+
+    if (!mounted) return;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('$name added'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    _clearSelection();
   }
 }

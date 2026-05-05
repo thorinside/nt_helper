@@ -39,6 +39,15 @@ void main() {
 
     // Register fallback values for mocktail
     registerFallbackValue(DistingState.initial());
+    registerFallbackValue(
+      AlgorithmInfo(
+        algorithmIndex: 0,
+        guid: '_fallback',
+        name: '_fallback',
+        specifications: const [],
+      ),
+    );
+    registerFallbackValue(<int>[]);
   });
 
   tearDownAll(() async {
@@ -472,6 +481,125 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Load Plugin'), findsOneWidget);
       });
+    });
+  });
+
+  group('AddAlgorithmScreen Stay-open option', () {
+    DistingState synchronizedWith(List<AlgorithmInfo> algorithms,
+        {int slotCount = 0}) {
+      return DistingState.synchronized(
+        disting: mockDistingMidi,
+        distingVersion: '',
+        firmwareVersion: mockFirmwareVersion,
+        presetName: 'Test Preset',
+        algorithms: algorithms,
+        slots: List.generate(
+          slotCount,
+          (i) => Slot(
+            algorithm: Algorithm(
+              algorithmIndex: i,
+              guid: 'placeholder',
+              name: 'Slot $i',
+            ),
+            routing: RoutingInfo.filler(),
+            pages: ParameterPages(algorithmIndex: i, pages: const []),
+            parameters: const [],
+            values: const [],
+            enums: const [],
+            mappings: const [],
+            valueStrings: const [],
+          ),
+        ),
+        unitStrings: const [],
+        inputDevice: null,
+        outputDevice: null,
+        loading: false,
+        offline: false,
+        screenshot: null,
+        demo: false,
+        videoStream: null,
+      );
+    }
+
+    testWidgets('split-button menu offers Add and select another '
+        'after a loaded algorithm is selected', (tester) async {
+      when(() => mockCubit.state)
+          .thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // No menu visible before selecting
+      expect(find.text('Add and select another'), findsNothing);
+
+      // Select algorithm
+      await tester.tap(find.text('Clock'));
+      await tester.pumpAndSettle();
+
+      // Open the split-button menu
+      await tester.tap(find.byTooltip('More add options'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add and select another'), findsOneWidget);
+    });
+
+    testWidgets('Add and select another adds, clears selection, '
+        'shows SnackBar, and stays open', (tester) async {
+      when(() => mockCubit.state)
+          .thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockCubit.onAlgorithmSelected(any(), any()))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Clock'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add to Preset'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('More add options'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add and select another'));
+      await tester.pumpAndSettle();
+
+      // Cubit add was invoked exactly once
+      verify(() => mockCubit.onAlgorithmSelected(
+            any(that: predicate<AlgorithmInfo>((a) => a.guid == 'clck')),
+            any(),
+          )).called(1);
+
+      // Selection was cleared (button reverts to disabled "Select Algorithm")
+      expect(find.text('Add to Preset'), findsNothing);
+      expect(find.text('Select Algorithm'), findsOneWidget);
+
+      // SnackBar confirms the add
+      expect(find.text('Clock added'), findsOneWidget);
+
+      // Picker is still open (AppBar title still visible)
+      expect(find.text('Add Algorithm'), findsOneWidget);
+    });
+
+    testWidgets('split-button menu hidden when slot cap is reached',
+        (tester) async {
+      when(() => mockCubit.state).thenReturn(
+        synchronizedWith([mockFactoryAlgorithm], slotCount: 32),
+      );
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Clock'));
+      await tester.pumpAndSettle();
+
+      // Add to Preset is still rendered (existing behavior unchanged)
+      expect(find.text('Add to Preset'), findsOneWidget);
+      // But the split-button arrow is gone
+      expect(find.byTooltip('More add options'), findsNothing);
     });
   });
 }
