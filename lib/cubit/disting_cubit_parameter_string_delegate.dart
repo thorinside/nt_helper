@@ -40,7 +40,12 @@ class _ParameterStringDelegate {
       final updatedSlots = List<Slot>.from(currentState.slots);
       updatedSlots[algorithmIndex] = updatedSlot;
 
-      _cubit._emitState(currentState.copyWith(slots: updatedSlots));
+      _cubit._emitState(
+        currentState.copyWith(
+          slots: updatedSlots,
+          isDirty: currentState.isDirty,
+        ),
+      );
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
     }
@@ -90,7 +95,12 @@ class _ParameterStringDelegate {
       final updatedSlots = List<Slot>.from(currentState.slots);
       updatedSlots[algorithmIndex] = updatedSlot;
 
-      _cubit._emitState(currentState.copyWith(slots: updatedSlots));
+      _cubit._emitState(
+        currentState.copyWith(
+          slots: updatedSlots,
+          isDirty: currentState.isDirty,
+        ),
+      );
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
     }
@@ -139,6 +149,7 @@ class _ParameterStringDelegate {
                     ),
                   );
                 }),
+                isDirty: true,
               ),
             );
           }

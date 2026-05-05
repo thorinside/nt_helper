@@ -15,6 +15,10 @@ class _MappingDelegate {
         final disting = _cubit.requireDisting();
         await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
         await _cubit._refreshStateFromManager();
+        final after = _cubit.state;
+        if (after is DistingStateSynchronized) {
+          _cubit._emitState(after.copyWith(isDirty: true));
+        }
         break;
       default:
       // Handle other cases or errors
@@ -92,6 +96,7 @@ class _MappingDelegate {
             ),
           );
         }),
+        isDirty: true,
       ),
     );
 

@@ -255,7 +255,7 @@ class FloatingVideoContent extends StatelessWidget {
               builder: (context, cubitState) {
                 final videoState = cubitState.maybeWhen(
                   synchronized:
-                      (_, _, _, _, _, _, _, _, _, _, _, _, _, videoStream, _, _) =>
+                      (_, _, _, _, _, _, _, _, _, _, _, _, _, videoStream, _, _, _) =>
                           videoStream,
                   orElse: () => null,
                 );

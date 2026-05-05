@@ -30,7 +30,13 @@ mixin _DistingCubitSlotOps on _DistingCubitBase {
         currentState.slots,
         (s) => s.copyWith(algorithm: optimisticAlgorithm),
       );
-      emit(currentState.copyWith(slots: optimisticSlots, loading: false));
+      emit(
+        currentState.copyWith(
+          slots: optimisticSlots,
+          loading: false,
+          isDirty: true,
+        ),
+      );
 
       // 2) Send request in background
       final disting = requireDisting();
@@ -66,7 +72,12 @@ mixin _DistingCubitSlotOps on _DistingCubitBase {
                   verificationState.slots,
                   (s) => s.copyWith(algorithm: actual),
                 );
-                emit(verificationState.copyWith(slots: correctedSlots));
+                emit(
+                  verificationState.copyWith(
+                    slots: correctedSlots,
+                    isDirty: true,
+                  ),
+                );
               }
             }),
             onCancel: () {},

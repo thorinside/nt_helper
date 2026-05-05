@@ -31,7 +31,9 @@ class _PerfPageDelegate {
     if (item.itemIndex >= 0 && item.itemIndex < updatedItems.length) {
       updatedItems[item.itemIndex] = item;
     }
-    _cubit._emitState(currentState.copyWith(perfPageItems: updatedItems));
+    _cubit._emitState(
+      currentState.copyWith(perfPageItems: updatedItems, isDirty: true),
+    );
 
     // Send to hardware
     disting.setPerfPageItem(item).catchError((e, s) {
@@ -60,7 +62,10 @@ class _PerfPageDelegate {
                 fixedItems[item.itemIndex] = actual;
               }
               _cubit._emitState(
-                verifyState.copyWith(perfPageItems: fixedItems),
+                verifyState.copyWith(
+                  perfPageItems: fixedItems,
+                  isDirty: true,
+                ),
               );
             }
           }

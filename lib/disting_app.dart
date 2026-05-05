@@ -435,6 +435,7 @@ class _DistingPageState extends State<DistingPage> {
                 units: state.unitStrings,
                 distingVersion: state.distingVersion,
                 presetName: state.presetName,
+                isDirty: state.isDirty,
                 screenshot: state.screenshot,
                 loading: state.loading,
                 firmwareVersion: state.firmwareVersion,
