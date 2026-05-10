@@ -71,5 +71,7 @@ sealed class DistingState with _$DistingState {
     /// True when the in-memory preset has been mutated since the last
     /// save / load / new / device refresh. Cleared on save/load/new/refresh.
     @Default(false) bool isDirty,
+    /// The name of a preset that is currently awaiting confirmation to be overwritten
+    @Default(null) String? renameConfirmationName,
   }) = DistingStateSynchronized;
 }

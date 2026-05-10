@@ -31,57 +31,54 @@ mixin _DistingCubitPresetOps on _DistingCubitBase {
 
   void renamePresetImpl(String newName) async {
     final currentState = state;
-    if (currentState is DistingStateSynchronized) {
-      final trimmed = newName.trim();
-      if (trimmed.isEmpty || trimmed == currentState.presetName) return;
+    if (currentState is! DistingStateSynchronized) return;
 
-      // 1) Optimistic update for instant UI response
-      emit(
-        currentState.copyWith(
-          presetName: trimmed,
-          loading: false,
-          isDirty: true,
-        ),
-      );
+    final trimmed = newName.trim();
+    // 1. Basic validation: no empty names, and no-op if name is unchanged
+    if (trimmed.isEmpty || trimmed == currentState.presetName) return;
 
-      // 2) Send request in background (works for online + offline managers)
-      final disting = currentState.disting;
-      disting.requestSetPresetName(trimmed).then((_) {
-        // Auto-save via the same path as the manual "Save Preset" action.
-        disting.requestSavePreset().catchError((_) {});
-      }, onError: (e, s) {
-        // If rename fails, fall back to device truth via a lightweight read.
-        _renamePresetVerificationOperation?.cancel();
-        _renamePresetVerificationOperation = CancelableOperation.fromFuture(
-          Future.delayed(const Duration(milliseconds: 250), () async {
-            if (state is! DistingStateSynchronized) return;
-            final verificationState = state as DistingStateSynchronized;
-            final actual = await disting.requestPresetName();
-            if (actual == null) return;
-            if (verificationState.presetName != actual) {
-              emit(verificationState.copyWith(presetName: actual));
-            }
-          }),
-          onCancel: () {},
-        );
-      });
+    // 2. Hardware limit: max 31 chars (plus null terminator).
+    // We truncate to ensure the hardware doesn't reject or behave unpredictably.
+    final finalName = trimmed.length > 31 ? trimmed.substring(0, 31) : trimmed;
 
-      // 3) Verification (lightweight): read name back and correct if needed.
+    // 3. Final check: if truncation resulted in the same name, skip the write.
+    if (finalName == currentState.presetName) return;
+
+    // Optimistic update
+    emit(currentState.copyWith(
+      presetName: finalName,
+      isDirty: true,
+    ));
+
+    final disting = currentState.disting;
+    disting.requestSetPresetName(finalName).then((_) {
+      disting.requestSavePreset().catchError((_) {});
+    }, onError: (e, s) {
+      // Revert to device truth if the request failed
       _renamePresetVerificationOperation?.cancel();
       _renamePresetVerificationOperation = CancelableOperation.fromFuture(
-        Future.delayed(const Duration(milliseconds: 500), () async {
+        Future.delayed(const Duration(milliseconds: 250), () async {
           if (state is! DistingStateSynchronized) return;
-          final verificationState = state as DistingStateSynchronized;
-          if (verificationState.presetName != trimmed) return;
-
           final actual = await disting.requestPresetName();
-          if (actual == null) return;
-          if (actual != trimmed) {
-            emit(verificationState.copyWith(presetName: actual));
+          if (actual != null && state.presetName != actual) {
+            emit(state.copyWith(presetName: actual));
           }
         }),
         onCancel: () {},
       );
-    }
+    });
+
+    // Verification loop to ensure the name actually took
+    _renamePresetVerificationOperation?.cancel();
+    _renamePresetVerificationOperation = CancelableOperation.fromFuture(
+      Future.delayed(const Duration(milliseconds: 500), () async {
+        if (state is! DistingStateSynchronized) return;
+        final actual = await disting.requestPresetName();
+        if (actual != null && state.presetName != actual) {
+          emit(state.copyWith(presetName: actual));
+        }
+      }),
+      onCancel: () {},
+    );
   }
 }
