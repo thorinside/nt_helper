@@ -253,6 +253,7 @@ class _ParameterPageContent extends StatelessWidget {
             availableFirmwareUpdate,
             perfPageItems,
             isDirty,
+            renameConfirmationName,
           ) {
             final currentSlot = slotIndex < slots.length ? slots[slotIndex] : slot;
             return (currentSlot, unitStrings);

@@ -129,6 +129,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
               availableFirmwareUpdate,
               perfPageItems,
               isDirty,
+              renameConfirmationName,
             ) => offline,
             orElse: () => false,
           );

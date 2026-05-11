@@ -188,6 +188,7 @@ class DistingCubit extends _DistingCubitBase
             availableFirmwareUpdate,
             perfPageItems,
             isDirty,
+            renameConfirmationName,
           ) => videoStream,
       orElse: () => null,
     ),

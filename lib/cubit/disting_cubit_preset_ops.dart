@@ -58,10 +58,14 @@ mixin _DistingCubitPresetOps on _DistingCubitBase {
       _renamePresetVerificationOperation?.cancel();
       _renamePresetVerificationOperation = CancelableOperation.fromFuture(
         Future.delayed(const Duration(milliseconds: 250), () async {
-          if (state is! DistingStateSynchronized) return;
+          final syncState = state;
+          if (syncState is! DistingStateSynchronized) return;
           final actual = await disting.requestPresetName();
-          if (actual != null && state.presetName != actual) {
-            emit(state.copyWith(presetName: actual));
+          final latestState = state;
+          if (actual != null &&
+              latestState is DistingStateSynchronized &&
+              latestState.presetName != actual) {
+            emit(latestState.copyWith(presetName: actual));
           }
         }),
         onCancel: () {},
@@ -72,10 +76,14 @@ mixin _DistingCubitPresetOps on _DistingCubitBase {
     _renamePresetVerificationOperation?.cancel();
     _renamePresetVerificationOperation = CancelableOperation.fromFuture(
       Future.delayed(const Duration(milliseconds: 500), () async {
-        if (state is! DistingStateSynchronized) return;
+        final syncState = state;
+        if (syncState is! DistingStateSynchronized) return;
         final actual = await disting.requestPresetName();
-        if (actual != null && state.presetName != actual) {
-          emit(state.copyWith(presetName: actual));
+        final latestState = state;
+        if (actual != null &&
+            latestState is DistingStateSynchronized &&
+            latestState.presetName != actual) {
+          emit(latestState.copyWith(presetName: actual));
         }
       }),
       onCancel: () {},

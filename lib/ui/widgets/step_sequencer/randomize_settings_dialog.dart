@@ -83,6 +83,7 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
             availableFirmwareUpdate,
             perfPageItems,
             isDirty,
+            renameConfirmationName,
           ) {
             if (widget.slotIndex < slots.length) {
               return slots[widget.slotIndex];

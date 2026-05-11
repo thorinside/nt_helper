@@ -119,6 +119,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             availableFirmwareUpdate,
             perfPageItems,
             isDirty,
+            renameConfirmationName,
           ) {
             _processSynchronizedState(slots);
           },
