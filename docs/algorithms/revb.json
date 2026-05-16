@@ -3,8 +3,8 @@
   "name": "Reverb",
   "description": "This algorithm offers a classic algorithmic reverb effect. It does not seek to emulate any particular hardware, or for that matter, any particular physical reverberant space.",
   "categories": [
-    "effects",
-    "reverb"
+    "Effects",
+    "Reverb"
   ],
   "short_description": "A general purpose reverb effect",
   "specifications": [],
@@ -14,7 +14,9 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
+      "description": "Sets the wet/dry mix.",
+      "type": "scaled",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -22,7 +24,9 @@
       "min": 400,
       "max": 3000,
       "default": 1700,
-      "type": "folder",
+      "description": "Sets the reverb time.",
+      "type": "scaled",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -30,7 +34,9 @@
       "min": 0,
       "max": 3,
       "default": 1,
-      "type": "folder",
+      "description": "Chooses the reverb model.",
+      "type": "enum",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -38,7 +44,9 @@
       "min": 1,
       "max": 100,
       "default": 100,
-      "type": "folder",
+      "description": "Sets the size of the reverb space – mainly affects the times of the early reflections.",
+      "type": "scaled",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -46,7 +54,9 @@
       "min": 0,
       "max": 100,
       "default": 60,
-      "type": "folder",
+      "description": "Sets the amount of high frequency damping in the reverb tail.",
+      "type": "scaled",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -54,7 +64,9 @@
       "min": 0.01,
       "max": 5.0,
       "default": 2.5,
-      "type": "folder",
+      "description": "Sets the speed of reverb modulation.",
+      "type": "scaled",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -62,7 +74,9 @@
       "min": 0,
       "max": 100,
       "default": 25,
-      "type": "folder",
+      "description": "Sets the depth of reverb modulation.",
+      "type": "scaled",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -70,7 +84,9 @@
       "min": -40,
       "max": 6,
       "default": -12,
-      "type": "folder",
+      "description": "Sets the output level of the early reflections.",
+      "type": "scaled",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -78,7 +94,9 @@
       "min": -40,
       "max": 6,
       "default": -6,
-      "type": "folder",
+      "description": "Sets the output level of the diffuse reflections.",
+      "type": "scaled",
+      "channelCountRef": "",
       "is_bus": false
     },
     {
@@ -86,7 +104,9 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum",
+      "channelCountRef": "",
       "is_bus": false
     }
   ],
@@ -98,14 +118,6 @@
     {
       "name": "Right input",
       "description": "The right audio input bus."
-    },
-    {
-      "name": "Left input",
-      "description": ""
-    },
-    {
-      "name": "Right input",
-      "description": ""
     }
   ],
   "output_ports": [
@@ -116,14 +128,6 @@
     {
       "name": "Right output",
       "description": "The right audio output bus."
-    },
-    {
-      "name": "Left output",
-      "description": ""
-    },
-    {
-      "name": "Right output",
-      "description": ""
     }
   ]
 }

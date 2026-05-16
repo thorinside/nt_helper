@@ -1,51 +1,207 @@
 {
   "guid": "tpfz",
   "name": "Temporal Freeze",
-  "description": "This algorithm is an audio 'freeze' effect – it captures sound at a moment in time and sustains it indefinitely. The 'temporal' part of the name indicates that it works in the time domain, in contrast to the Spectral Freeze algorithm (above). There are a number (depending on the specification) of different 'voices' i.e. you can freeze different moments of audio and play them simultaneously.",
+  "description": "This algorithm is an audio ‘freeze’ effect – it captures sound at a moment in time and sustains it indefinitely. The ‘temporal’ part of the name indicates that it works in the time domain, in contrast to the Spectral Freeze algorithm (above). There are a number (depending on the specification) of different ‘voices’ i.e. you can freeze different moments of audio and play them simultaneously. You can also layer up new audio on top of existing freezes.",
   "categories": [
     "Audio Effects",
-    "Time Domain",
-    "Freeze",
-    "Sustain"
+    "Time-based",
+    "Freeze"
   ],
-  "short_description": "An audio 'freeze' effect",
-  "use_cases": [
-    "Manual voice control",
-    "Automatic voice selection",
-    "Sustaining audio moments",
-    "Creating swells"
-  ],
-  "gui_description": "The display shows information about each of the voices. The vertical bar on the left shows the envelope level. The 'T' above to the voice number indicates the 'Freeze target'; if there is no 'T', the target is set to 'Auto'. Each voice also shows a very condensed waveform view showing the section of audio that was captured. The similar waveform at the bottom left of the screen shows the incoming audio.",
+  "short_description": "An audio ‘freeze’ effect",
   "specifications": [
     {
       "name": "Voices",
-      "description": "The number of simultaneous voices.",
+      "value": "1-16",
+      "description": "The number of simultaneous voices."
+    },
+    {
+      "name": "History",
+      "value": "0.1-2.0s",
+      "description": "The length of the history stored for each voice."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Freeze toggle",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze when the parameter changes from ‘0’ to ‘1’."
+    },
+    {
+      "name": "Freeze gate",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze when the parameter changes from ‘0’ to ‘1’, and releases the freeze when the parameter changes from ‘1’ to ‘0’."
+    },
+    {
+      "name": "Freeze target",
+      "min": 0,
+      "default": 0,
+      "description": "Chooses the voice for the next freeze, or ‘0’ for ‘Auto’."
+    },
+    {
+      "name": "Unfreeze all",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes to ‘1’, all active freezes are released."
+    },
+    {
+      "name": "Auto voices",
+      "default": 2,
+      "description": "When the freeze target is Auto, sets how many voices will be used by the automatic voice selection. The remainder can be frozen manually."
+    },
+    {
+      "name": "Length",
+      "min": 10,
+      "default": 200,
+      "description": "Sets the amount of audio just preceding the moment of the freeze to use.",
+      "type": "scaled",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Play heads",
       "min": 1,
-      "max": 16
+      "max": 7,
+      "default": 4,
+      "description": "Sets the number of ‘playback heads’ (to use a tape metaphor)."
+    },
+    {
+      "name": "Octave down heads",
+      "min": 0,
+      "max": 7,
+      "default": 0,
+      "description": "Sets how many of the playback heads run at half speed i.e. an octave down."
+    },
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "Applies a gain to the algorithm outputs.",
+      "type": "scaled",
+      "channelCountRef": "dB"
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the envelope attack time. Exponential scale from 0.01s to 30s."
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the envelope release time. Exponential scale from 0.01s to 30s."
+    },
+    {
+      "name": "Mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets the envelope mode: ‘Normal’ or ‘Complete attack’. In the latter mode, the envelope attack segment always completes, even if the gate is released during the attack, which is useful to trigger long swells from a short trigger pulse."
+    },
+    {
+      "name": "Layer fade",
+      "min": -40.0,
+      "max": 0.0,
+      "default": 0.0,
+      "description": "The amount by which old material fades out when a new layer is added.",
+      "type": "scaled",
+      "channelCountRef": "dB"
+    },
+    {
+      "name": "Layer time",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "description": "The crossfade time when adding a new layer. Exponential scale from 0.1s to 10s."
+    },
+    {
+      "name": "Pedal style",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The style of pedal gesture that will release a freeze - ‘Long hold’ or ‘Double tap’."
+    },
+    {
+      "name": "Pedal hold time",
+      "min": 0.1,
+      "max": 5.0,
+      "default": 0.3,
+      "description": "The time required to hold a pedal to release a freeze, if the pedal style is ‘Long hold’.",
+      "type": "scaled",
+      "channelCountRef": "s"
+    },
+    {
+      "name": "Double tap time",
+      "min": 0.1,
+      "max": 5.0,
+      "default": 0.3,
+      "description": "The time during which a pedal must be double-tapped to release a freeze, if the pedal style is ‘Double tap’.",
+      "type": "scaled",
+      "channelCountRef": "s"
+    },
+    {
+      "name": "Freeze",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze on the corresponding voice when the parameter changes from ‘0’ to ‘1’, and releases the freeze when the parameter changes from ‘1’ to ‘0’.",
+      "type": "scaled"
+    },
+    {
+      "name": "Layer",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Triggers the addition of a layer when the parameter changes from ‘0’ to ‘1’."
+    },
+    {
+      "name": "Pedal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Controls the ‘pedal’ interface to the voice."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
     {
       "name": "Left/mono input",
-      "description": "Sets the left or mono input audio bus.",
-      "busIdRef": "Left/mono input"
+      "description": "Sets the left or mono input audio bus."
     },
     {
       "name": "Right input",
-      "description": "Sets the right input audio bus.",
-      "busIdRef": "Right input"
+      "description": "Sets the right input audio bus."
     }
   ],
   "output_ports": [
     {
       "name": "Left/mono output",
-      "description": "Sets the left output bus for the voice.",
-      "busIdRef": "Left/mono output"
+      "description": "The left or mono output signal from the voice."
     },
     {
       "name": "Right output",
-      "description": "Sets the right output bus for the voice.",
-      "busIdRef": "Right output"
+      "description": "The right output signal from the voice."
+    },
+    {
+      "name": "Left/mono output",
+      "description": "Sets the left output bus for the voice."
+    },
+    {
+      "name": "Right output",
+      "description": "Sets the right output bus for the voice."
     }
   ]
 }

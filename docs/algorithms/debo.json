@@ -1,24 +1,17 @@
 {
   "guid": "debo",
   "name": "Debouncer",
-  "description": "A switch debouncer that implements a simple switch debouncer to allow simple passive guitar footswitches to be attached to the module's inputs and used with algorithms like the Looper algorithm.",
+  "description": "This algorithm implements a simple switch debouncer. It was added primarily so that simple passive guitar footswitches can be attached to the module’s inputs (with a suitable voltage source) and used with, for example, the Looper algorithm.",
   "categories": [
-    "Signal Processing",
-    "Control",
-    "Utility"
+    "Utility",
+    "Signal Processing"
   ],
   "short_description": "A switch debouncer",
-  "use_cases": [
-    "Guitar footswitch control",
-    "Passive switch interfacing",
-    "Looper trigger control"
-  ],
-  "gui_description": "A switch debouncer interface with per-channel settings for input/output routing, voltage output, and debounce timing.",
   "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 8
+      "value": "1-8",
+      "description": "The number of bus channels to process."
     }
   ],
   "parameters": [
@@ -27,40 +20,56 @@
       "min": 1,
       "max": 100,
       "default": 10,
+      "scope": "global",
       "description": "The hold-off time. Once the output has changed, it is not allowed to change again for the this duration.",
-      "type": "enum"
+      "type": "scaled",
+      "channelCountRef": "global",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "description": "Enables debouncing on this channel.",
-      "type": "enum"
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
+      "scope": "per-channel",
       "description": "The standard Add/Replace mode selector as described above.",
-      "type": "enum"
+      "type": "toggle",
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
       "name": "Output Volts",
       "min": -10,
       "max": 10,
       "default": 5,
-      "description": "The output voltage when the input is 'high', in Volts.",
-      "type": "enum"
+      "scope": "per-channel",
+      "description": "The output voltage when the input is ‘high’, in Volts.",
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_bus": false
     },
     {
       "name": "Output semitones",
       "min": -60,
       "max": 60,
       "default": 0,
-      "description": "The output voltage when the input is 'high', in 12-TET semitones (one twelfth of a Volt).",
-      "type": "enum"
+      "scope": "per-channel",
+      "description": "The output voltage when the input is ‘high’, in 12-TET semitones (one twelfth of a Volt).",
+      "type": "scaled",
+      "is_per_channel": true,
+      "is_bus": false
     }
   ],
   "input_ports": [
@@ -72,7 +81,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
+      "description": "The output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace’."
     }
   ]
 }

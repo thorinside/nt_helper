@@ -1,25 +1,21 @@
 {
   "guid": "saml",
   "name": "Sample Player (Sliced)",
-  "description": "This algorithm allows you to place a number of marker points on a sample, and conveniently trigger playback from the various marker points. It's your go-to algorithm for breakbeat slicing.",
+  "description": "This algorithm allows you to place a number of marker points on a sample, and conveniently trigger playback from the various marker points. It’s your go-to algorithm for breakbeat slicing.",
   "categories": [
-    "Audio",
     "Sampler",
-    "Slice"
+    "Slicing",
+    "Playback"
   ],
   "short_description": "Plays sliced samples",
   "use_cases": [
-    "Breakbeat slicing",
-    "Triggering samples from marker points",
-    "Automatic loop playback"
+    "breakbeat slicing"
   ],
-  "gui_description": "The display shows the sample waveform with the slices indicated as check marks above. The last triggered slice is shown as the large number bottom right. Above this is the sample length (in seconds), the sample length in bars at the current tempo, and the calculated number of bars that the sample will loop over, if a clock is supplied and 'Auto trigger' is enabled.",
   "specifications": [
     {
       "name": "Record time",
-      "description": "The maximum length of audio that can be recorded (sampled).",
-      "min": 0,
-      "max": 60
+      "value": "0-60 seconds",
+      "description": "The maximum length of audio that can be recorded (sampled)."
     }
   ],
   "parameters": [
@@ -28,7 +24,7 @@
       "min": 1,
       "max": 24,
       "default": 1,
-      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the 'Play' parameter."
+      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the ‘Play’ parameter."
     },
     {
       "name": "Slices",
@@ -42,21 +38,32 @@
       "min": -200.0,
       "max": 200.0,
       "default": 100.0,
-      "description": "Sets the playback speed. Multiplied by the per-slice Speed parameter."
+      "description": "Sets the playback speed. Multiplied by the per-slice Speed parameter.",
+      "type": "file",
+      "channelCountRef": "global",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Transpose",
       "min": -60,
       "max": 60,
       "default": 0,
-      "description": "Transposes the playback speed in semitones (across all slices)."
+      "description": "Transposes the playback speed in semitones (across all slices).",
+      "type": "string",
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "Adjusts the playback speed in cents (across all slices)."
+      "description": "Adjusts the playback speed in cents (across all slices).",
+      "type": "string",
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Stop at slice end",
@@ -70,14 +77,19 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "When this parameter changes from 0 to 1, it invokes the 'Detect transients' function exactly as if the user had selected it from the menu."
+      "description": "When this parameter changes from 0 to 1, it invokes the ‘Detect transients’ function exactly as if the user had selected it from the menu."
     },
     {
       "name": "Clock source",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets the clock source: 'Off', 'External', or 'MIDI'."
+      "description": "Sets the clock source: ‘Off’, ‘External’, or ‘MIDI’.",
+      "enum_values": [
+        "Off",
+        "External",
+        "MIDI"
+      ]
     },
     {
       "name": "Auto trigger",
@@ -91,7 +103,7 @@
       "min": 0,
       "max": 19,
       "default": 15,
-      "description": "Sets how often the sample will be triggered, if 'Auto trigger' is 'Fixed'."
+      "description": "Sets how often the sample will be triggered, if ‘Auto trigger’ is ‘Fixed’."
     },
     {
       "name": "Time sig num",
@@ -105,14 +117,22 @@
       "min": 0,
       "max": 4,
       "default": 2,
-      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16."
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16.",
+      "enum_values": [
+        "1",
+        "2",
+        "4",
+        "8",
+        "16"
+      ]
     },
     {
       "name": "Coarse",
       "min": 0.0,
       "max": 100.0,
       "default": 0.0,
-      "description": "The coarse slice position, as a percentage of the sample length."
+      "description": "The coarse slice position, as a percentage of the sample length.",
+      "type": "file"
     },
     {
       "name": "Fine",
@@ -122,37 +142,34 @@
       "description": "The fine slice position, in sample frames."
     },
     {
-      "name": "Speed",
+      "name": "Speed (per slice)",
       "min": -200.0,
       "max": 200.0,
       "default": 100.0,
-      "description": "The playback speed for the slice."
+      "description": "The playback speed for the slice.",
+      "type": "file"
     }
   ],
   "input_ports": [
     {
       "name": "Slice input",
-      "description": "CV input for slice selection (V/oct, scaled at one semitone per slice)."
+      "description": "Pitch CV input (V/oct, scaled at one semitone per slice) to select a slice."
     },
     {
       "name": "Trigger input",
-      "description": "Trigger or gate input for triggering slices."
+      "description": "Trigger or gate input to start playback of a slice."
     },
     {
       "name": "Advance input",
-      "description": "Trigger input to advance to the next slice."
+      "description": "Trigger signal to advance the Slice parameter by one."
     },
     {
       "name": "Reset input",
-      "description": "Trigger input to reset to slice 1."
+      "description": "Trigger signal to return the Slice parameter to 1."
     },
     {
       "name": "Clock input",
-      "description": "Clock input (24 ppqn) for automatic loop playback."
-    },
-    {
-      "name": "Run/stop input",
-      "description": "Input to control run/stop state."
+      "description": "Clock source input (24 ppqn)."
     },
     {
       "name": "Slice input",
@@ -175,14 +192,5 @@
       "description": "The bus to use for the reset input (to reset to slice 1)."
     }
   ],
-  "output_ports": [
-    {
-      "name": "Audio output",
-      "description": "Audio output for the sliced sample playback."
-    },
-    {
-      "name": "Slice CV",
-      "description": "CV output indicating the current slice selection."
-    }
-  ]
+  "output_ports": []
 }

@@ -1,20 +1,21 @@
 {
   "guid": "cali",
   "name": "Auto-calibrator",
-  "description": "This algorithm offers oscillator calibration, similar to that in our Silent Way Voice Controller VST plug-in, in the FH-2 module, and in various algorithms on the disting EX. Pass the pitch CV from another algorithm (for example, the Quantizer) or another module through this algorithm, and connect the algorithm output to your VCO's CV input. To perform the calibration, you will also need to connect an output from the VCO to an input on this algorithm. This is only required during calibration, and can be disconnected afterwards (unless you're using continuous mode, as described below). To start the calibration, set the 'Start' parameter to 'On'. The module will output a series of voltages, ranging from -4 Volts up to +6 Volts, and analyse the pitch of the resulting signal from the VCO. As it does so, it will draw a graph of the results, which will ideally look like a nice straight line. Once the calibration is complete, the algorithm will continuously modify the pitch CV it receives to achieve the expected frequency from the VCO. To successfully calibrate, the algorithm needs a fairly clean waveform from the VCO – for example a nice sine or triangle wave. If your VCO is unable to provide this, consider using the default calibration and continuous mode, as described below. When discussing this process we may say 'calibrate an output' or 'calibrate a VCO' but what is really being calibrated is the combination of the disting NT output and the VCO. Both may in fact be perfectly well calibrated, in terms of tracking, but the absolute pitch of a VCO is usually determined by a physical tuning knob (not to mention temperature and other factors) and so is hard to know precisely. This process saves you having to tune by hand.",
+  "description": "This algorithm offers oscillator calibration, similar to that in our Silent Way Voice Controller VST plug-in, in the FH-2 module, and in various algorithms on the disting EX.\n\nPass the pitch CV from another algorithm (for example, the Quantizer) or another module through this algorithm, and connect the algorithm output to your VCO’s CV input.\n\nTo perform the calibration, you will also need to connect an output from the VCO to an input on this algorithm. This is only required during calibration, and can be disconnected afterwards (unless you’re using continuous mode, as described below).\n\nTo start the calibration, set the ‘Start’ parameter to ‘On’. The module will output a series of voltages, ranging from -4 Volts up to +6 Volts, and analyse the pitch of the resulting signal from the VCO. As it does so, it will draw a graph of the results, which will ideally look like a nice straight line.\n\nOnce the calibration is complete, the algorithm will continuously modify the pitch CV it receives to achieve the expected frequency from the VCO.\n\nTo successfully calibrate, the algorithm needs a fairly clean waveform from the VCO – for example a nice sine or triangle wave. If your VCO is unable to provide this, consider using the default calibration and continuous mode, as described below.\n\nWhen discussing this process we may say “calibrate an output” or “calibrate a VCO” but what is really being calibrated is the combination of the disting NT output and the VCO. Both may in fact be perfectly well calibrated, in terms of tracking, but the absolute pitch of a VCO is usually determined by a physical tuning knob (not to mention temperature and other factors) and so is hard to know precisely. This process saves you having to tune by hand.",
   "categories": [
     "Calibration",
-    "Pitch Correction",
-    "Oscillator Control"
+    "Utilities",
+    "Tuning"
   ],
   "short_description": "Calibrates pitch CV outputs",
-  "parameters": [
+  "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 8,
+      "value": "1-8",
       "description": "The number of bus channels to process."
-    },
+    }
+  ],
+  "parameters": [
     {
       "name": "Enable",
       "min": 0,
@@ -43,7 +44,7 @@
       "default": 50,
       "description": "The maximum voltage error that continuous calibration mode will attempt to correct – beyond this, it assumes it has just failed to track the pitch correctly.",
       "type": "string",
-      "is_bus": true
+      "channelCountRef": "mV"
     },
     {
       "name": "Time",
@@ -52,17 +53,17 @@
       "default": 1.0,
       "description": "The time constant for continuous mode correction. Use a high value if you just want to correct for long-term oscillator drift; use a low value for rapid, autotune-like pitch correction.",
       "type": "string",
-      "is_bus": true
+      "channelCountRef": "s"
     }
   ],
   "input_ports": [
     {
-      "name": "CV input",
-      "description": "The pitch CV input bus."
+      "name": "Pitch CV Input",
+      "description": "Pitch CV from another algorithm or module"
     },
     {
-      "name": "Audio input",
-      "description": "The audio input to use during calibration."
+      "name": "VCO Audio Input",
+      "description": "Audio signal from the VCO to be calibrated"
     },
     {
       "name": "CV input",
@@ -75,12 +76,12 @@
   ],
   "output_ports": [
     {
-      "name": "CV output",
-      "description": "The pitch CV output bus. Always uses Replace output mode."
+      "name": "Pitch CV Output",
+      "description": "Calibrated pitch CV output to the VCO's CV input"
     },
     {
       "name": "CV output",
-      "description": "The pitch CV output bus. Always uses Replace output mode."
+      "description": "The pitch CV output bus. Always uses “Replace” output mode."
     }
   ]
 }

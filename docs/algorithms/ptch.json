@@ -1,36 +1,38 @@
 {
   "guid": "ptch",
   "name": "Pitch reference",
-  "description": "This algorithm simply generates a sine wave tone at a particular pitch or frequency. Note that if using a note to specify the pitch, it respects the global tuning setting.",
+  "description": "This algorithm simply generates a sine wave tone at a particular pitch or frequency.\n\nNote that if using a note to specify the pitch, it respects the global tuning setting.",
   "categories": [
-    "Audio",
-    "Pitch"
+    "Utility",
+    "Oscillator"
   ],
   "short_description": "Generates a pitch reference tone",
   "gui_description": "The display shows the chosen pitch as a MIDI note name plus cents, as a fractional MIDI note number, and as a frequency in Hz.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Pitch mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the mode, either “Pitch”, or “Frequency”."
     },
     {
       "name": "Note",
       "min": 0,
       "max": 127,
       "default": 69,
-      "type": "enum",
-      "is_bus": false
+      "description": "Sets the note pitch."
     },
     {
       "name": "Frequency",
       "min": 27.0,
       "max": 880.0,
       "default": 440.0,
-      "type": "enum",
+      "description": "Sets the frequency.",
+      "type": "string",
+      "channelCountRef": "Hz",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -38,15 +40,17 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "enum",
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Amplitude",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "type": "enum",
+      "description": "The amplitude of the signal (before the gain is applied).",
+      "type": "string",
+      "channelCountRef": "V",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -54,7 +58,10 @@
       "min": -40,
       "max": 6,
       "default": -40,
-      "type": "enum",
+      "description": "The level of the output signal.",
+      "type": "string",
+      "channelCountRef": "dB",
+      "is_per_channel": false,
       "is_bus": false
     }
   ],
@@ -63,10 +70,6 @@
     {
       "name": "Output",
       "description": "The output bus."
-    },
-    {
-      "name": "Output",
-      "description": ""
     }
   ]
 }

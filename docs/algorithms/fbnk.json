@@ -1,42 +1,250 @@
 {
   "guid": "fbnk",
   "name": "Filter bank",
-  "description": "A fixed filter/resonator bank based on the disting EX algorithm. Provides a bank of parallel stereo bandpass filters or resonators. Filters can be mono, stereo, or up to 8 channels wide. Supports Resonator, Bandpass, and Multiband modes. The number of filters can be increased to 12.",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. It provides a bank of up to 12 parallel filters or resonators. The filters' levels can be controlled manually, via CV, or with envelopes driven from gates, and their pitch can also be set manually or via CV or MIDI. The filters can be mono, stereo, or up to 8 channels wide. Filter modes include Resonator (peaking all-pass), Bandpass (attenuate frequencies away from centre), and Multiband (crossover points).",
   "categories": [
-    "filter",
-    "resonator",
-    "bandpass",
-    "multiband",
-    "polysynth"
+    "Filters",
+    "Synthesis",
+    "Effects"
   ],
   "short_description": "A fixed filter/resonator bank",
-  "use_cases": [
-    "playing chords over MIDI",
-    "filter bank effects",
-    "parallel stereo bandpass filters"
-  ],
   "gui_description": "The display shows the notes to which each filter is tuned, overlaid on a bar to represent the envelope level of the voice.",
   "specifications": [
     {
       "name": "Filters",
+      "value": "1-12",
+      "description": "The number of filters in the bank."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Width",
       "min": 1,
-      "max": 12
+      "max": 8,
+      "default": 1,
+      "scope": "global",
+      "type": "bus",
+      "is_bus": true
+    },
+    {
+      "name": "Mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "scope": "global",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Resonance/Q",
+      "min": 1,
+      "max": 100,
+      "default": 50,
+      "description": "Sets the filter gain (for resonators) or resonance (for bandpass/multiband).",
+      "enum_values": [
+        "Resonator",
+        "Bandpass",
+        "Multiband"
+      ],
+      "enumValues": [
+        "Resonator",
+        "Bandpass",
+        "Multiband"
+      ],
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Attack time",
+      "min": 0,
+      "max": 1023,
+      "default": 64,
+      "description": "The envelope attack time. The scale is exponential, from 1ms up to 4s.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Release time",
+      "min": 0,
+      "max": 1023,
+      "default": 64,
+      "description": "The envelope release time. The scale is exponential, from 1ms up to 4s.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "An overall gain control.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Pitch",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "description": "The filter frequency/pitch, as a MIDI note number.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Gate",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The filter gate.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Gain",
+      "min": -40.0,
+      "max": 24.0,
+      "default": 0.0,
+      "description": "The filter’s gain.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel to listen on.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Controls how the algorithm will respond to MPE. See above.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "Sets the I2C channel.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Controlled voices",
+      "min": 1,
+      "max": 12,
+      "default": 12,
+      "description": "Sets the number of filters that will be controlled by MIDI or CV/gate. By reducing this, you can elect to control some filters by MIDI while the rest remain under manual control.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Transpose",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Coarse tuning control.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Fine tuning control.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain pedal).",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Unison",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of voices to play simultaneously for each note triggered.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Unison detune",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "description": "The detune amount when Unison is active.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard polysynth sustain mode parameter. See above.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "Press -> volume",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which pressure (per note for MPE) affects the note volume.",
+      "type": "enum",
+      "is_bus": false
+    },
+    {
+      "name": "MPE Y -> volume",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the MPE Y dimension affects the note volume.",
+      "type": "enum",
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
       "name": "Audio input",
-      "description": "The first audio input bus."
-    },
-    {
-      "name": "Audio input busses",
-      "description": "The number of audio input busses (e.g. set to 2 for stereo)."
+      "description": ""
     }
   ],
   "output_ports": [
     {
-      "name": "Output bus",
-      "description": "The filter's output bus."
+      "name": "Output",
+      "description": "The filter’s (first) output bus."
     }
   ]
 }

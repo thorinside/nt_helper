@@ -1,21 +1,17 @@
 {
   "guid": "sams",
   "name": "Sample Player (Speed)",
-  "description": "This algorithm plays samples with flexible control over the playback speed, including the possibility of playing the sample backwards. It provides the features of a number of disting mk4 algorithms, including Audio Playback, Audio Playback with V/Oct, Audio Playback with Z Speed, and Audio Playback with Reverse.",
+  "description": "This algorithm plays samples with flexible control over the playback speed, including the possibility of playing the sample backwards. It provides the features of a number of disting mk4 algorithms, including Audio Playback, Audio Playback with V/Oct, Audio Playback with Z Speed, and Audio Playback with Reverse.\n\nPlease review the section on the features common to the various Sample Players, above.",
   "categories": [
-    "Audio Playback"
+    "Sample Player",
+    "Playback"
   ],
   "short_description": "Plays samples with speed/pitch control",
-  "use_cases": [
-    "Playing samples with speed control",
-    "Playing samples backwards"
-  ],
-  "gui_description": "Plays samples with speed/pitch control",
   "specifications": [
     {
       "name": "Record time",
-      "min": 0,
-      "max": 60
+      "value": "0-60 seconds",
+      "description": "The maximum length of audio that can be recorded (sampled)."
     }
   ],
   "parameters": [
@@ -24,8 +20,10 @@
       "min": -200.0,
       "max": 200.0,
       "default": 100.0,
-      "type": "folder",
-      "is_common": false,
+      "description": "Sets the playback speed. Negative values play backwards.",
+      "type": "file",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -33,8 +31,10 @@
       "min": -60,
       "max": 60,
       "default": 0,
-      "type": "folder",
-      "is_common": false,
+      "description": "Transposes the playback speed in semitones.",
+      "type": "file",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -42,8 +42,10 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_common": false,
+      "description": "Adjusts the playback speed in cents.",
+      "type": "file",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     }
   ],
@@ -55,14 +57,6 @@
     {
       "name": "Pitch input",
       "description": "The bus to use for 1V/octave pitch control."
-    },
-    {
-      "name": "Speed input",
-      "description": ""
-    },
-    {
-      "name": "Pitch input",
-      "description": ""
     }
   ],
   "output_ports": []

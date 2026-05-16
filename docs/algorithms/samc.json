@@ -1,18 +1,19 @@
 {
   "guid": "samc",
   "name": "Sample Player (Clocked)",
-  "description": "This algorithm plays samples, stretching or shrinking them to fit the tempo provided by a clock input, or MIDI. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm, but works somewhat differently. Still, it might be fun to review the video (actually for the disting mk3) here. The algorithm looks at the length of the chosen sample, and uses the current tempo and time signature to figure out a number of bars that best fits. It then adjusts the playback speed so that the sample will fit that number of bars. You can use the Speed tune parameter to adjust the speed – this is particularly useful if the sample is not actually a full number of bars long.",
+  "description": "This algorithm plays samples, stretching or shrinking them to fit the tempo provided by a clock input, or MIDI. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm, but works somewhat differently. Still, it might be fun to review the video (actually for the disting mk3) here https://www.youtube.com/watch?v=9wZHqDfXvGg . Please review the section on the features common to the various Sample Players, above. To use the algorithm, first give it a clock, either from an input bus, or by telling it to follow MIDI clock. You also need to trigger the sample – you can do this via a bus, or via MIDI, or manually, but it’s also possible to have the algorithm continuously trigger the sample in a loop via the ‘Auto trigger’ parameter. The algorithm looks at the length of the chosen sample, and uses the current tempo and time signature to figure out a number of bars that best fits. It then adjusts the playback speed so that the sample will fit that number of bars. You can use the ‘Speed tune’ parameter to adjust the speed – this is particularly useful if the sample is not actually a full number of bars long.",
   "categories": [
     "Sample Player",
-    "Clocked",
-    "Audio Playback"
+    "Clocked Audio",
+    "Sequencing"
   ],
   "short_description": "Plays samples synced to a clock",
+  "gui_description": "As with the other Sample Players, the display shows the waveform of the sample, which is updated as the sample plays. Unlike the other Sample Players, which always show the full length of the sample, this algorithm’s display shows the full length of the time of the calculated loop. How the sample fits into this time depends on, among other things, the ‘Speed tune’ parameter. Above the waveform are tick marks for the bars and beats. To the right, the algorithm shows the length of the sample (in seconds), the calculated number of bars that the sample would play for at its natural speed, and the number of bars that the algorithm has chosen to fit the sample to.",
   "specifications": [
     {
       "name": "Record time",
-      "min": 0,
-      "max": 60
+      "value": "0-60 seconds",
+      "description": "The maximum length of audio that can be recorded (sampled)."
     }
   ],
   "parameters": [
@@ -21,9 +22,10 @@
       "min": 50.0,
       "max": 200.0,
       "default": 100.0,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "Adjusts the playback speed, relative to the one calculated by the algorithm.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -31,9 +33,10 @@
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "Sets the interpretation of the input clock pulse.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -41,9 +44,10 @@
       "min": 1,
       "max": 99,
       "default": 4,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "The time signature numerator.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -51,9 +55,10 @@
       "min": 0,
       "max": 4,
       "default": 2,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -61,9 +66,10 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "Sets whether the sample will automatically be triggered by the clock. This can be at a fixed interval, or set automatically by the length of the loop.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -71,9 +77,10 @@
       "min": 0,
       "max": 19,
       "default": 15,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "Sets how often the sample will be triggered, if ‘Auto trigger’ is ‘Fixed’. ",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -81,9 +88,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "Whether to follow MIDI clock.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -91,9 +99,10 @@
       "min": 0,
       "max": 19,
       "default": 4,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "Sets how often the MIDI clock will cause an internal clock event. This should normally match the ‘Input clock div’ parameter.",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     },
     {
@@ -101,9 +110,10 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "isCommon": true,
-      "is_common": true,
+      "description": "Sets the type of reset signal: ‘Trigger’ or ‘Run/stop’. ",
+      "type": "string",
+      "channelCountRef": "1",
+      "is_common": false,
       "is_bus": false
     }
   ],
@@ -117,18 +127,17 @@
       "description": "The bus to use as the reset input."
     },
     {
+      "name": "Trigger",
+      "description": "Trigger the sample via a bus, MIDI, or manually."
+    },
+    {
       "name": "Clock input",
-      "description": ""
+      "description": "The bus to use as the clock input."
     },
     {
       "name": "Reset input",
-      "description": ""
+      "description": "The bus to use as the reset input."
     }
   ],
-  "output_ports": [
-    {
-      "name": "Audio output",
-      "description": "Audio output port."
-    }
-  ]
+  "output_ports": []
 }

@@ -1,23 +1,18 @@
 {
   "guid": "samb",
   "name": "Sample Player (Scrub)",
-  "description": "This algorithm is based on the Audio Playback with Scrub algorithm on the disting mk4. You might like to watch the video on that algorithm, here. From the disting mk4 manual: In this algorithm the sample playback position is directly driven from the input. Imagine a piece of audio tape passing over a tape head – in other algorithms, that tape is constantly moving at some speed or other as if driven by a motor, but in this algorithm you're basically dragging the tape back and forwards over the playhead yourself. You can scrub the audio using a CV input, or the Scrub parameter (which can of course be mapped). Remember that you need to trigger the sample before any playback will occur, and again to change the sample (unless you have Retrigger on change on). Please review the section on the features common to the various Sample Players, above.",
+  "description": "This algorithm is based on the Audio Playback with Scrub algorithm on the disting mk4. In this algorithm the sample playback position is directly driven from the [input]. Imagine a piece of audio tape passing over a tape head – in other algorithms, that tape is constantly moving at some speed or other as if driven by a motor, but in this algorithm you're basically dragging the tape back and forwards over the playhead yourself. You can scrub the audio using a CV input, or the Scrub parameter (which can of course be mapped). Remember that you need to trigger the sample before any playback will occur, and again to change the sample (unless you have ‘Retrigger on change’ on).",
   "categories": [
-    "Audio Playback",
-    "Scrub Control"
+    "Sample Playback",
+    "Audio Effects"
   ],
   "short_description": "Plays samples with scrub control",
-  "use_cases": [
-    "Sample playback with manual scrub control",
-    "Audio tape simulation"
-  ],
   "gui_description": "The display shows the waveform and the playhead position as a check mark above it. The current playback speed is also shown. Positive values indicate forwards playback; negative values indicates reversed playback.",
   "specifications": [
     {
       "name": "Record time",
-      "description": "The maximum length of audio that can be recorded (sampled)",
-      "min": 0,
-      "max": 60
+      "value": "0-60 seconds",
+      "description": "The maximum length of audio that can be recorded (sampled)."
     }
   ],
   "parameters": [
@@ -26,41 +21,60 @@
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "description": "Sets the scrub position."
+      "description": "Sets the scrub position.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_bus": false
     },
     {
       "name": "Max speed",
       "min": 1,
       "max": 100,
       "default": 16,
-      "description": "Sets the maximum playback speed."
+      "description": "Sets the maximum playback speed.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_bus": false
     },
     {
       "name": "Slew",
       "min": 0,
       "max": 1000,
       "default": 400,
-      "description": "Sets the amount of slew applied to the scrub position."
+      "description": "Sets the amount of slew applied to the scrub position.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_bus": false
     },
     {
       "name": "Min CV",
       "min": -10,
       "max": 10,
       "default": -5,
-      "description": "Sets the CV voltage corresponding to scrubbing to the start of the sample."
+      "description": "Sets the CV voltage corresponding to scrubbing to the start of the sample.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_bus": false
     },
     {
       "name": "Max CV",
       "min": -10,
       "max": 10,
       "default": 5,
-      "description": "Sets the CV voltage corresponding to scrubbing to the end of the sample."
+      "description": "Sets the CV voltage corresponding to scrubbing to the end of the sample.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "Audio input for sample playback"
+      "name": "Scrub CV",
+      "description": "Directly drives the sample playback position."
+    },
+    {
+      "name": "Trigger",
+      "description": "Triggers the sample playback or changes the sample."
     },
     {
       "name": "Scrub input",
@@ -69,8 +83,8 @@
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "description": "Audio output from sample playback"
+      "name": "Audio Out",
+      "description": "The scrubbed sample audio output."
     }
   ]
 }

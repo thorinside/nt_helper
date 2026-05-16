@@ -3,21 +3,21 @@
   "name": "Mixer Mono",
   "description": "This algorithm is a mono mixer - it mixes mono inputs to a mono output. Up to four aux send busses are available, which can be switched to pre- or post-fade.",
   "categories": [
-    "mixing",
-    "mono"
+    "Mixer",
+    "Utility"
   ],
   "short_description": "A mono mixer",
-  "gui_description": "The display shows a level meter for each channel. The thin line at the top indicates 0dBFS; if a channel goes over this, a clip indicator will show. The chevrons to the right of the level meters indicate the mixer gains. Mute and Solo are indicated with a small 'M' and 'S' respectively. Muted level meters are grayed out.",
+  "gui_description": "The display shows a level meter for each channel. The thin line at the top indicates 0dBFS; if a channel goes over this, a clip indicator will show (a small rectangle over the 0dBFS line). The chevrons to the right of the level meters indicate the mixer gains. Mute and Solo are indicated with a small ‘M’ and ‘S’ respectively. Muted level meters are grayed out.",
   "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 12
+      "value": "1-12",
+      "description": "The number of mixer channels."
     },
     {
       "name": "Sends",
-      "min": 0,
-      "max": 4
+      "value": "0-4",
+      "description": "The number of aux sends per channel."
     }
   ],
   "parameters": [
@@ -26,67 +26,96 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum"
     },
     {
       "name": "Output gain",
       "min": -70.0,
       "max": 6.0,
       "default": 0.0,
-      "description": "The mixer output gain."
+      "description": "The mixer output gain.",
+      "type": "file",
+      "channelCountRef": "common",
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Destination",
       "min": 1,
       "max": 64,
       "default": 13,
-      "description": "The output bus for the send."
+      "description": "The output bus for the send.",
+      "type": "bus",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Pre/post",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "Whether the send is Pre-fade or Post-fade."
+      "description": "Whether the send is Pre-fade or Post-fade.",
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "description": "The channel gain."
+      "description": "The channel gain.",
+      "type": "file",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Mute",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Mutes the channel."
+      "description": "Mutes the channel.",
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Solo",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Solos the channel."
+      "description": "Solos the channel.",
+      "type": "enum",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Name",
-      "description": "A text name for the channel for identification."
+      "description": "A text name for the channel for identification.",
+      "type": "string",
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Send gain",
       "min": -70.0,
       "max": 6.0,
       "default": -70.0,
-      "description": "The send gain."
+      "description": "The send gain.",
+      "type": "file",
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [

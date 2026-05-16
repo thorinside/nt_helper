@@ -1,0 +1,301 @@
+{
+  "guid": "lisp",
+  "name": "Little Spacey",
+  "description": "This algorithm is a version of the Expert Sleepers VST plug-in of the same name. Little Spacey is delay effect, inspired by classic analogue ‘bucket brigade’ delays but with refinements only possible in the digital arena – not to mention a maximum delay time that would cost a small fortune to realise in hardware. Great care has been taken to give Little Spacey the smooth, creamy sound which makes analogue delays still popular today. In common with the best analogue delays Little Spacey allows you to modulate the delay time for chorus or vibrato effects. Unlike most analogue delays, Little Spacey is not restricted to mono operation, and works well in stereo settings, offering variation of the effect between the channels for particularly rich and involving sounds. Unlike the VST version, this implementation also allow the delay time to be synchronised to clocks (analogue or MIDI).",
+  "categories": [
+    "Delay",
+    "Modulation",
+    "Stereo Effect"
+  ],
+  "short_description": "A bucket-brigade delay effect",
+  "gui_description": "The display simply shows the current delay time, taking into account any clock syncing, and the limits on the delay time imposed by the currently selected BBD size.",
+  "specifications": [
+    {
+      "name": "Stereo",
+      "description": "Whether the algorithm is mono or stereo."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "BBD Size",
+      "min": 0,
+      "max": 5,
+      "default": 0,
+      "description": "Sets the number of bucket-brigade stages."
+    },
+    {
+      "name": "Delay time",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "description": "Sets the delay time, between the minimum and maximum times determined from the BBD size and the current sample rate.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Spread",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the difference in delay times between the left and right channels. At 0%, the two channels have the same delay time.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Colour",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Allows you to lower the cut-off frequencies of the low pass filters, resulting in delays that lose more of their high frequency components.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Feedback",
+      "min": 0.0,
+      "max": 110.0,
+      "default": 0.0,
+      "description": "Sets the amount of the delayed signal that gets routed back to the input of the delay, causing repeated echoes. Note that the control goes up to 110%. Settings above 100% cause ‘positive feedback’ i.e. the delays get louder over time.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Feedback path",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the feedback path, as described above.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Mix",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The wet/dry mix.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Level",
+      "min": -40,
+      "max": 0,
+      "default": 0,
+      "description": "The gain applied to the delay/wet signal.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Dry mix",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Controls whether the ‘dry’ output is indeed the true dry sound or a filtered version. The filtered version can be useful when using fairly ‘dark’-sounding delays to match the dry sound more closely to the delayed sound.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "LFO 1 Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 700,
+      "description": "The LFO speed. Exponential scale from 0.05Hz to 20Hz."
+    },
+    {
+      "name": "LFO 1 Depth",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The LFO depth.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "LFO 1 Spread",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Varies the phase of the LFO applied to each (stereo) channel.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "LFO 2 Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 700,
+      "description": "The LFO speed. Exponential scale from 0.05Hz to 20Hz."
+    },
+    {
+      "name": "LFO 2 Depth",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The LFO depth.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "LFO 2 Spread",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "Varies the phase of the LFO applied to each (stereo) channel.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Ducking",
+      "min": 0,
+      "max": 40,
+      "default": 0,
+      "description": "Reduces the level of the delays when the signal level is high. This is typically used to let the initial note ‘cut through’ the delays, with the delays then fading up during the note’s decay tails.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Env->LFO 1 Speed",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the amount by which the envelope modifies the modulation speed. Positive settings cause the modulation to speed up when the sound is louder; negative settings cause the modulation to slow down when the sound is louder.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Env->LFO 1 Depth",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the amount by which the envelope modifies the modulation depth. Positive settings cause the modulation depth to increase when the sound is louder; negative settings cause the modulation depth to decrease when the sound is louder.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Env->LFO 1 Spread",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the amount by which the envelope modifies the modulation LFO’s spread.",
+      "type": "string",
+      "channelCountRef": "unit",
+      "is_per_channel": false,
+      "is_bus": false
+    },
+    {
+      "name": "Clock source",
+      "min": 0,
+      "max": 2,
+      "default": 1,
+      "description": "Chooses the clock source: ‘None’, ‘Clock input’, or ‘MIDI clock’.",
+      "enum_values": [
+        "None",
+        "Clock input",
+        "MIDI clock"
+      ]
+    },
+    {
+      "name": "MIDI divisor",
+      "min": 0,
+      "max": 19,
+      "default": 9,
+      "description": "The MIDI divisor, if the clock source is ‘MIDI clock’."
+    },
+    {
+      "name": "MIDI numerator",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI numerator, if the clock source is ‘MIDI clock’."
+    },
+    {
+      "name": "Delay multiplier",
+      "min": 0,
+      "max": 23,
+      "default": 15,
+      "description": "A delay multiplier, if the clock source is not ‘None’."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "description": "The left or mono input bus."
+    },
+    {
+      "name": "Right input",
+      "description": "The right input bus."
+    },
+    {
+      "name": "Clock input",
+      "description": "The input bus to use for the clock, if the source is ‘Clock input’."
+    },
+    {
+      "name": "Clock input",
+      "description": "The input bus to use for the clock, if the source is ‘Clock input’."
+    },
+    {
+      "name": "Left/mono input",
+      "description": "The left or mono input bus."
+    },
+    {
+      "name": "Right input",
+      "description": "The right input bus."
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": "The left or mono output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right output bus."
+    },
+    {
+      "name": "Left/mono output",
+      "description": "The left or mono output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right output bus."
+    }
+  ]
+}

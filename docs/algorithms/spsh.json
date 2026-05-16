@@ -1,19 +1,13 @@
 {
   "guid": "spsh",
   "name": "Step Sequencer Head",
-  "description": "This algorithm shares the sequence of another Step Sequencer algorithm (above), and replicates the parameters that define how that sequence is played. This allows you to, for example, have the same sequence played in different directions simultaneously, or at different speeds, or with different transpositions. The Step Sequencer Head refers to the nearest Step Sequencer above it in the algorithm list. You can have as many Step Sequencer Heads as you like for each Step Sequencer.",
+  "description": "This algorithm shares the sequence of another Step Sequencer algorithm (above), and replicates the parameters that define how that sequence is played. This allows you to, for example, have the same sequence played in different directions simultaneously, or at different speeds, or with different transpositions.\n\nThe Step Sequencer Head refers to the nearest Step Sequencer above it in the algorithm list. You can have as many Step Sequencer Heads as you like for each Step Sequencer.",
   "categories": [
-    "sequencer",
-    "playback",
-    "control"
+    "Sequencer",
+    "Playback",
+    "Utility"
   ],
   "short_description": "An extra playback head",
-  "use_cases": [
-    "play sequences in different directions simultaneously",
-    "play sequences at different speeds",
-    "play sequences with different transpositions"
-  ],
-  "gui_description": "An extra playback head",
   "parameters": [
     {
       "name": "Sequence",
@@ -55,23 +49,29 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets the gate type: \"% of clock\" or \"Trigger\"."
+      "description": "Sets the gate type: “% of clock” or “Trigger”."
     },
     {
       "name": "Gate length",
       "min": 1,
       "max": 99,
       "default": 50,
-      "description": "Sets the length of the gate output if the type is \"% of clock\".",
-      "type": "folder"
+      "description": "Sets the length of the gate output if the type is “% of clock”.",
+      "type": "string",
+      "channelCountRef": "percentage",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Trigger length",
       "min": 1,
       "max": 100,
       "default": 10,
-      "description": "Sets the length of the gate output if the type is \"Trigger\".",
-      "type": "folder"
+      "description": "Sets the length of the gate output if the type is “Trigger”.",
+      "type": "string",
+      "channelCountRef": "milliseconds",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Glide",
@@ -79,7 +79,10 @@
       "max": 1000,
       "default": 100,
       "description": "Sets the glide time for tied notes.",
-      "type": "folder"
+      "type": "string",
+      "channelCountRef": "milliseconds",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Octave",
@@ -94,14 +97,17 @@
       "max": 60,
       "default": 0,
       "description": "Transposes the sequence in semitones.",
-      "type": "folder"
+      "type": "string",
+      "channelCountRef": "semitones",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Reset mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets the mode for the reset input. The options are: the input is a reset trigger. the input is a run/stop signal."
+      "description": "Sets the mode for the reset input. The options are: the input is a reset trigger, the input is a run/stop signal."
     },
     {
       "name": "Pitch output mode",
@@ -150,8 +156,7 @@
       "min": 0,
       "max": 19,
       "default": 4,
-      "description": "Sets the clock divisor when following MIDI clock.",
-      "type": "folder"
+      "description": "Sets the clock divisor when following MIDI clock."
     },
     {
       "name": "MIDI channel (out)",
@@ -207,11 +212,11 @@
     },
     {
       "name": "Sequence CV input",
-      "description": "The bus to use to select the sequence. See above."
+      "description": "The bus to use to select the sequence."
     },
     {
       "name": "Sequence trigger input",
-      "description": "The bus to use for the sequence select trigger. See above."
+      "description": "The bus to use for the sequence select trigger."
     },
     {
       "name": "Clock input",

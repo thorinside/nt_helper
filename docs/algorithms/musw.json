@@ -1,20 +1,19 @@
 {
   "guid": "musw",
   "name": "Multi-Switch",
-  "description": "This algorithm is based on the disting EX algorithm of the same name. It offers up to six highly configurable sequential or voltage controlled switches. Being DC-coupled, it can switch audio or CVs. Each switch consists of two sub-switches: an input sub-switch, and an output sub-switch. The selected input is routed to the selected output. When multiple switches share the same output, their signals are summed. Each sub-switch can crossfade when transitioning, for click-free switches (when the fade is very short) or noticeable blends between sources/targets (when the fade is long). The switches can be controlled by CV inputs, or by one of the 'Macro' parameters, which can in turn be controlled by one of the mapping sources (CV, MIDI, or I2C).",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the video on that algorithm here. It offers up to six highly configurable sequential or voltage controlled switches. Being DC-coupled, it can switch audio or CVs. Each switch consists of two sub-switches: an input sub-switch, and an output sub-switch. The selected input is routed to the selected output. When multiple switches share the same output, their signals are summed. Each sub-switch can crossfade when transitioning, for click-free switches (when the fade is very short) or noticeable blends between sources/targets (when the fade is long). The switches can be controlled by CV inputs, or by one of the 'Macro' parameters, which can in turn be controlled by one of the mapping sources (CV, MIDI, or I2C).",
   "categories": [
-    "Switching",
+    "Utility",
     "Routing",
-    "CV Control",
-    "Sequential Control"
+    "Switch"
   ],
   "short_description": "Sequential or CV-controlled switch",
+  "gui_description": "The display shows which input and output busses are currently joined by the various switches.",
   "specifications": [
     {
-      "name": "Switches 1-6",
-      "description": "The number of switches.",
-      "min": 1,
-      "max": 6
+      "name": "Switches",
+      "value": "1-6",
+      "description": "The number of switches."
     }
   ],
   "parameters": [
@@ -37,7 +36,19 @@
       "min": 0,
       "max": 9,
       "default": 0,
-      "description": "The type of control source for the input switch. See 'control types' below."
+      "description": "The type of control source for the input switch.",
+      "enum_values": [
+        "None",
+        "Trig fwds",
+        "Trig rev",
+        "Trig pong",
+        "Trig rand",
+        "Unipolar",
+        "Bipolar",
+        "Uni rev",
+        "Bi rev",
+        "Link"
+      ]
     },
     {
       "name": "In control source",
@@ -51,21 +62,33 @@
       "min": 0,
       "max": 6,
       "default": 0,
-      "description": "The linked switch, if the 'In control type' is 'Link'."
+      "description": "The linked switch, if the ‘In control type’ is ‘Link’."
     },
     {
       "name": "In link offset",
       "min": 0,
       "max": 11,
       "default": 0,
-      "description": "The linked switch offset, if the 'In control type' is 'Link'."
+      "description": "The linked switch offset, if the ‘In control type’ is ‘Link’."
     },
     {
       "name": "Out control type",
       "min": 0,
       "max": 9,
       "default": 0,
-      "description": "The type of control source for the output switch. See 'control types' below."
+      "description": "The type of control source for the output switch.",
+      "enum_values": [
+        "None",
+        "Trig fwds",
+        "Trig rev",
+        "Trig pong",
+        "Trig rand",
+        "Unipolar",
+        "Bipolar",
+        "Uni rev",
+        "Bi rev",
+        "Link"
+      ]
     },
     {
       "name": "Out control source",
@@ -79,14 +102,14 @@
       "min": 0,
       "max": 6,
       "default": 0,
-      "description": "The linked switch, if the 'Out control type' is 'Link'."
+      "description": "The linked switch, if the ‘Out control type’ is ‘Link’."
     },
     {
       "name": "Out link offset",
       "min": 0,
       "max": 11,
       "default": 0,
-      "description": "The linked switch offset, if the 'Out control type' is 'Link'."
+      "description": "The linked switch offset, if the ‘Out control type’ is ‘Link’."
     },
     {
       "name": "Reset source",
@@ -101,53 +124,27 @@
       "max": 1000,
       "default": 1,
       "description": "The switch's crossfade time, in milliseconds.",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false
+      "type": "string",
+      "channelCountRef": "1",
+      "is_per_channel": false,
+      "is_common": false,
+      "is_bus": false
     },
     {
       "name": "Input A-L",
       "min": 0,
       "max": 64,
       "default": 0,
-      "description": "The bus to use for the 12 possible inputs of the input sub-switch.",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false
+      "description": "The bus to use for the 12 possible inputs of the input sub-switch."
     },
     {
       "name": "Output A-H",
       "min": 0,
       "max": 64,
       "default": 0,
-      "description": "The bus to use for the 8 possible outputs of the output sub-switch.",
-      "type": "enum",
-      "is_per_channel": true,
-      "is_common": false
+      "description": "The bus to use for the 8 possible outputs of the output sub-switch."
     }
   ],
-  "input_ports": [
-    {
-      "name": "Switch Control",
-      "description": "CV or macro parameter to control switch position or type."
-    },
-    {
-      "name": "Reset",
-      "description": "CV or macro parameter to reset the switch."
-    },
-    {
-      "name": "Input A-L",
-      "description": "12 input buses for the input sub-switch."
-    },
-    {
-      "name": "Output A-H",
-      "description": "8 output buses for the output sub-switch."
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "Switch Output",
-      "description": "Routed audio or CV signal from selected input to output."
-    }
-  ]
+  "input_ports": [],
+  "output_ports": []
 }

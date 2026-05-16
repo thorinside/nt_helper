@@ -1,11 +1,11 @@
 {
   "guid": "satu",
   "name": "Saturation",
-  "description": "This algorithm implements a simple soft-saturation effect. It can be used simply for creative toneshaping, but it is particularly useful for avoiding harsh digital clipping when signals get loud. (It is the same processing that is built into many of the disting EX algorithms as a final \"output bus\" limiter.)",
+  "description": "This algorithm implements a simple soft-saturation effect. It can be used simply for creative toneshaping, but it is particularly useful for avoiding harsh digital clipping when signals get loud. (It is the same processing that is built into many of the disting EX algorithms as a final “output bus” limiter.)",
   "categories": [
-    "Effects",
-    "Toneshaping",
-    "Saturation"
+    "Saturation",
+    "Distortion",
+    "Utility"
   ],
   "short_description": "Soft-clipping saturation",
   "parameters": [
@@ -14,7 +14,9 @@
       "min": -40,
       "max": 24,
       "default": 0,
-      "type": "folder",
+      "description": "A gain to apply before the saturation.",
+      "type": "scaled",
+      "channelCountRef": "global",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -23,7 +25,9 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "type": "folder",
+      "description": "A gain to apply after the saturation.",
+      "type": "scaled",
+      "channelCountRef": "global",
       "is_per_channel": false,
       "is_bus": false
     },
@@ -32,7 +36,8 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
+      "description": "Enables saturation on this channel.",
+      "type": "scaled",
       "is_per_channel": true,
       "is_bus": false
     },
@@ -41,7 +46,8 @@
       "min": 1,
       "max": 12,
       "default": 1,
-      "type": "folder",
+      "description": "The number of busses to process, starting from the\nInput. For example, for a stereo signal, set this to 2.",
+      "type": "scaled",
       "is_per_channel": true,
       "is_bus": false
     }
@@ -50,16 +56,7 @@
     {
       "name": "Input",
       "description": "The input (and output) bus."
-    },
-    {
-      "name": "Input",
-      "description": ""
     }
   ],
-  "output_ports": [
-    {
-      "name": "Output",
-      "description": "The output (and input) bus."
-    }
-  ]
+  "output_ports": []
 }

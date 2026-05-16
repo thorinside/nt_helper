@@ -1,13 +1,19 @@
 {
   "guid": "mima",
   "name": "Minimum/maximum",
-  "description": "This simple algorithm computes the minimum and maximum of two input voltages. Note that with one input disabled, or at 0V, this effectively performs half-wave rectification.",
+  "description": "This simple algorithm computes the minimum and maximum of two input voltages.\n\nNote that with one input disabled, or at 0V, this effectively performs half-wave rectification.",
   "categories": [
-    "math",
-    "signal processing",
-    "utility"
+    "Utility",
+    "Signal Processing"
   ],
   "short_description": "Min/max, or half-wave rectifier",
+  "specifications": [
+    {
+      "name": "Channels",
+      "value": "1-12",
+      "description": "The number of bus channels to process."
+    }
+  ],
   "parameters": [
     {
       "name": "Input A",
@@ -38,25 +44,8 @@
       "description": "The standard Add/Replace mode selector as described above for the maximum voltage."
     }
   ],
-  "input_ports": [
-    {
-      "name": "Input A",
-      "description": "One of the two input busses to process."
-    },
-    {
-      "name": "Input B",
-      "description": "One of the two input busses to process."
-    }
-  ],
+  "input_ports": [],
   "output_ports": [
-    {
-      "name": "Min output",
-      "description": "The output bus for the minimum voltage."
-    },
-    {
-      "name": "Max output",
-      "description": "The output bus for the maximum voltage."
-    },
     {
       "name": "Min output",
       "description": "The output bus for the minimum voltage."

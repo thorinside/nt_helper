@@ -1,12 +1,10 @@
 {
   "guid": "chof",
   "name": "Chorus/Flange",
-  "description": "This algorithm is a stereo chorus or flanger effect. For a chorus effect, select a longish Delay with a low Depth and low Feedback. For a flanger, you want a short Delay and a high Depth, and add feedback to taste. The Spread control sets the phase difference in the LFOs for the left and right channel. When at the default setting of 180 you get the 'stereo chorus' effect provided on certain classic synths to generate a stereo output from an essentially mono source.",
+  "description": "This algorithm is a stereo chorus or flanger effect.\n\nFor a chorus effect, select a longish Delay with a low Depth and low Feedback. For a flanger, you want a short Delay and a high Depth, and add feedback to taste.\n\nThe Spread control sets the phase difference in the LFOs for the left and right channel. When at the default setting of 180 you get the 'stereo chorus' effect provided on certain classic synths to generate a stereo output from an essentially mono source.",
   "categories": [
-    "Effects",
-    "Stereo",
-    "Delay",
-    "Modulation"
+    "Modulation",
+    "Effects"
   ],
   "short_description": "Chorus or Flange effect",
   "parameters": [
@@ -23,7 +21,10 @@
       "max": 150.0,
       "default": 20.0,
       "description": "The size of the delay lines.",
-      "type": "folder"
+      "type": "string",
+      "channelCountRef": "stereo",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Speed",
@@ -38,7 +39,11 @@
       "max": 100.0,
       "default": 0.0,
       "description": "The internal feedback.",
-      "type": "folder"
+      "enum_values": [],
+      "type": "string",
+      "channelCountRef": "stereo",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Depth",
@@ -46,7 +51,11 @@
       "max": 100,
       "default": 15,
       "description": "The LFO depth.",
-      "type": "folder"
+      "enum_values": [],
+      "type": "string",
+      "channelCountRef": "stereo",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Spread",
@@ -54,7 +63,11 @@
       "max": 360,
       "default": 180,
       "description": "The LFO phase difference between channels.",
-      "type": "folder"
+      "enum_values": [],
+      "type": "string",
+      "channelCountRef": "stereo",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Mix",
@@ -62,7 +75,11 @@
       "max": 100,
       "default": 50,
       "description": "The wet/dry mix.",
-      "type": "folder"
+      "enum_values": [],
+      "type": "string",
+      "channelCountRef": "stereo",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Level",
@@ -70,7 +87,11 @@
       "max": 0,
       "default": 0,
       "description": "The gain applied to the wet signal.",
-      "type": "folder"
+      "enum_values": [],
+      "type": "string",
+      "channelCountRef": "stereo",
+      "is_per_channel": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
@@ -81,25 +102,9 @@
     {
       "name": "Right input",
       "description": "The right input bus, if stereo."
-    },
-    {
-      "name": "Left/mono input",
-      "description": "The left or mono input bus."
-    },
-    {
-      "name": "Right input",
-      "description": "The right input bus, if stereo."
     }
   ],
   "output_ports": [
-    {
-      "name": "Left/mono output",
-      "description": "The left output bus."
-    },
-    {
-      "name": "Right output",
-      "description": "The right output bus, if stereo."
-    },
     {
       "name": "Left/mono output",
       "description": "The left output bus."

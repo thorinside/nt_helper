@@ -1,11 +1,10 @@
 {
   "guid": "quan",
   "name": "Quantizer",
-  "description": "This algorithm is a multi-channel CV quantizer, loosely based on the Quad Quantizer algorithm on the disting EX. It supports microtuning (see above), but this is not a requirement. It quantizes CV inputs and generates CV outputs and/or MIDI output. The quantization parameters are common to all channels; the individual channels' parameters are solely related to routing.",
+  "description": "This algorithm is a multi-channel CV quantizer, loosely based on the Quad Quantizer algorithm on the disting EX. It supports microtuning (see above), but this is not a requirement. It quantizes CV inputs and generates CV outputs and/or MIDI output. The quantization parameters are common to all channels; the individual channels’ parameters are solely related to routing.",
   "categories": [
-    "CV",
-    "Quantizer",
-    "Microtuning",
+    "CV Tools",
+    "Quantizers",
     "MIDI"
   ],
   "short_description": "A CV quantizer",
@@ -15,17 +14,21 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "enum",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the quantization mode: ‘Nearest’, ‘Mapped’, or ‘Warped’.",
+      "enum_values": [
+        "Nearest",
+        "Mapped",
+        "Warped"
+      ]
     },
     {
       "name": "Input transpose",
       "min": -48,
       "max": 48,
       "default": 0,
+      "description": "Sets the input transposition, in 12-TET semitones.",
       "type": "string",
+      "channelCountRef": "ST",
       "is_per_channel": false,
       "is_common": true,
       "is_bus": false
@@ -35,153 +38,131 @@
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the in-scale shift."
     },
     {
       "name": "Key",
       "min": -12,
       "max": 12,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the key (C, D, E, etc.)."
     },
     {
       "name": "Scale",
       "min": 0,
       "max": 10,
       "default": 2,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "The scale to quantize into. Defaults to Chromatic."
     },
     {
       "name": "Mode",
       "min": 1,
       "max": 12,
       "default": 1,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the mode, that is, the rotation of the notes within the scale. If the selected scale is ‘Major’, the mode is displayed by one of the familiar names Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, or Locrian."
     },
     {
       "name": "Output transpose",
       "min": -48,
       "max": 48,
       "default": 0,
+      "description": "Sets the output transposition, in 12-TET semitones.",
       "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "channelCountRef": "ST"
     },
     {
       "name": "Output gate mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the behaviour of the gate/trigger outputs. The options are: ‘Triggers', 'Inv Triggers' (inverted triggers, always high except for a low pulse when the trigger is fired, useful for driving an envelope generator which is generally in sustain but which needs to be retriggered when the chord changes), and 'Gates' (in which case the output is gated by the corresponding gate input). Note that this also applies to any MIDI output.",
+      "enum_values": [
+        "Triggers",
+        "Inv Triggers",
+        "Gates"
+      ]
     },
     {
       "name": "Gate offset",
       "min": 0.0,
       "max": 10.0,
       "default": 2.0,
+      "description": "Offsets (delays) the gate inputs relative to the pitch inputs. This is useful to allow pitch CVs to settle before they are sampled on the rising gate, and also to cope with modules which output both a pitch and gate but change their gate first.",
       "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "channelCountRef": "ms"
     },
     {
       "name": "MIDI channel (in)",
       "min": 0,
       "max": 16,
       "default": 1,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "The MIDI channel to receive on."
     },
     {
       "name": "MIDI channel (out)",
       "min": 0,
       "max": 16,
       "default": 0,
-      "type": "string",
-      "is_per_channel": true,
-      "is_common": false,
-      "is_bus": true
+      "description": "The MIDI channel to output notes on."
     },
     {
       "name": "Output to breakout",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Enables MIDI output to the breakout."
     },
     {
       "name": "Output to Select Bus",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Enables MIDI output to the Select Bus."
     },
     {
       "name": "Output to USB",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Enables MIDI output to USB."
     },
     {
       "name": "Output to internal",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
     },
     {
       "name": "Send pitch bend",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "description": "If enabled, a pitch bend message is sent with each note on message to adjust the note tuning according to the selected microtuning."
     },
     {
       "name": "Pitch bend range",
       "min": 1,
       "max": 48,
       "default": 2,
+      "description": "Sets the pitch bend range, in semitones. For the “Send pitch bend” function to work properly, this should match the pitch bend range of the receiving synth.",
       "type": "string",
-      "is_per_channel": false,
-      "is_common": true,
-      "is_bus": false
+      "channelCountRef": "ST"
     }
   ],
   "input_ports": [
+    {
+      "name": "CV input",
+      "description": "Pitch CV input signal"
+    },
+    {
+      "name": "Gate input",
+      "description": "Optional gate input signal used to sample the CV"
+    },
+    {
+      "name": "MIDI input",
+      "description": "MIDI input for receiving notes or defining scales"
+    },
     {
       "name": "CV input",
       "description": "The pitch CV input bus."
@@ -189,48 +170,36 @@
     {
       "name": "Gate input",
       "description": "The (optional) gate input bus."
-    },
-    {
-      "name": "MIDI channel (in)",
-      "description": "The MIDI channel to receive on."
-    },
-    {
-      "name": "CV input",
-      "description": ""
-    },
-    {
-      "name": "Gate input",
-      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "CV output",
-      "description": "The pitch CV output bus. Always uses 'Replace' output mode."
+      "description": "Quantized pitch CV output"
     },
     {
       "name": "Gate output",
-      "description": "The gate output bus, according to the 'Output gate mode' parameter. Always uses 'Replace' output mode."
+      "description": "Gate/trigger output based on Output gate mode"
     },
     {
       "name": "Change output",
-      "description": "The 'change trigger' output bus. Fires a trigger pulse when the quantized note changes. Always uses 'Replace' output mode."
+      "description": "Trigger pulse fired when the quantized note changes"
     },
     {
-      "name": "MIDI channel (out)",
-      "description": "The MIDI channel to output notes on."
+      "name": "MIDI output",
+      "description": "MIDI note output"
     },
     {
       "name": "CV output",
-      "description": ""
+      "description": "The pitch CV output bus. Always uses ‘Replace’ output mode."
     },
     {
       "name": "Gate output",
-      "description": ""
+      "description": "The gate output bus, according to the ‘Output gate mode’ parameter. Always uses ‘Replace’ output mode."
     },
     {
       "name": "Change output",
-      "description": ""
+      "description": "The ‘change trigger’ output bus. Fires a trigger pulse when the quantized note changes. Always uses ‘Replace’ output mode."
     }
   ]
 }

@@ -1,10 +1,9 @@
 {
   "guid": "djfi",
   "name": "DJ Filter",
-  "description": "This algorithm is an implementation of the disting mk4 algorithm of the same name. You may like to review the video about that algorithm, which is here. The algorithm is a filter which sweeps from lowpass to highpass on a single control. The Sweep parameter sets the filter cutoff. At the central, zero position no filter effect is applied. If the sweep goes negative, a lowpass filter is applied, with a cutoff frequency that sweeps down the more you go. If the sweep goes positive, a highpass filter is applied, with a cutoff frequency that sweeps up the more you go. There is a deadzone around zero where the filter has no effect, indicated by >DRY< next to the parameter value.",
+  "description": "This algorithm is an implementation of the disting mk4 algorithm of the same name. You may like to review the video about that algorithm, which is here https://www.youtube.com/watch?v=fII_lscKbBg. The algorithm is a filter which sweeps from lowpass to highpass on a single control. The Sweep parameter sets the filter cutoff. At the central, zero position no filter effect is applied. If the sweep goes negative, a lowpass filter is applied, with a cutoff frequency that sweeps down the more you go. If the sweep goes positive, a highpass filter is applied, with a cutoff frequency that sweeps up the more you go. There is a deadzone around zero where the filter has no effect, indicated by “>DRY<” next to the parameter value.",
   "categories": [
-    "Filter",
-    "Audio Effect"
+    "Filter"
   ],
   "short_description": "Low/High pass filter",
   "parameters": [
@@ -13,8 +12,10 @@
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "type": "folder",
-      "is_common": true,
+      "description": "Controls the filter sweep.",
+      "type": "file",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -22,8 +23,10 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
+      "description": "Sets the filter resonance/Q.",
+      "type": "file",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -31,29 +34,23 @@
       "min": 1,
       "max": 8,
       "default": 1,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "Output mode",
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
     {
       "name": "Input",
       "description": "The first input bus to process."
-    },
-    {
-      "name": "Input",
-      "description": ""
     }
   ],
   "output_ports": [
     {
       "name": "Output",
       "description": "The first output bus."
-    },
-    {
-      "name": "Output",
-      "description": ""
     }
   ]
 }

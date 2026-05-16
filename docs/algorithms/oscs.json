@@ -3,11 +3,12 @@
   "name": "Oscilloscope",
   "description": "This algorithm implements a simple but useful 2-channel oscilloscope.",
   "categories": [
-    "visualization",
-    "analysis",
-    "utility"
+    "Utility",
+    "Visualization"
   ],
   "short_description": "Oscilloscope for viewing waveforms",
+  "gui_description": "The display shows one or both waveforms according to the display mode.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Input 1",
@@ -28,13 +29,13 @@
       "min": 0,
       "max": 4,
       "default": 0,
-      "description": "The type of trigger, to synchronise the display to the waveform. The options are: Free running, 1 rising - trigger on the rising edge of input 1, 1 falling - trigger on the falling edge of input 1, 2 rising - trigger on the rising edge of input 2, 2 falling - trigger on the falling edge of input 2.",
+      "description": "The type of trigger, to synchronise the display to the waveform.",
       "enum_values": [
         "Free running",
-        "1 rising",
-        "1 falling",
-        "2 rising",
-        "2 falling"
+        "1 rising - trigger on the rising edge of input 1",
+        "1 falling - trigger on the falling edge of input 1",
+        "2 rising - trigger on the rising edge of input 2",
+        "2 falling - trigger on the falling edge of input 2"
       ]
     },
     {
@@ -42,23 +43,23 @@
       "min": -11.0,
       "max": 11.0,
       "default": 0.0,
-      "description": "Set the trigger voltage - the voltage the input signal has to cross to trigger the oscilloscope.",
-      "type": "folder",
-      "is_bus": true
+      "description": "Set the trigger voltage – the voltage the input signal has to cross to trigger the oscilloscope.",
+      "type": "file",
+      "is_bus": false
     },
     {
       "name": "Time range",
       "min": 0,
-      "max": 13,
+      "max": 16,
       "default": 7,
-      "description": "Sets the time range corresponding to the full width of the display. The special value Auto sets the time range to the time between consecutive triggers."
+      "description": "Sets the time range corresponding to the full width of the display. The special value “Auto” sets the time range to the time between consecutive triggers."
     },
     {
       "name": "Display mode",
       "min": 0,
       "max": 4,
       "default": 2,
-      "description": "Sets which waveforms are displayed and how. The options are Overlaid, Split, Channel 1, Channel 2, and XY. In XY mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa.",
+      "description": "Sets which waveforms are displayed and how. In “XY” mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa.",
       "enum_values": [
         "Overlaid",
         "Split",
@@ -72,7 +73,7 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets how the waveform signals are drawn. The options are Lines (antialiased), Lines, and Points.",
+      "description": "Sets how the waveform signals are drawn.",
       "enum_values": [
         "Lines (antialiased)",
         "Lines",
@@ -84,7 +85,7 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the vertical scale for channel 1. The options are 10V, 5V, 2V, and 1V.",
+      "description": "Sets the vertical scale for channel 1.",
       "enum_values": [
         "10V",
         "5V",
@@ -97,24 +98,34 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the vertical scale for channel 2.",
-      "enum_values": [
-        "10V",
-        "5V",
-        "2V",
-        "1V"
-      ]
-    }
-  ],
-  "input_ports": [
-    {
-      "name": "Input 1",
-      "description": "The bus for input 1."
+      "description": "Sets the vertical scale for channel 2."
     },
     {
-      "name": "Input 2",
-      "description": "The bus for input 2."
+      "name": "Vertical offset 1",
+      "min": -11.0,
+      "max": 11.0,
+      "default": 0.0,
+      "description": "Sets an amount by which to move the display of channel 1 vertically.",
+      "type": "file",
+      "is_bus": false
+    },
+    {
+      "name": "Vertical offset 2",
+      "min": -11.0,
+      "max": 11.0,
+      "default": 0.0,
+      "description": "Sets an amount by which to move the display of channel 2 vertically.",
+      "type": "file",
+      "is_bus": false
+    },
+    {
+      "name": "Disable screensaver",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "If set, and the oscilloscope custom UI is displayed, the screensaver is prevented from starting. The 0V line is also disabled, to prevent screen burn-in."
     }
   ],
+  "input_ports": [],
   "output_ports": []
 }

@@ -1,23 +1,31 @@
 {
   "guid": "augu",
   "name": "Augustus Loop",
-  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name. Essentially, it's a tape-inspired stereo delay. The delay time can be dialled in manually, or set by tap tempo or a clock input. The longest delay possible is around 44 seconds. Being a tape delay, you can change the tape speed via CV. Patching an LFO into here is your route to all manner of subtle detuning or extreme mangling effects. You can also stop and reverse the tape. There is an option to run the delay signal through an 'effects loop', allowing you to insert other effects or processing into the guts of the delay.",
+  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name. Essentially, it's a tape-inspired stereo delay. The delay time can be dialled in manually, or set by tap tempo or a clock input. The longest delay possible is around 44 seconds. Being a tape delay, you can change the tape speed via CV. Patching an LFO into here is your route to all manner of subtle detuning or extreme mangling effects. You can also stop and reverse the tape. There is an option to run the delay signal through an 'effects loop', allowing you to insert other effects or processing into the guts of the delay. Note that the 'Pitch CV' input changes the tape speed. It is labelled pitch rather than speed to emphasise the fact that it is scaled 1V/octave. There are four 'tape read heads' with independent delay times and stereo positions, allowing for straight stereo delays, ping pong delays, or hybrid multi-tap style effects.",
   "categories": [
     "Delay",
-    "Tape",
     "Stereo",
-    "Effects"
+    "Tape Delay",
+    "Modulation"
   ],
   "short_description": "Tape-like delay",
-  "gui_description": "The display shows the feedback amount bottom left and the delay time bottom right. The centre area shows an animation indicating the tape direction and speed. If using a clock input, the word 'Clock' flashes up every time the algorithm receives a clock pulse. The word 'Tap' is displayed if the tap tempo function will set the delay time on the next tap.",
+  "gui_description": "The display shows the feedback amount bottom left and the delay time bottom right. The centre area shows an animation indicating the tape direction and speed. If using a clock input, the word ‘Clock’ flashes up every time the algorithm receives a clock pulse. The word ‘Tap’ is displayed if the tap tempo function will set the delay time on the next tap i.e. it shows whether tap tempo is ‘live’.",
+  "specifications": [
+    {
+      "name": "Max delay time",
+      "value": "1-44 seconds"
+    }
+  ],
   "parameters": [
     {
       "name": "Time (coarse)",
       "min": 0.0,
       "max": 43.7,
       "default": 1.0,
-      "type": "folder",
-      "is_common": true,
+      "description": "Sets the delay time. The coarse and fine delay times are added to produce the actual delay time.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -25,8 +33,10 @@
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
+      "description": "Sets an adjustment to the delay time, in milliseconds. The coarse and fine delay times are added to produce the actual delay time.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -34,17 +44,43 @@
       "min": 0,
       "max": 23,
       "default": 15,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "A multiplier to apply to the delay time set by the parameters, the tap tempo, or the clock.",
+      "enum_values": [
+        "1/64",
+        "1/48",
+        "1/32",
+        "1/24",
+        "1/16",
+        "1/12",
+        "1/8",
+        "1/6",
+        "3/16",
+        "1/4",
+        "5/16",
+        "1/3",
+        "3/8",
+        "1/2",
+        "3/4",
+        "x1",
+        "x1.5",
+        "x2",
+        "x3",
+        "x4",
+        "x5",
+        "x6",
+        "x8",
+        "x16"
+      ]
     },
     {
       "name": "Feedback",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "folder",
-      "is_common": true,
+      "description": "The overall delay feedback amount.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -52,8 +88,10 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
+      "description": "Scales the delay time of the left-to-left feedback path, as a percentage of the overall delay time.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -61,8 +99,10 @@
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "folder",
-      "is_common": true,
+      "description": "Scales the delay time of the left-to-right feedback path, as a percentage of the overall delay time.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -70,8 +110,10 @@
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "folder",
-      "is_common": true,
+      "description": "Scales the delay time of the right-to-left feedback path, as a percentage of the overall delay time.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -79,8 +121,10 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
+      "description": "Scales the delay time of the right-to-right feedback path, as a percentage of the overall delay time.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -88,8 +132,10 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
+      "description": "Scales the amount of the delayed left signal mixed into the left feedback path.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -97,8 +143,10 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
+      "description": "Scales the amount of the delayed left signal mixed into the right feedback path.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -106,8 +154,10 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
+      "description": "Scales the amount of the delayed right signal mixed into the left feedback path.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -115,8 +165,10 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
+      "description": "Scales the amount of the delayed right signal mixed into the right feedback path.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -124,8 +176,10 @@
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
+      "description": "Reduces the stereo width of the incoming signal. At zero the signal is reduced to mono, at a pan position set by the 'Initial pan' parameter.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -133,8 +187,10 @@
       "min": -100,
       "max": 100,
       "default": -100,
-      "type": "folder",
-      "is_common": true,
+      "description": "Sets the pan position of the mono-ized signal. -100 is fully left; 100 is fully right.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -142,8 +198,10 @@
       "min": -40,
       "max": 6,
       "default": -40,
-      "type": "folder",
-      "is_common": true,
+      "description": "The amount of the dry signal to mix into the outputs. At “-40” there is no dry signal at all i.e. it's actually –∞dB.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -151,8 +209,10 @@
       "min": -40,
       "max": 6,
       "default": -3,
-      "type": "folder",
-      "is_common": true,
+      "description": "The amount of the effect (delay) signal to mix into the outputs. At “-40” there is no effect signal at all i.e. it's actually –∞dB.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -160,8 +220,10 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
+      "description": "Attenuates the input signal fed to the tape write head.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -169,53 +231,45 @@
       "min": 0,
       "max": 125,
       "default": 64,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the amount of 'inertia' or slew on the pitch CV input. At zero, the tape speed follows the pitch input closely; at the maximum value, pitch changes are quite gradual."
     },
     {
       "name": "Stop tape",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "When on, the tape speed is set to zero. Note that the Pitch inertia affects how quickly the tape stops and starts."
     },
     {
       "name": "Reverse tape",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "When on, the tape is reversed. Note that the Pitch inertia affects how quickly the tape reverses."
     },
     {
       "name": "Bit depth",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Controls the bit depth used in the delay memory (note, not the bit depth used in any other processing). Setting this to '0' (16 bit) doubles the maximum delay time."
     },
     {
       "name": "Inertia free",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Enables 'Inertia free' mode. When activated, the algorithm crossfades between the old and new delay times."
     },
     {
       "name": "Inertia fade time",
       "min": 1,
       "max": 1000,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
+      "description": "The fade time to use when in Inertia free mode.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -223,17 +277,17 @@
       "min": 0,
       "max": 127,
       "default": 96,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the speed of the pitch modulation LFO."
     },
     {
       "name": "Pitch LFO depth",
       "min": 0,
       "max": 100,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
+      "description": "Sets the depth of pitch modulation by the LFO.",
+      "type": "string",
+      "channelCountRef": "",
+      "is_per_channel": false,
       "is_bus": false
     },
     {
@@ -241,207 +295,184 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "When on, instigates a rapid clear of the delay buffer (while maintaining passthrough of the dry signal)."
     },
     {
       "name": "Filter type",
       "min": 0,
       "max": 400,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the filter type.",
+      "enum_values": [
+        "thru",
+        "low pass",
+        "band pass",
+        "high pass"
+      ]
     },
     {
       "name": "Filter freq",
       "min": 0,
       "max": 127,
       "default": 64,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the filter frequency."
     },
     {
       "name": "Filter Q",
       "min": 0,
       "max": 100,
       "default": 20,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the filter resonance."
     },
     {
       "name": "Saturation enable",
       "min": 0,
       "max": 1,
       "default": 1,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Enables the saturation processing (on the tape output, before the filter)."
     },
     {
       "name": "Saturation",
       "min": 0,
       "max": 110,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the depth of the saturation effect, by applying gain before the saturation waveshaper."
     },
     {
       "name": "Saturation shape",
       "min": 0,
       "max": 100,
       "default": 100,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Controls the shape of the saturation. At '100' the effect is that of soft saturation and clipping. At '0' the effect is of hard digital clipping."
     },
     {
       "name": "Tap tempo",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "When this parameter transitions from 0 to 1, the algorithm acts on a tap tempo event."
     },
     {
-      "name": "Clocks",
+      "name": "Clocks required",
       "min": 1,
       "max": 10,
       "default": 1,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the number of consistent clocks required to change the delay time."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector."
     },
     {
       "name": "FX Loop position",
       "min": 0,
       "max": 2,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Enables the effects loop and sets in position the signal flow.",
+      "enum_values": [
+        "Off",
+        "Pre-Filter",
+        "Post-Filter"
+      ]
     },
     {
       "name": "FX Loop output L",
       "min": 0,
       "max": 64,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the left output to the effect loop."
     },
     {
       "name": "FX Loop output R",
       "min": 0,
       "max": 64,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the right output to the effect loop."
     },
     {
       "name": "FX Loop input L",
       "min": 0,
       "max": 64,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the left input from the effects loop."
     },
     {
       "name": "FX Loop input R",
       "min": 0,
       "max": 64,
       "default": 0,
-      "type": "folder",
-      "is_common": true,
-      "is_bus": false
+      "description": "Sets the right input from the effects loop."
     }
   ],
   "input_ports": [
     {
-      "name": "Input",
-      "description": "Left input signal."
+      "name": "Left input",
+      "description": "Left audio input signal."
     },
     {
       "name": "Right input",
-      "description": "Right input signal."
+      "description": "Right audio input signal."
     },
     {
       "name": "Pitch CV input",
-      "description": "CV input to use for pitch."
+      "description": "CV input to change tape speed, scaled 1V/octave."
     },
     {
       "name": "Clock input",
-      "description": "CV input to use as the clock."
+      "description": "CV input used to set delay time based on the interval between rising edges."
     },
     {
-      "name": "Tap tempo",
-      "description": "Tap tempo input."
+      "name": "FX Loop input L",
+      "description": "Left input from the external effects loop."
+    },
+    {
+      "name": "FX Loop input R",
+      "description": "Right input from the external effects loop."
     },
     {
       "name": "Pitch CV input",
-      "description": ""
+      "description": "The CV input to use for pitch."
     },
     {
       "name": "Clock input",
-      "description": ""
+      "description": "The CV input to use as the clock. The delay time is set as the time between two rising clock edges."
     },
     {
       "name": "Left input",
-      "description": ""
+      "description": "Sets the bus for the left input."
     },
     {
       "name": "Right input",
-      "description": ""
+      "description": "Sets the bus for the right input."
     }
   ],
   "output_ports": [
     {
       "name": "Left output",
-      "description": "Left output signal."
+      "description": "Left audio output signal."
     },
     {
       "name": "Right output",
-      "description": "Right output signal."
+      "description": "Right audio output signal."
     },
     {
       "name": "FX Loop output L",
-      "description": "Left output to the effect loop."
+      "description": "Left output to the external effects loop."
     },
     {
       "name": "FX Loop output R",
-      "description": "Right output to the effect loop."
-    },
-    {
-      "name": "FX Loop input L",
-      "description": "Left input from the effects loop."
-    },
-    {
-      "name": "FX Loop input R",
-      "description": "Right input from the effects loop."
+      "description": "Right output to the external effects loop."
     },
     {
       "name": "Left output",
-      "description": ""
+      "description": "Sets the bus for the left output."
     },
     {
       "name": "Right output",
-      "description": ""
+      "description": "Sets the bus for the right output."
     }
   ]
 }

@@ -3,40 +3,34 @@
   "name": "Rectifier",
   "description": "This simple algorithm computes the absolute value of the input voltage.",
   "categories": [
-    "Audio Effect",
-    "Signal Processing"
+    "Signal Processing",
+    "Waveform Shaping"
   ],
   "short_description": "Full-wave rectifier/absolute value",
-  "parameters": [
+  "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 12,
-      "description": "The number of bus channels to process.",
-      "type": "bus"
-    },
+      "value": "1-12",
+      "description": "The number of bus channels to process."
+    }
+  ],
+  "parameters": [
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables the channel. Disabled channels have no effect on the bus.",
-      "type": "toggle"
+      "description": "Enables the channel. Disabled channels have no effect on the bus."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "toggle"
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
-    {
-      "name": "Input",
-      "description": "The input bus to process."
-    },
     {
       "name": "Input",
       "description": "The input bus to process."
@@ -45,11 +39,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
-    },
-    {
-      "name": "Output",
-      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
+      "description": "The output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace’."
     }
   ]
 }

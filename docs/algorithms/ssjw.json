@@ -3,41 +3,186 @@
   "name": "Seaside Jawari",
   "description": "This algorithm is based on the open source Jawari VCV Rack module by Seaside Modular. It is a simulation of the tanpura, the Indian drone instrument. The tanpura is a four-stringed instrument, without frets. The four strings are typically played in sequence, in a continuous loop, and this is what this algorithm does. Each time it gets a strum (from the strum input bus, or via the strum parameter) it advances to and plays the next string. The second, third, and fourth strings of the tanpura are generally tuned in octaves, with the fourth string an octave below the other two. The first string is tuned to another note of the scale, very often the fifth. For a completely authentic sound, you might consider using the microtuning support to tune the strings to just intervals.",
   "categories": [
-    "Synthesizer",
+    "Synth",
     "Drone",
-    "Indian Instruments",
-    "String Instruments"
+    "Simulation"
   ],
   "short_description": "Tanpura synth by Seaside Modular",
-  "use_cases": [
-    "Indian music production",
-    "Drone sound generation",
-    "Tanpura simulation"
-  ],
   "gui_description": "The display shows the tuning of the four strings, with the last string played highlighted.",
-  "input_ports": [
-    {
-      "name": "Strum",
-      "description": "The bus to use for a strum trigger."
-    },
+  "parameters": [
     {
       "name": "Bridge shape",
-      "description": "The bus to use for CV control over the bridge shape."
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "description": "Sets the blend between the raw string pluck and a comb filtered version."
+    },
+    {
+      "name": "Tuning (1st string)",
+      "min": 0,
+      "max": 11,
+      "default": 7,
+      "description": "Sets the tuning of the first string, in semitones above the fourth string."
+    },
+    {
+      "name": "Transpose",
+      "min": -36,
+      "max": 36,
+      "default": 0,
+      "description": "Transposes the whole instrument.",
+      "type": "string",
+      "channelCountRef": "ST"
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Fine tuning control for the whole instrument.",
+      "type": "string",
+      "channelCountRef": "cents"
+    },
+    {
+      "name": "Strum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Causes a strum when changed from 0 to 1."
     },
     {
       "name": "Reset",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Resets the sequence so that the next strum plays the first string."
+    },
+    {
+      "name": "Velocity",
+      "min": 1,
+      "max": 127,
+      "default": 127,
+      "description": "Sets the strum velocity."
+    },
+    {
+      "name": "Damping",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.995,
+      "description": "The damping factor for the string model."
+    },
+    {
+      "name": "Length",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 1.0,
+      "description": "The decay time for the string model.",
+      "type": "string",
+      "channelCountRef": "s"
+    },
+    {
+      "name": "Bounce count",
+      "min": 1,
+      "max": 10000,
+      "default": 1200,
+      "description": "The number of bridge bounces after the initial strum."
+    },
+    {
+      "name": "Strum level",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 25.0,
+      "description": "The relative strength of the strum vs the bounces.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Bounce level",
+      "min": 0.0,
+      "max": 1000.0,
+      "default": 150.0,
+      "description": "The relative strength of the bounces vs the strum.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Start harmonic",
+      "min": 1,
+      "max": 20,
+      "default": 3,
+      "description": "The emphasised harmonic at the start of the bounces."
+    },
+    {
+      "name": "End harmonic",
+      "min": 1,
+      "max": 20,
+      "default": 10,
+      "description": "The emphasised harmonic at the end of the bounces."
+    },
+    {
+      "name": "Strum type",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The shape of the initial strum applied to the string model: Flat or Ramped.",
+      "enum_values": [
+        "Flat",
+        "Ramped"
+      ]
+    },
+    {
+      "name": "Strum (Routing)",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "description": "The bus to use for a strum trigger."
+    },
+    {
+      "name": "Bridge shape (Routing)",
+      "min": 0,
+      "max": 64,
+      "default": 0,
+      "description": "The bus to use for CV control over the ‘bridge shape’."
+    },
+    {
+      "name": "Reset (Routing)",
+      "min": 0,
+      "max": 64,
+      "default": 0,
       "description": "The bus to use for a reset trigger."
     },
     {
       "name": "V/oct main",
+      "min": 0,
+      "max": 64,
+      "default": 0,
       "description": "The bus to use for pitch control over the instrument as a whole."
     },
     {
       "name": "V/oct 1st string",
+      "min": 0,
+      "max": 64,
+      "default": 0,
       "description": "The bus to use for pitch control over the tuning of the first string."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Strum input bus",
+      "description": "Triggers the instrument to advance to and play the next string."
     }
   ],
   "output_ports": [
+    {
+      "name": "Output bus",
+      "description": "The audio output of the tanpura simulation."
+    },
     {
       "name": "Output",
       "description": "The output bus."

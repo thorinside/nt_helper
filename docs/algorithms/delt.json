@@ -1,47 +1,67 @@
 {
   "guid": "delt",
   "name": "Delay (Tape)",
-  "description": "This algorithm is based on the disting mk4 algorithm D-2 Tape Delay, which is itself a simplified version of the Augustus Loop effect. It is a delay/echo effect which simulates a variable speed tape loop echo device.",
+  "description": "This algorithm is based on the disting mk4 algorithm “D-2 Tape Delay”, which is itself a simplified version of the “Augustus Loop” effect. It is a delay/echo effect which simulates a variable speed tape loop echo device.\n\nThe ‘Tape length’ parameter sets the range of delay times available. Note though that changing this may introduce clicks and pops. The primary means of changing the delay time is the “Tape speed” parameter and/or the Speed CV input.\n\nThe tape speed can be set in the range from half speed (0.5x) to double speed (2x). If using the CV input, the scaling is 8V/octave i.e. +8V gives double speed and -4V gives half speed.\n\nThree options are available for how the wet/dry mix is controlled:\n\n- With feedback - the amount of delay in the mix rises in direct proportion to the amount of feedback.\n- Crossfade - the ‘Mix’ parameter is a crossfader.\n- Add delay - the dry level is constant, and the ‘Mix’ parameter adds in the delay signal.",
   "categories": [
     "Delay",
     "Echo",
-    "Tape Effect"
+    "Effects"
   ],
   "short_description": "A tape delay effect",
-  "use_cases": [
-    "Tape delay simulation",
-    "Variable speed delay",
-    "Echo effects"
+  "specifications": [
+    {
+      "name": "Max tape length",
+      "value": "1-30 seconds"
+    },
+    {
+      "name": "Stereo",
+      "value": "Whether the algorithm is mono or stereo"
+    }
   ],
-  "gui_description": "Tape delay effect interface with tape length and speed controls",
   "parameters": [
     {
       "name": "Mix mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets how the delay and dry signals are mixed. See above."
+      "description": "Sets how the delay and dry signals are mixed. Options include: With feedback (delay rises with feedback), Crossfade (Mix is a crossfader), and Add delay (dry level constant, Mix adds delay signal).",
+      "enum_values": [
+        "With feedback",
+        "Crossfade",
+        "Add delay"
+      ]
     },
     {
       "name": "Mix",
       "min": 0,
       "max": 100,
       "default": 100,
-      "description": "Controls the wet/dry mix, unless the Mix mode is With feedback."
+      "description": "Controls the wet/dry mix, unless the ‘Mix mode’ is ‘With feedback’.",
+      "type": "string",
+      "channelCountRef": "percentage",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Feedback",
       "min": 0,
       "max": 110,
       "default": 50,
-      "description": "The delay feedback."
+      "description": "The delay feedback.",
+      "type": "string",
+      "channelCountRef": "percentage",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Tape length",
       "min": 1,
-      "max": 250,
       "default": 250,
-      "description": "Sets the length of the tape i.e. the delay time at 1x speed."
+      "description": "Sets the length of the tape i.e. the delay time at 1x speed.",
+      "type": "string",
+      "channelCountRef": "milliseconds",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Tape speed",
@@ -49,6 +69,13 @@
       "max": 1000,
       "default": 0,
       "description": "Sets the tape speed (in conjunction with the CV input)."
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [

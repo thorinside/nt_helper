@@ -1,25 +1,19 @@
 {
   "guid": "luae",
   "name": "Lua Expression",
-  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example a + b to add two signals together. It is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you're out and about without a computer on which to write the script).",
+  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example “a + b” to add two signals together. It is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you’re out and about without a computer on which to write the script).",
   "categories": [
-    "Expression",
-    "Lua",
-    "CV",
-    "Audio"
+    "Utility",
+    "Math",
+    "Logic"
   ],
   "short_description": "A single line of Lua",
-  "use_cases": [
-    "Quick arithmetic operations",
-    "Simple signal processing",
-    "Ad-hoc signal manipulation"
-  ],
-  "gui_description": "The display shows any errors encountered when parsing or running the expression, or No errors if everything is OK.",
+  "gui_description": "The display shows any errors encountered when parsing or running the expression, or “No errors” if everything is OK.",
   "specifications": [
     {
       "name": "Expressions",
-      "min": 1,
-      "max": 8
+      "value": "1-8",
+      "description": "The number of independent expressions to evaluate."
     }
   ],
   "parameters": [
@@ -27,92 +21,84 @@
       "name": "Input A-H",
       "min": 1,
       "max": 64,
-      "description": "The bus to use for the correspondingly named expression variable.",
-      "type": "bus"
+      "scope": "global",
+      "description": "The bus to use for the correspondingly named expression variable."
     },
     {
       "name": "Input A-H mode",
       "min": 0,
       "max": 1,
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression).",
-      "type": "enum",
-      "is_per_channel": true
+      "default": 0,
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "enum"
+      "scope": "per-channel",
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
       "name": "Enable",
       "min": 0,
       "max": 1,
-      "description": "Enables evaluation of the expression.",
-      "type": "enum"
+      "scope": "per-channel",
+      "description": "Enables evaluation of the expression."
     },
     {
       "name": "Expression",
-      "description": "The expression text.",
-      "type": "string"
+      "scope": "per-channel",
+      "description": "The expression text."
     },
     {
       "name": "Rate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Whether the expression is evaluated at control rate or audio rate.",
-      "type": "enum"
+      "scope": "per-channel",
+      "description": "Whether the expression is evaluated at control rate or audio rate."
     }
   ],
   "input_ports": [
     {
       "name": "Input A",
-      "description": "Input signal A for expression evaluation",
-      "isPerChannel": true
+      "description": "Input variable 'a'"
     },
     {
       "name": "Input B",
-      "description": "Input signal B for expression evaluation",
-      "isPerChannel": true
+      "description": "Input variable 'b'"
     },
     {
       "name": "Input C",
-      "description": "Input signal C for expression evaluation",
-      "isPerChannel": true
+      "description": "Input variable 'c'"
     },
     {
       "name": "Input D",
-      "description": "Input signal D for expression evaluation",
-      "isPerChannel": true
+      "description": "Input variable 'd'"
     },
     {
       "name": "Input E",
-      "description": "Input signal E for expression evaluation",
-      "isPerChannel": true
+      "description": "Input variable 'e'"
     },
     {
       "name": "Input F",
-      "description": "Input signal F for expression evaluation",
-      "isPerChannel": true
+      "description": "Input variable 'f'"
     },
     {
       "name": "Input G",
-      "description": "Input signal G for expression evaluation",
-      "isPerChannel": true
+      "description": "Input variable 'g'"
     },
     {
       "name": "Input H",
-      "description": "Input signal H for expression evaluation",
-      "isPerChannel": true
+      "description": "Input variable 'h'"
     }
   ],
   "output_ports": [
     {
       "name": "Output",
-      "description": "Expression result output"
+      "description": "The result of the Lua expression evaluation"
     },
     {
       "name": "Output",

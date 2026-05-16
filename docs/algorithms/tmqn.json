@@ -1,24 +1,18 @@
 {
   "guid": "tmqn",
   "name": "Temporal MIDI Quantizer",
-  "description": "This algorithm is a MIDI quantizer, but not a pitch quantizer – it quantizes the position of notes in time (much like applying quantization to the timing of a MIDI clip in your DAW). Timing can be derived from MIDI clock or from clock pulses on the algorithm's input bus. It only affects MIDI notes – other MIDI messages are not processed. Because there is no concept of 'replacing' or 'consuming' MIDI events in the disting NT, you will usually want to use different input and output MIDI channels e.g. receive MIDI notes from your keyboard on channel 1 and output quantized notes on channel 2, and then have your synth algorithm(s) respond on channel 2.",
+  "description": "This algorithm is a MIDI quantizer, but not a pitch quantizer – it quantizes the position of notes in time (much like applying quantization to the timing of a MIDI clip in your DAW). Timing can be derived from MIDI clock or from clock pulses on the algorithm’s input bus.\n\nIt only affects MIDI notes – other MIDI messages are not processed.\n\nBecause there is no concept of ‘replacing’ or ‘consuming’ MIDI events in the disting NT, you will usually want to use different input and output MIDI channels e.g. receive MIDI notes from your keyboard on channel 1 and output quantized notes on channel 2, and then have your synth algorithm(s) respond on channel 2.",
   "categories": [
     "MIDI",
     "Quantization",
     "Timing"
   ],
   "short_description": "Quantizes MIDI notes in time",
-  "use_cases": [
-    "MIDI timing correction",
-    "DAW-style quantization",
-    "MIDI clock synchronization"
-  ],
-  "gui_description": "MIDI quantizer that adjusts note timing based on clock sources",
   "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 16
+      "value": "1-16",
+      "description": "The number of MIDI channels to process."
     }
   ],
   "parameters": [
@@ -27,7 +21,12 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The timing source to sync to: None, MIDI, or Clock."
+      "description": "The timing source to sync to: None, MIDI, or Clock.",
+      "enum_values": [
+        "None",
+        "MIDI",
+        "Clock"
+      ]
     },
     {
       "name": "Output to breakout",
@@ -62,6 +61,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "description": "Enables the channel."
     },
     {
@@ -69,13 +69,17 @@
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "The MIDI channel on which to receive notes."
+      "scope": "per-channel",
+      "description": "The MIDI channel on which to receive notes.",
+      "type": "enum",
+      "channelCountRef": "Col5"
     },
     {
       "name": "Output channel",
       "min": 1,
       "max": 16,
       "default": 2,
+      "scope": "per-channel",
       "description": "The MIDI channel on which to send notes."
     },
     {
@@ -83,6 +87,7 @@
       "min": 0,
       "max": 19,
       "default": 9,
+      "scope": "per-channel",
       "description": "The MIDI clock divisor, if Sync is set to MIDI."
     },
     {
@@ -90,23 +95,15 @@
       "min": 0,
       "max": 1,
       "default": 0,
+      "scope": "per-channel",
       "description": "If enabled, notes that are already over by the time the clock pulse comes around are suppressed."
     }
   ],
   "input_ports": [
     {
-      "name": "MIDI Input",
-      "description": "MIDI input for notes and clock signals"
-    },
-    {
       "name": "Clock input",
       "description": "The input bus to use for clock if Sync is set to Clock."
     }
   ],
-  "output_ports": [
-    {
-      "name": "MIDI Output",
-      "description": "MIDI output for quantized notes"
-    }
-  ]
+  "output_ports": []
 }

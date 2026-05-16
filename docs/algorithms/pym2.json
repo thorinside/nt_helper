@@ -1,55 +1,28 @@
 {
   "guid": "pym2",
   "name": "Poly Macro Oscillator 2",
-  "description": "A polysynth where each voice is essentially a Plaits (the open source Plaits module by Émilie Gillet). The display shows the notes being played by the various voices. Note that Plaits voices never really end – in theory they decay forever. As on the original Plaits, there are two outputs, 'Main' and 'Aux'. If you select the same bus for both outputs they are mixed.",
+  "description": "This algorithm is a polysynth where each voice is essentially a Plaits (the open source Plaits [102] module by Émilie Gillet). Please refer to the section “Common polysynth features” above.",
   "categories": [
-    "Synthesis",
     "Polysynth",
     "Oscillator"
   ],
   "short_description": "It's lots of Plaits!",
-  "use_cases": [
-    "Polyphonic synthesis",
-    "Plaits-based sound design"
-  ],
   "gui_description": "The display shows the notes being played by the various voices. Note that Plaits voices never really end – in theory they decay forever.",
   "specifications": [
     {
       "name": "Voices",
-      "min": 1,
-      "max": 8
-    }
-  ],
-  "input_ports": [
-    {
-      "name": "Level input",
-      "description": "Selects which bus is used as the level input."
-    },
-    {
-      "name": "FM input",
-      "description": "Selects which bus is used as the FM input."
-    },
-    {
-      "name": "Harmonics input",
-      "description": "Selects which bus is used as the harmonics input."
-    },
-    {
-      "name": "Timbre input",
-      "description": "Selects which bus is used as the timbre input."
-    },
-    {
-      "name": "Morph input",
-      "description": "Selects which bus is used as the morph input."
+      "value": "1-8",
+      "description": "The number of simultaneous voices."
     }
   ],
   "output_ports": [
     {
-      "name": "Main output",
-      "description": "The bus for the 'Main' output."
+      "name": "Main",
+      "description": "Main output signal"
     },
     {
-      "name": "Aux output",
-      "description": "The bus for the 'Aux' output."
+      "name": "Aux",
+      "description": "Aux output signal"
     }
   ]
 }

@@ -3,25 +3,24 @@
   "name": "EQ Parametric",
   "description": "This algorithm is a multi-channel, multi-band, parametric EQ. Each channel can process a number of busses - you might typically have a channel processing one or two busses for a mono or stereo signal, but you could, say, process all 12 of the inputs with the same EQ settings by using a single channel with a width of 12.",
   "categories": [
-    "Audio Processing",
-    "Equalization",
-    "Parametric EQ"
+    "Equalizer",
+    "Filtering"
   ],
   "short_description": "Multi-band parametric EQ",
   "gui_description": "The display shows a graphical representation of the EQ curve for the current channel. The frequency and gain of the current band within the channel is indicated with a small box.",
-  "parameters": [
+  "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 12,
+      "value": "1-12",
       "description": "The number of bus channels to process."
     },
     {
       "name": "Bands",
-      "min": 1,
-      "max": 4,
+      "value": "1-4",
       "description": "The number of EQ bands per channel."
-    },
+    }
+  ],
+  "parameters": [
     {
       "name": "Width",
       "min": 1,
@@ -48,7 +47,16 @@
       "min": 0,
       "max": 6,
       "default": 6,
-      "description": "Chooses the type of the EQ band. The options are 'Low pass (1st)', 'High pass (1st)', 'Low pass (2nd)', 'High pass (2nd)', 'Low shelf', 'High shelf', and 'Peak'."
+      "description": "Chooses the type of the EQ band.",
+      "enum_values": [
+        "Low pass (1st)",
+        "High pass (1st)",
+        "Low pass (2nd)",
+        "High pass (2nd)",
+        "Low shelf",
+        "High shelf",
+        "Peak"
+      ]
     },
     {
       "name": "Frequency",
@@ -62,7 +70,7 @@
       "min": 0,
       "max": 127,
       "default": 48,
-      "description": "Sets the EQ band 'Q' or resonance. Note that some EQ types do not use this parameter."
+      "description": "Sets the EQ band ‘Q’ or resonance. Note that some EQ types do not use this parameter."
     },
     {
       "name": "Gain",
@@ -70,9 +78,11 @@
       "max": 12.0,
       "default": 0.0,
       "description": "Sets the EQ band gain. Note that some EQ types do not use this parameter.",
-      "type": "folder",
+      "type": "string",
+      "channelCountRef": "per-band",
       "is_per_channel": true,
-      "is_bus": true
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
@@ -84,7 +94,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The first output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
+      "description": "The first output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace’."
     }
   ]
 }

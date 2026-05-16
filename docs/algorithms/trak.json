@@ -1,15 +1,15 @@
 {
   "guid": "trak",
   "name": "Tracker",
-  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the video on that algorithm, here. The pitch shifter part of the EX algorithm was split out into a separate algorithm on the NT (above), which you can combine with this algorithm if it suits your needs. The algorithm tracks the pitch and envelope of an audio signal, which are output as CVs. It can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio). The chords can be tuned microtonally using Scala or MTS.",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the video on that algorithm, here [131] . The pitch shifter part of the EX algorithm was split out into a separate algorithm on the NT (above), which you can combine with this algorithm if it suits your needs.\n\nThe algorithm tracks the pitch and envelope of an audio signal, which are output as CVs. It can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio).\n\nThe chords can be tuned microtonally using Scala or MTS.",
   "categories": [
     "Pitch Tracking",
-    "Harmony",
-    "Microtuning",
-    "Audio Processing"
+    "Envelope Tracking",
+    "Harmony Generation"
   ],
   "short_description": "A pitch and envelope tracker",
-  "gui_description": "The display shows the tracked note at the bottom of the screen, as a MIDI note number plus cents, and as a frequency in Hz. To the right of this is a bar that shows the envelope, and the tuning as a deviation from the true pitch of the tracked note. Above this is the closest note to the tracked note that lies within the current scale (on the left), and the four harmony notes (on the right).",
+  "gui_description": "The display shows the tracked note at the bottom of the screen, as a MIDI note number plus cents, and as a frequency in Hz. To the right of this is a bar that shows the envelope, and the tuning as a deviation from the true pitch of the tracked note.\n\nAbove this is the closest note to the tracked note that lies within the current scale (on the left), and the four harmony notes (on the right).",
+  "specifications": [],
   "parameters": [
     {
       "name": "Range",
@@ -23,28 +23,41 @@
       "min": 0,
       "max": 100,
       "default": 10,
-      "description": "An internal parameter of the pitch tracking algorithm, which can help it avoid errors of octave in some circumstances. The default value is recommended in most cases."
+      "description": "An internal parameter of the pitch tracking algorithm, which can help it avoid errors of octave in some circumstances. The default value is recommended in most cases.",
+      "type": "string",
+      "channelCountRef": "percentage",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
-      "name": "Track bias threshold",
+      "name": "Env threshold",
       "min": -80,
       "max": 0,
       "default": -40,
-      "description": "Sets a signal threshold below which no attempt is made to track pitch."
+      "description": "Sets a signal threshold below which no attempt is made to track pitch.",
+      "type": "string",
+      "channelCountRef": "decibels",
+      "is_per_channel": false,
+      "is_bus": false
     },
     {
       "name": "Harmony mode",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets the harmony mode – one of 'Shape', 'SATB', or 'MIDI'. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes."
+      "description": "Sets the harmony mode – one of ‘Shape’, ‘SATB’, or ‘MIDI’. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes.",
+      "enum_values": [
+        "Shape",
+        "SATB",
+        "MIDI"
+      ]
     },
     {
       "name": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "description": "Sets the MIDI channel on which to receive notes if the harmony mode is 'MIDI'."
+      "description": "Sets the MIDI channel on which to receive notes if the harmony mode is ‘MIDI’."
     },
     {
       "name": "Force in tune",

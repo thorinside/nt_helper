@@ -1,14 +1,14 @@
 {
   "guid": "tunf",
   "name": "Tuner (fancy)",
-  "description": "This algorithm provides four simultaneous tuners. It uses an autocorrelation pitch detection method which is fairly CPU heavy, but which provides reliable pitch detection for most signals. For simpler tones, you may prefer the 'Tuner (simple)' algorithm. Microtuning via Scala or MTS is supported.",
+  "description": "This algorithm provides four simultaneous tuners. It uses an autocorrelation pitch detection method which is fairly CPU heavy, but which provides reliable pitch detection for most signals. For simpler tones, you may prefer the “Tuner (simple)” algorithm. Microtuning via Scala or MTS is supported.",
   "categories": [
-    "Pitch Detection",
-    "Tuning",
-    "Audio Processing"
+    "Utility",
+    "Tuning"
   ],
   "short_description": "A sophisticated tuner",
-  "gui_description": "The display shows the detected pitch of the active channels, as a MIDI note number and cents, and as a value in Hz. It also shows a bar which grows to the left or right depending on how flat or sharp the note is relative to the 'true' pitch of the detected note.",
+  "gui_description": "The display shows the detected pitch of the active channels, as a MIDI note number and cents, and as a value in Hz. It also shows a bar which grows to the left or right depending on how flat or sharp the note is relative to the ‘true’ pitch of the detected note.",
+  "specifications": [],
   "parameters": [
     {
       "name": "Channel 1",
@@ -50,7 +50,12 @@
       "min": 0,
       "max": 100,
       "default": 10,
-      "description": "An internal parameter of the pitch tracking algorithm, which can help it avoid errors of octave in some circumstances. The default value is recommended in most cases."
+      "description": "An internal parameter of the pitch tracking algorithm, which can help it avoid errors of octave in some circumstances. The default value is recommended in most cases.",
+      "type": "string",
+      "channelCountRef": "N/A",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     },
     {
       "name": "Env threshold",
@@ -59,7 +64,10 @@
       "default": -40,
       "description": "Sets a signal threshold below which no attempt is made to track pitch.",
       "type": "string",
-      "is_bus": true
+      "channelCountRef": "N/A",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
     }
   ],
   "input_ports": [],

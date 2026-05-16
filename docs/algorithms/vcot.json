@@ -7,13 +7,12 @@
     "Wavetable"
   ],
   "short_description": "A wavetable VCO",
-  "gui_description": "The display shows a single cycle of the current wavetable waveform, and the VCO's pitch as a MIDI note name plus cents and as a frequency in Hz.",
+  "gui_description": "The display shows a single cycle of the current wavetable waveform, and the VCO’s pitch as a MIDI note name plus cents and as a frequency in Hz.",
   "parameters": [
     {
       "name": "Wavetable",
-      "description": "Chooses the wavetable.",
-      "type": "enum",
-      "is_bus": false
+      "min": 0,
+      "description": "Chooses the wavetable."
     },
     {
       "name": "Wave offset",
@@ -21,7 +20,8 @@
       "max": 100.0,
       "default": 0.0,
       "description": "Sets the position within the wavetable.",
-      "type": "folder",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -29,9 +29,7 @@
       "min": -16,
       "max": 8,
       "default": 0,
-      "description": "Adjusts the VCO tuning in octaves.",
-      "type": "folder",
-      "is_bus": false
+      "description": "Adjusts the VCO tuning in octaves."
     },
     {
       "name": "Transpose",
@@ -39,7 +37,8 @@
       "max": 60,
       "default": 0,
       "description": "Adjusts the VCO tuning in semitones.",
-      "type": "folder",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -48,7 +47,8 @@
       "max": 100,
       "default": 0,
       "description": "Adjusts the VCO tuning in cents.",
-      "type": "folder",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -56,8 +56,9 @@
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "description": "Sets the amplitude of the output (before it's affected by the gain).",
-      "type": "folder",
+      "description": "Sets the amplitude of the output (before it’s affected by the gain).",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -66,7 +67,8 @@
       "max": 6,
       "default": 0,
       "description": "Sets the level of the output.",
-      "type": "folder",
+      "type": "string",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -74,31 +76,17 @@
       "min": 0,
       "max": 16,
       "default": 0,
-      "description": "If enabled, MIDI notes on the specified channel will set the pitch of the VCO.",
-      "type": "folder",
-      "is_bus": false
+      "description": "If enabled, MIDI notes on the specified channel will set the pitch of the VCO."
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "The standard Add/Replace mode selector as described above.",
-      "type": "folder",
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
-    {
-      "name": "Pitch input",
-      "description": "The pitch CV input (1V/octave).",
-      "isPerChannel": false
-    },
-    {
-      "name": "Wave input",
-      "description": "Sets an input bus to modulate the wave offset.",
-      "isPerChannel": false
-    },
     {
       "name": "Pitch input",
       "description": "The pitch CV input (1V/octave)."
@@ -109,11 +97,6 @@
     }
   ],
   "output_ports": [
-    {
-      "name": "Output",
-      "description": "The output bus.",
-      "isPerChannel": false
-    },
     {
       "name": "Output",
       "description": "The output bus."

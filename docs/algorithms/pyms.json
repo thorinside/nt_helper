@@ -1,59 +1,296 @@
 {
   "guid": "pyms",
   "name": "Poly Multisample (legacy)",
-  "description": "This algorithm is a polyphonic, multitimbral, sample playback instrument, playing WAV files from the MicroSD card. It can be played via CV/gate, MIDI, or I2C. It supports both velocity switches and round robins per sample. It was the 'Poly Multisample' up until firmware version 1.10, in which it was replaced by the current 'Poly Multisample', which allows audio recording.",
+  "description": "This algorithm is inspired by the original “SD Multisample” algorithm on the disting EX. It is a polyphonic, multitimbral, sample playback instrument, playing WAV files from the MicroSD card. It can be played via CV/gate, MIDI, or I2C. It supports both velocity switches and round robins per sample. Please refer to the section “Common polysynth features” above, and to the section on samples on the MicroSD card, also above. This algorithm was the “Poly Multisample” up until firmware version 1.10, in which it was replaced by the current “Poly Multisample”, which allows audio recording.",
   "categories": [
-    "Synthesizer",
     "Sample Player",
-    "Multitimbral",
-    "Polyphonic"
+    "Polyphonic Synth",
+    "Multitimbral"
   ],
   "short_description": "A polyphonic sample player",
-  "use_cases": [
-    "Playing WAV files from MicroSD card",
-    "CV/gate/MIDI/I2C control",
-    "Velocity switching",
-    "Round robin sampling"
-  ],
-  "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar to indicate the note envelope. The folder and filename of the last sample played are also shown.",
+  "gui_description": "The display shows the notes being played by the various voices, each superimposed on a bar to indicate the note envelope. The folder and filename of the last sample played are also shown. When adjusting the microtuning parameters, more information about the chosen tuning is displayed.",
   "specifications": [
     {
       "name": "Timbres",
-      "min": 1,
-      "max": 4
+      "value": "1-4"
     },
     {
       "name": "Voices",
+      "value": "1-16"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Global gain",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "A global gain adjustment applied to all timbres (in addition to their individual gains).",
+      "type": "string",
+      "channelCountRef": "global",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard polysynth sustain mode parameter. See above.",
+      "type": "string",
+      "channelCountRef": "global",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Gate offset",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 0.2,
+      "description": "Offsets (delays) the gate inputs relative to the pitch inputs. This is useful to allow pitch CVs to settle before they are sampled on the rising gate, and also to cope with modules which output both a pitch and gate but change their gate first.",
+      "type": "string",
+      "channelCountRef": "global",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Round robin mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "The round-robin mode. See above.",
+      "type": "string",
+      "channelCountRef": "global",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false
+    },
+    {
+      "name": "Folder",
       "min": 1,
-      "max": 16
+      "max": null,
+      "default": 1,
+      "description": "Sets the sample folder to use.",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "Sets the output level.",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Pan",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the stereo pan position.",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Transpose",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Adjusts the tuning in semitones.",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Adjusts the tuning in cents.",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Envelope",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables an ADSR volume envelope. If the envelope is disabled, the sample simply plays once until the end.",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "description": "Sets the envelope attack time (from 1ms to 15s, exponential response).",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Decay",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Sets the envelope decay time (from 20ms to 15s, exponential response).",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Sets the envelope sustain level.",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 127,
+      "default": 77,
+      "description": "Sets the envelope release time (from 10ms to 30s, exponential response).",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Velocity",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Sets the amount by which the note velocity affects the note volume.",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Sustain (Control)",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain pedal).",
+      "type": "string",
+      "channelCountRef": "per-timbre",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel to listen on.",
+      "type": "string",
+      "channelCountRef": "per-timbre setup",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Controls how the algorithm will respond to MPE. See above.",
+      "type": "string",
+      "channelCountRef": "per-timbre setup",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel.",
+      "type": "string",
+      "channelCountRef": "per-timbre setup",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range.",
+      "type": "string",
+      "channelCountRef": "per-timbre setup",
+      "is_per_channel": true,
+      "is_common": false,
+      "is_bus": false
     }
   ],
   "input_ports": [
     {
-      "name": "Pitch CV",
-      "description": "Pitch control voltage input"
-    },
-    {
-      "name": "Gate",
-      "description": "Gate trigger input"
+      "name": "CV/gate",
+      "description": "Control Voltage and Gate inputs for pitch and triggering."
     },
     {
       "name": "MIDI",
-      "description": "MIDI input for control"
+      "description": "MIDI input for note and control data."
     },
     {
       "name": "I2C",
-      "description": "I2C communication interface"
+      "description": "I2C input for digital control."
     }
   ],
   "output_ports": [
     {
-      "name": "Left/Mono Output",
-      "description": "Left or mono audio output bus"
+      "name": "Left/mono output",
+      "description": "Left or mono audio output bus."
     },
     {
-      "name": "Right Output",
-      "description": "Right audio output bus"
+      "name": "Right output",
+      "description": "Right audio output bus."
+    },
+    {
+      "name": "Left/mono output",
+      "description": "The left or mono output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right output bus."
     }
   ]
 }

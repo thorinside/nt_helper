@@ -1,0 +1,812 @@
+{
+  "guid": "mist",
+  "name": "Minky Starshine",
+  "description": "Minky Starshine is at heart an additive synthesiser, augmented with possibilities for subtractive synthesis (i.e. filtering) and pulse width modulation.\n\nA waveform is created by summing 16 independently controllable 'partials'. By setting the relative levels of the partials appropriately you can create familiar waveforms such as sawtooth and squarewave, but you can also create an infinite range of timbres in between.\n\nAs well as simply setting the levels of the partials, you can flexibly assign them to three 'groups'. Each group has a very flexible envelope generator and an LFO, so you can change the balance of the partials (and therefore the timbre of the sound) over time.\n\nThe LFOs have a wide frequency range and can also be used as ring modulators.\n\nThe waveform as a whole can have its pulsewidth controlled. An envelope and LFO is provided, as well as control by note velocity.\n\nA resonant filter is available, capable of lowpass, bandpass and highpass and a continuous range in between. Again, control by envelope, LFO and note velocity are possible.",
+  "categories": [
+    "Additive Synthesis",
+    "Polysynth",
+    "Subtractive Synthesis"
+  ],
+  "short_description": "An additive polysynth",
+  "specifications": [
+    {
+      "name": "Voices",
+      "value": "1-16",
+      "description": "The number of simultaneous voices."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Transpose",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Adjusts the tuning in semitones.",
+      "type": "string",
+      "channelCountRef": "ST"
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Adjusts the tuning in cents.",
+      "type": "string",
+      "channelCountRef": "cents"
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range."
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard polysynth sustain mode parameter."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
+    },
+    {
+      "name": "Quality",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Sets the quality of the sine wave approximation used for the partials. Low quality uses less CPU."
+    },
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "Applies an overall output gain.",
+      "type": "string",
+      "channelCountRef": "dB"
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel to listen on."
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Controls how the algorithm will respond to MPE."
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Level 1",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The amplitude of the first partial (the fundamental).",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 2",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 2.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 3",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 3.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 4",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 4.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 5",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 5.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 6",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 6.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 7",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 7.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 8",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 8.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 9",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 9.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 10",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 10.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 11",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 11.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 12",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 12.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 13",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 13.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 14",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 14.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 15",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 15.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level 16",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The amplitude of partial 16.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Group 1",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 1. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 2",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 2. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 3",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 3. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 4",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 4. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 5",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 5. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 6",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 6. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 7",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 7. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 8",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 8. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 9",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 9. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 10",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 10. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 11",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 11. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 12",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 12. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 13",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 13. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 14",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 14. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 15",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 15. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Group 16",
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "description": "The group for partial 16. Groups 1-3 are affected by envelopes 1-3 and LFOs 1-3 respectively. Group 4 is affected by LFO 4."
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 5000,
+      "default": 500,
+      "description": "The amplitude envelope attack time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Decay",
+      "min": 0,
+      "max": 5000,
+      "default": 500,
+      "description": "The amplitude envelope decay time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 5000,
+      "default": 500,
+      "description": "The amplitude envelope release time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Attack shape",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the attack stage of the amplitude envelope.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Decay shape",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the decay stage of the amplitude envelope.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Release shape",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the release stage of the amplitude envelope.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Sustain",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 70.0,
+      "description": "The amplitude envelope sustain level.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Time A1",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the first attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Time A2",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the second attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Time A3",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the third attack stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Time R1",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "description": "The time for the first release stage.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Time R2",
+      "min": 0,
+      "max": 5000,
+      "default": 5000,
+      "description": "The time for the second release stage. When set to maximum, release becomes 'Infinite'.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Shape A1",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Shape A2",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Shape A3",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the A3 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Shape R1",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the R1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Shape R2",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "description": "The shape of the R2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level A1",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The level at the end of the A1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level A2",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The level at the end of the A2 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Sustain (Group)",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The sustain level for group envelopes.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Level R1",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The level at the end of the R1 stage.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "The LFO speed. Exponential scale from 0.05Hz to 20Hz."
+    },
+    {
+      "name": "Offset",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 100.0,
+      "description": "The LFO offset – the value around which the LFO oscillates. At 100% this is a normal ‘tremolo’ effect; at 0% the LFO becomes a ring modulator.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Amount",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "The depth of the LFO around the offset.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "KB Track",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Keyboard tracking – the amount by which the note pitch affects the LFO speed.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Multiplier",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "A multiplier for the LFO speed: 1x, 10x, or 100x."
+    },
+    {
+      "name": "Pulse width",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "description": "Sets the pulse width.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "PW LFO Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "Sets the pulse width LFO speed. Exponential scale from 0.05Hz to 20Hz."
+    },
+    {
+      "name": "PW LFO Amount",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets the amount of pulse width LFO modulation.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "PW Env Attack",
+      "min": 0,
+      "max": 5000,
+      "default": 1000,
+      "description": "Sets the pulse width envelope attack time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "PW Env Decay",
+      "min": 0,
+      "max": 5000,
+      "default": 1000,
+      "description": "Sets the pulse width envelope decay time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "PW Env Release",
+      "min": 0,
+      "max": 5000,
+      "default": 1000,
+      "description": "Sets the pulse width envelope release time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "PW Env Sustain",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 70.0,
+      "description": "Sets the pulse width envelope sustain level.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "PW Env Amount",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets the pulse width envelope modulation amount.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Cutoff",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "Sets the filter cutoff frequency. Exponential scale from 50Hz to 12kHz."
+    },
+    {
+      "name": "Q",
+      "min": 1.0,
+      "max": 100.0,
+      "default": 10.0,
+      "description": "Sets the filter resonance.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Type",
+      "min": 0,
+      "max": 400,
+      "default": 0,
+      "description": "Sets the filter type. Smoothly transitions from no filter, to lowpass, to bandpass, to highpass, and back to no filter."
+    },
+    {
+      "name": "LFO Speed",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "Sets the filter LFO speed. Exponential scale from 0.05Hz to 20Hz."
+    },
+    {
+      "name": "LFO Amount",
+      "min": 0.0,
+      "max": 300.0,
+      "default": 0.0,
+      "description": "Sets the amount of filter LFO modulation.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "LFO Type Amount",
+      "min": 0,
+      "max": 400,
+      "default": 0,
+      "description": "Sets the amount of filter type LFO modulation.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env Attack",
+      "min": 0,
+      "max": 5000,
+      "default": 1000,
+      "description": "Sets the filter envelope attack time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env Decay",
+      "min": 0,
+      "max": 5000,
+      "default": 1000,
+      "description": "Sets the filter envelope decay time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env Release",
+      "min": 0,
+      "max": 5000,
+      "default": 1000,
+      "description": "Sets the filter envelope release time.",
+      "type": "string",
+      "channelCountRef": "ms"
+    },
+    {
+      "name": "Env Sustain",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 70.0,
+      "description": "Sets the filter envelope sustain level.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Env Amount",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets the filter envelope modulation amount.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "KB Track",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets the amount of filter keyboard tracking.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Vel Env Amount",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets how velocity affects the overall amplitude of the note.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Vel Filter Amount",
+      "min": -800.0,
+      "max": 800.0,
+      "default": 0.0,
+      "description": "Sets how velocity affects the filter cutoff.",
+      "type": "string",
+      "channelCountRef": "%"
+    },
+    {
+      "name": "Vel Filter Env Amount",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets how velocity affects the depth of the filter envelope."
+    },
+    {
+      "name": "Vel PW Amount",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets how velocity affects the pulse width."
+    },
+    {
+      "name": "Vel PW Env Amount",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Sets how velocity affects the depth of the pulse width envelope."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "description": "The left or mono output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right output bus."
+    },
+    {
+      "name": "Left/mono output",
+      "description": "The left or mono output bus."
+    },
+    {
+      "name": "Right output",
+      "description": "The right output bus."
+    }
+  ]
+}

@@ -1,20 +1,21 @@
 {
   "guid": "enfo",
   "name": "Envelope Follower",
-  "description": "This algorithm is a simple envelope follower. It outputs a CV according to the volume envelope of the input audio. When operating on stereo (or multichannel) signals, it tracks the maximum of the various signals and outputs a single CV. If you want to separately track the left and right sides of a stereo signal, use this algorithm configured as two mono channels.",
+  "description": "This algorithm is a simple envelope follower. It outputs a CV according to the volume envelope of the input audio.\n\nWhen operating on stereo (or multichannel) signals, it tracks the maximum of the various signals and outputs a single CV. If you want to separately track the left and right sides of a stereo signal, use this algorithm configured as two mono channels.",
   "categories": [
-    "Audio Processing",
-    "Envelope Detection",
-    "CV Generation"
+    "Dynamics",
+    "Modulation",
+    "Utility"
   ],
   "short_description": "Tracks the volume envelope of a signal",
-  "parameters": [
+  "specifications": [
     {
       "name": "Channels",
-      "min": 1,
-      "max": 12,
+      "value": "1-12",
       "description": "The number of bus channels to process."
-    },
+    }
+  ],
+  "parameters": [
     {
       "name": "Enable",
       "min": 0,
@@ -60,7 +61,7 @@
   "output_ports": [
     {
       "name": "Output",
-      "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'."
+      "description": "The output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace’."
     }
   ]
 }

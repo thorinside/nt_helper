@@ -1,157 +1,174 @@
 {
   "guid": "clou",
   "name": "Texture Synthesizer",
-  "description": "This algorithm is an implementation of the open source Clouds module by Émilie Gillet. This implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version.",
+  "description": "This algorithm is an implementation of the open source Clouds module by Émilie Gillet.\n\nThis implementation should behave and sound identical to the original. Any demos or tutorials you may find online should apply just as well to this version. The user manual for the original module is here. The documentation below assumes some familiarity with this.",
   "categories": [
-    "Audio Effects",
-    "Granular Synthesis",
-    "Texture Synthesis"
+    "Granular",
+    "Texture",
+    "Delay",
+    "Spectral"
   ],
-  "short_description": "\"It's Clouds!\"",
+  "short_description": "It's Clouds!",
+  "specifications": [],
   "parameters": [
     {
       "name": "Sample rate",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Allows you to run the algorithm at the disting NT’s own sample rate (‘Native’) or the sample rate of a real Clouds module (‘Authentic (32kHz)’)."
     },
     {
       "name": "Mode",
       "min": 0,
       "max": 3,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "The effect mode: Granular, Stretch, Looping delay, or Spectral."
     },
     {
       "name": "Buffer channels",
       "min": 1,
       "max": 2,
       "default": 2,
-      "type": "string",
-      "is_bus": false
+      "description": "Whether the internal audio buffer is mono or stereo."
     },
     {
       "name": "Input channels",
       "min": 1,
       "max": 2,
       "default": 2,
-      "type": "string",
-      "is_bus": false
+      "description": "Whether the audio input is mono or stereo."
     },
     {
       "name": "Bit depth",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Enables “lo-fi” mode (8 bit and reduced sample rate)."
     },
     {
       "name": "Freeze",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "“This latching [parameter] stops the recording of incoming audio. Granularization is now performed on the last few seconds of audio kept in memory in the module.”"
     },
     {
       "name": "Position",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_bus": false
+      "description": "“Selects from which part of the recording buffer the audio grains are played. Turn the knob clockwise to travel back in time.”",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Size",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_bus": false
+      "description": "Sets the grain size.",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Pitch",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Sets the grain transposition.",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Coarse tune",
       "min": -48,
       "max": 48,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Sets the grain pitch in semitones.",
+      "enum_values": [
+        "ST"
+      ]
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "Sets the grain pitch in cents.",
+      "enum_values": [
+        "cents"
+      ]
     },
     {
       "name": "Density",
       "min": -100,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_bus": false
+      "description": "“At 12 o'clock, no grains are generated. Turn clockwise and grains will be sown randomly, counter-clockwise and they will be played at a constant rate. The further you turn, the higher the overlap between grains.”",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Texture",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_bus": false
+      "description": "“Morphs through various shapes of grain envelopes: square (boxcar), triangle, and then Hann window. Past 2 o'clock, activates a diffuser which smears transients.”",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Wet/dry",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_bus": false
+      "description": "Wet/dry mix balance.",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Spread",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_bus": false
+      "description": "“Stereo spread (amount of random panning/balance applied to the grains).”",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Feedback",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_bus": false
+      "description": "Sets the amount of feedback.",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Reverb",
       "min": 0,
       "max": 100,
       "default": 50,
-      "type": "string",
-      "is_bus": false
+      "description": "Sets the amount of reverb applied to the output.",
+      "enum_values": [
+        "%"
+      ]
     },
     {
       "name": "Output mode",
       "min": 0,
       "max": 1,
       "default": 0,
-      "type": "string",
-      "is_bus": false
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
@@ -170,22 +187,6 @@
     {
       "name": "Trigger input",
       "description": "The bus to use for a trigger input."
-    },
-    {
-      "name": "Left input",
-      "description": ""
-    },
-    {
-      "name": "Right input",
-      "description": ""
-    },
-    {
-      "name": "V/Oct input",
-      "description": ""
-    },
-    {
-      "name": "Trigger input",
-      "description": ""
     }
   ],
   "output_ports": [
@@ -196,14 +197,6 @@
     {
       "name": "Right output",
       "description": "The right audio output bus."
-    },
-    {
-      "name": "Left output",
-      "description": ""
-    },
-    {
-      "name": "Right output",
-      "description": ""
     }
   ]
 }

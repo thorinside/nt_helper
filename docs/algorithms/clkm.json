@@ -1,11 +1,10 @@
 {
   "guid": "clkm",
   "name": "Clock Multiplier",
-  "description": "This algorithm is a simple clock multiplier, generating a faster clock from a slower one. The output clock rate is updated on every clock received, except that the clock duration is limited to at most double each time. This is mainly to prevent the output clock rate changing when the input clock is paused and restarted, which would otherwise be interpreted as a really long clock pulse.",
+  "description": "This algorithm is a simple clock multiplier, generating a faster clock from a slower one.\n\nThe output clock rate is updated on every clock received, except that the clock duration is limited to at most double each time. This is mainly to prevent the output clock rate changing when the input clock is paused and restarted, which would otherwise be interpreted as a really long clock pulse.",
   "categories": [
     "Clock",
-    "Timing",
-    "Signal Processing"
+    "Utility"
   ],
   "short_description": "Multiplies clocks",
   "parameters": [
@@ -29,7 +28,8 @@
       "max": 10.0,
       "default": 0.0,
       "description": "The output voltage when the clock is low/inactive.",
-      "type": "folder",
+      "type": "file",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -38,7 +38,8 @@
       "max": 10.0,
       "default": 5.0,
       "description": "The output voltage when the clock is high/active.",
-      "type": "folder",
+      "type": "file",
+      "channelCountRef": "1",
       "is_bus": false
     },
     {
@@ -46,24 +47,16 @@
       "min": 0,
       "max": 6,
       "default": 0,
-      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Clock output parameter. 1 means the ES-5 itself."
+      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Clock output parameter. “1” means the ES-5 itself."
     }
   ],
   "input_ports": [
     {
       "name": "Clock input",
       "description": "The clock input bus."
-    },
-    {
-      "name": "Clock input",
-      "description": "The clock input bus."
     }
   ],
   "output_ports": [
-    {
-      "name": "Clock output",
-      "description": "The clock output bus."
-    },
     {
       "name": "Clock output",
       "description": "The clock output bus."
