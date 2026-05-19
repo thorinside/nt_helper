@@ -10,6 +10,7 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/performance_page_item.dart';
+import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_helpers/mock_midi_command.dart';
@@ -69,10 +70,7 @@ void main() {
         name: 'Test',
       ),
       routing: RoutingInfo.filler(),
-      pages: ParameterPages(
-        algorithmIndex: algorithmIndex,
-        pages: const [],
-      ),
+      pages: ParameterPages(algorithmIndex: algorithmIndex, pages: const []),
       parameters: List.generate(
         paramCount,
         (i) => ParameterInfo(
@@ -196,11 +194,13 @@ void main() {
       ).thenAnswer((_) async {});
       when(
         () => mockDisting.requestParameterValueString(any(), any()),
-      ).thenAnswer((_) async => ParameterValueString(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            value: 'hi',
-          ));
+      ).thenAnswer(
+        (_) async => ParameterValueString(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          value: 'hi',
+        ),
+      );
       cubit.emit(makeSyncState(slots: [makeSlot()]));
       expect((cubit.state as DistingStateSynchronized).isDirty, isFalse);
 
@@ -212,6 +212,104 @@ void main() {
 
       expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
     });
+
+    test(
+      'refreshes entire slot after committing editable Name string',
+      () async {
+        ParameterInfo parameter({
+          required int parameterNumber,
+          required int unit,
+          required String name,
+        }) {
+          return ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: parameterNumber,
+            min: 0,
+            max: 100,
+            defaultValue: 0,
+            unit: unit,
+            name: name,
+            powerOfTen: 0,
+          );
+        }
+
+        final originalSlot = makeSlot(paramCount: 2).copyWith(
+          parameters: [
+            parameter(
+              parameterNumber: 0,
+              unit: ParameterUnits.modernTextInput,
+              name: '2:Name',
+            ),
+            parameter(parameterNumber: 1, unit: 0, name: '2:Solo'),
+          ],
+        );
+
+        when(
+          () => mockDisting.setParameterString(0, 0, 'B'),
+        ).thenAnswer((_) async {});
+        when(() => mockDisting.requestParameterValueString(0, 0)).thenAnswer(
+          (_) async => ParameterValueString(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 'B',
+          ),
+        );
+        when(() => mockDisting.requestParameterPages(0)).thenAnswer(
+          (_) async => ParameterPages(
+            algorithmIndex: 0,
+            pages: [
+              ParameterPage(name: 'All', parameters: [0, 1]),
+            ],
+          ),
+        );
+        when(() => mockDisting.requestNumberOfParameters(0)).thenAnswer(
+          (_) async => NumParameters(algorithmIndex: 0, numParameters: 2),
+        );
+        when(() => mockDisting.requestAlgorithmGuid(0)).thenAnswer(
+          (_) async => Algorithm(algorithmIndex: 0, guid: 'test', name: 'Test'),
+        );
+        when(() => mockDisting.requestAllParameterValues(0)).thenAnswer(
+          (_) async => AllParameterValues(
+            algorithmIndex: 0,
+            values: [
+              ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0),
+              ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0),
+            ],
+          ),
+        );
+        when(() => mockDisting.requestParameterInfo(0, 0)).thenAnswer(
+          (_) async => parameter(
+            parameterNumber: 0,
+            unit: ParameterUnits.modernTextInput,
+            name: '2:Name',
+          ),
+        );
+        when(() => mockDisting.requestParameterInfo(0, 1)).thenAnswer(
+          (_) async => parameter(parameterNumber: 1, unit: 0, name: 'B:Solo'),
+        );
+        when(() => mockDisting.requestMappings(0, any())).thenAnswer(
+          (invocation) async => Mapping(
+            algorithmIndex: 0,
+            parameterNumber: invocation.positionalArguments[1] as int,
+            packedMappingData: PackedMappingData.filler(),
+          ),
+        );
+
+        cubit.emit(makeSyncState(slots: [originalSlot]));
+
+        await cubit.updateParameterString(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          value: 'B',
+        );
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.isDirty, isTrue);
+        expect(state.slots[0].valueStrings[0].value, 'B');
+        expect(state.slots[0].parameters[1].name, 'B:Solo');
+        verify(() => mockDisting.requestParameterInfo(0, 1)).called(1);
+      },
+    );
   });
 
   group('cubit algorithm ops', () {
@@ -250,10 +348,7 @@ void main() {
 
       cubit.emit(
         makeSyncState(
-          slots: [
-            makeSlot(algorithmIndex: 0),
-            makeSlot(algorithmIndex: 1),
-          ],
+          slots: [makeSlot(algorithmIndex: 0), makeSlot(algorithmIndex: 1)],
         ),
       );
       await cubit.moveAlgorithmUp(1);
@@ -268,10 +363,7 @@ void main() {
 
       cubit.emit(
         makeSyncState(
-          slots: [
-            makeSlot(algorithmIndex: 0),
-            makeSlot(algorithmIndex: 1),
-          ],
+          slots: [makeSlot(algorithmIndex: 0), makeSlot(algorithmIndex: 1)],
         ),
       );
       await cubit.moveAlgorithmDown(0);
@@ -320,48 +412,51 @@ void main() {
   });
 
   group('cubit mapping ops', () {
-    test('saveMapping marks state dirty (after device-refresh sweep)',
-        () async {
-      when(
-        () => mockDisting.requestSetMapping(any(), any(), any()),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockDisting.requestNumAlgorithmsInPreset(),
-      ).thenAnswer((_) async => 0);
-      when(
-        () => mockDisting.requestPresetName(),
-      ).thenAnswer((_) async => 'Test Preset');
+    test(
+      'saveMapping marks state dirty (after device-refresh sweep)',
+      () async {
+        when(
+          () => mockDisting.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockDisting.requestPresetName(),
+        ).thenAnswer((_) async => 'Test Preset');
 
-      cubit.emit(
-        DistingStateSynchronized(
-          disting: mockDisting,
-          distingVersion: '1.10.0',
-          firmwareVersion: FirmwareVersion('1.14.0'),
-          presetName: 'Test Preset',
-          algorithms: const [],
-          slots: const [],
-          unitStrings: const [],
-          offline: true,
-        ),
-      );
+        cubit.emit(
+          DistingStateSynchronized(
+            disting: mockDisting,
+            distingVersion: '1.10.0',
+            firmwareVersion: FirmwareVersion('1.14.0'),
+            presetName: 'Test Preset',
+            algorithms: const [],
+            slots: const [],
+            unitStrings: const [],
+            offline: true,
+          ),
+        );
 
-      await cubit.saveMapping(0, 0, PackedMappingData.filler());
+        await cubit.saveMapping(0, 0, PackedMappingData.filler());
 
-      expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
-    });
+        expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+      },
+    );
 
     test('setPerformancePageMapping marks state dirty (optimistic)', () async {
       when(
         () => mockDisting.setPerformancePageMapping(any(), any(), any()),
       ).thenAnswer((_) async {});
-      when(
-        () => mockDisting.requestMappings(any(), any()),
-      ).thenAnswer((_) async => Mapping(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            packedMappingData:
-                PackedMappingData.filler().copyWith(perfPageIndex: 1),
-          ));
+      when(() => mockDisting.requestMappings(any(), any())).thenAnswer(
+        (_) async => Mapping(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          packedMappingData: PackedMappingData.filler().copyWith(
+            perfPageIndex: 1,
+          ),
+        ),
+      );
 
       cubit.emit(makeSyncState(slots: [makeSlot()]));
       // Don't await — verification retries take seconds. We only care about
@@ -379,9 +474,7 @@ void main() {
       when(
         () => mockDisting.requestSetPresetName(any()),
       ).thenAnswer((_) async {});
-      when(
-        () => mockDisting.requestSavePreset(),
-      ).thenAnswer((_) async {});
+      when(() => mockDisting.requestSavePreset()).thenAnswer((_) async {});
 
       cubit.emit(makeSyncState(presetName: 'Old'));
       cubit.renamePreset('New');
@@ -393,9 +486,7 @@ void main() {
 
   group('cubit perf page ops', () {
     test('setPerfPageItem marks state dirty (optimistic)', () async {
-      when(
-        () => mockDisting.setPerfPageItem(any()),
-      ).thenAnswer((_) async {});
+      when(() => mockDisting.setPerfPageItem(any())).thenAnswer((_) async {});
       when(
         () => mockDisting.requestPerfPageItem(any()),
       ).thenAnswer((_) async => PerformancePageItem.empty(0));

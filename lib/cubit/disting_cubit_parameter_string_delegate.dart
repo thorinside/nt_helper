@@ -120,8 +120,15 @@ class _ParameterStringDelegate {
         case DistingStateSelectDevice():
         case DistingStateConnected():
           break;
-        case DistingStateSynchronized _:
-          var disting = _cubit.requireDisting();
+        case DistingStateSynchronized syncState:
+          final shouldRefreshEntireSlot =
+              algorithmIndex >= 0 &&
+              algorithmIndex < syncState.slots.length &&
+              _isEditableNameParameter(
+                syncState.slots[algorithmIndex],
+                parameterNumber,
+              );
+          final disting = _cubit.requireDisting();
 
           await disting.setParameterString(
             algorithmIndex,
@@ -134,6 +141,15 @@ class _ParameterStringDelegate {
             algorithmIndex,
             parameterNumber,
           );
+
+          if (shouldRefreshEntireSlot) {
+            await _refreshSlotAfterNameCommit(
+              algorithmIndex: algorithmIndex,
+              parameterNumber: parameterNumber,
+              valueString: newValueString,
+            );
+            break;
+          }
 
           if (newValueString != null) {
             final state = (_cubit.state as DistingStateSynchronized);
@@ -160,5 +176,56 @@ class _ParameterStringDelegate {
       _cubit._parameterFetchDelegate.releaseCommandSemaphore();
     }
   }
-}
 
+  bool _isEditableNameParameter(Slot slot, int parameterNumber) {
+    if (parameterNumber < 0 || parameterNumber >= slot.parameters.length) {
+      return false;
+    }
+
+    final parameter = slot.parameters[parameterNumber];
+    if (!ParameterEditorRegistry.isStringTypeUnit(parameter.unit)) {
+      return false;
+    }
+
+    final unprefixedName = parameter.name.split(':').last.trim();
+    return unprefixedName.toLowerCase() == 'name';
+  }
+
+  Future<void> _refreshSlotAfterNameCommit({
+    required int algorithmIndex,
+    required int parameterNumber,
+    required ParameterValueString? valueString,
+  }) async {
+    final state = _cubit.state;
+    if (state is! DistingStateSynchronized ||
+        algorithmIndex < 0 ||
+        algorithmIndex >= state.slots.length) {
+      return;
+    }
+
+    var slots = state.slots;
+    if (valueString != null) {
+      slots = _cubit.updateSlot(algorithmIndex, slots, (slot) {
+        if (parameterNumber < 0 ||
+            parameterNumber >= slot.valueStrings.length) {
+          return slot;
+        }
+        return slot.copyWith(
+          valueStrings: _cubit.replaceInList(
+            slot.valueStrings,
+            valueString,
+            index: parameterNumber,
+          ),
+        );
+      });
+    }
+
+    _cubit._emitState(state.copyWith(slots: slots, isDirty: true));
+
+    try {
+      await _cubit.refreshSlot(algorithmIndex);
+    } catch (_) {
+      // Keep the committed string in state even if the follow-up full refresh fails.
+    }
+  }
+}
