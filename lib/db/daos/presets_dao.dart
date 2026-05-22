@@ -44,6 +44,7 @@ class FullPresetSlot {
     PresetParameterValues,
     PresetMappings,
     PresetParameterStringValues,
+    PresetRoutings,
     Algorithms,
   ],
 )
@@ -398,4 +399,347 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     // Note: Cascading deletes in the table definitions should handle related data
     // (PresetSlots -> PresetParameterValues, PresetParameterStringValues, PresetMappings, PresetRoutings)
   }
+
+  /// Copies a subset of slots from `templateId` into `targetPresetId`.
+  ///
+  /// See [ApplyTemplateSlotsResult] for the result shape and the spec in
+  /// `specs/2026-05-22_multi-algorithm-templates.md` for the full semantics.
+  Future<ApplyTemplateSlotsResult> applyTemplateSlots({
+    required int templateId,
+    required int targetPresetId,
+    required List<int> templateSlotIndices,
+    required int insertionOffset,
+    bool overwrite = false,
+  }) async {
+    if (templateSlotIndices.isEmpty) {
+      throw ArgumentError.value(
+        templateSlotIndices,
+        'templateSlotIndices',
+        'must not be empty',
+      );
+    }
+    if (insertionOffset < 0) {
+      throw ArgumentError.value(
+        insertionOffset,
+        'insertionOffset',
+        'must be >= 0',
+      );
+    }
+
+    return transaction(() async {
+      final templateExists = await (select(presets)
+            ..where((p) => p.id.equals(templateId)))
+          .getSingleOrNull();
+      if (templateExists == null) {
+        throw StateError('Template preset $templateId not found.');
+      }
+      final targetExists = await (select(presets)
+            ..where((p) => p.id.equals(targetPresetId)))
+          .getSingleOrNull();
+      if (targetExists == null) {
+        throw StateError('Target preset $targetPresetId not found.');
+      }
+
+      // Snapshot the template's slot rows in slotIndex order so we can map
+      // requested indices to source rows.
+      final templateSlotRows = await (select(presetSlots)
+            ..where((s) => s.presetId.equals(templateId))
+            ..orderBy([(s) => OrderingTerm.asc(s.slotIndex)]))
+          .get();
+
+      for (final i in templateSlotIndices) {
+        if (i < 0 || i >= templateSlotRows.length) {
+          throw ArgumentError.value(
+            i,
+            'templateSlotIndices',
+            'index out of range [0, ${templateSlotRows.length})',
+          );
+        }
+      }
+
+      // Snapshot child rows for the template's slots, keyed by source slot id.
+      final templateSlotIds =
+          templateSlotRows.map((s) => s.id).toList(growable: false);
+      final tmplValues = templateSlotIds.isEmpty
+          ? <PresetParameterValueEntry>[]
+          : await (select(presetParameterValues)
+                ..where((v) => v.presetSlotId.isIn(templateSlotIds)))
+              .get();
+      final tmplStrings = templateSlotIds.isEmpty
+          ? <PresetParameterStringValueEntry>[]
+          : await (select(presetParameterStringValues)
+                ..where((v) => v.presetSlotId.isIn(templateSlotIds)))
+              .get();
+      final tmplMappings = templateSlotIds.isEmpty
+          ? <PresetMappingEntry>[]
+          : await (select(presetMappings)
+                ..where((m) => m.presetSlotId.isIn(templateSlotIds)))
+              .get();
+      final tmplRoutings = templateSlotIds.isEmpty
+          ? <PresetRoutingEntry>[]
+          : await (select(presetRoutings)
+                ..where((r) => r.presetSlotId.isIn(templateSlotIds)))
+              .get();
+
+      final tmplValuesBySlot =
+          <int, List<PresetParameterValueEntry>>{};
+      for (final v in tmplValues) {
+        tmplValuesBySlot.putIfAbsent(v.presetSlotId, () => []).add(v);
+      }
+      final tmplStringsBySlot =
+          <int, List<PresetParameterStringValueEntry>>{};
+      for (final v in tmplStrings) {
+        tmplStringsBySlot.putIfAbsent(v.presetSlotId, () => []).add(v);
+      }
+      final tmplMappingsBySlot = <int, List<PresetMappingEntry>>{};
+      for (final m in tmplMappings) {
+        tmplMappingsBySlot.putIfAbsent(m.presetSlotId, () => []).add(m);
+      }
+      final tmplRoutingBySlot = <int, PresetRoutingEntry>{};
+      for (final r in tmplRoutings) {
+        tmplRoutingBySlot[r.presetSlotId] = r;
+      }
+
+      // Resolve which algorithm GUIDs are locally known.
+      final neededGuids = {
+        for (final i in templateSlotIndices) templateSlotRows[i].algorithmGuid,
+      };
+      final knownAlgoRows = neededGuids.isEmpty
+          ? <AlgorithmEntry>[]
+          : await (select(algorithms)
+                ..where((a) => a.guid.isIn(neededGuids)))
+              .get();
+      final knownGuids = knownAlgoRows.map((a) => a.guid).toSet();
+
+      // Build the apply plan: keep templateSlotIndices in order; split into
+      // applied vs skipped.
+      final appliedSourceRows = <PresetSlotEntry>[];
+      final skipped = <int>[];
+      final missingGuids = <String>{};
+      for (final i in templateSlotIndices) {
+        final row = templateSlotRows[i];
+        if (knownGuids.contains(row.algorithmGuid)) {
+          appliedSourceRows.add(row);
+        } else {
+          skipped.add(i);
+          missingGuids.add(row.algorithmGuid);
+        }
+      }
+      final appliedCount = appliedSourceRows.length;
+
+      // Target slot space accounting.
+      final existingTargetSlots = await (select(presetSlots)
+            ..where((s) => s.presetId.equals(targetPresetId))
+            ..orderBy([(s) => OrderingTerm.asc(s.slotIndex)]))
+          .get();
+      final existingCount = existingTargetSlots.length;
+      final clampedOffset =
+          insertionOffset > existingCount ? existingCount : insertionOffset;
+
+      const slotLimit = 32;
+      // Space accounting uses the *unclamped* insertionOffset in replace mode
+      // so that a caller asking to "replace at slot 25" of a 5-slot target
+      // (which would need 35 slots) fails the limit check explicitly, instead
+      // of silently being treated as "append starting at slot 5".
+      final spaceNeeded = overwrite
+          ? (insertionOffset + appliedCount > existingCount
+              ? insertionOffset + appliedCount
+              : existingCount)
+          : existingCount + appliedCount;
+      if (appliedCount > 0 && spaceNeeded > slotLimit) {
+        throw TemplateSpaceException(
+          current: existingCount,
+          applied: appliedCount,
+          limit: slotLimit,
+        );
+      }
+
+      // Mutation phase.
+      if (overwrite) {
+        // For each i in 0..appliedCount-1, replace the target slot at
+        // clampedOffset+i (or create it if absent).
+        for (var i = 0; i < appliedCount; i++) {
+          final targetSlotIndex = clampedOffset + i;
+          final existing = existingTargetSlots.firstWhereOrNull(
+            (s) => s.slotIndex == targetSlotIndex,
+          );
+          if (existing != null) {
+            // Explicitly clear non-cascading children (PresetRoutings) and
+            // cascading ones too (the slot row will be replaced).
+            await (delete(presetMappings)
+                  ..where((m) => m.presetSlotId.equals(existing.id)))
+                .go();
+            await (delete(presetRoutings)
+                  ..where((r) => r.presetSlotId.equals(existing.id)))
+                .go();
+            await (delete(presetSlots)
+                  ..where((s) => s.id.equals(existing.id)))
+                .go();
+          }
+        }
+      } else {
+        // Insert mode: shift any existing slots at clampedOffset..end upward
+        // by appliedCount. Shift from top down to avoid uniqueness clashes.
+        if (appliedCount > 0) {
+          final toShift = existingTargetSlots
+              .where((s) => s.slotIndex >= clampedOffset)
+              .toList()
+            ..sort((a, b) => b.slotIndex.compareTo(a.slotIndex));
+          for (final row in toShift) {
+            await (update(presetSlots)..where((s) => s.id.equals(row.id)))
+                .write(
+              PresetSlotsCompanion(
+                slotIndex: Value(row.slotIndex + appliedCount),
+              ),
+            );
+          }
+        }
+      }
+
+      // Copy each applied template slot into the target preset.
+      final insertedSlotIndices = <int>[];
+      for (var i = 0; i < appliedCount; i++) {
+        final source = appliedSourceRows[i];
+        final newSlotIndex = clampedOffset + i;
+        final newSlotId = await into(presetSlots).insert(
+          PresetSlotsCompanion.insert(
+            presetId: targetPresetId,
+            slotIndex: newSlotIndex,
+            algorithmGuid: source.algorithmGuid,
+            customName: Value(source.customName),
+          ),
+        );
+        insertedSlotIndices.add(newSlotIndex);
+
+        final srcValues = tmplValuesBySlot[source.id] ?? const [];
+        if (srcValues.isNotEmpty) {
+          await batch((b) {
+            b.insertAll(
+              presetParameterValues,
+              srcValues
+                  .map(
+                    (v) => PresetParameterValuesCompanion.insert(
+                      presetSlotId: newSlotId,
+                      parameterNumber: v.parameterNumber,
+                      value: v.value,
+                    ),
+                  )
+                  .toList(growable: false),
+            );
+          });
+        }
+        final srcStrings = tmplStringsBySlot[source.id] ?? const [];
+        if (srcStrings.isNotEmpty) {
+          await batch((b) {
+            b.insertAll(
+              presetParameterStringValues,
+              srcStrings
+                  .map(
+                    (v) => PresetParameterStringValuesCompanion.insert(
+                      presetSlotId: newSlotId,
+                      parameterNumber: v.parameterNumber,
+                      stringValue: v.stringValue,
+                    ),
+                  )
+                  .toList(growable: false),
+            );
+          });
+        }
+        final srcMappings = tmplMappingsBySlot[source.id] ?? const [];
+        if (srcMappings.isNotEmpty) {
+          await batch((b) {
+            b.insertAll(
+              presetMappings,
+              srcMappings
+                  .map(
+                    (m) => PresetMappingsCompanion.insert(
+                      presetSlotId: newSlotId,
+                      parameterNumber: m.parameterNumber,
+                      packedData: m.packedData,
+                      perfPageIndex: Value(m.perfPageIndex),
+                    ),
+                  )
+                  .toList(growable: false),
+            );
+          });
+        }
+        final srcRouting = tmplRoutingBySlot[source.id];
+        if (srcRouting != null) {
+          await into(presetRoutings).insert(
+            PresetRoutingsCompanion.insert(
+              presetSlotId: Value(newSlotId),
+              routingInfoJson: srcRouting.routingInfoJson,
+            ),
+          );
+        }
+      }
+
+      // Bump target lastModified.
+      await (update(presets)..where((p) => p.id.equals(targetPresetId))).write(
+        PresetsCompanion(lastModified: Value(DateTime.now())),
+      );
+
+      String? warning;
+      if (skipped.isNotEmpty) {
+        final missingList = missingGuids.toList()..sort();
+        warning =
+            'Skipped ${skipped.length} template slot(s) with missing algorithm '
+            'metadata: ${missingList.join(', ')}.';
+      }
+
+      return ApplyTemplateSlotsResult(
+        targetPresetId: targetPresetId,
+        insertedSlotIndices: List.unmodifiable(insertedSlotIndices),
+        skippedTemplateSlotIndices: List.unmodifiable(skipped),
+        warning: warning,
+      );
+    });
+  }
+}
+
+/// Outcome of [PresetsDao.applyTemplateSlots].
+class ApplyTemplateSlotsResult {
+  final int targetPresetId;
+
+  /// New `slotIndex` values produced in the target preset, in apply order.
+  final List<int> insertedSlotIndices;
+
+  /// Indices from the original `templateSlotIndices` argument that were
+  /// skipped — typically because the source slot's algorithm GUID has no
+  /// matching row in the local `algorithms` table.
+  final List<int> skippedTemplateSlotIndices;
+
+  /// User-facing, non-fatal warning. Null when nothing was skipped.
+  final String? warning;
+
+  const ApplyTemplateSlotsResult({
+    required this.targetPresetId,
+    required this.insertedSlotIndices,
+    required this.skippedTemplateSlotIndices,
+    this.warning,
+  });
+}
+
+/// Thrown by [PresetsDao.applyTemplateSlots] when the target would exceed
+/// the device's 32-slot limit.
+class TemplateSpaceException implements Exception {
+  /// Existing slot count on the target preset before the apply.
+  final int current;
+
+  /// Number of slots the apply would add (after skipping any with missing
+  /// algorithm metadata).
+  final int applied;
+
+  /// Hard upper bound. Defaults to 32 (the device limit).
+  final int limit;
+
+  TemplateSpaceException({
+    required this.current,
+    required this.applied,
+    this.limit = 32,
+  });
+
+  @override
+  String toString() =>
+      'TemplateSpaceException: Cannot apply: $current + $applied > $limit slots';
 }

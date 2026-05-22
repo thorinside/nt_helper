@@ -12,6 +12,7 @@ mixin _$PresetsDaoMixin on DatabaseAccessor<AppDatabase> {
   $PresetMappingsTable get presetMappings => attachedDatabase.presetMappings;
   $PresetParameterStringValuesTable get presetParameterStringValues =>
       attachedDatabase.presetParameterStringValues;
+  $PresetRoutingsTable get presetRoutings => attachedDatabase.presetRoutings;
   PresetsDaoManager get managers => PresetsDaoManager(this);
 }
 
@@ -39,5 +40,10 @@ class PresetsDaoManager {
       $$PresetParameterStringValuesTableTableManager(
         _db.attachedDatabase,
         _db.presetParameterStringValues,
+      );
+  $$PresetRoutingsTableTableManager get presetRoutings =>
+      $$PresetRoutingsTableTableManager(
+        _db.attachedDatabase,
+        _db.presetRoutings,
       );
 }
