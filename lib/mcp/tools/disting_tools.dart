@@ -1185,10 +1185,13 @@ class DistingTools {
 
     final cubit = MetadataSyncCubit(db, _distingCubit);
     var appliedCount = 0;
+    String? failureMessage;
     try {
       final subscription = cubit.stream.listen((state) {
         if (state is InjectingTemplate) {
           appliedCount = state.applied;
+        } else if (state is PresetLoadFailure) {
+          failureMessage = state.error;
         }
       });
       try {
@@ -1197,6 +1200,12 @@ class DistingTools {
           templateSlotIndices: slotIndices,
           manager: _distingCubit.requireDisting(),
         );
+        final finalState = cubit.state;
+        if (finalState is PresetLoadFailure) {
+          failureMessage = finalState.error;
+        } else if (finalState is InjectingTemplate) {
+          appliedCount = finalState.applied;
+        }
       } finally {
         await subscription.cancel();
         await cubit.close();
@@ -1208,6 +1217,17 @@ class DistingTools {
           'error': 'partial_apply',
           'applied_slot_count': appliedCount,
           'message': e.toString(),
+        }),
+      );
+    }
+
+    if (failureMessage != null) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'partial_apply',
+          'applied_slot_count': appliedCount,
+          'message': failureMessage,
         }),
       );
     }

@@ -286,10 +286,36 @@ class MetadataSyncPage extends StatelessWidget {
                                     _showExportDialog(metaCtx);
                                     break;
                                   case 'template_manager':
+                                    final metadataCubit = metaCtx
+                                        .read<MetadataSyncCubit>();
                                     Navigator.of(metaCtx).push(
                                       MaterialPageRoute(
-                                        builder: (_) =>
-                                            const TemplateManagerScreen(),
+                                        builder: (_) => TemplateManagerScreen(
+                                          onApplyDevice:
+                                              (
+                                                template,
+                                                selectedIndices,
+                                              ) async {
+                                                await metadataCubit
+                                                    .applyTemplateToDevice(
+                                                      template: template,
+                                                      templateSlotIndices:
+                                                          selectedIndices,
+                                                      manager: distingCubit
+                                                          .requireDisting(),
+                                                    );
+                                                final state =
+                                                    metadataCubit.state;
+                                                if (state
+                                                    case PresetLoadFailure(
+                                                      error: final error,
+                                                    )) {
+                                                  throw StateError(error);
+                                                }
+                                              },
+                                          onCancelDeviceApply:
+                                              metadataCubit.cancelInjection,
+                                        ),
                                       ),
                                     );
                                     break;
@@ -1241,11 +1267,35 @@ class _TemplateListView extends StatelessWidget {
                     icon: const Icon(Icons.dashboard_customize),
                     onPressed: isOperationInProgress
                         ? null
-                        : () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const TemplateManagerScreen(),
-                            ),
-                          ),
+                        : () {
+                            final metadataCubit = context
+                                .read<MetadataSyncCubit>();
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TemplateManagerScreen(
+                                  onApplyDevice:
+                                      (template, selectedIndices) async {
+                                        await metadataCubit
+                                            .applyTemplateToDevice(
+                                              template: template,
+                                              templateSlotIndices:
+                                                  selectedIndices,
+                                              manager: distingCubit
+                                                  .requireDisting(),
+                                            );
+                                        final state = metadataCubit.state;
+                                        if (state case PresetLoadFailure(
+                                          error: final error,
+                                        )) {
+                                          throw StateError(error);
+                                        }
+                                      },
+                                  onCancelDeviceApply:
+                                      metadataCubit.cancelInjection,
+                                ),
+                              ),
+                            );
+                          },
                   ),
                 ],
               ),

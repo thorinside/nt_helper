@@ -115,6 +115,39 @@ void main() {
     expect(target.slots.map((slot) => slot.slot.algorithmGuid), ['BBBB']);
   });
 
+  testWidgets('replace mode replaces from the selected start slot', (
+    tester,
+  ) async {
+    final templateId = await _savePreset(
+      db,
+      'Starter',
+      isTemplate: true,
+      slots: [_slot(0, 'BBBB')],
+    );
+    final targetId = await _savePreset(
+      db,
+      'Target',
+      isTemplate: false,
+      slots: [_slot(0, 'AAAA'), _slot(1, 'AAAA')],
+    );
+    final template = (await db.presetsDao.getFullPresetDetails(templateId))!;
+
+    await _pumpDialog(tester, db: db, template: template, selected: {0});
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Replace existing slots'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply selected'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Applied 1 slot'), findsOneWidget);
+    final target = (await db.presetsDao.getFullPresetDetails(targetId))!;
+    expect(target.slots.map((slot) => slot.slot.algorithmGuid), [
+      'BBBB',
+      'AAAA',
+    ]);
+  });
+
   testWidgets('renders TemplateSpaceException diagnostics', (tester) async {
     final templateId = await _savePreset(
       db,
@@ -178,5 +211,55 @@ void main() {
 
     expect(cancelled, isTrue);
     completer.complete();
+  });
+
+  testWidgets('current device target is disabled without apply callback', (
+    tester,
+  ) async {
+    final templateId = await _savePreset(
+      db,
+      'Starter',
+      isTemplate: true,
+      slots: [_slot(0, 'AAAA')],
+    );
+    await _savePreset(db, 'Target', isTemplate: false, slots: const []);
+    final template = (await db.presetsDao.getFullPresetDetails(templateId))!;
+
+    await _pumpDialog(tester, db: db, template: template, selected: {0});
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Current device'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Target preset'), findsOneWidget);
+  });
+
+  testWidgets('device apply surfaces callback failures instead of success', (
+    tester,
+  ) async {
+    final templateId = await _savePreset(
+      db,
+      'Starter',
+      isTemplate: true,
+      slots: [_slot(0, 'AAAA')],
+    );
+    final template = (await db.presetsDao.getFullPresetDetails(templateId))!;
+
+    await _pumpDialog(
+      tester,
+      db: db,
+      template: template,
+      selected: {0},
+      onApplyDevice: () async => throw StateError('device failed'),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Current device'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply selected'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('device failed'), findsOneWidget);
+    expect(find.textContaining('Applied 1 slot'), findsNothing);
   });
 }

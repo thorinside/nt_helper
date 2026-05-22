@@ -106,6 +106,80 @@ void main() {
       );
     });
 
+    test(
+      'saves and loads preset routing rows with full preset details',
+      () async {
+        await database.metadataDao.upsertAlgorithms([
+          AlgorithmEntry(
+            guid: 'ROUT',
+            name: 'Routing Algorithm',
+            numSpecifications: 0,
+            pluginFilePath: null,
+          ),
+        ]);
+
+        final presetId = await database.presetsDao.saveFullPreset(
+          FullPresetDetails(
+            preset: PresetEntry(
+              id: -1,
+              name: 'Routing Preset',
+              lastModified: DateTime.now(),
+              isTemplate: true,
+            ),
+            slots: [
+              FullPresetSlot(
+                slot: PresetSlotEntry(
+                  id: -1,
+                  presetId: -1,
+                  slotIndex: 0,
+                  algorithmGuid: 'ROUT',
+                  customName: null,
+                ),
+                algorithm: AlgorithmEntry(
+                  guid: 'ROUT',
+                  name: 'Routing Algorithm',
+                  numSpecifications: 0,
+                  pluginFilePath: null,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
+                routing: PresetRoutingEntry(
+                  presetSlotId: -1,
+                  routingInfoJson: const [1, 2, 3, 4, 5, 6],
+                ),
+              ),
+            ],
+          ),
+          isTemplate: true,
+        );
+
+        final loadedPreset = await database.presetsDao.getFullPresetDetails(
+          presetId,
+        );
+
+        expect(loadedPreset, isNotNull);
+        expect(loadedPreset!.slots.single.routing, isNotNull);
+        expect(loadedPreset.slots.single.routing!.routingInfoJson, [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+        ]);
+
+        final savedRoutingRows = await database
+            .select(database.presetRoutings)
+            .get();
+        expect(savedRoutingRows, hasLength(1));
+        expect(
+          savedRoutingRows.single.presetSlotId,
+          loadedPreset.slots.single.slot.id,
+        );
+      },
+    );
+
     test('saves mapping with perfPageIndex = 0 (not assigned)', () async {
       // 1. Create test algorithm
       await database.metadataDao.upsertAlgorithms([
@@ -317,8 +391,14 @@ void main() {
       );
 
       // 4. Save both
-      await database.presetsDao.saveFullPreset(templateDetails, isTemplate: true);
-      await database.presetsDao.saveFullPreset(regularDetails, isTemplate: false);
+      await database.presetsDao.saveFullPreset(
+        templateDetails,
+        isTemplate: true,
+      );
+      await database.presetsDao.saveFullPreset(
+        regularDetails,
+        isTemplate: false,
+      );
 
       // 5. Query templates
       final templates = await database.presetsDao.getTemplates();
@@ -401,8 +481,14 @@ void main() {
       );
 
       // 4. Save both
-      await database.presetsDao.saveFullPreset(templateDetails, isTemplate: true);
-      await database.presetsDao.saveFullPreset(regularDetails, isTemplate: false);
+      await database.presetsDao.saveFullPreset(
+        templateDetails,
+        isTemplate: true,
+      );
+      await database.presetsDao.saveFullPreset(
+        regularDetails,
+        isTemplate: false,
+      );
 
       // 5. Query non-templates
       final nonTemplates = await database.presetsDao.getNonTemplates();
@@ -651,7 +737,9 @@ void main() {
       expect(updatedPreset, isNotNull);
       expect(
         updatedPreset!.preset.lastModified.isAfter(initialTimestamp) ||
-        updatedPreset.preset.lastModified.isAtSameMomentAs(initialTimestamp),
+            updatedPreset.preset.lastModified.isAtSameMomentAs(
+              initialTimestamp,
+            ),
         isTrue,
         reason: 'lastModified should be updated or remain the same',
       );

@@ -6,6 +6,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/mcp/tool_registry.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/services/disting_controller.dart';
@@ -14,6 +16,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MockDistingController extends Mock implements DistingController {}
 
 class MockDistingCubit extends Mock implements DistingCubit {}
+
+class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
+
+class FakeAlgorithmInfo extends Fake implements AlgorithmInfo {}
 
 FullPresetSlot _slot({required int slotIndex, required String guid}) {
   return FullPresetSlot(
@@ -65,12 +71,18 @@ void main() {
   late MockDistingCubit cubit;
   late DistingTools tools;
 
+  setUpAll(() {
+    registerFallbackValue(FakeAlgorithmInfo());
+    registerFallbackValue(<int>[]);
+  });
+
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
     db = AppDatabase.forTesting(NativeDatabase.memory());
     cubit = MockDistingCubit();
     when(() => cubit.database).thenReturn(db);
+    when(() => cubit.state).thenReturn(const DistingState.initial());
     tools = DistingTools(MockDistingController(), cubit);
   });
 
@@ -162,5 +174,41 @@ void main() {
       expect(entry.inputSchema['properties'], contains('slot_indices'));
       expect(entry.timeout, const Duration(seconds: 120));
     });
+
+    test(
+      'device target returns failure when device apply emits failure',
+      () async {
+        final manager = MockDistingMidiManager();
+        when(() => cubit.requireDisting()).thenReturn(manager);
+        when(
+          () => manager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => manager.requestAddAlgorithm(
+            any<AlgorithmInfo>(),
+            any<List<int>>(),
+          ),
+        ).thenAnswer((_) async => throw Exception('MIDI send failed'));
+
+        await _seedAlgorithm(db, 'AAAA');
+        final templateId = await _savePreset(
+          db,
+          'Starter',
+          isTemplate: true,
+          slots: [_slot(slotIndex: 0, guid: 'AAAA')],
+        );
+
+        final response = await tools.applyTemplateToPreset({
+          'template_id': templateId,
+          'target': 'device',
+        });
+        final json = jsonDecode(response) as Map<String, dynamic>;
+
+        expect(json['success'], isFalse);
+        expect(json['error'], 'partial_apply');
+        expect(json['applied_slot_count'], 0);
+        expect(json['message'], contains('Connection lost during injection'));
+      },
+    );
   });
 }

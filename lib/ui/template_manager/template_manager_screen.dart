@@ -6,10 +6,23 @@ import 'package:nt_helper/models/template_metadata.dart';
 import 'package:nt_helper/ui/template_manager/template_apply_dialog.dart';
 import 'package:nt_helper/ui/template_manager/template_slot_selection_list.dart';
 
+typedef TemplateDeviceApplyCallback =
+    Future<void> Function(
+      FullPresetDetails template,
+      List<int> selectedIndices,
+    );
+
 class TemplateManagerScreen extends StatefulWidget {
   final AppDatabase? database;
+  final TemplateDeviceApplyCallback? onApplyDevice;
+  final VoidCallback? onCancelDeviceApply;
 
-  const TemplateManagerScreen({super.key, this.database});
+  const TemplateManagerScreen({
+    super.key,
+    this.database,
+    this.onApplyDevice,
+    this.onCancelDeviceApply,
+  });
 
   @override
   State<TemplateManagerScreen> createState() => _TemplateManagerScreenState();
@@ -85,6 +98,8 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
                 database: _database,
                 template: selected,
                 selectedSlots: _selectedSlots,
+                onApplyDevice: widget.onApplyDevice,
+                onCancelDeviceApply: widget.onCancelDeviceApply,
                 onSelectionChanged: (next) {
                   setState(() => _selectedSlots = next);
                 },
@@ -232,12 +247,16 @@ class _TemplateManagerDetail extends StatelessWidget {
   final AppDatabase database;
   final FullPresetDetails template;
   final Set<int> selectedSlots;
+  final TemplateDeviceApplyCallback? onApplyDevice;
+  final VoidCallback? onCancelDeviceApply;
   final ValueChanged<Set<int>> onSelectionChanged;
 
   const _TemplateManagerDetail({
     required this.database,
     required this.template,
     required this.selectedSlots,
+    this.onApplyDevice,
+    this.onCancelDeviceApply,
     required this.onSelectionChanged,
   });
 
@@ -293,33 +312,27 @@ class _TemplateManagerDetail extends StatelessWidget {
         const Divider(height: 1),
         Padding(
           padding: const EdgeInsets.all(12),
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            alignment: WrapAlignment.spaceBetween,
-            children: [
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Insert')),
-                  ButtonSegment(value: true, label: Text('Replace')),
-                ],
-                selected: const {false},
-                onSelectionChanged: (_) {},
-              ),
-              FilledButton.icon(
-                icon: const Icon(Icons.playlist_add),
-                label: const Text('Apply selected'),
-                onPressed: selectedSlots.isEmpty
-                    ? null
-                    : () => TemplateApplyDialog.show(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.playlist_add),
+              label: const Text('Apply selected'),
+              onPressed: selectedSlots.isEmpty
+                  ? null
+                  : () {
+                      final selected = selectedSlots.toList()..sort();
+                      TemplateApplyDialog.show(
                         context,
                         database: database,
                         template: template,
                         selectedIndices: selectedSlots,
-                      ),
-              ),
-            ],
+                        onApplyDevice: onApplyDevice == null
+                            ? null
+                            : () => onApplyDevice!(template, selected),
+                        onCancelDeviceApply: onCancelDeviceApply,
+                      );
+                    },
+            ),
           ),
         ),
       ],

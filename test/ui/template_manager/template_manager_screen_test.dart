@@ -115,4 +115,37 @@ void main() {
     expect(find.text('Apply template slots'), findsOneWidget);
     expect(find.textContaining('1 selected from Space Kit'), findsOneWidget);
   });
+
+  testWidgets('passes selected slots to current-device apply callback', (
+    tester,
+  ) async {
+    FullPresetDetails? appliedTemplate;
+    List<int>? appliedSlots;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TemplateManagerScreen(
+          database: db,
+          onApplyDevice: (template, selectedIndices) async {
+            appliedTemplate = template;
+            appliedSlots = selectedIndices;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reverb').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply selected'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Current device'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply selected').last);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Applied 1 slot'), findsOneWidget);
+    expect(appliedTemplate?.preset.name, 'Space Kit');
+    expect(appliedSlots, [1]);
+  });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:collection/collection.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 
@@ -57,6 +58,7 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
   int? _targetPresetId;
   bool _inFlight = false;
   bool _overwrite = false;
+  int _insertionOffset = 0;
   String? _message;
   String? _error;
 
@@ -86,7 +88,11 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
 
     try {
       if (_target == _TemplateApplyTarget.device) {
-        await (widget.onApplyDevice?.call() ?? Future<void>.value());
+        final applyDevice = widget.onApplyDevice;
+        if (applyDevice == null) {
+          throw StateError('Current device apply is unavailable.');
+        }
+        await applyDevice();
         if (!mounted) return;
         setState(() {
           _message = _appliedMessage(widget.selectedIndices.length);
@@ -104,7 +110,7 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
           templateId: widget.template.preset.id,
           targetPresetId: targetId,
           templateSlotIndices: selected,
-          insertionOffset: target.slots.length,
+          insertionOffset: _normalizedInsertionOffset(target),
           overwrite: _overwrite,
         );
         if (!mounted) return;
@@ -136,6 +142,33 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
     return 'Applied $count ${count == 1 ? 'slot' : 'slots'}';
   }
 
+  String _slotOffsetLabel(FullPresetDetails target, int offset) {
+    if (offset >= target.slots.length) {
+      return 'End (${target.slots.length})';
+    }
+    return 'Slot $offset';
+  }
+
+  int _normalizedInsertionOffset(FullPresetDetails target) {
+    final maxOffset = _maxInsertionOffset(target);
+    if (_insertionOffset > maxOffset) return maxOffset;
+    return _insertionOffset;
+  }
+
+  int _maxInsertionOffset(FullPresetDetails target) {
+    if (_overwrite && target.slots.isNotEmpty) {
+      return target.slots.length - 1;
+    }
+    return target.slots.length;
+  }
+
+  FullPresetDetails? _selectedTarget(List<FullPresetDetails> targets) {
+    final targetId =
+        _targetPresetId ?? (targets.isEmpty ? null : targets.first.preset.id);
+    if (targetId == null) return null;
+    return targets.firstWhereOrNull((target) => target.preset.id == targetId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<FullPresetDetails>>(
@@ -144,6 +177,11 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
         final targets = snapshot.data ?? const <FullPresetDetails>[];
         if (_targetPresetId == null && targets.isNotEmpty) {
           _targetPresetId = targets.first.preset.id;
+        }
+        final selectedTarget = _selectedTarget(targets);
+        if (selectedTarget != null &&
+            _insertionOffset > _maxInsertionOffset(selectedTarget)) {
+          _insertionOffset = _maxInsertionOffset(selectedTarget);
         }
 
         return PopScope(
@@ -165,8 +203,8 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
                 ),
                 const SizedBox(height: 12),
                 SegmentedButton<_TemplateApplyTarget>(
-                  segments: const [
-                    ButtonSegment(
+                  segments: [
+                    const ButtonSegment(
                       value: _TemplateApplyTarget.preset,
                       icon: Icon(Icons.library_music_outlined),
                       label: Text('Local preset'),
@@ -175,12 +213,17 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
                       value: _TemplateApplyTarget.device,
                       icon: Icon(Icons.memory),
                       label: Text('Current device'),
+                      enabled: widget.onApplyDevice != null,
                     ),
                   ],
                   selected: {_target},
                   onSelectionChanged: _inFlight
                       ? null
-                      : (next) => setState(() => _target = next.single),
+                      : (next) => setState(() {
+                          _target = next.single;
+                          _message = null;
+                          _error = null;
+                        }),
                 ),
                 const SizedBox(height: 12),
                 if (_target == _TemplateApplyTarget.preset)
@@ -203,17 +246,50 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
                               ? null
                               : (value) => setState(() {
                                   _targetPresetId = value;
+                                  _insertionOffset = 0;
                                 }),
                         ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _overwrite,
-                  onChanged: _inFlight
-                      ? null
-                      : (value) => setState(() => _overwrite = value),
-                  title: const Text('Replace existing slots'),
-                ),
+                if (_target == _TemplateApplyTarget.preset &&
+                    selectedTarget != null) ...[
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int>(
+                    initialValue: _normalizedInsertionOffset(selectedTarget),
+                    decoration: const InputDecoration(
+                      labelText: 'Start slot',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (
+                        var i = 0;
+                        i <= _maxInsertionOffset(selectedTarget);
+                        i++
+                      )
+                        DropdownMenuItem(
+                          value: i,
+                          child: Text(_slotOffsetLabel(selectedTarget, i)),
+                        ),
+                    ],
+                    onChanged: _inFlight
+                        ? null
+                        : (value) => setState(() {
+                            _insertionOffset = value ?? 0;
+                          }),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _overwrite,
+                    onChanged: _inFlight
+                        ? null
+                        : (value) => setState(() {
+                            _overwrite = value;
+                            _insertionOffset = _normalizedInsertionOffset(
+                              selectedTarget,
+                            );
+                          }),
+                    title: const Text('Replace existing slots'),
+                  ),
+                ],
                 if (_message != null)
                   Text(
                     _message!,

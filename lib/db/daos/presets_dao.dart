@@ -25,6 +25,7 @@ class FullPresetSlot {
   final Map<int, int> parameterValues; // paramNum -> value
   final Map<int, String> parameterStringValues; // paramNum -> stringValue
   final Map<int, PackedMappingData> mappings; // paramNum -> mappingData
+  final PresetRoutingEntry? routing;
 
   FullPresetSlot({
     required this.slot,
@@ -32,6 +33,7 @@ class FullPresetSlot {
     required this.parameterValues,
     required this.parameterStringValues,
     required this.mappings,
+    this.routing,
   });
 }
 
@@ -68,10 +70,11 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   }
 
   Future<List<FullPresetDetails>> getTemplates() async {
-    final templatePresets = await (select(presets)
-          ..where((p) => p.isTemplate.equals(true))
-          ..orderBy([(p) => OrderingTerm.asc(p.name)]))
-        .get();
+    final templatePresets =
+        await (select(presets)
+              ..where((p) => p.isTemplate.equals(true))
+              ..orderBy([(p) => OrderingTerm.asc(p.name)]))
+            .get();
     final List<FullPresetDetails> templates = [];
     for (final preset in templatePresets) {
       final details = await getFullPresetDetails(preset.id);
@@ -90,8 +93,9 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   }
 
   Future<List<FullPresetDetails>> getNonTemplates() async {
-    final nonTemplatePresets =
-        await (select(presets)..where((p) => p.isTemplate.equals(false))).get();
+    final nonTemplatePresets = await (select(
+      presets,
+    )..where((p) => p.isTemplate.equals(false))).get();
     final List<FullPresetDetails> nonTemplates = [];
     for (final preset in nonTemplatePresets) {
       final details = await getFullPresetDetails(preset.id);
@@ -171,9 +175,19 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
           ).map(
             (slotId, entries) => MapEntry(slotId, {
               for (var e in entries)
-                e.parameterNumber: e.packedData.copyWith(perfPageIndex: e.perfPageIndex),
+                e.parameterNumber: e.packedData.copyWith(
+                  perfPageIndex: e.perfPageIndex,
+                ),
             }),
           );
+
+      // Fetch routing information
+      final routingsQuery = select(presetRoutings)
+        ..where((r) => r.presetSlotId.isIn(slotIds));
+      final routingEntries = await routingsQuery.get();
+      final routingBySlot = {
+        for (final routing in routingEntries) routing.presetSlotId: routing,
+      };
 
       // Assemble FullPresetSlot list
       final List<FullPresetSlot> fullSlots = [];
@@ -188,6 +202,7 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
               parameterValues: paramValuesBySlot[slotId] ?? {},
               parameterStringValues: paramStringValuesBySlot[slotId] ?? {},
               mappings: paramMappingsBySlot[slotId] ?? {},
+              routing: routingBySlot[slotId],
             ),
           );
         } else {
@@ -294,6 +309,10 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
             presetMappings,
             (row) => row.presetSlotId.equals(slotId),
           );
+          batch.deleteWhere(
+            presetRoutings,
+            (row) => row.presetSlotId.equals(slotId),
+          );
         });
 
         // Batch insert new data using .insert() companions
@@ -339,6 +358,15 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
                     ),
                   )
                   .toList(),
+            );
+          }
+          if (fullSlot.routing != null) {
+            batch.insert(
+              presetRoutings,
+              PresetRoutingsCompanion.insert(
+                presetSlotId: Value(slotId),
+                routingInfoJson: fullSlot.routing!.routingInfoJson,
+              ),
             );
           }
         });
@@ -427,25 +455,26 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     }
 
     return transaction(() async {
-      final templateExists = await (select(presets)
-            ..where((p) => p.id.equals(templateId)))
-          .getSingleOrNull();
+      final templateExists = await (select(
+        presets,
+      )..where((p) => p.id.equals(templateId))).getSingleOrNull();
       if (templateExists == null) {
         throw StateError('Template preset $templateId not found.');
       }
-      final targetExists = await (select(presets)
-            ..where((p) => p.id.equals(targetPresetId)))
-          .getSingleOrNull();
+      final targetExists = await (select(
+        presets,
+      )..where((p) => p.id.equals(targetPresetId))).getSingleOrNull();
       if (targetExists == null) {
         throw StateError('Target preset $targetPresetId not found.');
       }
 
       // Snapshot the template's slot rows in slotIndex order so we can map
       // requested indices to source rows.
-      final templateSlotRows = await (select(presetSlots)
-            ..where((s) => s.presetId.equals(templateId))
-            ..orderBy([(s) => OrderingTerm.asc(s.slotIndex)]))
-          .get();
+      final templateSlotRows =
+          await (select(presetSlots)
+                ..where((s) => s.presetId.equals(templateId))
+                ..orderBy([(s) => OrderingTerm.asc(s.slotIndex)]))
+              .get();
 
       for (final i in templateSlotIndices) {
         if (i < 0 || i >= templateSlotRows.length) {
@@ -458,36 +487,35 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       }
 
       // Snapshot child rows for the template's slots, keyed by source slot id.
-      final templateSlotIds =
-          templateSlotRows.map((s) => s.id).toList(growable: false);
+      final templateSlotIds = templateSlotRows
+          .map((s) => s.id)
+          .toList(growable: false);
       final tmplValues = templateSlotIds.isEmpty
           ? <PresetParameterValueEntry>[]
-          : await (select(presetParameterValues)
-                ..where((v) => v.presetSlotId.isIn(templateSlotIds)))
-              .get();
+          : await (select(
+              presetParameterValues,
+            )..where((v) => v.presetSlotId.isIn(templateSlotIds))).get();
       final tmplStrings = templateSlotIds.isEmpty
           ? <PresetParameterStringValueEntry>[]
-          : await (select(presetParameterStringValues)
-                ..where((v) => v.presetSlotId.isIn(templateSlotIds)))
-              .get();
+          : await (select(
+              presetParameterStringValues,
+            )..where((v) => v.presetSlotId.isIn(templateSlotIds))).get();
       final tmplMappings = templateSlotIds.isEmpty
           ? <PresetMappingEntry>[]
-          : await (select(presetMappings)
-                ..where((m) => m.presetSlotId.isIn(templateSlotIds)))
-              .get();
+          : await (select(
+              presetMappings,
+            )..where((m) => m.presetSlotId.isIn(templateSlotIds))).get();
       final tmplRoutings = templateSlotIds.isEmpty
           ? <PresetRoutingEntry>[]
-          : await (select(presetRoutings)
-                ..where((r) => r.presetSlotId.isIn(templateSlotIds)))
-              .get();
+          : await (select(
+              presetRoutings,
+            )..where((r) => r.presetSlotId.isIn(templateSlotIds))).get();
 
-      final tmplValuesBySlot =
-          <int, List<PresetParameterValueEntry>>{};
+      final tmplValuesBySlot = <int, List<PresetParameterValueEntry>>{};
       for (final v in tmplValues) {
         tmplValuesBySlot.putIfAbsent(v.presetSlotId, () => []).add(v);
       }
-      final tmplStringsBySlot =
-          <int, List<PresetParameterStringValueEntry>>{};
+      final tmplStringsBySlot = <int, List<PresetParameterStringValueEntry>>{};
       for (final v in tmplStrings) {
         tmplStringsBySlot.putIfAbsent(v.presetSlotId, () => []).add(v);
       }
@@ -506,9 +534,9 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       };
       final knownAlgoRows = neededGuids.isEmpty
           ? <AlgorithmEntry>[]
-          : await (select(algorithms)
-                ..where((a) => a.guid.isIn(neededGuids)))
-              .get();
+          : await (select(
+              algorithms,
+            )..where((a) => a.guid.isIn(neededGuids))).get();
       final knownGuids = knownAlgoRows.map((a) => a.guid).toSet();
 
       // Build the apply plan: keep templateSlotIndices in order; split into
@@ -528,13 +556,15 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       final appliedCount = appliedSourceRows.length;
 
       // Target slot space accounting.
-      final existingTargetSlots = await (select(presetSlots)
-            ..where((s) => s.presetId.equals(targetPresetId))
-            ..orderBy([(s) => OrderingTerm.asc(s.slotIndex)]))
-          .get();
+      final existingTargetSlots =
+          await (select(presetSlots)
+                ..where((s) => s.presetId.equals(targetPresetId))
+                ..orderBy([(s) => OrderingTerm.asc(s.slotIndex)]))
+              .get();
       final existingCount = existingTargetSlots.length;
-      final clampedOffset =
-          insertionOffset > existingCount ? existingCount : insertionOffset;
+      final clampedOffset = insertionOffset > existingCount
+          ? existingCount
+          : insertionOffset;
 
       const slotLimit = 32;
       // Space accounting uses the *unclamped* insertionOffset in replace mode
@@ -543,8 +573,8 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       // of silently being treated as "append starting at slot 5".
       final spaceNeeded = overwrite
           ? (insertionOffset + appliedCount > existingCount
-              ? insertionOffset + appliedCount
-              : existingCount)
+                ? insertionOffset + appliedCount
+                : existingCount)
           : existingCount + appliedCount;
       if (appliedCount > 0 && spaceNeeded > slotLimit) {
         throw TemplateSpaceException(
@@ -566,28 +596,30 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
           if (existing != null) {
             // Explicitly clear non-cascading children (PresetRoutings) and
             // cascading ones too (the slot row will be replaced).
-            await (delete(presetMappings)
-                  ..where((m) => m.presetSlotId.equals(existing.id)))
-                .go();
-            await (delete(presetRoutings)
-                  ..where((r) => r.presetSlotId.equals(existing.id)))
-                .go();
-            await (delete(presetSlots)
-                  ..where((s) => s.id.equals(existing.id)))
-                .go();
+            await (delete(
+              presetMappings,
+            )..where((m) => m.presetSlotId.equals(existing.id))).go();
+            await (delete(
+              presetRoutings,
+            )..where((r) => r.presetSlotId.equals(existing.id))).go();
+            await (delete(
+              presetSlots,
+            )..where((s) => s.id.equals(existing.id))).go();
           }
         }
       } else {
         // Insert mode: shift any existing slots at clampedOffset..end upward
         // by appliedCount. Shift from top down to avoid uniqueness clashes.
         if (appliedCount > 0) {
-          final toShift = existingTargetSlots
-              .where((s) => s.slotIndex >= clampedOffset)
-              .toList()
-            ..sort((a, b) => b.slotIndex.compareTo(a.slotIndex));
+          final toShift =
+              existingTargetSlots
+                  .where((s) => s.slotIndex >= clampedOffset)
+                  .toList()
+                ..sort((a, b) => b.slotIndex.compareTo(a.slotIndex));
           for (final row in toShift) {
-            await (update(presetSlots)..where((s) => s.id.equals(row.id)))
-                .write(
+            await (update(
+              presetSlots,
+            )..where((s) => s.id.equals(row.id))).write(
               PresetSlotsCompanion(
                 slotIndex: Value(row.slotIndex + appliedCount),
               ),
