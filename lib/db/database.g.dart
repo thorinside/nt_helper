@@ -2928,8 +2928,37 @@ class $PresetsTable extends Presets with TableInfo<$PresetsTable, PresetEntry> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, lastModified, isTemplate];
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _templateMetadataMeta = const VerificationMeta(
+    'templateMetadata',
+  );
+  @override
+  late final GeneratedColumn<String> templateMetadata = GeneratedColumn<String>(
+    'template_metadata',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    lastModified,
+    isTemplate,
+    category,
+    templateMetadata,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2968,6 +2997,21 @@ class $PresetsTable extends Presets with TableInfo<$PresetsTable, PresetEntry> {
         isTemplate.isAcceptableOrUnknown(data['is_template']!, _isTemplateMeta),
       );
     }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('template_metadata')) {
+      context.handle(
+        _templateMetadataMeta,
+        templateMetadata.isAcceptableOrUnknown(
+          data['template_metadata']!,
+          _templateMetadataMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2993,6 +3037,14 @@ class $PresetsTable extends Presets with TableInfo<$PresetsTable, PresetEntry> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_template'],
       )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      ),
+      templateMetadata: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_metadata'],
+      ),
     );
   }
 
@@ -3007,11 +3059,15 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
   final String name;
   final DateTime lastModified;
   final bool isTemplate;
+  final String? category;
+  final String? templateMetadata;
   const PresetEntry({
     required this.id,
     required this.name,
     required this.lastModified,
     required this.isTemplate,
+    this.category,
+    this.templateMetadata,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3020,6 +3076,12 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
     map['name'] = Variable<String>(name);
     map['last_modified'] = Variable<DateTime>(lastModified);
     map['is_template'] = Variable<bool>(isTemplate);
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
+    if (!nullToAbsent || templateMetadata != null) {
+      map['template_metadata'] = Variable<String>(templateMetadata);
+    }
     return map;
   }
 
@@ -3029,6 +3091,12 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
       name: Value(name),
       lastModified: Value(lastModified),
       isTemplate: Value(isTemplate),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
+      templateMetadata: templateMetadata == null && nullToAbsent
+          ? const Value.absent()
+          : Value(templateMetadata),
     );
   }
 
@@ -3042,6 +3110,8 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
       name: serializer.fromJson<String>(json['name']),
       lastModified: serializer.fromJson<DateTime>(json['lastModified']),
       isTemplate: serializer.fromJson<bool>(json['isTemplate']),
+      category: serializer.fromJson<String?>(json['category']),
+      templateMetadata: serializer.fromJson<String?>(json['templateMetadata']),
     );
   }
   @override
@@ -3052,6 +3122,8 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
       'name': serializer.toJson<String>(name),
       'lastModified': serializer.toJson<DateTime>(lastModified),
       'isTemplate': serializer.toJson<bool>(isTemplate),
+      'category': serializer.toJson<String?>(category),
+      'templateMetadata': serializer.toJson<String?>(templateMetadata),
     };
   }
 
@@ -3060,11 +3132,17 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
     String? name,
     DateTime? lastModified,
     bool? isTemplate,
+    Value<String?> category = const Value.absent(),
+    Value<String?> templateMetadata = const Value.absent(),
   }) => PresetEntry(
     id: id ?? this.id,
     name: name ?? this.name,
     lastModified: lastModified ?? this.lastModified,
     isTemplate: isTemplate ?? this.isTemplate,
+    category: category.present ? category.value : this.category,
+    templateMetadata: templateMetadata.present
+        ? templateMetadata.value
+        : this.templateMetadata,
   );
   PresetEntry copyWithCompanion(PresetsCompanion data) {
     return PresetEntry(
@@ -3076,6 +3154,10 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
       isTemplate: data.isTemplate.present
           ? data.isTemplate.value
           : this.isTemplate,
+      category: data.category.present ? data.category.value : this.category,
+      templateMetadata: data.templateMetadata.present
+          ? data.templateMetadata.value
+          : this.templateMetadata,
     );
   }
 
@@ -3085,13 +3167,22 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('lastModified: $lastModified, ')
-          ..write('isTemplate: $isTemplate')
+          ..write('isTemplate: $isTemplate, ')
+          ..write('category: $category, ')
+          ..write('templateMetadata: $templateMetadata')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, lastModified, isTemplate);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    lastModified,
+    isTemplate,
+    category,
+    templateMetadata,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3099,7 +3190,9 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
           other.id == this.id &&
           other.name == this.name &&
           other.lastModified == this.lastModified &&
-          other.isTemplate == this.isTemplate);
+          other.isTemplate == this.isTemplate &&
+          other.category == this.category &&
+          other.templateMetadata == this.templateMetadata);
 }
 
 class PresetsCompanion extends UpdateCompanion<PresetEntry> {
@@ -3107,29 +3200,39 @@ class PresetsCompanion extends UpdateCompanion<PresetEntry> {
   final Value<String> name;
   final Value<DateTime> lastModified;
   final Value<bool> isTemplate;
+  final Value<String?> category;
+  final Value<String?> templateMetadata;
   const PresetsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.lastModified = const Value.absent(),
     this.isTemplate = const Value.absent(),
+    this.category = const Value.absent(),
+    this.templateMetadata = const Value.absent(),
   });
   PresetsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
     this.lastModified = const Value.absent(),
     this.isTemplate = const Value.absent(),
+    this.category = const Value.absent(),
+    this.templateMetadata = const Value.absent(),
   }) : name = Value(name);
   static Insertable<PresetEntry> custom({
     Expression<int>? id,
     Expression<String>? name,
     Expression<DateTime>? lastModified,
     Expression<bool>? isTemplate,
+    Expression<String>? category,
+    Expression<String>? templateMetadata,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (lastModified != null) 'last_modified': lastModified,
       if (isTemplate != null) 'is_template': isTemplate,
+      if (category != null) 'category': category,
+      if (templateMetadata != null) 'template_metadata': templateMetadata,
     });
   }
 
@@ -3138,12 +3241,16 @@ class PresetsCompanion extends UpdateCompanion<PresetEntry> {
     Value<String>? name,
     Value<DateTime>? lastModified,
     Value<bool>? isTemplate,
+    Value<String?>? category,
+    Value<String?>? templateMetadata,
   }) {
     return PresetsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       lastModified: lastModified ?? this.lastModified,
       isTemplate: isTemplate ?? this.isTemplate,
+      category: category ?? this.category,
+      templateMetadata: templateMetadata ?? this.templateMetadata,
     );
   }
 
@@ -3162,6 +3269,12 @@ class PresetsCompanion extends UpdateCompanion<PresetEntry> {
     if (isTemplate.present) {
       map['is_template'] = Variable<bool>(isTemplate.value);
     }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (templateMetadata.present) {
+      map['template_metadata'] = Variable<String>(templateMetadata.value);
+    }
     return map;
   }
 
@@ -3171,7 +3284,9 @@ class PresetsCompanion extends UpdateCompanion<PresetEntry> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('lastModified: $lastModified, ')
-          ..write('isTemplate: $isTemplate')
+          ..write('isTemplate: $isTemplate, ')
+          ..write('category: $category, ')
+          ..write('templateMetadata: $templateMetadata')
           ..write(')'))
         .toString();
   }
@@ -9002,6 +9117,8 @@ typedef $$PresetsTableCreateCompanionBuilder =
       required String name,
       Value<DateTime> lastModified,
       Value<bool> isTemplate,
+      Value<String?> category,
+      Value<String?> templateMetadata,
     });
 typedef $$PresetsTableUpdateCompanionBuilder =
     PresetsCompanion Function({
@@ -9009,6 +9126,8 @@ typedef $$PresetsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<DateTime> lastModified,
       Value<bool> isTemplate,
+      Value<String?> category,
+      Value<String?> templateMetadata,
     });
 
 final class $$PresetsTableReferences
@@ -9060,6 +9179,16 @@ class $$PresetsTableFilterComposer
 
   ColumnFilters<bool> get isTemplate => $composableBuilder(
     column: $table.isTemplate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get templateMetadata => $composableBuilder(
+    column: $table.templateMetadata,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9117,6 +9246,16 @@ class $$PresetsTableOrderingComposer
     column: $table.isTemplate,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get templateMetadata => $composableBuilder(
+    column: $table.templateMetadata,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PresetsTableAnnotationComposer
@@ -9141,6 +9280,14 @@ class $$PresetsTableAnnotationComposer
 
   GeneratedColumn<bool> get isTemplate => $composableBuilder(
     column: $table.isTemplate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get templateMetadata => $composableBuilder(
+    column: $table.templateMetadata,
     builder: (column) => column,
   );
 
@@ -9202,11 +9349,15 @@ class $$PresetsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<DateTime> lastModified = const Value.absent(),
                 Value<bool> isTemplate = const Value.absent(),
+                Value<String?> category = const Value.absent(),
+                Value<String?> templateMetadata = const Value.absent(),
               }) => PresetsCompanion(
                 id: id,
                 name: name,
                 lastModified: lastModified,
                 isTemplate: isTemplate,
+                category: category,
+                templateMetadata: templateMetadata,
               ),
           createCompanionCallback:
               ({
@@ -9214,11 +9365,15 @@ class $$PresetsTableTableManager
                 required String name,
                 Value<DateTime> lastModified = const Value.absent(),
                 Value<bool> isTemplate = const Value.absent(),
+                Value<String?> category = const Value.absent(),
+                Value<String?> templateMetadata = const Value.absent(),
               }) => PresetsCompanion.insert(
                 id: id,
                 name: name,
                 lastModified: lastModified,
                 isTemplate: isTemplate,
+                category: category,
+                templateMetadata: templateMetadata,
               ),
           withReferenceMapper: (p0) => p0
               .map(

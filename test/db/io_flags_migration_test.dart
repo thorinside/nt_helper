@@ -17,8 +17,9 @@ void main() {
     });
 
     test('Fresh v10 schema includes ioFlags column', () async {
-      // Test that schema version 11 includes ioFlags column (incremented for ParameterOutputModeUsage table)
-      expect(database.schemaVersion, 11);
+      // Schema version was 11 when ParameterOutputModeUsage was added; it was
+      // bumped to 12 for Presets.category + Presets.templateMetadata.
+      expect(database.schemaVersion, 12);
 
       // Insert a test algorithm
       await database.into(database.algorithms).insert(

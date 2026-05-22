@@ -44,7 +44,8 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11; // Incremented to fix ParameterOutputModeUsage table creation
+  int get schemaVersion =>
+      12; // Adds Presets.category + Presets.templateMetadata for multi-algorithm templates
 
   // Access DAOs (Drift generates getters)
   // MetadataDao get metadataDao => MetadataDao(this); // This getter is generated
@@ -158,6 +159,20 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(parameterOutputModeUsage);
         } catch (e) {
           // Intentionally empty - table may already exist in some edge cases
+        }
+      }
+
+      // Migration for version 12: Add category + templateMetadata columns to presets table
+      if (from <= 11) {
+        try {
+          await m.addColumn(presets, presets.category);
+        } catch (e) {
+          // Intentionally empty - column may already exist in some edge cases
+        }
+        try {
+          await m.addColumn(presets, presets.templateMetadata);
+        } catch (e) {
+          // Intentionally empty - column may already exist in some edge cases
         }
       }
     },
