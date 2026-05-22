@@ -21,6 +21,58 @@ The Disting NT MCP (Model Context Protocol) API provides 15 individual, well-nam
 
 ## Tool Reference
 
+### Template Tools
+
+#### apply_template_to_preset
+
+Apply selected slots from a saved template to the connected device or to a saved local preset.
+
+**Parameters**:
+- `template_id` (optional, integer): Template preset id.
+- `template_name` (optional, string): Alternative to `template_id`; resolved by exact match, then case-insensitive exact match.
+- `slot_indices` (optional, array of integers): Template slot positions to apply. Omit to apply all slots. Duplicates are allowed.
+- `target` (optional, string): `device` or `preset`. Default: `device`.
+- `target_preset_id` (optional, integer): Required when `target` is `preset` unless `target_preset_name` is supplied.
+- `target_preset_name` (optional, string): Alternative to `target_preset_id`.
+- `insertion_offset` (optional, integer): Target slot index. Defaults to append for device mode and `0` for preset mode.
+- `overwrite` (optional, boolean): Replace target slots starting at `insertion_offset` instead of inserting. Default: `false`.
+
+```json
+{
+  "tool": "apply_template_to_preset",
+  "arguments": {
+    "template_name": "Space Kit",
+    "target": "preset",
+    "target_preset_name": "Live Set",
+    "slot_indices": [0, 2],
+    "insertion_offset": 4
+  }
+}
+```
+
+**Success response**:
+```json
+{
+  "success": true,
+  "target": "preset",
+  "target_preset_id": 42,
+  "applied_slot_count": 2,
+  "inserted_slot_indices": [4, 5],
+  "skipped_template_slot_indices": [],
+  "warning": null
+}
+```
+
+If the target would exceed the 32-slot device limit, the tool returns a structured error:
+
+```json
+{"success": false, "error": "space", "current": 31, "applied": 2, "limit": 32}
+```
+
+Device mode requires a connected Disting NT. If a device apply fails mid-operation, inspect the current device state with `show_preset`; hardware writes are not transactional.
+
+---
+
 ### Search Tools
 
 #### search_algorithms

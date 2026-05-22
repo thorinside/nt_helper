@@ -48,7 +48,8 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
     ParameterPageAssigner.buildCustomUISet(widget.slot.parameters);
 
     // Parameters handled by custom Step Sequencer UI (to exclude)
-    final customUIParameters = ParameterPageAssigner.getStepSequencerCustomUIParameters();
+    final customUIParameters =
+        ParameterPageAssigner.getStepSequencerCustomUIParameters();
 
     // Filter firmware pages to only include parameters not in custom UI
     _availableFirmwarePages = firmwarePages
@@ -56,10 +57,7 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
           final filteredParams = page.parameters
               .where((paramNum) => !customUIParameters.contains(paramNum))
               .toList();
-          return ParameterPage(
-            name: page.name,
-            parameters: filteredParams,
-          );
+          return ParameterPage(name: page.name, parameters: filteredParams);
         })
         .where((page) => page.parameters.isNotEmpty)
         .toList();
@@ -99,7 +97,10 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
         appBar: AppBar(
           title: const Text('Parameter Pages'),
           leading: IconButton(
-            icon: const Icon(Icons.close, semanticLabel: 'Close parameter pages'),
+            icon: const Icon(
+              Icons.close,
+              semanticLabel: 'Close parameter pages',
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
           bottom: TabBar(
@@ -130,7 +131,10 @@ class _ParameterPagesViewState extends State<ParameterPagesView>
             appBar: AppBar(
               title: const Text('Parameter Pages'),
               leading: IconButton(
-                icon: const Icon(Icons.close, semanticLabel: 'Close parameter pages'),
+                icon: const Icon(
+                  Icons.close,
+                  semanticLabel: 'Close parameter pages',
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               bottom: TabBar(
@@ -235,29 +239,32 @@ class _ParameterPageContent extends StatelessWidget {
       builder: (context, state) {
         // Get current slot and unit strings to refresh parameter values
         final data = state.maybeWhen(
-          synchronized: (
-            disting,
-            distingVersion,
-            firmwareVersion,
-            presetName,
-            algorithms,
-            slots,
-            unitStrings,
-            inputDevice,
-            outputDevice,
-            loading,
-            offline,
-            screenshot,
-            demo,
-            videoStream,
-            availableFirmwareUpdate,
-            perfPageItems,
-            isDirty,
-            renameConfirmationName,
-          ) {
-            final currentSlot = slotIndex < slots.length ? slots[slotIndex] : slot;
-            return (currentSlot, unitStrings);
-          },
+          synchronized:
+              (
+                disting,
+                distingVersion,
+                firmwareVersion,
+                presetName,
+                algorithms,
+                slots,
+                unitStrings,
+                inputDevice,
+                outputDevice,
+                loading,
+                offline,
+                screenshot,
+                demo,
+                videoStream,
+                availableFirmwareUpdate,
+                perfPageItems,
+                isDirty,
+                renameConfirmationName,
+              ) {
+                final currentSlot = slotIndex < slots.length
+                    ? slots[slotIndex]
+                    : slot;
+                return (currentSlot, unitStrings);
+              },
           orElse: () => (slot, <String>[]),
         );
 
@@ -266,6 +273,7 @@ class _ParameterPageContent extends StatelessWidget {
 
         // Use the familiar parameter editor UI
         return ListView.builder(
+          // ignore: deprecated_member_use
           cacheExtent: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           itemCount: parameterNumbers.length,
@@ -277,7 +285,9 @@ class _ParameterPageContent extends StatelessWidget {
             final value = currentSlot.values.elementAtOrNull(paramNum);
             final enumStrings = currentSlot.enums.elementAtOrNull(paramNum);
             final mapping = currentSlot.mappings.elementAtOrNull(paramNum);
-            final valueString = currentSlot.valueStrings.elementAtOrNull(paramNum);
+            final valueString = currentSlot.valueStrings.elementAtOrNull(
+              paramNum,
+            );
 
             // Skip if we don't have essential data
             if (parameter == null || value == null) {
@@ -285,14 +295,19 @@ class _ParameterPageContent extends StatelessWidget {
             }
 
             // Use filler/empty data if not available
-            final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
-            final safeValueString = valueString ?? ParameterValueString.filler();
+            final safeEnumStrings =
+                enumStrings ?? ParameterEnumStrings.filler();
+            final safeValueString =
+                valueString ?? ParameterValueString.filler();
 
             // For string-type parameters, don't fetch unit - they use value strings
             // The registry handles firmware version differences automatically
-            final shouldShowUnit =
-                !ParameterEditorRegistry.isStringTypeUnit(parameter.unit);
-            final unit = shouldShowUnit ? parameter.getUnitString(unitStrings) : null;
+            final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
+              parameter.unit,
+            );
+            final unit = shouldShowUnit
+                ? parameter.getUnitString(unitStrings)
+                : null;
 
             // Use the familiar ParameterEditorView widget
             return ParameterEditorView(
