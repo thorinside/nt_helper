@@ -25,6 +25,13 @@ sealed class MetadataSyncState with _$MetadataSyncState {
   // --- Preset Management Specific States ---
   const factory MetadataSyncState.savingPreset() = SavingPreset;
   const factory MetadataSyncState.loadingPreset() = LoadingPreset;
+  // Progress emission for a multi-slot template injection. `applied` is the
+  // number of template slots already sent to the device; `total` is the total
+  // requested. UI dialogs render `Adding $applied of $total…`.
+  const factory MetadataSyncState.injectingTemplate({
+    required int applied,
+    required int total,
+  }) = InjectingTemplate;
   const factory MetadataSyncState.presetSaveSuccess(String message) =
       PresetSaveSuccess;
   const factory MetadataSyncState.presetSaveFailure(String error) =
