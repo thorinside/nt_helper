@@ -16,7 +16,11 @@ FullPresetSlot _slot(int index, String guid) {
       algorithmGuid: guid,
       customName: 'Slot $index',
     ),
-    algorithm: AlgorithmEntry(guid: guid, name: 'Alg $guid', numSpecifications: 0),
+    algorithm: AlgorithmEntry(
+      guid: guid,
+      name: 'Alg $guid',
+      numSpecifications: 0,
+    ),
     parameterValues: {index: index + 100},
     parameterStringValues: {},
     mappings: {},
@@ -78,11 +82,26 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const ValueKey('template-name')), 'FX Pair');
-    await tester.enterText(find.byKey(const ValueKey('template-category')), 'Ambience');
-    await tester.enterText(find.byKey(const ValueKey('template-description')), 'Delay and reverb');
-    await tester.enterText(find.byKey(const ValueKey('template-tags')), 'wide, live');
-    await tester.enterText(find.byKey(const ValueKey('template-author')), 'Neal');
+    await tester.enterText(
+      find.byKey(const ValueKey('template-name')),
+      'FX Pair',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('template-category')),
+      'Ambience',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('template-description')),
+      'Delay and reverb',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('template-tags')),
+      'wide, live',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('template-author')),
+      'Neal',
+    );
     await tester.tap(find.byTooltip('Select all visible slots'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Create template'));

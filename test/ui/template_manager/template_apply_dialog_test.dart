@@ -15,7 +15,11 @@ FullPresetSlot _slot(int index, String guid) {
       slotIndex: index,
       algorithmGuid: guid,
     ),
-    algorithm: AlgorithmEntry(guid: guid, name: 'Alg $guid', numSpecifications: 0),
+    algorithm: AlgorithmEntry(
+      guid: guid,
+      name: 'Alg $guid',
+      numSpecifications: 0,
+    ),
     parameterValues: {index: index * 10},
     parameterStringValues: {},
     mappings: {},

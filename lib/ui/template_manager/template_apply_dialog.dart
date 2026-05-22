@@ -23,6 +23,7 @@ class TemplateApplyDialog extends StatefulWidget {
 
   static Future<void> show(
     BuildContext context, {
+    AppDatabase? database,
     required FullPresetDetails template,
     required Set<int> selectedIndices,
     Future<void> Function()? onApplyDevice,
@@ -35,6 +36,7 @@ class TemplateApplyDialog extends StatefulWidget {
         child: SizedBox(
           width: 560,
           child: TemplateApplyDialog(
+            database: database,
             template: template,
             selectedIndices: selectedIndices,
             onApplyDevice: onApplyDevice,
@@ -153,7 +155,7 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Apply Template',
+                  'Apply template slots',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 12),
@@ -185,7 +187,7 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
                   snapshot.connectionState == ConnectionState.waiting
                       ? const LinearProgressIndicator()
                       : DropdownButtonFormField<int>(
-                          value: _targetPresetId,
+                          initialValue: _targetPresetId,
                           decoration: const InputDecoration(
                             labelText: 'Target preset',
                             border: OutlineInputBorder(),

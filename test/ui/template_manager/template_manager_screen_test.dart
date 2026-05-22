@@ -100,4 +100,19 @@ void main() {
     expect(find.text('Delay'), findsNothing);
     expect(find.text('Reverb'), findsOneWidget);
   });
+
+  testWidgets('opens apply dialog for selected slots', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: TemplateManagerScreen(database: db)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Delay').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apply selected'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Apply template slots'), findsOneWidget);
+    expect(find.textContaining('1 selected from Space Kit'), findsOneWidget);
+  });
 }

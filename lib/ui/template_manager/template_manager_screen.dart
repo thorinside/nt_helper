@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/models/template_metadata.dart';
+import 'package:nt_helper/ui/template_manager/template_apply_dialog.dart';
 import 'package:nt_helper/ui/template_manager/template_slot_selection_list.dart';
 
 class TemplateManagerScreen extends StatefulWidget {
@@ -81,6 +82,7 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
                 },
               );
               final detail = _TemplateManagerDetail(
+                database: _database,
                 template: selected,
                 selectedSlots: _selectedSlots,
                 onSelectionChanged: (next) {
@@ -227,11 +229,13 @@ class _TemplateListTile extends StatelessWidget {
 }
 
 class _TemplateManagerDetail extends StatelessWidget {
+  final AppDatabase database;
   final FullPresetDetails template;
   final Set<int> selectedSlots;
   final ValueChanged<Set<int>> onSelectionChanged;
 
   const _TemplateManagerDetail({
+    required this.database,
     required this.template,
     required this.selectedSlots,
     required this.onSelectionChanged,
@@ -306,7 +310,14 @@ class _TemplateManagerDetail extends StatelessWidget {
               FilledButton.icon(
                 icon: const Icon(Icons.playlist_add),
                 label: const Text('Apply selected'),
-                onPressed: selectedSlots.isEmpty ? null : () {},
+                onPressed: selectedSlots.isEmpty
+                    ? null
+                    : () => TemplateApplyDialog.show(
+                        context,
+                        database: database,
+                        template: template,
+                        selectedIndices: selectedSlots,
+                      ),
               ),
             ],
           ),
