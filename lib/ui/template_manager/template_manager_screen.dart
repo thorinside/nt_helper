@@ -290,13 +290,6 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
         title: const Text('Template Manager'),
         actions: [
           IconButton(
-            tooltip: 'Load template from file',
-            icon: const Icon(Icons.file_open_outlined),
-            onPressed: _isApplying || _isImporting
-                ? null
-                : _loadTemplateFromFile,
-          ),
-          IconButton(
             tooltip: 'Refresh templates',
             icon: const Icon(Icons.refresh),
             onPressed: _isImporting ? null : _refresh,
