@@ -18,6 +18,7 @@ class CreateTemplateFromPresetDialog extends StatefulWidget {
 
   static Future<void> show(
     BuildContext context, {
+    AppDatabase? database,
     required FullPresetDetails source,
   }) {
     return showDialog<void>(
@@ -26,7 +27,10 @@ class CreateTemplateFromPresetDialog extends StatefulWidget {
         child: SizedBox(
           width: 720,
           height: 640,
-          child: CreateTemplateFromPresetDialog(source: source),
+          child: CreateTemplateFromPresetDialog(
+            database: database,
+            source: source,
+          ),
         ),
       ),
     );
@@ -116,6 +120,10 @@ class _CreateTemplateFromPresetDialogState
           ),
         );
       }
+
+      await _database.metadataDao.upsertAlgorithms(
+        copiedSlots.map((slot) => slot.algorithm).toList(growable: false),
+      );
 
       await _database.presetsDao.saveFullPreset(
         FullPresetDetails(

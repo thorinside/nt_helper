@@ -116,6 +116,49 @@ void main() {
     expect(find.textContaining('1 selected from Space Kit'), findsOneWidget);
   });
 
+  testWidgets(
+    'New from current preset opens creation dialog and saves template',
+    (tester) async {
+      final source = FullPresetDetails(
+        preset: PresetEntry(
+          id: -1,
+          name: 'Live Preset',
+          lastModified: DateTime(2026),
+          isTemplate: false,
+        ),
+        slots: [_slot(0, 'dely', 'Delay')],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TemplateManagerScreen(
+            database: db,
+            loadCurrentPresetSource: () async => source,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final createButton = find.byTooltip('New from current preset');
+      expect(createButton, findsOneWidget);
+
+      await tester.tap(createButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Create Template'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('template-slot-0')).last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('template-name')),
+        'Live Delay Template',
+      );
+      await tester.tap(find.text('Create template'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Live Delay Template'), findsWidgets);
+    },
+  );
+
   testWidgets('passes selected slots to current-device apply callback', (
     tester,
   ) async {

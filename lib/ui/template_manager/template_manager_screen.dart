@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/models/template_metadata.dart';
+import 'package:nt_helper/ui/template_manager/create_template_from_preset_dialog.dart';
 import 'package:nt_helper/ui/template_manager/template_apply_dialog.dart';
 import 'package:nt_helper/ui/template_manager/template_slot_selection_list.dart';
 
@@ -12,16 +13,20 @@ typedef TemplateDeviceApplyCallback =
       List<int> selectedIndices,
     );
 
+typedef CurrentPresetSourceLoader = Future<FullPresetDetails?> Function();
+
 class TemplateManagerScreen extends StatefulWidget {
   final AppDatabase? database;
   final TemplateDeviceApplyCallback? onApplyDevice;
   final VoidCallback? onCancelDeviceApply;
+  final CurrentPresetSourceLoader? loadCurrentPresetSource;
 
   const TemplateManagerScreen({
     super.key,
     this.database,
     this.onApplyDevice,
     this.onCancelDeviceApply,
+    this.loadCurrentPresetSource,
   });
 
   @override
@@ -47,6 +52,27 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
       _selected = null;
       _selectedSlots = {};
     });
+  }
+
+  Future<void> _createFromCurrentPreset() async {
+    final loader = widget.loadCurrentPresetSource;
+    if (loader == null) return;
+
+    final source = await loader();
+    if (!mounted) return;
+    if (source == null || source.slots.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No current preset slots to template.')),
+      );
+      return;
+    }
+
+    await CreateTemplateFromPresetDialog.show(
+      context,
+      database: _database,
+      source: source,
+    );
+    if (mounted) _refresh();
   }
 
   @override
@@ -76,7 +102,22 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
 
           final templates = snapshot.data ?? const <FullPresetDetails>[];
           if (templates.isEmpty) {
-            return const Center(child: Text('No templates found.'));
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('No templates found.'),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('New from current preset'),
+                    onPressed: widget.loadCurrentPresetSource == null
+                        ? null
+                        : () => _createFromCurrentPreset(),
+                  ),
+                ],
+              ),
+            );
           }
           final selected = _selected ?? templates.first;
           _selected ??= selected;
@@ -87,6 +128,9 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
               final list = _TemplateManagerList(
                 templates: templates,
                 selectedId: selected.preset.id,
+                canCreateFromCurrentPreset:
+                    widget.loadCurrentPresetSource != null,
+                onCreateFromCurrentPreset: () => _createFromCurrentPreset(),
                 onSelected: (template) {
                   setState(() {
                     _selected = template;
@@ -132,11 +176,15 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
 class _TemplateManagerList extends StatelessWidget {
   final List<FullPresetDetails> templates;
   final int selectedId;
+  final bool canCreateFromCurrentPreset;
+  final VoidCallback onCreateFromCurrentPreset;
   final ValueChanged<FullPresetDetails> onSelected;
 
   const _TemplateManagerList({
     required this.templates,
     required this.selectedId,
+    required this.canCreateFromCurrentPreset,
+    required this.onCreateFromCurrentPreset,
     required this.onSelected,
   });
 
@@ -163,7 +211,9 @@ class _TemplateManagerList extends StatelessWidget {
               IconButton(
                 tooltip: 'New from current preset',
                 icon: const Icon(Icons.add),
-                onPressed: null,
+                onPressed: canCreateFromCurrentPreset
+                    ? onCreateFromCurrentPreset
+                    : null,
               ),
               IconButton(
                 tooltip: 'Edit metadata',

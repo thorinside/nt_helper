@@ -335,6 +335,17 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       // 3. Add a final delay after all commands are sent
       await Future.delayed(const Duration(milliseconds: 100));
 
+      final refreshError = await _refreshAttachedDistingCubit();
+      if (refreshError != null) {
+        emit(
+          MetadataSyncState.presetLoadFailure(
+            "Preset '${preset.preset.name}' was sent to device, but the app "
+            "could not refresh device state: $refreshError",
+          ),
+        );
+        return;
+      }
+
       emit(
         MetadataSyncState.presetLoadSuccess(
           "Preset '${preset.preset.name}' sent to device.",
@@ -885,6 +896,17 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       await Future.delayed(const Duration(milliseconds: 100));
 
+      final refreshError = await _refreshAttachedDistingCubit();
+      if (refreshError != null) {
+        emit(
+          MetadataSyncState.presetLoadFailure(
+            "Template '${template.preset.name}' was injected to device, but "
+            "the app could not refresh device state: $refreshError",
+          ),
+        );
+        return;
+      }
+
       emit(
         MetadataSyncState.presetLoadSuccess(
           "Template '${template.preset.name}' injected to device. "
@@ -913,6 +935,17 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       emit(MetadataSyncState.presetLoadFailure(errorMessage));
     } finally {
       _isInjectionRunning = false;
+    }
+  }
+
+  Future<Object?> _refreshAttachedDistingCubit() async {
+    final distingCubit = _distingCubit;
+    if (distingCubit == null) return null;
+    try {
+      await distingCubit.refresh();
+      return null;
+    } catch (error) {
+      return error;
     }
   }
 

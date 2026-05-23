@@ -39,9 +39,12 @@ import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 
 import 'package:nt_helper/ui/cpu_monitor_widget.dart';
+import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/plugin_gallery_screen.dart';
+import 'package:nt_helper/ui/template_manager/current_preset_template_source.dart';
+import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 import 'package:nt_helper/ui/widgets/shortcut_help_overlay.dart';
 
 import 'package:nt_helper/util/extensions.dart';
@@ -1246,6 +1249,37 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     return !_platformService.isMobilePlatform() && width >= 1008;
   }
 
+  void _openTemplateManager(BuildContext context) {
+    final distingCubit = context.read<DistingCubit>();
+    final metadataCubit = MetadataSyncCubit(
+      distingCubit.database,
+      distingCubit,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TemplateManagerScreen(
+          database: distingCubit.database,
+          onApplyDevice: (template, selectedIndices) async {
+            await metadataCubit.applyTemplateToDevice(
+              template: template,
+              templateSlotIndices: selectedIndices,
+              manager: distingCubit.requireDisting(),
+            );
+            final state = metadataCubit.state;
+            if (state case PresetLoadFailure(error: final error)) {
+              throw StateError(error);
+            }
+          },
+          onCancelDeviceApply: metadataCubit.cancelInjection,
+          loadCurrentPresetSource: () async =>
+              fullPresetDetailsFromDistingState(distingCubit.state),
+        ),
+      ),
+    ).whenComplete(metadataCubit.close);
+  }
+
   BottomAppBar _buildBottomAppBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     bool isWideScreen = screenWidth > 900;
@@ -1338,6 +1372,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             final cubit = context.read<DistingCubit>();
                             _handleBrowsePresets(cubit);
                           },
+                  ),
+                  IconButton(
+                    tooltip: 'Template Manager',
+                    icon: const Icon(
+                      Icons.dashboard_customize,
+                      semanticLabel: 'Template Manager',
+                    ),
+                    onPressed: widget.loading
+                        ? null
+                        : () => _openTemplateManager(context),
                   ),
                   IconButton(
                     tooltip: 'Video',

@@ -5,14 +5,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/db/daos/metadata_dao.dart';
+import 'package:nt_helper/db/daos/presets_dao.dart';
+import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {}
 
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
+
+class MockAppDatabase extends Mock implements AppDatabase {}
+
+class MockMetadataDao extends Mock implements MetadataDao {}
+
+class MockPresetsDao extends Mock implements PresetsDao {}
 
 class MockPlatformInteractionService extends Mock
     implements PlatformInteractionService {}
@@ -22,6 +32,9 @@ void main() {
     late MockDistingCubit mockCubit;
     late MockDistingMidiManager mockMidiManager;
     late MockPlatformInteractionService mockPlatformService;
+    late MockAppDatabase mockDatabase;
+    late MockMetadataDao mockMetadataDao;
+    late MockPresetsDao mockPresetsDao;
 
     setUpAll(() {
       // Initialize MCP server service for tests to avoid initialization error
@@ -32,7 +45,14 @@ void main() {
       mockCubit = MockDistingCubit();
       mockMidiManager = MockDistingMidiManager();
       mockPlatformService = MockPlatformInteractionService();
+      mockDatabase = MockAppDatabase();
+      mockMetadataDao = MockMetadataDao();
+      mockPresetsDao = MockPresetsDao();
       when(() => mockCubit.checkpoints).thenReturn([]);
+      when(() => mockCubit.database).thenReturn(mockDatabase);
+      when(() => mockDatabase.metadataDao).thenReturn(mockMetadataDao);
+      when(() => mockDatabase.presetsDao).thenReturn(mockPresetsDao);
+      when(() => mockPresetsDao.getTemplates()).thenAnswer((_) async => []);
 
       // Initialize McpServerService with mock cubit
       McpServerService.initialize(distingCubit: mockCubit);
@@ -91,6 +111,7 @@ void main() {
 
       // Quick-action buttons should still be present
       expect(find.byTooltip('File Browser'), findsOneWidget);
+      expect(find.byTooltip('Template Manager'), findsOneWidget);
       expect(find.byTooltip('Perform'), findsOneWidget);
       expect(find.byTooltip('Plugin Manager'), findsOneWidget);
     });
@@ -146,8 +167,23 @@ void main() {
 
       // Quick-action buttons should be present regardless of platform
       expect(find.byTooltip('File Browser'), findsOneWidget);
+      expect(find.byTooltip('Template Manager'), findsOneWidget);
       expect(find.byTooltip('Perform'), findsOneWidget);
       expect(find.byTooltip('Plugin Manager'), findsOneWidget);
+    });
+
+    testWidgets('Template Manager shortcut pushes TemplateManagerScreen', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestWidget(isMobile: false, isOffline: false),
+      );
+
+      await tester.tap(find.byTooltip('Template Manager'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TemplateManagerScreen), findsOneWidget);
+      expect(find.text('Template Manager'), findsOneWidget);
     });
   });
 }

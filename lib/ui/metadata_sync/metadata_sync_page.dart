@@ -15,6 +15,7 @@ import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/debug_metadata_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/template_preview_dialog.dart';
+import 'package:nt_helper/ui/template_manager/current_preset_template_source.dart';
 import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 
 class MetadataSyncAnnouncementListener extends StatelessWidget {
@@ -315,6 +316,10 @@ class MetadataSyncPage extends StatelessWidget {
                                               },
                                           onCancelDeviceApply:
                                               metadataCubit.cancelInjection,
+                                          loadCurrentPresetSource: () async =>
+                                              fullPresetDetailsFromDistingState(
+                                                distingCubit.state,
+                                              ),
                                         ),
                                       ),
                                     );
@@ -1292,6 +1297,10 @@ class _TemplateListView extends StatelessWidget {
                                       },
                                   onCancelDeviceApply:
                                       metadataCubit.cancelInjection,
+                                  loadCurrentPresetSource: () async =>
+                                      fullPresetDetailsFromDistingState(
+                                        distingCubit.state,
+                                      ),
                                 ),
                               ),
                             );
@@ -1568,21 +1577,15 @@ class _TemplateListView extends StatelessWidget {
       if (!context.mounted) return;
     }
 
-    // Show the template preview dialog
-    final result = await TemplatePreviewDialog.show(
+    // Show the template preview dialog. Successful injection refreshes
+    // DistingCubit centrally in MetadataSyncCubit.applyTemplateToDevice().
+    await TemplatePreviewDialog.show(
       context,
       template,
       currentSlotCount,
       metadataSyncCubit,
       manager,
     );
-
-    // If injection succeeded, refresh the DistingCubit
-    if (result == true) {
-      // Trigger refresh of the DistingCubit to show the newly added algorithms
-      // Use the distingCubit parameter instead of reading from context
-      await distingCubit.refresh();
-    }
   }
 }
 

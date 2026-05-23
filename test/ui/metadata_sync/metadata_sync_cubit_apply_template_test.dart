@@ -1,14 +1,18 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../test_helpers/mock_midi_command.dart';
 
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
@@ -54,6 +58,56 @@ FullPresetDetails _template({
         ),
       ],
 );
+
+FullAlgorithmDetails _fullAlgorithmDetails(String guid, String name) {
+  return FullAlgorithmDetails(
+    algorithm: AlgorithmEntry(guid: guid, name: name, numSpecifications: 0),
+    specifications: [],
+    parameters: [],
+    parameterPages: [],
+    enums: {},
+  );
+}
+
+void _stubRefreshableDevice(
+  MockDistingMidiManager manager,
+  List<Algorithm> deviceAlgorithms, {
+  String presetName = 'Device Preset',
+}) {
+  when(
+    () => manager.requestNumAlgorithmsInPreset(),
+  ).thenAnswer((_) async => deviceAlgorithms.length);
+  when(() => manager.requestPresetName()).thenAnswer((_) async => presetName);
+  when(() => manager.requestParameterPages(any())).thenAnswer((invocation) {
+    final index = invocation.positionalArguments[0] as int;
+    return Future.value(ParameterPages(algorithmIndex: index, pages: []));
+  });
+  when(() => manager.requestNumberOfParameters(any())).thenAnswer((invocation) {
+    final index = invocation.positionalArguments[0] as int;
+    return Future.value(NumParameters(algorithmIndex: index, numParameters: 0));
+  });
+  when(() => manager.requestAlgorithmGuid(any())).thenAnswer((invocation) {
+    final index = invocation.positionalArguments[0] as int;
+    return Future.value(deviceAlgorithms[index]);
+  });
+  when(() => manager.requestAllParameterValues(any())).thenAnswer((invocation) {
+    final index = invocation.positionalArguments[0] as int;
+    return Future.value(AllParameterValues(algorithmIndex: index, values: []));
+  });
+}
+
+DistingStateSynchronized _synchronizedState(IDistingMidiManager manager) {
+  return DistingStateSynchronized(
+    disting: manager,
+    distingVersion: '1.10.0',
+    firmwareVersion: FirmwareVersion('1.10.0'),
+    presetName: 'Initial',
+    algorithms: const [],
+    slots: const [],
+    unitStrings: const [],
+    offline: true,
+  );
+}
 
 void main() {
   late MetadataSyncCubit cubit;
@@ -213,7 +267,184 @@ void main() {
     );
   });
 
+  group('loadPresetToDevice', () {
+    test(
+      'refreshes attached DistingCubit slots after replacing preset',
+      () async {
+        final deviceAlgorithms = <Algorithm>[
+          Algorithm(algorithmIndex: 0, guid: 'old', name: 'Old'),
+        ];
+        _stubRefreshableDevice(
+          mockManager,
+          deviceAlgorithms,
+          presetName: 'Replacement',
+        );
+        when(() => mockManager.requestNewPreset()).thenAnswer((_) async {
+          deviceAlgorithms.clear();
+        });
+        when(() => mockManager.requestAddAlgorithm(any(), any())).thenAnswer((
+          invocation,
+        ) async {
+          final info = invocation.positionalArguments[0] as AlgorithmInfo;
+          deviceAlgorithms.add(
+            Algorithm(
+              algorithmIndex: deviceAlgorithms.length,
+              guid: info.guid,
+              name: info.name,
+            ),
+          );
+        });
+        when(
+          () => mockManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSetPresetName(any()),
+        ).thenAnswer((_) async => {});
+        when(() => mockManager.requestSavePreset()).thenAnswer((_) async => {});
+        when(
+          () => mockMetadataDao.getFullAlgorithmDetails('guid-1'),
+        ).thenAnswer((_) async => _fullAlgorithmDetails('guid-1', 'Alg 1'));
+        when(
+          () => mockMetadataDao.getFullAlgorithmDetails('guid-2'),
+        ).thenAnswer((_) async => _fullAlgorithmDetails('guid-2', 'Alg 2'));
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => <String, int>{});
+        when(
+          () => mockPresetsDao.getAllPresets(),
+        ).thenAnswer((_) async => <PresetEntry>[]);
+
+        final distingCubit = DistingCubit(
+          mockDatabase,
+          midiCommand: MockMidiCommand(),
+        )..emit(_synchronizedState(mockManager));
+        final syncCubit = MetadataSyncCubit(mockDatabase, distingCubit);
+        addTearDown(syncCubit.close);
+        addTearDown(distingCubit.close);
+
+        await syncCubit.loadPresetToDevice(
+          _template(
+            name: 'Replacement',
+            slots: [
+              FullPresetSlot(
+                slot: const PresetSlotEntry(
+                  id: 1,
+                  presetId: 1,
+                  slotIndex: 0,
+                  algorithmGuid: 'guid-1',
+                ),
+                algorithm: const AlgorithmEntry(
+                  guid: 'guid-1',
+                  name: 'Alg 1',
+                  numSpecifications: 0,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
+              ),
+              FullPresetSlot(
+                slot: const PresetSlotEntry(
+                  id: 2,
+                  presetId: 1,
+                  slotIndex: 1,
+                  algorithmGuid: 'guid-2',
+                ),
+                algorithm: const AlgorithmEntry(
+                  guid: 'guid-2',
+                  name: 'Alg 2',
+                  numSpecifications: 0,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
+              ),
+            ],
+          ),
+          mockManager,
+        );
+
+        final refreshedState = distingCubit.state as DistingStateSynchronized;
+        expect(refreshedState.slots.map((slot) => slot.algorithm.guid), [
+          'guid-1',
+          'guid-2',
+        ]);
+      },
+    );
+  });
+
   group('applyTemplateToDevice', () {
+    test(
+      'refreshes attached DistingCubit slots after appending template',
+      () async {
+        final deviceAlgorithms = <Algorithm>[
+          Algorithm(algorithmIndex: 0, guid: 'old', name: 'Old'),
+        ];
+        _stubRefreshableDevice(mockManager, deviceAlgorithms);
+        when(() => mockManager.requestAddAlgorithm(any(), any())).thenAnswer((
+          invocation,
+        ) async {
+          final info = invocation.positionalArguments[0] as AlgorithmInfo;
+          deviceAlgorithms.add(
+            Algorithm(
+              algorithmIndex: deviceAlgorithms.length,
+              guid: info.guid,
+              name: info.name,
+            ),
+          );
+        });
+        when(
+          () => mockManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMetadataDao.getFullAlgorithmDetails('guid-1'),
+        ).thenAnswer((_) async => _fullAlgorithmDetails('guid-1', 'Alg 1'));
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => <String, int>{});
+        when(
+          () => mockPresetsDao.getAllPresets(),
+        ).thenAnswer((_) async => <PresetEntry>[]);
+
+        final distingCubit = DistingCubit(
+          mockDatabase,
+          midiCommand: MockMidiCommand(),
+        )..emit(_synchronizedState(mockManager));
+        final syncCubit = MetadataSyncCubit(mockDatabase, distingCubit);
+        addTearDown(syncCubit.close);
+        addTearDown(distingCubit.close);
+
+        await syncCubit.applyTemplateToDevice(
+          template: _template(),
+          templateSlotIndices: const [0],
+          manager: mockManager,
+        );
+
+        final refreshedState = distingCubit.state as DistingStateSynchronized;
+        expect(refreshedState.slots.map((slot) => slot.algorithm.guid), [
+          'old',
+          'guid-1',
+        ]);
+      },
+    );
+
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'emits progress states injectingTemplate(applied, total) during apply',
       build: () {
