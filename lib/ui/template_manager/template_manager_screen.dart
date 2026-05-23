@@ -424,7 +424,7 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Drop template JSON to load',
+                      'Drop template JSON to import',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
