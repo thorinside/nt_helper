@@ -23,37 +23,42 @@ void main() {
       height: 40.0,
     );
 
-    RoutingEditorStateLoaded buildLoadedState() => RoutingEditorState.loaded(
-          physicalInputs: const [],
-          physicalOutputs: const [],
-          algorithms: [
-            RoutingAlgorithm(
-              id: algoId,
-              index: 0,
-              algorithm: Algorithm(
-                algorithmIndex: 0,
-                guid: 'test0',
-                name: 'Test Algorithm',
-              ),
-              inputPorts: const [],
-              outputPorts: const [],
-            ),
-          ],
-          connections: const [],
-          nodePositions: const {algoId: algoNodePos},
-        ) as RoutingEditorStateLoaded;
+    RoutingEditorStateLoaded buildLoadedState() =>
+        RoutingEditorState.loaded(
+              physicalInputs: const [],
+              physicalOutputs: const [],
+              algorithms: [
+                RoutingAlgorithm(
+                  id: algoId,
+                  index: 0,
+                  algorithm: Algorithm(
+                    algorithmIndex: 0,
+                    guid: 'test0',
+                    name: 'Test Algorithm',
+                  ),
+                  inputPorts: const [],
+                  outputPorts: const [],
+                ),
+              ],
+              connections: const [],
+              nodePositions: const {algoId: algoNodePos},
+            )
+            as RoutingEditorStateLoaded;
 
     Future<void> initWithSetting({required bool autoCenter}) async {
       // Reseed prefs and force the singleton to pick them up.
-      SharedPreferences.setMockInitialValues(
-        {'auto_center_on_selection': autoCenter},
-      );
+      SharedPreferences.setMockInitialValues({
+        'auto_center_on_selection': autoCenter,
+      });
       await SettingsService().init();
 
       mockDistingCubit = _MockDistingCubit();
-      when(() => mockDistingCubit.stream)
-          .thenAnswer((_) => const Stream.empty());
-      when(() => mockDistingCubit.state).thenReturn(const DistingState.initial());
+      when(
+        () => mockDistingCubit.stream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockDistingCubit.state,
+      ).thenReturn(const DistingState.initial());
       cubit = RoutingEditorCubit(mockDistingCubit);
       cubit.emit(buildLoadedState());
     }
@@ -86,23 +91,28 @@ void main() {
       expect(state.cascadeScrollTarget, isNull);
     });
 
-    test('default (no key persisted) auto-centers, preserving prior behavior',
-        () async {
-      // No 'auto_center_on_selection' key — getter returns default true.
-      SharedPreferences.setMockInitialValues({});
-      await SettingsService().init();
+    test(
+      'default (no key persisted) auto-centers, preserving prior behavior',
+      () async {
+        // No 'auto_center_on_selection' key — getter returns default true.
+        SharedPreferences.setMockInitialValues({});
+        await SettingsService().init();
 
-      mockDistingCubit = _MockDistingCubit();
-      when(() => mockDistingCubit.stream)
-          .thenAnswer((_) => const Stream.empty());
-      when(() => mockDistingCubit.state).thenReturn(const DistingState.initial());
-      cubit = RoutingEditorCubit(mockDistingCubit);
-      cubit.emit(buildLoadedState());
+        mockDistingCubit = _MockDistingCubit();
+        when(
+          () => mockDistingCubit.stream,
+        ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockDistingCubit.state,
+        ).thenReturn(const DistingState.initial());
+        cubit = RoutingEditorCubit(mockDistingCubit);
+        cubit.emit(buildLoadedState());
 
-      cubit.setFocusedAlgorithm(algoId);
+        cubit.setFocusedAlgorithm(algoId);
 
-      final state = cubit.state as RoutingEditorStateLoaded;
-      expect(state.cascadeScrollTarget, equals(const Offset(140.0, 220.0)));
-    });
+        final state = cubit.state as RoutingEditorStateLoaded;
+        expect(state.cascadeScrollTarget, equals(const Offset(140.0, 220.0)));
+      },
+    );
   });
 }

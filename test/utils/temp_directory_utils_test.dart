@@ -31,15 +31,17 @@ void main() {
         expect(dir.path, Directory.systemTemp.path);
       });
 
-      test('falls back when primary throws MissingPlatformDirectoryException',
-          () async {
-        final dir = await TempDirectoryUtils.getWritableTempDirectory(
-          primaryProvider: () async =>
-              throw MissingPlatformDirectoryException('no temp dir'),
-          fallbackProvider: () => Directory.systemTemp,
-        );
-        expect(dir.path, Directory.systemTemp.path);
-      });
+      test(
+        'falls back when primary throws MissingPlatformDirectoryException',
+        () async {
+          final dir = await TempDirectoryUtils.getWritableTempDirectory(
+            primaryProvider: () async =>
+                throw MissingPlatformDirectoryException('no temp dir'),
+            fallbackProvider: () => Directory.systemTemp,
+          );
+          expect(dir.path, Directory.systemTemp.path);
+        },
+      );
 
       test('falls back when primary throws generic exception', () async {
         final dir = await TempDirectoryUtils.getWritableTempDirectory(
@@ -62,19 +64,24 @@ void main() {
 
     group('isWritable', () {
       test('returns true for writable directory', () async {
-        final result = await TempDirectoryUtils.isWritable(Directory.systemTemp);
+        final result = await TempDirectoryUtils.isWritable(
+          Directory.systemTemp,
+        );
         expect(result, isTrue);
       });
 
       test('returns false for non-existent directory', () async {
-        final result =
-            await TempDirectoryUtils.isWritable(Directory('/nonexistent/path'));
+        final result = await TempDirectoryUtils.isWritable(
+          Directory('/nonexistent/path'),
+        );
         expect(result, isFalse);
       });
 
       test('cleans up probe file after write test', () async {
         await TempDirectoryUtils.isWritable(Directory.systemTemp);
-        final probe = File('${Directory.systemTemp.path}/.nt_helper_write_test');
+        final probe = File(
+          '${Directory.systemTemp.path}/.nt_helper_write_test',
+        );
         expect(probe.existsSync(), isFalse);
       });
     });

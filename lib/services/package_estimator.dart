@@ -99,10 +99,7 @@ class PackageEstimator {
 
     if (config.includeWavetables) {
       for (final wt in deps.wavetables) {
-        final folder = await sumFolder(
-          'wavetables/$wt',
-          'wavetables/$wt',
-        );
+        final folder = await sumFolder('wavetables/$wt', 'wavetables/$wt');
         if (folder != null) {
           add(folder);
         } else {
@@ -143,11 +140,7 @@ class PackageEstimator {
       for (final relPath in deps.sampleFiles) {
         final size = await sumFile('samples/$relPath');
         if (size != null) {
-          add(FolderSize(
-            path: 'samples/$relPath',
-            fileCount: 1,
-            bytes: size,
-          ));
+          add(FolderSize(path: 'samples/$relPath', fileCount: 1, bytes: size));
         } else {
           warnings.add('Sample not found: samples/$relPath');
         }
@@ -155,11 +148,7 @@ class PackageEstimator {
       for (final s in deps.granulatorSamples) {
         final size = await sumFile('samples/$s');
         if (size != null) {
-          add(FolderSize(
-            path: 'samples/$s',
-            fileCount: 1,
-            bytes: size,
-          ));
+          add(FolderSize(path: 'samples/$s', fileCount: 1, bytes: size));
         } else {
           warnings.add('Granulator sample not found: samples/$s');
         }
@@ -170,11 +159,7 @@ class PackageEstimator {
       for (final bank in deps.fmBanks) {
         final size = await sumFile('FMSYX/$bank');
         if (size != null) {
-          add(FolderSize(
-            path: 'FMSYX/$bank',
-            fileCount: 1,
-            bytes: size,
-          ));
+          add(FolderSize(path: 'FMSYX/$bank', fileCount: 1, bytes: size));
         } else {
           warnings.add('FM bank not found: FMSYX/$bank');
         }
@@ -185,11 +170,13 @@ class PackageEstimator {
       for (final p in deps.threePotPrograms) {
         final size = await sumFile('programs/three_pot/$p');
         if (size != null) {
-          add(FolderSize(
-            path: 'programs/three_pot/$p',
-            fileCount: 1,
-            bytes: size,
-          ));
+          add(
+            FolderSize(
+              path: 'programs/three_pot/$p',
+              fileCount: 1,
+              bytes: size,
+            ),
+          );
         } else {
           warnings.add('Three Pot program not found: programs/three_pot/$p');
         }
@@ -200,11 +187,7 @@ class PackageEstimator {
       for (final s in deps.luaScripts) {
         final size = await sumFile('programs/lua/$s');
         if (size != null) {
-          add(FolderSize(
-            path: 'programs/lua/$s',
-            fileCount: 1,
-            bytes: size,
-          ));
+          add(FolderSize(path: 'programs/lua/$s', fileCount: 1, bytes: size));
         } else {
           warnings.add('Lua script not found: programs/lua/$s');
         }
@@ -230,11 +213,7 @@ class PackageEstimator {
         if (!referenced) continue;
         final size = await sumFile(entry.value);
         if (size != null) {
-          add(FolderSize(
-            path: entry.value,
-            fileCount: 1,
-            bytes: size,
-          ));
+          add(FolderSize(path: entry.value, fileCount: 1, bytes: size));
         } else {
           warnings.add('Plugin not found: ${entry.value}');
         }

@@ -48,14 +48,13 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
 
     if (tools.isNotEmpty) {
       final toolsList = tools
-          .map((t) => <String, dynamic>{
-                'name': t.name,
-                'description': t.description,
-                'input_schema': {
-                  'type': 'object',
-                  ...t.inputSchema,
-                },
-              })
+          .map(
+            (t) => <String, dynamic>{
+              'name': t.name,
+              'description': t.description,
+              'input_schema': {'type': 'object', ...t.inputSchema},
+            },
+          )
           .toList();
       toolsList.last['cache_control'] = {'type': 'ephemeral'};
       body['tools'] = toolsList;
@@ -170,11 +169,13 @@ class AnthropicProvider with LlmErrorHandling implements LlmProvider {
       if (type == 'text') {
         textContent = (textContent ?? '') + (block['text'] as String);
       } else if (type == 'tool_use') {
-        toolCalls.add(LlmToolCall(
-          id: block['id'] as String,
-          name: block['name'] as String,
-          arguments: block['input'] as Map<String, dynamic>,
-        ));
+        toolCalls.add(
+          LlmToolCall(
+            id: block['id'] as String,
+            name: block['name'] as String,
+            arguments: block['input'] as Map<String, dynamic>,
+          ),
+        );
       }
     }
 

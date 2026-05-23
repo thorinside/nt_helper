@@ -143,25 +143,28 @@ void main() {
       },
     );
 
-    test('skips plugin collection when includeCommunityPlugins is false', () async {
-      // Arrange
-      final deps = PresetDependencies();
-      deps.pluginPaths['PLUGIN'] = 'programs/plug-ins/Plugin.elf';
+    test(
+      'skips plugin collection when includeCommunityPlugins is false',
+      () async {
+        // Arrange
+        final deps = PresetDependencies();
+        deps.pluginPaths['PLUGIN'] = 'programs/plug-ins/Plugin.elf';
 
-      final config = const PackageConfig(includeCommunityPlugins: false);
+        final config = const PackageConfig(includeCommunityPlugins: false);
 
-      // Act
-      final result = await fileCollector.collectDependencies(
-        deps,
-        config: config,
-      );
+        // Act
+        final result = await fileCollector.collectDependencies(
+          deps,
+          config: config,
+        );
 
-      // Assert
-      expect(result.files, isEmpty);
+        // Assert
+        expect(result.files, isEmpty);
 
-      // Should never try to read the plugin file
-      verifyNever(() => mockFileSystem.readFile(any()));
-    });
+        // Should never try to read the plugin file
+        verifyNever(() => mockFileSystem.readFile(any()));
+      },
+    );
 
     test('avoids duplicate collection when GUID is in both sets', () async {
       // Arrange
@@ -191,41 +194,34 @@ void main() {
       expect(result.warnings, isEmpty);
     });
 
-    test(
-      'does not package plugins that are in pluginPaths but not referenced '
-      'by the preset',
-      () async {
-        // Regression: `pluginPaths` is the full NT library, not just the
-        // plugins the preset uses. We must only package plugins whose
-        // GUID appears in `communityPlugins`.
-        final deps = PresetDependencies();
-        deps.pluginPaths['USED'] = 'programs/plug-ins/Used.o';
-        deps.pluginPaths['UNUSED_A'] = 'programs/plug-ins/UnusedA.o';
-        deps.pluginPaths['UNUSED_B'] = 'programs/plug-ins/UnusedB.o';
-        deps.communityPlugins.add('USED');
+    test('does not package plugins that are in pluginPaths but not referenced '
+        'by the preset', () async {
+      // Regression: `pluginPaths` is the full NT library, not just the
+      // plugins the preset uses. We must only package plugins whose
+      // GUID appears in `communityPlugins`.
+      final deps = PresetDependencies();
+      deps.pluginPaths['USED'] = 'programs/plug-ins/Used.o';
+      deps.pluginPaths['UNUSED_A'] = 'programs/plug-ins/UnusedA.o';
+      deps.pluginPaths['UNUSED_B'] = 'programs/plug-ins/UnusedB.o';
+      deps.communityPlugins.add('USED');
 
-        when(
-          () => mockFileSystem.readFile('programs/plug-ins/Used.o'),
-        ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+      when(
+        () => mockFileSystem.readFile('programs/plug-ins/Used.o'),
+      ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
 
-        final result = await fileCollector.collectDependencies(
-          deps,
-          config: const PackageConfig(includeCommunityPlugins: true),
-        );
+      final result = await fileCollector.collectDependencies(
+        deps,
+        config: const PackageConfig(includeCommunityPlugins: true),
+      );
 
-        expect(result.files, hasLength(1));
-        expect(result.files.first.relativePath, 'programs/plug-ins/Used.o');
-        expect(result.warnings, isEmpty);
+      expect(result.files, hasLength(1));
+      expect(result.files.first.relativePath, 'programs/plug-ins/Used.o');
+      expect(result.warnings, isEmpty);
 
-        // Unused plugins must not be read from the SD card.
-        verifyNever(
-          () => mockFileSystem.readFile('programs/plug-ins/UnusedA.o'),
-        );
-        verifyNever(
-          () => mockFileSystem.readFile('programs/plug-ins/UnusedB.o'),
-        );
-      },
-    );
+      // Unused plugins must not be read from the SD card.
+      verifyNever(() => mockFileSystem.readFile('programs/plug-ins/UnusedA.o'));
+      verifyNever(() => mockFileSystem.readFile('programs/plug-ins/UnusedB.o'));
+    });
 
     test('matches community plugin GUIDs with trailing-space padding', () {
       // Analyzer preserves trailing spaces on raw GUIDs
@@ -247,9 +243,9 @@ void main() {
             config: const PackageConfig(includeCommunityPlugins: true),
           )
           .then((result) {
-        expect(result.files, hasLength(1));
-        expect(result.warnings, isEmpty);
-      });
+            expect(result.files, hasLength(1));
+            expect(result.warnings, isEmpty);
+          });
     });
   });
 
@@ -282,7 +278,8 @@ void main() {
 
       expect(result.files, isEmpty);
       verifyNever(
-        () => mockFileSystem.listFiles(any(), recursive: any(named: 'recursive')),
+        () =>
+            mockFileSystem.listFiles(any(), recursive: any(named: 'recursive')),
       );
     });
 
@@ -299,7 +296,8 @@ void main() {
 
       expect(result.files, isEmpty);
       verifyNever(
-        () => mockFileSystem.listFiles(any(), recursive: any(named: 'recursive')),
+        () =>
+            mockFileSystem.listFiles(any(), recursive: any(named: 'recursive')),
       );
     });
 
@@ -368,14 +366,18 @@ void main() {
           recursive: any(named: 'recursive'),
         ),
       ).thenAnswer((_) async => <String>[]);
-      when(() => mockFileSystem.readFile('wavetables/MySaw.wav'))
-          .thenAnswer((_) async => wtBytes);
-      when(() => mockFileSystem.readFile('FMSYX/bank.syx'))
-          .thenAnswer((_) async => fmBytes);
-      when(() => mockFileSystem.readFile('programs/three_pot/prog.pot'))
-          .thenAnswer((_) async => potBytes);
-      when(() => mockFileSystem.readFile('programs/lua/script.lua'))
-          .thenAnswer((_) async => luaBytes);
+      when(
+        () => mockFileSystem.readFile('wavetables/MySaw.wav'),
+      ).thenAnswer((_) async => wtBytes);
+      when(
+        () => mockFileSystem.readFile('FMSYX/bank.syx'),
+      ).thenAnswer((_) async => fmBytes);
+      when(
+        () => mockFileSystem.readFile('programs/three_pot/prog.pot'),
+      ).thenAnswer((_) async => potBytes);
+      when(
+        () => mockFileSystem.readFile('programs/lua/script.lua'),
+      ).thenAnswer((_) async => luaBytes);
 
       final result = await fileCollector.collectDependencies(deps);
 
@@ -398,9 +400,8 @@ void main() {
       final sdBytes = Uint8List.fromList([0xBB]);
 
       when(
-        () => mockFileSystem.readFile(
-          'samples/Cheetah_MD16/MD16_BD_Gated_1.wav',
-        ),
+        () =>
+            mockFileSystem.readFile('samples/Cheetah_MD16/MD16_BD_Gated_1.wav'),
       ).thenAnswer((_) async => bdBytes);
       when(
         () => mockFileSystem.readFile(
@@ -416,8 +417,7 @@ void main() {
       expect(result.warnings, isEmpty);
     });
 
-    test('wavetable name with .wav extension is not double-extended',
-        () async {
+    test('wavetable name with .wav extension is not double-extended', () async {
       // Real preset (Multi_switch test.json) has
       //   "wavetable": "01-Gentle Speech.wav"
       // The slot field already includes the audio extension. The
@@ -452,8 +452,9 @@ void main() {
       final deps = PresetDependencies();
       deps.granulatorSamples.add('kick.wav');
 
-      when(() => mockFileSystem.readFile('samples/kick.wav'))
-          .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+      when(
+        () => mockFileSystem.readFile('samples/kick.wav'),
+      ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
 
       final result = await fileCollector.collectDependencies(deps);
 
@@ -467,8 +468,9 @@ void main() {
       final deps = PresetDependencies();
       deps.sampleFiles.add('drums/missing.wav');
 
-      when(() => mockFileSystem.readFile('samples/drums/missing.wav'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockFileSystem.readFile('samples/drums/missing.wav'),
+      ).thenAnswer((_) async => null);
 
       final result = await fileCollector.collectDependencies(deps);
 
@@ -483,16 +485,14 @@ void main() {
 
       // 51 MB — over the 50 MB cap
       final huge = Uint8List(51 * 1024 * 1024);
-      when(() => mockFileSystem.readFile('samples/huge.wav'))
-          .thenAnswer((_) async => huge);
+      when(
+        () => mockFileSystem.readFile('samples/huge.wav'),
+      ).thenAnswer((_) async => huge);
 
       final result = await fileCollector.collectDependencies(deps);
 
       expect(result.files, isEmpty);
-      expect(
-        result.warnings.any((w) => w.contains('oversized')),
-        isTrue,
-      );
+      expect(result.warnings.any((w) => w.contains('oversized')), isTrue);
     });
 
     test('excludes sample files when includeSamples is false', () async {
@@ -513,37 +513,44 @@ void main() {
   });
 
   group('FileCollector - de-dup guard', () {
-    test('does not double-collect a file referenced via folder + path',
-        () async {
-      // Folder copy includes `kick.wav`; explicit `sampleFiles` entry also
-      // points at it. The single-file pass should short-circuit on the
-      // already-collected path.
-      final deps = PresetDependencies();
-      deps.sampleFolders.add('MD16_Kit');
-      deps.sampleFiles.add('MD16_Kit/kick.wav');
+    test(
+      'does not double-collect a file referenced via folder + path',
+      () async {
+        // Folder copy includes `kick.wav`; explicit `sampleFiles` entry also
+        // points at it. The single-file pass should short-circuit on the
+        // already-collected path.
+        final deps = PresetDependencies();
+        deps.sampleFolders.add('MD16_Kit');
+        deps.sampleFiles.add('MD16_Kit/kick.wav');
 
-      when(
-        () => mockFileSystem.listFiles(
-          'samples/MD16_Kit',
-          recursive: any(named: 'recursive'),
-        ),
-      ).thenAnswer(
-        (_) async => ['samples/MD16_Kit/kick.wav', 'samples/MD16_Kit/snare.wav'],
-      );
-      when(() => mockFileSystem.readFile('samples/MD16_Kit/kick.wav'))
-          .thenAnswer((_) async => Uint8List.fromList([1]));
-      when(() => mockFileSystem.readFile('samples/MD16_Kit/snare.wav'))
-          .thenAnswer((_) async => Uint8List.fromList([2]));
+        when(
+          () => mockFileSystem.listFiles(
+            'samples/MD16_Kit',
+            recursive: any(named: 'recursive'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            'samples/MD16_Kit/kick.wav',
+            'samples/MD16_Kit/snare.wav',
+          ],
+        );
+        when(
+          () => mockFileSystem.readFile('samples/MD16_Kit/kick.wav'),
+        ).thenAnswer((_) async => Uint8List.fromList([1]));
+        when(
+          () => mockFileSystem.readFile('samples/MD16_Kit/snare.wav'),
+        ).thenAnswer((_) async => Uint8List.fromList([2]));
 
-      final result = await fileCollector.collectDependencies(deps);
+        final result = await fileCollector.collectDependencies(deps);
 
-      final paths = result.files.map((f) => f.relativePath).toList();
-      expect(paths, hasLength(2));
-      // Each path appears exactly once.
-      expect(paths.toSet().length, 2);
-      expect(paths, contains('samples/MD16_Kit/kick.wav'));
-      expect(paths, contains('samples/MD16_Kit/snare.wav'));
-    });
+        final paths = result.files.map((f) => f.relativePath).toList();
+        expect(paths, hasLength(2));
+        // Each path appears exactly once.
+        expect(paths.toSet().length, 2);
+        expect(paths, contains('samples/MD16_Kit/kick.wav'));
+        expect(paths, contains('samples/MD16_Kit/snare.wav'));
+      },
+    );
 
     test('wavetable folder with many slices collects all of them', () async {
       // Regression guard: wavetables are folders of WAV slices. Earlier
@@ -563,8 +570,9 @@ void main() {
         ),
       ).thenAnswer((_) async => slicePaths);
       for (final p in slicePaths) {
-        when(() => mockFileSystem.readFile(p))
-            .thenAnswer((_) async => Uint8List.fromList([0x52, 0x49, 0x46, 0x46]));
+        when(
+          () => mockFileSystem.readFile(p),
+        ).thenAnswer((_) async => Uint8List.fromList([0x52, 0x49, 0x46, 0x46]));
       }
 
       final result = await fileCollector.collectDependencies(deps);
@@ -584,15 +592,19 @@ void main() {
           'MIDI',
           recursive: any(named: 'recursive'),
         ),
-      ).thenAnswer((_) async => [
-            'MIDI/Demo/song1.mid',
-            'MIDI/Demo/song2.mid',
-            'MIDI/Demo/notes.txt', // wrong extension — must be skipped
-          ]);
-      when(() => mockFileSystem.readFile('MIDI/Demo/song1.mid'))
-          .thenAnswer((_) async => Uint8List.fromList([0x4D, 0x54, 0x68, 0x64]));
-      when(() => mockFileSystem.readFile('MIDI/Demo/song2.mid'))
-          .thenAnswer((_) async => Uint8List.fromList([0x4D, 0x54, 0x68, 0x64]));
+      ).thenAnswer(
+        (_) async => [
+          'MIDI/Demo/song1.mid',
+          'MIDI/Demo/song2.mid',
+          'MIDI/Demo/notes.txt', // wrong extension — must be skipped
+        ],
+      );
+      when(
+        () => mockFileSystem.readFile('MIDI/Demo/song1.mid'),
+      ).thenAnswer((_) async => Uint8List.fromList([0x4D, 0x54, 0x68, 0x64]));
+      when(
+        () => mockFileSystem.readFile('MIDI/Demo/song2.mid'),
+      ).thenAnswer((_) async => Uint8List.fromList([0x4D, 0x54, 0x68, 0x64]));
 
       final result = await fileCollector.collectDependencies(deps);
 
@@ -602,8 +614,7 @@ void main() {
       expect(paths, isNot(contains('MIDI/Demo/notes.txt')));
     });
 
-    test('includeMidiTree=false skips MIDI tree even if flag is set',
-        () async {
+    test('includeMidiTree=false skips MIDI tree even if flag is set', () async {
       final deps = PresetDependencies();
       deps.bundleMidiTree = true;
 
@@ -614,38 +625,43 @@ void main() {
 
       expect(result.files, isEmpty);
       verifyNever(
-        () => mockFileSystem.listFiles('MIDI', recursive: any(named: 'recursive')),
+        () => mockFileSystem.listFiles(
+          'MIDI',
+          recursive: any(named: 'recursive'),
+        ),
       );
     });
 
-    test('bundleSclTree + bundleKbmTree collect their respective trees',
-        () async {
-      final deps = PresetDependencies();
-      deps.bundleSclTree = true;
-      deps.bundleKbmTree = true;
+    test(
+      'bundleSclTree + bundleKbmTree collect their respective trees',
+      () async {
+        final deps = PresetDependencies();
+        deps.bundleSclTree = true;
+        deps.bundleKbmTree = true;
 
-      when(
-        () => mockFileSystem.listFiles(
-          'scl',
-          recursive: any(named: 'recursive'),
-        ),
-      ).thenAnswer((_) async => ['scl/12tone.scl', 'scl/19tone.scl']);
-      when(
-        () => mockFileSystem.listFiles(
-          'kbm',
-          recursive: any(named: 'recursive'),
-        ),
-      ).thenAnswer((_) async => ['kbm/standard.kbm']);
-      when(() => mockFileSystem.readFile(any())).thenAnswer(
-        (_) async => Uint8List.fromList([0x21]),
-      );
+        when(
+          () => mockFileSystem.listFiles(
+            'scl',
+            recursive: any(named: 'recursive'),
+          ),
+        ).thenAnswer((_) async => ['scl/12tone.scl', 'scl/19tone.scl']);
+        when(
+          () => mockFileSystem.listFiles(
+            'kbm',
+            recursive: any(named: 'recursive'),
+          ),
+        ).thenAnswer((_) async => ['kbm/standard.kbm']);
+        when(
+          () => mockFileSystem.readFile(any()),
+        ).thenAnswer((_) async => Uint8List.fromList([0x21]));
 
-      final result = await fileCollector.collectDependencies(deps);
+        final result = await fileCollector.collectDependencies(deps);
 
-      final paths = result.files.map((f) => f.relativePath).toSet();
-      expect(paths, contains('scl/12tone.scl'));
-      expect(paths, contains('scl/19tone.scl'));
-      expect(paths, contains('kbm/standard.kbm'));
-    });
+        final paths = result.files.map((f) => f.relativePath).toSet();
+        expect(paths, contains('scl/12tone.scl'));
+        expect(paths, contains('scl/19tone.scl'));
+        expect(paths, contains('kbm/standard.kbm'));
+      },
+    );
   });
 }

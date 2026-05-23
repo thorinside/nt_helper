@@ -11,6 +11,7 @@ import 'package:nt_helper/ui/widgets/step_sequencer/step_grid_view.dart';
 
 // Mock classes
 class MockDistingCubit extends Mock implements DistingCubit {}
+
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
 void main() {
@@ -21,7 +22,7 @@ void main() {
   setUp(() {
     mockCubit = MockDistingCubit();
     mockManager = MockDistingMidiManager();
-    
+
     // Create test slot with parameters
     testSlot = Slot(
       algorithm: Algorithm(
@@ -104,18 +105,14 @@ void main() {
   Widget makeTestableWidget(Widget child) {
     return BlocProvider<DistingCubit>.value(
       value: mockCubit,
-      child: MaterialApp(
-        home: Scaffold(
-          body: child,
-        ),
-      ),
+      child: MaterialApp(home: Scaffold(body: child)),
     );
   }
 
   group('StepGridView', () {
     testWidgets('Drag gesture is enabled for Pitch mode', (tester) async {
       // State is already set in setUp, but we can override if needed
-      
+
       await tester.pumpWidget(
         makeTestableWidget(
           StepGridView(
@@ -158,15 +155,29 @@ void main() {
 
       // In StepGridView, the GestureDetector wrapping the SingleChildScrollView should have null callbacks
       final singleChildScrollView = find.byType(SingleChildScrollView);
-      final gestureDetector = find.ancestor(
-        of: singleChildScrollView,
-        matching: find.byType(GestureDetector),
-      ).first;
+      final gestureDetector = find
+          .ancestor(
+            of: singleChildScrollView,
+            matching: find.byType(GestureDetector),
+          )
+          .first;
 
       final widget = tester.widget<GestureDetector>(gestureDetector);
-      expect(widget.onPanStart, isNull, reason: 'onPanStart should be null in Pattern mode');
-      expect(widget.onPanUpdate, isNull, reason: 'onPanUpdate should be null in Pattern mode');
-      expect(widget.onPanEnd, isNull, reason: 'onPanEnd should be null in Pattern mode');
+      expect(
+        widget.onPanStart,
+        isNull,
+        reason: 'onPanStart should be null in Pattern mode',
+      );
+      expect(
+        widget.onPanUpdate,
+        isNull,
+        reason: 'onPanUpdate should be null in Pattern mode',
+      );
+      expect(
+        widget.onPanEnd,
+        isNull,
+        reason: 'onPanEnd should be null in Pattern mode',
+      );
     });
 
     testWidgets('Drag gesture is DISABLED for Ties mode', (tester) async {
@@ -184,13 +195,19 @@ void main() {
       );
 
       final singleChildScrollView = find.byType(SingleChildScrollView);
-      final gestureDetector = find.ancestor(
-        of: singleChildScrollView,
-        matching: find.byType(GestureDetector),
-      ).first;
+      final gestureDetector = find
+          .ancestor(
+            of: singleChildScrollView,
+            matching: find.byType(GestureDetector),
+          )
+          .first;
 
       final widget = tester.widget<GestureDetector>(gestureDetector);
-      expect(widget.onPanStart, isNull, reason: 'onPanStart should be null in Ties mode');
+      expect(
+        widget.onPanStart,
+        isNull,
+        reason: 'onPanStart should be null in Ties mode',
+      );
     });
   });
 }

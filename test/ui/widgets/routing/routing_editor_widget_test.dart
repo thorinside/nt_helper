@@ -111,7 +111,5 @@ void main() {
       // Verify hover state is managed (test passes if no exceptions thrown)
       expect(find.byType(RoutingEditorWidget), findsOneWidget);
     });
-
   });
-
 }

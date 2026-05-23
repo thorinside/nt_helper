@@ -23,7 +23,9 @@ class AlgorithmJsonExporter {
         final details = await dao.getFullAlgorithmDetails(algorithm.guid);
 
         // Skip algorithms with no parameters
-        if (details?.parameters == null || details!.parameters.isEmpty) continue;
+        if (details?.parameters == null || details!.parameters.isEmpty) {
+          continue;
+        }
 
         final Map<String, dynamic> algorithmData = {
           'guid': algorithm.guid,
@@ -123,7 +125,11 @@ class AlgorithmJsonExporter {
       final allParameters = await dao.getAllParameters();
       final guidsWithParams = allParameters.map((p) => p.algorithmGuid).toSet();
       final algorithms = allAlgorithms
-          .where((a) => a.guid == a.guid.toLowerCase() && guidsWithParams.contains(a.guid))
+          .where(
+            (a) =>
+                a.guid == a.guid.toLowerCase() &&
+                guidsWithParams.contains(a.guid),
+          )
           .toList();
       final factoryGuids = algorithms.map((a) => a.guid).toSet();
 
@@ -145,13 +151,14 @@ class AlgorithmJsonExporter {
           .toList();
       final parameterOutputModeUsage =
           (await database.select(database.parameterOutputModeUsage).get())
-          .where((p) => factoryGuids.contains(p.algorithmGuid))
-          .toList();
+              .where((p) => factoryGuids.contains(p.algorithmGuid))
+              .toList();
 
       // Build the complete export structure
       final Map<String, dynamic> exportJson = {
         'exportDate': DateTime.now().toIso8601String(),
-        'exportVersion': 2, // Incremented for ioFlags column in Parameters table
+        'exportVersion':
+            2, // Incremented for ioFlags column in Parameters table
         'exportType': 'full_metadata',
         'debugExport': true,
         'tables': {
@@ -200,7 +207,8 @@ class AlgorithmJsonExporter {
                   'unitId': p.unitId,
                   'powerOfTen': p.powerOfTen,
                   'rawUnitIndex': p.rawUnitIndex,
-                  'ioFlags': p.ioFlags, // I/O flags from firmware (null or 0-15)
+                  'ioFlags':
+                      p.ioFlags, // I/O flags from firmware (null or 0-15)
                 },
               )
               .toList(),
@@ -298,23 +306,33 @@ class AlgorithmJsonExporter {
       final allParameters = await dao.getAllParameters();
       final guidsWithParams = allParameters.map((p) => p.algorithmGuid).toSet();
       final algorithms = allAlgorithms
-          .where((a) => a.guid == a.guid.toLowerCase() && guidsWithParams.contains(a.guid))
+          .where(
+            (a) =>
+                a.guid == a.guid.toLowerCase() &&
+                guidsWithParams.contains(a.guid),
+          )
           .toList();
       final factoryGuids = algorithms.map((a) => a.guid).toSet();
 
       final specifications = (await dao.getAllSpecifications())
-          .where((s) => factoryGuids.contains(s.algorithmGuid)).toList();
+          .where((s) => factoryGuids.contains(s.algorithmGuid))
+          .toList();
       final parameters = allParameters
-          .where((p) => factoryGuids.contains(p.algorithmGuid)).toList();
+          .where((p) => factoryGuids.contains(p.algorithmGuid))
+          .toList();
       final parameterEnums = (await dao.getAllParameterEnums())
-          .where((e) => factoryGuids.contains(e.algorithmGuid)).toList();
+          .where((e) => factoryGuids.contains(e.algorithmGuid))
+          .toList();
       final parameterPages = (await dao.getAllParameterPages())
-          .where((p) => factoryGuids.contains(p.algorithmGuid)).toList();
+          .where((p) => factoryGuids.contains(p.algorithmGuid))
+          .toList();
       final parameterPageItems = (await dao.getAllParameterPageItems())
-          .where((i) => factoryGuids.contains(i.algorithmGuid)).toList();
+          .where((i) => factoryGuids.contains(i.algorithmGuid))
+          .toList();
       final parameterOutputModeUsage =
           (await database.select(database.parameterOutputModeUsage).get())
-          .where((p) => factoryGuids.contains(p.algorithmGuid)).toList();
+              .where((p) => factoryGuids.contains(p.algorithmGuid))
+              .toList();
 
       // Estimate size (rough approximation)
       final estimatedSizeKB =

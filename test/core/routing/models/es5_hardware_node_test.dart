@@ -26,26 +26,22 @@ void main() {
     group('firmware-aware bus methods', () {
       test('legacy firmware uses buses 29-30', () {
         expect(
-          ES5HardwareNode.leftAudioBusForFirmware(
-              hasExtendedAuxBuses: false),
+          ES5HardwareNode.leftAudioBusForFirmware(hasExtendedAuxBuses: false),
           equals(BusSpec.es5Min),
         );
         expect(
-          ES5HardwareNode.rightAudioBusForFirmware(
-              hasExtendedAuxBuses: false),
+          ES5HardwareNode.rightAudioBusForFirmware(hasExtendedAuxBuses: false),
           equals(BusSpec.es5Max),
         );
       });
 
       test('extended firmware uses buses 65-66', () {
         expect(
-          ES5HardwareNode.leftAudioBusForFirmware(
-              hasExtendedAuxBuses: true),
+          ES5HardwareNode.leftAudioBusForFirmware(hasExtendedAuxBuses: true),
           equals(BusSpec.es5MinExtended),
         );
         expect(
-          ES5HardwareNode.rightAudioBusForFirmware(
-              hasExtendedAuxBuses: true),
+          ES5HardwareNode.rightAudioBusForFirmware(hasExtendedAuxBuses: true),
           equals(BusSpec.es5MaxExtended),
         );
       });
@@ -55,8 +51,7 @@ void main() {
       late List<Port> ports;
 
       setUp(() {
-        ports = ES5HardwareNode.createInputPorts(
-            hasExtendedAuxBuses: false);
+        ports = ES5HardwareNode.createInputPorts(hasExtendedAuxBuses: false);
       });
 
       test('creates exactly 10 ports', () {
@@ -128,8 +123,7 @@ void main() {
       late List<Port> ports;
 
       setUp(() {
-        ports = ES5HardwareNode.createInputPorts(
-            hasExtendedAuxBuses: true);
+        ports = ES5HardwareNode.createInputPorts(hasExtendedAuxBuses: true);
       });
 
       test('creates exactly 10 ports', () {
@@ -198,7 +192,8 @@ void main() {
     group('getLeftAudioPort', () {
       test('returns L port with legacy bus value', () {
         final port = ES5HardwareNode.getLeftAudioPort(
-            hasExtendedAuxBuses: false);
+          hasExtendedAuxBuses: false,
+        );
         expect(port.id, equals('es5_L'));
         expect(port.name, equals('L'));
         expect(port.type, equals(PortType.audio));
@@ -209,7 +204,8 @@ void main() {
 
       test('returns L port with extended bus value', () {
         final port = ES5HardwareNode.getLeftAudioPort(
-            hasExtendedAuxBuses: true);
+          hasExtendedAuxBuses: true,
+        );
         expect(port.busValue, equals(65));
       });
     });
@@ -217,7 +213,8 @@ void main() {
     group('getRightAudioPort', () {
       test('returns R port with legacy bus value', () {
         final port = ES5HardwareNode.getRightAudioPort(
-            hasExtendedAuxBuses: false);
+          hasExtendedAuxBuses: false,
+        );
         expect(port.id, equals('es5_R'));
         expect(port.name, equals('R'));
         expect(port.type, equals(PortType.audio));
@@ -228,7 +225,8 @@ void main() {
 
       test('returns R port with extended bus value', () {
         final port = ES5HardwareNode.getRightAudioPort(
-            hasExtendedAuxBuses: true);
+          hasExtendedAuxBuses: true,
+        );
         expect(port.busValue, equals(66));
       });
     });
@@ -283,44 +281,60 @@ void main() {
     });
 
     group('integration', () {
-      test('all ports from createInputPorts match individual getters (legacy)',
-          () {
-        final allPorts = ES5HardwareNode.createInputPorts(
-            hasExtendedAuxBuses: false);
+      test(
+        'all ports from createInputPorts match individual getters (legacy)',
+        () {
+          final allPorts = ES5HardwareNode.createInputPorts(
+            hasExtendedAuxBuses: false,
+          );
 
-        expect(allPorts[0],
-            equals(ES5HardwareNode.getLeftAudioPort(
-                hasExtendedAuxBuses: false)));
-        expect(allPorts[1],
-            equals(ES5HardwareNode.getRightAudioPort(
-                hasExtendedAuxBuses: false)));
+          expect(
+            allPorts[0],
+            equals(
+              ES5HardwareNode.getLeftAudioPort(hasExtendedAuxBuses: false),
+            ),
+          );
+          expect(
+            allPorts[1],
+            equals(
+              ES5HardwareNode.getRightAudioPort(hasExtendedAuxBuses: false),
+            ),
+          );
 
-        for (int i = 1; i <= 8; i++) {
-          expect(allPorts[i + 1], equals(ES5HardwareNode.getNumberedPort(i)));
-        }
-      });
+          for (int i = 1; i <= 8; i++) {
+            expect(allPorts[i + 1], equals(ES5HardwareNode.getNumberedPort(i)));
+          }
+        },
+      );
 
       test(
-          'all ports from createInputPorts match individual getters (extended)',
-          () {
-        final allPorts = ES5HardwareNode.createInputPorts(
-            hasExtendedAuxBuses: true);
+        'all ports from createInputPorts match individual getters (extended)',
+        () {
+          final allPorts = ES5HardwareNode.createInputPorts(
+            hasExtendedAuxBuses: true,
+          );
 
-        expect(allPorts[0],
-            equals(ES5HardwareNode.getLeftAudioPort(
-                hasExtendedAuxBuses: true)));
-        expect(allPorts[1],
-            equals(ES5HardwareNode.getRightAudioPort(
-                hasExtendedAuxBuses: true)));
+          expect(
+            allPorts[0],
+            equals(ES5HardwareNode.getLeftAudioPort(hasExtendedAuxBuses: true)),
+          );
+          expect(
+            allPorts[1],
+            equals(
+              ES5HardwareNode.getRightAudioPort(hasExtendedAuxBuses: true),
+            ),
+          );
 
-        for (int i = 1; i <= 8; i++) {
-          expect(allPorts[i + 1], equals(ES5HardwareNode.getNumberedPort(i)));
-        }
-      });
+          for (int i = 1; i <= 8; i++) {
+            expect(allPorts[i + 1], equals(ES5HardwareNode.getNumberedPort(i)));
+          }
+        },
+      );
 
       test('L and R ports have bus values, numbered ports do not', () {
         final ports = ES5HardwareNode.createInputPorts(
-            hasExtendedAuxBuses: false);
+          hasExtendedAuxBuses: false,
+        );
         final lPort = ports[0];
         final rPort = ports[1];
         final numberedPorts = ports.sublist(2);
@@ -332,7 +346,8 @@ void main() {
 
       test('audio ports have different types than gate ports', () {
         final ports = ES5HardwareNode.createInputPorts(
-            hasExtendedAuxBuses: false);
+          hasExtendedAuxBuses: false,
+        );
         final audioPorts = ports.take(2);
         final gatePorts = ports.skip(2);
 

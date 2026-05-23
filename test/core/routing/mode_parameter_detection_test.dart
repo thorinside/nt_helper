@@ -150,7 +150,8 @@ void main() {
       // Create routing from slot
       final routing = AlgorithmRouting.fromSlot(
         slot,
-        algorithmUuid: 'test_outputmode_${DateTime.now().millisecondsSinceEpoch}',
+        algorithmUuid:
+            'test_outputmode_${DateTime.now().millisecondsSinceEpoch}',
       );
 
       // Find the output port for parameter 10 (controlled by mode parameter 20)
@@ -209,7 +210,8 @@ void main() {
 
       final routing = AlgorithmRouting.fromSlot(
         slot,
-        algorithmUuid: 'test_uncontrolled_${DateTime.now().millisecondsSinceEpoch}',
+        algorithmUuid:
+            'test_uncontrolled_${DateTime.now().millisecondsSinceEpoch}',
       );
 
       // Parameter 11 is not controlled by any mode parameter
@@ -222,28 +224,32 @@ void main() {
       expect(output11.outputMode, isNull);
     });
 
-    test('should fallback to pattern matching when outputModeMap is empty (AC-6, AC-9)', () {
-      // Create slot without outputModeMap but with mode parameters
-      final slot = _createLuaScriptSlot();
+    test(
+      'should fallback to pattern matching when outputModeMap is empty (AC-6, AC-9)',
+      () {
+        // Create slot without outputModeMap but with mode parameters
+        final slot = _createLuaScriptSlot();
 
-      final routing = AlgorithmRouting.fromSlot(
-        slot,
-        algorithmUuid: 'test_fallback_${DateTime.now().millisecondsSinceEpoch}',
-      );
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid:
+              'test_fallback_${DateTime.now().millisecondsSinceEpoch}',
+        );
 
-      // Should still detect mode parameters via pattern matching in offline mode
-      final gateOutput = routing.outputPorts.firstWhere(
-        (p) => p.name == 'Gate Out',
-        orElse: () => throw Exception('Gate Out not found'),
-      );
+        // Should still detect mode parameters via pattern matching in offline mode
+        final gateOutput = routing.outputPorts.firstWhere(
+          (p) => p.name == 'Gate Out',
+          orElse: () => throw Exception('Gate Out not found'),
+        );
 
-      // In offline mode with pattern matching, mode should be detected
-      expect(
-        gateOutput.modeParameterNumber,
-        isNotNull,
-        reason: 'Should fallback to pattern matching for mode detection',
-      );
-    });
+        // In offline mode with pattern matching, mode should be detected
+        expect(
+          gateOutput.modeParameterNumber,
+          isNotNull,
+          reason: 'Should fallback to pattern matching for mode detection',
+        );
+      },
+    );
 
     // Story 7.6: PolyAlgorithmRouting Tests (AC-7)
     test('should use outputModeMap in PolyAlgorithmRouting (AC-7)', () {
@@ -252,7 +258,8 @@ void main() {
       // Create routing from slot - PolyAlgorithmRouting should be selected
       final routing = AlgorithmRouting.fromSlot(
         slot,
-        algorithmUuid: 'test_poly_outputmode_${DateTime.now().millisecondsSinceEpoch}',
+        algorithmUuid:
+            'test_poly_outputmode_${DateTime.now().millisecondsSinceEpoch}',
       );
 
       // Find the voice output port for parameter 100 (controlled by mode parameter 200)
@@ -265,7 +272,8 @@ void main() {
       expect(
         voiceOutput.modeParameterNumber,
         equals(200),
-        reason: 'Poly algorithm mode parameter should be 200 from outputModeMap',
+        reason:
+            'Poly algorithm mode parameter should be 200 from outputModeMap',
       );
     });
 
@@ -293,7 +301,8 @@ void main() {
 
       final routing = AlgorithmRouting.fromSlot(
         slot,
-        algorithmUuid: 'test_poly_replace_${DateTime.now().millisecondsSinceEpoch}',
+        algorithmUuid:
+            'test_poly_replace_${DateTime.now().millisecondsSinceEpoch}',
       );
 
       final voiceOutput = routing.outputPorts.firstWhere(
@@ -307,28 +316,33 @@ void main() {
       );
     });
 
-    test('should fallback to pattern matching in offline PolyAlgorithmRouting (AC-6, AC-7)', () {
-      // Create poly slot without outputModeMap but with mode parameters
-      final slot = _createPolySlotWithoutOutputModeMap();
+    test(
+      'should fallback to pattern matching in offline PolyAlgorithmRouting (AC-6, AC-7)',
+      () {
+        // Create poly slot without outputModeMap but with mode parameters
+        final slot = _createPolySlotWithoutOutputModeMap();
 
-      final routing = AlgorithmRouting.fromSlot(
-        slot,
-        algorithmUuid: 'test_poly_fallback_${DateTime.now().millisecondsSinceEpoch}',
-      );
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid:
+              'test_poly_fallback_${DateTime.now().millisecondsSinceEpoch}',
+        );
 
-      // Should still detect mode parameters via pattern matching in offline mode
-      final pitchOutput = routing.outputPorts.firstWhere(
-        (p) => p.name.contains('Pitch'),
-        orElse: () => throw Exception('Pitch output not found'),
-      );
+        // Should still detect mode parameters via pattern matching in offline mode
+        final pitchOutput = routing.outputPorts.firstWhere(
+          (p) => p.name.contains('Pitch'),
+          orElse: () => throw Exception('Pitch output not found'),
+        );
 
-      // In offline mode with pattern matching, mode should be detected
-      expect(
-        pitchOutput.modeParameterNumber,
-        isNotNull,
-        reason: 'Poly algorithm should fallback to pattern matching for mode detection',
-      );
-    });
+        // In offline mode with pattern matching, mode should be detected
+        expect(
+          pitchOutput.modeParameterNumber,
+          isNotNull,
+          reason:
+              'Poly algorithm should fallback to pattern matching for mode detection',
+        );
+      },
+    );
   });
 }
 

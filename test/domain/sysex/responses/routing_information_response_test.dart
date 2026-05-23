@@ -136,10 +136,7 @@ void main() {
 
     test('format detection threshold at exactly 31 bytes', () {
       // 31 bytes = short format (data.length > 31 is false)
-      final shortPayload = Uint8List.fromList([
-        0x00,
-        ...List.filled(30, 0),
-      ]);
+      final shortPayload = Uint8List.fromList([0x00, ...List.filled(30, 0)]);
       expect(shortPayload.length, 31);
 
       final shortResponse = RoutingInformationResponse(shortPayload);
@@ -148,10 +145,7 @@ void main() {
 
       // 32 bytes = long format (data.length > 31 is true)
       // Need 61 bytes for full long format parse
-      final longPayload = Uint8List.fromList([
-        0x00,
-        ...List.filled(60, 0),
-      ]);
+      final longPayload = Uint8List.fromList([0x00, ...List.filled(60, 0)]);
       expect(longPayload.length, 61);
 
       final longResponse = RoutingInformationResponse(longPayload);

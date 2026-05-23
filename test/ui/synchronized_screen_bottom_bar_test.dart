@@ -38,10 +38,7 @@ void main() {
       McpServerService.initialize(distingCubit: mockCubit);
     });
 
-    Widget createTestWidget({
-      required bool isMobile,
-      required bool isOffline,
-    }) {
+    Widget createTestWidget({required bool isMobile, required bool isOffline}) {
       // Mock platform service response
       when(() => mockPlatformService.isMobilePlatform()).thenReturn(isMobile);
 
@@ -78,8 +75,9 @@ void main() {
       );
     }
 
-    testWidgets('Display mode buttons are not in bottom bar when online',
-        (tester) async {
+    testWidgets('Display mode buttons are not in bottom bar when online', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(isMobile: false, isOffline: false),
       );
@@ -98,47 +96,50 @@ void main() {
     });
 
     testWidgets(
-        'Offline mode does not show "Offline Data" button in bottom bar on desktop',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(isMobile: false, isOffline: true),
-      );
+      'Offline mode does not show "Offline Data" button in bottom bar on desktop',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(isMobile: false, isOffline: true),
+        );
 
-      // Offline data button moved to overflow menu only
-      expect(find.byTooltip('Offline Data'), findsNothing);
+        // Offline data button moved to overflow menu only
+        expect(find.byTooltip('Offline Data'), findsNothing);
 
-      // Verify desktop display mode buttons are NOT present
-      expect(find.byTooltip('Parameter View'), findsNothing);
-      expect(find.byTooltip('Algorithm UI'), findsNothing);
-      expect(find.byTooltip('Overview UI'), findsNothing);
-      expect(find.byTooltip('Overview VU Meters'), findsNothing);
+        // Verify desktop display mode buttons are NOT present
+        expect(find.byTooltip('Parameter View'), findsNothing);
+        expect(find.byTooltip('Algorithm UI'), findsNothing);
+        expect(find.byTooltip('Overview UI'), findsNothing);
+        expect(find.byTooltip('Overview VU Meters'), findsNothing);
 
-      // Verify mobile button is NOT present
-      expect(find.byTooltip('View Options'), findsNothing);
-    });
+        // Verify mobile button is NOT present
+        expect(find.byTooltip('View Options'), findsNothing);
+      },
+    );
 
     testWidgets(
-        'Offline mode does not show "Offline Data" button in bottom bar on mobile',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(isMobile: true, isOffline: true),
-      );
+      'Offline mode does not show "Offline Data" button in bottom bar on mobile',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(isMobile: true, isOffline: true),
+        );
 
-      // Offline data button moved to overflow menu only
-      expect(find.byTooltip('Offline Data'), findsNothing);
+        // Offline data button moved to overflow menu only
+        expect(find.byTooltip('Offline Data'), findsNothing);
 
-      // Verify mobile "View Options" button is NOT present
-      expect(find.byTooltip('View Options'), findsNothing);
+        // Verify mobile "View Options" button is NOT present
+        expect(find.byTooltip('View Options'), findsNothing);
 
-      // Verify desktop display mode buttons are NOT present
-      expect(find.byTooltip('Parameter View'), findsNothing);
-      expect(find.byTooltip('Algorithm UI'), findsNothing);
-      expect(find.byTooltip('Overview UI'), findsNothing);
-      expect(find.byTooltip('Overview VU Meters'), findsNothing);
-    });
+        // Verify desktop display mode buttons are NOT present
+        expect(find.byTooltip('Parameter View'), findsNothing);
+        expect(find.byTooltip('Algorithm UI'), findsNothing);
+        expect(find.byTooltip('Overview UI'), findsNothing);
+        expect(find.byTooltip('Overview VU Meters'), findsNothing);
+      },
+    );
 
-    testWidgets('Quick-action buttons render on both platforms',
-        (tester) async {
+    testWidgets('Quick-action buttons render on both platforms', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(isMobile: false, isOffline: false),
       );

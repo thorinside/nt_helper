@@ -57,12 +57,7 @@ Uint8List _buildNoteOff(int channel, int note, int velocity) {
 
 /// Builds a foreign SysEx message (non-Expert Sleepers manufacturer).
 Uint8List _buildForeignSysEx(List<int> manufacturerId, List<int> payload) {
-  return Uint8List.fromList([
-    0xF0,
-    ...manufacturerId,
-    ...payload,
-    0xF7,
-  ]);
+  return Uint8List.fromList([0xF0, ...manufacturerId, ...payload, 0xF7]);
 }
 
 /// Combines multiple MIDI messages into a single raw packet.
@@ -102,7 +97,8 @@ void _injectResponse(
   StreamController<MidiPacket> incoming,
   MidiDevice device,
   MockMidiCommand midi,
-}) _createScheduler({
+})
+_createScheduler({
   Duration messageInterval = Duration.zero,
   Duration defaultTimeout = const Duration(milliseconds: 200),
   int defaultMaxRetries = 1,
@@ -112,8 +108,9 @@ void _injectResponse(
   final device = _makeDevice('test-device');
 
   when(() => midi.onMidiDataReceived).thenAnswer((_) => incoming.stream);
-  when(() => midi.sendData(any(), deviceId: any(named: 'deviceId')))
-      .thenAnswer((_) {});
+  when(
+    () => midi.sendData(any(), deviceId: any(named: 'deviceId')),
+  ).thenAnswer((_) {});
 
   final scheduler = DistingMessageScheduler(
     midiCommand: midi,
@@ -125,12 +122,7 @@ void _injectResponse(
     defaultMaxRetries: defaultMaxRetries,
   );
 
-  return (
-    scheduler: scheduler,
-    incoming: incoming,
-    device: device,
-    midi: midi,
-  );
+  return (scheduler: scheduler, incoming: incoming, device: device, midi: midi);
 }
 
 // ---------------------------------------------------------------------------
@@ -172,7 +164,9 @@ void main() {
       );
       await Future.microtask(() {});
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
       final result1 = await future1;
@@ -189,7 +183,9 @@ void main() {
       );
       await Future.microtask(() {});
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x04],
       );
       final result2 = await future2;
@@ -211,9 +207,11 @@ void main() {
       // CC prepended to SysEx response in one packet
       final combined = _combineMessages([
         _buildCC(0, 20, 64),
-        _buildSysEx(
-          DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-        ),
+        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, [
+          0x00,
+          0x00,
+          0x08,
+        ]),
       ]);
       _injectRawBytes(incoming, device, combined);
 
@@ -234,9 +232,11 @@ void main() {
       await Future.microtask(() {});
 
       final combined = _combineMessages([
-        _buildSysEx(
-          DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-        ),
+        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, [
+          0x00,
+          0x00,
+          0x08,
+        ]),
         _buildCC(0, 20, 64),
       ]);
       _injectRawBytes(incoming, device, combined);
@@ -258,13 +258,13 @@ void main() {
       await Future.microtask(() {});
 
       final combined = _combineMessages([
-        _buildSysEx(
-          DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-        ),
+        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, [
+          0x00,
+          0x00,
+          0x08,
+        ]),
         _buildCC(0, 20, 64),
-        _buildSysEx(
-          DistingNTRespMessageType.respPresetName, [0x41, 0x00],
-        ),
+        _buildSysEx(DistingNTRespMessageType.respPresetName, [0x41, 0x00]),
       ]);
       _injectRawBytes(incoming, device, combined);
 
@@ -272,39 +272,42 @@ void main() {
       expect(result, isNotNull);
     });
 
-    test('CC packet during split SysEx buffering — buffer NOT corrupted',
-        () async {
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
+    test(
+      'CC packet during split SysEx buffering — buffer NOT corrupted',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respNumAlgorithms,
+        );
 
-      final future = scheduler.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-      );
-      await Future.microtask(() {});
+        final future = scheduler.sendRequest(
+          _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+          key,
+        );
+        await Future.microtask(() {});
 
-      // Split SysEx: first half (F0, no F7)
-      final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-      );
-      final firstHalf = fullSysEx.sublist(0, 5);
-      final secondHalf = fullSysEx.sublist(5);
+        // Split SysEx: first half (F0, no F7)
+        final fullSysEx = _buildSysEx(
+          DistingNTRespMessageType.respNumAlgorithms,
+          [0x00, 0x00, 0x08],
+        );
+        final firstHalf = fullSysEx.sublist(0, 5);
+        final secondHalf = fullSysEx.sublist(5);
 
-      _injectRawBytes(incoming, device, Uint8List.fromList(firstHalf));
-      await Future.microtask(() {});
+        _injectRawBytes(incoming, device, Uint8List.fromList(firstHalf));
+        await Future.microtask(() {});
 
-      // CC arrives during buffering — should be skipped
-      _injectRawBytes(incoming, device, _buildCC(0, 20, 64));
-      await Future.microtask(() {});
+        // CC arrives during buffering — should be skipped
+        _injectRawBytes(incoming, device, _buildCC(0, 20, 64));
+        await Future.microtask(() {});
 
-      // Second half completes the SysEx
-      _injectRawBytes(incoming, device, Uint8List.fromList(secondHalf));
+        // Second half completes the SysEx
+        _injectRawBytes(incoming, device, Uint8List.fromList(secondHalf));
 
-      final result = await future;
-      expect(result, isNotNull);
-    });
+        final result = await future;
+        expect(result, isNotNull);
+      },
+    );
 
     test('Multiple CC packets during split SysEx buffering', () async {
       final key = RequestKey(
@@ -319,7 +322,8 @@ void main() {
       await Future.microtask(() {});
 
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       final firstHalf = fullSysEx.sublist(0, 5);
       final secondHalf = fullSysEx.sublist(5);
@@ -377,7 +381,9 @@ void main() {
       await Future.microtask(() {});
 
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
 
@@ -398,7 +404,8 @@ void main() {
       await Future.microtask(() {});
 
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       final firstHalf = fullSysEx.sublist(0, 5);
       final secondHalf = fullSysEx.sublist(5);
@@ -430,9 +437,11 @@ void main() {
 
       final combined = _combineMessages([
         _buildNoteOn(0, 60, 100),
-        _buildSysEx(
-          DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-        ),
+        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, [
+          0x00,
+          0x00,
+          0x08,
+        ]),
         _buildNoteOff(0, 60, 0),
       ]);
       _injectRawBytes(incoming, device, combined);
@@ -459,34 +468,40 @@ void main() {
       incoming.close();
     });
 
-    test('Complete foreign SysEx while not buffering — ignored by parser',
-        () async {
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
+    test(
+      'Complete foreign SysEx while not buffering — ignored by parser',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respNumAlgorithms,
+        );
 
-      final future = scheduler.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-      );
-      await Future.microtask(() {});
+        final future = scheduler.sendRequest(
+          _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+          key,
+        );
+        await Future.microtask(() {});
 
-      // Foreign SysEx (Yamaha manufacturer ID 0x43)
-      _injectRawBytes(
-        incoming, device, _buildForeignSysEx([0x43], [0x10, 0x4C]),
-      );
-      await Future.microtask(() {});
+        // Foreign SysEx (Yamaha manufacturer ID 0x43)
+        _injectRawBytes(
+          incoming,
+          device,
+          _buildForeignSysEx([0x43], [0x10, 0x4C]),
+        );
+        await Future.microtask(() {});
 
-      // Our response still works
-      _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
-        [0x00, 0x00, 0x08],
-      );
+        // Our response still works
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respNumAlgorithms,
+          [0x00, 0x00, 0x08],
+        );
 
-      final result = await future;
-      expect(result, isNotNull);
-    });
+        final result = await future;
+        expect(result, isNotNull);
+      },
+    );
 
     test('Complete foreign SysEx during split SysEx buffering', () async {
       final key = RequestKey(
@@ -503,7 +518,8 @@ void main() {
       await Future.microtask(() {});
 
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       final firstHalf = fullSysEx.sublist(0, 5);
 
@@ -513,13 +529,17 @@ void main() {
 
       // Foreign SysEx arrives — has F0, so buffer is discarded
       _injectRawBytes(
-        incoming, device, _buildForeignSysEx([0x43], [0x10, 0x4C]),
+        incoming,
+        device,
+        _buildForeignSysEx([0x43], [0x10, 0x4C]),
       );
       await Future.microtask(() {});
 
       // Retry will send the request again; inject the full response
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
 
@@ -541,9 +561,11 @@ void main() {
 
       final combined = _combineMessages([
         _buildForeignSysEx([0x43], [0x10, 0x4C]),
-        _buildSysEx(
-          DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-        ),
+        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, [
+          0x00,
+          0x00,
+          0x08,
+        ]),
       ]);
       _injectRawBytes(incoming, device, combined);
 
@@ -566,9 +588,11 @@ void main() {
       final combined = _combineMessages([
         _buildForeignSysEx([0x43], [0x10]),
         _buildForeignSysEx([0x41], [0x20]),
-        _buildSysEx(
-          DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-        ),
+        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, [
+          0x00,
+          0x00,
+          0x08,
+        ]),
       ]);
       _injectRawBytes(incoming, device, combined);
 
@@ -608,7 +632,9 @@ void main() {
 
       // SysEx from different module (sysExId = 0x01)
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x04],
         sysExId: 0x01,
       );
@@ -616,7 +642,9 @@ void main() {
 
       // Our response with correct sysExId
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
 
@@ -639,7 +667,8 @@ void main() {
       await Future.microtask(() {});
 
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       final firstHalf = fullSysEx.sublist(0, 5);
 
@@ -648,7 +677,9 @@ void main() {
 
       // Different module's SysEx during our buffering — has F0, discards buffer
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x04],
         sysExId: 0x01,
       );
@@ -656,7 +687,9 @@ void main() {
 
       // Retry sends again; inject the full response
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
 
@@ -695,7 +728,8 @@ void main() {
       await Future.microtask(() {});
 
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       final firstHalf = fullSysEx.sublist(0, 5);
       final secondHalf = fullSysEx.sublist(5);
@@ -730,7 +764,9 @@ void main() {
       await Future.microtask(() {});
 
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
 
@@ -796,12 +832,12 @@ void main() {
       await Future.microtask(() {});
 
       final combined = _combineMessages([
-        _buildSysEx(
-          DistingNTRespMessageType.respPresetName, [0x41, 0x00],
-        ),
-        _buildSysEx(
-          DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-        ),
+        _buildSysEx(DistingNTRespMessageType.respPresetName, [0x41, 0x00]),
+        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, [
+          0x00,
+          0x00,
+          0x08,
+        ]),
       ]);
       _injectRawBytes(incoming, device, combined);
 
@@ -838,7 +874,9 @@ void main() {
       // The buffered orphaned F0 will be discarded when real response arrives
       // (because it has F0, triggering buffer reset)
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
 
@@ -885,16 +923,21 @@ void main() {
       await Future.microtask(() {});
 
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       final mid = fullSysEx.length ~/ 2;
 
       _injectRawBytes(
-        incoming, device, Uint8List.fromList(fullSysEx.sublist(0, mid)),
+        incoming,
+        device,
+        Uint8List.fromList(fullSysEx.sublist(0, mid)),
       );
       await Future.microtask(() {});
       _injectRawBytes(
-        incoming, device, Uint8List.fromList(fullSysEx.sublist(mid)),
+        incoming,
+        device,
+        Uint8List.fromList(fullSysEx.sublist(mid)),
       );
 
       final result = await future;
@@ -914,22 +957,26 @@ void main() {
       await Future.microtask(() {});
 
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       final third = fullSysEx.length ~/ 3;
 
       _injectRawBytes(
-        incoming, device,
+        incoming,
+        device,
         Uint8List.fromList(fullSysEx.sublist(0, third)),
       );
       await Future.microtask(() {});
       _injectRawBytes(
-        incoming, device,
+        incoming,
+        device,
         Uint8List.fromList(fullSysEx.sublist(third, third * 2)),
       );
       await Future.microtask(() {});
       _injectRawBytes(
-        incoming, device,
+        incoming,
+        device,
         Uint8List.fromList(fullSysEx.sublist(third * 2)),
       );
 
@@ -951,10 +998,12 @@ void main() {
 
       // First half of SysEx
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       _injectRawBytes(
-        incoming, device,
+        incoming,
+        device,
         Uint8List.fromList(fullSysEx.sublist(0, 5)),
       );
       await Future.microtask(() {});
@@ -986,22 +1035,25 @@ void main() {
 
       // Start buffering
       final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
+        DistingNTRespMessageType.respNumAlgorithms,
+        [0x00, 0x00, 0x08],
       );
       _injectRawBytes(
-        incoming, device, Uint8List.fromList(fullSysEx.sublist(0, 5)),
+        incoming,
+        device,
+        Uint8List.fromList(fullSysEx.sublist(0, 5)),
       );
       await Future.microtask(() {});
 
       // New F0 packet arrives (start of different SysEx) — should reset buffer
-      _injectRawBytes(
-        incoming, device, Uint8List.fromList([0xF0, 0x43, 0x10]),
-      );
+      _injectRawBytes(incoming, device, Uint8List.fromList([0xF0, 0x43, 0x10]));
       await Future.microtask(() {});
 
       // Retry: complete correct response
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
 
@@ -1044,17 +1096,16 @@ void main() {
       await Future.microtask(() {});
       _injectRawBytes(incoming, device, _buildNoteOn(0, 60, 100));
       await Future.microtask(() {});
-      _injectRawBytes(
-        incoming, device,
-        _buildForeignSysEx([0x43], [0x10]),
-      );
+      _injectRawBytes(incoming, device, _buildForeignSysEx([0x43], [0x10]));
       await Future.microtask(() {});
       _injectRawBytes(incoming, device, _buildCC(0, 2, 32));
       await Future.microtask(() {});
 
       // Our actual response
       _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
+        incoming,
+        device,
+        DistingNTRespMessageType.respNumAlgorithms,
         [0x00, 0x00, 0x08],
       );
       await Future.microtask(() {});
@@ -1064,81 +1115,89 @@ void main() {
       expect(result, isNotNull);
     });
 
-    test('Active request with heavy CC/Note traffic — response received',
-        () async {
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
+    test(
+      'Active request with heavy CC/Note traffic — response received',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respNumAlgorithms,
+        );
 
-      final future = scheduler.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-      );
-      await Future.microtask(() {});
+        final future = scheduler.sendRequest(
+          _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+          key,
+        );
+        await Future.microtask(() {});
 
-      // Flood with CC and Note messages
-      for (int i = 0; i < 20; i++) {
-        _injectRawBytes(incoming, device, _buildCC(0, i % 128, i % 128));
-        if (i % 3 == 0) {
-          _injectRawBytes(incoming, device, _buildNoteOn(0, i % 128, 100));
+        // Flood with CC and Note messages
+        for (int i = 0; i < 20; i++) {
+          _injectRawBytes(incoming, device, _buildCC(0, i % 128, i % 128));
+          if (i % 3 == 0) {
+            _injectRawBytes(incoming, device, _buildNoteOn(0, i % 128, 100));
+          }
         }
-      }
-      await Future.microtask(() {});
+        await Future.microtask(() {});
 
-      // Response arrives after flood
-      _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
-        [0x00, 0x00, 0x08],
-      );
+        // Response arrives after flood
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respNumAlgorithms,
+          [0x00, 0x00, 0x08],
+        );
 
-      final result = await future;
-      expect(result, isNotNull);
-    });
+        final result = await future;
+        expect(result, isNotNull);
+      },
+    );
 
     test(
-        'Split SysEx with interleaved CC + foreign SysEx — retry recovers',
-        () async {
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
+      'Split SysEx with interleaved CC + foreign SysEx — retry recovers',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respNumAlgorithms,
+        );
 
-      final future = scheduler.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-        maxRetries: 3,
-        timeout: const Duration(milliseconds: 500),
-      );
-      await Future.microtask(() {});
+        final future = scheduler.sendRequest(
+          _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+          key,
+          maxRetries: 3,
+          timeout: const Duration(milliseconds: 500),
+        );
+        await Future.microtask(() {});
 
-      // Start split SysEx
-      final fullSysEx = _buildSysEx(
-        DistingNTRespMessageType.respNumAlgorithms, [0x00, 0x00, 0x08],
-      );
-      _injectRawBytes(
-        incoming, device, Uint8List.fromList(fullSysEx.sublist(0, 5)),
-      );
-      await Future.microtask(() {});
+        // Start split SysEx
+        final fullSysEx = _buildSysEx(
+          DistingNTRespMessageType.respNumAlgorithms,
+          [0x00, 0x00, 0x08],
+        );
+        _injectRawBytes(
+          incoming,
+          device,
+          Uint8List.fromList(fullSysEx.sublist(0, 5)),
+        );
+        await Future.microtask(() {});
 
-      // CC during buffering — skipped
-      _injectRawBytes(incoming, device, _buildCC(0, 20, 64));
-      await Future.microtask(() {});
+        // CC during buffering — skipped
+        _injectRawBytes(incoming, device, _buildCC(0, 20, 64));
+        await Future.microtask(() {});
 
-      // Foreign SysEx — has F0, discards buffer
-      _injectRawBytes(
-        incoming, device, _buildForeignSysEx([0x43], [0x10]),
-      );
-      await Future.microtask(() {});
+        // Foreign SysEx — has F0, discards buffer
+        _injectRawBytes(incoming, device, _buildForeignSysEx([0x43], [0x10]));
+        await Future.microtask(() {});
 
-      // Retry: full correct response
-      _injectResponse(
-        incoming, device, DistingNTRespMessageType.respNumAlgorithms,
-        [0x00, 0x00, 0x08],
-      );
+        // Retry: full correct response
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respNumAlgorithms,
+          [0x00, 0x00, 0x08],
+        );
 
-      final result = await future;
-      expect(result, isNotNull);
-    });
+        final result = await future;
+        expect(result, isNotNull);
+      },
+    );
   });
 }

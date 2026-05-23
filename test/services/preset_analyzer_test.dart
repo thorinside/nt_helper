@@ -142,48 +142,45 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test(
-      'normalizes bare filenames into the correct plugin directory',
-      () {
-        // The firmware returns bare filenames (no directory prefix) for some
-        // plugins. We have to prepend the canonical directory based on the
-        // file extension or readFile() will fail at the SD card root.
-        final algorithmInfos = [
-          AlgorithmInfo(
-            algorithmIndex: 0,
-            guid: 'Th26',
-            name: 'ARP 2600',
-            specifications: const [],
-            isPlugin: true,
-            filename: 'arp2600.o',
-          ),
-          AlgorithmInfo(
-            algorithmIndex: 1,
-            guid: 'LUAX',
-            name: 'Lua plugin',
-            specifications: const [],
-            isPlugin: true,
-            filename: 'my_script.lua',
-          ),
-          AlgorithmInfo(
-            algorithmIndex: 2,
-            guid: 'TPOT',
-            name: 'Three Pot plugin',
-            specifications: const [],
-            isPlugin: true,
-            filename: 'knob_demo.3pot',
-          ),
-        ];
+    test('normalizes bare filenames into the correct plugin directory', () {
+      // The firmware returns bare filenames (no directory prefix) for some
+      // plugins. We have to prepend the canonical directory based on the
+      // file extension or readFile() will fail at the SD card root.
+      final algorithmInfos = [
+        AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: 'Th26',
+          name: 'ARP 2600',
+          specifications: const [],
+          isPlugin: true,
+          filename: 'arp2600.o',
+        ),
+        AlgorithmInfo(
+          algorithmIndex: 1,
+          guid: 'LUAX',
+          name: 'Lua plugin',
+          specifications: const [],
+          isPlugin: true,
+          filename: 'my_script.lua',
+        ),
+        AlgorithmInfo(
+          algorithmIndex: 2,
+          guid: 'TPOT',
+          name: 'Three Pot plugin',
+          specifications: const [],
+          isPlugin: true,
+          filename: 'knob_demo.3pot',
+        ),
+      ];
 
-        final result = PresetAnalyzer.extractPluginPaths(algorithmInfos);
+      final result = PresetAnalyzer.extractPluginPaths(algorithmInfos);
 
-        expect(result, {
-          'Th26': 'programs/plug-ins/arp2600.o',
-          'LUAX': 'programs/lua/my_script.lua',
-          'TPOT': 'programs/three_pot/knob_demo.3pot',
-        });
-      },
-    );
+      expect(result, {
+        'Th26': 'programs/plug-ins/arp2600.o',
+        'LUAX': 'programs/lua/my_script.lua',
+        'TPOT': 'programs/three_pot/knob_demo.3pot',
+      });
+    });
 
     test('prepends plug-ins dir even when filename has a subfolder', () {
       // Firmware returns filenames relative to the plugin directory, so
@@ -203,9 +200,7 @@ void main() {
 
       final result = PresetAnalyzer.extractPluginPaths(algorithmInfos);
 
-      expect(result, {
-        'ThCo': 'programs/plug-ins/corrupter/corrupter.o',
-      });
+      expect(result, {'ThCo': 'programs/plug-ins/corrupter/corrupter.o'});
     });
 
     test('trusts filenames that already start with programs/', () {
@@ -224,9 +219,7 @@ void main() {
 
       final result = PresetAnalyzer.extractPluginPaths(algorithmInfos);
 
-      expect(result, {
-        'PLUGIN_C': 'programs/plug-ins/subfolder/PluginC.o',
-      });
+      expect(result, {'PLUGIN_C': 'programs/plug-ins/subfolder/PluginC.o'});
     });
   });
 
@@ -286,13 +279,7 @@ void main() {
 
       final deps = PresetAnalyzer.analyzeDependencies(preset);
 
-      expect(
-        deps.fmBanks,
-        containsAll([
-          '!ROM1B.syx',
-          '!ROM2A.syx',
-        ]),
-      );
+      expect(deps.fmBanks, containsAll(['!ROM1B.syx', '!ROM2A.syx']));
       expect(deps.wavetables, contains('warm-squ'));
       // No community plugins
       expect(deps.communityPlugins, isEmpty);
@@ -365,10 +352,7 @@ void main() {
 
       final deps = PresetAnalyzer.analyzeDependencies(preset);
 
-      expect(
-        deps.multisampleFolders,
-        {'!CORec_Modular Percussion Stereo'},
-      );
+      expect(deps.multisampleFolders, {'!CORec_Modular Percussion Stereo'});
       // saveFolder is a record destination, not a dependency.
       expect(deps.sampleFolders, isEmpty);
     });
@@ -403,10 +387,7 @@ void main() {
       final deps = PresetAnalyzer.analyzeDependencies(preset);
 
       expect(deps.sampleFolders, contains('MD16_Kit'));
-      expect(
-        deps.sampleFiles.any((p) => p.contains('<MULTISAMPLE>')),
-        isFalse,
-      );
+      expect(deps.sampleFiles.any((p) => p.contains('<MULTISAMPLE>')), isFalse);
     });
 
     test('explicit-filename trigger still maps to single-file', () {
@@ -451,7 +432,10 @@ void main() {
       // name string — we bundle the whole tree.
       final preset = {
         'slots': [
-          {'guid': 'midp', 'parameters': [0, 1, 1, 1, 0]},
+          {
+            'guid': 'midp',
+            'parameters': [0, 1, 1, 1, 0],
+          },
         ],
       };
 
@@ -464,7 +448,10 @@ void main() {
     test('quan slot triggers scl + kbm bundling', () {
       final preset = {
         'slots': [
-          {'guid': 'quan', 'parameters': [0]},
+          {
+            'guid': 'quan',
+            'parameters': [0],
+          },
         ],
       };
 

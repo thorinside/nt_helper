@@ -36,8 +36,8 @@ class AppUpdateService {
   static const _cacheDuration = Duration(hours: 1);
 
   AppUpdateService({http.Client? httpClient, String? currentVersion})
-      : _httpClient = httpClient ?? http.Client(),
-        _currentVersionOverride = currentVersion;
+    : _httpClient = httpClient ?? http.Client(),
+      _currentVersionOverride = currentVersion;
 
   bool get _isDesktop =>
       Platform.isMacOS || Platform.isLinux || Platform.isWindows;
@@ -68,8 +68,8 @@ class AppUpdateService {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       final release = AppRelease.fromGitHubJson(json);
 
-      final currentVersion = _currentVersionOverride ??
-          (await PackageInfo.fromPlatform()).version;
+      final currentVersion =
+          _currentVersionOverride ?? (await PackageInfo.fromPlatform()).version;
 
       _lastCheckTime = DateTime.now();
 
@@ -91,7 +91,9 @@ class AppUpdateService {
     AppRelease release, {
     void Function(double progress)? onProgress,
   }) async {
-    if (kPlayStoreBuild) throw UnsupportedError('Not available on Play Store build');
+    if (kPlayStoreBuild) {
+      throw UnsupportedError('Not available on Play Store build');
+    }
     final platformKey = _getPlatformKeyword();
     final url = release.platformAssets[platformKey];
     if (url == null) {
@@ -136,10 +138,12 @@ class AppUpdateService {
       if (Platform.isMacOS) {
         // Use ditto to extract on macOS — preserves code signatures,
         // notarization tickets, symlinks, and file permissions.
-        final result = await Process.run(
-          'ditto',
-          ['-x', '-k', zipPath, extractDir.path],
-        );
+        final result = await Process.run('ditto', [
+          '-x',
+          '-k',
+          zipPath,
+          extractDir.path,
+        ]);
         if (result.exitCode != 0) {
           return InstallResult(
             outcome: InstallOutcome.error,
@@ -185,9 +189,7 @@ class AppUpdateService {
   Future<InstallResult> _installMacOS(Directory extractDir) async {
     final exePath = Platform.resolvedExecutable;
     // Go up 3 levels: MacOS -> Contents -> App.app
-    final appBundlePath = path.dirname(
-      path.dirname(path.dirname(exePath)),
-    );
+    final appBundlePath = path.dirname(path.dirname(path.dirname(exePath)));
 
     // Find the .app in the extracted directory
     final entities = await extractDir.list().toList();
@@ -209,10 +211,10 @@ class AppUpdateService {
     final targetDir = path.dirname(appBundlePath);
 
     if (_canWriteTo(targetDir)) {
-      final result = await Process.run(
-        'ditto',
-        [sourceApp.path, path.join(targetDir, path.basename(sourceApp.path))],
-      );
+      final result = await Process.run('ditto', [
+        sourceApp.path,
+        path.join(targetDir, path.basename(sourceApp.path)),
+      ]);
       if (result.exitCode == 0) {
         await _removeQuarantineAttribute(appBundlePath);
         return const InstallResult(
@@ -231,10 +233,11 @@ class AppUpdateService {
     final appDir = path.dirname(exePath);
 
     if (_canWriteTo(appDir)) {
-      final result = await Process.run(
-        'cp',
-        ['-Rf', '${extractDir.path}/.', appDir],
-      );
+      final result = await Process.run('cp', [
+        '-Rf',
+        '${extractDir.path}/.',
+        appDir,
+      ]);
       if (result.exitCode == 0) {
         await Process.run('chmod', ['+x', exePath]);
         return const InstallResult(
@@ -253,7 +256,8 @@ class AppUpdateService {
     final appDir = path.dirname(exePath);
     final currentPid = pid;
 
-    final scriptContent = '''
+    final scriptContent =
+        '''
 Start-Sleep -Seconds 2
 try {
   Wait-Process -Id $currentPid -Timeout 10 -ErrorAction SilentlyContinue
@@ -266,11 +270,12 @@ Start-Process "$exePath"
     final scriptPath = path.join(tempDir.path, 'nt_helper_update.ps1');
     await File(scriptPath).writeAsString(scriptContent);
 
-    await Process.start(
-      'powershell',
-      ['-ExecutionPolicy', 'Bypass', '-File', scriptPath],
-      mode: ProcessStartMode.detached,
-    );
+    await Process.start('powershell', [
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      scriptPath,
+    ], mode: ProcessStartMode.detached);
 
     exit(0);
   }
@@ -298,7 +303,10 @@ Start-Process "$exePath"
     String sourcePath,
     String name,
   ) async {
-    final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '';
+    final home =
+        Platform.environment['HOME'] ??
+        Platform.environment['USERPROFILE'] ??
+        '';
     final downloadsDir = Directory(path.join(home, 'Downloads'));
 
     if (!await downloadsDir.exists()) {
@@ -332,7 +340,8 @@ Start-Process "$exePath"
 
     return InstallResult(
       outcome: InstallOutcome.success,
-      message: 'Update saved to ~/Downloads/$name. Install it manually from there.',
+      message:
+          'Update saved to ~/Downloads/$name. Install it manually from there.',
       folderPath: downloadsDir.path,
     );
   }
@@ -359,9 +368,7 @@ Start-Process "$exePath"
     if (Platform.isMacOS) {
       final exePath = Platform.resolvedExecutable;
       // Go up 3 levels: MacOS -> Contents -> App.app
-      final appBundlePath = path.dirname(
-        path.dirname(path.dirname(exePath)),
-      );
+      final appBundlePath = path.dirname(path.dirname(path.dirname(exePath)));
       final scriptPath = path.join(updateDir.path, 'relaunch.sh');
       await File(scriptPath).writeAsString('''
 #!/bin/bash
@@ -370,11 +377,9 @@ sleep 0.5
 open "$appBundlePath"
 ''');
       await Process.run('chmod', ['+x', scriptPath]);
-      await Process.start(
-        '/bin/bash',
-        [scriptPath],
-        mode: ProcessStartMode.detached,
-      );
+      await Process.start('/bin/bash', [
+        scriptPath,
+      ], mode: ProcessStartMode.detached);
     } else if (Platform.isLinux) {
       final exePath = Platform.resolvedExecutable;
       final scriptPath = path.join(updateDir.path, 'relaunch.sh');
@@ -385,11 +390,9 @@ sleep 0.5
 nohup "$exePath" &>/dev/null &
 ''');
       await Process.run('chmod', ['+x', scriptPath]);
-      await Process.start(
-        '/bin/bash',
-        [scriptPath],
-        mode: ProcessStartMode.detached,
-      );
+      await Process.start('/bin/bash', [
+        scriptPath,
+      ], mode: ProcessStartMode.detached);
     } else if (Platform.isWindows) {
       final exePath = Platform.resolvedExecutable;
       final scriptPath = path.join(updateDir.path, 'relaunch.ps1');
@@ -398,11 +401,12 @@ Start-Sleep -Seconds 2
 try { Wait-Process -Id $currentPid -Timeout 10 -ErrorAction SilentlyContinue } catch {}
 Start-Process "$exePath"
 ''');
-      await Process.start(
-        'powershell',
-        ['-ExecutionPolicy', 'Bypass', '-File', scriptPath],
-        mode: ProcessStartMode.detached,
-      );
+      await Process.start('powershell', [
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        scriptPath,
+      ], mode: ProcessStartMode.detached);
     }
 
     exit(0);

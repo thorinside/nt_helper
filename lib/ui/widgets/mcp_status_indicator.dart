@@ -42,7 +42,8 @@ class McpStatusIndicator extends StatelessWidget {
     // Build tooltip message based on state
     final String tooltip;
     if (isRunning) {
-      tooltip = 'MCP server running at http://localhost:$mcpPort (Tap to disable)';
+      tooltip =
+          'MCP server running at http://localhost:$mcpPort (Tap to disable)';
     } else if (hasError) {
       tooltip = 'MCP server failed: $lastError (Tap to retry)';
     } else {
@@ -52,8 +53,8 @@ class McpStatusIndicator extends StatelessWidget {
     final semanticLabel = isRunning
         ? 'MCP server running. Double tap to disable'
         : hasError
-            ? 'MCP server error. Double tap to retry'
-            : 'MCP server disabled. Double tap to enable';
+        ? 'MCP server error. Double tap to retry'
+        : 'MCP server disabled. Double tap to enable';
 
     return Semantics(
       button: true,

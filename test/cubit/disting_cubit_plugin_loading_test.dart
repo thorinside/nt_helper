@@ -41,7 +41,9 @@ void main() {
 
     // Setup database mock
     when(() => mockDatabase.metadataDao).thenReturn(mockMetadataDao);
-    when(() => mockMetadataDao.hasCachedAlgorithms()).thenAnswer((_) async => false);
+    when(
+      () => mockMetadataDao.hasCachedAlgorithms(),
+    ).thenAnswer((_) async => false);
 
     cubit = DistingCubit(mockDatabase, midiCommand: mockMidiCommand);
 
@@ -60,8 +62,20 @@ void main() {
       guid: 'TestPlugin',
       name: 'Test Plugin',
       specifications: [
-        Specification(name: 'Param 1', min: 0, max: 100, defaultValue: 50, type: 0),
-        Specification(name: 'Param 2', min: -10, max: 10, defaultValue: 0, type: 0),
+        Specification(
+          name: 'Param 1',
+          min: 0,
+          max: 100,
+          defaultValue: 50,
+          type: 0,
+        ),
+        Specification(
+          name: 'Param 2',
+          min: -10,
+          max: 10,
+          defaultValue: 0,
+          type: 0,
+        ),
       ],
       isPlugin: true,
       isLoaded: true,
@@ -72,7 +86,13 @@ void main() {
       guid: 'clck',
       name: 'Clock',
       specifications: [
-        Specification(name: 'Rate', min: 0, max: 255, defaultValue: 128, type: 0),
+        Specification(
+          name: 'Rate',
+          min: 0,
+          max: 255,
+          defaultValue: 128,
+          type: 0,
+        ),
       ],
       isLoaded: true,
     );
@@ -173,8 +193,12 @@ void main() {
       );
 
       // Mock successful plugin loading
-      when(() => mockDisting.requestLoadPlugin('TestPlugin')).thenAnswer((_) async => {});
-      when(() => mockDisting.requestAlgorithmInfo(1)).thenAnswer((_) async => loadedPlugin);
+      when(
+        () => mockDisting.requestLoadPlugin('TestPlugin'),
+      ).thenAnswer((_) async => {});
+      when(
+        () => mockDisting.requestAlgorithmInfo(1),
+      ).thenAnswer((_) async => loadedPlugin);
 
       // Act
       final result = await cubit.loadPlugin('TestPlugin');
@@ -217,7 +241,9 @@ void main() {
       );
 
       // Mock failed plugin loading
-      when(() => mockDisting.requestLoadPlugin('TestPlugin')).thenThrow(Exception('Load failed'));
+      when(
+        () => mockDisting.requestLoadPlugin('TestPlugin'),
+      ).thenThrow(Exception('Load failed'));
 
       // Act
       final result = await cubit.loadPlugin('TestPlugin');
@@ -257,8 +283,12 @@ void main() {
       );
 
       // Mock successful load but failed info request
-      when(() => mockDisting.requestLoadPlugin('TestPlugin')).thenAnswer((_) async => {});
-      when(() => mockDisting.requestAlgorithmInfo(0)).thenAnswer((_) async => null);
+      when(
+        () => mockDisting.requestLoadPlugin('TestPlugin'),
+      ).thenAnswer((_) async => {});
+      when(
+        () => mockDisting.requestAlgorithmInfo(0),
+      ).thenAnswer((_) async => null);
 
       // Act
       final result = await cubit.loadPlugin('TestPlugin');
@@ -306,8 +336,12 @@ void main() {
       );
 
       // Mock successful plugin loading
-      when(() => mockDisting.requestLoadPlugin('TestPlugin')).thenAnswer((_) async => {});
-      when(() => mockDisting.requestAlgorithmInfo(1)).thenAnswer((_) async => loadedPlugin);
+      when(
+        () => mockDisting.requestLoadPlugin('TestPlugin'),
+      ).thenAnswer((_) async => {});
+      when(
+        () => mockDisting.requestAlgorithmInfo(1),
+      ).thenAnswer((_) async => loadedPlugin);
 
       // Act
       final result = await cubit.loadPlugin('TestPlugin');
@@ -349,8 +383,12 @@ void main() {
         );
 
         // Mock successful loading
-        when(() => mockDisting.requestLoadPlugin('TestPlugin')).thenAnswer((_) async => {});
-        when(() => mockDisting.requestAlgorithmInfo(0)).thenAnswer((_) async => loadedPlugin);
+        when(
+          () => mockDisting.requestLoadPlugin('TestPlugin'),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockDisting.requestAlgorithmInfo(0),
+        ).thenAnswer((_) async => loadedPlugin);
 
         // Verify initial state
         var currentState = cubit.state as DistingStateSynchronized;
@@ -362,7 +400,7 @@ void main() {
 
         // Assert - Algorithm is now loaded in the cubit's state
         expect(result, equals(loadedPlugin));
-        
+
         currentState = cubit.state as DistingStateSynchronized;
         expect(currentState.algorithms[0].isLoaded, isTrue);
         expect(currentState.algorithms[0].numSpecifications, equals(2));

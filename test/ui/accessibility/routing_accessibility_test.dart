@@ -37,10 +37,7 @@ void main() {
 
       test('meetsWCAGAA fails for light grey on white', () {
         expect(
-          AccessibilityColors.meetsWCAGAA(
-            Colors.grey.shade300,
-            Colors.white,
-          ),
+          AccessibilityColors.meetsWCAGAA(Colors.grey.shade300, Colors.white),
           isFalse,
         );
       });
@@ -122,10 +119,10 @@ void main() {
           contrastLevel: 1.0,
         );
 
-        final normalColors =
-            AccessibilityColors.fromColorScheme(normalScheme);
-        final highContrastColors =
-            AccessibilityColors.fromColorScheme(highContrastScheme);
+        final normalColors = AccessibilityColors.fromColorScheme(normalScheme);
+        final highContrastColors = AccessibilityColors.fromColorScheme(
+          highContrastScheme,
+        );
 
         // Selection indicator should meet AAA in high contrast
         final ratio = AccessibilityColors.getContrastRatio(
@@ -153,8 +150,9 @@ void main() {
     });
 
     group('Accessible routing list view', () {
-      testWidgets('announces algorithm and connection summaries',
-          (tester) async {
+      testWidgets('announces algorithm and connection summaries', (
+        tester,
+      ) async {
         final semanticsHandle = tester.ensureSemantics();
         final cubit = _TestRoutingEditorCubit(_loadedState());
 
@@ -188,9 +186,12 @@ void main() {
         await cubit.close();
       });
 
-      testWidgets('renders an explicit empty connections message',
-          (tester) async {
-        final cubit = _TestRoutingEditorCubit(_loadedState(connections: const []));
+      testWidgets('renders an explicit empty connections message', (
+        tester,
+      ) async {
+        final cubit = _TestRoutingEditorCubit(
+          _loadedState(connections: const []),
+        );
 
         await tester.pumpWidget(
           MaterialApp(

@@ -26,12 +26,12 @@ void main() {
       mockSettingsService = MockSettingsService();
 
       // Mock the settings service methods
-      when(() => mockSettingsService.galleryUrl).thenReturn(
-        'https://example.com/gallery.json',
-      );
-      when(() => mockSettingsService.graphqlEndpoint).thenReturn(
-        'https://example.com/graphql',
-      );
+      when(
+        () => mockSettingsService.galleryUrl,
+      ).thenReturn('https://example.com/gallery.json');
+      when(
+        () => mockSettingsService.graphqlEndpoint,
+      ).thenReturn('https://example.com/graphql');
 
       galleryService = GalleryService(
         settingsService: mockSettingsService,
@@ -147,30 +147,33 @@ void main() {
     });
 
     group('Device GUID-based detection', () {
-      test('detects manually installed plugin via device GUID with update available', () async {
-        final plugin = createTestPlugin(
-          id: 'manual-plugin',
-          name: 'Manual Plugin',
-          guid: 'MNPL',
-        );
+      test(
+        'detects manually installed plugin via device GUID with update available',
+        () async {
+          final plugin = createTestPlugin(
+            id: 'manual-plugin',
+            name: 'Manual Plugin',
+            guid: 'MNPL',
+          );
 
-        // Plugin not in database, but on device
-        final gallery = createTestGallery([plugin]);
-        final devicePluginGuids = {'MNPL'}; // Plugin is on device
+          // Plugin not in database, but on device
+          final gallery = createTestGallery([plugin]);
+          final devicePluginGuids = {'MNPL'}; // Plugin is on device
 
-        final updateInfo = await galleryService.compareWithInstalledVersions(
-          gallery,
-          devicePluginGuids: devicePluginGuids,
-        );
+          final updateInfo = await galleryService.compareWithInstalledVersions(
+            gallery,
+            devicePluginGuids: devicePluginGuids,
+          );
 
-        expect(updateInfo, contains('manual-plugin'));
-        expect(
-          updateInfo['manual-plugin']!.installedVersion,
-          equals('unknown'),
-        );
-        // Unknown version should suggest update available
-        expect(updateInfo['manual-plugin']!.updateAvailable, isTrue);
-      });
+          expect(updateInfo, contains('manual-plugin'));
+          expect(
+            updateInfo['manual-plugin']!.installedVersion,
+            equals('unknown'),
+          );
+          // Unknown version should suggest update available
+          expect(updateInfo['manual-plugin']!.updateAvailable, isTrue);
+        },
+      );
 
       test('does not auto-cache manually installed plugin in database', () async {
         // Note: Database recording is now handled by DistingCubit.installPlugin(),
@@ -217,7 +220,10 @@ void main() {
         );
 
         expect(updateInfo, contains('detected-plugin'));
-        expect(updateInfo['detected-plugin']!.installedVersion, equals('unknown'));
+        expect(
+          updateInfo['detected-plugin']!.installedVersion,
+          equals('unknown'),
+        );
         expect(updateInfo['detected-plugin']!.updateAvailable, isTrue);
 
         // Verify no database record was created
@@ -290,54 +296,63 @@ void main() {
         expect(updateInfo['mixed-plugin']!.installedVersion, equals('v2.0.0'));
       });
 
-      test('detects multiple plugins with different installation methods', () async {
-        final galleryPlugin = createTestPlugin(
-          id: 'gallery-plugin',
-          name: 'Gallery Plugin',
-          guid: 'GALL',
-        );
-        final manualPlugin = createTestPlugin(
-          id: 'manual-plugin',
-          name: 'Manual Plugin',
-          guid: 'MNPL',
-        );
-        final unknownPlugin = createTestPlugin(
-          id: 'unknown-plugin',
-          name: 'Unknown Plugin',
-          guid: 'UNKN',
-        );
+      test(
+        'detects multiple plugins with different installation methods',
+        () async {
+          final galleryPlugin = createTestPlugin(
+            id: 'gallery-plugin',
+            name: 'Gallery Plugin',
+            guid: 'GALL',
+          );
+          final manualPlugin = createTestPlugin(
+            id: 'manual-plugin',
+            name: 'Manual Plugin',
+            guid: 'MNPL',
+          );
+          final unknownPlugin = createTestPlugin(
+            id: 'unknown-plugin',
+            name: 'Unknown Plugin',
+            guid: 'UNKN',
+          );
 
-        // Gallery plugin in database
-        await database.pluginInstallationsDao.recordPluginInstallation(
-          plugin: galleryPlugin,
-          installedVersion: 'v1.0.0',
-          installationPath: '/programs/lua',
-        );
+          // Gallery plugin in database
+          await database.pluginInstallationsDao.recordPluginInstallation(
+            plugin: galleryPlugin,
+            installedVersion: 'v1.0.0',
+            installationPath: '/programs/lua',
+          );
 
-        final gallery = createTestGallery([
-          galleryPlugin,
-          manualPlugin,
-          unknownPlugin,
-        ]);
-        final devicePluginGuids = {'GALL', 'MNPL'}; // Manual plugin on device
+          final gallery = createTestGallery([
+            galleryPlugin,
+            manualPlugin,
+            unknownPlugin,
+          ]);
+          final devicePluginGuids = {'GALL', 'MNPL'}; // Manual plugin on device
 
-        final updateInfo = await galleryService.compareWithInstalledVersions(
-          gallery,
-          devicePluginGuids: devicePluginGuids,
-        );
+          final updateInfo = await galleryService.compareWithInstalledVersions(
+            gallery,
+            devicePluginGuids: devicePluginGuids,
+          );
 
-        // Gallery plugin detected via database
-        expect(updateInfo, contains('gallery-plugin'));
-        expect(updateInfo['gallery-plugin']!.installedVersion, equals('v1.0.0'));
+          // Gallery plugin detected via database
+          expect(updateInfo, contains('gallery-plugin'));
+          expect(
+            updateInfo['gallery-plugin']!.installedVersion,
+            equals('v1.0.0'),
+          );
 
-        // Manual plugin detected via device GUID (update available for unknown version)
-        expect(updateInfo, contains('manual-plugin'));
-        expect(updateInfo['manual-plugin']!.installedVersion, equals('unknown'));
-        expect(updateInfo['manual-plugin']!.updateAvailable, isTrue);
+          // Manual plugin detected via device GUID (update available for unknown version)
+          expect(updateInfo, contains('manual-plugin'));
+          expect(
+            updateInfo['manual-plugin']!.installedVersion,
+            equals('unknown'),
+          );
+          expect(updateInfo['manual-plugin']!.updateAvailable, isTrue);
 
-        // Unknown plugin not detected
-        expect(updateInfo, isNot(contains('unknown-plugin')));
-      });
+          // Unknown plugin not detected
+          expect(updateInfo, isNot(contains('unknown-plugin')));
+        },
+      );
     });
 
     group('Edge cases', () {
@@ -414,11 +429,15 @@ void main() {
         final installed = await database.pluginInstallationsDao
             .getAllInstalledPlugins();
         final id = installed.first.id;
-        await (database.update(database.pluginInstallations)
-              ..where((tbl) => tbl.id.equals(id)))
-            .write(PluginInstallationsCompanion(
-          installedAt: Value(DateTime.now().subtract(const Duration(days: 2))),
-        ));
+        await (database.update(
+          database.pluginInstallations,
+        )..where((tbl) => tbl.id.equals(id))).write(
+          PluginInstallationsCompanion(
+            installedAt: Value(
+              DateTime.now().subtract(const Duration(days: 2)),
+            ),
+          ),
+        );
 
         final gallery = createTestGallery([plugin]);
         final updateInfo = await galleryService.compareWithInstalledVersions(
@@ -430,40 +449,45 @@ void main() {
         expect(updateInfo['date-plugin']!.updateAvailable, isTrue);
       });
 
-      test('no update when gallery updatedAt is older than installation', () async {
-        final plugin = GalleryPlugin(
-          id: 'old-plugin',
-          name: 'Old Plugin',
-          description: 'Plugin with old updatedAt',
-          type: GalleryPluginType.lua,
-          author: 'test-author',
-          repository: const PluginRepository(
-            owner: 'test-owner',
-            name: 'test-repo',
-            url: 'https://github.com/test-owner/test-repo',
-          ),
-          releases: const PluginReleases(latest: 'invalid-version'),
-          installation: const PluginInstallation(targetPath: '/programs/lua'),
-          guid: 'OLDP',
-          updatedAt: DateTime.now().subtract(const Duration(days: 5)), // Old update
-        );
+      test(
+        'no update when gallery updatedAt is older than installation',
+        () async {
+          final plugin = GalleryPlugin(
+            id: 'old-plugin',
+            name: 'Old Plugin',
+            description: 'Plugin with old updatedAt',
+            type: GalleryPluginType.lua,
+            author: 'test-author',
+            repository: const PluginRepository(
+              owner: 'test-owner',
+              name: 'test-repo',
+              url: 'https://github.com/test-owner/test-repo',
+            ),
+            releases: const PluginReleases(latest: 'invalid-version'),
+            installation: const PluginInstallation(targetPath: '/programs/lua'),
+            guid: 'OLDP',
+            updatedAt: DateTime.now().subtract(
+              const Duration(days: 5),
+            ), // Old update
+          );
 
-        // Install recently
-        await database.pluginInstallationsDao.recordPluginInstallation(
-          plugin: plugin,
-          installedVersion: 'current-version',
-          installationPath: '/programs/lua',
-        );
+          // Install recently
+          await database.pluginInstallationsDao.recordPluginInstallation(
+            plugin: plugin,
+            installedVersion: 'current-version',
+            installationPath: '/programs/lua',
+          );
 
-        final gallery = createTestGallery([plugin]);
-        final updateInfo = await galleryService.compareWithInstalledVersions(
-          gallery,
-        );
+          final gallery = createTestGallery([plugin]);
+          final updateInfo = await galleryService.compareWithInstalledVersions(
+            gallery,
+          );
 
-        // Should not detect update - installed version is newer
-        expect(updateInfo, contains('old-plugin'));
-        expect(updateInfo['old-plugin']!.updateAvailable, isFalse);
-      });
+          // Should not detect update - installed version is newer
+          expect(updateInfo, contains('old-plugin'));
+          expect(updateInfo['old-plugin']!.updateAvailable, isFalse);
+        },
+      );
 
       test('handles plugins with no updatedAt date gracefully', () async {
         final plugin = GalleryPlugin(
@@ -565,7 +589,9 @@ void main() {
           releases: const PluginReleases(latest: 'v2.0.0'),
           installation: const PluginInstallation(targetPath: '/programs/lua'),
           guid: 'VPRI',
-          updatedAt: DateTime.now().subtract(const Duration(days: 10)), // Old date
+          updatedAt: DateTime.now().subtract(
+            const Duration(days: 10),
+          ), // Old date
         );
 
         // Install v1.0.0 recently

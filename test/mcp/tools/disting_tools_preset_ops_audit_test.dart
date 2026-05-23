@@ -2,8 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm;
+import 'package:nt_helper/domain/disting_nt_sysex.dart' show Algorithm;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
@@ -162,9 +161,7 @@ void main() {
     test('returns error when no Notes algorithm in preset', () async {
       when(
         () => controller.getAllSlots(),
-      ).thenAnswer((_) async => <int, Algorithm?>{
-        0: testAlgorithm,
-      });
+      ).thenAnswer((_) async => <int, Algorithm?>{0: testAlgorithm});
 
       final result = await distingTools.getNotes({});
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -251,14 +248,14 @@ void main() {
   group('setNotes — Notes creation and positioning', () {
     test('moves Notes algorithm to slot 0 when found at higher slot', () async {
       // Notes at slot 3, should be moved to slot 0
-      when(
-        () => controller.getAllSlots(),
-      ).thenAnswer((_) async => <int, Algorithm?>{
-        0: testAlgorithm,
-        1: testAlgorithm,
-        2: testAlgorithm,
-        3: notesAlgorithm,
-      });
+      when(() => controller.getAllSlots()).thenAnswer(
+        (_) async => <int, Algorithm?>{
+          0: testAlgorithm,
+          1: testAlgorithm,
+          2: testAlgorithm,
+          3: notesAlgorithm,
+        },
+      );
 
       for (int i = 1; i <= 7; i++) {
         when(
@@ -362,9 +359,7 @@ void main() {
     });
 
     test('sets slot name successfully', () async {
-      when(
-        () => controller.setSlotName(0, 'MyVCO'),
-      ).thenAnswer((_) async {});
+      when(() => controller.setSlotName(0, 'MyVCO')).thenAnswer((_) async {});
 
       final result = await distingTools.setSlotName({
         'slot_index': 0,
@@ -403,12 +398,12 @@ void main() {
     });
 
     test('finds algorithm by GUID', () async {
-      when(
-        () => controller.getAllSlots(),
-      ).thenAnswer((_) async => <int, Algorithm?>{
-        0: testAlgorithm,
-        1: Algorithm(algorithmIndex: 1, guid: 'vco1', name: 'VCO'),
-      });
+      when(() => controller.getAllSlots()).thenAnswer(
+        (_) async => <int, Algorithm?>{
+          0: testAlgorithm,
+          1: Algorithm(algorithmIndex: 1, guid: 'vco1', name: 'VCO'),
+        },
+      );
 
       final result = await distingTools.findAlgorithmInPreset({
         'algorithm_guid': 'vco1',
@@ -416,20 +411,17 @@ void main() {
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isTrue);
       expect(json['slot_count'], equals(1));
-      expect(
-        (json['found_in_slots'] as List).first['slot_index'],
-        equals(1),
-      );
+      expect((json['found_in_slots'] as List).first['slot_index'], equals(1));
     });
 
     test('finds multiple instances of same algorithm', () async {
-      when(
-        () => controller.getAllSlots(),
-      ).thenAnswer((_) async => <int, Algorithm?>{
-        0: Algorithm(algorithmIndex: 0, guid: 'attn', name: 'Attenuator'),
-        2: Algorithm(algorithmIndex: 2, guid: 'attn', name: 'Attenuator'),
-        5: Algorithm(algorithmIndex: 5, guid: 'attn', name: 'Attenuator'),
-      });
+      when(() => controller.getAllSlots()).thenAnswer(
+        (_) async => <int, Algorithm?>{
+          0: Algorithm(algorithmIndex: 0, guid: 'attn', name: 'Attenuator'),
+          2: Algorithm(algorithmIndex: 2, guid: 'attn', name: 'Attenuator'),
+          5: Algorithm(algorithmIndex: 5, guid: 'attn', name: 'Attenuator'),
+        },
+      );
 
       final result = await distingTools.findAlgorithmInPreset({
         'algorithm_guid': 'attn',
@@ -442,9 +434,7 @@ void main() {
     test('returns error when algorithm not found in preset', () async {
       when(
         () => controller.getAllSlots(),
-      ).thenAnswer((_) async => <int, Algorithm?>{
-        0: testAlgorithm,
-      });
+      ).thenAnswer((_) async => <int, Algorithm?>{0: testAlgorithm});
 
       final result = await distingTools.findAlgorithmInPreset({
         'algorithm_guid': 'nonexistent',
@@ -499,9 +489,7 @@ void main() {
 
     test('malformed slot data returns slot-level error', () async {
       when(() => controller.newPreset()).thenAnswer((_) async {});
-      when(
-        () => controller.setPresetName('Test'),
-      ).thenAnswer((_) async {});
+      when(() => controller.setPresetName('Test')).thenAnswer((_) async {});
 
       final result = await distingTools.buildPresetFromJson({
         'preset_data': {
@@ -518,9 +506,7 @@ void main() {
   group('buildPresetFromJson — null slot handling', () {
     test('null entries in slots array are skipped', () async {
       when(() => controller.newPreset()).thenAnswer((_) async {});
-      when(
-        () => controller.setPresetName('Test'),
-      ).thenAnswer((_) async {});
+      when(() => controller.setPresetName('Test')).thenAnswer((_) async {});
 
       final result = await distingTools.buildPresetFromJson({
         'preset_data': {

@@ -85,10 +85,7 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 5,
-        ),
+        createTestWidget(template: template, currentSlotCount: 5),
       );
 
       expect(find.text('Inject Template: Test Template'), findsOneWidget);
@@ -98,25 +95,20 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 5,
-        ),
+        createTestWidget(template: template, currentSlotCount: 5),
       );
 
       // Should show "5 algorithms (slots 1-5)" in current preset section
       expect(find.text('5 algorithms (slots 1-5)'), findsOneWidget);
     });
 
-    testWidgets(
-        'displays current preset summary for empty preset', (tester) async {
+    testWidgets('displays current preset summary for empty preset', (
+      tester,
+    ) async {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 0,
-        ),
+        createTestWidget(template: template, currentSlotCount: 0),
       );
 
       // Should show "0 algorithms" without slot range
@@ -128,10 +120,7 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 8);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 5,
-        ),
+        createTestWidget(template: template, currentSlotCount: 5),
       );
 
       // Should show "8 algorithms"
@@ -142,10 +131,7 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 5,
-        ),
+        createTestWidget(template: template, currentSlotCount: 5),
       );
 
       // Should show all algorithm names
@@ -158,10 +144,7 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 5,
-        ),
+        createTestWidget(template: template, currentSlotCount: 5),
       );
 
       // Should show "8 algorithms" (5 + 3)
@@ -176,10 +159,7 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 5,
-        ),
+        createTestWidget(template: template, currentSlotCount: 5),
       );
 
       expect(find.text('Cancel'), findsOneWidget);
@@ -212,10 +192,7 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 10);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 25,
-        ),
+        createTestWidget(template: template, currentSlotCount: 25),
       );
 
       // Should show warning icon
@@ -226,10 +203,7 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 10);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 25,
-        ),
+        createTestWidget(template: template, currentSlotCount: 25),
       );
 
       // Find the ElevatedButton
@@ -241,8 +215,9 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('enables Inject button when limit not exceeded',
-        (tester) async {
+    testWidgets('enables Inject button when limit not exceeded', (
+      tester,
+    ) async {
       final template = createTestTemplate(name: 'Test Template', slotCount: 5);
 
       await tester.pumpWidget(
@@ -261,15 +236,13 @@ void main() {
       expect(button.onPressed, isNotNull);
     });
 
-    testWidgets('does not show warning when limit not exceeded',
-        (tester) async {
+    testWidgets('does not show warning when limit not exceeded', (
+      tester,
+    ) async {
       final template = createTestTemplate(name: 'Test Template', slotCount: 5);
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 10,
-        ),
+        createTestWidget(template: template, currentSlotCount: 10),
       );
 
       // Should not show warning
@@ -350,17 +323,15 @@ void main() {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
       // Mock injection to delay briefly
-      when(() => mockCubit.injectTemplateToDevice(any(), any()))
-          .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 100)));
-      when(() => mockCubit.state).thenReturn(
-        const MetadataSyncState.loadingPreset(),
-      );
+      when(
+        () => mockCubit.injectTemplateToDevice(any(), any()),
+      ).thenAnswer((_) => Future.delayed(const Duration(milliseconds: 100)));
+      when(
+        () => mockCubit.state,
+      ).thenReturn(const MetadataSyncState.loadingPreset());
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 5,
-        ),
+        createTestWidget(template: template, currentSlotCount: 5),
       );
 
       // Tap Inject button
@@ -369,10 +340,7 @@ void main() {
 
       // Should show loading state
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(
-        find.textContaining('Adding 3 algorithm'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Adding 3 algorithm'), findsOneWidget);
 
       // Clean up
       await tester.pumpAndSettle();
@@ -381,17 +349,15 @@ void main() {
     testWidgets('prevents dialog dismissal during loading', (tester) async {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
-      when(() => mockCubit.injectTemplateToDevice(any(), any()))
-          .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 100)));
-      when(() => mockCubit.state).thenReturn(
-        const MetadataSyncState.loadingPreset(),
-      );
+      when(
+        () => mockCubit.injectTemplateToDevice(any(), any()),
+      ).thenAnswer((_) => Future.delayed(const Duration(milliseconds: 100)));
+      when(
+        () => mockCubit.state,
+      ).thenReturn(const MetadataSyncState.loadingPreset());
 
       await tester.pumpWidget(
-        createTestWidget(
-          template: template,
-          currentSlotCount: 5,
-        ),
+        createTestWidget(template: template, currentSlotCount: 5),
       );
 
       // Tap Inject button
@@ -399,9 +365,7 @@ void main() {
       await tester.pump();
 
       // Find PopScope
-      final popScope = tester.widget<PopScope>(
-        find.byType(PopScope),
-      );
+      final popScope = tester.widget<PopScope>(find.byType(PopScope));
 
       // Should prevent dismissal
       expect(popScope.canPop, false);
@@ -417,8 +381,9 @@ void main() {
   // doesn't listen to state for error display.
 
   group('TemplatePreviewDialog - Static show method', () {
-    testWidgets('static show method creates and displays dialog',
-        (tester) async {
+    testWidgets('static show method creates and displays dialog', (
+      tester,
+    ) async {
       final template = createTestTemplate(name: 'Test Template', slotCount: 3);
 
       await tester.pumpWidget(

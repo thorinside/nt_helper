@@ -15,40 +15,54 @@ Slot _makeSlot({
   final valueStrings = <ParameterValueString>[];
 
   for (final p in params) {
-    parameters.add(ParameterInfo(
-      algorithmIndex: algorithmIndex,
-      parameterNumber: p.paramNumber,
-      min: p.paramMin,
-      max: p.paramMax,
-      defaultValue: p.paramMin,
-      unit: 0,
-      name: 'param${p.paramNumber}',
-      powerOfTen: 0,
-    ));
-    values.add(ParameterValue(
-      algorithmIndex: algorithmIndex,
-      parameterNumber: p.paramNumber,
-      value: p.paramMin,
-    ));
-    enums.add(ParameterEnumStrings(
-      algorithmIndex: algorithmIndex,
-      parameterNumber: p.paramNumber,
-      values: [],
-    ));
-    mappings.add(Mapping(
-      algorithmIndex: algorithmIndex,
-      parameterNumber: p.paramNumber,
-      packedMappingData: p.mapping,
-    ));
-    valueStrings.add(ParameterValueString(
-      algorithmIndex: algorithmIndex,
-      parameterNumber: p.paramNumber,
-      value: '',
-    ));
+    parameters.add(
+      ParameterInfo(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: p.paramNumber,
+        min: p.paramMin,
+        max: p.paramMax,
+        defaultValue: p.paramMin,
+        unit: 0,
+        name: 'param${p.paramNumber}',
+        powerOfTen: 0,
+      ),
+    );
+    values.add(
+      ParameterValue(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: p.paramNumber,
+        value: p.paramMin,
+      ),
+    );
+    enums.add(
+      ParameterEnumStrings(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: p.paramNumber,
+        values: [],
+      ),
+    );
+    mappings.add(
+      Mapping(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: p.paramNumber,
+        packedMappingData: p.mapping,
+      ),
+    );
+    valueStrings.add(
+      ParameterValueString(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: p.paramNumber,
+        value: '',
+      ),
+    );
   }
 
   return Slot(
-    algorithm: Algorithm(algorithmIndex: algorithmIndex, guid: 'test', name: 'test'),
+    algorithm: Algorithm(
+      algorithmIndex: algorithmIndex,
+      guid: 'test',
+      name: 'test',
+    ),
     routing: RoutingInfo(algorithmIndex: algorithmIndex, routingInfo: []),
     pages: ParameterPages(algorithmIndex: algorithmIndex, pages: []),
     parameters: parameters,
@@ -112,14 +126,17 @@ void main() {
   group('CcReverseLookup', () {
     test('build creates lookup from slot mappings', () {
       final slots = [
-        _makeSlot(algorithmIndex: 0, params: [
-          _ParamSpec(
-            paramNumber: 0,
-            paramMin: 0,
-            paramMax: 1000,
-            mapping: _ccMapping(channel: 0, cc: 1),
-          ),
-        ]),
+        _makeSlot(
+          algorithmIndex: 0,
+          params: [
+            _ParamSpec(
+              paramNumber: 0,
+              paramMin: 0,
+              paramMax: 1000,
+              mapping: _ccMapping(channel: 0, cc: 1),
+            ),
+          ],
+        ),
       ];
 
       final lookup = CcReverseLookup.build(slots);
@@ -134,14 +151,17 @@ void main() {
 
     test('build ignores disabled MIDI mappings', () {
       final slots = [
-        _makeSlot(algorithmIndex: 0, params: [
-          _ParamSpec(
-            paramNumber: 0,
-            paramMin: 0,
-            paramMax: 100,
-            mapping: _ccMapping(enabled: false),
-          ),
-        ]),
+        _makeSlot(
+          algorithmIndex: 0,
+          params: [
+            _ParamSpec(
+              paramNumber: 0,
+              paramMin: 0,
+              paramMax: 100,
+              mapping: _ccMapping(enabled: false),
+            ),
+          ],
+        ),
       ];
 
       final lookup = CcReverseLookup.build(slots);
@@ -150,14 +170,17 @@ void main() {
 
     test('build ignores note mappings', () {
       final slots = [
-        _makeSlot(algorithmIndex: 0, params: [
-          _ParamSpec(
-            paramNumber: 0,
-            paramMin: 0,
-            paramMax: 100,
-            mapping: _ccMapping(type: MidiMappingType.noteMomentary),
-          ),
-        ]),
+        _makeSlot(
+          algorithmIndex: 0,
+          params: [
+            _ParamSpec(
+              paramNumber: 0,
+              paramMin: 0,
+              paramMax: 100,
+              mapping: _ccMapping(type: MidiMappingType.noteMomentary),
+            ),
+          ],
+        ),
       ];
 
       final lookup = CcReverseLookup.build(slots);
@@ -166,14 +189,17 @@ void main() {
 
     test('build registers 14-bit CC on both MSB and LSB', () {
       final slots = [
-        _makeSlot(algorithmIndex: 0, params: [
-          _ParamSpec(
-            paramNumber: 0,
-            paramMin: 0,
-            paramMax: 16383,
-            mapping: _ccMapping(cc: 1, type: MidiMappingType.cc14BitHigh),
-          ),
-        ]),
+        _makeSlot(
+          algorithmIndex: 0,
+          params: [
+            _ParamSpec(
+              paramNumber: 0,
+              paramMin: 0,
+              paramMax: 16383,
+              mapping: _ccMapping(cc: 1, type: MidiMappingType.cc14BitHigh),
+            ),
+          ],
+        ),
       ];
 
       final lookup = CcReverseLookup.build(slots);
@@ -183,14 +209,17 @@ void main() {
 
     test('lookup returns null for unregistered channel/cc', () {
       final slots = [
-        _makeSlot(algorithmIndex: 0, params: [
-          _ParamSpec(
-            paramNumber: 0,
-            paramMin: 0,
-            paramMax: 100,
-            mapping: _ccMapping(channel: 0, cc: 1),
-          ),
-        ]),
+        _makeSlot(
+          algorithmIndex: 0,
+          params: [
+            _ParamSpec(
+              paramNumber: 0,
+              paramMin: 0,
+              paramMax: 100,
+              mapping: _ccMapping(channel: 0, cc: 1),
+            ),
+          ],
+        ),
       ];
 
       final lookup = CcReverseLookup.build(slots);
@@ -200,20 +229,23 @@ void main() {
 
     test('multiple params on same channel/cc returns multiple targets', () {
       final slots = [
-        _makeSlot(algorithmIndex: 0, params: [
-          _ParamSpec(
-            paramNumber: 0,
-            paramMin: 0,
-            paramMax: 100,
-            mapping: _ccMapping(channel: 0, cc: 7),
-          ),
-          _ParamSpec(
-            paramNumber: 1,
-            paramMin: -50,
-            paramMax: 50,
-            mapping: _ccMapping(channel: 0, cc: 7),
-          ),
-        ]),
+        _makeSlot(
+          algorithmIndex: 0,
+          params: [
+            _ParamSpec(
+              paramNumber: 0,
+              paramMin: 0,
+              paramMax: 100,
+              mapping: _ccMapping(channel: 0, cc: 7),
+            ),
+            _ParamSpec(
+              paramNumber: 1,
+              paramMin: -50,
+              paramMax: 50,
+              mapping: _ccMapping(channel: 0, cc: 7),
+            ),
+          ],
+        ),
       ];
 
       final lookup = CcReverseLookup.build(slots);
@@ -238,7 +270,10 @@ void main() {
 
       expect(CcReverseLookup.convertCcToParamValue(target, 0), 0);
       expect(CcReverseLookup.convertCcToParamValue(target, 127), 1000);
-      expect(CcReverseLookup.convertCcToParamValue(target, 64), closeTo(504, 1));
+      expect(
+        CcReverseLookup.convertCcToParamValue(target, 64),
+        closeTo(504, 1),
+      );
     });
 
     test('standard linear with custom midi range', () {
@@ -328,11 +363,19 @@ void main() {
 
       // CC 127 = -1, CC 126 = -2
       expect(
-        CcReverseLookup.convertCcToParamValue(target, 127, currentParamValue: 50),
+        CcReverseLookup.convertCcToParamValue(
+          target,
+          127,
+          currentParamValue: 50,
+        ),
         49,
       );
       expect(
-        CcReverseLookup.convertCcToParamValue(target, 126, currentParamValue: 50),
+        CcReverseLookup.convertCcToParamValue(
+          target,
+          126,
+          currentParamValue: 50,
+        ),
         48,
       );
     });
@@ -351,11 +394,19 @@ void main() {
       );
 
       expect(
-        CcReverseLookup.convertCcToParamValue(target, 10, currentParamValue: 95),
+        CcReverseLookup.convertCcToParamValue(
+          target,
+          10,
+          currentParamValue: 95,
+        ),
         100,
       );
       expect(
-        CcReverseLookup.convertCcToParamValue(target, 120, currentParamValue: 5),
+        CcReverseLookup.convertCcToParamValue(
+          target,
+          120,
+          currentParamValue: 5,
+        ),
         0,
       );
     });

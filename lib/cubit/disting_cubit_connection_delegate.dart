@@ -77,7 +77,8 @@ class _ConnectionDelegate {
       final devices = await _fetchDeviceLists(); // Call helper
 
       // Re-check offline capability here for manual refresh accuracy
-      final bool canWorkOffline = await _cubit._metadataDao.hasCachedAlgorithms();
+      final bool canWorkOffline = await _cubit._metadataDao
+          .hasCachedAlgorithms();
 
       // Transition to the select device state
       _cubit._emitState(
@@ -211,19 +212,18 @@ class _ConnectionDelegate {
         int numInPreset = 0;
         int numAlgorithms = 0;
         try {
-          numAlgorithms =
-              await distingManager.requestNumberOfAlgorithms() ?? 0;
+          numAlgorithms = await distingManager.requestNumberOfAlgorithms() ?? 0;
           numInPreset =
               await distingManager.requestNumAlgorithmsInPreset() ?? 0;
 
           // Try to load cached algorithms synchronously for fast startup
           if (numAlgorithms > 0) {
             final cacheFreshnessDays = SettingsService().algorithmCacheDays;
-            final cachedAlgorithms =
-                await _cubit._metadataDao.getAlgorithmInfoCache(
-              numAlgorithms,
-              cacheFreshnessDays: cacheFreshnessDays,
-            );
+            final cachedAlgorithms = await _cubit._metadataDao
+                .getAlgorithmInfoCache(
+                  numAlgorithms,
+                  cacheFreshnessDays: cacheFreshnessDays,
+                );
             if (cachedAlgorithms != null &&
                 cachedAlgorithms.length == numAlgorithms) {
               // Cache hit - use cached data immediately
@@ -240,10 +240,11 @@ class _ConnectionDelegate {
             await distingManager.requestVersionString() ?? "";
         final versionParts = versionResponse.split('\n');
         final distingVersion = versionParts[0];
-        final firmwareDate =
-            versionParts.length > 1 ? versionParts[1] : null;
-        final firmwareVersion =
-            FirmwareVersion(distingVersion, date: firmwareDate);
+        final firmwareDate = versionParts.length > 1 ? versionParts[1] : null;
+        final firmwareVersion = FirmwareVersion(
+          distingVersion,
+          date: firmwareDate,
+        );
         _cubit._lastKnownFirmwareVersion = firmwareVersion;
         // Set the parameter unit scheme based on firmware version
         ParameterEditorRegistry.setFirmwareVersion(firmwareVersion);
@@ -271,8 +272,9 @@ class _ConnectionDelegate {
         List<PerformancePageItem> perfPageItems = [];
         if (firmwareVersion.hasPerfPageItems) {
           _emitSyncProgress('Loading performance pages...', progress: 0.90);
-          perfPageItems = await _cubit._perfPageDelegate
-              .fetchAllPerfPageItems(distingManager);
+          perfPageItems = await _cubit._perfPageDelegate.fetchAllPerfPageItems(
+            distingManager,
+          );
         }
 
         _emitSyncProgress('Finalizing...', progress: 0.95);
@@ -370,7 +372,8 @@ class _ConnectionDelegate {
         }
         existingManager.dispose(); // Dispose the old manager
       }
-      _cubit._offlineManager?.dispose(); // Explicitly dispose offline if it exists
+      _cubit._offlineManager
+          ?.dispose(); // Explicitly dispose offline if it exists
       _cubit._offlineManager = null;
 
       // Connect to the selected device
@@ -408,7 +411,8 @@ class _ConnectionDelegate {
       // BEFORE starting the full sync.
       _cubit._lastOnlineInputDevice = inputDevice;
       _cubit._lastOnlineOutputDevice = outputDevice;
-      _cubit._lastOnlineSysExId = sysExId; // Use the parameter passed to this method
+      _cubit._lastOnlineSysExId =
+          sysExId; // Use the parameter passed to this method
 
       // Synchronize device clock with local time
       // The device has no timezone info — it stamps FAT files directly from
@@ -416,8 +420,12 @@ class _ConnectionDelegate {
       try {
         final now = DateTime.now();
         final localAsUtc = DateTime.utc(
-          now.year, now.month, now.day,
-          now.hour, now.minute, now.second,
+          now.year,
+          now.month,
+          now.day,
+          now.hour,
+          now.minute,
+          now.second,
         );
         final localEpoch = localAsUtc.millisecondsSinceEpoch ~/ 1000;
         await newDistingManager.requestSetRealTimeClock(localEpoch);
@@ -452,7 +460,8 @@ class _ConnectionDelegate {
     );
     return {
       'input': devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
-      'output': devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
+      'output':
+          devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
     };
   }
 }

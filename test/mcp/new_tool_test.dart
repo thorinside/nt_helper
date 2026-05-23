@@ -74,9 +74,7 @@ void main() {
       });
 
       test('should return error when name is empty string', () async {
-        final result = await tools.newWithAlgorithms({
-          'name': '',
-        });
+        final result = await tools.newWithAlgorithms({'name': ''});
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
@@ -108,9 +106,7 @@ void main() {
 
     group('newWithAlgorithms - response structure', () {
       test('should return valid JSON for blank preset', () async {
-        final result = await tools.newWithAlgorithms({
-          'name': 'Test Preset',
-        });
+        final result = await tools.newWithAlgorithms({'name': 'Test Preset'});
 
         final decoded = jsonDecode(result);
         expect(decoded is Map, isTrue);
@@ -130,9 +126,7 @@ void main() {
       });
 
       test('should return success=true with data field on success', () async {
-        final result = await tools.newWithAlgorithms({
-          'name': 'Success Test',
-        });
+        final result = await tools.newWithAlgorithms({'name': 'Success Test'});
 
         final decoded = jsonDecode(result);
         if (decoded['success'] == true) {
@@ -234,9 +228,7 @@ void main() {
       });
 
       test('should not include algorithm_results for blank presets', () async {
-        final result = await tools.newWithAlgorithms({
-          'name': 'Blank Test',
-        });
+        final result = await tools.newWithAlgorithms({'name': 'Blank Test'});
 
         final decoded = jsonDecode(result);
         if (decoded['success'] == true && decoded['data'] != null) {
@@ -248,9 +240,7 @@ void main() {
 
     group('newWithAlgorithms - data field content', () {
       test('should include preset_name in successful response', () async {
-        final result = await tools.newWithAlgorithms({
-          'name': 'My Preset',
-        });
+        final result = await tools.newWithAlgorithms({'name': 'My Preset'});
 
         final decoded = jsonDecode(result);
         if (decoded['success'] == true) {
@@ -260,9 +250,7 @@ void main() {
       });
 
       test('should include slots array in successful response', () async {
-        final result = await tools.newWithAlgorithms({
-          'name': 'Slots Test',
-        });
+        final result = await tools.newWithAlgorithms({'name': 'Slots Test'});
 
         final decoded = jsonDecode(result);
         if (decoded['success'] == true) {
@@ -305,9 +293,7 @@ void main() {
       test('should handle malformed algorithm specs', () async {
         final result = await tools.newWithAlgorithms({
           'name': 'Malformed Test',
-          'algorithms': [
-            'not an object',
-          ],
+          'algorithms': ['not an object'],
         });
 
         final decoded = jsonDecode(result);

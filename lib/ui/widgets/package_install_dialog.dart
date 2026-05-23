@@ -75,7 +75,10 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
       title: Row(
         children: [
           ExcludeSemantics(
-            child: Icon(Icons.archive, color: Theme.of(context).colorScheme.primary),
+            child: Icon(
+              Icons.archive,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -258,7 +261,11 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
           radius: 12,
           backgroundColor: _getFileStatusColor(file),
           child: ExcludeSemantics(
-            child: Icon(_getFileStatusIcon(file), size: 16, color: Colors.white),
+            child: Icon(
+              _getFileStatusIcon(file),
+              size: 16,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -354,7 +361,9 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
 
   String _getFileStatusDescription(PackageFile file) {
     if (file.hasConflict) {
-      return file.shouldInstall ? 'Conflict: will overwrite' : 'Conflict: will skip';
+      return file.shouldInstall
+          ? 'Conflict: will overwrite'
+          : 'Conflict: will skip';
     }
     return file.shouldInstall ? 'Will install' : 'Will skip';
   }
@@ -446,7 +455,10 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
         title: Row(
           children: [
             ExcludeSemantics(
-              child: Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+              child: Icon(
+                Icons.error,
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
             const SizedBox(width: 8),
             const Text('Installation Errors'),

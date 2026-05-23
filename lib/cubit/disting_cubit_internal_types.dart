@@ -23,4 +23,3 @@ class _ParameterRetryRequest {
     required this.type,
   });
 }
-

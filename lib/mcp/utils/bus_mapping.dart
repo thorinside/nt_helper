@@ -7,10 +7,7 @@ class BusMapping {
   /// Convert bus number to human-friendly name.
   /// Returns "None" for 0, "Input 1"-"Input 12", "Output 1"-"Output 8",
   /// "Aux 1"-"Aux N", "ES-5 L"/"ES-5 R", or "Unknown (N)" for unrecognized.
-  static String busToName(
-    int busNumber, {
-    required bool hasExtendedAuxBuses,
-  }) {
+  static String busToName(int busNumber, {required bool hasExtendedAuxBuses}) {
     if (busNumber == 0) return 'None';
     if (BusSpec.isPhysicalInput(busNumber)) {
       return 'Input $busNumber';
@@ -18,15 +15,19 @@ class BusMapping {
     if (BusSpec.isPhysicalOutput(busNumber)) {
       return 'Output ${busNumber - (BusSpec.outputMin - 1)}';
     }
-    if (BusSpec.isEs5ForFirmware(busNumber,
-        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+    if (BusSpec.isEs5ForFirmware(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    )) {
       final local = hasExtendedAuxBuses
           ? busNumber - (BusSpec.es5MinExtended - 1)
           : busNumber - (BusSpec.es5Min - 1);
       return local == 1 ? 'ES-5 L' : 'ES-5 R';
     }
-    if (BusSpec.isAuxForFirmware(busNumber,
-        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+    if (BusSpec.isAuxForFirmware(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    )) {
       return 'Aux ${busNumber - (BusSpec.auxMin - 1)}';
     }
     return 'Unknown ($busNumber)';
@@ -39,10 +40,7 @@ class BusMapping {
 
   /// Convert human-friendly name to bus number.
   /// Case-insensitive. Returns null for unrecognized names.
-  static int? nameToBus(
-    String name, {
-    required bool hasExtendedAuxBuses,
-  }) {
+  static int? nameToBus(String name, {required bool hasExtendedAuxBuses}) {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return null;
 
@@ -70,10 +68,13 @@ class BusMapping {
         final n = int.tryParse(suffix);
         if (n == null || n < 1) return null;
         final bus = BusSpec.auxMin - 1 + n;
-        final auxMax =
-            BusSpec.auxMaxForFirmware(hasExtendedAuxBuses: hasExtendedAuxBuses);
+        final auxMax = BusSpec.auxMaxForFirmware(
+          hasExtendedAuxBuses: hasExtendedAuxBuses,
+        );
         // Skip over legacy ES-5 range on old firmware
-        if (!hasExtendedAuxBuses && bus >= BusSpec.es5Min && bus <= BusSpec.es5Max) {
+        if (!hasExtendedAuxBuses &&
+            bus >= BusSpec.es5Min &&
+            bus <= BusSpec.es5Max) {
           return null;
         }
         if (bus > auxMax) return null;
@@ -98,10 +99,7 @@ class BusMapping {
 
   /// Parse bus from either a name string or raw integer.
   /// Accepts "Aux 1", "Input 5", "None", or integer bus numbers.
-  static int? parseBus(
-    dynamic value, {
-    required bool hasExtendedAuxBuses,
-  }) {
+  static int? parseBus(dynamic value, {required bool hasExtendedAuxBuses}) {
     if (value is int) {
       if (value == 0) return 0;
       return BusSpec.isValid(value) ? value : null;
@@ -126,5 +124,4 @@ class BusMapping {
         (param.min == 0 || param.min == 1) &&
         BusSpec.isBusParameterMaxValue(param.max);
   }
-
 }

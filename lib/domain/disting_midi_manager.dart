@@ -977,7 +977,8 @@ class DistingMidiManager implements IDistingMidiManager {
       id: -1, // Use -1 to indicate it's fresh from device, not a DB entry ID
       name: presetName,
       lastModified: DateTime.now(), // Use current time for fetched state
-      isTemplate: false, // Presets fetched from device are not templates by default
+      isTemplate:
+          false, // Presets fetched from device are not templates by default
     );
 
     // 4. Return the complete details
@@ -1291,10 +1292,7 @@ class DistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> setPerfPageItem(PerformancePageItem item) {
-    final message = SetPerfPageItemMessage(
-      sysExId: sysExId,
-      item: item,
-    );
+    final message = SetPerfPageItemMessage(sysExId: sysExId, item: item);
     final packet = message.encode();
     final key = RequestKey(sysExId: sysExId);
 

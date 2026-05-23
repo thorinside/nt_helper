@@ -32,12 +32,14 @@ void main() {
   late MockFlashToolBridge mockFlashToolBridge;
 
   setUpAll(() {
-    registerFallbackValue(FirmwareRelease(
-      version: '0.0.0',
-      releaseDate: DateTime(2024),
-      changelog: [],
-      downloadUrl: '',
-    ));
+    registerFallbackValue(
+      FirmwareRelease(
+        version: '0.0.0',
+        releaseDate: DateTime(2024),
+        changelog: [],
+        downloadUrl: '',
+      ),
+    );
   });
 
   setUp(() {
@@ -66,26 +68,28 @@ void main() {
   }
 
   group('FirmwareUpdateCubit', () {
-    test('initial state is FirmwareUpdateState.initial with current version',
-        () {
-      final cubit = createCubit(currentVersion: '1.11.0');
+    test(
+      'initial state is FirmwareUpdateState.initial with current version',
+      () {
+        final cubit = createCubit(currentVersion: '1.11.0');
 
-      expect(cubit.state, isA<FirmwareUpdateStateInitial>());
-      expect(
-        (cubit.state as FirmwareUpdateStateInitial).currentVersion,
-        '1.11.0',
-      );
-      expect(
-        (cubit.state as FirmwareUpdateStateInitial).availableVersions,
-        isNull,
-      );
-      expect(
-        (cubit.state as FirmwareUpdateStateInitial).isLoadingVersions,
-        false,
-      );
+        expect(cubit.state, isA<FirmwareUpdateStateInitial>());
+        expect(
+          (cubit.state as FirmwareUpdateStateInitial).currentVersion,
+          '1.11.0',
+        );
+        expect(
+          (cubit.state as FirmwareUpdateStateInitial).availableVersions,
+          isNull,
+        );
+        expect(
+          (cubit.state as FirmwareUpdateStateInitial).isLoadingVersions,
+          false,
+        );
 
-      cubit.close();
-    });
+        cubit.close();
+      },
+    );
 
     test('isUpdateAvailable returns false in demo mode', () {
       final cubit = createCubit(isDemo: true);
@@ -118,14 +122,18 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'emits loading then loaded with versions on success',
         build: () {
-          when(() => mockFirmwareVersionService.fetchAvailableVersions())
-              .thenAnswer((_) async => testVersions);
+          when(
+            () => mockFirmwareVersionService.fetchAvailableVersions(),
+          ).thenAnswer((_) async => testVersions);
           return createCubit();
         },
         act: (cubit) => cubit.loadAvailableVersions(),
         expect: () => [
-          isA<FirmwareUpdateStateInitial>()
-              .having((s) => s.isLoadingVersions, 'isLoadingVersions', true),
+          isA<FirmwareUpdateStateInitial>().having(
+            (s) => s.isLoadingVersions,
+            'isLoadingVersions',
+            true,
+          ),
           isA<FirmwareUpdateStateInitial>()
               .having((s) => s.isLoadingVersions, 'isLoadingVersions', false)
               .having(
@@ -139,14 +147,18 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'emits loading then error on failure',
         build: () {
-          when(() => mockFirmwareVersionService.fetchAvailableVersions())
-              .thenThrow(Exception('Network error'));
+          when(
+            () => mockFirmwareVersionService.fetchAvailableVersions(),
+          ).thenThrow(Exception('Network error'));
           return createCubit();
         },
         act: (cubit) => cubit.loadAvailableVersions(),
         expect: () => [
-          isA<FirmwareUpdateStateInitial>()
-              .having((s) => s.isLoadingVersions, 'isLoadingVersions', true),
+          isA<FirmwareUpdateStateInitial>().having(
+            (s) => s.isLoadingVersions,
+            'isLoadingVersions',
+            true,
+          ),
           isA<FirmwareUpdateStateInitial>()
               .having((s) => s.isLoadingVersions, 'isLoadingVersions', false)
               .having((s) => s.fetchError, 'fetchError', isNotNull),
@@ -198,10 +210,12 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'emits downloading progress then waitingForBootloader on success',
         build: () {
-          when(() => mockFirmwareVersionService.downloadFirmware(
-                any(),
-                onProgress: any(named: 'onProgress'),
-              )).thenAnswer((invocation) async {
+          when(
+            () => mockFirmwareVersionService.downloadFirmware(
+              any(),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((invocation) async {
             // Simulate progress callback
             final onProgress =
                 invocation.namedArguments[#onProgress] as Function(double)?;
@@ -216,12 +230,22 @@ void main() {
           isA<FirmwareUpdateStateDownloading>()
               .having((s) => s.version, 'version', testVersion)
               .having((s) => s.progress, 'progress', 0),
-          isA<FirmwareUpdateStateDownloading>()
-              .having((s) => s.progress, 'progress', 0.5),
-          isA<FirmwareUpdateStateDownloading>()
-              .having((s) => s.progress, 'progress', 1.0),
+          isA<FirmwareUpdateStateDownloading>().having(
+            (s) => s.progress,
+            'progress',
+            0.5,
+          ),
+          isA<FirmwareUpdateStateDownloading>().having(
+            (s) => s.progress,
+            'progress',
+            1.0,
+          ),
           isA<FirmwareUpdateStateWaitingForBootloader>()
-              .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
+              .having(
+                (s) => s.firmwarePath,
+                'firmwarePath',
+                '/tmp/firmware.zip',
+              )
               .having((s) => s.targetVersion, 'targetVersion', '1.12.0'),
         ],
       );
@@ -229,12 +253,12 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'emits error on download failure',
         build: () {
-          when(() => mockFirmwareVersionService.downloadFirmware(
-                any(),
-                onProgress: any(named: 'onProgress'),
-              )).thenThrow(
-            const FirmwareDownloadException('Network error'),
-          );
+          when(
+            () => mockFirmwareVersionService.downloadFirmware(
+              any(),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenThrow(const FirmwareDownloadException('Network error'));
           return createCubit();
         },
         act: (cubit) => cubit.startUpdate(testVersion),
@@ -260,8 +284,9 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'emits flashing states and success on completion',
         build: () {
-          when(() => mockFlashToolManager.getToolPath())
-              .thenAnswer((_) async => '/path/to/tool');
+          when(
+            () => mockFlashToolManager.getToolPath(),
+          ).thenAnswer((_) async => '/path/to/tool');
           when(() => mockFlashToolBridge.flash(any())).thenAnswer(
             (_) => Stream.fromIterable([
               const FlashProgress(
@@ -317,8 +342,9 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'emits error when flash process reports error',
         build: () {
-          when(() => mockFlashToolManager.getToolPath())
-              .thenAnswer((_) async => '/path/to/tool');
+          when(
+            () => mockFlashToolManager.getToolPath(),
+          ).thenAnswer((_) async => '/path/to/tool');
           when(() => mockFlashToolBridge.flash(any())).thenAnswer(
             (_) => Stream.fromIterable([
               const FlashProgress(
@@ -387,11 +413,14 @@ void main() {
       Future<String> createValidFirmwareZip() async {
         final archive = Archive();
         // Expert Sleepers firmware uses disting_NT.bin in bootable_images/
-        archive.addFile(ArchiveFile(
-          'bootable_images/disting_NT.bin',
-          4,
-          [0x00, 0x01, 0x02, 0x03],
-        ));
+        archive.addFile(
+          ArchiveFile('bootable_images/disting_NT.bin', 4, [
+            0x00,
+            0x01,
+            0x02,
+            0x03,
+          ]),
+        );
         final zipData = ZipEncoder().encode(archive);
         final zipFile = File('${tempDir.path}/valid_firmware.zip');
         await zipFile.writeAsBytes(zipData);
@@ -406,11 +435,9 @@ void main() {
 
       Future<String> createZipWithoutFirmware() async {
         final archive = Archive();
-        archive.addFile(ArchiveFile(
-          'readme.txt',
-          5,
-          [0x48, 0x65, 0x6C, 0x6C, 0x6F],
-        ));
+        archive.addFile(
+          ArchiveFile('readme.txt', 5, [0x48, 0x65, 0x6C, 0x6C, 0x6F]),
+        );
         final zipData = ZipEncoder().encode(archive);
         final zipFile = File('${tempDir.path}/no_firmware.zip');
         await zipFile.writeAsBytes(zipData);
@@ -506,18 +533,20 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'resets to initial state from error state',
         build: () {
-          when(() => mockFirmwareVersionService.fetchAvailableVersions())
-              .thenAnswer((_) async => []);
+          when(
+            () => mockFirmwareVersionService.fetchAvailableVersions(),
+          ).thenAnswer((_) async => []);
           return createCubit(currentVersion: '1.11.0');
         },
-        seed: () => const FirmwareUpdateState.error(
-          message: 'Some error',
-        ),
+        seed: () => const FirmwareUpdateState.error(message: 'Some error'),
         act: (cubit) => cubit.cleanupAndReset(),
         expect: () => [
           isA<FirmwareUpdateStateInitial>(),
-          isA<FirmwareUpdateStateInitial>()
-              .having((s) => s.isLoadingVersions, 'isLoadingVersions', true),
+          isA<FirmwareUpdateStateInitial>().having(
+            (s) => s.isLoadingVersions,
+            'isLoadingVersions',
+            true,
+          ),
           isA<FirmwareUpdateStateInitial>()
               .having((s) => s.isLoadingVersions, 'isLoadingVersions', false)
               .having((s) => s.availableVersions, 'availableVersions', []),
@@ -527,8 +556,9 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'preserves currentVersion when resetting from any state',
         build: () {
-          when(() => mockFirmwareVersionService.fetchAvailableVersions())
-              .thenAnswer((_) async => []);
+          when(
+            () => mockFirmwareVersionService.fetchAvailableVersions(),
+          ).thenAnswer((_) async => []);
           return createCubit(currentVersion: '1.11.0');
         },
         seed: () => const FirmwareUpdateState.flashing(
@@ -561,8 +591,9 @@ void main() {
 
       setUp(() {
         mockMidiManager = MockDistingMidiManager();
-        when(() => mockMidiManager.requestEnterBootloader())
-            .thenAnswer((_) async {});
+        when(
+          () => mockMidiManager.requestEnterBootloader(),
+        ).thenAnswer((_) async {});
       });
 
       final testVersion = FirmwareRelease(
@@ -575,14 +606,17 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'firmware >= 1.15 shows waitingForBootloader with canAutoEnter, then confirmAndFlash enters bootloader',
         build: () {
-          when(() => mockFirmwareVersionService.downloadFirmware(
-                any(),
-                onProgress: any(named: 'onProgress'),
-              )).thenAnswer((invocation) async {
+          when(
+            () => mockFirmwareVersionService.downloadFirmware(
+              any(),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((invocation) async {
             return '/tmp/firmware.zip';
           });
-          when(() => mockFlashToolManager.getToolPath())
-              .thenAnswer((_) async => '/path/to/tool');
+          when(
+            () => mockFlashToolManager.getToolPath(),
+          ).thenAnswer((_) async => '/path/to/tool');
           when(() => mockFlashToolBridge.flash(any())).thenAnswer(
             (_) => Stream.fromIterable([
               const FlashProgress(
@@ -605,18 +639,29 @@ void main() {
         expect: () => [
           isA<FirmwareUpdateStateDownloading>(),
           isA<FirmwareUpdateStateWaitingForBootloader>()
-              .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
+              .having(
+                (s) => s.firmwarePath,
+                'firmwarePath',
+                '/tmp/firmware.zip',
+              )
               .having((s) => s.targetVersion, 'targetVersion', '1.16.0')
               .having((s) => s.canAutoEnter, 'canAutoEnter', true),
           // First enteringBootloader with progress 0
           isA<FirmwareUpdateStateEnteringBootloader>()
-              .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
+              .having(
+                (s) => s.firmwarePath,
+                'firmwarePath',
+                '/tmp/firmware.zip',
+              )
               .having((s) => s.targetVersion, 'targetVersion', '1.16.0')
               .having((s) => s.progress, 'progress', 0.0),
           // 50 progress ticks (0.02 to 1.0) - match them all
           for (var i = 1; i <= 50; i++)
-            isA<FirmwareUpdateStateEnteringBootloader>()
-                .having((s) => s.progress, 'progress', i / 50),
+            isA<FirmwareUpdateStateEnteringBootloader>().having(
+              (s) => s.progress,
+              'progress',
+              i / 50,
+            ),
           isA<FirmwareUpdateStateFlashing>(),
           isA<FirmwareUpdateStateSuccess>(),
         ],
@@ -628,10 +673,12 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'firmware < 1.15 still shows waitingForBootloader',
         build: () {
-          when(() => mockFirmwareVersionService.downloadFirmware(
-                any(),
-                onProgress: any(named: 'onProgress'),
-              )).thenAnswer((_) async => '/tmp/firmware.zip');
+          when(
+            () => mockFirmwareVersionService.downloadFirmware(
+              any(),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => '/tmp/firmware.zip');
           return createCubit(
             currentVersion: '1.14.0',
             firmwareVersion: FirmwareVersion('1.14.0'),
@@ -642,7 +689,11 @@ void main() {
         expect: () => [
           isA<FirmwareUpdateStateDownloading>(),
           isA<FirmwareUpdateStateWaitingForBootloader>()
-              .having((s) => s.firmwarePath, 'firmwarePath', '/tmp/firmware.zip')
+              .having(
+                (s) => s.firmwarePath,
+                'firmwarePath',
+                '/tmp/firmware.zip',
+              )
               .having((s) => s.targetVersion, 'targetVersion', '1.16.0')
               .having((s) => s.canAutoEnter, 'canAutoEnter', false),
         ],
@@ -654,10 +705,12 @@ void main() {
       blocTest<FirmwareUpdateCubit, FirmwareUpdateState>(
         'no midiManager falls back to waitingForBootloader even on 1.15+',
         build: () {
-          when(() => mockFirmwareVersionService.downloadFirmware(
-                any(),
-                onProgress: any(named: 'onProgress'),
-              )).thenAnswer((_) async => '/tmp/firmware.zip');
+          when(
+            () => mockFirmwareVersionService.downloadFirmware(
+              any(),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => '/tmp/firmware.zip');
           return createCubit(
             currentVersion: '1.15.0',
             firmwareVersion: FirmwareVersion('1.15.0'),
@@ -690,12 +743,18 @@ void main() {
         downloadUrl: 'https://example.com/firmware.zip',
       );
 
-      final a =
-          FirmwareUpdateState.downloading(version: version, progress: 0.5);
-      final b =
-          FirmwareUpdateState.downloading(version: version, progress: 0.5);
-      final c =
-          FirmwareUpdateState.downloading(version: version, progress: 0.7);
+      final a = FirmwareUpdateState.downloading(
+        version: version,
+        progress: 0.5,
+      );
+      final b = FirmwareUpdateState.downloading(
+        version: version,
+        progress: 0.5,
+      );
+      final c = FirmwareUpdateState.downloading(
+        version: version,
+        progress: 0.7,
+      );
 
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
@@ -711,8 +770,7 @@ void main() {
     });
 
     test('when method handles all states', () {
-      const initialState =
-          FirmwareUpdateState.initial(currentVersion: '1.0.0');
+      const initialState = FirmwareUpdateState.initial(currentVersion: '1.0.0');
       final downloadingState = FirmwareUpdateState.downloading(
         version: FirmwareRelease(
           version: '1.12.0',
@@ -820,8 +878,14 @@ void main() {
   group('getActionButtonText', () {
     test('returns correct text for each FlashStage', () {
       expect(getActionButtonText(null), 'Try Again');
-      expect(getActionButtonText(FlashStage.sdpConnect), 'Re-enter Bootloader Mode');
-      expect(getActionButtonText(FlashStage.blCheck), 'Re-enter Bootloader Mode');
+      expect(
+        getActionButtonText(FlashStage.sdpConnect),
+        'Re-enter Bootloader Mode',
+      );
+      expect(
+        getActionButtonText(FlashStage.blCheck),
+        'Re-enter Bootloader Mode',
+      );
       expect(getActionButtonText(FlashStage.sdpUpload), 'Retry Update');
       expect(getActionButtonText(FlashStage.write), 'Retry Update');
       expect(getActionButtonText(FlashStage.configure), 'Try Again');

@@ -382,7 +382,9 @@ void main() {
 
         // Check per-voice gates go to ES-5
         final gatePorts = outputPorts
-            .where((p) => p.name.contains('Gate') && p.name != 'Paraphonic gate')
+            .where(
+              (p) => p.name.contains('Gate') && p.name != 'Paraphonic gate',
+            )
             .toList();
         expect(gatePorts, hasLength(4));
         for (final port in gatePorts) {
@@ -401,57 +403,62 @@ void main() {
         }
       });
 
-      test('Gates to ES-5, Pitch + Velocity CVs to normal buses (tightly packed)', () {
-        final slot = createPolyCvSlot(
-          voices: 2,
-          gateOutputs: 1,
-          pitchOutputs: 1,
-          velocityOutputs: 1,
-          firstOutput: 13,
-          es5Expander: 1,
-          es5Output: 1,
-        );
+      test(
+        'Gates to ES-5, Pitch + Velocity CVs to normal buses (tightly packed)',
+        () {
+          final slot = createPolyCvSlot(
+            voices: 2,
+            gateOutputs: 1,
+            pitchOutputs: 1,
+            velocityOutputs: 1,
+            firstOutput: 13,
+            es5Expander: 1,
+            es5Output: 1,
+          );
 
-        final routing = PolyAlgorithmRouting.createFromSlot(
-          slot,
-          ioParameters: {
-            'Voices': 2,
-            'First output': 13,
-            'Gate outputs': 1,
-            'Pitch outputs': 1,
-            'Velocity outputs': 1,
-            'ES-5 Expander': 1,
-            'ES-5 Output': 1,
-          },
-          algorithmUuid: 'test-uuid-pycv',
-        );
+          final routing = PolyAlgorithmRouting.createFromSlot(
+            slot,
+            ioParameters: {
+              'Voices': 2,
+              'First output': 13,
+              'Gate outputs': 1,
+              'Pitch outputs': 1,
+              'Velocity outputs': 1,
+              'ES-5 Expander': 1,
+              'ES-5 Output': 1,
+            },
+            algorithmUuid: 'test-uuid-pycv',
+          );
 
-        final outputPorts = routing.outputPorts;
+          final outputPorts = routing.outputPorts;
 
-        // Check per-voice gates go to ES-5
-        final gatePorts = outputPorts
-            .where((p) => p.name.contains('Gate') && p.name != 'Paraphonic gate')
-            .toList();
-        expect(gatePorts, hasLength(2));
-        for (final port in gatePorts) {
-          expect(port.busParam, equals('es5_direct'));
-        }
+          // Check per-voice gates go to ES-5
+          final gatePorts = outputPorts
+              .where(
+                (p) => p.name.contains('Gate') && p.name != 'Paraphonic gate',
+              )
+              .toList();
+          expect(gatePorts, hasLength(2));
+          for (final port in gatePorts) {
+            expect(port.busParam, equals('es5_direct'));
+          }
 
-        // Check pitch + velocity CVs tightly packed: pitch1, vel1, pitch2, vel2
-        final pitchPorts = outputPorts
-            .where((p) => p.name.contains('Pitch'))
-            .toList();
-        final velPorts = outputPorts
-            .where((p) => p.name.contains('Velocity'))
-            .toList();
-        expect(pitchPorts, hasLength(2));
-        expect(velPorts, hasLength(2));
-        // Voice 1: pitch=13, velocity=14; Voice 2: pitch=15, velocity=16
-        expect(pitchPorts[0].busValue, equals(13));
-        expect(velPorts[0].busValue, equals(14));
-        expect(pitchPorts[1].busValue, equals(15));
-        expect(velPorts[1].busValue, equals(16));
-      });
+          // Check pitch + velocity CVs tightly packed: pitch1, vel1, pitch2, vel2
+          final pitchPorts = outputPorts
+              .where((p) => p.name.contains('Pitch'))
+              .toList();
+          final velPorts = outputPorts
+              .where((p) => p.name.contains('Velocity'))
+              .toList();
+          expect(pitchPorts, hasLength(2));
+          expect(velPorts, hasLength(2));
+          // Voice 1: pitch=13, velocity=14; Voice 2: pitch=15, velocity=16
+          expect(pitchPorts[0].busValue, equals(13));
+          expect(velPorts[0].busValue, equals(14));
+          expect(pitchPorts[1].busValue, equals(15));
+          expect(velPorts[1].busValue, equals(16));
+        },
+      );
     });
 
     group('Normal Mode Tests', () {

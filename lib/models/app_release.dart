@@ -15,8 +15,7 @@ class AppRelease {
 
   factory AppRelease.fromGitHubJson(Map<String, dynamic> json) {
     final tagName = json['tag_name'] as String? ?? '';
-    final version =
-        tagName.startsWith('v') ? tagName.substring(1) : tagName;
+    final version = tagName.startsWith('v') ? tagName.substring(1) : tagName;
 
     final assets = json['assets'] as List<dynamic>? ?? [];
     final platformAssets = <String, String>{};
@@ -37,9 +36,8 @@ class AppRelease {
       version: version,
       tagName: tagName,
       body: json['body'] as String? ?? '',
-      publishedAt: DateTime.tryParse(
-            json['published_at'] as String? ?? '',
-          ) ??
+      publishedAt:
+          DateTime.tryParse(json['published_at'] as String? ?? '') ??
           DateTime.now(),
       platformAssets: platformAssets,
     );

@@ -14,7 +14,8 @@ class SequenceSelector extends StatelessWidget {
   final int currentSequence; // Current parameter value
   final bool isLoading;
   final ValueChanged<int> onSequenceChanged;
-  final Map<int, String>? sequenceNames; // Optional custom names (deprecated - use enumStrings)
+  final Map<int, String>?
+  sequenceNames; // Optional custom names (deprecated - use enumStrings)
   final List<String>? enumStrings; // Firmware-provided sequence names
   final int? minValue; // Parameter minimum value
   final int? maxValue; // Parameter maximum value
@@ -37,9 +38,7 @@ class SequenceSelector extends StatelessWidget {
 
     return Row(
       children: [
-        Expanded(
-          child: _buildSequenceDropdown(context, isMobile),
-        ),
+        Expanded(child: _buildSequenceDropdown(context, isMobile)),
         if (isLoading)
           const Padding(
             padding: EdgeInsets.only(left: 8),
@@ -64,11 +63,8 @@ class SequenceSelector extends StatelessWidget {
       isExpanded: true,
       decoration: InputDecoration(
         labelText: 'Sequence',
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
         fillColor: Theme.of(context).brightness == Brightness.dark
             ? Colors.grey.shade800
@@ -77,7 +73,9 @@ class SequenceSelector extends StatelessWidget {
       items: List.generate(count, (index) {
         final value = min + index;
         String name;
-        if (enumStrings != null && index < enumStrings!.length && enumStrings![index].isNotEmpty) {
+        if (enumStrings != null &&
+            index < enumStrings!.length &&
+            enumStrings![index].isNotEmpty) {
           // Use firmware-provided enum string
           name = enumStrings![index];
         } else if (sequenceNames != null && sequenceNames!.containsKey(value)) {
@@ -88,10 +86,7 @@ class SequenceSelector extends StatelessWidget {
           name = '$value';
         }
 
-        return DropdownMenuItem<int>(
-          value: value,
-          child: Text(name),
-        );
+        return DropdownMenuItem<int>(value: value, child: Text(name));
       }),
       onChanged: isLoading
           ? null

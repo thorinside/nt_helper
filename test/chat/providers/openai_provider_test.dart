@@ -143,10 +143,7 @@ void main() {
                       {
                         'id': 'call_3',
                         'type': 'function',
-                        'function': {
-                          'name': 'show_preset',
-                          'arguments': null,
-                        },
+                        'function': {'name': 'show_preset', 'arguments': null},
                       },
                     ],
                   },
@@ -183,10 +180,7 @@ void main() {
                       {
                         'id': 'call_4',
                         'type': 'function',
-                        'function': {
-                          'name': 'show_preset',
-                          'arguments': '',
-                        },
+                        'function': {'name': 'show_preset', 'arguments': ''},
                       },
                     ],
                   },
@@ -341,7 +335,8 @@ void main() {
     });
 
     test('converts non-String Map keys in tool arguments to strings', () async {
-      final rawJson = '{"choices":[{"message":{"role":"assistant",'
+      final rawJson =
+          '{"choices":[{"message":{"role":"assistant",'
           '"tool_calls":[{"id":"call_6","type":"function",'
           '"function":{"name":"search_algorithms",'
           '"arguments":{"query":"lfo"}}}]},'
@@ -486,10 +481,7 @@ void main() {
                   'finish_reason': 'stop',
                 },
               ],
-              'usage': {
-                'prompt_tokens': '42',
-                'completion_tokens': '7',
-              },
+              'usage': {'prompt_tokens': '42', 'completion_tokens': '7'},
             }),
             200,
           );

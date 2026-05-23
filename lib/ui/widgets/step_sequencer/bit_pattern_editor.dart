@@ -74,7 +74,8 @@ class _BitPatternEditorState extends State<BitPatternEditor> {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Pattern: ${widget.validBitCount} substeps, '
+      label:
+          'Pattern: ${widget.validBitCount} substeps, '
           '${_countSetBits(widget.value, widget.validBitCount)} active',
       child: Column(
         children: List.generate(8, (index) {
@@ -126,16 +127,16 @@ class _BitPatternEditorState extends State<BitPatternEditor> {
                         color: !isValid
                             ? Colors.grey.shade400.withValues(alpha: 0.4)
                             : isSet
-                                ? widget.color
-                                : null,
+                            ? widget.color
+                            : null,
                         border: Border.all(
                           color: _focusedBitIndex == bitIndex
                               ? Theme.of(context).colorScheme.primary
                               : !isValid
-                                  ? Colors.grey.shade500
-                                  : isSet
-                                      ? widget.color
-                                      : Colors.grey.shade400,
+                              ? Colors.grey.shade500
+                              : isSet
+                              ? widget.color
+                              : Colors.grey.shade400,
                           width: _focusedBitIndex == bitIndex ? 2.0 : 0.5,
                         ),
                       ),

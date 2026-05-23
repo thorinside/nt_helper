@@ -51,7 +51,10 @@ void main() {
 
     setUp(() {
       distingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
-      tools = MCPAlgorithmTools(DistingControllerImpl(distingCubit), distingCubit);
+      tools = MCPAlgorithmTools(
+        DistingControllerImpl(distingCubit),
+        distingCubit,
+      );
     });
 
     tearDown(() {
@@ -68,7 +71,10 @@ void main() {
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('Missing required parameter: target'));
+        expect(
+          decoded['error'],
+          contains('Missing required parameter: target'),
+        );
         expect(decoded['valid_targets'], isNotNull);
       });
 
@@ -77,7 +83,10 @@ void main() {
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('Missing required parameter: target'));
+        expect(
+          decoded['error'],
+          contains('Missing required parameter: target'),
+        );
       });
 
       test('should return error when target is invalid', () async {
@@ -86,7 +95,10 @@ void main() {
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
         expect(decoded['error'], contains('Invalid target'));
-        expect(decoded['valid_targets'], equals(['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu']));
+        expect(
+          decoded['valid_targets'],
+          equals(['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu']),
+        );
       });
     });
 
@@ -106,11 +118,17 @@ void main() {
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('Missing required parameter: identifier'));
+        expect(
+          decoded['error'],
+          contains('Missing required parameter: identifier'),
+        );
       });
 
       test('should return error when identifier is not an integer', () async {
-        final result = await tools.show({'target': 'slot', 'identifier': 'not-a-number'});
+        final result = await tools.show({
+          'target': 'slot',
+          'identifier': 'not-a-number',
+        });
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
@@ -159,44 +177,77 @@ void main() {
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('Missing required parameter: identifier'));
+        expect(
+          decoded['error'],
+          contains('Missing required parameter: identifier'),
+        );
       });
 
-      test('should return error when identifier format is invalid (no colon)', () async {
-        final result = await tools.show({'target': 'parameter', 'identifier': '0'});
+      test(
+        'should return error when identifier format is invalid (no colon)',
+        () async {
+          final result = await tools.show({
+            'target': 'parameter',
+            'identifier': '0',
+          });
 
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('Invalid identifier format'));
-        expect(decoded['error'], contains('slot_index:parameter_number'));
-      });
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(decoded['error'], contains('Invalid identifier format'));
+          expect(decoded['error'], contains('slot_index:parameter_number'));
+        },
+      );
 
       test('should return error when identifier has no slot_index', () async {
-        final result = await tools.show({'target': 'parameter', 'identifier': ':5'});
+        final result = await tools.show({
+          'target': 'parameter',
+          'identifier': ':5',
+        });
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
         expect(decoded['error'], contains('Invalid identifier format'));
       });
 
-      test('should return error when identifier has non-integer slot_index', () async {
-        final result = await tools.show({'target': 'parameter', 'identifier': 'abc:5'});
+      test(
+        'should return error when identifier has non-integer slot_index',
+        () async {
+          final result = await tools.show({
+            'target': 'parameter',
+            'identifier': 'abc:5',
+          });
 
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('slot_index and parameter_number must be integers'));
-      });
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(
+            decoded['error'],
+            contains('slot_index and parameter_number must be integers'),
+          );
+        },
+      );
 
-      test('should return error when identifier has non-integer parameter_number', () async {
-        final result = await tools.show({'target': 'parameter', 'identifier': '0:abc'});
+      test(
+        'should return error when identifier has non-integer parameter_number',
+        () async {
+          final result = await tools.show({
+            'target': 'parameter',
+            'identifier': '0:abc',
+          });
 
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('slot_index and parameter_number must be integers'));
-      });
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(
+            decoded['error'],
+            contains('slot_index and parameter_number must be integers'),
+          );
+        },
+      );
 
       test('should return error when slot_index is negative', () async {
-        final result = await tools.show({'target': 'parameter', 'identifier': '-1:5'});
+        final result = await tools.show({
+          'target': 'parameter',
+          'identifier': '-1:5',
+        });
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
@@ -204,7 +255,10 @@ void main() {
       });
 
       test('should return error when slot_index >= 32', () async {
-        final result = await tools.show({'target': 'parameter', 'identifier': '32:5'});
+        final result = await tools.show({
+          'target': 'parameter',
+          'identifier': '32:5',
+        });
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
@@ -212,7 +266,10 @@ void main() {
       });
 
       test('should return error when device not synchronized', () async {
-        final result = await tools.show({'target': 'parameter', 'identifier': '0:0'});
+        final result = await tools.show({
+          'target': 'parameter',
+          'identifier': '0:0',
+        });
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);

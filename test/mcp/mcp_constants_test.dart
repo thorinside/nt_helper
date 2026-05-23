@@ -105,9 +105,12 @@ void main() {
           for (final value in [0, 1, 100, -50, 9999]) {
             final displayed = MCPUtils.scaleForDisplay(value, powerOfTen);
             final raw = MCPUtils.scaleToRaw(displayed, powerOfTen);
-            expect(raw, value,
-                reason:
-                    'Round trip failed for value=$value, powerOfTen=$powerOfTen');
+            expect(
+              raw,
+              value,
+              reason:
+                  'Round trip failed for value=$value, powerOfTen=$powerOfTen',
+            );
           }
         }
       });
@@ -216,8 +219,10 @@ void main() {
       test('higher similarity for closer strings', () {
         // 'cat' vs 'car' (1 edit, len 3) = 2/3 ≈ 0.667
         // 'cat' vs 'dog' (3 edits, len 3) = 0/3 = 0.0
-        expect(MCPUtils.similarity('cat', 'car'),
-            greaterThan(MCPUtils.similarity('cat', 'dog')));
+        expect(
+          MCPUtils.similarity('cat', 'car'),
+          greaterThan(MCPUtils.similarity('cat', 'dog')),
+        );
       });
     });
 
@@ -273,8 +278,11 @@ void main() {
       });
 
       test('includes helpCommand when provided', () {
-        final result = MCPUtils.validateRequiredParam(null, 'my_param',
-            helpCommand: 'Use search tool');
+        final result = MCPUtils.validateRequiredParam(
+          null,
+          'my_param',
+          helpCommand: 'Use search tool',
+        );
         expect(result, isNotNull);
         expect(result!['help_command'], 'Use search tool');
       });
@@ -358,10 +366,10 @@ void main() {
 
     group('validateMutuallyExclusive', () {
       test('returns error when no params provided', () {
-        final result = MCPUtils.validateMutuallyExclusive(
-          {},
-          ['param_a', 'param_b'],
-        );
+        final result = MCPUtils.validateMutuallyExclusive({}, [
+          'param_a',
+          'param_b',
+        ]);
         expect(result, isNotNull);
         expect(result!['success'], false);
         expect(result['error'], contains('required'));
@@ -413,10 +421,7 @@ void main() {
 
     group('validateExactlyOne', () {
       test('returns error when no params provided', () {
-        final result = MCPUtils.validateExactlyOne(
-          {},
-          ['param_a', 'param_b'],
-        );
+        final result = MCPUtils.validateExactlyOne({}, ['param_a', 'param_b']);
         expect(result, isNotNull);
         expect(result!['success'], false);
       });
@@ -439,11 +444,10 @@ void main() {
       });
 
       test('includes helpCommand when provided', () {
-        final result = MCPUtils.validateExactlyOne(
-          {},
-          ['param_a', 'param_b'],
-          helpCommand: 'search tool',
-        );
+        final result = MCPUtils.validateExactlyOne({}, [
+          'param_a',
+          'param_b',
+        ], helpCommand: 'search tool');
         expect(result, isNotNull);
         expect(result!['help_command'], 'search tool');
       });
@@ -476,8 +480,7 @@ void main() {
       });
 
       test('includes details when provided and non-empty', () {
-        final result =
-            MCPUtils.buildError('err', details: {'key': 'value'});
+        final result = MCPUtils.buildError('err', details: {'key': 'value'});
         expect(result['details'], {'key': 'value'});
       });
 
@@ -500,8 +503,10 @@ void main() {
       });
 
       test('merges data into result when provided', () {
-        final result =
-            MCPUtils.buildSuccess('done', data: {'count': 5, 'name': 'x'});
+        final result = MCPUtils.buildSuccess(
+          'done',
+          data: {'count': 5, 'name': 'x'},
+        );
         expect(result['success'], true);
         expect(result['message'], 'done');
         expect(result['count'], 5);
@@ -515,15 +520,16 @@ void main() {
       });
 
       test('data cannot overwrite success field', () {
-        final result =
-            MCPUtils.buildSuccess('done', data: {'success': false});
+        final result = MCPUtils.buildSuccess('done', data: {'success': false});
         // success should remain true regardless of data contents
         expect(result['success'], true);
       });
 
       test('data cannot overwrite message field', () {
-        final result =
-            MCPUtils.buildSuccess('done', data: {'message': 'hijacked'});
+        final result = MCPUtils.buildSuccess(
+          'done',
+          data: {'message': 'hijacked'},
+        );
         // message should remain 'done' regardless of data contents
         expect(result['message'], 'done');
       });

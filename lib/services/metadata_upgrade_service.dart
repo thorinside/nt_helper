@@ -15,10 +15,12 @@ class MetadataUpgradeService {
   Future<bool> needsIoFlagsUpgrade(AppDatabase database) async {
     try {
       // Check if any parameters have ioFlags set
-      final result = await database.customSelect(
-        'SELECT COUNT(*) as count FROM parameters WHERE io_flags IS NOT NULL',
-        readsFrom: {database.parameters},
-      ).getSingle();
+      final result = await database
+          .customSelect(
+            'SELECT COUNT(*) as count FROM parameters WHERE io_flags IS NOT NULL',
+            readsFrom: {database.parameters},
+          )
+          .getSingle();
 
       final count = result.read<int>('count');
       // Need upgrade if all flags are null (count = 0)

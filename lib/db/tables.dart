@@ -114,7 +114,8 @@ class ParameterOutputModeUsage extends Table {
       text().references(Algorithms, #guid)(); // FK to Algorithms
   IntColumn get parameterNumber => integer()(); // Parameter number
   // JSON array of output numbers affected by this parameter (e.g., "[1, 2, 3]")
-  TextColumn get affectedOutputNumbers => text().map(const IntListConverter())();
+  TextColumn get affectedOutputNumbers =>
+      text().map(const IntListConverter())();
 
   @override
   Set<Column> get primaryKey => {algorithmGuid, parameterNumber};

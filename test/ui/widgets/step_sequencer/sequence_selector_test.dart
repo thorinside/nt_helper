@@ -4,8 +4,9 @@ import 'package:nt_helper/ui/widgets/step_sequencer/sequence_selector.dart';
 
 void main() {
   group('SequenceSelector Widget Tests', () {
-    testWidgets('displays sequence options based on min/max values',
-        (tester) async {
+    testWidgets('displays sequence options based on min/max values', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -53,8 +54,9 @@ void main() {
       expect(find.text('5'), findsOneWidget);
     });
 
-    testWidgets('calls onSequenceChanged when selection changes',
-        (tester) async {
+    testWidgets('calls onSequenceChanged when selection changes', (
+      tester,
+    ) async {
       int? selectedSequence;
 
       await tester.pumpWidget(
@@ -85,8 +87,9 @@ void main() {
       expect(selectedSequence, equals(9));
     });
 
-    testWidgets('shows loading indicator when isLoading is true',
-        (tester) async {
+    testWidgets('shows loading indicator when isLoading is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -104,12 +107,14 @@ void main() {
 
       // Verify dropdown is disabled (onChanged should be null)
       final dropdown = tester.widget<DropdownButtonFormField<int>>(
-          find.byType(DropdownButtonFormField<int>));
+        find.byType(DropdownButtonFormField<int>),
+      );
       expect(dropdown.onChanged, isNull);
     });
 
-    testWidgets('hides loading indicator when isLoading is false',
-        (tester) async {
+    testWidgets('hides loading indicator when isLoading is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -127,45 +132,44 @@ void main() {
 
       // Verify dropdown is enabled
       final dropdown = tester.widget<DropdownButtonFormField<int>>(
-          find.byType(DropdownButtonFormField<int>));
+        find.byType(DropdownButtonFormField<int>),
+      );
       expect(dropdown.onChanged, isNotNull);
     });
 
-    testWidgets('displays custom sequence names when provided via sequenceNames',
-        (tester) async {
-      final customNames = {
-        0: 'Intro',
-        1: 'Verse',
-        2: 'Chorus',
-      };
+    testWidgets(
+      'displays custom sequence names when provided via sequenceNames',
+      (tester) async {
+        final customNames = {0: 'Intro', 1: 'Verse', 2: 'Chorus'};
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SequenceSelector(
-              currentSequence: 0,
-              isLoading: false,
-              onSequenceChanged: (_) {},
-              sequenceNames: customNames,
-              minValue: 0,
-              maxValue: 4,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SequenceSelector(
+                currentSequence: 0,
+                isLoading: false,
+                onSequenceChanged: (_) {},
+                sequenceNames: customNames,
+                minValue: 0,
+                maxValue: 4,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Open dropdown
-      await tester.tap(find.byType(DropdownButtonFormField<int>));
-      await tester.pumpAndSettle();
+        // Open dropdown
+        await tester.tap(find.byType(DropdownButtonFormField<int>));
+        await tester.pumpAndSettle();
 
-      // Verify custom names are displayed
-      expect(find.text('Intro'), findsWidgets);
-      expect(find.text('Verse'), findsWidgets);
-      expect(find.text('Chorus'), findsWidgets);
+        // Verify custom names are displayed
+        expect(find.text('Intro'), findsWidgets);
+        expect(find.text('Verse'), findsWidgets);
+        expect(find.text('Chorus'), findsWidgets);
 
-      // Verify unnamed sequences show numeric value fallback
-      expect(find.text('3'), findsWidgets);
-    });
+        // Verify unnamed sequences show numeric value fallback
+        expect(find.text('3'), findsWidgets);
+      },
+    );
 
     testWidgets('displays enumStrings when provided', (tester) async {
       final enumStrings = ['Pattern A', 'Pattern B', 'Pattern C'];
@@ -210,7 +214,8 @@ void main() {
 
       // Verify dropdown is disabled by checking onChanged is null
       final dropdown = tester.widget<DropdownButtonFormField<int>>(
-          find.byType(DropdownButtonFormField<int>));
+        find.byType(DropdownButtonFormField<int>),
+      );
       expect(dropdown.onChanged, isNull);
 
       // Also verify loading indicator is present

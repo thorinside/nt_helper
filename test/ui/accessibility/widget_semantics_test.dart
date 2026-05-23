@@ -10,31 +10,32 @@ void main() {
   group('Widget Semantics', () {
     group('PortWidget', () {
       testWidgets(
-          'announces disconnected output port with keyboard action hint',
-          (tester) async {
-        final semanticsHandle = tester.ensureSemantics();
+        'announces disconnected output port with keyboard action hint',
+        (tester) async {
+          final semanticsHandle = tester.ensureSemantics();
 
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(
-              body: PortWidget(
-                label: 'Audio Out',
-                isInput: false,
-                portId: 'audio_out_1',
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: Scaffold(
+                body: PortWidget(
+                  label: 'Audio Out',
+                  isInput: false,
+                  portId: 'audio_out_1',
+                ),
               ),
             ),
-          ),
-        );
+          );
 
-        final node = tester.getSemantics(find.byType(PortWidget));
-        final data = node.getSemanticsData();
-        expect(data.flagsCollection.isButton, isTrue);
-        expect(data.label, contains('Audio Out'));
-        expect(data.label, contains('not connected'));
-        expect(data.hint, contains('Press Space'));
+          final node = tester.getSemantics(find.byType(PortWidget));
+          final data = node.getSemanticsData();
+          expect(data.flagsCollection.isButton, isTrue);
+          expect(data.label, contains('Audio Out'));
+          expect(data.label, contains('not connected'));
+          expect(data.hint, contains('Press Space'));
 
-        semanticsHandle.dispose();
-      });
+          semanticsHandle.dispose();
+        },
+      );
 
       testWidgets('announces port type and connection state', (tester) async {
         final semanticsHandle = tester.ensureSemantics();
@@ -130,8 +131,9 @@ void main() {
         semanticsHandle.dispose();
       });
 
-      testWidgets('announces enumerated parameter labels and selected value',
-          (tester) async {
+      testWidgets('announces enumerated parameter labels and selected value', (
+        tester,
+      ) async {
         final semanticsHandle = tester.ensureSemantics();
 
         await tester.pumpWidget(

@@ -386,45 +386,45 @@ class MiniMapWidgetState extends State<MiniMapWidget> {
 
     return ExcludeSemantics(
       child: Container(
-      width: widget.width,
-      height: widget.height,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
-        border: Border.all(color: Theme.of(context).dividerColor, width: 1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: MouseRegion(
-        cursor: cursor,
-        onEnter: _handlePointerEnter,
-        onExit: _handlePointerExit,
-        onHover: _handlePointerHover,
-        child: GestureDetector(
-          onTapDown: _handleTapDown,
-          onTap: _handleTap,
-          onPanDown: _handlePanDown,
-          onPanStart: _handlePanStart,
-          onPanUpdate: _handlePanUpdate,
-          onPanEnd: _handlePanEnd,
-          // Allow both tap and pan gestures
-          behavior: HitTestBehavior.opaque,
-          child: CustomPaint(
-            painter: _MiniMapPainter(
-              viewportOffset: _viewportOffset,
-              scaleFactor: scaleFactor,
-              theme: Theme.of(context),
-              canvasWidth: widget.canvasWidth,
-              canvasHeight: widget.canvasHeight,
-              nodePositions: widget.nodePositions ?? {},
-              connections: widget.connections ?? [],
-              portPositions: widget.portPositions ?? {},
-              isDragging: _isDragging,
-              highlightViewportRectangle: _highlightViewportRectangle,
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+          border: Border.all(color: Theme.of(context).dividerColor, width: 1),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: MouseRegion(
+          cursor: cursor,
+          onEnter: _handlePointerEnter,
+          onExit: _handlePointerExit,
+          onHover: _handlePointerHover,
+          child: GestureDetector(
+            onTapDown: _handleTapDown,
+            onTap: _handleTap,
+            onPanDown: _handlePanDown,
+            onPanStart: _handlePanStart,
+            onPanUpdate: _handlePanUpdate,
+            onPanEnd: _handlePanEnd,
+            // Allow both tap and pan gestures
+            behavior: HitTestBehavior.opaque,
+            child: CustomPaint(
+              painter: _MiniMapPainter(
+                viewportOffset: _viewportOffset,
+                scaleFactor: scaleFactor,
+                theme: Theme.of(context),
+                canvasWidth: widget.canvasWidth,
+                canvasHeight: widget.canvasHeight,
+                nodePositions: widget.nodePositions ?? {},
+                connections: widget.connections ?? [],
+                portPositions: widget.portPositions ?? {},
+                isDragging: _isDragging,
+                highlightViewportRectangle: _highlightViewportRectangle,
+              ),
+              size: Size(widget.width, widget.height),
             ),
-            size: Size(widget.width, widget.height),
           ),
         ),
       ),
-    ),
     );
   }
 }

@@ -28,8 +28,7 @@ class _MappingEditButtonState extends State<MappingEditButton> {
 
     final ButtonStyle defaultStyle = IconButton.styleFrom(
       foregroundColor: Theme.of(context).colorScheme.onSurface,
-      backgroundColor:
-          Theme.of(context).colorScheme.surfaceContainerHighest,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
     );
     final ButtonStyle mappedStyle = IconButton.styleFrom(
       foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -56,7 +55,10 @@ class _MappingEditButtonState extends State<MappingEditButton> {
             minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
             tapTargetSize: MaterialTapTargetSize.padded,
           ),
-          icon: Icon(Icons.map_sharp, semanticLabel: hasMapping ? 'Edit mapping (active)' : 'Add mapping'),
+          icon: Icon(
+            Icons.map_sharp,
+            semanticLabel: hasMapping ? 'Edit mapping (active)' : 'Add mapping',
+          ),
           tooltip: hasMapping ? 'Edit mapping (active)' : 'Add mapping',
           onPressed: () async {
             final cubit = context.read<DistingCubit>();
@@ -86,10 +88,8 @@ class _MappingEditButtonState extends State<MappingEditButton> {
                   distingCubit: distingCubit,
                   data: data,
                   slots: currentSlots,
-                  algorithmIndex:
-                      widget.parameterViewRow.algorithmIndex,
-                  parameterNumber:
-                      widget.parameterViewRow.parameterNumber,
+                  algorithmIndex: widget.parameterViewRow.algorithmIndex,
+                  parameterNumber: widget.parameterViewRow.parameterNumber,
                   parameterMin: widget.parameterViewRow.min,
                   parameterMax: widget.parameterViewRow.max,
                   powerOfTen: widget.parameterViewRow.powerOfTen,

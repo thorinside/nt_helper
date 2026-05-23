@@ -8,41 +8,43 @@ import 'package:nt_helper/chat/providers/anthropic_provider.dart';
 
 void main() {
   group('AnthropicProvider', () {
-    test('sends system prompt as content-block array with cache_control',
-        () async {
-      Map<String, dynamic>? capturedBody;
+    test(
+      'sends system prompt as content-block array with cache_control',
+      () async {
+        Map<String, dynamic>? capturedBody;
 
-      final provider = AnthropicProvider(
-        apiKey: 'test-key',
-        model: 'claude-sonnet-4-20250514',
-        client: MockClient((request) async {
-          capturedBody = jsonDecode(request.body) as Map<String, dynamic>;
-          return http.Response(
-            jsonEncode({
-              'content': [
-                {'type': 'text', 'text': 'Hello'},
-              ],
-              'stop_reason': 'end_turn',
-              'usage': {'input_tokens': 10, 'output_tokens': 5},
-            }),
-            200,
-          );
-        }),
-      );
+        final provider = AnthropicProvider(
+          apiKey: 'test-key',
+          model: 'claude-sonnet-4-20250514',
+          client: MockClient((request) async {
+            capturedBody = jsonDecode(request.body) as Map<String, dynamic>;
+            return http.Response(
+              jsonEncode({
+                'content': [
+                  {'type': 'text', 'text': 'Hello'},
+                ],
+                'stop_reason': 'end_turn',
+                'usage': {'input_tokens': 10, 'output_tokens': 5},
+              }),
+              200,
+            );
+          }),
+        );
 
-      await provider.sendMessages(
-        messages: [LlmMessage.user('Hi')],
-        tools: const [],
-        systemPrompt: 'You are helpful.',
-      );
+        await provider.sendMessages(
+          messages: [LlmMessage.user('Hi')],
+          tools: const [],
+          systemPrompt: 'You are helpful.',
+        );
 
-      expect(capturedBody!['system'], isList);
-      final systemBlocks = capturedBody!['system'] as List;
-      expect(systemBlocks, hasLength(1));
-      expect(systemBlocks[0]['type'], 'text');
-      expect(systemBlocks[0]['text'], 'You are helpful.');
-      expect(systemBlocks[0]['cache_control'], {'type': 'ephemeral'});
-    });
+        expect(capturedBody!['system'], isList);
+        final systemBlocks = capturedBody!['system'] as List;
+        expect(systemBlocks, hasLength(1));
+        expect(systemBlocks[0]['type'], 'text');
+        expect(systemBlocks[0]['text'], 'You are helpful.');
+        expect(systemBlocks[0]['cache_control'], {'type': 'ephemeral'});
+      },
+    );
 
     test('adds cache_control to last tool definition', () async {
       Map<String, dynamic>? capturedBody;
@@ -124,10 +126,7 @@ void main() {
           {'type': 'text', 'text': 'Hello'},
         ],
         'stop_reason': 'end_turn',
-        'usage': {
-          'input_tokens': 50,
-          'output_tokens': 20,
-        },
+        'usage': {'input_tokens': 50, 'output_tokens': 20},
       });
 
       expect(response.usage, isNotNull);

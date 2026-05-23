@@ -107,7 +107,8 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
         final port = Port(
           id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_input',
           name: 'Channel $channelNumber',
-          type: PortType.cv, // All gate/trigger signals are CV (Story 7.5) // ES-5 handles gates/triggers
+          type: PortType
+              .cv, // All gate/trigger signals are CV (Story 7.5) // ES-5 handles gates/triggers
           direction: PortDirection.input,
           description:
               'ES-5 Channel $channelNumber (Expander $expanderValue, Output $outputValue)',

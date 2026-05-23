@@ -285,7 +285,8 @@ class PackedMappingData {
     final payload = [
       adjustedCC & 0x7F, // MIDI CC number or Note number
       flags & 0x7F, // Flags
-      if (encodeVersion >= 2) midiFlags2 & 0x7F, // Flags2 (relative, toggle, is_note)
+      if (encodeVersion >= 2)
+        midiFlags2 & 0x7F, // Flags2 (relative, toggle, is_note)
       ...encode16(midiMin), // Encode 'min' as 7-bit chunks
       ...encode16(midiMax), // Encode 'max' as 7-bit chunks
     ];

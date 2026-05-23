@@ -28,8 +28,9 @@ class ParameterEditorView extends StatelessWidget {
   Widget build(BuildContext context) {
     // For string-type parameters, don't pass unit - they use value strings
     // The registry handles firmware version differences automatically
-    final shouldShowUnit =
-        !ParameterEditorRegistry.isStringTypeUnit(parameterInfo.unit);
+    final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
+      parameterInfo.unit,
+    );
 
     // Check if we have a complete set of enum strings (all non-empty)
     // Partial enums (e.g., ["Off", "", "", ...]) should not be treated as dropdowns

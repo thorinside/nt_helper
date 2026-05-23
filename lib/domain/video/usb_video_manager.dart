@@ -174,9 +174,7 @@ class UsbVideoManager {
     if (distingNT != null) {
       await connectToDevice(distingNT.deviceId);
     } else {
-      _updateState(
-        const VideoStreamState.error('Disting NT video not found'),
-      );
+      _updateState(const VideoStreamState.error('Disting NT video not found'));
     }
   }
 

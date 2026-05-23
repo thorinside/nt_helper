@@ -60,8 +60,10 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
     Widget content = Shortcuts(
       shortcuts: <ShortcutActivator, Intent>{
-        const SingleActivator(LogicalKeyboardKey.delete): const _DeleteSelectedIntent(),
-        const SingleActivator(LogicalKeyboardKey.backspace): const _DeleteSelectedIntent(),
+        const SingleActivator(LogicalKeyboardKey.delete):
+            const _DeleteSelectedIntent(),
+        const SingleActivator(LogicalKeyboardKey.backspace):
+            const _DeleteSelectedIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -84,11 +86,17 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                     return Row(
                       children: [
                         state.maybeMap(
-                          loaded: (loaded) => loaded.navigationHistory.isNotEmpty
+                          loaded: (loaded) =>
+                              loaded.navigationHistory.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.arrow_back, semanticLabel: 'Back'),
+                                  icon: const Icon(
+                                    Icons.arrow_back,
+                                    semanticLabel: 'Back',
+                                  ),
                                   onPressed: () {
-                                    context.read<PresetBrowserCubit>().navigateBack();
+                                    context
+                                        .read<PresetBrowserCubit>()
+                                        .navigateBack();
                                   },
                                   tooltip: 'Back',
                                 )
@@ -106,7 +114,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                                   : 'Sort alphabetically',
                             ),
                             onPressed: () {
-                              context.read<PresetBrowserCubit>().toggleSortMode();
+                              context
+                                  .read<PresetBrowserCubit>()
+                                  .toggleSortMode();
                             },
                             tooltip: loaded.sortByDate
                                 ? 'Sort by date'
@@ -152,67 +162,81 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                     ),
                   Expanded(
                     child: ClipRect(
-                    child: BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
-                      builder: (context, state) {
-                        return state.map(
-                          initial: (_) =>
-                              const Center(child: CircularProgressIndicator()),
-                          loading: (_) =>
-                              const Center(child: CircularProgressIndicator()),
-                          loaded: (loaded) => isMobile
-                              ? MobileDrillDownNavigator(
-                                  items:
-                                      loaded.currentDrillItems ??
-                                      loaded.leftPanelItems,
-                                  selectedItem: loaded.selectedDrillItem,
-                                  breadcrumbs: loaded.breadcrumbs ?? [],
-                                  onItemTap: _handleMobileItemTap,
-                                  onBreadcrumbTap: _handleBreadcrumbTap,
-                                  onRefresh: _handleRefresh,
-                                  onLongPress: (entry) {
-                                    final drillPath =
-                                        loaded.drillPath ?? loaded.currentPath;
-                                    _showContextMenuAtCenter(entry, drillPath);
-                                  },
-                                )
-                              : ThreePanelNavigator(
-                                  leftPanelItems: loaded.leftPanelItems,
-                                  centerPanelItems: loaded.centerPanelItems,
-                                  rightPanelItems: loaded.rightPanelItems,
-                                  selectedLeftItem: loaded.selectedLeftItem,
-                                  selectedCenterItem: loaded.selectedCenterItem,
-                                  selectedRightItem: loaded.selectedRightItem,
-                                  onItemSelected: _handleItemSelected,
-                                  currentPath: loaded.currentPath,
-                                  onContextMenu: _handleContextMenu,
+                      child:
+                          BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
+                            builder: (context, state) {
+                              return state.map(
+                                initial: (_) => const Center(
+                                  child: CircularProgressIndicator(),
                                 ),
-                          error: (error) => Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.error_outline,
-                                  color: Colors.red,
-                                  size: 48,
+                                loading: (_) => const Center(
+                                  child: CircularProgressIndicator(),
                                 ),
-                                const SizedBox(height: 16),
-                                Text(error.message, textAlign: TextAlign.center),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    context
-                                        .read<PresetBrowserCubit>()
-                                        .loadRootDirectory();
-                                  },
-                                  child: const Text('Retry'),
+                                loaded: (loaded) => isMobile
+                                    ? MobileDrillDownNavigator(
+                                        items:
+                                            loaded.currentDrillItems ??
+                                            loaded.leftPanelItems,
+                                        selectedItem: loaded.selectedDrillItem,
+                                        breadcrumbs: loaded.breadcrumbs ?? [],
+                                        onItemTap: _handleMobileItemTap,
+                                        onBreadcrumbTap: _handleBreadcrumbTap,
+                                        onRefresh: _handleRefresh,
+                                        onLongPress: (entry) {
+                                          final drillPath =
+                                              loaded.drillPath ??
+                                              loaded.currentPath;
+                                          _showContextMenuAtCenter(
+                                            entry,
+                                            drillPath,
+                                          );
+                                        },
+                                      )
+                                    : ThreePanelNavigator(
+                                        leftPanelItems: loaded.leftPanelItems,
+                                        centerPanelItems:
+                                            loaded.centerPanelItems,
+                                        rightPanelItems: loaded.rightPanelItems,
+                                        selectedLeftItem:
+                                            loaded.selectedLeftItem,
+                                        selectedCenterItem:
+                                            loaded.selectedCenterItem,
+                                        selectedRightItem:
+                                            loaded.selectedRightItem,
+                                        onItemSelected: _handleItemSelected,
+                                        currentPath: loaded.currentPath,
+                                        onContextMenu: _handleContextMenu,
+                                      ),
+                                error: (error) => Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline,
+                                        color: Colors.red,
+                                        size: 48,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        error.message,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          context
+                                              .read<PresetBrowserCubit>()
+                                              .loadRootDirectory();
+                                        },
+                                        child: const Text('Retry'),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
-                        );
-                      },
                     ),
-                  ),
                   ),
                   BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
                     builder: (context, state) {
@@ -334,10 +358,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
         ),
       ),
       child: SingleChildScrollView(
@@ -349,7 +370,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
               button: true,
               child: InkWell(
                 onTap: () {
-                  context.read<PresetBrowserCubit>().navigateToAbsolutePath('/');
+                  context.read<PresetBrowserCubit>().navigateToAbsolutePath(
+                    '/',
+                  );
                 },
                 child: Tooltip(
                   message: 'Go to root',
@@ -398,8 +421,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                           segment,
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight:
-                                isLast ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isLast
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             color: isLast
                                 ? Theme.of(context).colorScheme.onSurfaceVariant
                                 : Theme.of(context).colorScheme.primary,
@@ -500,27 +524,31 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     final items = <PopupMenuEntry<_FileAction>>[];
 
     if (isTextFile) {
-      items.add(const PopupMenuItem(
-        value: _FileAction.view,
-        child: ListTile(
-          leading: Icon(Icons.visibility),
-          title: Text('View'),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
+      items.add(
+        const PopupMenuItem(
+          value: _FileAction.view,
+          child: ListTile(
+            leading: Icon(Icons.visibility),
+            title: Text('View'),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
         ),
-      ));
+      );
     }
 
     if (isFile) {
-      items.add(const PopupMenuItem(
-        value: _FileAction.download,
-        child: ListTile(
-          leading: Icon(Icons.download),
-          title: Text('Download'),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
+      items.add(
+        const PopupMenuItem(
+          value: _FileAction.download,
+          child: ListTile(
+            leading: Icon(Icons.download),
+            title: Text('Download'),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
         ),
-      ));
+      );
     }
 
     items.addAll([
@@ -577,12 +605,10 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         case _FileAction.download:
           _downloadFile(entryPath, entry.name);
         case _FileAction.upload:
-          final targetDir =
-              entry.isDirectory ? entryPath : panelPath;
+          final targetDir = entry.isDirectory ? entryPath : panelPath;
           _uploadFileAction(targetDir);
         case _FileAction.newFolder:
-          final targetDir =
-              entry.isDirectory ? entryPath : panelPath;
+          final targetDir = entry.isDirectory ? entryPath : panelPath;
           _createFolderAction(targetDir);
         case _FileAction.rename:
           _renameAction(entryPath, entry.name);
@@ -628,9 +654,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
           'Downloaded $fileName',
           TextDirection.ltr,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Downloaded $fileName')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Downloaded $fileName')));
       }
     } catch (e) {
       if (mounted) {
@@ -662,20 +688,24 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
     try {
       setState(() => _uploadProgress = 0);
-      await cubit.uploadFile(targetDirectory, file.name, bytes,
+      await cubit.uploadFile(
+        targetDirectory,
+        file.name,
+        bytes,
         onProgress: (progress) {
           if (mounted) setState(() => _uploadProgress = progress);
         },
       );
       if (mounted) {
         setState(() => _uploadProgress = null);
-        SemanticsService.sendAnnouncement(View.of(context),
+        SemanticsService.sendAnnouncement(
+          View.of(context),
           'Uploaded ${file.name}',
           TextDirection.ltr,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Uploaded ${file.name}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Uploaded ${file.name}')));
       }
     } catch (e) {
       if (mounted) {
@@ -696,10 +726,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Semantics(
-          header: true,
-          child: const Text('New Folder'),
-        ),
+        title: Semantics(header: true, child: const Text('New Folder')),
         content: DigitShortcutBlocker(
           child: TextField(
             controller: controller,
@@ -729,7 +756,8 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     try {
       await cubit.createDirectory(parentDirectory, name.trim());
       if (mounted) {
-        SemanticsService.sendAnnouncement(View.of(context),
+        SemanticsService.sendAnnouncement(
+          View.of(context),
           'Created folder ${name.trim()}',
           TextDirection.ltr,
         );
@@ -758,17 +786,12 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Semantics(
-          header: true,
-          child: const Text('Rename'),
-        ),
+        title: Semantics(header: true, child: const Text('Rename')),
         content: DigitShortcutBlocker(
           child: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'New name',
-            ),
+            decoration: const InputDecoration(labelText: 'New name'),
             onSubmitted: (value) => Navigator.of(context).pop(value),
           ),
         ),
@@ -785,20 +808,23 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       ),
     );
 
-    if (newName == null || newName.trim().isEmpty || newName.trim() == cleanName) {
+    if (newName == null ||
+        newName.trim().isEmpty ||
+        newName.trim() == cleanName) {
       return;
     }
 
     try {
       await cubit.renameEntry(fullPath, newName.trim());
       if (mounted) {
-        SemanticsService.sendAnnouncement(View.of(context),
+        SemanticsService.sendAnnouncement(
+          View.of(context),
           'Renamed to ${newName.trim()}',
           TextDirection.ltr,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Renamed to ${newName.trim()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Renamed to ${newName.trim()}')));
       }
     } catch (e) {
       if (mounted) {
@@ -821,10 +847,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Semantics(
-          header: true,
-          child: const Text('Delete'),
-        ),
+        title: Semantics(header: true, child: const Text('Delete')),
         content: Text('Delete "$cleanName"? This cannot be undone.'),
         actions: [
           TextButton(
@@ -847,13 +870,14 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
     try {
       await cubit.deleteEntry(fullPath);
       if (mounted) {
-        SemanticsService.sendAnnouncement(View.of(context),
+        SemanticsService.sendAnnouncement(
+          View.of(context),
           'Deleted $cleanName',
           TextDirection.ltr,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Deleted $cleanName')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Deleted $cleanName')));
       }
     } catch (e) {
       if (mounted) {
@@ -901,10 +925,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Semantics(
-            header: true,
-            child: Text(fileName),
-          ),
+          title: Semantics(header: true, child: Text(fileName)),
           content: SizedBox(
             width: MediaQuery.of(context).size.width * 0.6,
             height: MediaQuery.of(context).size.height * 0.5,
@@ -985,20 +1006,24 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
     try {
       setState(() => _uploadProgress = 0);
-      await cubit.uploadFile(targetDir, fileName, bytes,
+      await cubit.uploadFile(
+        targetDir,
+        fileName,
+        bytes,
         onProgress: (progress) {
           if (mounted) setState(() => _uploadProgress = progress);
         },
       );
       if (mounted) {
         setState(() => _uploadProgress = null);
-        SemanticsService.sendAnnouncement(View.of(context),
+        SemanticsService.sendAnnouncement(
+          View.of(context),
           'Uploaded $fileName',
           TextDirection.ltr,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Uploaded $fileName')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Uploaded $fileName')));
       }
     } catch (e) {
       if (mounted) {
@@ -1228,13 +1253,21 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
     final leftPath = widget.currentPath;
 
     String centerPath = widget.currentPath;
-    if (widget.selectedLeftItem != null && widget.selectedLeftItem!.isDirectory) {
-      centerPath = _joinPath(widget.currentPath, _cleanName(widget.selectedLeftItem!.name));
+    if (widget.selectedLeftItem != null &&
+        widget.selectedLeftItem!.isDirectory) {
+      centerPath = _joinPath(
+        widget.currentPath,
+        _cleanName(widget.selectedLeftItem!.name),
+      );
     }
 
     String rightPath = centerPath;
-    if (widget.selectedCenterItem != null && widget.selectedCenterItem!.isDirectory) {
-      rightPath = _joinPath(centerPath, _cleanName(widget.selectedCenterItem!.name));
+    if (widget.selectedCenterItem != null &&
+        widget.selectedCenterItem!.isDirectory) {
+      rightPath = _joinPath(
+        centerPath,
+        _cleanName(widget.selectedCenterItem!.name),
+      );
     }
 
     return Row(
@@ -1243,7 +1276,8 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
           child: DirectoryPanel(
             items: widget.leftPanelItems,
             selectedItem: widget.selectedLeftItem,
-            onItemTap: (item) => widget.onItemSelected(item, PanelPosition.left),
+            onItemTap: (item) =>
+                widget.onItemSelected(item, PanelPosition.left),
             position: PanelPosition.left,
             currentPath: leftPath,
             onContextMenu: widget.onContextMenu,
@@ -1256,7 +1290,8 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
           child: DirectoryPanel(
             items: widget.centerPanelItems,
             selectedItem: widget.selectedCenterItem,
-            onItemTap: (item) => widget.onItemSelected(item, PanelPosition.center),
+            onItemTap: (item) =>
+                widget.onItemSelected(item, PanelPosition.center),
             position: PanelPosition.center,
             currentPath: centerPath,
             onContextMenu: widget.onContextMenu,
@@ -1269,7 +1304,8 @@ class _ThreePanelNavigatorState extends State<ThreePanelNavigator> {
           child: DirectoryPanel(
             items: widget.rightPanelItems,
             selectedItem: widget.selectedRightItem,
-            onItemTap: (item) => widget.onItemSelected(item, PanelPosition.right),
+            onItemTap: (item) =>
+                widget.onItemSelected(item, PanelPosition.right),
             position: PanelPosition.right,
             currentPath: rightPath,
             onContextMenu: widget.onContextMenu,
@@ -1323,7 +1359,8 @@ class DirectoryPanel extends StatefulWidget {
 
 class _DirectoryPanelState extends State<DirectoryPanel> {
   FocusNode? _ownedFocusNode;
-  FocusNode get _focusNode => widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
+  FocusNode get _focusNode =>
+      widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
   final ScrollController _scrollController = ScrollController();
   int _focusedIndex = 0;
   bool _showKeyboardFocus = false;
@@ -1484,7 +1521,10 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
+            border: Border.all(
+              color: Theme.of(context).dividerColor,
+              width: 0.5,
+            ),
           ),
           child: const Center(
             child: Text(
@@ -1518,8 +1558,7 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
               child: ListView.builder(
                 controller: _scrollController,
                 itemCount: widget.items.length,
-                itemBuilder: (context, index) =>
-                    _buildItem(context, index),
+                itemBuilder: (context, index) => _buildItem(context, index),
               ),
             ),
           ),
@@ -1598,10 +1637,18 @@ class _DirectoryPanelState extends State<DirectoryPanel> {
     if (!isParentDir && widget.onContextMenu != null) {
       tile = GestureDetector(
         onSecondaryTapUp: (details) {
-          widget.onContextMenu!(item, details.globalPosition, widget.currentPath);
+          widget.onContextMenu!(
+            item,
+            details.globalPosition,
+            widget.currentPath,
+          );
         },
         onLongPressEnd: (details) {
-          widget.onContextMenu!(item, details.globalPosition, widget.currentPath);
+          widget.onContextMenu!(
+            item,
+            details.globalPosition,
+            widget.currentPath,
+          );
         },
         child: tile,
       );

@@ -28,10 +28,7 @@ class DatabaseIntegrityService {
   static Future<DatabaseIntegrityResult> checkIntegrity() async {
     final file = await getDatabaseFile();
     if (!file.existsSync()) {
-      return const DatabaseIntegrityResult(
-        isCorrupt: false,
-        fileExists: false,
-      );
+      return const DatabaseIntegrityResult(isCorrupt: false, fileExists: false);
     }
 
     try {

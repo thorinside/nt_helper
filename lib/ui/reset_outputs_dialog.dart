@@ -12,10 +12,7 @@ Future<void> showResetOutputsDialog({
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
-        title: Semantics(
-          header: true,
-          child: const Text('Reset all Outputs'),
-        ),
+        title: Semantics(header: true, child: const Text('Reset all Outputs')),
         content: SizedBox(
           width: double.infinity,
           child: DropdownMenu<int>(

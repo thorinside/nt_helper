@@ -153,8 +153,11 @@ class _PortWidgetState extends State<PortWidget> {
   void _startHoverTimer() {
     // Only start timer if port is connected and has long press handler
     // Check both onLongPress (mobile) and onLongPressStart (desktop animated)
-    final hasLongPressHandler = widget.onLongPress != null || widget.onLongPressStart != null;
-    if (!widget.isConnected || !hasLongPressHandler || _suppressDeleteHint) return;
+    final hasLongPressHandler =
+        widget.onLongPress != null || widget.onLongPressStart != null;
+    if (!widget.isConnected || !hasLongPressHandler || _suppressDeleteHint) {
+      return;
+    }
 
     _hoverTimer?.cancel();
     _hoverTimer = Timer(_hoverHintDelay, () {
@@ -211,7 +214,9 @@ class _PortWidgetState extends State<PortWidget> {
       portWidget = GestureDetector(
         onTap: widget.onTap,
         // Use animated long press if callbacks are provided, otherwise immediate
-        onLongPress: widget.onLongPressStart == null ? widget.onLongPress : null,
+        onLongPress: widget.onLongPressStart == null
+            ? widget.onLongPress
+            : null,
         onLongPressStart: widget.onLongPressStart != null
             ? (_) {
                 // Prevent the delayed hover tooltip from appearing mid-delete.
@@ -257,7 +262,8 @@ class _PortWidgetState extends State<PortWidget> {
         : 'Press Space to start a connection.';
 
     return Semantics(
-      label: '${widget.label}, $typePrefix$directionLabel, $connectionLabel$shadowLabel',
+      label:
+          '${widget.label}, $typePrefix$directionLabel, $connectionLabel$shadowLabel',
       hint: hintText,
       button: true,
       child: portWidget,
@@ -295,8 +301,8 @@ class _PortWidgetState extends State<PortWidget> {
           color: widget.isFocused
               ? theme.colorScheme.primary
               : widget.isHighlighted
-                  ? portColor.withValues(alpha: 0.8)
-                  : theme.colorScheme.outline,
+              ? portColor.withValues(alpha: 0.8)
+              : theme.colorScheme.outline,
           width: (widget.isFocused || widget.isHighlighted) ? 3 : 2,
         ),
         boxShadow: widget.isFocused
@@ -308,14 +314,14 @@ class _PortWidgetState extends State<PortWidget> {
                 ),
               ]
             : widget.isHighlighted
-                ? [
-                    BoxShadow(
-                      color: portColor.withValues(alpha: 0.3),
-                      blurRadius: 6,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
+            ? [
+                BoxShadow(
+                  color: portColor.withValues(alpha: 0.3),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
       ),
     );
 
@@ -418,9 +424,7 @@ class _PortWidgetState extends State<PortWidget> {
     // Slightly adjust brightness based on direction for additional distinction
     if (widget.isInput) {
       return HSLColor.fromColor(baseColor)
-          .withLightness(
-            theme.brightness == Brightness.dark ? 0.60 : 0.45,
-          )
+          .withLightness(theme.brightness == Brightness.dark ? 0.60 : 0.45)
           .toColor();
     } else {
       return baseColor;

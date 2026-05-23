@@ -111,8 +111,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     }
 
     // Auto-default CV range for new mappings
-    final bool isNewCvMapping = (_data.volts == -1) ||
-        (_data.volts == 0 && _data.delta == 0);
+    final bool isNewCvMapping =
+        (_data.volts == -1) || (_data.volts == 0 && _data.delta == 0);
     if (isNewCvMapping && widget.parameterMin < widget.parameterMax) {
       _cvRangeMin = widget.parameterMin;
       _cvRangeMax = widget.parameterMax;
@@ -120,12 +120,12 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       _data = _data.copyWith(volts: 5, delta: depth);
     } else {
       // Derive range from existing volts/delta
-      final depth = _data.isUnipolar
-          ? _data.delta
-          : _data.delta * 2;
+      final depth = _data.isUnipolar ? _data.delta : _data.delta * 2;
       _cvRangeMin = widget.parameterMin;
-      _cvRangeMax = (widget.parameterMin + depth)
-          .clamp(widget.parameterMin, widget.parameterMax);
+      _cvRangeMax = (widget.parameterMin + depth).clamp(
+        widget.parameterMin,
+        widget.parameterMax,
+      );
     }
 
     // Decide which tab should be displayed first.
@@ -194,11 +194,11 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
         now.difference(_lastPreviewSent!) > _previewThrottleDuration) {
       _lastPreviewSent = now;
       context.read<DistingCubit>().updateParameterValue(
-            algorithmIndex: widget.algorithmIndex,
-            parameterNumber: widget.parameterNumber,
-            value: value,
-            userIsChangingTheValue: true,
-          );
+        algorithmIndex: widget.algorithmIndex,
+        parameterNumber: widget.parameterNumber,
+        value: value,
+        userIsChangingTheValue: true,
+      );
     }
   }
 
@@ -206,13 +206,15 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final state = context.read<DistingCubit>().state;
     if (state is DistingStateSynchronized) {
       final currentValue = state
-          .slots[widget.algorithmIndex].values[widget.parameterNumber].value;
+          .slots[widget.algorithmIndex]
+          .values[widget.parameterNumber]
+          .value;
       context.read<DistingCubit>().updateParameterValue(
-            algorithmIndex: widget.algorithmIndex,
-            parameterNumber: widget.parameterNumber,
-            value: currentValue,
-            userIsChangingTheValue: false,
-          );
+        algorithmIndex: widget.algorithmIndex,
+        parameterNumber: widget.parameterNumber,
+        value: currentValue,
+        userIsChangingTheValue: false,
+      );
     }
   }
 
@@ -273,7 +275,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           _isSaving = false;
         });
         SemanticsService.sendAnnouncement(
-          View.of(context), 'Changes saved', TextDirection.ltr,
+          View.of(context),
+          'Changes saved',
+          TextDirection.ltr,
         );
       }
     } catch (e) {
@@ -287,7 +291,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             _isSaving = false;
           });
           SemanticsService.sendAnnouncement(
-            View.of(context), 'Failed to save changes', TextDirection.ltr,
+            View.of(context),
+            'Failed to save changes',
+            TextDirection.ltr,
           );
         }
       }
@@ -325,17 +331,13 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                       liveRegion: true,
                       label: _isSaving ? 'Saving changes' : 'Unsaved changes',
                       child: Tooltip(
-                        message: _isSaving
-                            ? 'Saving...'
-                            : 'Unsaved changes',
+                        message: _isSaving ? 'Saving...' : 'Unsaved changes',
                         child: Container(
                           width: 10,
                           height: 10,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _isSaving
-                                ? Colors.blue
-                                : Colors.amber,
+                            color: _isSaving ? Colors.blue : Colors.amber,
                           ),
                         ),
                       ),
@@ -368,7 +370,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final hasExtendedAuxBuses = state is DistingStateSynchronized
         ? state.firmwareVersion.hasExtendedAuxBuses
         : false;
-    final auxMax = BusSpec.auxMaxForFirmware(hasExtendedAuxBuses: hasExtendedAuxBuses);
+    final auxMax = BusSpec.auxMaxForFirmware(
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
 
     // Safely clamp the current CV input to valid range for display
     final cvInputValue = (_data.cvInput >= 0 && _data.cvInput <= auxMax)
@@ -478,8 +482,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   _data = _data.copyWith(isUnipolar: val);
                   final depth = val ? _data.delta : _data.delta * 2;
                   _cvRangeMin = widget.parameterMin;
-                  _cvRangeMax = (widget.parameterMin + depth)
-                      .clamp(widget.parameterMin, widget.parameterMax);
+                  _cvRangeMax = (widget.parameterMin + depth).clamp(
+                    widget.parameterMin,
+                    widget.parameterMax,
+                  );
                 });
                 _triggerOptimisticSave();
               },
@@ -530,8 +536,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   _data = _data.copyWith(delta: delta);
                 });
                 _triggerOptimisticSave();
-                final previewValue =
-                    (rawMin != previousMin) ? rawMin : rawMax;
+                final previewValue = (rawMin != previousMin) ? rawMin : rawMax;
                 _previewParameterValue(previewValue);
               },
               onChangeEnd: (_, _) {
@@ -691,8 +696,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               });
               _triggerOptimisticSave();
               // Preview whichever thumb moved
-              final previewValue =
-                  (rawMin != previousMin) ? rawMin : rawMax;
+              final previewValue = (rawMin != previousMin) ? rawMin : rawMax;
               _previewParameterValue(previewValue);
             },
             onChangeEnd: (_, _) {
@@ -832,8 +836,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               });
               _triggerOptimisticSave();
               // Preview whichever thumb moved
-              final previewValue =
-                  (rawMin != previousMin) ? rawMin : rawMax;
+              final previewValue = (rawMin != previousMin) ? rawMin : rawMax;
               _previewParameterValue(previewValue);
             },
             onChangeEnd: (_, _) {
@@ -926,9 +929,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
         children: [
           Text(
             'Assign this parameter to a performance page for quick access.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 16),
           DropdownMenu<int>(
@@ -936,10 +939,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: const Text('Performance Page'),
             expandedInsets: EdgeInsets.zero,
             dropdownMenuEntries: [
-              const DropdownMenuEntry<int>(
-                value: 0,
-                label: 'None',
-              ),
+              const DropdownMenuEntry<int>(value: 0, label: 'None'),
               for (int i = 1; i <= 15; i++)
                 DropdownMenuEntry<int>(
                   value: i,
@@ -967,10 +967,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             onSelected: (newValue) {
               if (newValue == null) return;
               context.read<DistingCubit>().setPerformancePageMapping(
-                    widget.algorithmIndex,
-                    widget.parameterNumber,
-                    newValue,
-                  );
+                widget.algorithmIndex,
+                widget.parameterNumber,
+                newValue,
+              );
             },
           ),
           const SizedBox(height: 16),
@@ -979,9 +979,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 ? 'Not assigned to any performance page'
                 : 'Assigned to Performance Page $currentPerfPageIndex',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[700],
-                  fontStyle: FontStyle.italic,
-                ),
+              color: Colors.grey[700],
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
       ),
@@ -1005,9 +1005,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
         children: [
           Text(
             'Assign this parameter to a performance index for quick access.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 16),
           DropdownMenu<int>(
@@ -1015,10 +1015,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: const Text('Performance Index'),
             expandedInsets: EdgeInsets.zero,
             dropdownMenuEntries: [
-              const DropdownMenuEntry<int>(
-                value: 0,
-                label: 'None',
-              ),
+              const DropdownMenuEntry<int>(value: 0, label: 'None'),
               for (int i = 1; i <= 30; i++)
                 DropdownMenuEntry<int>(
                   value: i,
@@ -1055,27 +1052,31 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 cubit.removePerfPageItem(oldDisplayIndex - 1);
               } else if (oldDisplayIndex > 0 && newValue != oldDisplayIndex) {
                 cubit.removePerfPageItem(oldDisplayIndex - 1);
-                cubit.setPerfPageItem(PerformancePageItem(
-                  itemIndex: newValue - 1,
-                  enabled: true,
-                  slotIndex: widget.algorithmIndex,
-                  parameterNumber: widget.parameterNumber,
-                  min: widget.parameterMin,
-                  max: widget.parameterMax,
-                  upperLabel: algoName,
-                  lowerLabel: paramName,
-                ));
+                cubit.setPerfPageItem(
+                  PerformancePageItem(
+                    itemIndex: newValue - 1,
+                    enabled: true,
+                    slotIndex: widget.algorithmIndex,
+                    parameterNumber: widget.parameterNumber,
+                    min: widget.parameterMin,
+                    max: widget.parameterMax,
+                    upperLabel: algoName,
+                    lowerLabel: paramName,
+                  ),
+                );
               } else if (oldDisplayIndex == 0 && newValue > 0) {
-                cubit.setPerfPageItem(PerformancePageItem(
-                  itemIndex: newValue - 1,
-                  enabled: true,
-                  slotIndex: widget.algorithmIndex,
-                  parameterNumber: widget.parameterNumber,
-                  min: widget.parameterMin,
-                  max: widget.parameterMax,
-                  upperLabel: algoName,
-                  lowerLabel: paramName,
-                ));
+                cubit.setPerfPageItem(
+                  PerformancePageItem(
+                    itemIndex: newValue - 1,
+                    enabled: true,
+                    slotIndex: widget.algorithmIndex,
+                    parameterNumber: widget.parameterNumber,
+                    min: widget.parameterMin,
+                    max: widget.parameterMax,
+                    upperLabel: algoName,
+                    lowerLabel: paramName,
+                  ),
+                );
               }
             },
           ),
@@ -1085,9 +1086,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                 ? 'Not assigned to any performance index'
                 : 'Assigned to Performance Index $currentDisplayIndex',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[700],
-                  fontStyle: FontStyle.italic,
-                ),
+              color: Colors.grey[700],
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
       ),

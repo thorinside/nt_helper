@@ -313,33 +313,36 @@ void main() {
       expect(mockManager.lastSpecifications, equals([5]));
     });
 
-    test('spec with default 0 sends midpoint (clamped to valid range)', () async {
-      final mockManager = TestMockDistingMidiManager(
-        testAlgorithms: [
-          AlgorithmInfo(
-            algorithmIndex: 0,
-            guid: 'test-zero',
-            name: 'Zero Default',
-            specifications: [
-              Specification(
-                name: 'Aux Sends per Channel',
-                min: 0,
-                max: 10,
-                defaultValue: 0,
-                type: 0,
-              ),
-            ],
-            isPlugin: false,
-            isLoaded: true,
-          ),
-        ],
-      );
+    test(
+      'spec with default 0 sends midpoint (clamped to valid range)',
+      () async {
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'test-zero',
+              name: 'Zero Default',
+              specifications: [
+                Specification(
+                  name: 'Aux Sends per Channel',
+                  min: 0,
+                  max: 10,
+                  defaultValue: 0,
+                  type: 0,
+                ),
+              ],
+              isPlugin: false,
+              isLoaded: true,
+            ),
+          ],
+        );
 
-      final service = MetadataSyncService(mockManager, database);
-      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+        final service = MetadataSyncService(mockManager, database);
+        await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
 
-      expect(mockManager.lastSpecifications, equals([5])); // (0+10)~/2 = 5
-    });
+        expect(mockManager.lastSpecifications, equals([5])); // (0+10)~/2 = 5
+      },
+    );
 
     test('spec with default 0 and max 0 sends 0 (clamped)', () async {
       final mockManager = TestMockDistingMidiManager(
@@ -369,33 +372,36 @@ void main() {
       expect(mockManager.lastSpecifications, equals([0]));
     });
 
-    test('spec with default 0 and min 2 sends midpoint (clamped to range)', () async {
-      final mockManager = TestMockDistingMidiManager(
-        testAlgorithms: [
-          AlgorithmInfo(
-            algorithmIndex: 0,
-            guid: 'test-high-min',
-            name: 'High Min',
-            specifications: [
-              Specification(
-                name: 'Mode',
-                min: 2,
-                max: 5,
-                defaultValue: 0,
-                type: 0,
-              ),
-            ],
-            isPlugin: false,
-            isLoaded: true,
-          ),
-        ],
-      );
+    test(
+      'spec with default 0 and min 2 sends midpoint (clamped to range)',
+      () async {
+        final mockManager = TestMockDistingMidiManager(
+          testAlgorithms: [
+            AlgorithmInfo(
+              algorithmIndex: 0,
+              guid: 'test-high-min',
+              name: 'High Min',
+              specifications: [
+                Specification(
+                  name: 'Mode',
+                  min: 2,
+                  max: 5,
+                  defaultValue: 0,
+                  type: 0,
+                ),
+              ],
+              isPlugin: false,
+              isLoaded: true,
+            ),
+          ],
+        );
 
-      final service = MetadataSyncService(mockManager, database);
-      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+        final service = MetadataSyncService(mockManager, database);
+        await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
 
-      expect(mockManager.lastSpecifications, equals([3])); // (2+5)~/2 = 3
-    });
+        expect(mockManager.lastSpecifications, equals([3])); // (2+5)~/2 = 3
+      },
+    );
 
     test('multiple specs apply logic per-spec', () async {
       final mockManager = TestMockDistingMidiManager(
@@ -436,190 +442,202 @@ void main() {
       final service = MetadataSyncService(mockManager, database);
       await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
 
-      expect(mockManager.lastSpecifications, equals([4, 4, 3])); // 4 (non-zero default), (0+8)~/2=4, (2+5)~/2=3
+      expect(
+        mockManager.lastSpecifications,
+        equals([4, 4, 3]),
+      ); // 4 (non-zero default), (0+8)~/2=4, (2+5)~/2=3
     });
   });
 
   group('MetadataSyncService - Auto-Recovery on Timeout', () {
-    test('rescanSingleAlgorithm: timeout triggers reboot then retry succeeds',
-        () {
-      fakeAsync((async) {
-        final database = AppDatabase.forTesting(NativeDatabase.memory());
-        final mockManager = TestMockDistingMidiManager(
-          testAlgorithms: [
-            AlgorithmInfo(
-              algorithmIndex: 0,
-              guid: 'timeout-plugin',
-              name: 'Timeout Plugin',
-              specifications: [],
-              isPlugin: true,
-              isLoaded: true,
-            ),
-          ],
-          timeoutCountByGuid: {'timeout-plugin': 1},
-        );
+    test(
+      'rescanSingleAlgorithm: timeout triggers reboot then retry succeeds',
+      () {
+        fakeAsync((async) {
+          final database = AppDatabase.forTesting(NativeDatabase.memory());
+          final mockManager = TestMockDistingMidiManager(
+            testAlgorithms: [
+              AlgorithmInfo(
+                algorithmIndex: 0,
+                guid: 'timeout-plugin',
+                name: 'Timeout Plugin',
+                specifications: [],
+                isPlugin: true,
+                isLoaded: true,
+              ),
+            ],
+            timeoutCountByGuid: {'timeout-plugin': 1},
+          );
 
-        final service = MetadataSyncService(mockManager, database);
-        Object? caughtError;
+          final service = MetadataSyncService(mockManager, database);
+          Object? caughtError;
 
-        service
-            .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
-            .catchError((e) => caughtError = e);
+          service
+              .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
+              .catchError((e) => caughtError = e);
 
-        // Advance past all delays (30s reboot wait + polling + misc)
-        async.elapse(const Duration(minutes: 2));
+          // Advance past all delays (30s reboot wait + polling + misc)
+          async.elapse(const Duration(minutes: 2));
 
-        expect(mockManager.rebootCallCount, equals(1));
-        expect(caughtError, isNull);
+          expect(mockManager.rebootCallCount, equals(1));
+          expect(caughtError, isNull);
 
-        database.close();
-        async.elapse(const Duration(seconds: 1));
-      });
-    });
-
-    test('rescanSingleAlgorithm: both attempts fail throws TimeoutException',
-        () {
-      fakeAsync((async) {
-        final database = AppDatabase.forTesting(NativeDatabase.memory());
-        final mockManager = TestMockDistingMidiManager(
-          testAlgorithms: [
-            AlgorithmInfo(
-              algorithmIndex: 0,
-              guid: 'always-fail',
-              name: 'Always Fail',
-              specifications: [],
-              isPlugin: true,
-              isLoaded: true,
-            ),
-          ],
-          alwaysFailGuids: {'always-fail'},
-        );
-
-        final service = MetadataSyncService(mockManager, database);
-        Object? caughtError;
-
-        service
-            .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
-            .catchError((e) => caughtError = e);
-
-        async.elapse(const Duration(minutes: 2));
-
-        expect(caughtError, isA<TimeoutException>());
-        expect(mockManager.rebootCallCount, equals(1));
-
-        database.close();
-        async.elapse(const Duration(seconds: 1));
-      });
-    });
-
-    test('rescanSingleAlgorithm: non-timeout error does not trigger reboot',
-        () {
-      fakeAsync((async) {
-        final database = AppDatabase.forTesting(NativeDatabase.memory());
-        final mockManager = _NonTimeoutErrorMockManager(
-          testAlgorithms: [
-            AlgorithmInfo(
-              algorithmIndex: 0,
-              guid: 'non-timeout',
-              name: 'Non-Timeout Error',
-              specifications: [],
-              isPlugin: false,
-              isLoaded: true,
-            ),
-          ],
-        );
-
-        final service = MetadataSyncService(mockManager, database);
-        Object? caughtError;
-
-        service
-            .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
-            .catchError((e) => caughtError = e);
-
-        async.elapse(const Duration(minutes: 1));
-
-        expect(caughtError, isA<Exception>());
-        expect(mockManager.rebootCallCount, equals(0));
-
-        database.close();
-        async.elapse(const Duration(seconds: 1));
-      });
-    });
-
-    test('syncAllAlgorithmMetadata: timeout then reboot then retry succeeds',
-        () {
-      fakeAsync((async) {
-        final database = AppDatabase.forTesting(NativeDatabase.memory());
-        final mockManager = TestMockDistingMidiManager(
-          testAlgorithms: [
-            AlgorithmInfo(
-              algorithmIndex: 0,
-              guid: 'syto',
-              name: 'Sync Timeout Plugin',
-              specifications: [],
-              isPlugin: false,
-              isLoaded: true,
-            ),
-          ],
-          timeoutCountByGuid: {'syto': 1},
-        );
-
-        final service = MetadataSyncService(mockManager, database);
-        final errors = <String>[];
-
-        service.syncAllAlgorithmMetadata(
-          onProgress: (progress, processed, total, mainMsg, subMsg) {},
-          onError: (error) => errors.add(error),
-        );
-
-        async.elapse(const Duration(minutes: 3));
-
-        expect(mockManager.rebootCallCount, equals(1));
-        expect(errors, isEmpty);
-
-        database.close();
-        async.elapse(const Duration(seconds: 1));
-      });
-    });
+          database.close();
+          async.elapse(const Duration(seconds: 1));
+        });
+      },
+    );
 
     test(
-        'syncAllAlgorithmMetadata: retry fails then deferred rescan+reboot succeeds',
-        () {
-      fakeAsync((async) {
-        final database = AppDatabase.forTesting(NativeDatabase.memory());
-        // Fails first 2 attempts, succeeds on 3rd (after rescan+reboot)
-        final mockManager = TestMockDistingMidiManager(
-          testAlgorithms: [
-            AlgorithmInfo(
-              algorithmIndex: 0,
-              guid: 'defr',
-              name: 'Deferred Plugin',
-              specifications: [],
-              isPlugin: false,
-              isLoaded: true,
-            ),
-          ],
-          timeoutCountByGuid: {'defr': 2},
-        );
+      'rescanSingleAlgorithm: both attempts fail throws TimeoutException',
+      () {
+        fakeAsync((async) {
+          final database = AppDatabase.forTesting(NativeDatabase.memory());
+          final mockManager = TestMockDistingMidiManager(
+            testAlgorithms: [
+              AlgorithmInfo(
+                algorithmIndex: 0,
+                guid: 'always-fail',
+                name: 'Always Fail',
+                specifications: [],
+                isPlugin: true,
+                isLoaded: true,
+              ),
+            ],
+            alwaysFailGuids: {'always-fail'},
+          );
 
-        final service = MetadataSyncService(mockManager, database);
-        final errors = <String>[];
+          final service = MetadataSyncService(mockManager, database);
+          Object? caughtError;
 
-        service.syncAllAlgorithmMetadata(
-          onProgress: (progress, processed, total, mainMsg, subMsg) {},
-          onError: (error) => errors.add(error),
-        );
+          service
+              .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
+              .catchError((e) => caughtError = e);
 
-        async.elapse(const Duration(minutes: 5));
+          async.elapse(const Duration(minutes: 2));
 
-        expect(mockManager.rescanPluginsCallCount, equals(1));
-        expect(mockManager.rebootCallCount, equals(2));
-        expect(errors, isEmpty);
+          expect(caughtError, isA<TimeoutException>());
+          expect(mockManager.rebootCallCount, equals(1));
 
-        database.close();
-        async.elapse(const Duration(seconds: 1));
-      });
-    });
+          database.close();
+          async.elapse(const Duration(seconds: 1));
+        });
+      },
+    );
+
+    test(
+      'rescanSingleAlgorithm: non-timeout error does not trigger reboot',
+      () {
+        fakeAsync((async) {
+          final database = AppDatabase.forTesting(NativeDatabase.memory());
+          final mockManager = _NonTimeoutErrorMockManager(
+            testAlgorithms: [
+              AlgorithmInfo(
+                algorithmIndex: 0,
+                guid: 'non-timeout',
+                name: 'Non-Timeout Error',
+                specifications: [],
+                isPlugin: false,
+                isLoaded: true,
+              ),
+            ],
+          );
+
+          final service = MetadataSyncService(mockManager, database);
+          Object? caughtError;
+
+          service
+              .rescanSingleAlgorithm(mockManager.testAlgorithms[0])
+              .catchError((e) => caughtError = e);
+
+          async.elapse(const Duration(minutes: 1));
+
+          expect(caughtError, isA<Exception>());
+          expect(mockManager.rebootCallCount, equals(0));
+
+          database.close();
+          async.elapse(const Duration(seconds: 1));
+        });
+      },
+    );
+
+    test(
+      'syncAllAlgorithmMetadata: timeout then reboot then retry succeeds',
+      () {
+        fakeAsync((async) {
+          final database = AppDatabase.forTesting(NativeDatabase.memory());
+          final mockManager = TestMockDistingMidiManager(
+            testAlgorithms: [
+              AlgorithmInfo(
+                algorithmIndex: 0,
+                guid: 'syto',
+                name: 'Sync Timeout Plugin',
+                specifications: [],
+                isPlugin: false,
+                isLoaded: true,
+              ),
+            ],
+            timeoutCountByGuid: {'syto': 1},
+          );
+
+          final service = MetadataSyncService(mockManager, database);
+          final errors = <String>[];
+
+          service.syncAllAlgorithmMetadata(
+            onProgress: (progress, processed, total, mainMsg, subMsg) {},
+            onError: (error) => errors.add(error),
+          );
+
+          async.elapse(const Duration(minutes: 3));
+
+          expect(mockManager.rebootCallCount, equals(1));
+          expect(errors, isEmpty);
+
+          database.close();
+          async.elapse(const Duration(seconds: 1));
+        });
+      },
+    );
+
+    test(
+      'syncAllAlgorithmMetadata: retry fails then deferred rescan+reboot succeeds',
+      () {
+        fakeAsync((async) {
+          final database = AppDatabase.forTesting(NativeDatabase.memory());
+          // Fails first 2 attempts, succeeds on 3rd (after rescan+reboot)
+          final mockManager = TestMockDistingMidiManager(
+            testAlgorithms: [
+              AlgorithmInfo(
+                algorithmIndex: 0,
+                guid: 'defr',
+                name: 'Deferred Plugin',
+                specifications: [],
+                isPlugin: false,
+                isLoaded: true,
+              ),
+            ],
+            timeoutCountByGuid: {'defr': 2},
+          );
+
+          final service = MetadataSyncService(mockManager, database);
+          final errors = <String>[];
+
+          service.syncAllAlgorithmMetadata(
+            onProgress: (progress, processed, total, mainMsg, subMsg) {},
+            onError: (error) => errors.add(error),
+          );
+
+          async.elapse(const Duration(minutes: 5));
+
+          expect(mockManager.rescanPluginsCallCount, equals(1));
+          expect(mockManager.rebootCallCount, equals(2));
+          expect(errors, isEmpty);
+
+          database.close();
+          async.elapse(const Duration(seconds: 1));
+        });
+      },
+    );
 
     test('syncAllAlgorithmMetadata: all retries fail reports error', () {
       fakeAsync((async) {
@@ -678,10 +696,12 @@ void main() {
         bool cancelled = false;
         bool completed = false;
 
-        service.syncAllAlgorithmMetadata(
-          onProgress: (progress, processed, total, mainMsg, subMsg) {},
-          isCancelled: () => cancelled,
-        ).then((_) => completed = true);
+        service
+            .syncAllAlgorithmMetadata(
+              onProgress: (progress, processed, total, mainMsg, subMsg) {},
+              isCancelled: () => cancelled,
+            )
+            .then((_) => completed = true);
 
         // Advance past initial scan + timeout, into the reboot wait
         async.elapse(const Duration(seconds: 5));

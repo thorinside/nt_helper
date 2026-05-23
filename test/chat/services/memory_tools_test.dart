@@ -23,8 +23,9 @@ void main() {
 
   group('memory_read', () {
     test('returns success JSON with content', () async {
-      when(() => mockService.readMemory())
-          .thenAnswer((_) async => 'stored facts');
+      when(
+        () => mockService.readMemory(),
+      ).thenAnswer((_) async => 'stored facts');
 
       final result = await findTool('memory_read').handler({});
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -48,9 +49,9 @@ void main() {
     test('writes string content successfully', () async {
       when(() => mockService.writeMemory(any())).thenAnswer((_) async {});
 
-      final result = await findTool('memory_write').handler({
-        'content': 'new memory content',
-      });
+      final result = await findTool(
+        'memory_write',
+      ).handler({'content': 'new memory content'});
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isTrue);
@@ -58,9 +59,7 @@ void main() {
     });
 
     test('returns error JSON for empty content', () async {
-      final result = await findTool('memory_write').handler({
-        'content': '',
-      });
+      final result = await findTool('memory_write').handler({'content': ''});
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
@@ -78,9 +77,7 @@ void main() {
     test('handles non-String value without throwing TypeError', () async {
       when(() => mockService.writeMemory(any())).thenAnswer((_) async {});
 
-      final result = await findTool('memory_write').handler({
-        'content': 42,
-      });
+      final result = await findTool('memory_write').handler({'content': 42});
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isTrue);
@@ -90,9 +87,7 @@ void main() {
     test('handles bool value without throwing TypeError', () async {
       when(() => mockService.writeMemory(any())).thenAnswer((_) async {});
 
-      final result = await findTool('memory_write').handler({
-        'content': true,
-      });
+      final result = await findTool('memory_write').handler({'content': true});
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isTrue);
@@ -104,9 +99,9 @@ void main() {
     test('appends string entry successfully', () async {
       when(() => mockService.appendDailyLog(any())).thenAnswer((_) async {});
 
-      final result = await findTool('memory_append_daily').handler({
-        'entry': 'worked on routing',
-      });
+      final result = await findTool(
+        'memory_append_daily',
+      ).handler({'entry': 'worked on routing'});
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isTrue);
@@ -114,9 +109,9 @@ void main() {
     });
 
     test('returns error JSON for empty entry', () async {
-      final result = await findTool('memory_append_daily').handler({
-        'entry': '',
-      });
+      final result = await findTool(
+        'memory_append_daily',
+      ).handler({'entry': ''});
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
@@ -134,9 +129,9 @@ void main() {
     test('handles non-String value without throwing TypeError', () async {
       when(() => mockService.appendDailyLog(any())).thenAnswer((_) async {});
 
-      final result = await findTool('memory_append_daily').handler({
-        'entry': 123,
-      });
+      final result = await findTool(
+        'memory_append_daily',
+      ).handler({'entry': 123});
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isTrue);
@@ -158,8 +153,9 @@ void main() {
 
   group('memory_read_daily', () {
     test('returns success JSON with content', () async {
-      when(() => mockService.readDailyLogs())
-          .thenAnswer((_) async => '### 2026-03-02\n- [10:00] entry');
+      when(
+        () => mockService.readDailyLogs(),
+      ).thenAnswer((_) async => '### 2026-03-02\n- [10:00] entry');
 
       final result = await findTool('memory_read_daily').handler({});
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -186,12 +182,15 @@ void main() {
 
     test('registers expected tool names', () {
       final names = entries.map((e) => e.name).toSet();
-      expect(names, containsAll([
-        'memory_read',
-        'memory_write',
-        'memory_append_daily',
-        'memory_read_daily',
-      ]));
+      expect(
+        names,
+        containsAll([
+          'memory_read',
+          'memory_write',
+          'memory_append_daily',
+          'memory_read_daily',
+        ]),
+      );
     });
   });
 }

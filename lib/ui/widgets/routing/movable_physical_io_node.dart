@@ -205,30 +205,30 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
     return Semantics(
       header: true,
       child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.1),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12.0),
-          topRight: Radius.circular(12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12.0),
+            topRight: Radius.circular(12.0),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(widget.icon, size: 16.0, color: colorScheme.primary),
+            const SizedBox(width: 8.0),
+            Text(
+              widget.title,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(widget.icon, size: 16.0, color: colorScheme.primary),
-          const SizedBox(width: 8.0),
-          Text(
-            widget.title,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    ),
     );
   }
 
@@ -306,7 +306,9 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
 
     if (event.logicalKey == LogicalKeyboardKey.enter) {
       if (_focusedPortIndex < 0 && widget.ports.isNotEmpty) {
-        setState(() { _focusedPortIndex = 0; });
+        setState(() {
+          _focusedPortIndex = 0;
+        });
         return KeyEventResult.handled;
       }
       if (_focusedPortIndex >= 0) {
@@ -317,33 +319,44 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
 
     if (event.logicalKey == LogicalKeyboardKey.escape) {
       if (_focusedPortIndex >= 0) {
-        setState(() { _focusedPortIndex = -1; });
+        setState(() {
+          _focusedPortIndex = -1;
+        });
         return KeyEventResult.handled;
       }
       return KeyEventResult.ignored;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.arrowDown && _focusedPortIndex >= 0) {
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+        _focusedPortIndex >= 0) {
       setState(() {
-        _focusedPortIndex = (_focusedPortIndex + 1).clamp(0, widget.ports.length - 1);
+        _focusedPortIndex = (_focusedPortIndex + 1).clamp(
+          0,
+          widget.ports.length - 1,
+        );
       });
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp && _focusedPortIndex >= 0) {
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+        _focusedPortIndex >= 0) {
       setState(() {
-        _focusedPortIndex = (_focusedPortIndex - 1).clamp(0, widget.ports.length - 1);
+        _focusedPortIndex = (_focusedPortIndex - 1).clamp(
+          0,
+          widget.ports.length - 1,
+        );
       });
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.space && _focusedPortIndex >= 0) {
+    if (event.logicalKey == LogicalKeyboardKey.space &&
+        _focusedPortIndex >= 0) {
       _activateFocusedPort();
       return KeyEventResult.handled;
     }
 
     if ((event.logicalKey == LogicalKeyboardKey.delete ||
-         event.logicalKey == LogicalKeyboardKey.backspace) &&
+            event.logicalKey == LogicalKeyboardKey.backspace) &&
         _focusedPortIndex >= 0) {
       _deleteFocusedPortConnections();
       return KeyEventResult.handled;
@@ -353,13 +366,17 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   }
 
   void _activateFocusedPort() {
-    if (_focusedPortIndex < 0 || _focusedPortIndex >= widget.ports.length) return;
+    if (_focusedPortIndex < 0 || _focusedPortIndex >= widget.ports.length) {
+      return;
+    }
     final port = widget.ports[_focusedPortIndex];
     widget.onPortTapped?.call(port);
   }
 
   void _deleteFocusedPortConnections() {
-    if (_focusedPortIndex < 0 || _focusedPortIndex >= widget.ports.length) return;
+    if (_focusedPortIndex < 0 || _focusedPortIndex >= widget.ports.length) {
+      return;
+    }
     final port = widget.ports[_focusedPortIndex];
     widget.onPortLongPress?.call(port);
   }
@@ -383,8 +400,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
     if (!_isDragging) return;
 
     // Account for canvas zoom level (screen pixels != canvas pixels)
-    final dragDelta =
-        (details.globalPosition - _dragStartGlobal) / _dragScale;
+    final dragDelta = (details.globalPosition - _dragStartGlobal) / _dragScale;
     final newPosition = _initialPosition + dragDelta;
 
     // Snap to grid

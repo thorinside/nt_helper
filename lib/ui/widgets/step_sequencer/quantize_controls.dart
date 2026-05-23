@@ -65,15 +65,9 @@ class QuantizeControls extends StatelessWidget {
       children: [
         _buildSnapCheckbox(context),
         const SizedBox(width: 12),
-        SizedBox(
-          width: 150,
-          child: _buildScaleDropdown(context),
-        ),
+        SizedBox(width: 150, child: _buildScaleDropdown(context)),
         const SizedBox(width: 12),
-        SizedBox(
-          width: 100,
-          child: _buildRootNoteDropdown(context),
-        ),
+        SizedBox(width: 100, child: _buildRootNoteDropdown(context)),
         const SizedBox(width: 12),
         _buildQuantizeAllButton(context),
         const SizedBox(width: 12),
@@ -90,13 +84,9 @@ class QuantizeControls extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(
-              child: _buildScaleDropdown(context),
-            ),
+            Expanded(child: _buildScaleDropdown(context)),
             const SizedBox(width: 8),
-            Expanded(
-              child: _buildRootNoteDropdown(context),
-            ),
+            Expanded(child: _buildRootNoteDropdown(context)),
           ],
         ),
         const SizedBox(height: 8),
@@ -115,17 +105,11 @@ class QuantizeControls extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Checkbox(
-          value: snapEnabled,
-          onChanged: (_) => onToggleSnap(),
-        ),
+        Checkbox(value: snapEnabled, onChanged: (_) => onToggleSnap()),
         const SizedBox(width: 4),
         GestureDetector(
           onTap: onToggleSnap,
-          child: const Text(
-            'Snap to Scale',
-            style: TextStyle(fontSize: 14),
-          ),
+          child: const Text('Snap to Scale', style: TextStyle(fontSize: 14)),
         ),
       ],
     );
@@ -137,21 +121,15 @@ class QuantizeControls extends StatelessWidget {
       isExpanded: true,
       decoration: InputDecoration(
         labelText: 'Scale',
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
         fillColor: Theme.of(context).brightness == Brightness.dark
             ? Colors.grey.shade800
             : Colors.grey.shade50,
       ),
       items: ScaleQuantizer.scaleNames.map((scale) {
-        return DropdownMenuItem<String>(
-          value: scale,
-          child: Text(scale),
-        );
+        return DropdownMenuItem<String>(value: scale, child: Text(scale));
       }).toList(),
       onChanged: (scale) {
         if (scale != null) {
@@ -167,11 +145,8 @@ class QuantizeControls extends StatelessWidget {
       isExpanded: true,
       decoration: InputDecoration(
         labelText: 'Root',
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
         fillColor: Theme.of(context).brightness == Brightness.dark
             ? Colors.grey.shade800
@@ -217,8 +192,12 @@ class QuantizeControls extends StatelessWidget {
             ? const Color(0xFF14b8a6) // primaryTeal
             : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
         foregroundColor: Colors.white,
-        disabledBackgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-        disabledForegroundColor: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+        disabledBackgroundColor: isDark
+            ? Colors.grey.shade800
+            : Colors.grey.shade300,
+        disabledForegroundColor: isDark
+            ? Colors.grey.shade600
+            : Colors.grey.shade400,
       ),
     );
   }

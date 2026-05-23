@@ -169,16 +169,17 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
 
   Widget? _buildOriginalNameSubtitle(BuildContext context) {
     final guid = widget.slot.algorithm.guid;
-    final originalName =
-        AlgorithmMetadataService().getAlgorithmByGuid(guid)?.name;
+    final originalName = AlgorithmMetadataService()
+        .getAlgorithmByGuid(guid)
+        ?.name;
     if (originalName == null || originalName == widget.slot.algorithm.name) {
       return null;
     }
     return Text(
       originalName,
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
-          ),
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+      ),
       overflow: TextOverflow.ellipsis,
     );
   }
@@ -186,7 +187,8 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
   @override
   Widget build(BuildContext context) {
     final displayName = widget.slot.algorithm.name;
-    final hasActions = widget.onMoveUp != null ||
+    final hasActions =
+        widget.onMoveUp != null ||
         widget.onMoveDown != null ||
         widget.onDelete != null;
 
@@ -198,8 +200,7 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
           var cubit = context.read<DistingCubit>();
           final newName = await showDialog<String>(
             context: context,
-            builder: (dialogCtx) =>
-                RenameSlotDialog(initialName: displayName),
+            builder: (dialogCtx) => RenameSlotDialog(initialName: displayName),
           );
           if (newName != null && newName != displayName) {
             cubit.renameSlot(widget.index, newName);
@@ -215,8 +216,9 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
       },
       child: MouseRegion(
         onEnter: (_) {
-          widget.onHelpTextChanged
-              ?.call(AlgorithmListView.algorithmNameHelpText);
+          widget.onHelpTextChanged?.call(
+            AlgorithmListView.algorithmNameHelpText,
+          );
           if (hasActions) _onHoverChanged(true);
         },
         onExit: (_) {
@@ -238,17 +240,16 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
             children: [
               ListTile(
                 title: ExcludeSemantics(
-                  child: Text(
-                    displayName,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: Text(displayName, overflow: TextOverflow.ellipsis),
                 ),
                 subtitle: _buildOriginalNameSubtitle(context),
                 selected: widget.isSelected,
-                selectedTileColor:
-                    Theme.of(context).colorScheme.secondaryContainer,
-                selectedColor:
-                    Theme.of(context).colorScheme.onSecondaryContainer,
+                selectedTileColor: Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer,
+                selectedColor: Theme.of(
+                  context,
+                ).colorScheme.onSecondaryContainer,
                 onTap: () {
                   widget.onSelectionChanged(widget.index);
                   SemanticsService.sendAnnouncement(
@@ -300,14 +301,9 @@ class _AlgorithmListTileState extends State<_AlgorithmListTile>
                               stops: const [0.0, 0.3],
                             ),
                           ),
-                          padding: const EdgeInsets.only(
-                            left: 24,
-                            right: 8,
-                          ),
+                          padding: const EdgeInsets.only(left: 24, right: 8),
                           child: Opacity(
-                            opacity: widget.isSelected
-                                ? 0.3 + 0.7 * t
-                                : t,
+                            opacity: widget.isSelected ? 0.3 + 0.7 * t : t,
                             child: child,
                           ),
                         ),

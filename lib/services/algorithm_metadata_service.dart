@@ -134,7 +134,8 @@ class AlgorithmMetadataService {
 
       final featureFiles = allAssets
           .where(
-            (path) => path.startsWith('docs/features/') && path.endsWith('.json'),
+            (path) =>
+                path.startsWith('docs/features/') && path.endsWith('.json'),
           )
           .toList();
 

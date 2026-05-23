@@ -46,9 +46,13 @@ class _PortWidgetState extends State<PortWidget> {
 
   String _getPortTypeLabel() {
     final portName = widget.port.name.toLowerCase();
-    if (portName.contains('audio') || portName.contains('signal')) return 'Audio';
+    if (portName.contains('audio') || portName.contains('signal')) {
+      return 'Audio';
+    }
     if (portName.contains('cv') || portName.contains('control')) return 'CV';
-    if (portName.contains('gate') || portName.contains('trigger')) return 'Gate';
+    if (portName.contains('gate') || portName.contains('trigger')) {
+      return 'Gate';
+    }
     if (portName.contains('clock') || portName.contains('sync')) return 'Clock';
     return 'Signal';
   }
@@ -59,122 +63,123 @@ class _PortWidgetState extends State<PortWidget> {
     final connectionLabel = widget.isConnected ? 'Connected' : 'Not connected';
 
     return Semantics(
-      label: '${widget.port.name}, ${_getPortTypeLabel()} $typeLabel, $connectionLabel',
+      label:
+          '${widget.port.name}, ${_getPortTypeLabel()} $typeLabel, $connectionLabel',
       button: true,
       child: GestureDetector(
-      onPanStart: (details) {
-        setState(() {
-          _isPressed = true;
-          _dragStartPosition = details.localPosition;
-          _isDragging = false;
-        });
-      },
-      onPanUpdate: (details) {
-        if (widget.type == PortType.output) {
-          // Check if we've moved beyond the threshold
-          if (!_isDragging && _dragStartPosition != null) {
-            final distance =
-                (details.localPosition - _dragStartPosition!).distance;
-            if (distance > _dragThreshold) {
-              // Start the connection only after moving beyond threshold
-              setState(() {
-                _isDragging = true;
-              });
-              widget.onConnectionStart?.call();
-              // Create a synthetic pan start at the original position
-              final syntheticStart = DragStartDetails(
-                localPosition: _dragStartPosition!,
-                globalPosition:
-                    details.globalPosition -
-                    (details.localPosition - _dragStartPosition!),
-              );
-              widget.onPanStart?.call(syntheticStart);
+        onPanStart: (details) {
+          setState(() {
+            _isPressed = true;
+            _dragStartPosition = details.localPosition;
+            _isDragging = false;
+          });
+        },
+        onPanUpdate: (details) {
+          if (widget.type == PortType.output) {
+            // Check if we've moved beyond the threshold
+            if (!_isDragging && _dragStartPosition != null) {
+              final distance =
+                  (details.localPosition - _dragStartPosition!).distance;
+              if (distance > _dragThreshold) {
+                // Start the connection only after moving beyond threshold
+                setState(() {
+                  _isDragging = true;
+                });
+                widget.onConnectionStart?.call();
+                // Create a synthetic pan start at the original position
+                final syntheticStart = DragStartDetails(
+                  localPosition: _dragStartPosition!,
+                  globalPosition:
+                      details.globalPosition -
+                      (details.localPosition - _dragStartPosition!),
+                );
+                widget.onPanStart?.call(syntheticStart);
+              }
+            }
+
+            // Continue updating if we're dragging
+            if (_isDragging) {
+              widget.onPanUpdate?.call(details);
             }
           }
+        },
+        onPanEnd: (details) {
+          setState(() {
+            _isPressed = false;
+          });
 
-          // Continue updating if we're dragging
-          if (_isDragging) {
-            widget.onPanUpdate?.call(details);
+          if (widget.type == PortType.input) {
+            widget.onConnectionEnd?.call();
           }
-        }
-      },
-      onPanEnd: (details) {
-        setState(() {
-          _isPressed = false;
-        });
 
-        if (widget.type == PortType.input) {
-          widget.onConnectionEnd?.call();
-        }
+          if (widget.type == PortType.output && _isDragging) {
+            // Only trigger pan end if we were actually dragging
+            widget.onPanEnd?.call(details);
+          }
 
-        if (widget.type == PortType.output && _isDragging) {
-          // Only trigger pan end if we were actually dragging
-          widget.onPanEnd?.call(details);
-        }
-
-        setState(() {
-          _isDragging = false;
-          _dragStartPosition = null;
-        });
-      },
-      onTapDown: (_) {
-        setState(() {
-          _isPressed = true;
-        });
-      },
-      onTap: () {
-        // For now, taps on ports don't do anything
-        // Connection creation requires dragging beyond the threshold
-        // Connection removal is handled through the connection lines themselves
-      },
-      onTapUp: (_) {
-        setState(() {
-          _isPressed = false;
-        });
-      },
-      onTapCancel: () {
-        setState(() {
-          _isPressed = false;
-          _isDragging = false;
-          _dragStartPosition = null;
-        });
-      },
-      child: Container(
-        width: 24,
-        height: 24,
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: _getPortColor(),
-          border: Border.all(
-            color: _getBorderColor(),
-            width: _getBorderWidth(),
+          setState(() {
+            _isDragging = false;
+            _dragStartPosition = null;
+          });
+        },
+        onTapDown: (_) {
+          setState(() {
+            _isPressed = true;
+          });
+        },
+        onTap: () {
+          // For now, taps on ports don't do anything
+          // Connection creation requires dragging beyond the threshold
+          // Connection removal is handled through the connection lines themselves
+        },
+        onTapUp: (_) {
+          setState(() {
+            _isPressed = false;
+          });
+        },
+        onTapCancel: () {
+          setState(() {
+            _isPressed = false;
+            _isDragging = false;
+            _dragStartPosition = null;
+          });
+        },
+        child: Container(
+          width: 24,
+          height: 24,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _getPortColor(),
+            border: Border.all(
+              color: _getBorderColor(),
+              width: _getBorderWidth(),
+            ),
+            boxShadow: widget.isHovered || _isPressed
+                ? [
+                    BoxShadow(
+                      color: _getPortColor().withValues(alpha: 0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
           ),
-          boxShadow: widget.isHovered || _isPressed
-              ? [
-                  BoxShadow(
-                    color: _getPortColor().withValues(alpha: 0.5),
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: widget.isConnected ? 8 : 6,
-            height: widget.isConnected ? 8 : 6,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: widget.isConnected
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.7),
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: widget.isConnected ? 8 : 6,
+              height: widget.isConnected ? 8 : 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: widget.isConnected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.7),
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 

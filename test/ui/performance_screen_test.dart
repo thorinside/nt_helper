@@ -19,8 +19,7 @@ void main() {
 
   setUp(() {
     mockCubit = MockDistingCubit();
-    when(() => mockCubit.refreshPerfPageItems())
-        .thenAnswer((_) async {});
+    when(() => mockCubit.refreshPerfPageItems()).thenAnswer((_) async {});
   });
 
   Widget createTestWidget({required Widget child, double width = 800}) {

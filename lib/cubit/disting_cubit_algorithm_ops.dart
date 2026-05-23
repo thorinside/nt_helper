@@ -20,8 +20,9 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         continue;
       }
 
-      final match = RegExp('^${RegExp.escape(baseName)}\\((\\d+)\\)\$')
-          .firstMatch(a.name);
+      final match = RegExp(
+        '^${RegExp.escape(baseName)}\\((\\d+)\\)\$',
+      ).firstMatch(a.name);
       if (match == null) continue;
       final n = int.tryParse(match.group(1) ?? '');
       if (n != null && n >= 2) {
@@ -173,8 +174,11 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
               final verified = state;
               if (verified is! DistingStateSynchronized) return;
               if (verified.slots.length != newSlotIndex + 1) return;
-              final updatedSlots =
-                  updateSlot(newSlotIndex, verified.slots, (_) => fetched!);
+              final updatedSlots = updateSlot(
+                newSlotIndex,
+                verified.slots,
+                (_) => fetched!,
+              );
               emit(verified.copyWith(slots: updatedSlots, loading: false));
               _rebuildCcLookup();
               return;

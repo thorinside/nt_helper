@@ -118,10 +118,10 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
         final eventNumber = eventInfo.$2;
         if (eventNumber != null) {
           _statusMessage = switch (type) {
-            MidiEventType.cc14BitLowFirst ||
-            MidiEventType.cc14BitHighFirst =>
+            MidiEventType.cc14BitLowFirst || MidiEventType.cc14BitHighFirst =>
               '14-bit CC $eventNumber Ch ${channel + 1}',
-            _ => 'Detected ${eventInfo.$1} $eventNumber on channel ${channel + 1}',
+            _ =>
+              'Detected ${eventInfo.$1} $eventNumber on channel ${channel + 1}',
           };
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
@@ -207,8 +207,14 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                         MidiEventType.cc => ('CC', lastDetectedCc),
                         MidiEventType.noteOn => ('Note On', lastDetectedNote),
                         MidiEventType.noteOff => ('Note Off', lastDetectedNote),
-                        MidiEventType.cc14BitLowFirst => ('14-bit CC', lastDetectedCc),
-                        MidiEventType.cc14BitHighFirst => ('14-bit CC', lastDetectedCc),
+                        MidiEventType.cc14BitLowFirst => (
+                          '14-bit CC',
+                          lastDetectedCc,
+                        ),
+                        MidiEventType.cc14BitHighFirst => (
+                          '14-bit CC',
+                          lastDetectedCc,
+                        ),
                       };
 
                       final eventNumber = eventInfo.$2;
@@ -309,7 +315,11 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
     setState(() {
       _statusMessage = newMessage;
     });
-    SemanticsService.sendAnnouncement(View.of(context),newMessage, TextDirection.ltr);
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      newMessage,
+      TextDirection.ltr,
+    );
     _fadeTimer?.cancel();
     _fadeTimer = Timer(const Duration(seconds: 3), () {
       setState(() {

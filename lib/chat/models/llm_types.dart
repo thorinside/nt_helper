@@ -33,10 +33,14 @@ class LlmMessage {
   factory LlmMessage.assistant(String content) =>
       LlmMessage(role: LlmRole.assistant, content: content);
 
-  factory LlmMessage.assistantWithToolCalls(List<LlmToolCall> toolCalls,
-          {String? content}) =>
-      LlmMessage(
-          role: LlmRole.assistant, content: content, toolCalls: toolCalls);
+  factory LlmMessage.assistantWithToolCalls(
+    List<LlmToolCall> toolCalls, {
+    String? content,
+  }) => LlmMessage(
+    role: LlmRole.assistant,
+    content: content,
+    toolCalls: toolCalls,
+  );
 
   factory LlmMessage.toolResult({
     required String toolCallId,
@@ -44,15 +48,14 @@ class LlmMessage {
     required String content,
     String? imageBase64,
     String? imageMimeType,
-  }) =>
-      LlmMessage(
-        role: LlmRole.tool,
-        content: content,
-        toolCallId: toolCallId,
-        toolName: toolName,
-        imageBase64: imageBase64,
-        imageMimeType: imageMimeType,
-      );
+  }) => LlmMessage(
+    role: LlmRole.tool,
+    content: content,
+    toolCallId: toolCallId,
+    toolName: toolName,
+    imageBase64: imageBase64,
+    imageMimeType: imageMimeType,
+  );
 }
 
 /// A tool call requested by the LLM.

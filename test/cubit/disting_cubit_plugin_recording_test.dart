@@ -37,11 +37,12 @@ void main() {
 
     // Setup common mocks for file upload
     when(() => mockDisting.requestWake()).thenAnswer((_) async {});
-    when(() => mockDisting.requestDirectoryListing(any()))
-        .thenAnswer((_) async => DirectoryListing(entries: []));
-    when(() => mockDisting.requestDirectoryCreate(any())).thenAnswer(
-      (_) async => SdCardStatus(success: true, message: 'ok'),
-    );
+    when(
+      () => mockDisting.requestDirectoryListing(any()),
+    ).thenAnswer((_) async => DirectoryListing(entries: []));
+    when(
+      () => mockDisting.requestDirectoryCreate(any()),
+    ).thenAnswer((_) async => SdCardStatus(success: true, message: 'ok'));
     when(
       () => mockDisting.requestFileUploadChunk(
         any(),
@@ -51,13 +52,16 @@ void main() {
       ),
     ).thenAnswer((_) async => SdCardStatus(success: true, message: 'ok'));
     when(() => mockDisting.requestRescanPlugins()).thenAnswer((_) async {});
-    when(() => mockDisting.requestNumberOfAlgorithms())
-        .thenAnswer((_) async => 0);
+    when(
+      () => mockDisting.requestNumberOfAlgorithms(),
+    ).thenAnswer((_) async => 0);
     when(() => mockDisting.requestNewPreset()).thenAnswer((_) async {});
-    when(() => mockDisting.requestLoadPreset(any(), any()))
-        .thenAnswer((_) async {});
-    when(() => mockDisting.requestNumAlgorithmsInPreset())
-        .thenAnswer((_) async => 0);
+    when(
+      () => mockDisting.requestLoadPreset(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockDisting.requestNumAlgorithmsInPreset(),
+    ).thenAnswer((_) async => 0);
     when(() => mockDisting.requestPresetName()).thenAnswer((_) async => 'Test');
   });
 
@@ -98,10 +102,13 @@ void main() {
       await cubit.installPlugin('test_script.lua', testData);
 
       // Assert - verify database record was created
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
-      expect(records[0].installationPath, equals('/programs/lua/test_script.lua'));
+      expect(
+        records[0].installationPath,
+        equals('/programs/lua/test_script.lua'),
+      );
       expect(records[0].pluginType, equals('lua'));
       expect(records[0].pluginName, equals('test_script.lua'));
       expect(records[0].totalBytes, equals(3));
@@ -116,8 +123,8 @@ void main() {
       await cubit.installPlugin('effect.3pot', testData);
 
       // Assert
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(
         records[0].installationPath,
@@ -135,13 +142,10 @@ void main() {
       await cubit.installPlugin('synth.o', testData);
 
       // Assert
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
-      expect(
-        records[0].installationPath,
-        equals('/programs/plug-ins/synth.o'),
-      );
+      expect(records[0].installationPath, equals('/programs/plug-ins/synth.o'));
       expect(records[0].pluginType, equals('cpp'));
       expect(records[0].totalBytes, equals(100));
     });
@@ -157,8 +161,8 @@ void main() {
       await cubit.installPlugin('test.lua', largerData);
 
       // Assert - should have only one record (upsert)
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].totalBytes, equals(5)); // Updated to larger size
     });
@@ -187,8 +191,8 @@ void main() {
       );
 
       // Verify no database record was created
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records, isEmpty);
     });
 
@@ -201,8 +205,8 @@ void main() {
       await cubit.installPlugin('subfolder/nested.lua', testData);
 
       // Assert
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(
         records[0].installationPath,
@@ -225,8 +229,8 @@ void main() {
       );
 
       // Assert - verify gallery metadata was recorded
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].pluginId, equals('expert-sleepers/my-synth'));
       expect(records[0].pluginVersion, equals('1.2.0'));
@@ -243,8 +247,8 @@ void main() {
       await cubit.installPlugin('my-script.lua', testData);
 
       // Assert - verify local prefix was used
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].pluginId, startsWith('local:'));
       expect(records[0].pluginVersion, equals('unknown'));

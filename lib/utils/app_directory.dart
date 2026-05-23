@@ -12,10 +12,7 @@ const _markerFile = '.migrated';
 /// copying them independently is non-atomic and can produce a corrupt
 /// database. SQLite will create new WAL/SHM files as needed when it opens
 /// the copied database.
-const filesToMigrate = [
-  'nt_helper_db.sqlite',
-  'gallery_cache.json',
-];
+const filesToMigrate = ['nt_helper_db.sqlite', 'gallery_cache.json'];
 
 Completer<Directory>? _initCompleter;
 
@@ -37,8 +34,9 @@ Future<Directory> getAppDirectory({
   _initCompleter = Completer<Directory>();
 
   try {
-    final docsDir =
-        docsProvider != null ? await docsProvider() : await getApplicationDocumentsDirectory();
+    final docsDir = docsProvider != null
+        ? await docsProvider()
+        : await getApplicationDocumentsDirectory();
     final appDir = Directory(p.join(docsDir.path, _subDir));
 
     if (!appDir.existsSync()) {

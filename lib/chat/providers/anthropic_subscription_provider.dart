@@ -66,14 +66,13 @@ class AnthropicSubscriptionProvider
 
     if (tools.isNotEmpty) {
       final toolsList = tools
-          .map((t) => <String, dynamic>{
-                'name': t.name,
-                'description': t.description,
-                'input_schema': {
-                  'type': 'object',
-                  ...t.inputSchema,
-                },
-              })
+          .map(
+            (t) => <String, dynamic>{
+              'name': t.name,
+              'description': t.description,
+              'input_schema': {'type': 'object', ...t.inputSchema},
+            },
+          )
           .toList();
       toolsList.last['cache_control'] = {'type': 'ephemeral'};
       body['tools'] = toolsList;

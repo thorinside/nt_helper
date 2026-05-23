@@ -24,20 +24,30 @@ class ChatLoopToolResult extends ChatLoopEvent {
   final String result;
   final String? imageBase64;
   final String? imageMimeType;
-  ChatLoopToolResult(this.toolCallId, this.toolName, this.result,
-      {this.imageBase64, this.imageMimeType});
+  ChatLoopToolResult(
+    this.toolCallId,
+    this.toolName,
+    this.result, {
+    this.imageBase64,
+    this.imageMimeType,
+  });
 }
 
 class ChatLoopAssistantMessage extends ChatLoopEvent {
   final String content;
   final LlmUsage? usage;
   final bool isFinal;
+
   /// When [isFinal] is true, contains the full updated LLM history including
   /// all tool calls/results and the final assistant message, ready to replace
   /// the cubit's [_llmHistory].
   final List<LlmMessage>? finalHistory;
-  ChatLoopAssistantMessage(this.content,
-      {this.usage, this.isFinal = false, this.finalHistory});
+  ChatLoopAssistantMessage(
+    this.content, {
+    this.usage,
+    this.isFinal = false,
+    this.finalHistory,
+  });
 }
 
 class ChatLoopError extends ChatLoopEvent {
@@ -74,9 +84,9 @@ class ChatService {
     required LlmProvider provider,
     required ToolBridgeService toolBridge,
     required String systemPrompt,
-  })  : _provider = provider,
-        _toolBridge = toolBridge,
-        _systemPrompt = systemPrompt;
+  }) : _provider = provider,
+       _toolBridge = toolBridge,
+       _systemPrompt = systemPrompt;
 
   /// Run the agentic loop as a stream of events.
   ///
@@ -143,10 +153,12 @@ class ChatService {
 
       if (response.hasToolCalls) {
         // Add assistant message with tool calls to history
-        currentMessages.add(LlmMessage.assistantWithToolCalls(
-          response.toolCalls,
-          content: response.content,
-        ));
+        currentMessages.add(
+          LlmMessage.assistantWithToolCalls(
+            response.toolCalls,
+            content: response.content,
+          ),
+        );
 
         if (response.content != null && response.content!.isNotEmpty) {
           yield ChatLoopAssistantMessage(response.content!);
@@ -156,8 +168,10 @@ class ChatService {
         for (final toolCall in response.toolCalls) {
           yield ChatLoopToolCall(toolCall);
 
-          final result =
-              await _toolBridge.executeTool(toolCall.name, toolCall.arguments);
+          final result = await _toolBridge.executeTool(
+            toolCall.name,
+            toolCall.arguments,
+          );
 
           final image = tryParseImageResult(result);
           final String llmContent;
@@ -171,17 +185,24 @@ class ChatService {
             llmContent = result;
           }
 
-          yield ChatLoopToolResult(toolCall.id, toolCall.name, result,
-              imageBase64: imageBase64, imageMimeType: imageMimeType);
-
-          // Add tool result to history
-          currentMessages.add(LlmMessage.toolResult(
-            toolCallId: toolCall.id,
-            toolName: toolCall.name,
-            content: llmContent,
+          yield ChatLoopToolResult(
+            toolCall.id,
+            toolCall.name,
+            result,
             imageBase64: imageBase64,
             imageMimeType: imageMimeType,
-          ));
+          );
+
+          // Add tool result to history
+          currentMessages.add(
+            LlmMessage.toolResult(
+              toolCallId: toolCall.id,
+              toolName: toolCall.name,
+              content: llmContent,
+              imageBase64: imageBase64,
+              imageMimeType: imageMimeType,
+            ),
+          );
         }
 
         // Loop continues — LLM needs to process tool results

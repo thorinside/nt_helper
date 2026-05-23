@@ -348,9 +348,9 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
   Future<int> cleanupChannelVersionRecords() async {
     const channelNames = ['latest', 'stable', 'beta'];
 
-    return (delete(pluginInstallations)..where(
-      (tbl) => tbl.pluginVersion.isIn(channelNames),
-    )).go();
+    return (delete(
+      pluginInstallations,
+    )..where((tbl) => tbl.pluginVersion.isIn(channelNames))).go();
   }
 }
 

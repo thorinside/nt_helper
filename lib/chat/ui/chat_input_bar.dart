@@ -171,7 +171,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         controller: _controller,
                         focusNode: _focusNode,
                         decoration: InputDecoration(
-                          hintText: _hasTyped ? null : 'Ask about your preset...',
+                          hintText: _hasTyped
+                              ? null
+                              : 'Ask about your preset...',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide.none,

@@ -43,9 +43,11 @@ class _CcNotificationDelegate {
   }
 
   Map<String, dynamic> get diagnostics => {
-        'lookupSize': _lookup?.size ?? 0,
-        'callbackRegistered': _cubit.disting()?.getSchedulerDiagnostics()?['ccCallbackRegistered'] ?? false,
-      };
+    'lookupSize': _lookup?.size ?? 0,
+    'callbackRegistered':
+        _cubit.disting()?.getSchedulerDiagnostics()?['ccCallbackRegistered'] ??
+        false,
+  };
 
   void rebuildLookup() {
     final state = _cubit.state;
@@ -97,8 +99,12 @@ class _CcNotificationDelegate {
       final first14 = targets.firstWhere((t) => t.is14Bit);
       final isHighFirst =
           first14.midiMappingType == MidiMappingType.cc14BitHigh;
-      final combined =
-          _accumulate14BitCc(channel, cc, value, isHighFirst: isHighFirst);
+      final combined = _accumulate14BitCc(
+        channel,
+        cc,
+        value,
+        isHighFirst: isHighFirst,
+      );
       if (combined != null) {
         for (final target in targets) {
           if (target.is14Bit) {
@@ -160,8 +166,7 @@ class _CcNotificationDelegate {
 
   void _applyValue(CcTarget target, int ccValue) {
     // Check feedback suppression
-    final suppressKey =
-        target.algorithmIndex * 10000 + target.parameterNumber;
+    final suppressKey = target.algorithmIndex * 10000 + target.parameterNumber;
     final lastOutbound = _outboundTimestamps[suppressKey];
     if (lastOutbound != null &&
         DateTime.now().difference(lastOutbound) < _feedbackWindow) {
@@ -215,20 +220,18 @@ class _CcNotificationDelegate {
 
       _cubit._emitState(
         freshState.copyWith(
-          slots: _cubit.updateSlot(
-            target.algorithmIndex,
-            freshState.slots,
-            (slot) {
-              if (target.parameterNumber >= slot.values.length) return slot;
-              return slot.copyWith(
-                values: _cubit.replaceInList(
-                  slot.values,
-                  newValue,
-                  index: target.parameterNumber,
-                ),
-              );
-            },
-          ),
+          slots: _cubit.updateSlot(target.algorithmIndex, freshState.slots, (
+            slot,
+          ) {
+            if (target.parameterNumber >= slot.values.length) return slot;
+            return slot.copyWith(
+              values: _cubit.replaceInList(
+                slot.values,
+                newValue,
+                index: target.parameterNumber,
+              ),
+            );
+          }),
         ),
       );
     }

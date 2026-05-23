@@ -73,9 +73,7 @@ void main() {
   });
 
   test('estimate sizes single files via getFileSize', () async {
-    final fs = _FakeFs({
-      'programs/lua/myscript.lua': Uint8List(123),
-    });
+    final fs = _FakeFs({'programs/lua/myscript.lua': Uint8List(123)});
 
     final deps = PresetDependencies();
     deps.luaScripts.add('myscript.lua');

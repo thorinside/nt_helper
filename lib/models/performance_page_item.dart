@@ -61,15 +61,15 @@ class PerformancePageItem {
 
   @override
   int get hashCode => Object.hash(
-        itemIndex,
-        enabled,
-        slotIndex,
-        parameterNumber,
-        min,
-        max,
-        upperLabel,
-        lowerLabel,
-      );
+    itemIndex,
+    enabled,
+    slotIndex,
+    parameterNumber,
+    min,
+    max,
+    upperLabel,
+    lowerLabel,
+  );
 
   @override
   String toString() =>

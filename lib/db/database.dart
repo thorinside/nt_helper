@@ -44,8 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion =>
-      12; // Adds Presets.category + Presets.templateMetadata for multi-algorithm templates
+  int get schemaVersion => 12; // Adds Presets.category + Presets.templateMetadata for multi-algorithm templates
 
   // Access DAOs (Drift generates getters)
   // MetadataDao get metadataDao => MetadataDao(this); // This getter is generated

@@ -6,10 +6,7 @@ void main() {
   group('SetPerfPageItemMessage', () {
     test('encodes disabled item', () {
       final item = PerformancePageItem.empty(5);
-      final message = SetPerfPageItemMessage(
-        sysExId: 1,
-        item: item,
-      );
+      final message = SetPerfPageItemMessage(sysExId: 1, item: item);
 
       final encoded = message.encode();
 
@@ -32,10 +29,7 @@ void main() {
         upperLabel: 'Freq',
         lowerLabel: 'VCO',
       );
-      final message = SetPerfPageItemMessage(
-        sysExId: 1,
-        item: item,
-      );
+      final message = SetPerfPageItemMessage(sysExId: 1, item: item);
 
       final encoded = message.encode();
 
@@ -87,10 +81,7 @@ void main() {
         upperLabel: '',
         lowerLabel: '',
       );
-      final message = SetPerfPageItemMessage(
-        sysExId: 1,
-        item: item,
-      );
+      final message = SetPerfPageItemMessage(sysExId: 1, item: item);
 
       final encoded = message.encode();
 

@@ -122,7 +122,9 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          const ExcludeSemantics(child: Icon(Icons.bug_report, size: 24, color: Colors.orange)),
+          const ExcludeSemantics(
+            child: Icon(Icons.bug_report, size: 24, color: Colors.orange),
+          ),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -127,8 +127,9 @@ class FileMemoryService {
       buffer.writeln();
     }
 
-    await File('$basePath/sessions/$filename.md')
-        .writeAsString(buffer.toString());
+    await File(
+      '$basePath/sessions/$filename.md',
+    ).writeAsString(buffer.toString());
   }
 
   static String _dateString(DateTime dt) =>
@@ -295,29 +296,35 @@ void main() {
       expect(await sessionsDir.exists(), isFalse);
     });
 
-    test('writeMemory with trailing newline does not lose a line at 200-line cap', () async {
-      // 200 real lines + trailing newline = 201 elements from split('\n').
-      // The cap should keep all 200 real lines, not discard the first.
-      final lines = List.generate(200, (i) => 'Line $i');
-      final content = '${lines.join('\n')}\n';
+    test(
+      'writeMemory with trailing newline does not lose a line at 200-line cap',
+      () async {
+        // 200 real lines + trailing newline = 201 elements from split('\n').
+        // The cap should keep all 200 real lines, not discard the first.
+        final lines = List.generate(200, (i) => 'Line $i');
+        final content = '${lines.join('\n')}\n';
 
-      await service.writeMemory(content);
-      final result = await service.readMemory();
+        await service.writeMemory(content);
+        final result = await service.readMemory();
 
-      final resultLines = result.split('\n');
-      // Should not have lost Line 0
-      expect(resultLines.first, equals('Line 0'));
-      // The trailing empty string from split should not count as a "line"
-      // that pushes real content out.
-      expect(result, contains('Line 0'));
-      expect(result, contains('Line 199'));
-    });
+        final resultLines = result.split('\n');
+        // Should not have lost Line 0
+        expect(resultLines.first, equals('Line 0'));
+        // The trailing empty string from split should not count as a "line"
+        // that pushes real content out.
+        expect(result, contains('Line 0'));
+        expect(result, contains('Line 199'));
+      },
+    );
 
-    test('writeMemory with content that is only newlines writes empty-ish content', () async {
-      await service.writeMemory('\n\n\n');
-      final result = await service.readMemory();
-      // Should not throw, content should round-trip
-      expect(result, isA<String>());
-    });
+    test(
+      'writeMemory with content that is only newlines writes empty-ish content',
+      () async {
+        await service.writeMemory('\n\n\n');
+        final result = await service.readMemory();
+        // Should not throw, content should round-trip
+        expect(result, isA<String>());
+      },
+    );
   });
 }

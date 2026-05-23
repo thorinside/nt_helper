@@ -113,11 +113,17 @@ class CcReverseLookup {
       if (ccValue <= midiMidInt) {
         final range = (midiMidInt - midiMin).toDouble();
         final t = range == 0 ? 1.0 : (ccValue - midiMin) / range;
-        return (paramMin + t * (paramMid - paramMin)).round().clamp(paramMin, paramMax);
+        return (paramMin + t * (paramMid - paramMin)).round().clamp(
+          paramMin,
+          paramMax,
+        );
       } else {
         final range = (midiMax - midiMidInt).toDouble();
         final t = range == 0 ? 1.0 : (ccValue - midiMidInt) / range;
-        return (paramMid + t * (paramMax - paramMid)).round().clamp(paramMin, paramMax);
+        return (paramMid + t * (paramMax - paramMid)).round().clamp(
+          paramMin,
+          paramMax,
+        );
       }
     }
 
@@ -126,8 +132,12 @@ class CcReverseLookup {
     final effectiveMidiMax = midiMax;
     if (effectiveMidiMax == effectiveMidiMin) return paramMin;
 
-    final t = (ccValue - effectiveMidiMin) / (effectiveMidiMax - effectiveMidiMin);
+    final t =
+        (ccValue - effectiveMidiMin) / (effectiveMidiMax - effectiveMidiMin);
     final clamped = t.clamp(0.0, 1.0);
-    return (paramMin + clamped * (paramMax - paramMin)).round().clamp(paramMin, paramMax);
+    return (paramMin + clamped * (paramMax - paramMin)).round().clamp(
+      paramMin,
+      paramMax,
+    );
   }
 }

@@ -46,7 +46,8 @@ class SyncStatusIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width <= 768;
     final statusText = _getStatusText(status);
-    final semanticLabel = 'Sync status: $statusText'
+    final semanticLabel =
+        'Sync status: $statusText'
         '${status == SyncStatus.error && errorMessage != null ? ". Error: $errorMessage" : ""}';
 
     return Semantics(
@@ -80,7 +81,11 @@ class SyncStatusIndicator extends StatelessWidget {
           if (status == SyncStatus.error && onRetry != null) ...[
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.refresh, size: 16, semanticLabel: 'Retry failed writes'),
+              icon: const Icon(
+                Icons.refresh,
+                size: 16,
+                semanticLabel: 'Retry failed writes',
+              ),
               onPressed: onRetry,
               tooltip: 'Retry failed writes',
               padding: const EdgeInsets.all(4),

@@ -13,9 +13,7 @@ Widget _buildScaledApp({required Widget child}) {
         builder: (context, scale, _) {
           final mediaQuery = MediaQuery.of(context);
           return MediaQuery(
-            data: mediaQuery.copyWith(
-              textScaler: TextScaler.linear(scale),
-            ),
+            data: mediaQuery.copyWith(textScaler: TextScaler.linear(scale)),
             child: appChild ?? const SizedBox.shrink(),
           );
         },
@@ -34,8 +32,9 @@ void main() {
     await SettingsService().setUiScale(SettingsService.defaultUiScale);
   });
 
-  testWidgets('default scale produces a linear(1.0) textScaler',
-      (tester) async {
+  testWidgets('default scale produces a linear(1.0) textScaler', (
+    tester,
+  ) async {
     late TextScaler capturedScaler;
     await tester.pumpWidget(
       _buildScaledApp(
@@ -51,8 +50,9 @@ void main() {
     expect(capturedScaler.scale(14), 14);
   });
 
-  testWidgets('increasing uiScale rebuilds with a larger textScaler',
-      (tester) async {
+  testWidgets('increasing uiScale rebuilds with a larger textScaler', (
+    tester,
+  ) async {
     final captured = <double>[];
 
     await tester.pumpWidget(

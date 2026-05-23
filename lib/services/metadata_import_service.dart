@@ -273,9 +273,7 @@ class MetadataImportService {
     });
   }
 
-  Future<void> _importParameterOutputModeUsage(
-    List<dynamic>? usageList,
-  ) async {
+  Future<void> _importParameterOutputModeUsage(List<dynamic>? usageList) async {
     if (usageList == null || usageList.isEmpty) {
       return;
     }

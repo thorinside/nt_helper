@@ -69,84 +69,101 @@ void main() {
     await database.close();
   });
 
-  group('_generateGeneralParameterDescription — false positive from contains(q)', () {
-    // Bug: contains('q') in the resonance check matches any parameter name
-    // containing the letter 'q', e.g. "Freq" → "freq" contains 'q',
-    // "Sequence" → "sequence" contains 'q'.
-    // This causes algorithms with frequency/sequencer parameters to be
-    // falsely described as having "resonance/filter emphasis controls".
-    // Fix: use `name == 'q'` to match only the standalone "Q" parameter.
+  group(
+    '_generateGeneralParameterDescription — false positive from contains(q)',
+    () {
+      // Bug: contains('q') in the resonance check matches any parameter name
+      // containing the letter 'q', e.g. "Freq" → "freq" contains 'q',
+      // "Sequence" → "sequence" contains 'q'.
+      // This causes algorithms with frequency/sequencer parameters to be
+      // falsely described as having "resonance/filter emphasis controls".
+      // Fix: use `name == 'q'` to match only the standalone "Q" parameter.
 
-    test('Clock algorithm should not show resonance/filter emphasis', () async {
-      final result = await algoTools.searchAlgorithms({
-        'type': 'algorithm',
-        'query': 'Clock',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+      test(
+        'Clock algorithm should not show resonance/filter emphasis',
+        () async {
+          final result = await algoTools.searchAlgorithms({
+            'type': 'algorithm',
+            'query': 'Clock',
+          });
+          final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json['results'], isNotEmpty);
-      final clockResult = (json['results'] as List<dynamic>).firstWhere(
-        (r) => (r as Map<String, dynamic>)['name'] == 'Clock',
-      ) as Map<String, dynamic>;
+          expect(json['results'], isNotEmpty);
+          final clockResult =
+              (json['results'] as List<dynamic>).firstWhere(
+                    (r) => (r as Map<String, dynamic>)['name'] == 'Clock',
+                  )
+                  as Map<String, dynamic>;
 
-      final generalParams = clockResult['general_parameters'] as String;
-      expect(
-        generalParams,
-        isNot(contains('resonance')),
-        reason: 'Clock has no resonance/Q/filter params',
-      );
-    });
-
-    test('sequencer algorithms should not show resonance from "sequence" containing q', () async {
-      // "Sequence" contains 'q' — the old contains('q') check would
-      // falsely flag this as resonance/filter emphasis
-      final result = await algoTools.searchAlgorithms({
-        'type': 'algorithm',
-        'query': 'Step Sequencer',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
-
-      expect(json['results'], isNotEmpty);
-      // Find a result with "Sequencer" in the name
-      final seqResults = (json['results'] as List<dynamic>).where(
-        (r) => (r as Map<String, dynamic>)['name']
-            .toString()
-            .toLowerCase()
-            .contains('sequenc'),
+          final generalParams = clockResult['general_parameters'] as String;
+          expect(
+            generalParams,
+            isNot(contains('resonance')),
+            reason: 'Clock has no resonance/Q/filter params',
+          );
+        },
       );
 
-      if (seqResults.isNotEmpty) {
-        final seqResult = seqResults.first as Map<String, dynamic>;
-        final generalParams = seqResult['general_parameters'] as String;
-        expect(
-          generalParams,
-          isNot(contains('resonance')),
-          reason:
-              '"Sequence" params contain "q" but are not resonance-related',
-        );
-      }
-    });
+      test(
+        'sequencer algorithms should not show resonance from "sequence" containing q',
+        () async {
+          // "Sequence" contains 'q' — the old contains('q') check would
+          // falsely flag this as resonance/filter emphasis
+          final result = await algoTools.searchAlgorithms({
+            'type': 'algorithm',
+            'query': 'Step Sequencer',
+          });
+          final json = jsonDecode(result) as Map<String, dynamic>;
 
-    test('algorithms with only Freq params should not show resonance category', () async {
-      final result = await algoTools.searchAlgorithms({
-        'type': 'algorithm',
-        'query': 'Attenuverter',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+          expect(json['results'], isNotEmpty);
+          // Find a result with "Sequencer" in the name
+          final seqResults = (json['results'] as List<dynamic>).where(
+            (r) => (r as Map<String, dynamic>)['name']
+                .toString()
+                .toLowerCase()
+                .contains('sequenc'),
+          );
 
-      expect(json['results'], isNotEmpty);
-      final attenuverter = (json['results'] as List<dynamic>).firstWhere(
-        (r) => (r as Map<String, dynamic>)['name'] == 'Attenuverter',
-      ) as Map<String, dynamic>;
-
-      final generalParams = attenuverter['general_parameters'] as String;
-      expect(
-        generalParams,
-        isNot(contains('resonance')),
-        reason: 'Attenuverter has no resonance params',
+          if (seqResults.isNotEmpty) {
+            final seqResult = seqResults.first as Map<String, dynamic>;
+            final generalParams = seqResult['general_parameters'] as String;
+            expect(
+              generalParams,
+              isNot(contains('resonance')),
+              reason:
+                  '"Sequence" params contain "q" but are not resonance-related',
+            );
+          }
+        },
       );
-    });
-  });
+
+      test(
+        'algorithms with only Freq params should not show resonance category',
+        () async {
+          final result = await algoTools.searchAlgorithms({
+            'type': 'algorithm',
+            'query': 'Attenuverter',
+          });
+          final json = jsonDecode(result) as Map<String, dynamic>;
+
+          expect(json['results'], isNotEmpty);
+          final attenuverter =
+              (json['results'] as List<dynamic>).firstWhere(
+                    (r) =>
+                        (r as Map<String, dynamic>)['name'] == 'Attenuverter',
+                  )
+                  as Map<String, dynamic>;
+
+          final generalParams = attenuverter['general_parameters'] as String;
+          expect(
+            generalParams,
+            isNot(contains('resonance')),
+            reason: 'Attenuverter has no resonance params',
+          );
+        },
+      );
+    },
+  );
 
   group('showScreen — non-string displayMode handling', () {
     // Bug: non-string displayMode values (int, bool) are silently ignored
@@ -186,8 +203,9 @@ void main() {
         ),
       ];
 
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => testParams);
+      when(
+        () => controller.getParametersForSlot(0),
+      ).thenAnswer((_) async => testParams);
 
       final result = await algoTools.showParameter('0:-1');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -210,8 +228,9 @@ void main() {
         ),
       ];
 
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => testParams);
+      when(
+        () => controller.getParametersForSlot(0),
+      ).thenAnswer((_) async => testParams);
 
       final result = await algoTools.showParameter('0:999');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -246,12 +265,15 @@ void main() {
         ),
       ];
 
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => testParams);
-      when(() => controller.getValuesForSlot(0))
-          .thenAnswer((_) async => testValues);
-      when(() => controller.getMappingsForSlot(0))
-          .thenAnswer((_) async => testMappings);
+      when(
+        () => controller.getParametersForSlot(0),
+      ).thenAnswer((_) async => testParams);
+      when(
+        () => controller.getValuesForSlot(0),
+      ).thenAnswer((_) async => testValues);
+      when(
+        () => controller.getMappingsForSlot(0),
+      ).thenAnswer((_) async => testMappings);
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -284,12 +306,15 @@ void main() {
         ),
       ];
 
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => testParams);
-      when(() => controller.getValuesForSlot(0))
-          .thenAnswer((_) async => testValues);
-      when(() => controller.getMappingsForSlot(0))
-          .thenAnswer((_) async => testMappings);
+      when(
+        () => controller.getParametersForSlot(0),
+      ).thenAnswer((_) async => testParams);
+      when(
+        () => controller.getValuesForSlot(0),
+      ).thenAnswer((_) async => testValues);
+      when(
+        () => controller.getMappingsForSlot(0),
+      ).thenAnswer((_) async => testMappings);
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -323,12 +348,15 @@ void main() {
         ),
       ];
 
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => testParams);
-      when(() => controller.getValuesForSlot(0))
-          .thenAnswer((_) async => testValues);
-      when(() => controller.getMappingsForSlot(0))
-          .thenAnswer((_) async => testMappings);
+      when(
+        () => controller.getParametersForSlot(0),
+      ).thenAnswer((_) async => testParams);
+      when(
+        () => controller.getValuesForSlot(0),
+      ).thenAnswer((_) async => testValues);
+      when(
+        () => controller.getMappingsForSlot(0),
+      ).thenAnswer((_) async => testMappings);
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -385,18 +413,24 @@ void main() {
         ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
       ];
 
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => testParams);
-      when(() => controller.getValuesForSlot(0))
-          .thenAnswer((_) async => testValues);
-      when(() => controller.getMappingsForSlot(0))
-          .thenAnswer((_) async => sourceOnlyMappings);
+      when(
+        () => controller.getParametersForSlot(0),
+      ).thenAnswer((_) async => testParams);
+      when(
+        () => controller.getValuesForSlot(0),
+      ).thenAnswer((_) async => testValues);
+      when(
+        () => controller.getMappingsForSlot(0),
+      ).thenAnswer((_) async => sourceOnlyMappings);
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json.containsKey('mapping'), isTrue,
-          reason: 'CV mapping should be included when source > 0');
+      expect(
+        json.containsKey('mapping'),
+        isTrue,
+        reason: 'CV mapping should be included when source > 0',
+      );
       final mapping = json['mapping'] as Map<String, dynamic>;
       expect(mapping.containsKey('cv'), isTrue);
       expect((mapping['cv'] as Map<String, dynamic>)['source'], equals(3));

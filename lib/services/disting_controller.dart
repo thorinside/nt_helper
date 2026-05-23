@@ -1,9 +1,15 @@
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, ParameterEnumStrings, Mapping, ParameterValue;
+    show
+        Algorithm,
+        ParameterInfo,
+        ParameterEnumStrings,
+        Mapping,
+        ParameterValue;
 import 'package:nt_helper/models/cpu_usage.dart';
-import 'package:nt_helper/models/packed_mapping_data.dart' show PackedMappingData;
+import 'package:nt_helper/models/packed_mapping_data.dart'
+    show PackedMappingData;
 
 /// Abstract interface defining operations to control the Disting state,
 /// intended for use by MCP tools or other services.
@@ -158,7 +164,11 @@ abstract class DistingController {
 
   /// Saves a mapping for a specific parameter.
   /// Throws StateError if the Disting is not in a synchronized state.
-  Future<void> saveMapping(int algorithmIndex, int parameterNumber, PackedMappingData mapping);
+  Future<void> saveMapping(
+    int algorithmIndex,
+    int parameterNumber,
+    PackedMappingData mapping,
+  );
 
   /// Refreshes the device state (re-reads preset from hardware).
   /// Throws StateError if the Disting is not in a synchronized state.

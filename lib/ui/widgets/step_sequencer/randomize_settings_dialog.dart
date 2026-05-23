@@ -18,7 +18,8 @@ class RandomizeSettingsDialog extends StatefulWidget {
   });
 
   @override
-  State<RandomizeSettingsDialog> createState() => _RandomizeSettingsDialogState();
+  State<RandomizeSettingsDialog> createState() =>
+      _RandomizeSettingsDialogState();
 }
 
 class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
@@ -65,31 +66,32 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
       builder: (context, state) {
         // Get current slot to refresh parameter values
         final currentSlot = state.maybeWhen(
-          synchronized: (
-            disting,
-            distingVersion,
-            firmwareVersion,
-            presetName,
-            algorithms,
-            slots,
-            unitStrings,
-            inputDevice,
-            outputDevice,
-            loading,
-            offline,
-            screenshot,
-            demo,
-            videoStream,
-            availableFirmwareUpdate,
-            perfPageItems,
-            isDirty,
-            renameConfirmationName,
-          ) {
-            if (widget.slotIndex < slots.length) {
-              return slots[widget.slotIndex];
-            }
-            return widget.slot;
-          },
+          synchronized:
+              (
+                disting,
+                distingVersion,
+                firmwareVersion,
+                presetName,
+                algorithms,
+                slots,
+                unitStrings,
+                inputDevice,
+                outputDevice,
+                loading,
+                offline,
+                screenshot,
+                demo,
+                videoStream,
+                availableFirmwareUpdate,
+                perfPageItems,
+                isDirty,
+                renameConfirmationName,
+              ) {
+                if (widget.slotIndex < slots.length) {
+                  return slots[widget.slotIndex];
+                }
+                return widget.slot;
+              },
           orElse: () => widget.slot,
         );
 
@@ -100,7 +102,10 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
           appBar: AppBar(
             title: const Text('Randomize Settings'),
             leading: IconButton(
-              icon: const Icon(Icons.close, semanticLabel: 'Close randomize settings'),
+              icon: const Icon(
+                Icons.close,
+                semanticLabel: 'Close randomize settings',
+              ),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
@@ -171,9 +176,9 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
         child: Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ),
     );
@@ -212,10 +217,8 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
         value: value.clamp(0, options.length - 1),
         items: List.generate(
           options.length,
-          (index) => DropdownMenuItem(
-            value: index,
-            child: Text(options[index]),
-          ),
+          (index) =>
+              DropdownMenuItem(value: index, child: Text(options[index])),
         ),
         onChanged: (newValue) {
           if (newValue != null) {
@@ -242,10 +245,8 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
         value: value.clamp(0, options.length - 1),
         items: List.generate(
           options.length,
-          (index) => DropdownMenuItem(
-            value: index,
-            child: Text(options[index]),
-          ),
+          (index) =>
+              DropdownMenuItem(value: index, child: Text(options[index])),
         ),
         onChanged: (newValue) {
           if (newValue != null) {
@@ -323,11 +324,31 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
   Widget _buildProbabilityParameters(Slot slot) {
     return Column(
       children: [
-        _buildProbabilitySlider(slot, 'Note probability', _params.noteProbability),
-        _buildProbabilitySlider(slot, 'Tie probability', _params.tieProbability),
-        _buildProbabilitySlider(slot, 'Accent probability', _params.accentProbability),
-        _buildProbabilitySlider(slot, 'Repeat probability', _params.repeatProbability),
-        _buildProbabilitySlider(slot, 'Ratchet probability', _params.ratchetProbability),
+        _buildProbabilitySlider(
+          slot,
+          'Note probability',
+          _params.noteProbability,
+        ),
+        _buildProbabilitySlider(
+          slot,
+          'Tie probability',
+          _params.tieProbability,
+        ),
+        _buildProbabilitySlider(
+          slot,
+          'Accent probability',
+          _params.accentProbability,
+        ),
+        _buildProbabilitySlider(
+          slot,
+          'Repeat probability',
+          _params.repeatProbability,
+        ),
+        _buildProbabilitySlider(
+          slot,
+          'Ratchet probability',
+          _params.ratchetProbability,
+        ),
       ],
     );
   }
@@ -423,7 +444,20 @@ class _RandomizeSettingsDialogState extends State<RandomizeSettingsDialog> {
   }
 
   String _midiNoteToString(int midiNote) {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const noteNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ];
     final octave = (midiNote ~/ 12) - 1;
     final noteName = noteNames[midiNote % 12];
     return '$noteName$octave ($midiNote)';

@@ -157,8 +157,9 @@ class MemoryService {
         buffer.writeln();
       }
 
-      await File('$base/sessions/$filename.md')
-          .writeAsString(buffer.toString());
+      await File(
+        '$base/sessions/$filename.md',
+      ).writeAsString(buffer.toString());
     } catch (e) {
       debugPrint('MemoryService: failed to save session snapshot: $e');
     }

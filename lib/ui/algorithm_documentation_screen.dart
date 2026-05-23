@@ -59,7 +59,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
           children: [
             Semantics(
               header: true,
-              child: Text('Description', style: Theme.of(context).textTheme.titleLarge),
+              child: Text(
+                'Description',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             const Divider(),
             Text(
@@ -82,7 +85,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
           children: [
             Semantics(
               header: true,
-              child: Text('Categories', style: Theme.of(context).textTheme.titleLarge),
+              child: Text(
+                'Categories',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             const Divider(),
             Wrap(
@@ -108,7 +114,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
           children: [
             Semantics(
               header: true,
-              child: Text('I/O Ports', style: Theme.of(context).textTheme.titleLarge),
+              child: Text(
+                'I/O Ports',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             const Divider(),
             if (metadata.inputPorts.isNotEmpty) ...[
@@ -129,7 +138,9 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
   Widget _buildPortTile(AlgorithmPort port) {
     return ListTile(
       dense: true,
-      leading: const ExcludeSemantics(child: Icon(Icons.arrow_circle_right_outlined)),
+      leading: const ExcludeSemantics(
+        child: Icon(Icons.arrow_circle_right_outlined),
+      ),
       title: Text(port.name),
       subtitle: port.description != null ? Text(port.description!) : null,
     );
@@ -193,7 +204,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
           children: [
             Semantics(
               header: true,
-              child: Text('Parameters', style: Theme.of(context).textTheme.titleLarge),
+              child: Text(
+                'Parameters',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             const Divider(),
             ...expandedParams.map(
@@ -270,7 +284,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
           children: [
             Semantics(
               header: true,
-              child: Text('Features', style: Theme.of(context).textTheme.titleLarge),
+              child: Text(
+                'Features',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             const Divider(),
             ...metadata.features.map((featureGuid) {

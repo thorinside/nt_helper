@@ -19,9 +19,9 @@ class AuxBusUsageInfo {
     Set<String>? algorithmIds,
     List<String>? sourceNames,
     List<String>? destNames,
-  })  : algorithmIds = algorithmIds ?? {},
-        sourceNames = sourceNames ?? [],
-        destNames = destNames ?? [];
+  }) : algorithmIds = algorithmIds ?? {},
+       sourceNames = sourceNames ?? [],
+       destNames = destNames ?? [];
 
   int get sessionCount => algorithmIds.length;
 }
@@ -107,9 +107,12 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     DateTime? lastPersistTime, // Last persistence save timestamp
     String? lastError, // Last error message
     @Default(SubState.idle) SubState subState, // Current sub-state
-    @Default({}) Set<String> focusedAlgorithmIds, // IDs of algorithms in focus mode
-    Offset? cascadeScrollTarget, // Target position to scroll to after cascade layout
-    @Default({}) Map<int, AuxBusUsageInfo> auxBusUsage, // Per-AUX-bus usage info
+    @Default({})
+    Set<String> focusedAlgorithmIds, // IDs of algorithms in focus mode
+    Offset?
+    cascadeScrollTarget, // Target position to scroll to after cascade layout
+    @Default({})
+    Map<int, AuxBusUsageInfo> auxBusUsage, // Per-AUX-bus usage info
     @Default(false) bool hasExtendedAuxBuses, // Firmware 1.15+ extended AUX
   }) = RoutingEditorStateLoaded;
 }

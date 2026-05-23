@@ -11,6 +11,7 @@ sealed class Slot with _$Slot {
     required List<ParameterEnumStrings> enums,
     required List<Mapping> mappings,
     required List<ParameterValueString> valueStrings,
+
     /// Output mode usage map: parameter number -> list of affected parameter numbers
     /// Populated from SysEx 0x55 responses (Story 7.4)
     @Default({}) Map<int, List<int>> outputModeMap,
@@ -64,13 +65,17 @@ sealed class DistingState with _$DistingState {
     @Default(null) Uint8List? screenshot,
     @Default(false) bool demo,
     @Default(null) VideoStreamState? videoStream,
+
     /// Available firmware update (null if no update available or not checked)
     @Default(null) FirmwareRelease? availableFirmwareUpdate,
+
     /// Performance page items (firmware v1.16+, populated via SysEx 0x57/0x58)
     @Default([]) List<PerformancePageItem> perfPageItems,
+
     /// True when the in-memory preset has been mutated since the last
     /// save / load / new / device refresh. Cleared on save/load/new/refresh.
     @Default(false) bool isDirty,
+
     /// The name of a preset that is currently awaiting confirmation to be overwritten
     @Default(null) String? renameConfirmationName,
   }) = DistingStateSynchronized;

@@ -169,18 +169,11 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         }
       }
       perfParams.sort((a, b) {
-        final itemA = _findPerfItem(
-          state.perfPageItems,
-          widget.slotIndex,
-          a,
+        final itemA = _findPerfItem(state.perfPageItems, widget.slotIndex, a);
+        final itemB = _findPerfItem(state.perfPageItems, widget.slotIndex, b);
+        final indexCompare = (itemA?.itemIndex ?? 0).compareTo(
+          itemB?.itemIndex ?? 0,
         );
-        final itemB = _findPerfItem(
-          state.perfPageItems,
-          widget.slotIndex,
-          b,
-        );
-        final indexCompare =
-            (itemA?.itemIndex ?? 0).compareTo(itemB?.itemIndex ?? 0);
         if (indexCompare != 0) return indexCompare;
         return a.compareTo(b);
       });
@@ -359,16 +352,18 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           cubit.removePerfPageItem(oldItem.itemIndex);
         }
         final paramInfo = widget.slot.parameters[parameterNumber];
-        cubit.setPerfPageItem(PerformancePageItem(
-          itemIndex: pageIndex - 1,
-          enabled: true,
-          slotIndex: widget.slotIndex,
-          parameterNumber: parameterNumber,
-          min: paramInfo.min,
-          max: paramInfo.max,
-          upperLabel: widget.slot.algorithm.name,
-          lowerLabel: paramInfo.name,
-        ));
+        cubit.setPerfPageItem(
+          PerformancePageItem(
+            itemIndex: pageIndex - 1,
+            enabled: true,
+            slotIndex: widget.slotIndex,
+            parameterNumber: parameterNumber,
+            min: paramInfo.min,
+            max: paramInfo.max,
+            upperLabel: widget.slot.algorithm.name,
+            lowerLabel: paramInfo.name,
+          ),
+        );
       }
       return;
     }
@@ -433,7 +428,8 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     } else {
       final actualPerfPageIndex = mapping?.packedMappingData.perfPageIndex ?? 0;
       perfPageIndex =
-          _optimisticPerfPageAssignments[parameterNumber] ?? actualPerfPageIndex;
+          _optimisticPerfPageAssignments[parameterNumber] ??
+          actualPerfPageIndex;
     }
 
     return Padding(
@@ -477,9 +473,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                     return DropdownMenuItem(
                       value: i + 1,
                       child: Text(
-                        _usePerfPageItems
-                            ? 'Index ${i + 1}'
-                            : 'Page ${i + 1}',
+                        _usePerfPageItems ? 'Index ${i + 1}' : 'Page ${i + 1}',
                       ),
                     );
                   }),
@@ -498,7 +492,8 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     final isEmpty = perfParams.isEmpty;
 
     final state = context.read<DistingCubit>().state;
-    final syncState = state is DistingStateSynchronized &&
+    final syncState =
+        state is DistingStateSynchronized &&
             state.firmwareVersion.hasPerfPageItems
         ? state
         : null;
@@ -701,5 +696,4 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
       ),
     );
   }
-
 }

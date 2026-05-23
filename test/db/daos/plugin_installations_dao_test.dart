@@ -22,8 +22,8 @@ void main() {
         totalBytes: 1024,
       );
 
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
 
       expect(records.length, equals(1));
       expect(records[0].installationPath, equals('/programs/lua/test.lua'));
@@ -50,8 +50,8 @@ void main() {
         totalBytes: 2048,
       );
 
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
 
       // Should still be just one record (upsert)
       expect(records.length, equals(1));
@@ -66,8 +66,8 @@ void main() {
         totalBytes: 512,
       );
 
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
 
       expect(records.length, equals(1));
       expect(records[0].pluginType, equals('threepot'));
@@ -81,8 +81,8 @@ void main() {
         totalBytes: 65536,
       );
 
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
 
       expect(records.length, equals(1));
       expect(records[0].pluginType, equals('cpp'));
@@ -97,8 +97,8 @@ void main() {
         pluginVersion: 'v1.2.0',
       );
 
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
 
       expect(records.length, equals(1));
       expect(records[0].pluginId, equals('gallery-plugin-id'));
@@ -112,8 +112,8 @@ void main() {
         pluginType: 'lua',
       );
 
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
 
       expect(records.length, equals(1));
       expect(records[0].pluginId, startsWith('local:'));
@@ -129,8 +129,8 @@ void main() {
         pluginType: 'lua',
       );
 
-      var records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      var records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].pluginId, startsWith('local:'));
 
@@ -144,8 +144,7 @@ void main() {
       );
 
       // Should have only ONE record (gallery install replaced local)
-      records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      records = await database.pluginInstallationsDao.getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].pluginId, equals('gallery-plugin'));
       expect(records[0].pluginVersion, equals('v1.0.0'));
@@ -163,8 +162,8 @@ void main() {
         pluginVersion: 'v1.0.0',
       );
 
-      var records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      var records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].pluginId, equals('gallery-synth'));
       expect(records[0].pluginVersion, equals('v1.0.0'));
@@ -178,8 +177,7 @@ void main() {
       );
 
       // Should preserve gallery pluginId but mark as user-installed
-      records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      records = await database.pluginInstallationsDao.getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].pluginId, equals('gallery-synth'));
       expect(records[0].pluginVersion, equals('user-installed'));
@@ -193,8 +191,8 @@ void main() {
         pluginType: 'cpp',
       );
 
-      var records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      var records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records[0].pluginId, startsWith('local:'));
 
       // Second: another local re-upload
@@ -206,8 +204,7 @@ void main() {
       );
 
       // Should still be a local: ID (no gallery association to preserve)
-      records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      records = await database.pluginInstallationsDao.getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].pluginId, startsWith('local:'));
       expect(records[0].pluginVersion, equals('unknown'));
@@ -232,8 +229,8 @@ void main() {
         pluginVersion: 'v2.0.0',
       );
 
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].pluginId, equals('gallery-synth-v2'));
       expect(records[0].pluginVersion, equals('v2.0.0'));
@@ -284,8 +281,8 @@ void main() {
         '/programs/lua/delete.lua',
       );
 
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
 
       expect(records.length, equals(1));
       expect(records[0].installationPath, equals('/programs/lua/keep.lua'));

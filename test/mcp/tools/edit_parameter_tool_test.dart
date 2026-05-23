@@ -65,20 +65,22 @@ void main() {
     });
 
     group('editParameter - parameter validation', () {
-      test('should return error when slot_index parameter is missing', () async {
-        final result = await tools.editParameter({
-          'parameter_number': 0,
-          'value': 50,
-        });
+      test(
+        'should return error when slot_index parameter is missing',
+        () async {
+          final result = await tools.editParameter({
+            'parameter_number': 0,
+            'value': 50,
+          });
 
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('slot_index'));
-      });
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(decoded['error'], contains('slot_index'));
+        },
+      );
 
       test('should return error when slot_index is negative', () async {
         final result = await tools.editParameter({
-
           'slot_index': -1,
           'parameter_number': 0,
           'value': 50,
@@ -91,7 +93,6 @@ void main() {
 
       test('should return error when slot_index exceeds maximum', () async {
         final result = await tools.editParameter({
-
           'slot_index': 32,
           'parameter_number': 0,
           'value': 50,
@@ -102,42 +103,51 @@ void main() {
         expect(decoded['error'], contains('slot_index'));
       });
 
-      test('should return error when parameter identifier is missing', () async {
-        final result = await tools.editParameter({
+      test(
+        'should return error when parameter identifier is missing',
+        () async {
+          final result = await tools.editParameter({
+            'slot_index': 0,
+            'value': 50,
+          });
 
-          'slot_index': 0,
-          'value': 50,
-        });
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(decoded['error'], contains('parameter'));
+        },
+      );
 
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('parameter'));
-      });
+      test(
+        'should return error when both value and mapping are omitted',
+        () async {
+          final result = await tools.editParameter({
+            'slot_index': 0,
+            'parameter_number': 0,
+          });
 
-      test('should return error when both value and mapping are omitted', () async {
-        final result = await tools.editParameter({
-
-          'slot_index': 0,
-          'parameter_number': 0,
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(
-          decoded['error'].toString().contains('value') ||
-              decoded['error'].toString().contains('mapping'),
-          isTrue,
-        );
-      });
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(
+            decoded['error'].toString().contains('value') ||
+                decoded['error'].toString().contains('mapping'),
+            isTrue,
+          );
+        },
+      );
 
       test('should return error when not in synchronized state', () async {
         // Create a new cubit without syncing
-        final offlineDistingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
+        final offlineDistingCubit = DistingCubit(
+          database,
+          midiCommand: MockMidiCommand(),
+        );
         final offlineController = DistingControllerImpl(offlineDistingCubit);
-        final offlineTools = DistingTools(offlineController, offlineDistingCubit);
+        final offlineTools = DistingTools(
+          offlineController,
+          offlineDistingCubit,
+        );
 
         final result = await offlineTools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'value': 50,
@@ -152,37 +162,40 @@ void main() {
     });
 
     group('editParameter - parameter lookup by number', () {
-      test('should return error when parameter number is out of range (negative)', () async {
-        final result = await tools.editParameter({
+      test(
+        'should return error when parameter number is out of range (negative)',
+        () async {
+          final result = await tools.editParameter({
+            'slot_index': 0,
+            'parameter_number': -1,
+            'value': 50,
+          });
 
-          'slot_index': 0,
-          'parameter_number': -1,
-          'value': 50,
-        });
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(decoded.containsKey('error'), isTrue);
+        },
+      );
 
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded.containsKey('error'), isTrue);
-      });
+      test(
+        'should return error when parameter number exceeds available parameters',
+        () async {
+          final result = await tools.editParameter({
+            'slot_index': 0,
+            'parameter_number': 999,
+            'value': 50,
+          });
 
-      test('should return error when parameter number exceeds available parameters', () async {
-        final result = await tools.editParameter({
-
-          'slot_index': 0,
-          'parameter_number': 999,
-          'value': 50,
-        });
-
-        final decoded = jsonDecode(result);
-        expect(decoded['success'], isFalse);
-        expect(decoded.containsKey('error'), isTrue);
-      });
+          final decoded = jsonDecode(result);
+          expect(decoded['success'], isFalse);
+          expect(decoded.containsKey('error'), isTrue);
+        },
+      );
     });
 
     group('editParameter - parameter lookup by name', () {
       test('should return error when parameter name not found', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 'NonexistentParameter',
           'value': 50,
@@ -195,7 +208,6 @@ void main() {
 
       test('should require exact match for parameter name', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 'parameter',
           'value': 50,
@@ -210,7 +222,6 @@ void main() {
     group('editParameter - value validation', () {
       test('should return error when value is not a number', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'value': 'not a number',
@@ -223,7 +234,6 @@ void main() {
 
       test('should return error when value is below minimum range', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'value': -100,
@@ -238,13 +248,10 @@ void main() {
     group('editParameter - mapping validation', () {
       test('should return error when MIDI channel is negative', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'mapping': {
-            'midi': {
-              'midi_channel': -1,
-            }
+            'midi': {'midi_channel': -1},
           },
         });
 
@@ -255,13 +262,10 @@ void main() {
 
       test('should return error when MIDI channel exceeds 15', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'mapping': {
-            'midi': {
-              'midi_channel': 16,
-            }
+            'midi': {'midi_channel': 16},
           },
         });
 
@@ -272,13 +276,10 @@ void main() {
 
       test('should return error when MIDI CC exceeds 128', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'mapping': {
-            'midi': {
-              'midi_cc': 129,
-            }
+            'midi': {'midi_cc': 129},
           },
         });
 
@@ -289,13 +290,10 @@ void main() {
 
       test('should accept MIDI CC value of 128 (aftertouch)', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'mapping': {
-            'midi': {
-              'midi_cc': 128,
-            }
+            'midi': {'midi_cc': 128},
           },
           'value': 50,
         });
@@ -311,13 +309,10 @@ void main() {
 
       test('should return error when CV input exceeds 12', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'mapping': {
-            'cv': {
-              'cv_input': 13,
-            }
+            'cv': {'cv_input': 13},
           },
         });
 
@@ -328,14 +323,11 @@ void main() {
 
       test('should return error when i2c CC exceeds 255', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'value': 50,
           'mapping': {
-            'i2c': {
-              'i2c_cc': 256,
-            }
+            'i2c': {'i2c_cc': 256},
           },
         });
 
@@ -346,13 +338,10 @@ void main() {
 
       test('should return error when performance_page exceeds 30', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'value': 50,
-          'mapping': {
-            'performance_page': 31,
-          },
+          'mapping': {'performance_page': 31},
         });
 
         final decoded = jsonDecode(result);
@@ -363,14 +352,11 @@ void main() {
 
       test('should return error when MIDI type is invalid', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'value': 50,
           'mapping': {
-            'midi': {
-              'midi_type': 'invalid_type',
-            }
+            'midi': {'midi_type': 'invalid_type'},
           },
         });
 
@@ -386,19 +372,16 @@ void main() {
           'note_momentary',
           'note_toggle',
           'cc_14bit_low',
-          'cc_14bit_high'
+          'cc_14bit_high',
         ];
 
         for (final midiType in validTypes) {
           final result = await tools.editParameter({
-  
             'slot_index': 0,
             'parameter_number': 0,
             'value': 50,
             'mapping': {
-              'midi': {
-                'midi_type': midiType,
-              }
+              'midi': {'midi_type': midiType},
             },
           });
 
@@ -412,47 +395,53 @@ void main() {
         }
       });
 
-      test('should support empty mapping object to preserve all mappings', () async {
-        final result = await tools.editParameter({
+      test(
+        'should support empty mapping object to preserve all mappings',
+        () async {
+          final result = await tools.editParameter({
+            'slot_index': 0,
+            'parameter_number': 0,
+            'value': 50,
+            'mapping': {},
+          });
 
-          'slot_index': 0,
-          'parameter_number': 0,
-          'value': 50,
-          'mapping': {},
-        });
-
-        final decoded = jsonDecode(result);
-        // Should fail due to empty slot, but not because of empty mapping being invalid
-        // Empty mapping is valid and should just preserve existing mappings
-        expect(decoded['success'], isFalse);
-        // Just verify it returned an error (empty slot is expected in test)
-        expect(decoded.containsKey('error'), isTrue);
-      });
+          final decoded = jsonDecode(result);
+          // Should fail due to empty slot, but not because of empty mapping being invalid
+          // Empty mapping is valid and should just preserve existing mappings
+          expect(decoded['success'], isFalse);
+          // Just verify it returned an error (empty slot is expected in test)
+          expect(decoded.containsKey('error'), isTrue);
+        },
+      );
     });
 
     group('editParameter - return value format', () {
-      test('should include slot_index, parameter_number, parameter_name, and value in response', () async {
-        final result = await tools.editParameter({
+      test(
+        'should include slot_index, parameter_number, parameter_name, and value in response',
+        () async {
+          final result = await tools.editParameter({
+            'slot_index': 0,
+            'parameter_number': 0,
+            'value': 50,
+          });
 
-          'slot_index': 0,
-          'parameter_number': 0,
-          'value': 50,
-        });
-
-        // Since we can't test with actual hardware, just verify the structure would be valid
-        // In real test with hardware, would verify:
-        // - decoded['slot_index'] == 0
-        // - decoded['parameter_number'] == 0
-        // - decoded['parameter_name'] is string
-        // - decoded['value'] is numeric
-        final decoded = jsonDecode(result);
-        // Empty slot response is expected - should have either error or success
-        expect(decoded.containsKey('error') || decoded.containsKey('slot_index'), isTrue);
-      });
+          // Since we can't test with actual hardware, just verify the structure would be valid
+          // In real test with hardware, would verify:
+          // - decoded['slot_index'] == 0
+          // - decoded['parameter_number'] == 0
+          // - decoded['parameter_name'] is string
+          // - decoded['value'] is numeric
+          final decoded = jsonDecode(result);
+          // Empty slot response is expected - should have either error or success
+          expect(
+            decoded.containsKey('error') || decoded.containsKey('slot_index'),
+            isTrue,
+          );
+        },
+      );
 
       test('should omit disabled mappings from return value', () async {
         final result = await tools.editParameter({
-
           'slot_index': 0,
           'parameter_number': 0,
           'value': 50,

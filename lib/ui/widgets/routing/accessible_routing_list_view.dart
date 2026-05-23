@@ -21,36 +21,36 @@ class AccessibleRoutingListView extends StatelessWidget {
         return state.when(
           initial: () => const Center(child: Text('Initializing...')),
           disconnected: () => const Center(child: Text('Disconnected')),
-          loaded: (
-            physicalInputs,
-            physicalOutputs,
-            es5Inputs,
-            algorithms,
-            connections,
-            buses,
-            portOutputModes,
-            nodePositions,
-            zoomLevel,
-            panOffset,
-            isHardwareSynced,
-            isPersistenceEnabled,
-            lastSyncTime,
-            lastPersistTime,
-            lastError,
-            subState,
-            focusedAlgorithmIds,
-            cascadeScrollTarget,
-            auxBusUsage,
-            hasExtendedAuxBuses,
-          ) =>
-              _buildListView(
-            context,
-            algorithms,
-            connections,
-            physicalInputs,
-            physicalOutputs,
-            hasExtendedAuxBuses: hasExtendedAuxBuses,
-          ),
+          loaded:
+              (
+                physicalInputs,
+                physicalOutputs,
+                es5Inputs,
+                algorithms,
+                connections,
+                buses,
+                portOutputModes,
+                nodePositions,
+                zoomLevel,
+                panOffset,
+                isHardwareSynced,
+                isPersistenceEnabled,
+                lastSyncTime,
+                lastPersistTime,
+                lastError,
+                subState,
+                focusedAlgorithmIds,
+                cascadeScrollTarget,
+                auxBusUsage,
+                hasExtendedAuxBuses,
+              ) => _buildListView(
+                context,
+                algorithms,
+                connections,
+                physicalInputs,
+                physicalOutputs,
+                hasExtendedAuxBuses: hasExtendedAuxBuses,
+              ),
         );
       },
     );
@@ -106,8 +106,13 @@ class AccessibleRoutingListView extends StatelessWidget {
           )
         else
           ...connections.map(
-            (conn) => _buildConnectionTile(context, conn, algorithms, cubit,
-                hasExtendedAuxBuses: hasExtendedAuxBuses),
+            (conn) => _buildConnectionTile(
+              context,
+              conn,
+              algorithms,
+              cubit,
+              hasExtendedAuxBuses: hasExtendedAuxBuses,
+            ),
           ),
       ],
     );
@@ -161,7 +166,12 @@ class AccessibleRoutingListView extends StatelessWidget {
               ),
               ...algo.inputPorts.map(
                 (port) => _buildPortListItem(
-                    context, port, connections, true, algorithms),
+                  context,
+                  port,
+                  connections,
+                  true,
+                  algorithms,
+                ),
               ),
             ],
             if (algo.outputPorts.isNotEmpty) ...[
@@ -174,7 +184,12 @@ class AccessibleRoutingListView extends StatelessWidget {
               ),
               ...algo.outputPorts.map(
                 (port) => _buildPortListItem(
-                    context, port, connections, false, algorithms),
+                  context,
+                  port,
+                  connections,
+                  false,
+                  algorithms,
+                ),
               ),
             ],
             const SizedBox(height: 8),
@@ -202,8 +217,7 @@ class AccessibleRoutingListView extends StatelessWidget {
       connectionInfo = 'Not connected';
     } else {
       final names = connectedTo.map((c) {
-        final otherPortId =
-            isInput ? c.sourcePortId : c.destinationPortId;
+        final otherPortId = isInput ? c.sourcePortId : c.destinationPortId;
         return _findPortName(otherPortId, algorithms);
       });
       connectionInfo = names.join(', ');
@@ -235,8 +249,10 @@ class AccessibleRoutingListView extends StatelessWidget {
     final isAlgoToAlgo =
         conn.connectionType == ConnectionType.algorithmToAlgorithm;
     final auxLabel = isAlgoToAlgo
-        ? _formatBusLabel(conn.busNumber,
-            hasExtendedAuxBuses: hasExtendedAuxBuses)
+        ? _formatBusLabel(
+            conn.busNumber,
+            hasExtendedAuxBuses: hasExtendedAuxBuses,
+          )
         : null;
 
     final reason = cubit.deletionBlockReasonForConnection(conn);
@@ -249,10 +265,7 @@ class AccessibleRoutingListView extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       child: ListTile(
-        leading: Icon(
-          Icons.link,
-          color: theme.colorScheme.primary,
-        ),
+        leading: Icon(Icons.link, color: theme.colorScheme.primary),
         title: Text('$sourceName \u2192 $destName'),
         subtitle: auxLabel != null ? Text('via $auxLabel') : null,
         trailing: canDelete
@@ -279,19 +292,24 @@ class AccessibleRoutingListView extends StatelessWidget {
     );
   }
 
-  String _formatBusLabel(int? busNumber,
-      {bool hasExtendedAuxBuses = false}) {
+  String _formatBusLabel(int? busNumber, {bool hasExtendedAuxBuses = false}) {
     if (busNumber == null) return 'Unknown bus';
     if (busNumber >= 1 && busNumber <= 12) return 'Input $busNumber';
     if (busNumber >= 13 && busNumber <= 20) return 'Output ${busNumber - 12}';
-    if (BusSpec.isEs5ForFirmware(busNumber,
-        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
-      final local = BusSpec.toLocalNumberForFirmware(busNumber,
-          hasExtendedAuxBuses: hasExtendedAuxBuses);
+    if (BusSpec.isEs5ForFirmware(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    )) {
+      final local = BusSpec.toLocalNumberForFirmware(
+        busNumber,
+        hasExtendedAuxBuses: hasExtendedAuxBuses,
+      );
       return local == 1 ? 'ES-5 Left' : 'ES-5 Right';
     }
-    if (BusSpec.isAuxForFirmware(busNumber,
-        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+    if (BusSpec.isAuxForFirmware(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    )) {
       return 'Aux ${BusSpec.toLocalNumberForFirmware(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses)}';
     }
     return 'Bus $busNumber';

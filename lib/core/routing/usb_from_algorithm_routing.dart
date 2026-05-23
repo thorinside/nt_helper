@@ -217,7 +217,8 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
   static List<ParameterInfo> _findUsbToParams(Slot slot) {
     // Use IO flags to find output parameters
     var toParams = [
-      for (final p in slot.parameters) if (p.isOutput) p,
+      for (final p in slot.parameters)
+        if (p.isOutput) p,
     ];
 
     // Sort stably by parameter number and keep the first 8
@@ -232,7 +233,8 @@ class UsbFromAlgorithmRouting extends CachedAlgorithmRouting {
   static List<ParameterInfo> _findUsbModeParams(Slot slot) {
     // Use IO flags to find output mode parameters
     var modeParams = [
-      for (final p in slot.parameters) if (p.isOutputMode) p,
+      for (final p in slot.parameters)
+        if (p.isOutputMode) p,
     ];
 
     // Sort by parameter number to keep channel order stable

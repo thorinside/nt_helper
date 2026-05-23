@@ -85,8 +85,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
     final params = StepSequencerParams.fromSlot(slot);
     final sequenceParamNum = params.currentSequence;
 
-    if (sequenceParamNum != null &&
-        sequenceParamNum < slot.values.length) {
+    if (sequenceParamNum != null && sequenceParamNum < slot.values.length) {
       final sequenceValue = slot.values[sequenceParamNum].value;
       if (sequenceValue >= 0 && sequenceValue < 32) {
         return sequenceValue;
@@ -108,191 +107,207 @@ class _StepSequencerViewState extends State<StepSequencerView> {
         builder: (context, state) {
           // Determine if we're offline
           final isOffline = state.maybeWhen(
-            connected: (disting, inputDevice, outputDevice, offline, loading,
-                    syncStatus, syncProgress) =>
-                offline,
-            synchronized: (
-              disting,
-              distingVersion,
-              firmwareVersion,
-              presetName,
-              algorithms,
-              slots,
-              unitStrings,
-              inputDevice,
-              outputDevice,
-              loading,
-              offline,
-              screenshot,
-              demo,
-              videoStream,
-              availableFirmwareUpdate,
-              perfPageItems,
-              isDirty,
-              renameConfirmationName,
-            ) => offline,
+            connected:
+                (
+                  disting,
+                  inputDevice,
+                  outputDevice,
+                  offline,
+                  loading,
+                  syncStatus,
+                  syncProgress,
+                ) => offline,
+            synchronized:
+                (
+                  disting,
+                  distingVersion,
+                  firmwareVersion,
+                  presetName,
+                  algorithms,
+                  slots,
+                  unitStrings,
+                  inputDevice,
+                  outputDevice,
+                  loading,
+                  offline,
+                  screenshot,
+                  demo,
+                  videoStream,
+                  availableFirmwareUpdate,
+                  perfPageItems,
+                  isDirty,
+                  renameConfirmationName,
+                ) => offline,
             orElse: () => false,
           );
 
           // Update sync status based on offline state
-          final effectiveSyncStatus = isOffline ? SyncStatus.offline : _syncStatus;
+          final effectiveSyncStatus = isOffline
+              ? SyncStatus.offline
+              : _syncStatus;
 
           return Focus(
             onKeyEvent: _handleParameterModeShortcut,
             child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Offline banner (if offline)
-                  if (isOffline) _buildOfflineBanner(context),
-                  if (isOffline) const SizedBox(height: 16),
-
-                  // Compact header row: Title, Sync Status, Overflow Menu
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Step Sequencer',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+                    // Offline banner (if offline)
+                    if (isOffline) _buildOfflineBanner(context),
+                    if (isOffline) const SizedBox(height: 16),
+
+                    // Compact header row: Title, Sync Status, Overflow Menu
                     Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        SyncStatusIndicator(
-                          status: effectiveSyncStatus,
-                          errorMessage: _lastError,
-                          onRetry: _retryFailedWrites,
+                        Text(
+                          'Step Sequencer',
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        const SizedBox(width: 8),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert, semanticLabel: 'More options'),
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'randomize',
-                              child: ListTile(
-                                leading: Icon(Icons.shuffle),
-                                title: Text('Randomize'),
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SyncStatusIndicator(
+                              status: effectiveSyncStatus,
+                              errorMessage: _lastError,
+                              onRetry: _retryFailedWrites,
                             ),
-                            const PopupMenuItem(
-                              value: 'settings',
-                              child: ListTile(
-                                leading: Icon(Icons.settings),
-                                title: Text('Randomize Settings...'),
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
+                            const SizedBox(width: 8),
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_vert,
+                                semanticLabel: 'More options',
                               ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'parameter_pages',
-                              child: ListTile(
-                                leading: Icon(Icons.view_list),
-                                title: Text('Parameter Pages...'),
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'randomize',
+                                  child: ListTile(
+                                    leading: Icon(Icons.shuffle),
+                                    title: Text('Randomize'),
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'settings',
+                                  child: ListTile(
+                                    leading: Icon(Icons.settings),
+                                    title: Text('Randomize Settings...'),
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'parameter_pages',
+                                  child: ListTile(
+                                    leading: Icon(Icons.view_list),
+                                    title: Text('Parameter Pages...'),
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) {
+                                if (value == 'randomize') {
+                                  _triggerRandomize();
+                                } else if (value == 'settings') {
+                                  _showRandomizeSettingsDialog();
+                                } else if (value == 'parameter_pages') {
+                                  _showParameterPages();
+                                }
+                              },
                             ),
                           ],
-                          onSelected: (value) {
-                            if (value == 'randomize') {
-                              _triggerRandomize();
-                            } else if (value == 'settings') {
-                              _showRandomizeSettingsDialog();
-                            } else if (value == 'parameter_pages') {
-                              _showParameterPages();
-                            }
-                          },
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                // Row with sequence and mode selector
-                Row(
-                  children: [
+                    // Row with sequence and mode selector
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: _buildSequenceSelector(widget.slot),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildGlobalParameterModeSelector()),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Step grid (fixed height so it doesn't shrink)
                     SizedBox(
-                      width: 120,
-                      child: _buildSequenceSelector(widget.slot),
+                      height: 400,
+                      child: StepGridView(
+                        slot: widget.slot,
+                        slotIndex: widget.slotIndex,
+                        snapEnabled: _snapEnabled,
+                        selectedScale: _selectedScale,
+                        rootNote: _rootNote,
+                        activeParameter: _activeParameter,
+                      ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildGlobalParameterModeSelector(),
+                    const SizedBox(height: 12),
+
+                    // Quantize controls (only visible in Pitch mode)
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: _activeParameter == StepParameter.pitch
+                          ? Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? const Color(0xFF2a2a2a)
+                                    : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: QuantizeControls(
+                                snapEnabled: _snapEnabled,
+                                selectedScale: _selectedScale,
+                                rootNote: _rootNote,
+                                onToggleSnap: _toggleSnapToScale,
+                                onScaleChanged: _setScale,
+                                onRootNoteChanged: _setRootNote,
+                                onQuantizeAll: _quantizeAllSteps,
+                                onUndo: _undoLastChange,
+                                canUndo: _undoHistory.isNotEmpty,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                    if (_activeParameter == StepParameter.pitch)
+                      const SizedBox(height: 12),
+
+                    // Playback controls (fixed height)
+                    SizedBox(
+                      height: 180,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = MediaQuery.of(context).size.width;
+                          final isMobile = width <= 768;
+                          final params = StepSequencerParams.fromSlot(
+                            widget.slot,
+                          );
+
+                          return PlaybackControls(
+                            slotIndex: widget.slotIndex,
+                            params: params,
+                            slot: widget.slot,
+                            compact: isMobile,
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-
-                // Step grid (fixed height so it doesn't shrink)
-                SizedBox(
-                  height: 400,
-                  child: StepGridView(
-                    slot: widget.slot,
-                    slotIndex: widget.slotIndex,
-                    snapEnabled: _snapEnabled,
-                    selectedScale: _selectedScale,
-                    rootNote: _rootNote,
-                    activeParameter: _activeParameter,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Quantize controls (only visible in Pitch mode)
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: _activeParameter == StepParameter.pitch
-                      ? Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? const Color(0xFF2a2a2a)
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: QuantizeControls(
-                            snapEnabled: _snapEnabled,
-                            selectedScale: _selectedScale,
-                            rootNote: _rootNote,
-                            onToggleSnap: _toggleSnapToScale,
-                            onScaleChanged: _setScale,
-                            onRootNoteChanged: _setRootNote,
-                            onQuantizeAll: _quantizeAllSteps,
-                            onUndo: _undoLastChange,
-                            canUndo: _undoHistory.isNotEmpty,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-                if (_activeParameter == StepParameter.pitch) const SizedBox(height: 12),
-
-                  // Playback controls (fixed height)
-                  SizedBox(
-                    height: 180,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final width = MediaQuery.of(context).size.width;
-                        final isMobile = width <= 768;
-                        final params = StepSequencerParams.fromSlot(widget.slot);
-
-                        return PlaybackControls(
-                          slotIndex: widget.slotIndex,
-                          params: params,
-                          slot: widget.slot,
-                          compact: isMobile,
-                        );
-                      },
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
           );
         },
       );
@@ -422,9 +437,9 @@ class _StepSequencerViewState extends State<StepSequencerView> {
           // Get current pitch value
           final currentPitch =
               widget.slot.values.isNotEmpty &&
-                      pitchParamNum < widget.slot.values.length
-                  ? widget.slot.values[pitchParamNum].value
-                  : 60; // Default to middle C if not available
+                  pitchParamNum < widget.slot.values.length
+              ? widget.slot.values[pitchParamNum].value
+              : 60; // Default to middle C if not available
 
           // Quantize to scale
           final quantized = ScaleQuantizer.quantize(
@@ -436,11 +451,13 @@ class _StepSequencerViewState extends State<StepSequencerView> {
           // Only update if value changed
           if (quantized != currentPitch) {
             // Store change for undo
-            changes.add(_ParameterChange(
-              parameterNumber: pitchParamNum,
-              oldValue: currentPitch,
-              newValue: quantized,
-            ));
+            changes.add(
+              _ParameterChange(
+                parameterNumber: pitchParamNum,
+                oldValue: currentPitch,
+                newValue: quantized,
+              ),
+            );
 
             // Update parameter (with debouncing built into cubit)
             cubit.updateParameterValue(
@@ -546,11 +563,13 @@ class _StepSequencerViewState extends State<StepSequencerView> {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
     // Only handle when no modifier keys are pressed (except Shift for M)
-    final isShiftOnly = HardwareKeyboard.instance.isShiftPressed &&
+    final isShiftOnly =
+        HardwareKeyboard.instance.isShiftPressed &&
         !HardwareKeyboard.instance.isControlPressed &&
         !HardwareKeyboard.instance.isMetaPressed &&
         !HardwareKeyboard.instance.isAltPressed;
-    final noModifiers = !HardwareKeyboard.instance.isShiftPressed &&
+    final noModifiers =
+        !HardwareKeyboard.instance.isShiftPressed &&
         !HardwareKeyboard.instance.isControlPressed &&
         !HardwareKeyboard.instance.isMetaPressed &&
         !HardwareKeyboard.instance.isAltPressed;
@@ -738,11 +757,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
   }
 
   /// Build individual mode button
-  Widget _buildModeButton(
-    StepParameter mode,
-    String label,
-    Color color,
-  ) {
+  Widget _buildModeButton(StepParameter mode, String label, Color color) {
     final isActive = _activeParameter == mode;
 
     return ChoiceChip(
@@ -756,10 +771,7 @@ class _StepSequencerViewState extends State<StepSequencerView> {
       selected: isActive,
       selectedColor: color.withValues(alpha: 0.3),
       backgroundColor: Colors.transparent,
-      side: BorderSide(
-        color: color,
-        width: isActive ? 2 : 1,
-      ),
+      side: BorderSide(color: color, width: isActive ? 2 : 1),
       onSelected: (_) {
         setState(() {
           _activeParameter = mode;

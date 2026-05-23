@@ -70,37 +70,34 @@ void main() {
       );
     }
 
-    testWidgets('clean state shows preset name without asterisk',
-        (tester) async {
+    testWidgets('clean state shows preset name without asterisk', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen(isDirty: false));
       // The preset name should appear; no asterisk after it.
       expect(find.text('My Preset'), findsWidgets);
       expect(find.text('My Preset *'), findsNothing);
     });
 
-    testWidgets('dirty state shows preset name followed by asterisk',
-        (tester) async {
+    testWidgets('dirty state shows preset name followed by asterisk', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen(isDirty: true));
       expect(find.text('My Preset *'), findsWidgets);
     });
 
-    testWidgets('semantic label includes "unsaved changes" only when dirty',
-        (tester) async {
+    testWidgets('semantic label includes "unsaved changes" only when dirty', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen(isDirty: false));
       expect(
         find.bySemanticsLabel(RegExp(r'^Preset: My Preset$')),
         findsWidgets,
       );
-      expect(
-        find.bySemanticsLabel(RegExp('unsaved changes')),
-        findsNothing,
-      );
+      expect(find.bySemanticsLabel(RegExp('unsaved changes')), findsNothing);
 
       await tester.pumpWidget(buildScreen(isDirty: true));
-      expect(
-        find.bySemanticsLabel(RegExp('unsaved changes')),
-        findsWidgets,
-      );
+      expect(find.bySemanticsLabel(RegExp('unsaved changes')), findsWidgets);
     });
   });
 }

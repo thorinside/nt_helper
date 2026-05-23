@@ -108,15 +108,18 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   ) async {
     try {
       // Validate algorithm index
-      if (algorithmIndex < 0 || algorithmIndex >= _presetAlgorithmGuids.length) {
+      if (algorithmIndex < 0 ||
+          algorithmIndex >= _presetAlgorithmGuids.length) {
         return null;
       }
 
       final algorithmGuid = _presetAlgorithmGuids[algorithmIndex];
 
       // Query database for output mode usage
-      final affectedOutputs =
-          await _metadataDao.getOutputModeUsage(algorithmGuid, parameterNumber);
+      final affectedOutputs = await _metadataDao.getOutputModeUsage(
+        algorithmGuid,
+        parameterNumber,
+      );
 
       // If no data, return null
       if (affectedOutputs == null || affectedOutputs.isEmpty) {
@@ -979,8 +982,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     // No-op in offline mode - remount not applicable without hardware
   }
 
-  final List<PerformancePageItem> _perfPageItems =
-      List.generate(30, (i) => PerformancePageItem.empty(i));
+  final List<PerformancePageItem> _perfPageItems = List.generate(
+    30,
+    (i) => PerformancePageItem.empty(i),
+  );
 
   @override
   Future<PerformancePageItem?> requestPerfPageItem(int itemIndex) async {

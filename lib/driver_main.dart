@@ -28,8 +28,7 @@ Future<String> _handleDriverData(String? message) async {
   }
 
   final routingElement =
-      _findElementByWidgetType(rootElement, RoutingEditorWidget) ??
-      rootElement;
+      _findElementByWidgetType(rootElement, RoutingEditorWidget) ?? rootElement;
 
   DistingCubit? distingCubit;
   RoutingEditorCubit? routingCubit;

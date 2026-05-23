@@ -172,7 +172,10 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         actions: _currentReport != null && !_isRunning
             ? [
                 IconButton(
-                  icon: const Icon(Icons.copy, semanticLabel: 'Copy to Clipboard'),
+                  icon: const Icon(
+                    Icons.copy,
+                    semanticLabel: 'Copy to Clipboard',
+                  ),
                   tooltip: 'Copy to Clipboard',
                   onPressed: _copyReportToClipboard,
                 ),
@@ -376,7 +379,9 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ExcludeSemantics(child: Icon(Icons.check_circle, size: 64, color: Colors.green)),
+            ExcludeSemantics(
+              child: Icon(Icons.check_circle, size: 64, color: Colors.green),
+            ),
             SizedBox(height: 16),
             Text('No issues detected! All tests passed successfully.'),
           ],
@@ -438,7 +443,8 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
               '(${test.minDuration}-${test.maxDuration}ms range)',
             ),
             trailing: Semantics(
-              label: 'Success rate: ${(test.successRate * 100).toStringAsFixed(0)}%${test.successRate == 1.0 ? '' : ', issues detected'}',
+              label:
+                  'Success rate: ${(test.successRate * 100).toStringAsFixed(0)}%${test.successRate == 1.0 ? '' : ', issues detected'}',
               excludeSemantics: true,
               child: Text(
                 '${(test.successRate * 100).toStringAsFixed(0)}%',

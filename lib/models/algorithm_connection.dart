@@ -170,8 +170,10 @@ extension AlgorithmConnectionHelpers on AlgorithmConnection {
 
   /// Generate a bus label based on the bus number and connection type
   String busLabelForFirmware({bool hasExtendedAuxBuses = false}) {
-    return BusLabelFormatter.formatBusNumber(busNumber,
-            hasExtendedAuxBuses: hasExtendedAuxBuses) ??
+    return BusLabelFormatter.formatBusNumber(
+          busNumber,
+          hasExtendedAuxBuses: hasExtendedAuxBuses,
+        ) ??
         'Bus$busNumber';
   }
 
@@ -202,7 +204,9 @@ extension AlgorithmConnectionHelpers on AlgorithmConnection {
 
     // Check bus number validity
     if (!BusSpec.isValid(busNumber)) {
-      errors.add('Bus number $busNumber is outside valid range (${BusSpec.min}-${BusSpec.extendedMax})');
+      errors.add(
+        'Bus number $busNumber is outside valid range (${BusSpec.min}-${BusSpec.extendedMax})',
+      );
     }
 
     // Check algorithm index validity

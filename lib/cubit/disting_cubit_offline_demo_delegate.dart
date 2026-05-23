@@ -90,8 +90,8 @@ class _OfflineDemoDelegate {
       // Create and initialize the offline manager
       _cubit._offlineManager = OfflineDistingMidiManager(_cubit.database);
       await _cubit._offlineManager!.initializeFromDb(null);
-      final version = await _cubit._offlineManager!.requestVersionString() ??
-          "Offline";
+      final version =
+          await _cubit._offlineManager!.requestVersionString() ?? "Offline";
       final firmwareVersion =
           _cubit._lastKnownFirmwareVersion ?? FirmwareVersion("1.15");
       _cubit._lastKnownFirmwareVersion = firmwareVersion;
@@ -101,8 +101,10 @@ class _OfflineDemoDelegate {
           await _cubit._offlineManager!.requestPresetName() ?? "Offline Preset";
       final numAlgorithmsInPreset =
           await _cubit._offlineManager!.requestNumAlgorithmsInPreset() ?? 0;
-      final List<Slot> initialSlots =
-          await _cubit.fetchSlots(numAlgorithmsInPreset, _cubit._offlineManager!);
+      final List<Slot> initialSlots = await _cubit.fetchSlots(
+        numAlgorithmsInPreset,
+        _cubit._offlineManager!,
+      );
 
       _cubit._emitState(
         DistingState.synchronized(
@@ -176,12 +178,14 @@ class _OfflineDemoDelegate {
     try {
       await _cubit._offlineManager!.initializeFromDb(presetDetails);
 
-      final presetName = await _cubit._offlineManager!.requestPresetName() ??
-          "Error";
+      final presetName =
+          await _cubit._offlineManager!.requestPresetName() ?? "Error";
       final numAlgorithmsInPreset =
           await _cubit._offlineManager!.requestNumAlgorithmsInPreset() ?? 0;
-      final slots =
-          await _cubit.fetchSlots(numAlgorithmsInPreset, _cubit._offlineManager!);
+      final slots = await _cubit.fetchSlots(
+        numAlgorithmsInPreset,
+        _cubit._offlineManager!,
+      );
 
       final availableAlgorithmsInfo = await _cubit._fetchOfflineAlgorithms();
       final units = await _cubit._offlineManager!.requestUnitStrings() ?? [];
@@ -211,4 +215,3 @@ class _OfflineDemoDelegate {
     }
   }
 }
-

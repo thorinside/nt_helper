@@ -84,10 +84,13 @@ class ConnectionPainter extends CustomPainter {
   final String? hoveredConnectionId;
   final List<Rect> obstacles;
   final bool drawEndpointsOnly;
+
   /// Port ID being long-pressed for deletion animation
   final String? deletingPortId;
+
   /// Progress of delete animation (0.0 to 1.0) - red → orange → white
   final double deleteAnimationProgress;
+
   /// Progress of fade-out animation (0.0 to 1.0) - white → transparent
   final double fadeOutProgress;
   final bool hasExtendedAuxBuses;
@@ -192,7 +195,6 @@ class ConnectionPainter extends CustomPainter {
         _drawConnectionLabel(canvas, conn);
       }
     }
-    
   }
 
   /// Draw a batch of connections of the same type
@@ -217,7 +219,10 @@ class ConnectionPainter extends CustomPainter {
       } else {
         // Regular path calculation for other connection types
         path = enableAntiOverlap
-            ? _createRoutedPath(conn, connections) // Use ALL connections for routing
+            ? _createRoutedPath(
+                conn,
+                connections,
+              ) // Use ALL connections for routing
             : _createDirectPath(conn.sourcePosition, conn.destinationPosition);
       }
 
@@ -227,7 +232,6 @@ class ConnectionPainter extends CustomPainter {
       // Draw the connection
       if (type == ConnectionVisualType.ghost) {
         _drawDashedPath(canvas, path, paint);
-
       } else if (type == ConnectionVisualType.invalid) {
         _drawDottedPath(canvas, path, paint);
       } else if (type == ConnectionVisualType.partial) {
@@ -355,11 +359,7 @@ class ConnectionPainter extends CustomPainter {
   }
 
   /// Create an offset bezier path to avoid overlaps
-  Path _createOffsetPath(
-    Offset start,
-    Offset end,
-    double offset,
-  ) {
+  Path _createOffsetPath(Offset start, Offset end, double offset) {
     final path = Path();
     path.moveTo(start.dx, start.dy);
 
@@ -424,7 +424,8 @@ class ConnectionPainter extends CustomPainter {
     }
 
     // Check if this connection is being deleted (involves the deleting port)
-    final isBeingDeleted = deletingPortId != null &&
+    final isBeingDeleted =
+        deletingPortId != null &&
         (conn.connection.sourcePortId == deletingPortId ||
             conn.connection.destinationPortId == deletingPortId);
 
@@ -432,9 +433,13 @@ class ConnectionPainter extends CustomPainter {
       // Two-phase animation:
       // Phase 1 (deleteAnimationProgress): red → orange → white
       // Phase 2 (fadeOutProgress): white → transparent
-      final color = _getDeleteAnimationColor(deleteAnimationProgress, fadeOutProgress);
+      final color = _getDeleteAnimationColor(
+        deleteAnimationProgress,
+        fadeOutProgress,
+      );
       paint
-        ..strokeWidth = 3.0 // Slightly thicker during delete animation
+        ..strokeWidth =
+            3.0 // Slightly thicker during delete animation
         ..color = color;
       return;
     }
@@ -491,7 +496,10 @@ class ConnectionPainter extends CustomPainter {
   /// Calculate the delete animation color based on two-phase progress
   /// Phase 1 (deleteProgress): red (0.0) → orange (0.5) → white (1.0)
   /// Phase 2 (fadeOutProgress): white → transparent
-  Color _getDeleteAnimationColor(double deleteProgress, double fadeOutProgress) {
+  Color _getDeleteAnimationColor(
+    double deleteProgress,
+    double fadeOutProgress,
+  ) {
     // Clamp progress values
     final dp = deleteProgress.clamp(0.0, 1.0);
     final fp = fadeOutProgress.clamp(0.0, 1.0);
@@ -578,7 +586,7 @@ class ConnectionPainter extends CustomPainter {
     const step = 0.01; // 1% steps
     const startT = 0.05;
     const endT = 0.95;
-    
+
     // Margin for "safe" threshold
     const safeMargin = 20.0;
 
@@ -590,7 +598,7 @@ class ConnectionPainter extends CustomPainter {
     // This allows us to treat the label as a point
     final halfWidth = labelWidth / 2;
     final halfHeight = labelHeight / 2;
-    
+
     final expandedObstacles = obstacles.map((rect) {
       // Use smaller margin for source/destination nodes to allow labels closer to them
       final isConnectedNode =
@@ -604,14 +612,14 @@ class ConnectionPainter extends CustomPainter {
         rect.bottom + halfHeight + margin,
       );
     }).toList();
-    
+
     for (double t = startT; t <= endT; t += step) {
       final pos = _getPointAtT(metric, t);
       if (pos == null) continue;
 
       // Find distance to the nearest obstacle
       double minDistToObs = double.infinity;
-      
+
       if (expandedObstacles.isEmpty) {
         minDistToObs = double.infinity;
       } else {
@@ -622,7 +630,7 @@ class ConnectionPainter extends CustomPainter {
           }
         }
       }
-      
+
       // Calculate score
       double score;
       if (minDistToObs > 0) {
@@ -680,7 +688,9 @@ class ConnectionPainter extends CustomPainter {
 
     if (dx > 0 || dy > 0) {
       // Outside: Euclidean distance to the nearest corner/edge
-      return math.sqrt(math.max(0, dx) * math.max(0, dx) + math.max(0, dy) * math.max(0, dy));
+      return math.sqrt(
+        math.max(0, dx) * math.max(0, dx) + math.max(0, dy) * math.max(0, dy),
+      );
     } else {
       // Inside: Distance to nearest edge (negative)
       // Since both are negative, max(dx, dy) is the one closest to 0 (closest edge)
@@ -712,27 +722,35 @@ class ConnectionPainter extends CustomPainter {
 
     // Use BusLabelFormatter to get the label with mode-aware formatting
     final label = formatBusLabelWithMode(
-        conn.busNumber, conn.outputMode, hasExtendedAuxBuses);
+      conn.busNumber,
+      conn.outputMode,
+      hasExtendedAuxBuses,
+    );
     if (label.isEmpty) {
       return;
     }
 
     // If this connection is being deleted, fade the label out during the fade-out phase.
-    final isBeingDeleted = deletingPortId != null &&
+    final isBeingDeleted =
+        deletingPortId != null &&
         (conn.connection.sourcePortId == deletingPortId ||
             conn.connection.destinationPortId == deletingPortId);
-    final labelAlpha = isBeingDeleted ? (1.0 - fadeOutProgress).clamp(0.0, 1.0) : 1.0;
+    final labelAlpha = isBeingDeleted
+        ? (1.0 - fadeOutProgress).clamp(0.0, 1.0)
+        : 1.0;
 
     // Create text painter with enhanced text style
     final textStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.bold,
-      color: Colors.black.withValues(alpha: labelAlpha), // Explicit black for visibility
+      color: Colors.black.withValues(
+        alpha: labelAlpha,
+      ), // Explicit black for visibility
     );
 
     final textPainter = createLabelTextPainter(label, textStyle);
     textPainter.layout();
-    
+
     final labelWidth = textPainter.width + 12;
     final labelHeight = textPainter.height + 8;
 
@@ -756,11 +774,11 @@ class ConnectionPainter extends CustomPainter {
         : _createDirectPath(conn.sourcePosition, conn.destinationPosition);
 
     final metrics = path.computeMetrics();
-    
+
     // Find the longest contour in the path (the actual connection line)
     dart_ui.PathMetric? bestMetric;
     double maxLen = 0.0;
-    
+
     for (final metric in metrics) {
       if (metric.length > maxLen) {
         maxLen = metric.length;
@@ -844,10 +862,13 @@ class ConnectionPainter extends CustomPainter {
       return;
     }
 
-    final isBeingDeleted = deletingPortId != null &&
+    final isBeingDeleted =
+        deletingPortId != null &&
         (conn.connection.sourcePortId == deletingPortId ||
             conn.connection.destinationPortId == deletingPortId);
-    final labelAlpha = isBeingDeleted ? (1.0 - fadeOutProgress).clamp(0.0, 1.0) : 1.0;
+    final labelAlpha = isBeingDeleted
+        ? (1.0 - fadeOutProgress).clamp(0.0, 1.0)
+        : 1.0;
 
     // Determine which end has the label
     final connectionType = conn.connection.connectionType;
@@ -953,18 +974,28 @@ class ConnectionPainter extends CustomPainter {
   }
 
   /// Format bus number into label string using BusLabelFormatter
-  static String formatBusLabel(int? busNumber,
-      [bool hasExtendedAuxBuses = false]) {
-    return BusLabelFormatter.formatBusNumber(busNumber,
-            hasExtendedAuxBuses: hasExtendedAuxBuses) ??
+  static String formatBusLabel(
+    int? busNumber, [
+    bool hasExtendedAuxBuses = false,
+  ]) {
+    return BusLabelFormatter.formatBusNumber(
+          busNumber,
+          hasExtendedAuxBuses: hasExtendedAuxBuses,
+        ) ??
         '';
   }
 
   /// Format bus number into label string with mode-aware formatting using BusLabelFormatter
   static String formatBusLabelWithMode(
-      int? busNumber, OutputMode? outputMode, bool hasExtendedAuxBuses) {
-    return BusLabelFormatter.formatBusLabelWithMode(busNumber, outputMode,
-            hasExtendedAuxBuses: hasExtendedAuxBuses) ??
+    int? busNumber,
+    OutputMode? outputMode,
+    bool hasExtendedAuxBuses,
+  ) {
+    return BusLabelFormatter.formatBusLabelWithMode(
+          busNumber,
+          outputMode,
+          hasExtendedAuxBuses: hasExtendedAuxBuses,
+        ) ??
         '';
   }
 

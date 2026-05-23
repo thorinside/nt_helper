@@ -321,10 +321,10 @@ void main() {
         outputs: [_outPort('A_out_b29', 29)], // Aux 9 on 1.15+
       );
 
-      final conns = ConnectionDiscoveryService.discoverConnections(
-        [auxAlgo, usbFromHost],
-        hasExtendedAuxBuses: true,
-      );
+      final conns = ConnectionDiscoveryService.discoverConnections([
+        auxAlgo,
+        usbFromHost,
+      ], hasExtendedAuxBuses: true);
 
       // Bus 65 should create ES-5 L hardware output connection
       expect(
@@ -352,11 +352,7 @@ void main() {
 
       // Bus 29 should NOT create ES-5 connection on 1.15+ (it's aux now)
       expect(
-        conns.any(
-          (c) =>
-              c.destinationPortId == 'es5_L' &&
-              c.busNumber == 29,
-        ),
+        conns.any((c) => c.destinationPortId == 'es5_L' && c.busNumber == 29),
         isFalse,
       );
 
@@ -378,10 +374,9 @@ void main() {
         outputs: [_outPort('A_out_b29', 29)],
       );
 
-      final conns = ConnectionDiscoveryService.discoverConnections(
-        [a],
-        hasExtendedAuxBuses: false,
-      );
+      final conns = ConnectionDiscoveryService.discoverConnections([
+        a,
+      ], hasExtendedAuxBuses: false);
 
       // Bus 29 should create ES-5 L connection on legacy firmware
       expect(
@@ -452,11 +447,7 @@ void main() {
           final writer = _FakeRouting(
             id: 'algo_writer',
             outputs: [
-              _outPort(
-                'writer_out_b25',
-                25,
-                mode: core.OutputMode.replace,
-              ),
+              _outPort('writer_out_b25', 25, mode: core.OutputMode.replace),
             ],
           );
 
@@ -534,74 +525,69 @@ void main() {
         },
       );
 
-      test('self-write: same-algorithm in/out on same bus is not connected',
-          () {
-        // A single algorithm with both an input port and an output port on
-        // bus 25. The output.algorithmId == input.algorithmId guard must
-        // skip the pair, even with the backward-edge guard relaxed.
-        final self = _FakeRouting(
-          id: 'algo_self',
-          inputs: [_inPort('self_in_b25', 25)],
-          outputs: [
-            _outPort('self_out_b25', 25, mode: core.OutputMode.replace),
-          ],
-        );
-
-        final conns = ConnectionDiscoveryService.discoverConnections([self]);
-
-        expect(
-          conns.any(
-            (c) =>
-                c.connectionType == ConnectionType.algorithmToAlgorithm &&
-                c.sourcePortId == 'self_out_b25' &&
-                c.destinationPortId == 'self_in_b25',
-          ),
-          isFalse,
-        );
-      });
-
       test(
-        'Replace + forward: writer in lower slot produces forward edge',
+        'self-write: same-algorithm in/out on same bus is not connected',
         () {
-          // Routings list [writer, reader]: writer.algorithmIndex == 0,
-          // reader.algorithmIndex == 1. Writer uses Replace. Confirms the
-          // fix didn't accidentally re-classify forward connections.
-          final writer = _FakeRouting(
-            id: 'algo_writer',
+          // A single algorithm with both an input port and an output port on
+          // bus 25. The output.algorithmId == input.algorithmId guard must
+          // skip the pair, even with the backward-edge guard relaxed.
+          final self = _FakeRouting(
+            id: 'algo_self',
+            inputs: [_inPort('self_in_b25', 25)],
             outputs: [
-              _outPort(
-                'writer_out_b25',
-                25,
-                mode: core.OutputMode.replace,
-              ),
+              _outPort('self_out_b25', 25, mode: core.OutputMode.replace),
             ],
           );
-          final reader = _FakeRouting(
-            id: 'algo_reader',
-            inputs: [_inPort('reader_in_b25', 25)],
+
+          final conns = ConnectionDiscoveryService.discoverConnections([self]);
+
+          expect(
+            conns.any(
+              (c) =>
+                  c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                  c.sourcePortId == 'self_out_b25' &&
+                  c.destinationPortId == 'self_in_b25',
+            ),
+            isFalse,
           );
-
-          final conns = ConnectionDiscoveryService.discoverConnections([
-            writer,
-            reader,
-          ]);
-
-          final forwardConns = conns
-              .where(
-                (c) =>
-                    c.connectionType == ConnectionType.algorithmToAlgorithm &&
-                    c.sourcePortId == 'writer_out_b25' &&
-                    c.destinationPortId == 'reader_in_b25',
-              )
-              .toList();
-
-          expect(forwardConns, hasLength(1));
-          final edge = forwardConns.single;
-          expect(edge.isBackwardEdge, isFalse);
-          expect(edge.isPartial, isFalse);
-          expect(edge.outputMode, core.OutputMode.replace);
         },
       );
+
+      test('Replace + forward: writer in lower slot produces forward edge', () {
+        // Routings list [writer, reader]: writer.algorithmIndex == 0,
+        // reader.algorithmIndex == 1. Writer uses Replace. Confirms the
+        // fix didn't accidentally re-classify forward connections.
+        final writer = _FakeRouting(
+          id: 'algo_writer',
+          outputs: [
+            _outPort('writer_out_b25', 25, mode: core.OutputMode.replace),
+          ],
+        );
+        final reader = _FakeRouting(
+          id: 'algo_reader',
+          inputs: [_inPort('reader_in_b25', 25)],
+        );
+
+        final conns = ConnectionDiscoveryService.discoverConnections([
+          writer,
+          reader,
+        ]);
+
+        final forwardConns = conns
+            .where(
+              (c) =>
+                  c.connectionType == ConnectionType.algorithmToAlgorithm &&
+                  c.sourcePortId == 'writer_out_b25' &&
+                  c.destinationPortId == 'reader_in_b25',
+            )
+            .toList();
+
+        expect(forwardConns, hasLength(1));
+        final edge = forwardConns.single;
+        expect(edge.isBackwardEdge, isFalse);
+        expect(edge.isPartial, isFalse);
+        expect(edge.outputMode, core.OutputMode.replace);
+      });
 
       test(
         'multiple Replace writers in higher slots produce one backward edge per writer',
@@ -647,10 +633,10 @@ void main() {
             expect(edge.isPartial, isFalse);
             expect(edge.outputMode, core.OutputMode.replace);
           }
-          expect(
-            backwardConns.map((c) => c.sourcePortId).toSet(),
-            {'writer1_out_b25', 'writer2_out_b25'},
-          );
+          expect(backwardConns.map((c) => c.sourcePortId).toSet(), {
+            'writer1_out_b25',
+            'writer2_out_b25',
+          });
         },
       );
     });

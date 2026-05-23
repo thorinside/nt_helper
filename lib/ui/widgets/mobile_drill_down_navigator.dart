@@ -72,7 +72,9 @@ class MobileDrillDownNavigator extends StatelessWidget {
                           child: Icon(
                             Icons.chevron_right,
                             size: 16,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         InkWell(
@@ -109,66 +111,67 @@ class MobileDrillDownNavigator extends StatelessWidget {
         // Directory listing
         Expanded(
           child: ClipRect(
-          child: RefreshIndicator(
-            onRefresh: () async => onRefresh(),
-            child: items.isEmpty
-                ? ListView(
-                    children: const [
-                      SizedBox(height: 100),
-                      Center(
-                        child: Text(
-                          'Empty directory',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
+            child: RefreshIndicator(
+              onRefresh: () async => onRefresh(),
+              child: items.isEmpty
+                  ? ListView(
+                      children: const [
+                        SizedBox(height: 100),
+                        Center(
+                          child: Text(
+                            'Empty directory',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  )
-                : ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      final isSelected = item == selectedItem;
+                      ],
+                    )
+                  : ListView.builder(
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        final isSelected = item == selectedItem;
 
-                      String displayName = item.name;
-                      if (displayName.endsWith('/')) {
-                        displayName = displayName.substring(
-                          0,
-                          displayName.length - 1,
-                        );
-                      }
+                        String displayName = item.name;
+                        if (displayName.endsWith('/')) {
+                          displayName = displayName.substring(
+                            0,
+                            displayName.length - 1,
+                          );
+                        }
 
-                      final isJsonPreset =
-                          !item.isDirectory &&
-                          item.name.toLowerCase().endsWith('.json');
-                      final isParentDir = item.name == '..';
+                        final isJsonPreset =
+                            !item.isDirectory &&
+                            item.name.toLowerCase().endsWith('.json');
+                        final isParentDir = item.name == '..';
 
-                      final icon = isParentDir
-                          ? Icons.folder_open
-                          : item.isDirectory
-                          ? Icons.folder
-                          : _getFileIcon(item.name);
+                        final icon = isParentDir
+                            ? Icons.folder_open
+                            : item.isDirectory
+                            ? Icons.folder
+                            : _getFileIcon(item.name);
 
-                      final iconColor = isParentDir
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.7)
-                          : item.isDirectory
-                          ? Theme.of(context).colorScheme.primary
-                          : isJsonPreset
-                          ? Theme.of(context).colorScheme.tertiary
-                          : Theme.of(context).colorScheme.secondary;
+                        final iconColor = isParentDir
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.7)
+                            : item.isDirectory
+                            ? Theme.of(context).colorScheme.primary
+                            : isJsonPreset
+                            ? Theme.of(context).colorScheme.tertiary
+                            : Theme.of(context).colorScheme.secondary;
 
-                      final fileInfo =
-                          !item.isDirectory ? _formatFileInfo(item) : null;
+                        final fileInfo = !item.isDirectory
+                            ? _formatFileInfo(item)
+                            : null;
 
-                      final semanticLabel = item.isDirectory
-                          ? 'Folder: $displayName'
-                          : 'File: $displayName, $fileInfo';
+                        final semanticLabel = item.isDirectory
+                            ? 'Folder: $displayName'
+                            : 'File: $displayName, $fileInfo';
 
-                      Widget tile = ListTile(
+                        Widget tile = ListTile(
                           leading: ExcludeSemantics(
                             child: Icon(icon, size: 28, color: iconColor),
                           ),
@@ -213,20 +216,20 @@ class MobileDrillDownNavigator extends StatelessWidget {
                             vertical: 4.0,
                           ),
                           minVerticalPadding: 8.0,
-                      );
-
-                      if (!isParentDir && onLongPress != null) {
-                        tile = GestureDetector(
-                          onLongPress: () => onLongPress!(item),
-                          child: tile,
                         );
-                      }
 
-                      return tile;
-                    },
-                  ),
+                        if (!isParentDir && onLongPress != null) {
+                          tile = GestureDetector(
+                            onLongPress: () => onLongPress!(item),
+                            child: tile,
+                          );
+                        }
+
+                        return tile;
+                      },
+                    ),
+            ),
           ),
-        ),
         ),
       ],
     );
@@ -254,7 +257,9 @@ class MobileDrillDownNavigator extends StatelessWidget {
   static IconData _getFileIcon(String name) {
     final lower = name.toLowerCase();
     if (lower.endsWith('.scl') || lower.endsWith('.kbm')) return Icons.tune;
-    if (lower.endsWith('.wav') || lower.endsWith('.aif')) return Icons.graphic_eq;
+    if (lower.endsWith('.wav') || lower.endsWith('.aif')) {
+      return Icons.graphic_eq;
+    }
     if (lower.endsWith('.lua') ||
         lower.endsWith('.3pot') ||
         lower.endsWith('.o')) {

@@ -42,28 +42,23 @@ class BusSpec {
   static bool isEs5(int n) => n >= es5Min && n <= es5Max;
 
   /// Extended ES-5 check (buses 65-66, firmware 1.15+).
-  static bool isEs5Extended(int n) => n >= es5MinExtended && n <= es5MaxExtended;
+  static bool isEs5Extended(int n) =>
+      n >= es5MinExtended && n <= es5MaxExtended;
 
   /// Firmware-aware ES-5 check.
   /// On 1.15+, ES-5 is at 65-66; on older firmware, at 29-30.
-  static bool isEs5ForFirmware(
-    int n, {
-    required bool hasExtendedAuxBuses,
-  }) =>
+  static bool isEs5ForFirmware(int n, {required bool hasExtendedAuxBuses}) =>
       hasExtendedAuxBuses ? isEs5Extended(n) : isEs5(n);
 
   /// Legacy aux check — excludes legacy ES-5 (29-30).
   /// Use [isAuxForFirmware] when firmware context is available.
-  static bool isAux(int n) =>
-      n >= auxMin && n <= auxMaxExtended && !isEs5(n);
+  static bool isAux(int n) => n >= auxMin && n <= auxMaxExtended && !isEs5(n);
 
   /// Firmware-aware aux check.
   /// On 1.15+, 29-30 are regular aux buses and ES-5 is at 65-66.
-  static bool isAuxForFirmware(
-    int n, {
-    required bool hasExtendedAuxBuses,
-  }) =>
-      n >= auxMin && n <= auxMaxExtended &&
+  static bool isAuxForFirmware(int n, {required bool hasExtendedAuxBuses}) =>
+      n >= auxMin &&
+      n <= auxMaxExtended &&
       !isEs5ForFirmware(n, hasExtendedAuxBuses: hasExtendedAuxBuses);
 
   /// Whether a parameter max value indicates a bus assignment parameter.
@@ -101,9 +96,7 @@ class BusSpec {
     if (isPhysicalInput(v)) return v;
     if (isPhysicalOutput(v)) return v - (outputMin - 1);
     if (isEs5ForFirmware(v, hasExtendedAuxBuses: hasExtendedAuxBuses)) {
-      return hasExtendedAuxBuses
-          ? v - (es5MinExtended - 1)
-          : v - (es5Min - 1);
+      return hasExtendedAuxBuses ? v - (es5MinExtended - 1) : v - (es5Min - 1);
     }
     if (isAuxForFirmware(v, hasExtendedAuxBuses: hasExtendedAuxBuses)) {
       return v - (auxMin - 1);

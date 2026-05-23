@@ -135,7 +135,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     registerFallbackValue(FakePackedMappingData());
     registerFallbackValue(
-        Algorithm(algorithmIndex: 0, guid: 'fake', name: 'Fake'));
+      Algorithm(algorithmIndex: 0, guid: 'fake', name: 'Fake'),
+    );
 
     database = AppDatabase.forTesting(NativeDatabase.memory());
 
@@ -169,19 +170,24 @@ void main() {
 
     // Default stubs
     when(() => controller.isSynchronized).thenReturn(true);
-    when(() => controller.getAlgorithmInSlot(0))
-        .thenAnswer((_) async => testAlgorithm);
-    when(() => controller.getParametersForSlot(0))
-        .thenAnswer((_) async => testParameters);
-    when(() => controller.getValuesForSlot(0))
-        .thenAnswer((_) async => testValues);
-    when(() => controller.getMappingsForSlot(0))
-        .thenAnswer((_) async => testMappings);
-    when(() => controller.getCurrentPresetName())
-        .thenAnswer((_) async => 'TestPreset');
-    when(() => controller.getAllSlots()).thenAnswer((_) async => {
-          0: testAlgorithm,
-        });
+    when(
+      () => controller.getAlgorithmInSlot(0),
+    ).thenAnswer((_) async => testAlgorithm);
+    when(
+      () => controller.getParametersForSlot(0),
+    ).thenAnswer((_) async => testParameters);
+    when(
+      () => controller.getValuesForSlot(0),
+    ).thenAnswer((_) async => testValues);
+    when(
+      () => controller.getMappingsForSlot(0),
+    ).thenAnswer((_) async => testMappings);
+    when(
+      () => controller.getCurrentPresetName(),
+    ).thenAnswer((_) async => 'TestPreset');
+    when(
+      () => controller.getAllSlots(),
+    ).thenAnswer((_) async => {0: testAlgorithm});
     when(() => cubit.state).thenReturn(const DistingStateInitial());
   });
 
@@ -208,7 +214,6 @@ void main() {
       expect(json['success'], isFalse);
       expect(json['error'], contains('"query"'));
     });
-
   });
 
   group('searchAlgorithms — matching', () {
@@ -223,7 +228,8 @@ void main() {
       final results = json['results'] as List<dynamic>;
       expect(
         results.any(
-            (r) => (r as Map<String, dynamic>)['name'] == 'Attenuverter'),
+          (r) => (r as Map<String, dynamic>)['name'] == 'Attenuverter',
+        ),
         isTrue,
       );
     });
@@ -238,10 +244,12 @@ void main() {
       expect(json['results'], isNotEmpty);
       final results = json['results'] as List<dynamic>;
       expect(
-        results.any((r) => (r as Map<String, dynamic>)['name']
-            .toString()
-            .toLowerCase()
-            .contains('attenuverter')),
+        results.any(
+          (r) => (r as Map<String, dynamic>)['name']
+              .toString()
+              .toLowerCase()
+              .contains('attenuverter'),
+        ),
         isTrue,
       );
     });
@@ -279,7 +287,8 @@ void main() {
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['results'], isNotEmpty);
-      final first = (json['results'] as List<dynamic>)[0] as Map<String, dynamic>;
+      final first =
+          (json['results'] as List<dynamic>)[0] as Map<String, dynamic>;
       expect(first.containsKey('guid'), isTrue);
       expect(first.containsKey('name'), isTrue);
       expect(first.containsKey('category'), isTrue);
@@ -340,8 +349,11 @@ void main() {
         if (desc.contains('.')) {
           // Should end at first period — only one period allowed
           final periodCount = '.'.allMatches(desc).length;
-          expect(periodCount, equals(1),
-              reason: 'Description "$desc" should be truncated to first sentence');
+          expect(
+            periodCount,
+            equals(1),
+            reason: 'Description "$desc" should be truncated to first sentence',
+          );
         }
       }
     });
@@ -395,27 +407,31 @@ void main() {
       expect(json['error'], contains('not synchronized'));
     });
 
-    test('slot JSON contains algorithm and parameter_count (not parameters)', () async {
-      final result = await algoTools.showPreset();
-      final json = jsonDecode(result) as Map<String, dynamic>;
+    test(
+      'slot JSON contains algorithm and parameter_count (not parameters)',
+      () async {
+        final result = await algoTools.showPreset();
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      final slot =
-          (json['slots'] as List<dynamic>)[0] as Map<String, dynamic>;
-      expect(slot['slot_index'], equals(0));
-      expect(slot['algorithm'], isA<Map>());
-      expect(
-        (slot['algorithm'] as Map<String, dynamic>)['name'],
-        equals('TestAlgo'),
-      );
-      expect(slot['parameter_count'], equals(3));
-      expect(slot.containsKey('parameters'), isFalse);
-    });
+        final slot =
+            (json['slots'] as List<dynamic>)[0] as Map<String, dynamic>;
+        expect(slot['slot_index'], equals(0));
+        expect(slot['algorithm'], isA<Map>());
+        expect(
+          (slot['algorithm'] as Map<String, dynamic>)['name'],
+          equals('TestAlgo'),
+        );
+        expect(slot['parameter_count'], equals(3));
+        expect(slot.containsKey('parameters'), isFalse);
+      },
+    );
   });
 
   group('showSlot — empty slot handling', () {
     test('returns empty slot JSON when algorithm is null', () async {
-      when(() => controller.getAlgorithmInSlot(0))
-          .thenAnswer((_) async => null);
+      when(
+        () => controller.getAlgorithmInSlot(0),
+      ).thenAnswer((_) async => null);
 
       final result = await algoTools.showSlot(0);
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -482,17 +498,20 @@ void main() {
   });
 
   group('showSlot — parameter summary format', () {
-    test('numeric parameter has value, min, max but no valid_enum_values', () async {
-      final result = await algoTools.showSlot(0);
-      final json = jsonDecode(result) as Map<String, dynamic>;
+    test(
+      'numeric parameter has value, min, max but no valid_enum_values',
+      () async {
+        final result = await algoTools.showSlot(0);
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      final param = (json['parameters'] as List)[0] as Map<String, dynamic>;
-      expect(param['parameter_name'], equals('Level'));
-      expect(param['value'], isNotNull);
-      expect(param['min'], isNotNull);
-      expect(param['max'], isNotNull);
-      expect(param.containsKey('valid_enum_values'), isFalse);
-    });
+        final param = (json['parameters'] as List)[0] as Map<String, dynamic>;
+        expect(param['parameter_name'], equals('Level'));
+        expect(param['value'], isNotNull);
+        expect(param['min'], isNotNull);
+        expect(param['max'], isNotNull);
+        expect(param.containsKey('valid_enum_values'), isFalse);
+      },
+    );
 
     test('parameter with no mapping has no has_mapping key', () async {
       final result = await algoTools.showSlot(0);
@@ -503,15 +522,17 @@ void main() {
     });
 
     test('parameter with MIDI mapping has has_mapping: true', () async {
-      when(() => controller.getMappingsForSlot(0)).thenAnswer((_) async => [
-            Mapping(
-              algorithmIndex: 0,
-              parameterNumber: 0,
-              packedMappingData: makeMappingData(isMidiEnabled: true, midiCC: 74),
-            ),
-            testMappings[1],
-            testMappings[2],
-          ]);
+      when(() => controller.getMappingsForSlot(0)).thenAnswer(
+        (_) async => [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: makeMappingData(isMidiEnabled: true, midiCC: 74),
+          ),
+          testMappings[1],
+          testMappings[2],
+        ],
+      );
 
       final result = await algoTools.showSlot(0);
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -522,15 +543,17 @@ void main() {
     });
 
     test('parameter with performance page includes performance_page', () async {
-      when(() => controller.getMappingsForSlot(0)).thenAnswer((_) async => [
-            Mapping(
-              algorithmIndex: 0,
-              parameterNumber: 0,
-              packedMappingData: makeMappingData(perfPageIndex: 3),
-            ),
-            testMappings[1],
-            testMappings[2],
-          ]);
+      when(() => controller.getMappingsForSlot(0)).thenAnswer(
+        (_) async => [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: makeMappingData(perfPageIndex: 3),
+          ),
+          testMappings[1],
+          testMappings[2],
+        ],
+      );
 
       final result = await algoTools.showSlot(0);
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -569,8 +592,7 @@ void main() {
 
   group('showScreen — display_mode validation', () {
     test('returns error for invalid display_mode', () async {
-      final result =
-          await algoTools.showScreen(displayMode: 'invalid_mode');
+      final result = await algoTools.showScreen(displayMode: 'invalid_mode');
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
@@ -588,8 +610,7 @@ void main() {
 
     test('validates display_mode before checking synchronized state', () async {
       // Even when not synchronized, invalid display_mode should error first
-      final result =
-          await algoTools.showScreen(displayMode: 'bogus');
+      final result = await algoTools.showScreen(displayMode: 'bogus');
       final json = jsonDecode(result) as Map<String, dynamic>;
 
       expect(json['success'], isFalse);
@@ -655,20 +676,25 @@ void main() {
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json.containsKey('mapping'), isFalse,
-          reason: 'Filler mapping should produce no mapping key');
+      expect(
+        json.containsKey('mapping'),
+        isFalse,
+        reason: 'Filler mapping should produce no mapping key',
+      );
     });
 
     test('includes only CV when cv_input > 0', () async {
-      when(() => controller.getMappingsForSlot(0)).thenAnswer((_) async => [
-            Mapping(
-              algorithmIndex: 0,
-              parameterNumber: 0,
-              packedMappingData: makeMappingData(cvInput: 1),
-            ),
-            testMappings[1],
-            testMappings[2],
-          ]);
+      when(() => controller.getMappingsForSlot(0)).thenAnswer(
+        (_) async => [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: makeMappingData(cvInput: 1),
+          ),
+          testMappings[1],
+          testMappings[2],
+        ],
+      );
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -681,15 +707,17 @@ void main() {
     });
 
     test('includes only MIDI when midi enabled', () async {
-      when(() => controller.getMappingsForSlot(0)).thenAnswer((_) async => [
-            Mapping(
-              algorithmIndex: 0,
-              parameterNumber: 0,
-              packedMappingData: makeMappingData(isMidiEnabled: true, midiCC: 10),
-            ),
-            testMappings[1],
-            testMappings[2],
-          ]);
+      when(() => controller.getMappingsForSlot(0)).thenAnswer(
+        (_) async => [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: makeMappingData(isMidiEnabled: true, midiCC: 10),
+          ),
+          testMappings[1],
+          testMappings[2],
+        ],
+      );
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -702,15 +730,17 @@ void main() {
     });
 
     test('includes only i2c when i2c enabled', () async {
-      when(() => controller.getMappingsForSlot(0)).thenAnswer((_) async => [
-            Mapping(
-              algorithmIndex: 0,
-              parameterNumber: 0,
-              packedMappingData: makeMappingData(isI2cEnabled: true, i2cCC: 5),
-            ),
-            testMappings[1],
-            testMappings[2],
-          ]);
+      when(() => controller.getMappingsForSlot(0)).thenAnswer(
+        (_) async => [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: makeMappingData(isI2cEnabled: true, i2cCC: 5),
+          ),
+          testMappings[1],
+          testMappings[2],
+        ],
+      );
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -723,15 +753,17 @@ void main() {
     });
 
     test('includes performance_page when perfPageIndex > 0', () async {
-      when(() => controller.getMappingsForSlot(0)).thenAnswer((_) async => [
-            Mapping(
-              algorithmIndex: 0,
-              parameterNumber: 0,
-              packedMappingData: makeMappingData(perfPageIndex: 3),
-            ),
-            testMappings[1],
-            testMappings[2],
-          ]);
+      when(() => controller.getMappingsForSlot(0)).thenAnswer(
+        (_) async => [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: makeMappingData(perfPageIndex: 3),
+          ),
+          testMappings[1],
+          testMappings[2],
+        ],
+      );
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -742,23 +774,25 @@ void main() {
     });
 
     test('includes all mapping types when all enabled', () async {
-      when(() => controller.getMappingsForSlot(0)).thenAnswer((_) async => [
-            Mapping(
-              algorithmIndex: 0,
-              parameterNumber: 0,
-              packedMappingData: makeMappingData(
-                cvInput: 1,
-                source: 2,
-                isMidiEnabled: true,
-                midiCC: 10,
-                isI2cEnabled: true,
-                i2cCC: 5,
-                perfPageIndex: 1,
-              ),
+      when(() => controller.getMappingsForSlot(0)).thenAnswer(
+        (_) async => [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: makeMappingData(
+              cvInput: 1,
+              source: 2,
+              isMidiEnabled: true,
+              midiCC: 10,
+              isI2cEnabled: true,
+              i2cCC: 5,
+              perfPageIndex: 1,
             ),
-            testMappings[1],
-            testMappings[2],
-          ]);
+          ),
+          testMappings[1],
+          testMappings[2],
+        ],
+      );
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -797,12 +831,15 @@ void main() {
         ),
       ];
 
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => scaledParams);
-      when(() => controller.getValuesForSlot(0))
-          .thenAnswer((_) async => scaledValues);
-      when(() => controller.getMappingsForSlot(0))
-          .thenAnswer((_) async => scaledMappings);
+      when(
+        () => controller.getParametersForSlot(0),
+      ).thenAnswer((_) async => scaledParams);
+      when(
+        () => controller.getValuesForSlot(0),
+      ).thenAnswer((_) async => scaledValues);
+      when(
+        () => controller.getMappingsForSlot(0),
+      ).thenAnswer((_) async => scaledMappings);
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -826,8 +863,9 @@ void main() {
         testValues[1],
         testValues[2],
       ];
-      when(() => controller.getValuesForSlot(0))
-          .thenAnswer((_) async => disabledValues);
+      when(
+        () => controller.getValuesForSlot(0),
+      ).thenAnswer((_) async => disabledValues);
 
       final result = await algoTools.showParameter('0:0');
       final json = jsonDecode(result) as Map<String, dynamic>;

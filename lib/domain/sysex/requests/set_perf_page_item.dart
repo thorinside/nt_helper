@@ -12,10 +12,7 @@ import 'package:nt_helper/models/performance_page_item.dart';
 class SetPerfPageItemMessage extends SysexMessage {
   final PerformancePageItem item;
 
-  SetPerfPageItemMessage({
-    required super.sysExId,
-    required this.item,
-  });
+  SetPerfPageItemMessage({required super.sysExId, required this.item});
 
   /// Clamp a character to the SysEx 7-bit safe range (0x01-0x7E).
   static int _clampChar(int c) => c.clamp(0x01, 0x7E);

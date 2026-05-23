@@ -30,7 +30,10 @@ class AuxBusUsageWidget extends StatelessWidget {
     // Collect all valid AUX bus numbers
     final busList = <int>[];
     for (int b = BusSpec.auxMin; b <= auxCeiling; b++) {
-      if (BusSpec.isAuxForFirmware(b, hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+      if (BusSpec.isAuxForFirmware(
+        b,
+        hasExtendedAuxBuses: hasExtendedAuxBuses,
+      )) {
         busList.add(b);
       }
     }
@@ -55,13 +58,17 @@ class AuxBusUsageWidget extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (int col = 0;
-                      col < columns && row * columns + col < busList.length;
-                      col++)
+                  for (
+                    int col = 0;
+                    col < columns && row * columns + col < busList.length;
+                    col++
+                  )
                     Padding(
                       padding: EdgeInsets.only(left: col > 0 ? 2.0 : 0),
                       child: _BusSquare(
-                        key: ValueKey('bus_${busList[row * columns + col]}_${(auxBusUsage[busList[row * columns + col]]?.sessionCount ?? 0) > 0}'),
+                        key: ValueKey(
+                          'bus_${busList[row * columns + col]}_${(auxBusUsage[busList[row * columns + col]]?.sessionCount ?? 0) > 0}',
+                        ),
                         busNumber: busList[row * columns + col],
                         hasExtendedAuxBuses: hasExtendedAuxBuses,
                         info: auxBusUsage[busList[row * columns + col]],
@@ -113,21 +120,26 @@ class _BusSquare extends StatelessWidget {
     if (isEmpty) {
       fillColor = Colors.transparent;
     } else if (sessions == 1) {
-      fillColor =
-          brightness == Brightness.dark ? Colors.green[400]! : Colors.green[600]!;
+      fillColor = brightness == Brightness.dark
+          ? Colors.green[400]!
+          : Colors.green[600]!;
     } else if (sessions == 2) {
-      fillColor =
-          brightness == Brightness.dark ? Colors.amber[400]! : Colors.amber[600]!;
+      fillColor = brightness == Brightness.dark
+          ? Colors.amber[400]!
+          : Colors.amber[600]!;
     } else {
       fillColor = colorScheme.error;
     }
 
-    final borderColor =
-        isFocused ? colorScheme.primary : colorScheme.outlineVariant;
+    final borderColor = isFocused
+        ? colorScheme.primary
+        : colorScheme.outlineVariant;
     final borderWidth = isFocused ? 2.0 : 1.0;
 
-    final label = BusLabelFormatter.formatBusValue(busNumber,
-        hasExtendedAuxBuses: hasExtendedAuxBuses);
+    final label = BusLabelFormatter.formatBusValue(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
     final tooltip = _buildTooltip(label);
 
     Widget squareWidget = Container(
@@ -171,10 +183,7 @@ class _BusSquare extends StatelessWidget {
             ),
           ),
         ),
-        childWhenDragging: Opacity(
-          opacity: 0.5,
-          child: squareWidget,
-        ),
+        childWhenDragging: Opacity(opacity: 0.5, child: squareWidget),
         child: GestureDetector(
           onTap: () => onTap(busNumber),
           child: squareWidget,
@@ -208,10 +217,7 @@ class _BusSquare extends StatelessWidget {
 
     // Wrap non-draggable squares with tap handler (draggable squares handle tap internally)
     if (isEmpty || onBusMoved == null) {
-      child = GestureDetector(
-        onTap: () => onTap(busNumber),
-        child: child,
-      );
+      child = GestureDetector(onTap: () => onTap(busNumber), child: child);
     }
 
     return Tooltip(

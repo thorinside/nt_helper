@@ -62,8 +62,11 @@ void main() {
       expect(
         () => handler.throwIfApiError(response, 'Test'),
         throwsA(
-          isA<LlmApiException>()
-              .having((e) => e.retryAfterSeconds, 'retryAfterSeconds', 5),
+          isA<LlmApiException>().having(
+            (e) => e.retryAfterSeconds,
+            'retryAfterSeconds',
+            5,
+          ),
         ),
       );
     });
@@ -76,8 +79,11 @@ void main() {
       expect(
         () => handler.throwIfApiError(response, 'Test'),
         throwsA(
-          isA<LlmApiException>()
-              .having((e) => e.retryAfterSeconds, 'retryAfterSeconds', null),
+          isA<LlmApiException>().having(
+            (e) => e.retryAfterSeconds,
+            'retryAfterSeconds',
+            null,
+          ),
         ),
       );
     });
@@ -87,12 +93,11 @@ void main() {
       expect(
         () => handler.throwIfApiError(response, 'Test'),
         throwsA(
-          isA<LlmApiException>()
-              .having(
-                (e) => e.message,
-                'message',
-                contains('not json at all'),
-              ),
+          isA<LlmApiException>().having(
+            (e) => e.message,
+            'message',
+            contains('not json at all'),
+          ),
         ),
       );
     });
@@ -105,12 +110,11 @@ void main() {
       expect(
         () => handler.throwIfApiError(response, 'My Provider'),
         throwsA(
-          isA<LlmApiException>()
-              .having(
-                (e) => e.message,
-                'message',
-                startsWith('My Provider error'),
-              ),
+          isA<LlmApiException>().having(
+            (e) => e.message,
+            'message',
+            startsWith('My Provider error'),
+          ),
         ),
       );
     });

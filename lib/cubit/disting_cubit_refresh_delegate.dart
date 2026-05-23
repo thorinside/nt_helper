@@ -24,10 +24,11 @@ class _RefreshDelegate {
       await _cubit._refreshStateFromManager();
 
       if (!currentState.offline &&
-          _cubit._algorithmLibraryDelegate.shouldRefreshAlgorithms(currentState)) {
+          _cubit._algorithmLibraryDelegate.shouldRefreshAlgorithms(
+            currentState,
+          )) {
         _cubit._algorithmLibraryDelegate.refreshAlgorithmsInBackground();
       }
     }
   }
 }
-

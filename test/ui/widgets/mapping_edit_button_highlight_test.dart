@@ -26,11 +26,10 @@ void main() {
     mockDistingCubit = MockDistingCubit();
     mockMidiListenerCubit = MockMidiListenerCubit();
 
-    when(() => mockDistingCubit.state).thenReturn(
-      const DistingStateInitial(),
-    );
-    when(() => mockDistingCubit.scheduleParameterRefresh(any()))
-        .thenReturn(null);
+    when(() => mockDistingCubit.state).thenReturn(const DistingStateInitial());
+    when(
+      () => mockDistingCubit.scheduleParameterRefresh(any()),
+    ).thenReturn(null);
     when(() => mockDistingCubit.disting()).thenReturn(null);
   });
 
@@ -64,11 +63,7 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            value: 50,
-          ),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
         ],
         enums: [ParameterEnumStrings.filler()],
         mappings: [Mapping.filler()],
@@ -90,9 +85,7 @@ void main() {
           BlocProvider<MidiListenerCubit>.value(value: mockMidiListenerCubit),
         ],
         child: Scaffold(
-          body: MappingEditButton(
-            parameterViewRow: createParameterViewRow(),
-          ),
+          body: MappingEditButton(parameterViewRow: createParameterViewRow()),
         ),
       ),
     );

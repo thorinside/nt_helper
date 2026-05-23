@@ -444,10 +444,7 @@ void main() {
           guid: 'test-guid',
           name: 'Test Algorithm',
         ),
-        routing: RoutingInfo(
-          algorithmIndex: 0,
-          routingInfo: List.filled(6, 0),
-        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: List.filled(6, 0)),
         pages: ParameterPages(algorithmIndex: 0, pages: []),
         parameters: [
           ParameterInfo(

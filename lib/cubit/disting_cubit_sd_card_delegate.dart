@@ -74,4 +74,3 @@ class _SdCardDelegate {
     return scanSdCardPresets();
   }
 }
-

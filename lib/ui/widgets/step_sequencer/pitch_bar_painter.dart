@@ -66,10 +66,7 @@ class PitchBarPainter extends CustomPainter {
         colors: [darkColor, darkerColor],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      bgPaint,
-    );
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
     // Draw bright fill from bottom to parameter value level
     // Normalize value to 0.0-1.0 range based on min/max

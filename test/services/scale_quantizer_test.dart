@@ -163,7 +163,15 @@ void main() {
       });
 
       test('C Minor scale notes pass through unchanged', () {
-        final cMinorNotes = [60, 62, 63, 65, 67, 68, 70]; // C, D, Eb, F, G, Ab, Bb
+        final cMinorNotes = [
+          60,
+          62,
+          63,
+          65,
+          67,
+          68,
+          70,
+        ]; // C, D, Eb, F, G, Ab, Bb
         for (final note in cMinorNotes) {
           final quantized = ScaleQuantizer.quantize(note, 'Minor', 0);
           expect(quantized, equals(note));

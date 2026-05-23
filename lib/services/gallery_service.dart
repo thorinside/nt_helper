@@ -117,11 +117,12 @@ class SampleInstallationResult {
 /// Callback type for installing a single sample file to the SD card.
 /// Returns `true` if installed, `false` if skipped (already exists).
 /// Throws an exception on failure.
-typedef SampleInstallCallback = Future<bool> Function(
-  String targetPath,
-  Uint8List data, {
-  Function(double)? onProgress,
-});
+typedef SampleInstallCallback =
+    Future<bool> Function(
+      String targetPath,
+      Uint8List data, {
+      Function(double)? onProgress,
+    });
 
 /// Service for managing the plugin gallery
 class GalleryService {
@@ -281,10 +282,7 @@ class GalleryService {
       final file = await _getCacheFile();
       final timestamp = DateTime.now().toIso8601String();
 
-      final cacheData = {
-        'timestamp': timestamp,
-        'gallery': gallery.toJson(),
-      };
+      final cacheData = {'timestamp': timestamp, 'gallery': gallery.toJson()};
 
       await file.writeAsString(json.encode(cacheData));
       _persistedCacheTimestamp = DateTime.now();
@@ -528,9 +526,7 @@ class GalleryService {
         compatibility: PluginCompatibility(
           minFirmwareVersion: p['minFirmwareVersion'] as String?,
         ),
-        metrics: PluginMetrics(
-          downloads: (p['downloadCount'] as int?) ?? 0,
-        ),
+        metrics: PluginMetrics(downloads: (p['downloadCount'] as int?) ?? 0),
         featured: p['featured'] as bool? ?? false,
         verified: p['verified'] as bool? ?? false,
         isCollection: p['isCollection'] as bool? ?? false,
@@ -763,7 +759,9 @@ class GalleryService {
     GalleryPlugin plugin,
     String version,
   ) async {
-    if (kPlayStoreBuild) throw UnsupportedError('Not available on Play Store build');
+    if (kPlayStoreBuild) {
+      throw UnsupportedError('Not available on Play Store build');
+    }
     final release = plugin.getVersionTag(version);
     final downloadUrl = await _getDownloadUrl(plugin, release);
 
@@ -845,9 +843,7 @@ class GalleryService {
     } else if (_isRawPluginFile(fileExtension)) {
       filesToInstall = [MapEntry(fileName, fileBytes)];
     } else {
-      throw GalleryException(
-        'Unsupported file type: $fileExtension',
-      );
+      throw GalleryException('Unsupported file type: $fileExtension');
     }
 
     // Install
@@ -1218,7 +1214,8 @@ class GalleryService {
 
       if (response.statusCode == 200) {
         final releaseData =
-            json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+            json.decode(utf8.decode(response.bodyBytes))
+                as Map<String, dynamic>;
         final assets = releaseData['assets'] as List;
 
         if (assets.isNotEmpty) {
@@ -1601,7 +1598,8 @@ class GalleryService {
         // Check 2: Also check if plugin GUID exists on device
         // (catches manually installed plugins not in database)
         // For collections, check if ANY of the collection's plugins are installed
-        final isInstalledOnDevice = normalizedDeviceGuids != null &&
+        final isInstalledOnDevice =
+            normalizedDeviceGuids != null &&
             ((galleryPlugin.guid != null &&
                     normalizedDeviceGuids.contains(
                       galleryPlugin.guid!.toUpperCase(),

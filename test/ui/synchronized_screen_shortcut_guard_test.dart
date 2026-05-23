@@ -71,8 +71,9 @@ void main() {
   }
 
   group('Shortcut re-entrancy guards', () {
-    testWidgets('Cmd+/ does not open multiple shortcut help dialogs',
-        (tester) async {
+    testWidgets('Cmd+/ does not open multiple shortcut help dialogs', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -88,35 +89,38 @@ void main() {
     });
 
     testWidgets(
-        'Cmd+/ can reopen shortcut help after previous dialog is dismissed',
-        (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      'Cmd+/ can reopen shortcut help after previous dialog is dismissed',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      // Open the help dialog
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-      await tester.sendKeyEvent(LogicalKeyboardKey.slash);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
-      await tester.pumpAndSettle();
+        // Open the help dialog
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+        await tester.sendKeyEvent(LogicalKeyboardKey.slash);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ShortcutHelpOverlay), findsOneWidget);
+        expect(find.byType(ShortcutHelpOverlay), findsOneWidget);
 
-      // Dismiss the dialog by tapping the close button inside it
-      await tester.tap(find.descendant(
-        of: find.byType(ShortcutHelpOverlay),
-        matching: find.byIcon(Icons.close),
-      ));
-      await tester.pumpAndSettle();
+        // Dismiss the dialog by tapping the close button inside it
+        await tester.tap(
+          find.descendant(
+            of: find.byType(ShortcutHelpOverlay),
+            matching: find.byIcon(Icons.close),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ShortcutHelpOverlay), findsNothing);
+        expect(find.byType(ShortcutHelpOverlay), findsNothing);
 
-      // Open it again - should work
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-      await tester.sendKeyEvent(LogicalKeyboardKey.slash);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
-      await tester.pumpAndSettle();
+        // Open it again - should work
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+        await tester.sendKeyEvent(LogicalKeyboardKey.slash);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ShortcutHelpOverlay), findsOneWidget);
-    });
+        expect(find.byType(ShortcutHelpOverlay), findsOneWidget);
+      },
+    );
   });
 }

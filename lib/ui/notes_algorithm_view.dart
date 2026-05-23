@@ -192,7 +192,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
       _isSaving = true;
     });
     SemanticsService.sendAnnouncement(
-      View.of(context), 'Saving notes...', TextDirection.ltr,
+      View.of(context),
+      'Saving notes...',
+      TextDirection.ltr,
     );
 
     final lines = _splitTextIntoLines(text);
@@ -234,7 +236,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
       });
       if (mounted) {
         SemanticsService.sendAnnouncement(
-          View.of(context), 'Notes saved', TextDirection.ltr,
+          View.of(context),
+          'Notes saved',
+          TextDirection.ltr,
         );
       }
     } catch (e) {
@@ -245,7 +249,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
       if (mounted) {
         _showError('Failed to save text: $e');
         SemanticsService.sendAnnouncement(
-          View.of(context), 'Failed to save notes', TextDirection.ltr,
+          View.of(context),
+          'Failed to save notes',
+          TextDirection.ltr,
         );
       }
     }
@@ -261,7 +267,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
       _textController.text = _getCurrentText();
     });
     SemanticsService.sendAnnouncement(
-      View.of(context), 'Edit cancelled', TextDirection.ltr,
+      View.of(context),
+      'Edit cancelled',
+      TextDirection.ltr,
     );
   }
 
@@ -413,33 +421,31 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                 SingleActivator(key, shift: true):
                     const DoNothingAndStopPropagationTextIntent(),
               },
-              for (final activator
-                  in KeyBindingService().globalShortcuts.keys)
-                activator:
-                    const DoNothingAndStopPropagationTextIntent(),
+              for (final activator in KeyBindingService().globalShortcuts.keys)
+                activator: const DoNothingAndStopPropagationTextIntent(),
             },
             child: TextField(
-            controller: _textController,
-            focusNode: _editorFocusNode,
-            maxLines: null,
-            expands: true,
-            textAlignVertical: TextAlignVertical.top,
-            style: Theme.of(context).textTheme.bodyLarge,
-            decoration: InputDecoration(
-              border: const OutlineInputBorder(),
-              hintText:
-                  'Enter your notes here...\n\nPress Enter to create line breaks.\nLong lines will wrap automatically.',
-              hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              controller: _textController,
+              focusNode: _editorFocusNode,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              style: Theme.of(context).textTheme.bodyLarge,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText:
+                    'Enter your notes here...\n\nPress Enter to create line breaks.\nLong lines will wrap automatically.',
+                hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
               ),
+              inputFormatters: [
+                // Allow reasonable input length for editing
+                LengthLimitingTextInputFormatter(500),
+              ],
             ),
-            inputFormatters: [
-              // Allow reasonable input length for editing
-              LengthLimitingTextInputFormatter(500),
-            ],
-          ),
           ),
         ),
 

@@ -69,7 +69,8 @@ void main() {
           defaultValue: 8,
           unit: 1,
           powerOfTen: 0,
-          ioFlags: 3, // Bits 0, 1 set: isInput, isOutput; Bit 2 clear: isAudio = false
+          ioFlags:
+              3, // Bits 0, 1 set: isInput, isOutput; Bit 2 clear: isAudio = false
         );
 
         expect(param.isAudio, isFalse);
@@ -145,44 +146,50 @@ void main() {
     });
 
     group('AC-8: Offline/Mock Mode Behavior', () {
-      test('parameters without I/O flags should not be treated as I/O parameters', () {
-        // In offline/mock mode where ioFlags = 0
-        final param = ParameterInfo(
-          algorithmIndex: 0,
-          parameterNumber: 1,
-          name: 'Some Parameter',
-          min: 1,
-          max: 20,
-          defaultValue: 5,
-          unit: 1,
-          powerOfTen: 0,
-          ioFlags: 0, // Offline mode: no I/O metadata
-        );
+      test(
+        'parameters without I/O flags should not be treated as I/O parameters',
+        () {
+          // In offline/mock mode where ioFlags = 0
+          final param = ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Some Parameter',
+            min: 1,
+            max: 20,
+            defaultValue: 5,
+            unit: 1,
+            powerOfTen: 0,
+            ioFlags: 0, // Offline mode: no I/O metadata
+          );
 
-        // Parameters without I/O flags should not create ports
-        // This is acceptable: offline mode has limited routing capabilities
-        expect(param.isInput, isFalse);
-        expect(param.isOutput, isFalse);
-      });
+          // Parameters without I/O flags should not create ports
+          // This is acceptable: offline mode has limited routing capabilities
+          expect(param.isInput, isFalse);
+          expect(param.isOutput, isFalse);
+        },
+      );
 
-      test('parameters with explicit I/O flags should work even in offline mode', () {
-        // If offline metadata includes I/O flags (from bundled metadata), they should work
-        final param = ParameterInfo(
-          algorithmIndex: 0,
-          parameterNumber: 1,
-          name: 'Input',
-          min: 1,
-          max: 20,
-          defaultValue: 5,
-          unit: 1,
-          powerOfTen: 0,
-          ioFlags: 5, // isInput + isAudio (from bundled metadata)
-        );
+      test(
+        'parameters with explicit I/O flags should work even in offline mode',
+        () {
+          // If offline metadata includes I/O flags (from bundled metadata), they should work
+          final param = ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Input',
+            min: 1,
+            max: 20,
+            defaultValue: 5,
+            unit: 1,
+            powerOfTen: 0,
+            ioFlags: 5, // isInput + isAudio (from bundled metadata)
+          );
 
-        // Should recognize as I/O parameter when flags are present
-        expect(param.isInput, isTrue);
-        expect(param.isAudio, isTrue);
-      });
+          // Should recognize as I/O parameter when flags are present
+          expect(param.isInput, isTrue);
+          expect(param.isAudio, isTrue);
+        },
+      );
     });
   });
 }

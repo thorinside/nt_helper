@@ -40,7 +40,10 @@ extension FirmwareReleaseExtension on FirmwareRelease {
   /// Returns positive if this version is newer, negative if older, 0 if equal
   int compareToVersion(String other) {
     final thisParts = versionParts;
-    final otherParts = other.split('.').map((p) => int.tryParse(p) ?? 0).toList();
+    final otherParts = other
+        .split('.')
+        .map((p) => int.tryParse(p) ?? 0)
+        .toList();
 
     for (int i = 0; i < 3; i++) {
       final thisVal = i < thisParts.length ? thisParts[i] : 0;

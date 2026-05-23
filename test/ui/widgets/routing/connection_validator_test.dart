@@ -87,13 +87,18 @@ void main() {
       );
     });
 
-    test('algorithm input -> algorithm output is valid (busReader + busWriter)',
-        () {
-      expect(
-        ConnectionValidator.isValidConnection(algorithmInput, algorithmOutput),
-        isTrue,
-      );
-    });
+    test(
+      'algorithm input -> algorithm output is valid (busReader + busWriter)',
+      () {
+        expect(
+          ConnectionValidator.isValidConnection(
+            algorithmInput,
+            algorithmOutput,
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('ghost connection is correctly identified', () {
       expect(
@@ -156,10 +161,12 @@ void main() {
         physicalInput,
         algorithmOutput,
       );
-      expect(forward || reverse, isTrue,
-          reason: 'Ghost connection should be valid in at least one direction');
-      expect(forward, isTrue,
-          reason: 'Algorithm output should be the source');
+      expect(
+        forward || reverse,
+        isTrue,
+        reason: 'Ghost connection should be valid in at least one direction',
+      );
+      expect(forward, isTrue, reason: 'Algorithm output should be the source');
     });
 
     test('dragging from physical input to algorithm output resolves', () {
@@ -173,8 +180,11 @@ void main() {
         algorithmOutput,
         physicalInput,
       );
-      expect(forward || reverse, isTrue,
-          reason: 'Should resolve via reverse ordering');
+      expect(
+        forward || reverse,
+        isTrue,
+        reason: 'Should resolve via reverse ordering',
+      );
     });
 
     test('dragging from physical output to algorithm input resolves', () {
@@ -186,10 +196,12 @@ void main() {
         algorithmInput,
         physicalOutput,
       );
-      expect(forward || reverse, isTrue,
-          reason: 'Physical output -> algorithm input is valid');
-      expect(forward, isTrue,
-          reason: 'Physical output should be the source');
+      expect(
+        forward || reverse,
+        isTrue,
+        reason: 'Physical output -> algorithm input is valid',
+      );
+      expect(forward, isTrue, reason: 'Physical output should be the source');
     });
 
     test('dragging from algorithm input to physical output resolves', () {
@@ -203,8 +215,11 @@ void main() {
         physicalOutput,
         algorithmInput,
       );
-      expect(forward || reverse, isTrue,
-          reason: 'Should resolve via reverse ordering');
+      expect(
+        forward || reverse,
+        isTrue,
+        reason: 'Should resolve via reverse ordering',
+      );
     });
 
     test('dragging from algorithm output to physical output resolves', () {
@@ -216,8 +231,11 @@ void main() {
         physicalOutput,
         algorithmOutput,
       );
-      expect(forward || reverse, isTrue,
-          reason: 'Algorithm output -> physical output is valid');
+      expect(
+        forward || reverse,
+        isTrue,
+        reason: 'Algorithm output -> physical output is valid',
+      );
       expect(forward, isTrue);
     });
   });

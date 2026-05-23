@@ -139,19 +139,17 @@ class _MappingDelegate {
             if (verificationState is DistingStateSynchronized) {
               _cubit._emitState(
                 verificationState.copyWith(
-                  slots: _cubit.updateSlot(
-                    slotIndex,
-                    verificationState.slots,
-                    (slot) {
-                      return slot.copyWith(
-                        mappings: _cubit.replaceInList(
-                          slot.mappings,
-                          actualMapping,
-                          index: parameterNumber,
-                        ),
-                      );
-                    },
-                  ),
+                  slots: _cubit.updateSlot(slotIndex, verificationState.slots, (
+                    slot,
+                  ) {
+                    return slot.copyWith(
+                      mappings: _cubit.replaceInList(
+                        slot.mappings,
+                        actualMapping,
+                        index: parameterNumber,
+                      ),
+                    );
+                  }),
                 ),
               );
             }
@@ -194,4 +192,3 @@ class _MappingDelegate {
     }
   }
 }
-

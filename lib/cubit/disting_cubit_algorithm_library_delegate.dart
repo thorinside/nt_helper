@@ -40,12 +40,18 @@ class _AlgorithmLibraryDelegate {
       );
     } else {
       // Original approach: fetch all algorithms synchronously with prioritization
-      algorithms = await _fetchAllAlgorithmsSynchronously(manager, numAlgorithms);
+      algorithms = await _fetchAllAlgorithmsSynchronously(
+        manager,
+        numAlgorithms,
+      );
     }
 
     // Save to cache if we got a complete set
     if (algorithms.length == numAlgorithms) {
-      await _cubit._metadataDao.saveAlgorithmInfoCache(algorithms, numAlgorithms);
+      await _cubit._metadataDao.saveAlgorithmInfoCache(
+        algorithms,
+        numAlgorithms,
+      );
     }
 
     return algorithms;
@@ -217,7 +223,10 @@ class _AlgorithmLibraryDelegate {
     // Save complete algorithm list to cache
     final allResults = [...factoryResults, ...communityResults];
     if (allResults.length == numAlgorithms) {
-      await _cubit._metadataDao.saveAlgorithmInfoCache(allResults, numAlgorithms);
+      await _cubit._metadataDao.saveAlgorithmInfoCache(
+        allResults,
+        numAlgorithms,
+      );
     }
   }
 
@@ -313,4 +322,3 @@ class _AlgorithmLibraryDelegate {
     refreshAlgorithmsInBackground();
   }
 }
-

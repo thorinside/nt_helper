@@ -35,12 +35,20 @@ class ConnectionDiscoveryService {
 
       // Register input ports (bus readers)
       _registerPorts(
-        routing.inputPorts, algorithmId, i, PortRole.busReader, busRegistry,
+        routing.inputPorts,
+        algorithmId,
+        i,
+        PortRole.busReader,
+        busRegistry,
       );
 
       // Register output ports (bus writers)
       _registerPorts(
-        routing.outputPorts, algorithmId, i, PortRole.busWriter, busRegistry,
+        routing.outputPorts,
+        algorithmId,
+        i,
+        PortRole.busWriter,
+        busRegistry,
       );
     }
 
@@ -76,16 +84,22 @@ class ConnectionDiscoveryService {
       final isHardwareInput = BusSpec.isPhysicalInput(busNumber);
       final isHardwareOutput =
           BusSpec.isPhysicalOutput(busNumber) ||
-          BusSpec.isEs5ForFirmware(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses);
+          BusSpec.isEs5ForFirmware(
+            busNumber,
+            hasExtendedAuxBuses: hasExtendedAuxBuses,
+          );
 
       // Algorithm-to-algorithm: connect only from contributing writers for each reader slot.
       // Skip when the bus is a physical bus (inputs 1-12 or outputs 13-20) AND there are
       // algorithm outputs — those connections are better represented by the physical path
       // (writer → hw node → reader). ES-5 and AUX buses use direct algo-to-algo.
-      final isPhysicalBusWithOutputs = outputs.isNotEmpty &&
+      final isPhysicalBusWithOutputs =
+          outputs.isNotEmpty &&
           (BusSpec.isPhysicalOutput(busNumber) ||
-           (isHardwareInput && outputs.isNotEmpty));
-      if (outputs.isNotEmpty && inputs.isNotEmpty && !isPhysicalBusWithOutputs) {
+              (isHardwareInput && outputs.isNotEmpty));
+      if (outputs.isNotEmpty &&
+          inputs.isNotEmpty &&
+          !isPhysicalBusWithOutputs) {
         for (final input in inputs) {
           final contributingPortIds = resolver.contributorsForReader(
             busNumber,
@@ -196,7 +210,8 @@ class ConnectionDiscoveryService {
       if (isHardwareOutput && outputs.isNotEmpty) {
         connections.addAll(
           _createHardwareOutputConnections(
-            busNumber, outputs,
+            busNumber,
+            outputs,
             hasExtendedAuxBuses: hasExtendedAuxBuses,
           ),
         );
@@ -363,7 +378,10 @@ class ConnectionDiscoveryService {
     final connections = <Connection>[];
 
     // Check for ES-5 buses (29-30 on legacy, 65-66 on 1.15+)
-    if (BusSpec.isEs5ForFirmware(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+    if (BusSpec.isEs5ForFirmware(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    )) {
       final es5LocalNumber = BusSpec.toLocalNumberForFirmware(
         busNumber,
         hasExtendedAuxBuses: hasExtendedAuxBuses,
@@ -566,9 +584,11 @@ class ConnectionDiscoveryService {
                     hasExtendedAuxBuses: hasExtendedAuxBuses,
                   ) ??
                   'Bus$busNumber')
-            : (BusLabelFormatter.formatBusNumber(busNumber,
-                    hasExtendedAuxBuses: hasExtendedAuxBuses) ??
-                'Bus$busNumber');
+            : (BusLabelFormatter.formatBusNumber(
+                    busNumber,
+                    hasExtendedAuxBuses: hasExtendedAuxBuses,
+                  ) ??
+                  'Bus$busNumber');
 
         final partialConnection = _createPartialConnection(
           port,

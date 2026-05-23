@@ -20,7 +20,8 @@ class MockMidiCommand extends Mock implements MidiCommand {}
 
 const int _testSysExId = 0x00;
 
-MidiDevice _makeDevice(String id) => MidiDevice(id, 'Test Device', 'native', true);
+MidiDevice _makeDevice(String id) =>
+    MidiDevice(id, 'Test Device', 'native', true);
 
 /// Builds a valid Disting NT SysEx response frame.
 Uint8List _buildSysEx(
@@ -46,7 +47,8 @@ Uint8List _buildSysEx(
   StreamController<MidiPacket> incoming,
   MidiDevice device,
   MockMidiCommand midi,
-}) _createScheduler({
+})
+_createScheduler({
   Duration messageInterval = Duration.zero,
   Duration defaultTimeout = const Duration(milliseconds: 200),
   int defaultMaxRetries = 1,
@@ -56,8 +58,9 @@ Uint8List _buildSysEx(
   final device = _makeDevice('test-device');
 
   when(() => midi.onMidiDataReceived).thenAnswer((_) => incoming.stream);
-  when(() => midi.sendData(any(), deviceId: any(named: 'deviceId')))
-      .thenAnswer((_) {});
+  when(
+    () => midi.sendData(any(), deviceId: any(named: 'deviceId')),
+  ).thenAnswer((_) {});
 
   final scheduler = DistingMessageScheduler(
     midiCommand: midi,
@@ -69,12 +72,7 @@ Uint8List _buildSysEx(
     defaultMaxRetries: defaultMaxRetries,
   );
 
-  return (
-    scheduler: scheduler,
-    incoming: incoming,
-    device: device,
-    midi: midi,
-  );
+  return (scheduler: scheduler, incoming: incoming, device: device, midi: midi);
 }
 
 /// Injects a SysEx response into the scheduler's incoming stream.
@@ -139,41 +137,44 @@ void main() {
       expect(result, isNotNull);
     });
 
-    test('unexpected message discarded — current request still completes', () async {
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
+    test(
+      'unexpected message discarded — current request still completes',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respNumAlgorithms,
+        );
 
-      final future = scheduler.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-      );
+        final future = scheduler.sendRequest(
+          _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+          key,
+        );
 
-      await Future.microtask(() {});
+        await Future.microtask(() {});
 
-      // Inject an unexpected message (different type)
-      _injectResponse(
-        incoming,
-        device,
-        DistingNTRespMessageType.respPresetName,
-        [0x41, 0x42, 0x43, 0x00], // "ABC"
-      );
+        // Inject an unexpected message (different type)
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respPresetName,
+          [0x41, 0x42, 0x43, 0x00], // "ABC"
+        );
 
-      // Now inject the correct response
-      _injectResponse(
-        incoming,
-        device,
-        DistingNTRespMessageType.respNumAlgorithms,
-        [0x00, 0x00, 0x08],
-      );
+        // Now inject the correct response
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respNumAlgorithms,
+          [0x00, 0x00, 0x08],
+        );
 
-      final result = await future;
-      expect(result, isNotNull);
+        final result = await future;
+        expect(result, isNotNull);
 
-      final diag = scheduler.getDiagnostics();
-      expect(diag['unmatchedResponsesDiscarded'], 1);
-    });
+        final diag = scheduler.getDiagnostics();
+        expect(diag['unmatchedResponsesDiscarded'], 1);
+      },
+    );
 
     test('stale response absorbed by expired handler', () async {
       // Send request A that will time out (maxRetries = 1)
@@ -222,7 +223,11 @@ void main() {
         incoming,
         device,
         DistingNTRespMessageType.respNumAlgorithms,
-        [0x00, 0x00, 0x08], // 8 algorithms (B's response, absorbed by A's expired handler)
+        [
+          0x00,
+          0x00,
+          0x08,
+        ], // 8 algorithms (B's response, absorbed by A's expired handler)
       );
 
       final resultB = await futureB;
@@ -238,9 +243,26 @@ void main() {
       expect(diag['staleResponsesAbsorbed'], 1);
     });
 
-    test('FIFO drain — multiple same-key timeouts drain expired handlers', () async {
-      // Time out 2 requests with same key
-      for (var i = 0; i < 2; i++) {
+    test(
+      'FIFO drain — multiple same-key timeouts drain expired handlers',
+      () async {
+        // Time out 2 requests with same key
+        for (var i = 0; i < 2; i++) {
+          final key = RequestKey(
+            sysExId: _testSysExId,
+            messageType: DistingNTRespMessageType.respNumAlgorithms,
+          );
+          final future = scheduler.sendRequest(
+            _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+            key,
+            responseExpectation: ResponseExpectation.optional,
+            maxRetries: 1,
+            timeout: const Duration(milliseconds: 50),
+          );
+          await future; // Wait for timeout
+        }
+
+        // Send a third request
         final key = RequestKey(
           sysExId: _testSysExId,
           messageType: DistingNTRespMessageType.respNumAlgorithms,
@@ -248,63 +270,52 @@ void main() {
         final future = scheduler.sendRequest(
           _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
           key,
-          responseExpectation: ResponseExpectation.optional,
-          maxRetries: 1,
-          timeout: const Duration(milliseconds: 50),
         );
-        await future; // Wait for timeout
-      }
 
-      // Send a third request
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
-      final future = scheduler.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-      );
+        await Future.microtask(() {});
 
-      await Future.microtask(() {});
+        // Inject 3 responses: active handler matches the 1st, remaining 2 absorbed by expired handlers
+        for (var i = 0; i < 3; i++) {
+          _injectResponse(
+            incoming,
+            device,
+            DistingNTRespMessageType.respNumAlgorithms,
+            [0x00, 0x00, i],
+          );
+        }
 
-      // Inject 3 responses: active handler matches the 1st, remaining 2 absorbed by expired handlers
-      for (var i = 0; i < 3; i++) {
-        _injectResponse(
-          incoming,
-          device,
-          DistingNTRespMessageType.respNumAlgorithms,
-          [0x00, 0x00, i],
+        final result = await future;
+        expect(result, isNotNull);
+        expect(result, isA<int>());
+        expect(result, 0);
+
+        // Allow remaining stream events (stale responses absorbed by expired
+        // handlers) to be delivered before checking diagnostics.
+        await Future.microtask(() {});
+        await Future.microtask(() {});
+
+        final diag = scheduler.getDiagnostics();
+        expect(diag['staleResponsesAbsorbed'], 2);
+      },
+    );
+
+    test(
+      'fire-and-forget completes immediately without handler registration',
+      () async {
+        final key = RequestKey(
+          sysExId: _testSysExId,
+          messageType: DistingNTRespMessageType.respNumAlgorithms,
         );
-      }
 
-      final result = await future;
-      expect(result, isNotNull);
-      expect(result, isA<int>());
-      expect(result, 0);
+        final result = await scheduler.sendRequest(
+          _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+          key,
+          responseExpectation: ResponseExpectation.none,
+        );
 
-      // Allow remaining stream events (stale responses absorbed by expired
-      // handlers) to be delivered before checking diagnostics.
-      await Future.microtask(() {});
-      await Future.microtask(() {});
-
-      final diag = scheduler.getDiagnostics();
-      expect(diag['staleResponsesAbsorbed'], 2);
-    });
-
-    test('fire-and-forget completes immediately without handler registration', () async {
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
-
-      final result = await scheduler.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-        responseExpectation: ResponseExpectation.none,
-      );
-
-      expect(result, isNull);
-    });
+        expect(result, isNull);
+      },
+    );
 
     test('optional timeout returns null (not error)', () async {
       final key = RequestKey(
@@ -323,106 +334,72 @@ void main() {
       expect(result, isNull);
     });
 
-    test('retry persists handler — handler not moved to expired during retries', () async {
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
-
-      final future = scheduler.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-        maxRetries: 10,
-        timeout: const Duration(milliseconds: 50),
-      );
-
-      // Wait for first retry timeout
-      await Future.delayed(const Duration(milliseconds: 70));
-
-      // Now inject a response — should still match the active handler
-      _injectResponse(
-        incoming,
-        device,
-        DistingNTRespMessageType.respNumAlgorithms,
-        [0x00, 0x00, 0x08],
-      );
-
-      final result = await future;
-      expect(result, isNotNull);
-
-      // No expired handlers should have been created (handler persisted)
-      final diag = scheduler.getDiagnostics();
-      expect(diag['staleResponsesAbsorbed'], 0);
-      expect(diag['expiredHandlerCount'], 0);
-    });
-
-    test('consecutive timeout recovery — auto-reset after 3 consecutive timeouts', () async {
-      final setup = _createScheduler(defaultMaxRetries: 1);
-      final sched = setup.scheduler;
-      final inc = setup.incoming;
-
-      addTearDown(() {
-        sched.dispose();
-        inc.close();
-      });
-
-      // Cause 3 consecutive timeouts
-      for (var i = 0; i < 3; i++) {
+    test(
+      'retry persists handler — handler not moved to expired during retries',
+      () async {
         final key = RequestKey(
           sysExId: _testSysExId,
           messageType: DistingNTRespMessageType.respNumAlgorithms,
         );
-        final future = sched.sendRequest(
+
+        final future = scheduler.sendRequest(
           _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
           key,
-          responseExpectation: ResponseExpectation.optional,
-          maxRetries: 1,
+          maxRetries: 10,
           timeout: const Duration(milliseconds: 50),
         );
-        await future;
-      }
 
-      // After 3 consecutive timeouts, _resetInternalState() was called.
-      // Verify scheduler still functions: send a request and respond to it.
-      final key = RequestKey(
-        sysExId: _testSysExId,
-        messageType: DistingNTRespMessageType.respNumAlgorithms,
-      );
-      final future = sched.sendRequest(
-        _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
-        key,
-        responseExpectation: ResponseExpectation.optional,
-        maxRetries: 1,
-        timeout: const Duration(milliseconds: 500),
-      );
+        // Wait for first retry timeout
+        await Future.delayed(const Duration(milliseconds: 70));
 
-      // Allow the scheduler to process and re-subscribe
-      await Future.delayed(const Duration(milliseconds: 20));
-      _injectResponse(
-        inc,
-        setup.device,
-        DistingNTRespMessageType.respNumAlgorithms,
-        [0x00, 0x00, 0x08],
-      );
+        // Now inject a response — should still match the active handler
+        _injectResponse(
+          incoming,
+          device,
+          DistingNTRespMessageType.respNumAlgorithms,
+          [0x00, 0x00, 0x08],
+        );
 
-      final result = await future;
-      expect(result, isNotNull);
-    });
+        final result = await future;
+        expect(result, isNotNull);
 
-    test('expired handler cleanup — handlers older than 30s are removed', () async {
-      // This tests the lazy cleanup in _cleanupExpiredHandlers.
-      // We can't easily simulate 30s passage, so we test the cap at 20 entries.
-      final setup = _createScheduler(defaultMaxRetries: 1);
-      final sched = setup.scheduler;
-      final inc = setup.incoming;
+        // No expired handlers should have been created (handler persisted)
+        final diag = scheduler.getDiagnostics();
+        expect(diag['staleResponsesAbsorbed'], 0);
+        expect(diag['expiredHandlerCount'], 0);
+      },
+    );
 
-      addTearDown(() {
-        sched.dispose();
-        inc.close();
-      });
+    test(
+      'consecutive timeout recovery — auto-reset after 3 consecutive timeouts',
+      () async {
+        final setup = _createScheduler(defaultMaxRetries: 1);
+        final sched = setup.scheduler;
+        final inc = setup.incoming;
 
-      // Create 25 expired handlers by timing out 25 requests
-      for (var i = 0; i < 25; i++) {
+        addTearDown(() {
+          sched.dispose();
+          inc.close();
+        });
+
+        // Cause 3 consecutive timeouts
+        for (var i = 0; i < 3; i++) {
+          final key = RequestKey(
+            sysExId: _testSysExId,
+            messageType: DistingNTRespMessageType.respNumAlgorithms,
+          );
+          final future = sched.sendRequest(
+            _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+            key,
+            responseExpectation: ResponseExpectation.optional,
+            maxRetries: 1,
+            timeout: const Duration(milliseconds: 50),
+          );
+          await future;
+        }
+
+        // After 3 consecutive timeouts, _resetInternalState() was called.
+        // Verify scheduler still functions: send a request and respond to it.
         final key = RequestKey(
           sysExId: _testSysExId,
           messageType: DistingNTRespMessageType.respNumAlgorithms,
@@ -432,54 +409,100 @@ void main() {
           key,
           responseExpectation: ResponseExpectation.optional,
           maxRetries: 1,
-          timeout: const Duration(milliseconds: 20),
+          timeout: const Duration(milliseconds: 500),
         );
-        await future;
-      }
 
-      // Trigger cleanup by dispatching an unmatched message
-      _injectResponse(
-        inc,
-        setup.device,
-        DistingNTRespMessageType.respPresetName,
-        [0x41, 0x00],
-      );
-
-      await Future.microtask(() {});
-
-      final diag = sched.getDiagnostics();
-      // Expired handler count should be capped at 20
-      expect(diag['expiredHandlerCount'] as int, lessThanOrEqualTo(20));
-    });
-
-    test('dispose while requests pending — all completers get errors', () async {
-      final setup = _createScheduler();
-      final sched = setup.scheduler;
-
-      // Queue up multiple requests
-      final futures = <Future>[];
-      for (var i = 0; i < 3; i++) {
-        final key = RequestKey(
-          sysExId: _testSysExId,
-          messageType: DistingNTRespMessageType.respNumAlgorithms,
+        // Allow the scheduler to process and re-subscribe
+        await Future.delayed(const Duration(milliseconds: 20));
+        _injectResponse(
+          inc,
+          setup.device,
+          DistingNTRespMessageType.respNumAlgorithms,
+          [0x00, 0x00, 0x08],
         );
-        futures.add(
-          sched.sendRequest(
+
+        final result = await future;
+        expect(result, isNotNull);
+      },
+    );
+
+    test(
+      'expired handler cleanup — handlers older than 30s are removed',
+      () async {
+        // This tests the lazy cleanup in _cleanupExpiredHandlers.
+        // We can't easily simulate 30s passage, so we test the cap at 20 entries.
+        final setup = _createScheduler(defaultMaxRetries: 1);
+        final sched = setup.scheduler;
+        final inc = setup.incoming;
+
+        addTearDown(() {
+          sched.dispose();
+          inc.close();
+        });
+
+        // Create 25 expired handlers by timing out 25 requests
+        for (var i = 0; i < 25; i++) {
+          final key = RequestKey(
+            sysExId: _testSysExId,
+            messageType: DistingNTRespMessageType.respNumAlgorithms,
+          );
+          final future = sched.sendRequest(
             _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
             key,
-          ),
+            responseExpectation: ResponseExpectation.optional,
+            maxRetries: 1,
+            timeout: const Duration(milliseconds: 20),
+          );
+          await future;
+        }
+
+        // Trigger cleanup by dispatching an unmatched message
+        _injectResponse(
+          inc,
+          setup.device,
+          DistingNTRespMessageType.respPresetName,
+          [0x41, 0x00],
         );
-      }
 
-      // Dispose immediately
-      sched.dispose();
-      setup.incoming.close();
+        await Future.microtask(() {});
 
-      // All futures should complete with errors
-      for (final future in futures) {
-        expect(future, throwsA(isA<StateError>()));
-      }
-    });
+        final diag = sched.getDiagnostics();
+        // Expired handler count should be capped at 20
+        expect(diag['expiredHandlerCount'] as int, lessThanOrEqualTo(20));
+      },
+    );
+
+    test(
+      'dispose while requests pending — all completers get errors',
+      () async {
+        final setup = _createScheduler();
+        final sched = setup.scheduler;
+
+        // Queue up multiple requests
+        final futures = <Future>[];
+        for (var i = 0; i < 3; i++) {
+          final key = RequestKey(
+            sysExId: _testSysExId,
+            messageType: DistingNTRespMessageType.respNumAlgorithms,
+          );
+          futures.add(
+            sched.sendRequest(
+              _buildSysEx(DistingNTRespMessageType.respNumAlgorithms, []),
+              key,
+            ),
+          );
+        }
+
+        // Dispose immediately
+        sched.dispose();
+        setup.incoming.close();
+
+        // All futures should complete with errors
+        for (final future in futures) {
+          expect(future, throwsA(isA<StateError>()));
+        }
+      },
+    );
 
     test('message observer receives all messages', () async {
       final observed = <DistingNTRespMessageType>[];

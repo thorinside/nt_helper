@@ -27,7 +27,9 @@ class MetadataSyncService {
 
   Future<FirmwareVersion> _requestFirmwareVersionSafe() async {
     try {
-      return FirmwareVersion(await _distingManager.requestVersionString() ?? '');
+      return FirmwareVersion(
+        await _distingManager.requestVersionString() ?? '',
+      );
     } catch (_) {
       return FirmwareVersion('');
     }
@@ -50,8 +52,7 @@ class MetadataSyncService {
         attempts < maxAttempts &&
         !(checkCancel?.call() ?? false)) {
       await Future.delayed(const Duration(milliseconds: 500));
-      numInPreset =
-          await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+      numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
       attempts++;
     }
     return numInPreset;
@@ -62,8 +63,9 @@ class MetadataSyncService {
     AlgorithmInfo algoInfo,
   ) async {
     if (!algoInfo.isPlugin) return algoInfo;
-    return await _distingManager
-            .requestAlgorithmInfo(algoInfo.algorithmIndex) ??
+    return await _distingManager.requestAlgorithmInfo(
+          algoInfo.algorithmIndex,
+        ) ??
         algoInfo;
   }
 
@@ -107,9 +109,7 @@ class MetadataSyncService {
     // Verify communication — poll up to 5 times with 2s gaps
     for (int attempt = 0; attempt < 5; attempt++) {
       if (checkCancel?.call() ?? false) return;
-      onStatus?.call(
-        'Verifying communication... (attempt ${attempt + 1}/5)',
-      );
+      onStatus?.call('Verifying communication... (attempt ${attempt + 1}/5)');
       try {
         final numAlgos = await _distingManager.requestNumberOfAlgorithms();
         if (numAlgos != null && numAlgos > 0) {
@@ -527,16 +527,12 @@ class MetadataSyncService {
           }
           if (!checkCancel()) {
             await _rebootAndWaitForReconnection(
-              onStatus: (msg) =>
-                  reportProgress("Retrying Failed Plugins", msg),
+              onStatus: (msg) => reportProgress("Retrying Failed Plugins", msg),
               checkCancel: checkCancel,
             );
           }
         } catch (e) {
-          reportProgress(
-            "Retrying Failed Plugins",
-            "Rescan/reboot failed: $e",
-          );
+          reportProgress("Retrying Failed Plugins", "Rescan/reboot failed: $e");
         }
 
         if (!checkCancel()) {

@@ -32,7 +32,7 @@ class FirmwareVersionService {
   final http.Client _httpClient;
 
   FirmwareVersionService({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
   /// Fetch available firmware versions from Expert Sleepers website
   ///
@@ -129,7 +129,9 @@ class FirmwareVersionService {
         final links = cell.querySelectorAll('a');
         for (final link in links) {
           final href = link.attributes['href'];
-          if (href != null && href.endsWith('.zip') && href.contains('distingNT')) {
+          if (href != null &&
+              href.endsWith('.zip') &&
+              href.contains('distingNT')) {
             downloadUrl = _resolveUrl(href);
             break;
           }
@@ -202,7 +204,10 @@ class FirmwareVersionService {
   ///
   /// [currentVersion] - The currently installed firmware version (e.g., "1.11.0")
   /// [available] - List of available firmware releases
-  bool isUpdateAvailable(String currentVersion, List<FirmwareRelease> available) {
+  bool isUpdateAvailable(
+    String currentVersion,
+    List<FirmwareRelease> available,
+  ) {
     final latest = getLatestVersion(available);
     if (latest == null) return false;
 
@@ -296,7 +301,9 @@ class FirmwareVersionService {
       }
     } catch (e) {
       if (e is FirmwareDownloadException) rethrow;
-      throw FirmwareDownloadException('ZIP verification failed: corrupted archive');
+      throw FirmwareDownloadException(
+        'ZIP verification failed: corrupted archive',
+      );
     }
   }
 

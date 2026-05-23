@@ -57,8 +57,9 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'throws exception when slot limit would be exceeded (31 + 2 > 32)',
       build: () {
-        when(() => mockMidiManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 31);
+        when(
+          () => mockMidiManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 31);
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -134,16 +135,21 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'does not call requestNewPreset during injection',
       build: () {
-        when(() => mockMidiManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 5);
-        when(() => mockMidiManager.requestAddAlgorithm(any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.setParameterValue(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.requestSetMapping(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.requestSendSlotName(any(), any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockMidiManager.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -167,10 +173,12 @@ void main() {
             enums: {},
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => {});
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => {});
         when(() => mockPresetsDao.getAllPresets()).thenAnswer((_) async => []);
 
         return cubit;
@@ -213,16 +221,21 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'does not call requestSavePreset during injection',
       build: () {
-        when(() => mockMidiManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 5);
-        when(() => mockMidiManager.requestAddAlgorithm(any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.setParameterValue(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.requestSetMapping(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.requestSendSlotName(any(), any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockMidiManager.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -246,10 +259,12 @@ void main() {
             enums: {},
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => {});
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => {});
         when(() => mockPresetsDao.getAllPresets()).thenAnswer((_) async => []);
 
         return cubit;
@@ -292,16 +307,21 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'calls requestAddAlgorithm for each template slot',
       build: () {
-        when(() => mockMidiManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 5);
-        when(() => mockMidiManager.requestAddAlgorithm(any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.setParameterValue(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.requestSetMapping(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.requestSendSlotName(any(), any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockMidiManager.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -325,10 +345,12 @@ void main() {
             enums: {},
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => {});
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => {});
         when(() => mockPresetsDao.getAllPresets()).thenAnswer((_) async => []);
 
         return cubit;
@@ -380,24 +402,30 @@ void main() {
         await cubit.injectTemplateToDevice(template, mockMidiManager);
       },
       verify: (_) {
-        verify(() => mockMidiManager.requestAddAlgorithm(any(), any()))
-            .called(2);
+        verify(
+          () => mockMidiManager.requestAddAlgorithm(any(), any()),
+        ).called(2);
       },
     );
 
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'sets parameter values with correct slot offset (current slot count + template slot index)',
       build: () {
-        when(() => mockMidiManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 10);
-        when(() => mockMidiManager.requestAddAlgorithm(any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.setParameterValue(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.requestSetMapping(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockMidiManager.requestSendSlotName(any(), any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 10);
+        when(
+          () => mockMidiManager.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockMidiManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -421,10 +449,12 @@ void main() {
             enums: {},
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => {});
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => {});
         when(() => mockPresetsDao.getAllPresets()).thenAnswer((_) async => []);
 
         return cubit;
@@ -495,10 +525,12 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'throws exception when template algorithm metadata is missing',
       build: () {
-        when(() => mockMidiManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 5);
-        when(() => mockMetadataDao.getFullAlgorithmDetails(any()))
-            .thenAnswer((_) async => null); // Simulate missing metadata
+        when(
+          () => mockMidiManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockMetadataDao.getFullAlgorithmDetails(any()),
+        ).thenAnswer((_) async => null); // Simulate missing metadata
 
         return cubit;
       },

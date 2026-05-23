@@ -231,9 +231,10 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
     int currentNumAlgorithms, {
     int cacheFreshnessDays = 2,
   }) async {
-    final entry = await (select(metadataCache)
-          ..where((tbl) => tbl.cacheKey.equals(_algorithmInfoCacheKey)))
-        .getSingleOrNull();
+    final entry =
+        await (select(metadataCache)
+              ..where((tbl) => tbl.cacheKey.equals(_algorithmInfoCacheKey)))
+            .getSingleOrNull();
 
     if (entry == null) return null;
 
@@ -276,9 +277,9 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
 
   /// Invalidates the algorithm info cache (call after plugin install or rescan).
   Future<void> invalidateAlgorithmInfoCache() async {
-    await (delete(metadataCache)
-          ..where((tbl) => tbl.cacheKey.equals(_algorithmInfoCacheKey)))
-        .go();
+    await (delete(
+      metadataCache,
+    )..where((tbl) => tbl.cacheKey.equals(_algorithmInfoCacheKey))).go();
   }
 
   /// Checks if algorithm info cache exists and is valid without loading the full data.
@@ -287,9 +288,10 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
     int currentNumAlgorithms, {
     int cacheFreshnessDays = 2,
   }) async {
-    final entry = await (select(metadataCache)
-          ..where((tbl) => tbl.cacheKey.equals(_algorithmInfoCacheKey)))
-        .getSingleOrNull();
+    final entry =
+        await (select(metadataCache)
+              ..where((tbl) => tbl.cacheKey.equals(_algorithmInfoCacheKey)))
+            .getSingleOrNull();
 
     if (entry == null) return false;
 
@@ -414,11 +416,13 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
     String algorithmGuid,
     int parameterNumber,
   ) async {
-    final entry = await (select(parameterOutputModeUsage)
-          ..where((t) =>
-              t.algorithmGuid.equals(algorithmGuid) &
-              t.parameterNumber.equals(parameterNumber)))
-        .getSingleOrNull();
+    final entry =
+        await (select(parameterOutputModeUsage)..where(
+              (t) =>
+                  t.algorithmGuid.equals(algorithmGuid) &
+                  t.parameterNumber.equals(parameterNumber),
+            ))
+            .getSingleOrNull();
 
     // The converter automatically handles JSON deserialization
     // affectedOutputNumbers is already a List<int> in the Dart model
@@ -438,9 +442,9 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
   Future<Map<int, List<int>>> getOutputModeUsageForAlgorithm(
     String algorithmGuid,
   ) async {
-    final entries = await (select(parameterOutputModeUsage)
-          ..where((t) => t.algorithmGuid.equals(algorithmGuid)))
-        .get();
+    final entries = await (select(
+      parameterOutputModeUsage,
+    )..where((t) => t.algorithmGuid.equals(algorithmGuid))).get();
 
     final result = <int, List<int>>{};
     for (final entry in entries) {

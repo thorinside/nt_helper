@@ -40,7 +40,10 @@ class MockDistingMidiManager implements IDistingMidiManager {
   Future<AlgorithmInfo?> requestAlgorithmInfo(int index) async => algorithmInfo;
 
   @override
-  Future<void> requestAddAlgorithm(AlgorithmInfo algorithm, List<int> specifications) async {
+  Future<void> requestAddAlgorithm(
+    AlgorithmInfo algorithm,
+    List<int> specifications,
+  ) async {
     _numAlgorithmsInPreset = 1;
   }
 
@@ -60,7 +63,10 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<ParameterInfo?> requestParameterInfo(int algorithmIndex, int parameterNumber) async {
+  Future<ParameterInfo?> requestParameterInfo(
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
     if (parameterNumber == parameterInfo.parameterNumber) {
       return parameterInfo;
     }
@@ -68,12 +74,18 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<ParameterEnumStrings?> requestParameterEnumStrings(int algorithmIndex, int parameterNumber) async {
+  Future<ParameterEnumStrings?> requestParameterEnumStrings(
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
     return null;
   }
 
   @override
-  Future<OutputModeUsage?> requestOutputModeUsage(int algorithmIndex, int parameterNumber) async {
+  Future<OutputModeUsage?> requestOutputModeUsage(
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
     if (parameterNumber == parameterInfo.parameterNumber) {
       return outputModeUsage;
     }
@@ -104,97 +116,104 @@ void main() {
       await database.close();
     });
 
-    test('should persist output mode usage when parameter has isOutputMode flag', () async {
-      // Arrange
-      const algoGuid = 'tag1';
-      const paramNum = 0; // Must be 0 because requestNumberOfParameters returns 1, so loop queries index 0
-      final affectedOutputs = [1, 2, 3];
+    test(
+      'should persist output mode usage when parameter has isOutputMode flag',
+      () async {
+        // Arrange
+        const algoGuid = 'tag1';
+        const paramNum =
+            0; // Must be 0 because requestNumberOfParameters returns 1, so loop queries index 0
+        final affectedOutputs = [1, 2, 3];
 
-      final algoInfo = AlgorithmInfo(
-        algorithmIndex: 0,
-        guid: algoGuid,
-        name: 'Test Algo',
-        specifications: [],
-        isPlugin: false,
-      );
+        final algoInfo = AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: algoGuid,
+          name: 'Test Algo',
+          specifications: [],
+          isPlugin: false,
+        );
 
-      final paramInfo = ParameterInfo(
-        algorithmIndex: 0,
-        parameterNumber: paramNum,
-        min: 0,
-        max: 10,
-        defaultValue: 0,
-        unit: 0,
-        name: 'Output Mode',
-        powerOfTen: 0,
-        ioFlags: 8, // Bit 3 set -> isOutputMode = true
-      );
+        final paramInfo = ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: paramNum,
+          min: 0,
+          max: 10,
+          defaultValue: 0,
+          unit: 0,
+          name: 'Output Mode',
+          powerOfTen: 0,
+          ioFlags: 8, // Bit 3 set -> isOutputMode = true
+        );
 
-      final outputModeUsage = OutputModeUsage(
-        algorithmIndex: 0,
-        parameterNumber: paramNum,
-        affectedParameterNumbers: affectedOutputs,
-      );
+        final outputModeUsage = OutputModeUsage(
+          algorithmIndex: 0,
+          parameterNumber: paramNum,
+          affectedParameterNumbers: affectedOutputs,
+        );
 
-      final mockManager = MockDistingMidiManager(
-        algorithmInfo: algoInfo,
-        parameterInfo: paramInfo,
-        outputModeUsage: outputModeUsage,
-      );
+        final mockManager = MockDistingMidiManager(
+          algorithmInfo: algoInfo,
+          parameterInfo: paramInfo,
+          outputModeUsage: outputModeUsage,
+        );
 
-      service = MetadataSyncService(mockManager, database);
+        service = MetadataSyncService(mockManager, database);
 
-      // Act
-      await service.syncAllAlgorithmMetadata();
+        // Act
+        await service.syncAllAlgorithmMetadata();
 
-      // Assert
-      final entries = await database.metadataDao.getAllOutputModeUsage();
-      expect(entries, isNotEmpty);
-      expect(entries.length, equals(1));
-      expect(entries.first.algorithmGuid, equals(algoGuid));
-      expect(entries.first.parameterNumber, equals(paramNum));
-      expect(entries.first.affectedOutputNumbers, equals(affectedOutputs));
-    });
+        // Assert
+        final entries = await database.metadataDao.getAllOutputModeUsage();
+        expect(entries, isNotEmpty);
+        expect(entries.length, equals(1));
+        expect(entries.first.algorithmGuid, equals(algoGuid));
+        expect(entries.first.parameterNumber, equals(paramNum));
+        expect(entries.first.affectedOutputNumbers, equals(affectedOutputs));
+      },
+    );
 
-    test('should NOT persist output mode usage when parameter does NOT have isOutputMode flag', () async {
-      // Arrange
-      const algoGuid = 'tag2';
-      const paramNum = 0;
+    test(
+      'should NOT persist output mode usage when parameter does NOT have isOutputMode flag',
+      () async {
+        // Arrange
+        const algoGuid = 'tag2';
+        const paramNum = 0;
 
-      final algoInfo = AlgorithmInfo(
-        algorithmIndex: 0,
-        guid: algoGuid,
-        name: 'Test Algo 2',
-        specifications: [],
-        isPlugin: false,
-      );
+        final algoInfo = AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: algoGuid,
+          name: 'Test Algo 2',
+          specifications: [],
+          isPlugin: false,
+        );
 
-      final paramInfo = ParameterInfo(
-        algorithmIndex: 0,
-        parameterNumber: paramNum,
-        min: 0,
-        max: 10,
-        defaultValue: 0,
-        unit: 0,
-        name: 'Normal Param',
-        powerOfTen: 0,
-        ioFlags: 0, // isOutputMode = false
-      );
+        final paramInfo = ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: paramNum,
+          min: 0,
+          max: 10,
+          defaultValue: 0,
+          unit: 0,
+          name: 'Normal Param',
+          powerOfTen: 0,
+          ioFlags: 0, // isOutputMode = false
+        );
 
-      final mockManager = MockDistingMidiManager(
-        algorithmInfo: algoInfo,
-        parameterInfo: paramInfo,
-        outputModeUsage: null, // Should not be called anyway
-      );
+        final mockManager = MockDistingMidiManager(
+          algorithmInfo: algoInfo,
+          parameterInfo: paramInfo,
+          outputModeUsage: null, // Should not be called anyway
+        );
 
-      service = MetadataSyncService(mockManager, database);
+        service = MetadataSyncService(mockManager, database);
 
-      // Act
-      await service.syncAllAlgorithmMetadata();
+        // Act
+        await service.syncAllAlgorithmMetadata();
 
-      // Assert
-      final entries = await database.metadataDao.getAllOutputModeUsage();
-      expect(entries, isEmpty);
-    });
+        // Assert
+        final entries = await database.metadataDao.getAllOutputModeUsage();
+        expect(entries, isEmpty);
+      },
+    );
   });
 }

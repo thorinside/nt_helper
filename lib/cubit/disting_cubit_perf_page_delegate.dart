@@ -62,10 +62,7 @@ class _PerfPageDelegate {
                 fixedItems[item.itemIndex] = actual;
               }
               _cubit._emitState(
-                verifyState.copyWith(
-                  perfPageItems: fixedItems,
-                  isDirty: true,
-                ),
+                verifyState.copyWith(perfPageItems: fixedItems, isDirty: true),
               );
             }
           }

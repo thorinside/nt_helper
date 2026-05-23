@@ -168,7 +168,11 @@ class _FlowDiagramPainter extends CustomPainter {
   }
 
   void _drawConnectionLine(
-      Canvas canvas, double startX, double endX, double y) {
+    Canvas canvas,
+    double startX,
+    double endX,
+    double y,
+  ) {
     final lineColor = isError ? theme.colorScheme.error : _getLineColor();
 
     final linePaint = Paint()
@@ -184,7 +188,12 @@ class _FlowDiagramPainter extends CustomPainter {
   }
 
   void _drawDashedLine(
-      Canvas canvas, double startX, double endX, double y, Paint paint) {
+    Canvas canvas,
+    double startX,
+    double endX,
+    double y,
+    Paint paint,
+  ) {
     const dashWidth = 8.0;
     const dashSpace = 6.0;
     double currentX = startX;
@@ -197,7 +206,11 @@ class _FlowDiagramPainter extends CustomPainter {
   }
 
   void _drawStatusIndicator(
-      Canvas canvas, double lineStart, double lineEnd, double y) {
+    Canvas canvas,
+    double lineStart,
+    double lineEnd,
+    double y,
+  ) {
     if (isError) {
       _drawErrorMark(canvas, (lineStart + lineEnd) / 2, y);
       return;
@@ -216,7 +229,11 @@ class _FlowDiagramPainter extends CustomPainter {
   }
 
   void _drawFlowDots(
-      Canvas canvas, double lineStart, double lineEnd, double y) {
+    Canvas canvas,
+    double lineStart,
+    double lineEnd,
+    double y,
+  ) {
     final dotPaint = Paint()
       ..color = theme.colorScheme.primary
       ..style = PaintingStyle.fill;
@@ -240,8 +257,7 @@ class _FlowDiagramPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(x, y),
         dotRadius,
-        dotPaint
-          ..color = theme.colorScheme.primary.withValues(alpha: opacity),
+        dotPaint..color = theme.colorScheme.primary.withValues(alpha: opacity),
       );
     }
   }

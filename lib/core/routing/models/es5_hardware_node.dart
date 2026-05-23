@@ -57,7 +57,8 @@ class ES5HardwareNode {
         direction: PortDirection.input,
         description: 'ES-5 Left (Silent Way)',
         busValue: leftAudioBusForFirmware(
-            hasExtendedAuxBuses: hasExtendedAuxBuses),
+          hasExtendedAuxBuses: hasExtendedAuxBuses,
+        ),
         nodeId: id,
         role: PortRole.es5Bus,
       ),
@@ -71,7 +72,8 @@ class ES5HardwareNode {
         direction: PortDirection.input,
         description: 'ES-5 Right (Silent Way)',
         busValue: rightAudioBusForFirmware(
-            hasExtendedAuxBuses: hasExtendedAuxBuses),
+          hasExtendedAuxBuses: hasExtendedAuxBuses,
+        ),
         nodeId: id,
         role: PortRole.es5Bus,
       ),
@@ -119,7 +121,8 @@ class ES5HardwareNode {
       direction: PortDirection.input,
       description: 'ES-5 Left (Silent Way)',
       busValue: leftAudioBusForFirmware(
-          hasExtendedAuxBuses: hasExtendedAuxBuses),
+        hasExtendedAuxBuses: hasExtendedAuxBuses,
+      ),
       nodeId: id,
       role: PortRole.es5Bus,
     );
@@ -134,7 +137,8 @@ class ES5HardwareNode {
       direction: PortDirection.input,
       description: 'ES-5 Right (Silent Way)',
       busValue: rightAudioBusForFirmware(
-          hasExtendedAuxBuses: hasExtendedAuxBuses),
+        hasExtendedAuxBuses: hasExtendedAuxBuses,
+      ),
       nodeId: id,
       role: PortRole.es5Bus,
     );

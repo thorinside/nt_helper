@@ -19,12 +19,12 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       mockSettingsService = MockSettingsService();
 
-      when(() => mockSettingsService.galleryUrl).thenReturn(
-        'https://example.com/gallery.json',
-      );
-      when(() => mockSettingsService.graphqlEndpoint).thenReturn(
-        'https://example.com/graphql',
-      );
+      when(
+        () => mockSettingsService.galleryUrl,
+      ).thenReturn('https://example.com/gallery.json');
+      when(
+        () => mockSettingsService.graphqlEndpoint,
+      ).thenReturn('https://example.com/graphql');
 
       galleryService = GalleryService(settingsService: mockSettingsService);
     });
@@ -56,11 +56,9 @@ void main() {
     List<int> createTestZip(Map<String, List<int>> files) {
       final archive = Archive();
       for (final entry in files.entries) {
-        archive.addFile(ArchiveFile(
-          entry.key,
-          entry.value.length,
-          entry.value,
-        ));
+        archive.addFile(
+          ArchiveFile(entry.key, entry.value.length, entry.value),
+        );
       }
       return ZipEncoder().encode(archive);
     }
@@ -108,10 +106,7 @@ void main() {
       });
 
       test('returns false for non-sample files', () {
-        expect(
-          GalleryService.isSampleFileForTesting('plugin.o'),
-          isFalse,
-        );
+        expect(GalleryService.isSampleFileForTesting('plugin.o'), isFalse);
         expect(
           GalleryService.isSampleFileForTesting('src/samples.txt'),
           isFalse,
@@ -317,8 +312,12 @@ void main() {
     group('ExtractedArchiveContents', () {
       test('hasSamples returns true when sampleFiles is not empty', () {
         final contents = ExtractedArchiveContents(
-          pluginFiles: [MapEntry('plugin.o', [0x01])],
-          sampleFiles: [MapEntry('samples/kick.wav', [0x10])],
+          pluginFiles: [
+            MapEntry('plugin.o', [0x01]),
+          ],
+          sampleFiles: [
+            MapEntry('samples/kick.wav', [0x10]),
+          ],
         );
 
         expect(contents.hasSamples, isTrue);
@@ -326,7 +325,9 @@ void main() {
 
       test('hasSamples returns false when sampleFiles is empty', () {
         final contents = ExtractedArchiveContents(
-          pluginFiles: [MapEntry('plugin.o', [0x01])],
+          pluginFiles: [
+            MapEntry('plugin.o', [0x01]),
+          ],
           sampleFiles: [],
         );
 

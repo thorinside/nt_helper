@@ -688,8 +688,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   ) {
     return applyTemplateToDevice(
       template: template,
-      templateSlotIndices:
-          List<int>.generate(template.slots.length, (i) => i),
+      templateSlotIndices: List<int>.generate(template.slots.length, (i) => i),
       manager: manager,
     );
   }
@@ -743,8 +742,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       // Pre-flight metadata check on every slot we will apply.
       for (final i in templateSlotIndices) {
         final slot = template.slots[i];
-        final details =
-            await _metadataDao.getFullAlgorithmDetails(slot.algorithm.guid);
+        final details = await _metadataDao.getFullAlgorithmDetails(
+          slot.algorithm.guid,
+        );
         if (details == null) {
           throw Exception(
             'Template missing algorithm metadata. Sync algorithms first.',
@@ -783,8 +783,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         final algorithmGuid = slot.algorithm.guid;
 
         try {
-          final details =
-              await _metadataDao.getFullAlgorithmDetails(algorithmGuid);
+          final details = await _metadataDao.getFullAlgorithmDetails(
+            algorithmGuid,
+          );
           if (details == null) {
             throw Exception(
               "Algorithm metadata for GUID '$algorithmGuid' not found locally. "
@@ -809,8 +810,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
                 )
                 .toList(),
           );
-          final defaultSpecifications =
-              details.specifications.map((s) => s.defaultValue).toList();
+          final defaultSpecifications = details.specifications
+              .map((s) => s.defaultValue)
+              .toList();
 
           await manager.requestAddAlgorithm(
             algorithmInfo,
@@ -819,10 +821,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           await Future.delayed(const Duration(milliseconds: 150));
 
           appliedCount++;
-          emit(MetadataSyncState.injectingTemplate(
-            applied: appliedCount,
-            total: total,
-          ));
+          emit(
+            MetadataSyncState.injectingTemplate(
+              applied: appliedCount,
+              total: total,
+            ),
+          );
         } catch (algorithmError) {
           throw Exception(
             'Failed to inject algorithm "${slot.algorithm.name}" '
@@ -841,13 +845,11 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         final targetSlotIndex = startingSlotIndex + i;
         final algorithmGuid = slot.algorithm.guid;
 
-        await manager.requestSendSlotName(
-          targetSlotIndex,
-          slot.algorithm.name,
-        );
+        await manager.requestSendSlotName(targetSlotIndex, slot.algorithm.name);
 
-        final details =
-            await _metadataDao.getFullAlgorithmDetails(algorithmGuid);
+        final details = await _metadataDao.getFullAlgorithmDetails(
+          algorithmGuid,
+        );
         if (details == null) {
           continue;
         }
@@ -947,9 +949,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       );
       rethrow;
     } catch (e) {
-      emit(MetadataSyncState.metadataSyncFailure(
-        'Failed to apply template: $e',
-      ));
+      emit(
+        MetadataSyncState.metadataSyncFailure('Failed to apply template: $e'),
+      );
       rethrow;
     }
   }

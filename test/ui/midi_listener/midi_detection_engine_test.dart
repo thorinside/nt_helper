@@ -16,7 +16,11 @@ void main() {
 
         for (int i = 0; i < 9; i++) {
           result = engine.processCc(0, 1, 64);
-          expect(result, isNull, reason: 'Should not detect before buffer full');
+          expect(
+            result,
+            isNull,
+            reason: 'Should not detect before buffer full',
+          );
         }
 
         result = engine.processCc(0, 1, 64);
@@ -137,18 +141,25 @@ void main() {
         expect(result, isNull);
       });
 
-      test('4 events with mixed values including non-toggle does not detect early', () {
-        DetectionResult? result;
+      test(
+        '4 events with mixed values including non-toggle does not detect early',
+        () {
+          DetectionResult? result;
 
-        result = engine.processCc(0, 1, 127);
-        expect(result, isNull);
-        result = engine.processCc(0, 1, 0);
-        expect(result, isNull);
-        result = engine.processCc(0, 1, 64); // non-toggle value
-        expect(result, isNull);
-        result = engine.processCc(0, 1, 127);
-        expect(result, isNull, reason: 'Mixed values should not trigger early detection');
-      });
+          result = engine.processCc(0, 1, 127);
+          expect(result, isNull);
+          result = engine.processCc(0, 1, 0);
+          expect(result, isNull);
+          result = engine.processCc(0, 1, 64); // non-toggle value
+          expect(result, isNull);
+          result = engine.processCc(0, 1, 127);
+          expect(
+            result,
+            isNull,
+            reason: 'Mixed values should not trigger early detection',
+          );
+        },
+      );
 
       test('alternating 0, 127, 0, 127 pattern detects early', () {
         DetectionResult? result;

@@ -51,7 +51,10 @@ void main() {
 
     setUp(() {
       distingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
-      tools = MCPAlgorithmTools(DistingControllerImpl(distingCubit), distingCubit);
+      tools = MCPAlgorithmTools(
+        DistingControllerImpl(distingCubit),
+        distingCubit,
+      );
     });
 
     tearDown(() {
@@ -72,9 +75,7 @@ void main() {
       });
 
       test('should return error when query is empty string', () async {
-        final result = await tools.searchAlgorithms({
-          'query': '',
-        });
+        final result = await tools.searchAlgorithms({'query': ''});
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
@@ -136,16 +137,19 @@ void main() {
         expect(decoded['results'].length, greaterThan(0));
       });
 
-      test('should find algorithms with fuzzy matching above 70% threshold', () async {
-        final result = await tools.searchAlgorithms({
-          'type': 'algorithm',
-          'query': 'Oscilator', // Typo: missing 'l' in Oscillator
-        });
+      test(
+        'should find algorithms with fuzzy matching above 70% threshold',
+        () async {
+          final result = await tools.searchAlgorithms({
+            'type': 'algorithm',
+            'query': 'Oscilator', // Typo: missing 'l' in Oscillator
+          });
 
-        final decoded = jsonDecode(result);
-        // Should find oscillator-related algorithms through fuzzy matching
-        expect(decoded['results'], isList);
-      });
+          final decoded = jsonDecode(result);
+          // Should find oscillator-related algorithms through fuzzy matching
+          expect(decoded['results'], isList);
+        },
+      );
 
       test('should exclude algorithms with similarity below 70%', () async {
         final result = await tools.searchAlgorithms({
@@ -171,15 +175,18 @@ void main() {
         // Should find algorithms in the Filter category
       });
 
-      test('should find algorithms when querying category with partial match', () async {
-        final result = await tools.searchAlgorithms({
-          'type': 'algorithm',
-          'query': 'filt',
-        });
+      test(
+        'should find algorithms when querying category with partial match',
+        () async {
+          final result = await tools.searchAlgorithms({
+            'type': 'algorithm',
+            'query': 'filt',
+          });
 
-        final decoded = jsonDecode(result);
-        expect(decoded['results'], isList);
-      });
+          final decoded = jsonDecode(result);
+          expect(decoded['results'], isList);
+        },
+      );
     });
 
     group('search - result formatting', () {
@@ -312,7 +319,10 @@ void main() {
         final decoded = jsonDecode(result);
         if (decoded['results'].length > 1) {
           // Results should be sorted by relevance (exact/partial matches first)
-          expect(decoded['results'][0]['name'], contains(RegExp('clock|Clock', caseSensitive: false)));
+          expect(
+            decoded['results'][0]['name'],
+            contains(RegExp('clock|Clock', caseSensitive: false)),
+          );
         }
       });
     });
@@ -329,7 +339,10 @@ void main() {
           final firstResult = decoded['results'][0];
           expect(firstResult['general_parameters'], isNotEmpty);
           // Should not contain specific parameter numbers like "Parameter 0", "Parameter 1"
-          expect(firstResult['general_parameters'], isNot(contains(RegExp(r'Parameter \d+'))));
+          expect(
+            firstResult['general_parameters'],
+            isNot(contains(RegExp(r'Parameter \d+'))),
+          );
         }
       });
 
@@ -371,7 +384,9 @@ void main() {
         expect(decoded['results'], isList);
         expect(decoded['results'].length, greaterThan(0));
         // Reverb algorithm should be in results
-        final guids = (decoded['results'] as List).map((r) => r['guid']).toList();
+        final guids = (decoded['results'] as List)
+            .map((r) => r['guid'])
+            .toList();
         expect(guids, contains('revb'));
       });
 

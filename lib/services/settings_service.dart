@@ -28,7 +28,9 @@ class SettingsService {
   SharedPreferences? _prefs;
 
   /// Notifier for CPU monitor enabled state changes
-  final cpuMonitorEnabledNotifier = ValueNotifier<bool>(defaultCpuMonitorEnabled);
+  final cpuMonitorEnabledNotifier = ValueNotifier<bool>(
+    defaultCpuMonitorEnabled,
+  );
 
   /// Notifier for UI scale changes; listeners rebuild when scale updates.
   final uiScaleNotifier = ValueNotifier<double>(defaultUiScale);
@@ -51,7 +53,8 @@ class SettingsService {
   static const String _algorithmCacheDaysKey = 'algorithm_cache_days';
   static const String _cpuMonitorEnabledKey = 'cpu_monitor_enabled';
   static const String _dismissedUpdateVersionKey = 'dismissed_update_version';
-  static const String _lastUpdateCheckTimestampKey = 'last_update_check_timestamp';
+  static const String _lastUpdateCheckTimestampKey =
+      'last_update_check_timestamp';
   static const String _splitDividerPositionKey = 'split_divider_position';
   static const String _mcpRemoteConnectionsKey = 'mcp_remote_connections';
   static const String _chatEnabledKey = 'chat_enabled';
@@ -503,7 +506,12 @@ class SettingsDialog extends StatefulWidget {
   final List<AlgorithmInfo>? algorithms;
   final Map<String, dynamic>? ccNotificationDiagnostics;
 
-  const SettingsDialog({super.key, this.midiManager, this.algorithms, this.ccNotificationDiagnostics});
+  const SettingsDialog({
+    super.key,
+    this.midiManager,
+    this.algorithms,
+    this.ccNotificationDiagnostics,
+  });
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
@@ -680,7 +688,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     // Algorithm cache duration setting
                     _SettingSection(
                       title: 'Algorithm Cache Duration',
-                      subtitle: 'How long to cache algorithm info before refreshing',
+                      subtitle:
+                          'How long to cache algorithm info before refreshing',
                       child: DigitShortcutBlocker(
                         child: TextFormField(
                           controller: _algorithmCacheDaysController,
@@ -718,7 +727,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                               context.showRttStatsDialog(
                                 widget.midiManager,
                                 algorithms: widget.algorithms,
-                                ccNotificationDiagnostics: widget.ccNotificationDiagnostics,
+                                ccNotificationDiagnostics:
+                                    widget.ccNotificationDiagnostics,
                               );
                             }
                           : null,
@@ -730,8 +740,11 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           'Connect to device to view RTT stats',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                         ),
                       ),
@@ -758,8 +771,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                               label: '${(_uiScale * 100).round()}%',
                               onChanged: (value) {
                                 setState(() {
-                                  _uiScale =
-                                      (value * 10).roundToDouble() / 10;
+                                  _uiScale = (value * 10).roundToDouble() / 10;
                                 });
                               },
                             ),
@@ -775,8 +787,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           IconButton(
                             icon: const Icon(Icons.refresh),
                             tooltip: 'Reset to 100%',
-                            onPressed: _uiScale ==
-                                    SettingsService.defaultUiScale
+                            onPressed:
+                                _uiScale == SettingsService.defaultUiScale
                                 ? null
                                 : () {
                                     setState(() {

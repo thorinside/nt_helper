@@ -9,7 +9,15 @@ void main() {
     test('extracts isDisabled=false when flag=0 (byte0=0x00)', () {
       // Format: [algorithmIndex, param# byte0, param# byte1, param# byte2, value byte0, value byte1, value byte2]
       // byte0=0x00 -> flag=(0x00 >> 2) & 0x1F = 0 -> isDisabled=false
-      final data = Uint8List.fromList([0x01, 0x00, 0x00, 0x05, 0x00, 0x00, 0x64]);
+      final data = Uint8List.fromList([
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x00,
+        0x00,
+        0x64,
+      ]);
       final response = ParameterValueResponse(data);
       final result = response.parse();
 
@@ -20,34 +28,67 @@ void main() {
     test('extracts isDisabled=true when flag=1 (byte0=0x04)', () {
       // byte0=0x04 -> flag=(0x04 >> 2) & 0x1F = 1 -> isDisabled=true
       // After masking: byte0 & 0x03 = 0x00, so value should still be 100
-      final data = Uint8List.fromList([0x01, 0x00, 0x00, 0x05, 0x04, 0x00, 0x64]);
+      final data = Uint8List.fromList([
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x04,
+        0x00,
+        0x64,
+      ]);
       final response = ParameterValueResponse(data);
       final result = response.parse();
 
       expect(result.isDisabled, true);
-      expect(result.value, 100); // Value should be correctly extracted despite flag bit
+      expect(
+        result.value,
+        100,
+      ); // Value should be correctly extracted despite flag bit
     });
 
     test('extracts isDisabled=false when flag=2 (byte0=0x08)', () {
       // byte0=0x08 -> flag=(0x08 >> 2) & 0x1F = 2 -> isDisabled=false
       // After masking: byte0 & 0x03 = 0x00, so value should still be 100
-      final data = Uint8List.fromList([0x01, 0x00, 0x00, 0x05, 0x08, 0x00, 0x64]);
+      final data = Uint8List.fromList([
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x08,
+        0x00,
+        0x64,
+      ]);
       final response = ParameterValueResponse(data);
       final result = response.parse();
 
       expect(result.isDisabled, false);
-      expect(result.value, 100); // Value should be correctly extracted despite flag bit
+      expect(
+        result.value,
+        100,
+      ); // Value should be correctly extracted despite flag bit
     });
 
     test('extracts isDisabled=false when flag=3 (byte0=0x0C)', () {
       // byte0=0x0C -> flag=(0x0C >> 2) & 0x1F = 3 -> isDisabled=false
       // After masking: byte0 & 0x03 = 0x00, so value should still be 100
-      final data = Uint8List.fromList([0x01, 0x00, 0x00, 0x05, 0x0C, 0x00, 0x64]);
+      final data = Uint8List.fromList([
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x0C,
+        0x00,
+        0x64,
+      ]);
       final response = ParameterValueResponse(data);
       final result = response.parse();
 
       expect(result.isDisabled, false);
-      expect(result.value, 100); // Value should be correctly extracted despite flag bit
+      expect(
+        result.value,
+        100,
+      ); // Value should be correctly extracted despite flag bit
     });
   });
 
@@ -57,8 +98,12 @@ void main() {
       final data = Uint8List.fromList([
         0x01, // algorithm index
         0x00, 0x00, 0x64, // param 0: flag=0, value=100, isDisabled=false
-        0x04, 0x00, 0x32, // param 1: flag=1, value=50, isDisabled=true (mask removes flag bit)
-        0x08, 0x00, 0x0A, // param 2: flag=2, value=10, isDisabled=false (mask removes flag bit)
+        0x04,
+        0x00,
+        0x32, // param 1: flag=1, value=50, isDisabled=true (mask removes flag bit)
+        0x08,
+        0x00,
+        0x0A, // param 2: flag=2, value=10, isDisabled=false (mask removes flag bit)
       ]);
       final response = AllParameterValuesResponse(data);
       final result = response.parse();

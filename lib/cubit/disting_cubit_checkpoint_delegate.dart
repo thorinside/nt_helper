@@ -5,10 +5,7 @@ class _SlotSnapshot {
   final String algorithmGuid;
   final Map<int, int> parameterValues;
 
-  _SlotSnapshot({
-    required this.algorithmGuid,
-    required this.parameterValues,
-  });
+  _SlotSnapshot({required this.algorithmGuid, required this.parameterValues});
 }
 
 /// A point-in-time snapshot of the preset state that can be restored.
@@ -50,10 +47,12 @@ class _CheckpointDelegate {
       for (final v in slot.values) {
         paramValues[v.parameterNumber] = v.value;
       }
-      slots.add(_SlotSnapshot(
-        algorithmGuid: slot.algorithm.guid,
-        parameterValues: paramValues,
-      ));
+      slots.add(
+        _SlotSnapshot(
+          algorithmGuid: slot.algorithm.guid,
+          parameterValues: paramValues,
+        ),
+      );
     }
 
     final checkpoint = PresetCheckpoint._(
@@ -119,18 +118,16 @@ class _CheckpointDelegate {
         // Skip values outside the current parameter's valid range to avoid
         // triggering anomaly-driven slot refreshes during restore
         final paramInfo = currentSlot.parameters[entry.key];
-        if (entry.value < paramInfo.min || entry.value > paramInfo.max) continue;
+        if (entry.value < paramInfo.min || entry.value > paramInfo.max) {
+          continue;
+        }
 
         final currentValue = currentSlot.values
             .where((v) => v.parameterNumber == entry.key)
             .firstOrNull
             ?.value;
         if (currentValue != entry.value) {
-          writes.add((
-            slotIndex: i,
-            paramNum: entry.key,
-            value: entry.value,
-          ));
+          writes.add((slotIndex: i, paramNum: entry.key, value: entry.value));
         }
       }
     }

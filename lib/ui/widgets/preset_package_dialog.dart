@@ -148,8 +148,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           presetFilePath: widget.presetFilePath,
           config: config,
           onProgress: (status) => setState(() => _status = status),
-          onFileProgress: (update) =>
-              setState(() => _fileProgress = update),
+          onFileProgress: (update) => setState(() => _fileProgress = update),
           estimatedFileCount: estimate?.fileCount,
           estimatedTotalBytes: estimate?.totalBytes,
           pluginPaths: widget.pluginPaths,
@@ -165,9 +164,8 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           // to be able to read them all.
           await showDialog<void>(
             context: rootNavigator.context,
-            builder: (ctx) => _PackageWarningsDialog(
-              warnings: packageResult.warnings,
-            ),
+            builder: (ctx) =>
+                _PackageWarningsDialog(warnings: packageResult.warnings),
           );
         }
       }
@@ -185,10 +183,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
     final presetName = widget.presetFilePath.split('/').last;
 
     return AlertDialog(
-      title: Semantics(
-        header: true,
-        child: Text('Package: $presetName'),
-      ),
+      title: Semantics(header: true, child: Text('Package: $presetName')),
       content: SizedBox(
         width: 480,
         child: SingleChildScrollView(
@@ -269,16 +264,13 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           Text(
             totalFiles != null
                 ? '${fp.filesCompleted}/$totalFiles files · '
-                    '${_formatBytes(fp.bytesCompleted)}'
-                    '${totalBytes != null ? ' / ${_formatBytes(totalBytes)}' : ''}'
+                      '${_formatBytes(fp.bytesCompleted)}'
+                      '${totalBytes != null ? ' / ${_formatBytes(totalBytes)}' : ''}'
                 : '${fp.filesCompleted} files · ${_formatBytes(fp.bytesCompleted)}',
             style: const TextStyle(fontSize: 12),
           ),
         ] else ...[
-          Text(
-            _status,
-            style: const TextStyle(fontSize: 12),
-          ),
+          Text(_status, style: const TextStyle(fontSize: 12)),
         ],
       ],
     );
@@ -421,33 +413,29 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
             CheckboxListTile(
               title: const Text('Include Wavetables'),
               value: config.includeWavetables,
-              onChanged: (value) => _updateConfig(
-                config.copyWith(includeWavetables: value),
-              ),
+              onChanged: (value) =>
+                  _updateConfig(config.copyWith(includeWavetables: value)),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include Samples & Multisamples'),
               value: config.includeSamples,
-              onChanged: (value) => _updateConfig(
-                config.copyWith(includeSamples: value),
-              ),
+              onChanged: (value) =>
+                  _updateConfig(config.copyWith(includeSamples: value)),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include FM Banks'),
               value: config.includeFMBanks,
-              onChanged: (value) => _updateConfig(
-                config.copyWith(includeFMBanks: value),
-              ),
+              onChanged: (value) =>
+                  _updateConfig(config.copyWith(includeFMBanks: value)),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include Three Pot Programs'),
               value: config.includeThreePot,
-              onChanged: (value) => _updateConfig(
-                config.copyWith(includeThreePot: value),
-              ),
+              onChanged: (value) =>
+                  _updateConfig(config.copyWith(includeThreePot: value)),
               dense: true,
             ),
             CheckboxListTile(
@@ -464,30 +452,25 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
                   'Bundles entire /MIDI/ tree (firmware selects by index)',
                 ),
                 value: config.includeMidiTree,
-                onChanged: (value) => _updateConfig(
-                  config.copyWith(includeMidiTree: value),
-                ),
+                onChanged: (value) =>
+                    _updateConfig(config.copyWith(includeMidiTree: value)),
                 dense: true,
               ),
             if (dependencies?.bundleSclTree == true ||
                 dependencies?.bundleKbmTree == true)
               CheckboxListTile(
                 title: const Text('Include Scales (.scl / .kbm)'),
-                subtitle: const Text(
-                  'Bundles entire /scl/ and /kbm/ trees',
-                ),
+                subtitle: const Text('Bundles entire /scl/ and /kbm/ trees'),
                 value: config.includeScales,
-                onChanged: (value) => _updateConfig(
-                  config.copyWith(includeScales: value),
-                ),
+                onChanged: (value) =>
+                    _updateConfig(config.copyWith(includeScales: value)),
                 dense: true,
               ),
             CheckboxListTile(
               title: const Text('Include README'),
               value: config.includeReadme,
-              onChanged: (value) => _updateConfig(
-                config.copyWith(includeReadme: value),
-              ),
+              onChanged: (value) =>
+                  _updateConfig(config.copyWith(includeReadme: value)),
               dense: true,
             ),
             if (dependencies?.hasCommunityPlugins == true)

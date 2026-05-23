@@ -46,22 +46,23 @@ class Specification {
   });
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'min': min,
-        'max': max,
-        'defaultValue': defaultValue,
-        'type': type,
-      };
+    'name': name,
+    'min': min,
+    'max': max,
+    'defaultValue': defaultValue,
+    'type': type,
+  };
 
   factory Specification.fromJson(Map<String, dynamic> json) => Specification(
-        name: json['name'] as String,
-        min: json['min'] as int,
-        max: json['max'] as int,
-        defaultValue: json['defaultValue'] as int,
-        type: json['type'] as int,
-      );
+    name: json['name'] as String,
+    min: json['min'] as int,
+    max: json['max'] as int,
+    defaultValue: json['defaultValue'] as int,
+    type: json['type'] as int,
+  );
 
-  int get safeDefaultValue => defaultValue != 0 ? defaultValue : ((min + max) ~/ 2).clamp(min, max);
+  int get safeDefaultValue =>
+      defaultValue != 0 ? defaultValue : ((min + max) ~/ 2).clamp(min, max);
 
   @override
   String toString() {
@@ -215,7 +216,8 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
 
   /// Override hashCode for using instances in hash-based collections
   @override
-  int get hashCode => Object.hash(algorithmIndex, parameterNumber, value, isDisabled);
+  int get hashCode =>
+      Object.hash(algorithmIndex, parameterNumber, value, isDisabled);
 }
 
 class ParameterEnumStrings implements HasAlgorithmIndex, HasParameterNumber {
@@ -346,26 +348,26 @@ class AlgorithmInfo {
   }
 
   Map<String, dynamic> toJson() => {
-        'algorithmIndex': algorithmIndex,
-        'name': name,
-        'guid': guid,
-        'specifications': specifications.map((s) => s.toJson()).toList(),
-        'isPlugin': isPlugin,
-        'isLoaded': isLoaded,
-        'filename': filename,
-      };
+    'algorithmIndex': algorithmIndex,
+    'name': name,
+    'guid': guid,
+    'specifications': specifications.map((s) => s.toJson()).toList(),
+    'isPlugin': isPlugin,
+    'isLoaded': isLoaded,
+    'filename': filename,
+  };
 
   factory AlgorithmInfo.fromJson(Map<String, dynamic> json) => AlgorithmInfo(
-        algorithmIndex: json['algorithmIndex'] as int,
-        name: json['name'] as String,
-        guid: json['guid'] as String,
-        specifications: (json['specifications'] as List)
-            .map((s) => Specification.fromJson(s as Map<String, dynamic>))
-            .toList(),
-        isPlugin: json['isPlugin'] as bool? ?? false,
-        isLoaded: json['isLoaded'] as bool? ?? true,
-        filename: json['filename'] as String?,
-      );
+    algorithmIndex: json['algorithmIndex'] as int,
+    name: json['name'] as String,
+    guid: json['guid'] as String,
+    specifications: (json['specifications'] as List)
+        .map((s) => Specification.fromJson(s as Map<String, dynamic>))
+        .toList(),
+    isPlugin: json['isPlugin'] as bool? ?? false,
+    isLoaded: json['isLoaded'] as bool? ?? true,
+    filename: json['filename'] as String?,
+  );
 
   @override
   String toString() {
@@ -415,7 +417,8 @@ class OutputModeUsage implements HasAlgorithmIndex, HasParameterNumber {
   final int algorithmIndex;
   @override
   final int parameterNumber; // The source parameter (mode control)
-  final List<int> affectedParameterNumbers; // Parameters controlled by this mode
+  final List<int>
+  affectedParameterNumbers; // Parameters controlled by this mode
 
   OutputModeUsage({
     required this.algorithmIndex,
@@ -470,10 +473,13 @@ enum DistingNTRequestMessageType {
   requestParameterPages(0x52),
   setParameterString(0x53),
   setPerformancePageMapping(0x54),
+
   /// Request output mode usage for a parameter (SysEx 0x55)
   requestOutputModeUsage(0x55),
+
   /// Request performance page item (SysEx 0x57, firmware v1.16+)
   requestPerfPageItem(0x57),
+
   /// Set performance page item (SysEx 0x58, firmware v1.16+)
   setPerfPageItem(0x58),
   requestNumAlgorithmsInPreset(0x60),
@@ -519,9 +525,11 @@ enum DistingNTRespMessageType {
   respMapping(0x4B),
   respParameterValueString(0x50),
   respParameterPages(0x52),
+
   /// Response to output mode usage query (SysEx 0x55)
   /// Returns list of parameters affected by an output mode control parameter
   respOutputModeUsage(0x55),
+
   /// Response to performance page item request (SysEx 0x57, firmware v1.16+)
   respPerfPageItem(0x57),
   respNumAlgorithmsInPreset(0x60),

@@ -11,10 +11,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class RequestPerfPageItemMessage extends SysexMessage {
   final int itemIndex;
 
-  RequestPerfPageItemMessage({
-    required super.sysExId,
-    required this.itemIndex,
-  });
+  RequestPerfPageItemMessage({required super.sysExId, required this.itemIndex});
 
   @override
   Uint8List encode() {

@@ -152,15 +152,15 @@ class _PlaybackControlsState extends State<PlaybackControls> {
   /// Uses firmware-provided enum strings if available, otherwise falls back
   /// to numeric labels. This ensures dropdowns work across firmware versions
   /// and adapt automatically to firmware changes.
-  List<DropdownMenuItem<int>> _buildEnumDropdownItems(Slot slot, int paramNumber) {
+  List<DropdownMenuItem<int>> _buildEnumDropdownItems(
+    Slot slot,
+    int paramNumber,
+  ) {
     final options = _getEnumStringsOrFallback(slot, paramNumber);
 
     return List.generate(
       options.length,
-      (index) => DropdownMenuItem(
-        value: index,
-        child: Text(options[index]),
-      ),
+      (index) => DropdownMenuItem(value: index, child: Text(options[index])),
     );
   }
 
@@ -174,20 +174,20 @@ class _PlaybackControlsState extends State<PlaybackControls> {
       // Debounced update for sliders (continuous values)
       _debouncer.schedule('param_$paramNumber', () {
         context.read<DistingCubit>().updateParameterValue(
-              algorithmIndex: widget.slotIndex,
-              parameterNumber: paramNumber,
-              value: value,
-              userIsChangingTheValue: true,
-            );
+          algorithmIndex: widget.slotIndex,
+          parameterNumber: paramNumber,
+          value: value,
+          userIsChangingTheValue: true,
+        );
       }, const Duration(milliseconds: 50));
     } else {
       // Immediate update for discrete values (dropdowns, text inputs)
       context.read<DistingCubit>().updateParameterValue(
-            algorithmIndex: widget.slotIndex,
-            parameterNumber: paramNumber,
-            value: value,
-            userIsChangingTheValue: true,
-          );
+        algorithmIndex: widget.slotIndex,
+        parameterNumber: paramNumber,
+        value: value,
+        userIsChangingTheValue: true,
+      );
     }
   }
 
@@ -252,38 +252,14 @@ class _PlaybackControlsState extends State<PlaybackControls> {
           runSpacing: 12,
           alignment: WrapAlignment.start,
           children: [
-            SizedBox(
-              width: 200,
-              child: _buildDirectionDropdown(slot),
-            ),
-            SizedBox(
-              width: 180,
-              child: _buildPermutationDropdown(slot),
-            ),
-            SizedBox(
-              width: 100,
-              child: _buildStartStepInput(slot),
-            ),
-            SizedBox(
-              width: 100,
-              child: _buildEndStepInput(slot),
-            ),
-            SizedBox(
-              width: 150,
-              child: _buildGateTypeToggle(slot),
-            ),
-            SizedBox(
-              width: 250,
-              child: _buildGateLengthSlider(slot),
-            ),
-            SizedBox(
-              width: 250,
-              child: _buildTriggerLengthSlider(slot),
-            ),
-            SizedBox(
-              width: 250,
-              child: _buildGlideTimeSlider(slot),
-            ),
+            SizedBox(width: 200, child: _buildDirectionDropdown(slot)),
+            SizedBox(width: 180, child: _buildPermutationDropdown(slot)),
+            SizedBox(width: 100, child: _buildStartStepInput(slot)),
+            SizedBox(width: 100, child: _buildEndStepInput(slot)),
+            SizedBox(width: 150, child: _buildGateTypeToggle(slot)),
+            SizedBox(width: 250, child: _buildGateLengthSlider(slot)),
+            SizedBox(width: 250, child: _buildTriggerLengthSlider(slot)),
+            SizedBox(width: 250, child: _buildGlideTimeSlider(slot)),
           ],
         ),
       ),
@@ -314,10 +290,7 @@ class _PlaybackControlsState extends State<PlaybackControls> {
               child: _buildPermutationDropdown(slot),
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: _buildGateTypeToggle(slot),
-            ),
+            SizedBox(width: double.infinity, child: _buildGateTypeToggle(slot)),
             const SizedBox(height: 12),
             _buildGateLengthSlider(slot),
             const SizedBox(height: 8),
@@ -356,7 +329,9 @@ class _PlaybackControlsState extends State<PlaybackControls> {
           _updateParameter(directionParam, value);
 
           // Request fresh parameter values from hardware after Direction change
-          context.read<DistingCubit>().scheduleParameterRefresh(widget.slotIndex);
+          context.read<DistingCubit>().scheduleParameterRefresh(
+            widget.slotIndex,
+          );
         }
       },
     );
@@ -377,9 +352,7 @@ class _PlaybackControlsState extends State<PlaybackControls> {
           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
         keyboardType: TextInputType.number,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-        ],
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         onFieldSubmitted: (value) {
           final intValue = int.tryParse(value);
           if (intValue != null && intValue >= 1 && intValue <= 16) {
@@ -402,7 +375,8 @@ class _PlaybackControlsState extends State<PlaybackControls> {
     }
 
     final startStepParam = widget.params.startStep;
-    final startValue = startStepParam != null && startStepParam < slot.values.length
+    final startValue =
+        startStepParam != null && startStepParam < slot.values.length
         ? slot.values[startStepParam].value
         : 1;
 
@@ -415,12 +389,13 @@ class _PlaybackControlsState extends State<PlaybackControls> {
           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
         keyboardType: TextInputType.number,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-        ],
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         onFieldSubmitted: (value) {
           final intValue = int.tryParse(value);
-          if (intValue != null && intValue >= 1 && intValue <= 16 && intValue >= startValue) {
+          if (intValue != null &&
+              intValue >= 1 &&
+              intValue <= 16 &&
+              intValue >= startValue) {
             _updateParameter(endStepParam, intValue);
           } else {
             final current = endStepParam < slot.values.length
@@ -435,7 +410,8 @@ class _PlaybackControlsState extends State<PlaybackControls> {
 
   Widget _buildPermutationDropdown(Slot slot) {
     final permutationParam = widget.params.permutation;
-    if (permutationParam == null || permutationParam >= slot.parameters.length) {
+    if (permutationParam == null ||
+        permutationParam >= slot.parameters.length) {
       return const SizedBox.shrink();
     }
 
@@ -489,7 +465,9 @@ class _PlaybackControlsState extends State<PlaybackControls> {
 
           // Request fresh parameter values from hardware after Gate Type change
           // This ensures we get updated disabled states for dependent parameters
-          context.read<DistingCubit>().scheduleParameterRefresh(widget.slotIndex);
+          context.read<DistingCubit>().scheduleParameterRefresh(
+            widget.slotIndex,
+          );
         }
       },
     );
@@ -534,9 +512,15 @@ class _PlaybackControlsState extends State<PlaybackControls> {
                 divisions: 98,
                 label: '$currentValue%',
                 semanticFormatterCallback: (v) => '${v.round()}%',
-                onChanged: isDisabled ? null : (value) {
-                  _updateParameter(gateLengthParam, value.toInt(), debounce: true);
-                },
+                onChanged: isDisabled
+                    ? null
+                    : (value) {
+                        _updateParameter(
+                          gateLengthParam,
+                          value.toInt(),
+                          debounce: true,
+                        );
+                      },
               ),
             ],
           ),
@@ -547,7 +531,8 @@ class _PlaybackControlsState extends State<PlaybackControls> {
 
   Widget _buildTriggerLengthSlider(Slot slot) {
     final triggerLengthParam = widget.params.triggerLength;
-    if (triggerLengthParam == null || triggerLengthParam >= slot.parameters.length) {
+    if (triggerLengthParam == null ||
+        triggerLengthParam >= slot.parameters.length) {
       return const SizedBox.shrink();
     }
 
@@ -584,9 +569,15 @@ class _PlaybackControlsState extends State<PlaybackControls> {
                 divisions: 99,
                 label: '${currentValue}ms',
                 semanticFormatterCallback: (v) => '${v.round()} milliseconds',
-                onChanged: isDisabled ? null : (value) {
-                  _updateParameter(triggerLengthParam, value.toInt(), debounce: true);
-                },
+                onChanged: isDisabled
+                    ? null
+                    : (value) {
+                        _updateParameter(
+                          triggerLengthParam,
+                          value.toInt(),
+                          debounce: true,
+                        );
+                      },
               ),
             ],
           ),

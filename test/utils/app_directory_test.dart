@@ -21,30 +21,22 @@ void main() {
 
   group('getAppDirectory', () {
     test('creates nt_helper subdirectory', () async {
-      final result = await getAppDirectory(
-        docsProvider: () async => tempRoot,
-      );
+      final result = await getAppDirectory(docsProvider: () async => tempRoot);
 
       expect(result.existsSync(), isTrue);
       expect(p.basename(result.path), 'nt_helper');
     });
 
     test('creates .migrated marker file after first run', () async {
-      final result = await getAppDirectory(
-        docsProvider: () async => tempRoot,
-      );
+      final result = await getAppDirectory(docsProvider: () async => tempRoot);
 
       final marker = File(p.join(result.path, '.migrated'));
       expect(marker.existsSync(), isTrue);
     });
 
     test('returns same directory on subsequent calls', () async {
-      final first = await getAppDirectory(
-        docsProvider: () async => tempRoot,
-      );
-      final second = await getAppDirectory(
-        docsProvider: () async => tempRoot,
-      );
+      final first = await getAppDirectory(docsProvider: () async => tempRoot);
+      final second = await getAppDirectory(docsProvider: () async => tempRoot);
 
       expect(first.path, second.path);
     });
@@ -64,14 +56,14 @@ void main() {
 
   group('migration', () {
     test('copies sqlite and gallery_cache from old location', () async {
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite'))
-          .writeAsStringSync('db-content');
-      File(p.join(tempRoot.path, 'gallery_cache.json'))
-          .writeAsStringSync('cache-content');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite'),
+      ).writeAsStringSync('db-content');
+      File(
+        p.join(tempRoot.path, 'gallery_cache.json'),
+      ).writeAsStringSync('cache-content');
 
-      final result = await getAppDirectory(
-        docsProvider: () async => tempRoot,
-      );
+      final result = await getAppDirectory(docsProvider: () async => tempRoot);
 
       expect(
         File(p.join(result.path, 'nt_helper_db.sqlite')).readAsStringSync(),
@@ -84,16 +76,17 @@ void main() {
     });
 
     test('does not copy WAL or SHM files', () async {
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite'))
-          .writeAsStringSync('db');
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite-wal'))
-          .writeAsStringSync('wal');
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite-shm'))
-          .writeAsStringSync('shm');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite'),
+      ).writeAsStringSync('db');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite-wal'),
+      ).writeAsStringSync('wal');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite-shm'),
+      ).writeAsStringSync('shm');
 
-      final result = await getAppDirectory(
-        docsProvider: () async => tempRoot,
-      );
+      final result = await getAppDirectory(docsProvider: () async => tempRoot);
 
       expect(
         File(p.join(result.path, 'nt_helper_db.sqlite-wal')).existsSync(),
@@ -106,10 +99,12 @@ void main() {
     });
 
     test('deletes old files after successful migration', () async {
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite'))
-          .writeAsStringSync('db');
-      File(p.join(tempRoot.path, 'gallery_cache.json'))
-          .writeAsStringSync('cache');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite'),
+      ).writeAsStringSync('db');
+      File(
+        p.join(tempRoot.path, 'gallery_cache.json'),
+      ).writeAsStringSync('cache');
 
       await getAppDirectory(docsProvider: () async => tempRoot);
 
@@ -124,12 +119,15 @@ void main() {
     });
 
     test('cleans up old WAL and SHM files', () async {
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite'))
-          .writeAsStringSync('db');
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite-wal'))
-          .writeAsStringSync('wal');
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite-shm'))
-          .writeAsStringSync('shm');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite'),
+      ).writeAsStringSync('db');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite-wal'),
+      ).writeAsStringSync('wal');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite-shm'),
+      ).writeAsStringSync('shm');
 
       await getAppDirectory(docsProvider: () async => tempRoot);
 
@@ -149,12 +147,11 @@ void main() {
       File(p.join(appDir.path, '.migrated')).createSync();
 
       // Place a file in the old location that would be migrated
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite'))
-          .writeAsStringSync('should-not-be-copied');
+      File(
+        p.join(tempRoot.path, 'nt_helper_db.sqlite'),
+      ).writeAsStringSync('should-not-be-copied');
 
-      final result = await getAppDirectory(
-        docsProvider: () async => tempRoot,
-      );
+      final result = await getAppDirectory(docsProvider: () async => tempRoot);
 
       // File should NOT have been copied since marker exists
       expect(
@@ -163,22 +160,26 @@ void main() {
       );
     });
 
-    test('runs migration when directory exists but marker is missing', () async {
-      final appDir = Directory(p.join(tempRoot.path, 'nt_helper'));
-      appDir.createSync();
+    test(
+      'runs migration when directory exists but marker is missing',
+      () async {
+        final appDir = Directory(p.join(tempRoot.path, 'nt_helper'));
+        appDir.createSync();
 
-      // No .migrated marker, so migration should run
-      File(p.join(tempRoot.path, 'nt_helper_db.sqlite'))
-          .writeAsStringSync('should-be-copied');
+        // No .migrated marker, so migration should run
+        File(
+          p.join(tempRoot.path, 'nt_helper_db.sqlite'),
+        ).writeAsStringSync('should-be-copied');
 
-      final result = await getAppDirectory(
-        docsProvider: () async => tempRoot,
-      );
+        final result = await getAppDirectory(
+          docsProvider: () async => tempRoot,
+        );
 
-      expect(
-        File(p.join(result.path, 'nt_helper_db.sqlite')).readAsStringSync(),
-        'should-be-copied',
-      );
-    });
+        expect(
+          File(p.join(result.path, 'nt_helper_db.sqlite')).readAsStringSync(),
+          'should-be-copied',
+        );
+      },
+    );
   });
 }

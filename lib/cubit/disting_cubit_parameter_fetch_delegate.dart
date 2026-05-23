@@ -248,26 +248,11 @@ class _ParameterFetchDelegate {
       numParams,
       ParameterInfo.filler(),
     );
-    await _forEachLimited(
-      Iterable<int>.generate(numParams),
-      (param) async {
-        try {
-          final info = await disting.requestParameterInfo(
-            algorithmIndex,
-            param,
-          );
-          parameters[param] = info ?? ParameterInfo.filler();
-          if (info == null) {
-            _queueParameterRetry(
-              _ParameterRetryRequest(
-                slotIndex: algorithmIndex,
-                paramIndex: param,
-                type: _ParameterRetryType.info,
-              ),
-            );
-          }
-        } catch (e) {
-          parameters[param] = ParameterInfo.filler();
+    await _forEachLimited(Iterable<int>.generate(numParams), (param) async {
+      try {
+        final info = await disting.requestParameterInfo(algorithmIndex, param);
+        parameters[param] = info ?? ParameterInfo.filler();
+        if (info == null) {
           _queueParameterRetry(
             _ParameterRetryRequest(
               slotIndex: algorithmIndex,
@@ -276,8 +261,17 @@ class _ParameterFetchDelegate {
             ),
           );
         }
-      },
-    );
+      } catch (e) {
+        parameters[param] = ParameterInfo.filler();
+        _queueParameterRetry(
+          _ParameterRetryRequest(
+            slotIndex: algorithmIndex,
+            paramIndex: param,
+            type: _ParameterRetryType.info,
+          ),
+        );
+      }
+    });
 
     /* Pre-calculate which params are enumerated / mappable / string */
     bool isEnum(int i) => parameters[i].unit == 1;
@@ -310,14 +304,9 @@ class _ParameterFetchDelegate {
     await Future.wait([
       // Enums
       _forEachLimited(
-        Iterable<int>.generate(
-          numParams,
-        ).where(
-              (i) =>
-                  visible.contains(i) &&
-                  isEnum(i) &&
-                  !shouldSkipEnumStrings(i),
-            ),
+        Iterable<int>.generate(numParams).where(
+          (i) => visible.contains(i) && isEnum(i) && !shouldSkipEnumStrings(i),
+        ),
         (param) async {
           try {
             final enumResult = await disting.requestParameterEnumStrings(
@@ -426,26 +415,22 @@ class _ParameterFetchDelegate {
       );
     }
 
-
     final outputModeMap = <int, List<int>>{};
     if (outputModeParamNumbers.isNotEmpty) {
-      await _forEachLimited(
-        outputModeParamNumbers,
-        (paramNumber) async {
-          try {
-            final outputModeUsage = await disting.requestOutputModeUsage(
-              algorithmIndex,
-              paramNumber,
-            );
-            if (outputModeUsage != null) {
-              outputModeMap[outputModeUsage.parameterNumber] =
-                  outputModeUsage.affectedParameterNumbers;
-            }
-          } catch (e) {
-            // Output mode usage is optional; ignore failures.
+      await _forEachLimited(outputModeParamNumbers, (paramNumber) async {
+        try {
+          final outputModeUsage = await disting.requestOutputModeUsage(
+            algorithmIndex,
+            paramNumber,
+          );
+          if (outputModeUsage != null) {
+            outputModeMap[outputModeUsage.parameterNumber] =
+                outputModeUsage.affectedParameterNumbers;
           }
-        },
-      );
+        } catch (e) {
+          // Output mode usage is optional; ignore failures.
+        }
+      });
     }
 
     if (outputModeMap.isNotEmpty) {
@@ -456,31 +441,27 @@ class _ParameterFetchDelegate {
     }
 
     if (outputModeMap.isNotEmpty) {
-      await _forEachLimited(
-        outputModeMap.keys,
-        (paramNumber) async {
-          if (paramNumber < 0 || paramNumber >= allValues.length) {
-            return;
+      await _forEachLimited(outputModeMap.keys, (paramNumber) async {
+        if (paramNumber < 0 || paramNumber >= allValues.length) {
+          return;
+        }
+        try {
+          final value = await disting.requestParameterValue(
+            algorithmIndex,
+            paramNumber,
+          );
+          if (value != null) {
+            allValues[paramNumber] = value;
           }
-          try {
-            final value = await disting.requestParameterValue(
-              algorithmIndex,
-              paramNumber,
-            );
-            if (value != null) {
-              allValues[paramNumber] = value;
-            }
-          } catch (e) {
-            // Output mode values are optional; ignore failures.
-          }
-        },
-      );
+        } catch (e) {
+          // Output mode values are optional; ignore failures.
+        }
+      });
     }
 
-    final resolvedOutputModeMap =
-        outputModeMap.isNotEmpty
-            ? outputModeMap
-            : _cubit._slotStateDelegate.outputModeMapForSlot(algorithmIndex);
+    final resolvedOutputModeMap = outputModeMap.isNotEmpty
+        ? outputModeMap
+        : _cubit._slotStateDelegate.outputModeMapForSlot(algorithmIndex);
 
     return Slot(
       algorithm:

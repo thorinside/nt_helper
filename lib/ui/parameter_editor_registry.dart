@@ -36,7 +36,8 @@ enum ParameterUnitScheme {
 /// Unit constants for each firmware scheme
 class ParameterUnits {
   // Common across all firmware versions
-  static const int enum_ = 1; // kNT_unitEnum - enumStrings must also be provided
+  static const int enum_ =
+      1; // kNT_unitEnum - enumStrings must also be provided
 
   // Legacy firmware (≤1.12)
   static const int legacyFilePath = 13;
@@ -78,7 +79,11 @@ class ParameterUnits {
   /// Check if a unit is a BPM unit that should use the BPM editor
   /// Modern firmware (≥1.13): unit 14 = kNT_unitBPM
   /// Legacy firmware (≤1.12): detected via unit string containing "BPM"
-  static bool isBpmUnit(int unit, String? unitString, ParameterUnitScheme scheme) {
+  static bool isBpmUnit(
+    int unit,
+    String? unitString,
+    ParameterUnitScheme scheme,
+  ) {
     switch (scheme) {
       case ParameterUnitScheme.legacy:
         // Legacy firmware: check the unit string

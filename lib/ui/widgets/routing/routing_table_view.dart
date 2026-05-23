@@ -26,7 +26,6 @@ class _RoutingTableViewState extends State<RoutingTableView> {
   static const double _cellWidth = 32;
   static const double _cellHeight = 28;
 
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
@@ -46,34 +45,34 @@ class _RoutingTableViewState extends State<RoutingTableView> {
         return state.when(
           initial: () => const Center(child: Text('Initializing...')),
           disconnected: () => const Center(child: Text('Disconnected')),
-          loaded: (
-            physicalInputs,
-            physicalOutputs,
-            es5Inputs,
-            algorithms,
-            connections,
-            buses,
-            portOutputModes,
-            nodePositions,
-            zoomLevel,
-            panOffset,
-            isHardwareSynced,
-            isPersistenceEnabled,
-            lastSyncTime,
-            lastPersistTime,
-            lastError,
-            subState,
-            focusedAlgorithmIds,
-            cascadeScrollTarget,
-            auxBusUsage,
-            hasExtendedAuxBuses,
-          ) =>
-              _buildTable(
-            context,
-            algorithms: algorithms,
-            portOutputModes: portOutputModes,
-            hasExtendedAuxBuses: hasExtendedAuxBuses,
-          ),
+          loaded:
+              (
+                physicalInputs,
+                physicalOutputs,
+                es5Inputs,
+                algorithms,
+                connections,
+                buses,
+                portOutputModes,
+                nodePositions,
+                zoomLevel,
+                panOffset,
+                isHardwareSynced,
+                isPersistenceEnabled,
+                lastSyncTime,
+                lastPersistTime,
+                lastError,
+                subState,
+                focusedAlgorithmIds,
+                cascadeScrollTarget,
+                auxBusUsage,
+                hasExtendedAuxBuses,
+              ) => _buildTable(
+                context,
+                algorithms: algorithms,
+                portOutputModes: portOutputModes,
+                hasExtendedAuxBuses: hasExtendedAuxBuses,
+              ),
         );
       },
     );
@@ -124,15 +123,14 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     required Map<String, OutputMode> portOutputModes,
     required bool hasExtendedAuxBuses,
   }) {
-    final routing =
-        _buildRoutingFromEditorState(algorithms, portOutputModes);
+    final routing = _buildRoutingFromEditorState(algorithms, portOutputModes);
     if (routing.isEmpty) {
       return Center(
         child: Text(
           'No algorithms loaded.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }
@@ -140,8 +138,11 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     final analyzer = RoutingAnalyzer(routing: routing);
     final slotCount = routing.length;
     final signals = analyzer.signals;
-    final numBuses = _computeVisibleBusCount(signals, routing,
-        hasExtendedAuxBuses: hasExtendedAuxBuses);
+    final numBuses = _computeVisibleBusCount(
+      signals,
+      routing,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -157,10 +158,12 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     ];
 
     // Pre-compute text styles once instead of per-cell
-    final headerStyle =
-        theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold);
-    final slotNameStyle =
-        theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600);
+    final headerStyle = theme.textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.bold,
+    );
+    final slotNameStyle = theme.textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
     final cellStyle = theme.textTheme.labelSmall;
     final symbolStyle = theme.textTheme.labelSmall?.copyWith(fontSize: 13);
     final pinnedBg = isDark ? const Color(0xFF333333) : const Color(0xFFF0F0F0);
@@ -172,28 +175,34 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     final mainRows = <TableRow>[];
 
     // Header row (top)
-    pinnedRows.add(TableRow(children: [
-      Container(
-        height: _cellHeight,
-        constraints: const BoxConstraints(minWidth: 80),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        alignment: Alignment.centerLeft,
-        color: pinnedBg,
-        child: Text('Algorithm', style: headerStyle),
-      ),
-    ]));
-    mainRows.add(TableRow(
-      children: [
-        for (int ch = 1; ch <= numBuses; ch++)
+    pinnedRows.add(
+      TableRow(
+        children: [
           Container(
-            width: _cellWidth,
             height: _cellHeight,
-            alignment: Alignment.center,
-            color: _headerBg(ch, isDark),
-            child: Text(_columnLabel(ch), style: headerStyle),
+            constraints: const BoxConstraints(minWidth: 80),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            alignment: Alignment.centerLeft,
+            color: pinnedBg,
+            child: Text('Algorithm', style: headerStyle),
           ),
-      ],
-    ));
+        ],
+      ),
+    );
+    mainRows.add(
+      TableRow(
+        children: [
+          for (int ch = 1; ch <= numBuses; ch++)
+            Container(
+              width: _cellWidth,
+              height: _cellHeight,
+              alignment: Alignment.center,
+              color: _headerBg(ch, isDark),
+              child: Text(_columnLabel(ch), style: headerStyle),
+            ),
+        ],
+      ),
+    );
 
     for (int s = 0; s < slotCount; s++) {
       final info = routing[s];
@@ -207,72 +216,100 @@ class _RoutingTableViewState extends State<RoutingTableView> {
 
       // Signal-above row
       pinnedRows.add(TableRow(children: [SizedBox(height: _cellHeight)]));
-      mainRows.add(TableRow(
-        children: [
-          for (int ch = 1; ch <= numBuses; ch++)
-            _signalAboveCell(ch, rowBefore, inMask, colours, isDark),
-        ],
-      ));
+      mainRows.add(
+        TableRow(
+          children: [
+            for (int ch = 1; ch <= numBuses; ch++)
+              _signalAboveCell(ch, rowBefore, inMask, colours, isDark),
+          ],
+        ),
+      );
 
       // Slot row
-      pinnedRows.add(TableRow(children: [
-        Container(
-          height: _cellHeight,
-          constraints: const BoxConstraints(minWidth: 80),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          alignment: Alignment.centerLeft,
-          color: slotBg,
-          child: Text(
-            '${info.algorithmIndex + 1}. ${info.algorithmName}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: slotNameStyle,
-          ),
+      pinnedRows.add(
+        TableRow(
+          children: [
+            Container(
+              height: _cellHeight,
+              constraints: const BoxConstraints(minWidth: 80),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              alignment: Alignment.centerLeft,
+              color: slotBg,
+              child: Text(
+                '${info.algorithmIndex + 1}. ${info.algorithmName}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: slotNameStyle,
+              ),
+            ),
+          ],
         ),
-      ]));
-      mainRows.add(TableRow(
-        children: [
-          for (int ch = 1; ch <= numBuses; ch++)
-            _slotCell(ch, signalsBefore: rowBefore, usedMask: usedMask,
-                colours: colours, usedBg: usedBg, unusedBg: unusedBg,
-                cellStyle: cellStyle),
-        ],
-      ));
+      );
+      mainRows.add(
+        TableRow(
+          children: [
+            for (int ch = 1; ch <= numBuses; ch++)
+              _slotCell(
+                ch,
+                signalsBefore: rowBefore,
+                usedMask: usedMask,
+                colours: colours,
+                usedBg: usedBg,
+                unusedBg: unusedBg,
+                cellStyle: cellStyle,
+              ),
+          ],
+        ),
+      );
 
       // Signal-below row
       pinnedRows.add(TableRow(children: [SizedBox(height: _cellHeight)]));
-      mainRows.add(TableRow(
-        children: [
-          for (int ch = 1; ch <= numBuses; ch++)
-            _signalBelowCell(ch, rowAfter, outMask, replaceMask, colours,
-                symbolStyle),
-        ],
-      ));
+      mainRows.add(
+        TableRow(
+          children: [
+            for (int ch = 1; ch <= numBuses; ch++)
+              _signalBelowCell(
+                ch,
+                rowAfter,
+                outMask,
+                replaceMask,
+                colours,
+                symbolStyle,
+              ),
+          ],
+        ),
+      );
     }
 
     // Header row (bottom)
-    pinnedRows.add(TableRow(children: [
-      Container(
-        height: _cellHeight,
-        constraints: const BoxConstraints(minWidth: 80),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        alignment: Alignment.centerLeft,
-        color: pinnedBg,
-        child: Text('Algorithm', style: headerStyle),
-      ),
-    ]));
-    mainRows.add(TableRow(
-      children: [
-        for (int ch = 1; ch <= numBuses; ch++)
+    pinnedRows.add(
+      TableRow(
+        children: [
           Container(
-            width: _cellWidth,
             height: _cellHeight,
-            alignment: Alignment.center,
-            color: _headerBg(ch, isDark),
-            child: Text(_columnLabel(ch), style: headerStyle),
+            constraints: const BoxConstraints(minWidth: 80),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            alignment: Alignment.centerLeft,
+            color: pinnedBg,
+            child: Text('Algorithm', style: headerStyle),
           ),
-      ],
-    ));
+        ],
+      ),
+    );
+    mainRows.add(
+      TableRow(
+        children: [
+          for (int ch = 1; ch <= numBuses; ch++)
+            Container(
+              width: _cellWidth,
+              height: _cellHeight,
+              alignment: Alignment.center,
+              color: _headerBg(ch, isDark),
+              child: Text(_columnLabel(ch), style: headerStyle),
+            ),
+        ],
+      ),
+    );
 
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
@@ -284,8 +321,10 @@ class _RoutingTableViewState extends State<RoutingTableView> {
             Table(
               border: TableBorder(
                 right: BorderSide(color: theme.dividerColor),
-                horizontalInside:
-                    BorderSide(color: theme.dividerColor, width: 0.5),
+                horizontalInside: BorderSide(
+                  color: theme.dividerColor,
+                  width: 0.5,
+                ),
               ),
               columnWidths: const {0: IntrinsicColumnWidth()},
               defaultVerticalAlignment: TableCellVerticalAlignment.middle,
@@ -297,10 +336,14 @@ class _RoutingTableViewState extends State<RoutingTableView> {
                 scrollDirection: Axis.horizontal,
                 child: Table(
                   border: TableBorder(
-                    verticalInside:
-                        BorderSide(color: theme.dividerColor, width: 0.5),
-                    horizontalInside:
-                        BorderSide(color: theme.dividerColor, width: 0.5),
+                    verticalInside: BorderSide(
+                      color: theme.dividerColor,
+                      width: 0.5,
+                    ),
+                    horizontalInside: BorderSide(
+                      color: theme.dividerColor,
+                      width: 0.5,
+                    ),
                   ),
                   columnWidths: {
                     for (int i = 0; i < numBuses; i++)
@@ -317,8 +360,13 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     );
   }
 
-  Widget _signalAboveCell(int ch, List<int> rowBefore, int inMask,
-      List<Color> colours, bool isDark) {
+  Widget _signalAboveCell(
+    int ch,
+    List<int> rowBefore,
+    int inMask,
+    List<Color> colours,
+    bool isDark,
+  ) {
     final usesChannel = (inMask & (1 << ch)) != 0;
     final signalLevel = ch < rowBefore.length ? rowBefore[ch] : 0;
     final bgColor = colours[signalLevel + 3 * (ch & 1)];
@@ -343,13 +391,15 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     );
   }
 
-  Widget _slotCell(int ch,
-      {required List<int> signalsBefore,
-      required int usedMask,
-      required List<Color> colours,
-      required Color usedBg,
-      required Color unusedBg,
-      required TextStyle? cellStyle}) {
+  Widget _slotCell(
+    int ch, {
+    required List<int> signalsBefore,
+    required int usedMask,
+    required List<Color> colours,
+    required Color usedBg,
+    required Color unusedBg,
+    required TextStyle? cellStyle,
+  }) {
     final levelBefore = ch < signalsBefore.length ? signalsBefore[ch] : 0;
     final isUsed = (usedMask & (1 << ch)) != 0;
 
@@ -374,8 +424,14 @@ class _RoutingTableViewState extends State<RoutingTableView> {
     );
   }
 
-  Widget _signalBelowCell(int ch, List<int> rowAfter, int outMask,
-      int replaceMask, List<Color> colours, TextStyle? symbolStyle) {
+  Widget _signalBelowCell(
+    int ch,
+    List<int> rowAfter,
+    int outMask,
+    int replaceMask,
+    List<Color> colours,
+    TextStyle? symbolStyle,
+  ) {
     final signalLevel = ch < rowAfter.length ? rowAfter[ch] : 0;
     final bgColor = colours[signalLevel + 3 * (ch & 1)];
     final hasOutput = (outMask & (1 << ch)) != 0;

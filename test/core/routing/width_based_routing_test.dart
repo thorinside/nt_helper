@@ -122,31 +122,41 @@ void main() {
     });
   });
 
-  group('Width-based routing — regression: Filter Bank uses "Audio input" name', () {
-    test('Filter Bank with Width=2 still produces 2 inputs and 2 outputs', () {
-      final slot = _createFilterBankSlot(audioInput: 3, width: 2, output: 13);
-      final routing = _createRouting(slot);
+  group(
+    'Width-based routing — regression: Filter Bank uses "Audio input" name',
+    () {
+      test(
+        'Filter Bank with Width=2 still produces 2 inputs and 2 outputs',
+        () {
+          final slot = _createFilterBankSlot(
+            audioInput: 3,
+            width: 2,
+            output: 13,
+          );
+          final routing = _createRouting(slot);
 
-      expect(routing.inputPorts.length, equals(2));
-      expect(routing.outputPorts.length, equals(2));
-    });
+          expect(routing.inputPorts.length, equals(2));
+          expect(routing.outputPorts.length, equals(2));
+        },
+      );
 
-    test('Filter Bank virtual input port name includes original name', () {
-      final slot = _createFilterBankSlot(audioInput: 3, width: 2, output: 13);
-      final routing = _createRouting(slot);
+      test('Filter Bank virtual input port name includes original name', () {
+        final slot = _createFilterBankSlot(audioInput: 3, width: 2, output: 13);
+        final routing = _createRouting(slot);
 
-      expect(routing.inputPorts[0].name, equals('Audio input'));
-      expect(routing.inputPorts[1].name, equals('Audio input 2'));
-    });
+        expect(routing.inputPorts[0].name, equals('Audio input'));
+        expect(routing.inputPorts[1].name, equals('Audio input 2'));
+      });
 
-    test('Filter Bank virtual input bus values are sequential', () {
-      final slot = _createFilterBankSlot(audioInput: 3, width: 2, output: 13);
-      final routing = _createRouting(slot);
+      test('Filter Bank virtual input bus values are sequential', () {
+        final slot = _createFilterBankSlot(audioInput: 3, width: 2, output: 13);
+        final routing = _createRouting(slot);
 
-      expect(routing.inputPorts[0].busValue, equals(3));
-      expect(routing.inputPorts[1].busValue, equals(4));
-    });
-  });
+        expect(routing.inputPorts[0].busValue, equals(3));
+        expect(routing.inputPorts[1].busValue, equals(4));
+      });
+    },
+  );
 }
 
 MultiChannelAlgorithmRouting _createRouting(Slot slot) {

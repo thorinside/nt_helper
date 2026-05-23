@@ -26,34 +26,34 @@ FullPresetDetails _template({
   int id = 1,
   String name = 'Tmpl',
   List<FullPresetSlot>? slots,
-}) =>
-    FullPresetDetails(
-      preset: PresetEntry(
-        id: id,
-        name: name,
-        lastModified: DateTime.now(),
-        isTemplate: true,
-      ),
-      slots: slots ??
-          [
-            FullPresetSlot(
-              slot: PresetSlotEntry(
-                id: 1,
-                presetId: id,
-                slotIndex: 0,
-                algorithmGuid: 'guid-1',
-              ),
-              algorithm: AlgorithmEntry(
-                guid: 'guid-1',
-                name: 'Alg 1',
-                numSpecifications: 0,
-              ),
-              parameterValues: {},
-              parameterStringValues: {},
-              mappings: {},
-            ),
-          ],
-    );
+}) => FullPresetDetails(
+  preset: PresetEntry(
+    id: id,
+    name: name,
+    lastModified: DateTime.now(),
+    isTemplate: true,
+  ),
+  slots:
+      slots ??
+      [
+        FullPresetSlot(
+          slot: PresetSlotEntry(
+            id: 1,
+            presetId: id,
+            slotIndex: 0,
+            algorithmGuid: 'guid-1',
+          ),
+          algorithm: AlgorithmEntry(
+            guid: 'guid-1',
+            name: 'Alg 1',
+            numSpecifications: 0,
+          ),
+          parameterValues: {},
+          parameterStringValues: {},
+          mappings: {},
+        ),
+      ],
+);
 
 void main() {
   late MetadataSyncCubit cubit;
@@ -85,25 +85,30 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'delegates to DAO with the given args and emits ViewingLocalData on success',
       build: () {
-        when(() => mockPresetsDao.applyTemplateSlots(
-              templateId: any(named: 'templateId'),
-              targetPresetId: any(named: 'targetPresetId'),
-              templateSlotIndices: any(named: 'templateSlotIndices'),
-              insertionOffset: any(named: 'insertionOffset'),
-              overwrite: any(named: 'overwrite'),
-            )).thenAnswer(
+        when(
+          () => mockPresetsDao.applyTemplateSlots(
+            templateId: any(named: 'templateId'),
+            targetPresetId: any(named: 'targetPresetId'),
+            templateSlotIndices: any(named: 'templateSlotIndices'),
+            insertionOffset: any(named: 'insertionOffset'),
+            overwrite: any(named: 'overwrite'),
+          ),
+        ).thenAnswer(
           (_) async => const ApplyTemplateSlotsResult(
             targetPresetId: 42,
             insertedSlotIndices: [0, 1, 2],
             skippedTemplateSlotIndices: [],
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => <String, int>{});
-        when(() => mockPresetsDao.getAllPresets())
-            .thenAnswer((_) async => <PresetEntry>[]);
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => <String, int>{});
+        when(
+          () => mockPresetsDao.getAllPresets(),
+        ).thenAnswer((_) async => <PresetEntry>[]);
         return cubit;
       },
       act: (c) async {
@@ -117,26 +122,30 @@ void main() {
       },
       expect: () => [isA<LoadingPreset>(), isA<ViewingLocalData>()],
       verify: (_) {
-        verify(() => mockPresetsDao.applyTemplateSlots(
-              templateId: 7,
-              targetPresetId: 42,
-              templateSlotIndices: const [0, 1, 2],
-              insertionOffset: 3,
-              overwrite: false,
-            )).called(1);
+        verify(
+          () => mockPresetsDao.applyTemplateSlots(
+            templateId: 7,
+            targetPresetId: 42,
+            templateSlotIndices: const [0, 1, 2],
+            insertionOffset: 3,
+            overwrite: false,
+          ),
+        ).called(1);
       },
     );
 
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'translates TemplateSpaceException to metadataSyncFailure',
       build: () {
-        when(() => mockPresetsDao.applyTemplateSlots(
-              templateId: any(named: 'templateId'),
-              targetPresetId: any(named: 'targetPresetId'),
-              templateSlotIndices: any(named: 'templateSlotIndices'),
-              insertionOffset: any(named: 'insertionOffset'),
-              overwrite: any(named: 'overwrite'),
-            )).thenThrow(TemplateSpaceException(current: 30, applied: 4));
+        when(
+          () => mockPresetsDao.applyTemplateSlots(
+            templateId: any(named: 'templateId'),
+            targetPresetId: any(named: 'targetPresetId'),
+            templateSlotIndices: any(named: 'templateSlotIndices'),
+            insertionOffset: any(named: 'insertionOffset'),
+            overwrite: any(named: 'overwrite'),
+          ),
+        ).thenThrow(TemplateSpaceException(current: 30, applied: 4));
         return cubit;
       },
       act: (c) async {
@@ -162,13 +171,15 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'returns DAO result to the caller',
       build: () {
-        when(() => mockPresetsDao.applyTemplateSlots(
-              templateId: any(named: 'templateId'),
-              targetPresetId: any(named: 'targetPresetId'),
-              templateSlotIndices: any(named: 'templateSlotIndices'),
-              insertionOffset: any(named: 'insertionOffset'),
-              overwrite: any(named: 'overwrite'),
-            )).thenAnswer(
+        when(
+          () => mockPresetsDao.applyTemplateSlots(
+            templateId: any(named: 'templateId'),
+            targetPresetId: any(named: 'targetPresetId'),
+            templateSlotIndices: any(named: 'templateSlotIndices'),
+            insertionOffset: any(named: 'insertionOffset'),
+            overwrite: any(named: 'overwrite'),
+          ),
+        ).thenAnswer(
           (_) async => const ApplyTemplateSlotsResult(
             targetPresetId: 9,
             insertedSlotIndices: [5],
@@ -176,12 +187,15 @@ void main() {
             warning: 'Skipped 1.',
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => <String, int>{});
-        when(() => mockPresetsDao.getAllPresets())
-            .thenAnswer((_) async => <PresetEntry>[]);
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => <String, int>{});
+        when(
+          () => mockPresetsDao.getAllPresets(),
+        ).thenAnswer((_) async => <PresetEntry>[]);
         return cubit;
       },
       act: (c) async {
@@ -203,16 +217,21 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'emits progress states injectingTemplate(applied, total) during apply',
       build: () {
-        when(() => mockManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 0);
-        when(() => mockManager.requestAddAlgorithm(any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.setParameterValue(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.requestSetMapping(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.requestSendSlotName(any(), any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockManager.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -226,35 +245,40 @@ void main() {
             enums: {},
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => <String, int>{});
-        when(() => mockPresetsDao.getAllPresets())
-            .thenAnswer((_) async => <PresetEntry>[]);
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => <String, int>{});
+        when(
+          () => mockPresetsDao.getAllPresets(),
+        ).thenAnswer((_) async => <PresetEntry>[]);
         return cubit;
       },
       act: (c) async {
         await c.applyTemplateToDevice(
-          template: _template(slots: [
-            for (var i = 0; i < 2; i++)
-              FullPresetSlot(
-                slot: PresetSlotEntry(
-                  id: i + 1,
-                  presetId: 1,
-                  slotIndex: i,
-                  algorithmGuid: 'guid-1',
+          template: _template(
+            slots: [
+              for (var i = 0; i < 2; i++)
+                FullPresetSlot(
+                  slot: PresetSlotEntry(
+                    id: i + 1,
+                    presetId: 1,
+                    slotIndex: i,
+                    algorithmGuid: 'guid-1',
+                  ),
+                  algorithm: AlgorithmEntry(
+                    guid: 'guid-1',
+                    name: 'Alg 1',
+                    numSpecifications: 0,
+                  ),
+                  parameterValues: {},
+                  parameterStringValues: {},
+                  mappings: {},
                 ),
-                algorithm: AlgorithmEntry(
-                  guid: 'guid-1',
-                  name: 'Alg 1',
-                  numSpecifications: 0,
-                ),
-                parameterValues: {},
-                parameterStringValues: {},
-                mappings: {},
-              ),
-          ]),
+            ],
+          ),
           templateSlotIndices: const [0, 1],
           manager: mockManager,
         );
@@ -278,16 +302,21 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'only applies the slot indices requested (partial selection)',
       build: () {
-        when(() => mockManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 0);
-        when(() => mockManager.requestAddAlgorithm(any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.setParameterValue(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.requestSetMapping(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.requestSendSlotName(any(), any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockManager.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -301,12 +330,15 @@ void main() {
             enums: {},
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => <String, int>{});
-        when(() => mockPresetsDao.getAllPresets())
-            .thenAnswer((_) async => <PresetEntry>[]);
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => <String, int>{});
+        when(
+          () => mockPresetsDao.getAllPresets(),
+        ).thenAnswer((_) async => <PresetEntry>[]);
         return cubit;
       },
       act: (c) async {
@@ -350,16 +382,21 @@ void main() {
     blocTest<MetadataSyncCubit, MetadataSyncState>(
       'injectTemplateToDevice applies all template slots',
       build: () {
-        when(() => mockManager.requestNumAlgorithmsInPreset())
-            .thenAnswer((_) async => 0);
-        when(() => mockManager.requestAddAlgorithm(any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.setParameterValue(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.requestSetMapping(any(), any(), any()))
-            .thenAnswer((_) async => {});
-        when(() => mockManager.requestSendSlotName(any(), any()))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestNumAlgorithmsInPreset(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockManager.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.setParameterValue(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSetMapping(any(), any(), any()),
+        ).thenAnswer((_) async => {});
+        when(
+          () => mockManager.requestSendSlotName(any(), any()),
+        ).thenAnswer((_) async => {});
         when(() => mockMetadataDao.getFullAlgorithmDetails(any())).thenAnswer(
           (_) async => FullAlgorithmDetails(
             algorithm: AlgorithmEntry(
@@ -373,35 +410,40 @@ void main() {
             enums: {},
           ),
         );
-        when(() => mockMetadataDao.getAllAlgorithms())
-            .thenAnswer((_) async => []);
-        when(() => mockMetadataDao.getAlgorithmParameterCounts())
-            .thenAnswer((_) async => <String, int>{});
-        when(() => mockPresetsDao.getAllPresets())
-            .thenAnswer((_) async => <PresetEntry>[]);
+        when(
+          () => mockMetadataDao.getAllAlgorithms(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockMetadataDao.getAlgorithmParameterCounts(),
+        ).thenAnswer((_) async => <String, int>{});
+        when(
+          () => mockPresetsDao.getAllPresets(),
+        ).thenAnswer((_) async => <PresetEntry>[]);
         return cubit;
       },
       act: (c) async {
         await c.injectTemplateToDevice(
-          _template(slots: [
-            for (var i = 0; i < 3; i++)
-              FullPresetSlot(
-                slot: PresetSlotEntry(
-                  id: i + 1,
-                  presetId: 1,
-                  slotIndex: i,
-                  algorithmGuid: 'guid-1',
+          _template(
+            slots: [
+              for (var i = 0; i < 3; i++)
+                FullPresetSlot(
+                  slot: PresetSlotEntry(
+                    id: i + 1,
+                    presetId: 1,
+                    slotIndex: i,
+                    algorithmGuid: 'guid-1',
+                  ),
+                  algorithm: AlgorithmEntry(
+                    guid: 'guid-1',
+                    name: 'Alg 1',
+                    numSpecifications: 0,
+                  ),
+                  parameterValues: {},
+                  parameterStringValues: {},
+                  mappings: {},
                 ),
-                algorithm: AlgorithmEntry(
-                  guid: 'guid-1',
-                  name: 'Alg 1',
-                  numSpecifications: 0,
-                ),
-                parameterValues: {},
-                parameterStringValues: {},
-                mappings: {},
-              ),
-          ]),
+            ],
+          ),
           mockManager,
         );
       },

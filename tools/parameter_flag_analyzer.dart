@@ -53,10 +53,26 @@ void demonstrateWithTestData() {
 
   // Test cases: different flag bit patterns
   final testCases = [
-    {'name': 'No flag', 'bytes': [0x00, 0x00, 0x64], 'expectedFlag': 0},
-    {'name': 'Flag = 1', 'bytes': [0x04, 0x00, 0x64], 'expectedFlag': 1},
-    {'name': 'Flag = 31', 'bytes': [0x7C, 0x00, 0x64], 'expectedFlag': 31},
-    {'name': 'Value = -100', 'bytes': [0x03, 0x7F, 0x1C], 'expectedFlag': 0},
+    {
+      'name': 'No flag',
+      'bytes': [0x00, 0x00, 0x64],
+      'expectedFlag': 0,
+    },
+    {
+      'name': 'Flag = 1',
+      'bytes': [0x04, 0x00, 0x64],
+      'expectedFlag': 1,
+    },
+    {
+      'name': 'Flag = 31',
+      'bytes': [0x7C, 0x00, 0x64],
+      'expectedFlag': 31,
+    },
+    {
+      'name': 'Value = -100',
+      'bytes': [0x03, 0x7F, 0x1C],
+      'expectedFlag': 0,
+    },
   ];
 
   print('Test# | Name          | Byte0 | Byte1 | Byte2 | Flag | Value');
@@ -67,13 +83,15 @@ void demonstrateWithTestData() {
     final bytes = test['bytes'] as List<int>;
     final result = analyzeParameterBytes(bytes[0], bytes[1], bytes[2]);
 
-    print('${(i + 1).toString().padLeft(5)} | '
-          '${(test['name'] as String).padRight(13)} | '
-          '${bytes[0].toRadixString(16).padLeft(5)} | '
-          '${bytes[1].toRadixString(16).padLeft(5)} | '
-          '${bytes[2].toRadixString(16).padLeft(5)} | '
-          '${result['flag'].toString().padLeft(4)} | '
-          '${result['value']}');
+    print(
+      '${(i + 1).toString().padLeft(5)} | '
+      '${(test['name'] as String).padRight(13)} | '
+      '${bytes[0].toRadixString(16).padLeft(5)} | '
+      '${bytes[1].toRadixString(16).padLeft(5)} | '
+      '${bytes[2].toRadixString(16).padLeft(5)} | '
+      '${result['flag'].toString().padLeft(4)} | '
+      '${result['value']}',
+    );
   }
   print('=' * 70);
 }
@@ -87,7 +105,9 @@ void analyzeHexDump(String hexDump) {
     return;
   }
 
-  print('Full message: ${bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+  print(
+    'Full message: ${bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+  );
   print('');
 
   // Validate it's a SysEx message
@@ -131,13 +151,15 @@ void analyzeHexDump(String hexDump) {
     final hasFlag = result['flag'] != 0;
     final analysis = hasFlag ? '<<< FLAG SET!' : '';
 
-    print('${paramNumber.toString().padLeft(6)} | '
-          '${byte0.toRadixString(16).padLeft(5)} | '
-          '${byte1.toRadixString(16).padLeft(5)} | '
-          '${byte2.toRadixString(16).padLeft(5)} | '
-          '${result['flag'].toString().padLeft(5)} | '
-          '${result['value'].toString().padLeft(7)} | '
-          '$analysis');
+    print(
+      '${paramNumber.toString().padLeft(6)} | '
+      '${byte0.toRadixString(16).padLeft(5)} | '
+      '${byte1.toRadixString(16).padLeft(5)} | '
+      '${byte2.toRadixString(16).padLeft(5)} | '
+      '${result['flag'].toString().padLeft(5)} | '
+      '${result['value'].toString().padLeft(7)} | '
+      '$analysis',
+    );
   }
 
   print('=' * 70);

@@ -90,9 +90,7 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.7),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(6),
-        ),
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -122,11 +120,7 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
     );
   }
 
-  Widget _displayModeButton(
-    IconData icon,
-    String tooltip,
-    DisplayMode mode,
-  ) {
+  Widget _displayModeButton(IconData icon, String tooltip, DisplayMode mode) {
     return IconButton(
       tooltip: tooltip,
       icon: Icon(icon, size: 18, color: Colors.white),
@@ -214,35 +208,36 @@ class FloatingVideoContent extends StatelessWidget {
               final opacity = 0.3 + 0.7 * Curves.easeOut.transform(fadeT);
 
               return Semantics(
-                label: 'Disting NT video feed. Long press to copy frame to clipboard.',
+                label:
+                    'Disting NT video feed. Long press to copy frame to clipboard.',
                 child: GestureDetector(
-                onLongPress: onCopyToClipboard,
-                child: SizedBox.expand(
-                  child: RepaintBoundary(
-                    child: ColoredBox(
-                      color: Colors.black,
-                      child: Opacity(
-                        opacity: opacity,
-                        child: Image.memory(
-                          bytesToDisplay,
-                          key: const ValueKey('stable_frame'),
-                          fit: BoxFit.cover,
-                          gaplessPlayback: true,
-                          excludeFromSemantics: true,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Text(
-                                'Frame error',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            );
-                          },
+                  onLongPress: onCopyToClipboard,
+                  child: SizedBox.expand(
+                    child: RepaintBoundary(
+                      child: ColoredBox(
+                        color: Colors.black,
+                        child: Opacity(
+                          opacity: opacity,
+                          child: Image.memory(
+                            bytesToDisplay,
+                            key: const ValueKey('stable_frame'),
+                            fit: BoxFit.cover,
+                            gaplessPlayback: true,
+                            excludeFromSemantics: true,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Text(
+                                  'Frame error',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
               );
             } else {
               return const ColoredBox(color: Colors.black);
@@ -255,8 +250,26 @@ class FloatingVideoContent extends StatelessWidget {
               builder: (context, cubitState) {
                 final videoState = cubitState.maybeWhen(
                   synchronized:
-                      (_, _, _, _, _, _, _, _, _, _, _, _, _, videoStream, _, _, _, _) =>
-                          videoStream,
+                      (
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        _,
+                        videoStream,
+                        _,
+                        _,
+                        _,
+                        _,
+                      ) => videoStream,
                   orElse: () => null,
                 );
 

@@ -35,69 +35,74 @@ void main() {
   });
 
   group('Rate limit retry', () {
-    test('single 429 then success yields rate limited event then result',
-        () async {
-      var callCount = 0;
-      when(
-        () => provider.sendMessages(
-          messages: any(named: 'messages'),
-          tools: any(named: 'tools'),
-          systemPrompt: any(named: 'systemPrompt'),
-        ),
-      ).thenAnswer((_) async {
-        callCount++;
-        if (callCount == 1) {
-          throw LlmApiException(
+    test(
+      'single 429 then success yields rate limited event then result',
+      () async {
+        var callCount = 0;
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            throw LlmApiException(
+              'Rate limit exceeded',
+              statusCode: 429,
+              retryAfterSeconds: 0,
+            );
+          }
+          return const LlmResponse(
+            content: 'Hello!',
+            isComplete: true,
+            usage: LlmUsage(inputTokens: 10, outputTokens: 5),
+          );
+        });
+
+        final events = await chatService.runAgenticLoop([
+          LlmMessage.user('Hi'),
+        ]).toList();
+
+        final types = events.map((e) => e.runtimeType).toList();
+        expect(types, contains(ChatLoopRateLimited));
+        expect(types, contains(ChatLoopAssistantMessage));
+        expect(types, isNot(contains(ChatLoopError)));
+      },
+    );
+
+    test(
+      'all retries exhausted yields rate limited events then error',
+      () async {
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenThrow(
+          LlmApiException(
             'Rate limit exceeded',
             statusCode: 429,
             retryAfterSeconds: 0,
-          );
-        }
-        return const LlmResponse(
-          content: 'Hello!',
-          isComplete: true,
-          usage: LlmUsage(inputTokens: 10, outputTokens: 5),
+          ),
         );
-      });
 
-      final events = await chatService
-          .runAgenticLoop([LlmMessage.user('Hi')])
-          .toList();
+        final events = await chatService.runAgenticLoop([
+          LlmMessage.user('Hi'),
+        ]).toList();
 
-      final types = events.map((e) => e.runtimeType).toList();
-      expect(types, contains(ChatLoopRateLimited));
-      expect(types, contains(ChatLoopAssistantMessage));
-      expect(types, isNot(contains(ChatLoopError)));
-    });
+        final rateLimitEvents = events
+            .whereType<ChatLoopRateLimited>()
+            .toList();
+        final errorEvents = events.whereType<ChatLoopError>().toList();
 
-    test('all retries exhausted yields rate limited events then error',
-        () async {
-      when(
-        () => provider.sendMessages(
-          messages: any(named: 'messages'),
-          tools: any(named: 'tools'),
-          systemPrompt: any(named: 'systemPrompt'),
-        ),
-      ).thenThrow(
-        LlmApiException(
-          'Rate limit exceeded',
-          statusCode: 429,
-          retryAfterSeconds: 0,
-        ),
-      );
-
-      final events = await chatService
-          .runAgenticLoop([LlmMessage.user('Hi')])
-          .toList();
-
-      final rateLimitEvents =
-          events.whereType<ChatLoopRateLimited>().toList();
-      final errorEvents = events.whereType<ChatLoopError>().toList();
-
-      expect(rateLimitEvents.length, 4);
-      expect(errorEvents.length, 1);
-      expect(errorEvents.first.message, contains('Rate limited'));
-    });
+        expect(rateLimitEvents.length, 4);
+        expect(errorEvents.length, 1);
+        expect(errorEvents.first.message, contains('Rate limited'));
+      },
+    );
 
     test('retry-after header value is used for wait time', () {
       fakeAsync((clock) {
@@ -125,14 +130,11 @@ void main() {
         });
 
         final events = <ChatLoopEvent>[];
-        chatService
-            .runAgenticLoop([LlmMessage.user('Hi')])
-            .listen(events.add);
+        chatService.runAgenticLoop([LlmMessage.user('Hi')]).listen(events.add);
 
         clock.elapse(const Duration(seconds: 10));
 
-        final rateLimitEvent =
-            events.whereType<ChatLoopRateLimited>().first;
+        final rateLimitEvent = events.whereType<ChatLoopRateLimited>().first;
         expect(rateLimitEvent.waitSeconds, 7);
       });
     });
@@ -144,16 +146,13 @@ void main() {
           tools: any(named: 'tools'),
           systemPrompt: any(named: 'systemPrompt'),
         ),
-      ).thenThrow(
-        LlmApiException('Server error', statusCode: 500),
-      );
+      ).thenThrow(LlmApiException('Server error', statusCode: 500));
 
-      final events = await chatService
-          .runAgenticLoop([LlmMessage.user('Hi')])
-          .toList();
+      final events = await chatService.runAgenticLoop([
+        LlmMessage.user('Hi'),
+      ]).toList();
 
-      final rateLimitEvents =
-          events.whereType<ChatLoopRateLimited>().toList();
+      final rateLimitEvents = events.whereType<ChatLoopRateLimited>().toList();
       final errorEvents = events.whereType<ChatLoopError>().toList();
 
       expect(rateLimitEvents, isEmpty);
@@ -170,12 +169,11 @@ void main() {
         ),
       ).thenThrow(Exception('Network error'));
 
-      final events = await chatService
-          .runAgenticLoop([LlmMessage.user('Hi')])
-          .toList();
+      final events = await chatService.runAgenticLoop([
+        LlmMessage.user('Hi'),
+      ]).toList();
 
-      final rateLimitEvents =
-          events.whereType<ChatLoopRateLimited>().toList();
+      final rateLimitEvents = events.whereType<ChatLoopRateLimited>().toList();
       final errorEvents = events.whereType<ChatLoopError>().toList();
 
       expect(rateLimitEvents, isEmpty);
@@ -208,14 +206,11 @@ void main() {
         });
 
         final events = <ChatLoopEvent>[];
-        chatService
-            .runAgenticLoop([LlmMessage.user('Hi')])
-            .listen(events.add);
+        chatService.runAgenticLoop([LlmMessage.user('Hi')]).listen(events.add);
 
         clock.elapse(const Duration(seconds: 35));
 
-        final rateLimitEvent =
-            events.whereType<ChatLoopRateLimited>().first;
+        final rateLimitEvent = events.whereType<ChatLoopRateLimited>().first;
         expect(rateLimitEvent.waitSeconds, 30);
       });
     });

@@ -38,8 +38,9 @@ class ChatReady extends ChatState {
     return ChatReady(
       messages: messages ?? this.messages,
       isProcessing: isProcessing ?? this.isProcessing,
-      currentToolName:
-          clearToolName ? null : (currentToolName ?? this.currentToolName),
+      currentToolName: clearToolName
+          ? null
+          : (currentToolName ?? this.currentToolName),
       totalInputTokens: totalInputTokens ?? this.totalInputTokens,
       totalOutputTokens: totalOutputTokens ?? this.totalOutputTokens,
     );
@@ -47,12 +48,12 @@ class ChatReady extends ChatState {
 
   @override
   List<Object?> get props => [
-        messages,
-        isProcessing,
-        currentToolName,
-        totalInputTokens,
-        totalOutputTokens,
-      ];
+    messages,
+    isProcessing,
+    currentToolName,
+    totalInputTokens,
+    totalOutputTokens,
+  ];
 }
 
 class ChatError extends ChatState {

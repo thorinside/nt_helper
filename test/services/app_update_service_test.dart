@@ -110,9 +110,7 @@ void main() {
     test('returns null on HTTP error', () async {
       when(
         () => mockClient.get(any(), headers: any(named: 'headers')),
-      ).thenAnswer(
-        (_) async => http.Response('Not Found', 404),
-      );
+      ).thenAnswer((_) async => http.Response('Not Found', 404));
 
       final result = await service.checkForUpdate();
       expect(result, isNull);
@@ -130,9 +128,7 @@ void main() {
     test('returns release when update is available', () async {
       when(
         () => mockClient.get(any(), headers: any(named: 'headers')),
-      ).thenAnswer(
-        (_) async => http.Response(jsonEncode(_sampleRelease), 200),
-      );
+      ).thenAnswer((_) async => http.Response(jsonEncode(_sampleRelease), 200));
 
       final result = await service.checkForUpdate();
       expect(result, isNotNull);
@@ -147,9 +143,7 @@ void main() {
 
       when(
         () => mockClient.get(any(), headers: any(named: 'headers')),
-      ).thenAnswer(
-        (_) async => http.Response(jsonEncode(_sampleRelease), 200),
-      );
+      ).thenAnswer((_) async => http.Response(jsonEncode(_sampleRelease), 200));
 
       final result = await upToDateService.checkForUpdate();
       expect(result, isNull);
@@ -158,9 +152,7 @@ void main() {
     test('caches result for subsequent calls', () async {
       when(
         () => mockClient.get(any(), headers: any(named: 'headers')),
-      ).thenAnswer(
-        (_) async => http.Response(jsonEncode(_sampleRelease), 200),
-      );
+      ).thenAnswer((_) async => http.Response(jsonEncode(_sampleRelease), 200));
 
       // First call hits API
       await service.checkForUpdate();
@@ -175,9 +167,7 @@ void main() {
     test('forceRefresh bypasses cache', () async {
       when(
         () => mockClient.get(any(), headers: any(named: 'headers')),
-      ).thenAnswer(
-        (_) async => http.Response(jsonEncode(_sampleRelease), 200),
-      );
+      ).thenAnswer((_) async => http.Response(jsonEncode(_sampleRelease), 200));
 
       await service.checkForUpdate();
       await service.checkForUpdate(forceRefresh: true);

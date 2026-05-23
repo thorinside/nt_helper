@@ -216,7 +216,9 @@ void main() {
 
     test('evicts oldest checkpoint when over limit', () {
       final state = makeSyncState(
-        slots: [makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
+        slots: [
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
+        ],
       );
       cubit.emit(state);
 
@@ -233,7 +235,9 @@ void main() {
 
     test('clearCheckpoints removes all', () {
       final state = makeSyncState(
-        slots: [makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
+        slots: [
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
+        ],
       );
       cubit.emit(state);
 
@@ -247,7 +251,9 @@ void main() {
 
     test('removeCheckpoint removes specific checkpoint', () {
       final state = makeSyncState(
-        slots: [makeSlot(index: 0, guid: 'abcd', values: {0: 50})],
+        slots: [
+          makeSlot(index: 0, guid: 'abcd', values: {0: 50}),
+        ],
       );
       cubit.emit(state);
 

@@ -15,7 +15,14 @@ part 'gallery_state.dart';
 /// Pending install request stored for queue processing
 class _PendingInstall {
   final GalleryPlugin plugin;
-  final Function(String, Uint8List, {Function(double)? onProgress, String? galleryPluginId, String? galleryPluginVersion}) distingInstallPlugin;
+  final Function(
+    String,
+    Uint8List, {
+    Function(double)? onProgress,
+    String? galleryPluginId,
+    String? galleryPluginVersion,
+  })
+  distingInstallPlugin;
   final SampleInstallCallback? distingInstallSample;
   final VoidCallback? onComplete;
   final Function(String)? onError;
@@ -255,10 +262,12 @@ class GalleryCubit extends Cubit<GalleryState> {
     final currentState = state;
     if (currentState is! GalleryLoaded) return false;
 
-    return currentState.installStatuses.values.any((s) =>
-        s.phase == PluginInstallPhase.downloading ||
-        s.phase == PluginInstallPhase.extracting ||
-        s.phase == PluginInstallPhase.installing);
+    return currentState.installStatuses.values.any(
+      (s) =>
+          s.phase == PluginInstallPhase.downloading ||
+          s.phase == PluginInstallPhase.extracting ||
+          s.phase == PluginInstallPhase.installing,
+    );
   }
 
   /// Queue a single plugin for installation
@@ -279,13 +288,15 @@ class GalleryCubit extends Cubit<GalleryState> {
     final currentState = state;
     if (currentState is! GalleryLoaded) return;
 
-    _installQueue.add(_PendingInstall(
-      plugin: plugin,
-      distingInstallPlugin: distingInstallPlugin,
-      distingInstallSample: distingInstallSample,
-      onComplete: onComplete,
-      onError: onError,
-    ));
+    _installQueue.add(
+      _PendingInstall(
+        plugin: plugin,
+        distingInstallPlugin: distingInstallPlugin,
+        distingInstallSample: distingInstallSample,
+        onComplete: onComplete,
+        onError: onError,
+      ),
+    );
 
     _updateInstallStatus(
       plugin.id,
@@ -318,14 +329,16 @@ class GalleryCubit extends Cubit<GalleryState> {
       (p) => p.id == pluginId,
     );
 
-    _installQueue.add(_PendingInstall(
-      plugin: plugin,
-      distingInstallPlugin: distingInstallPlugin,
-      distingInstallSample: distingInstallSample,
-      onComplete: onComplete,
-      onError: onError,
-      selectedPlugins: selected,
-    ));
+    _installQueue.add(
+      _PendingInstall(
+        plugin: plugin,
+        distingInstallPlugin: distingInstallPlugin,
+        distingInstallSample: distingInstallSample,
+        onComplete: onComplete,
+        onError: onError,
+        selectedPlugins: selected,
+      ),
+    );
 
     _updateInstallStatus(
       pluginId,
@@ -414,15 +427,19 @@ class GalleryCubit extends Cubit<GalleryState> {
 
       final availablePlugins =
           await PluginMetadataExtractor.extractPluginsFromArchive(
-        archiveBytes,
-        plugin,
-      );
+            archiveBytes,
+            plugin,
+          );
 
       // Select all installable plugins by default
       final pluginsWithSelection = availablePlugins
           .map(
             (p) => p.copyWith(
-              selected: const ['.o', '.lua', '.3pot'].contains('.${p.fileType}'),
+              selected: const [
+                '.o',
+                '.lua',
+                '.3pot',
+              ].contains('.${p.fileType}'),
             ),
           )
           .toList();

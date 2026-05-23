@@ -30,13 +30,13 @@ void main() {
     Set<String> devicePaths,
     AppDatabase db,
   ) async {
-    final dbRecords =
-        await db.pluginInstallationsDao.getAllInstalledPlugins();
+    final dbRecords = await db.pluginInstallationsDao.getAllInstalledPlugins();
 
     for (final record in dbRecords) {
       if (!devicePaths.contains(record.installationPath)) {
-        await db.pluginInstallationsDao
-            .removeByInstallationPath(record.installationPath);
+        await db.pluginInstallationsDao.removeByInstallationPath(
+          record.installationPath,
+        );
       }
     }
   }
@@ -56,8 +56,8 @@ void main() {
       );
 
       // Verify both records exist
-      var records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      var records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(2));
 
       // Simulate device only has 'exists.lua' (deleted.lua was removed)
@@ -97,8 +97,8 @@ void main() {
       await cleanupStaleRecords(devicePaths, database);
 
       // All records should be preserved
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(3));
     });
 
@@ -120,8 +120,8 @@ void main() {
       await cleanupStaleRecords(devicePaths, database);
 
       // All records should be removed
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records, isEmpty);
     });
 
@@ -136,8 +136,8 @@ void main() {
       await cleanupStaleRecords(devicePaths, database);
 
       // Database should still be empty (no records to clean up)
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records, isEmpty);
     });
 
@@ -155,34 +155,38 @@ void main() {
       );
 
       // Remove specific one
-      await database.pluginInstallationsDao
-          .removeByInstallationPath('/programs/lua/remove.lua');
+      await database.pluginInstallationsDao.removeByInstallationPath(
+        '/programs/lua/remove.lua',
+      );
 
       // Only keep.lua should remain
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
+      final records = await database.pluginInstallationsDao
+          .getAllInstalledPlugins();
       expect(records.length, equals(1));
       expect(records[0].installationPath, equals('/programs/lua/keep.lua'));
     });
 
-    test('removeByInstallationPath handles missing record gracefully', () async {
-      // Add a plugin
-      await database.pluginInstallationsDao.recordPluginByPath(
-        installationPath: '/programs/lua/exists.lua',
-        pluginName: 'exists.lua',
-        pluginType: 'lua',
-      );
+    test(
+      'removeByInstallationPath handles missing record gracefully',
+      () async {
+        // Add a plugin
+        await database.pluginInstallationsDao.recordPluginByPath(
+          installationPath: '/programs/lua/exists.lua',
+          pluginName: 'exists.lua',
+          pluginType: 'lua',
+        );
 
-      // Try to remove non-existent path - should not throw
-      final deleted = await database.pluginInstallationsDao
-          .removeByInstallationPath('/programs/lua/nonexistent.lua');
+        // Try to remove non-existent path - should not throw
+        final deleted = await database.pluginInstallationsDao
+            .removeByInstallationPath('/programs/lua/nonexistent.lua');
 
-      expect(deleted, equals(0));
+        expect(deleted, equals(0));
 
-      // Original record should still exist
-      final records =
-          await database.pluginInstallationsDao.getAllInstalledPlugins();
-      expect(records.length, equals(1));
-    });
+        // Original record should still exist
+        final records = await database.pluginInstallationsDao
+            .getAllInstalledPlugins();
+        expect(records.length, equals(1));
+      },
+    );
   });
 }

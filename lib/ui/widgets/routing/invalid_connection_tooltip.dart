@@ -166,29 +166,29 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
     return Semantics(
       label: '$semanticLabel$gainLabel$muteLabel',
       child: MouseRegion(
-      onEnter: (_) => _onHoverEnter(),
-      onExit: (_) => _onHoverExit(),
-      child: Stack(
-        children: [
-          widget.child,
-          if (_isShowingTooltip)
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: _buildTooltipContent(theme),
-                    ),
-                  );
-                },
+        onEnter: (_) => _onHoverEnter(),
+        onExit: (_) => _onHoverExit(),
+        child: Stack(
+          children: [
+            widget.child,
+            if (_isShowingTooltip)
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: _buildTooltipContent(theme),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 

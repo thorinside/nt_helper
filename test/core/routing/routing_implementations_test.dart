@@ -31,7 +31,12 @@ void main() {
 
           // Verify gate ports have correct direct properties
           final gatePorts = inputPorts
-              .where((p) => p.type == PortType.cv && p.name.startsWith('Gate ') && !p.name.contains('CV'))
+              .where(
+                (p) =>
+                    p.type == PortType.cv &&
+                    p.name.startsWith('Gate ') &&
+                    !p.name.contains('CV'),
+              )
               .toList();
           expect(gatePorts, hasLength(3)); // Gates 1, 2, 4
 
@@ -417,7 +422,10 @@ void main() {
             orElse: () =>
                 throw StateError('Hardware input write connection not found'),
           );
-          expect(writeConnection.connectionType, equals(ConnectionType.hardwareOutput));
+          expect(
+            writeConnection.connectionType,
+            equals(ConnectionType.hardwareOutput),
+          );
           expect(writeConnection.busNumber, equals(5));
 
           final readConnection = connections.firstWhere(
@@ -427,7 +435,10 @@ void main() {
             orElse: () =>
                 throw StateError('Hardware input read connection not found'),
           );
-          expect(readConnection.connectionType, equals(ConnectionType.hardwareInput));
+          expect(
+            readConnection.connectionType,
+            equals(ConnectionType.hardwareInput),
+          );
           expect(readConnection.busNumber, equals(5));
         },
       );

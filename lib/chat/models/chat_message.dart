@@ -3,7 +3,15 @@
 // These are distinct from LlmMessage — they represent what the user sees,
 // including tool execution details and thinking indicators.
 
-enum ChatMessageRole { user, assistant, toolCall, toolResult, thinking, system, compaction }
+enum ChatMessageRole {
+  user,
+  assistant,
+  toolCall,
+  toolResult,
+  thinking,
+  system,
+  compaction,
+}
 
 class ChatMessage {
   final String id;
@@ -31,33 +39,32 @@ class ChatMessage {
   bool get hasImage => imageBase64 != null && imageMimeType != null;
 
   factory ChatMessage.user(String content) => ChatMessage(
-        id: _generateId(),
-        role: ChatMessageRole.user,
-        content: content,
-        timestamp: DateTime.now(),
-      );
+    id: _generateId(),
+    role: ChatMessageRole.user,
+    content: content,
+    timestamp: DateTime.now(),
+  );
 
   factory ChatMessage.assistant(String content) => ChatMessage(
-        id: _generateId(),
-        role: ChatMessageRole.assistant,
-        content: content,
-        timestamp: DateTime.now(),
-      );
+    id: _generateId(),
+    role: ChatMessageRole.assistant,
+    content: content,
+    timestamp: DateTime.now(),
+  );
 
   factory ChatMessage.toolCall({
     required String toolName,
     required String toolCallId,
     required Map<String, dynamic> arguments,
-  }) =>
-      ChatMessage(
-        id: _generateId(),
-        role: ChatMessageRole.toolCall,
-        content: 'Calling $toolName...',
-        toolName: toolName,
-        toolCallId: toolCallId,
-        toolArguments: arguments,
-        timestamp: DateTime.now(),
-      );
+  }) => ChatMessage(
+    id: _generateId(),
+    role: ChatMessageRole.toolCall,
+    content: 'Calling $toolName...',
+    toolName: toolName,
+    toolCallId: toolCallId,
+    toolArguments: arguments,
+    timestamp: DateTime.now(),
+  );
 
   factory ChatMessage.toolResult({
     required String toolName,
@@ -65,39 +72,39 @@ class ChatMessage {
     required String result,
     String? imageBase64,
     String? imageMimeType,
-  }) =>
-      ChatMessage(
-        id: _generateId(),
-        role: ChatMessageRole.toolResult,
-        content: result,
-        toolName: toolName,
-        toolCallId: toolCallId,
-        imageBase64: imageBase64,
-        imageMimeType: imageMimeType,
-        timestamp: DateTime.now(),
-      );
+  }) => ChatMessage(
+    id: _generateId(),
+    role: ChatMessageRole.toolResult,
+    content: result,
+    toolName: toolName,
+    toolCallId: toolCallId,
+    imageBase64: imageBase64,
+    imageMimeType: imageMimeType,
+    timestamp: DateTime.now(),
+  );
 
   factory ChatMessage.thinking() => ChatMessage(
-        id: _generateId(),
-        role: ChatMessageRole.thinking,
-        content: 'Thinking...',
-        timestamp: DateTime.now(),
-      );
+    id: _generateId(),
+    role: ChatMessageRole.thinking,
+    content: 'Thinking...',
+    timestamp: DateTime.now(),
+  );
 
   factory ChatMessage.system(String content) => ChatMessage(
-        id: _generateId(),
-        role: ChatMessageRole.system,
-        content: content,
-        timestamp: DateTime.now(),
-      );
+    id: _generateId(),
+    role: ChatMessageRole.system,
+    content: content,
+    timestamp: DateTime.now(),
+  );
 
   factory ChatMessage.compaction() => ChatMessage(
-        id: _generateId(),
-        role: ChatMessageRole.compaction,
-        content: 'Context compacted',
-        timestamp: DateTime.now(),
-      );
+    id: _generateId(),
+    role: ChatMessageRole.compaction,
+    content: 'Context compacted',
+    timestamp: DateTime.now(),
+  );
 
   static int _counter = 0;
-  static String _generateId() => 'msg_${DateTime.now().millisecondsSinceEpoch}_${_counter++}';
+  static String _generateId() =>
+      'msg_${DateTime.now().millisecondsSinceEpoch}_${_counter++}';
 }

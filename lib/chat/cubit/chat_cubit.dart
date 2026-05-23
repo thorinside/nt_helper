@@ -159,10 +159,7 @@ class ChatCubit extends Cubit<ChatState> {
       if (s is ChatReady) {
         emit(
           s.copyWith(
-            messages: [
-              ...s.messages,
-              ChatMessage.assistant('Error: $e'),
-            ],
+            messages: [...s.messages, ChatMessage.assistant('Error: $e')],
             isProcessing: false,
             clearToolName: true,
           ),
@@ -265,11 +262,7 @@ class ChatCubit extends Cubit<ChatState> {
           'This happens when too many requests are made in a short period. '
           'Retrying in $wait seconds...',
         );
-        emit(
-          currentState.copyWith(
-            messages: [...currentState.messages, msg],
-          ),
-        );
+        emit(currentState.copyWith(messages: [...currentState.messages, msg]));
       case ChatLoopError(message: final message):
         _truncateHistoryAfterCancellationPoint();
         final msg = ChatMessage.assistant('Error: $message');

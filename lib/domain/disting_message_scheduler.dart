@@ -108,7 +108,10 @@ class _ResponseDemux {
   static const int _maxExpiredHandlers = 20;
   static const Duration _expiredHandlerMaxAge = Duration(seconds: 30);
 
-  void registerActive(RequestKey key, void Function(DistingNTParsedMessage) onMatch) {
+  void registerActive(
+    RequestKey key,
+    void Function(DistingNTParsedMessage) onMatch,
+  ) {
     _activeHandler = _ActiveHandler(key: key, onMatch: onMatch);
   }
 
@@ -135,8 +138,7 @@ class _ResponseDemux {
     for (final observer in _observers) {
       try {
         observer(parsed);
-      } catch (_) {
-      }
+      } catch (_) {}
     }
 
     // 2. Check active handler first — active request always takes priority
@@ -214,13 +216,13 @@ class _RttStats {
   double get lastMs => last != null ? last!.inMicroseconds / 1000 : 0;
 
   Map<String, dynamic> toJson() => {
-        'count': count,
-        'timeouts': timeouts,
-        'avgMs': avgMs.toStringAsFixed(2),
-        'minMs': minMs.toStringAsFixed(2),
-        'maxMs': maxMs.toStringAsFixed(2),
-        'lastMs': lastMs.toStringAsFixed(2),
-      };
+    'count': count,
+    'timeouts': timeouts,
+    'avgMs': avgMs.toStringAsFixed(2),
+    'minMs': minMs.toStringAsFixed(2),
+    'maxMs': maxMs.toStringAsFixed(2),
+    'lastMs': lastMs.toStringAsFixed(2),
+  };
 }
 
 // -----------------------------------------------------------------------------
@@ -344,7 +346,8 @@ class DistingMessageScheduler {
         : -1;
 
     final avgRttMs = _totalRequestsCompleted > 0
-        ? (_totalRtt.inMicroseconds / _totalRequestsCompleted / 1000).toStringAsFixed(2)
+        ? (_totalRtt.inMicroseconds / _totalRequestsCompleted / 1000)
+              .toStringAsFixed(2)
         : 'N/A';
 
     return {
@@ -360,7 +363,8 @@ class DistingMessageScheduler {
       'currentState': _state.name,
       'queueLength': _queue.length,
       'hasCurrentRequest': _currentRequest != null,
-      'currentRequestCompleted': _currentRequest?.completer.isCompleted ?? false,
+      'currentRequestCompleted':
+          _currentRequest?.completer.isCompleted ?? false,
       // RTT statistics
       'rttRequestsCompleted': _totalRequestsCompleted,
       'rttRequestsTimedOut': _totalRequestsTimedOut,
@@ -707,7 +711,10 @@ class DistingMessageScheduler {
   }
 
   /// Called by the demux when a response matches the active handler.
-  void _onResponseMatched(_ScheduledRequest request, DistingNTParsedMessage parsed) {
+  void _onResponseMatched(
+    _ScheduledRequest request,
+    DistingNTParsedMessage parsed,
+  ) {
     // Guard against race conditions
     if (request.completer.isCompleted) {
       _finishCurrentRequest();
@@ -723,11 +730,7 @@ class DistingMessageScheduler {
     // Record RTT measurement
     request.stopwatch.stop();
     final rtt = request.stopwatch.elapsed;
-    _recordRtt(
-      rtt,
-      parsed.messageType,
-      libraryIndex: request.key.libraryIndex,
-    );
+    _recordRtt(rtt, parsed.messageType, libraryIndex: request.key.libraryIndex);
 
     // Parse and complete the response
     final response = ResponseFactory.fromMessageType(
@@ -826,7 +829,9 @@ class DistingMessageScheduler {
     if (request.attemptCount >= request.maxRetries) {
       _demux.expireActive();
       request.completer.completeError(
-        StateError('Failed to send request after ${request.attemptCount} attempts: $error'),
+        StateError(
+          'Failed to send request after ${request.attemptCount} attempts: $error',
+        ),
       );
       _finishCurrentRequest();
       return;

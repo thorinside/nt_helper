@@ -42,7 +42,8 @@ class ClockAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
       modeParametersWithNumbers: modeParametersWithNumbers,
       algorithmUuid: algorithmUuid,
       debugName: 'ClockAlgorithmRouting',
-      builder: (slot, config) => ClockAlgorithmRouting(slot: slot, config: config),
+      builder: (slot, config) =>
+          ClockAlgorithmRouting(slot: slot, config: config),
     );
   }
 }

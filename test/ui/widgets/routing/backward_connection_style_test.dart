@@ -39,9 +39,7 @@ void main() {
     group('classifyVisualType precedence', () {
       test('backward edge classifies as invalid', () {
         expect(
-          ConnectionPainter.classifyVisualType(
-            _connData(isBackwardEdge: true),
-          ),
+          ConnectionPainter.classifyVisualType(_connData(isBackwardEdge: true)),
           ConnectionVisualType.invalid,
         );
       });
@@ -123,10 +121,7 @@ void main() {
         final rNorm = (r * 255) ~/ a;
         final gNorm = (g * 255) ~/ a;
         final bNorm = (b * 255) ~/ a;
-        return rNorm >= 0xE0 &&
-            gNorm >= 0x60 &&
-            gNorm <= 0xA8 &&
-            bNorm <= 0x20;
+        return rNorm >= 0xE0 && gNorm >= 0x60 && gNorm <= 0xA8 && bNorm <= 0x20;
       }
 
       Future<int> maxOrangeRunOnScanlineFor(
@@ -146,8 +141,9 @@ void main() {
           painter.paint(canvas, const Size(w * 1.0, h * 1.0));
           final picture = recorder.endRecording();
           final image = await picture.toImage(w, h);
-          byteData =
-              (await image.toByteData(format: dart_ui.ImageByteFormat.rawRgba))!;
+          byteData = (await image.toByteData(
+            format: dart_ui.ImageByteFormat.rawRgba,
+          ))!;
         });
 
         final bytes = byteData.buffer.asUint8List();
@@ -159,7 +155,11 @@ void main() {
           for (int x = 0; x < w; x++) {
             final i = (y * w + x) * 4;
             if (isOrangeIsh(
-                bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3])) {
+              bytes[i],
+              bytes[i + 1],
+              bytes[i + 2],
+              bytes[i + 3],
+            )) {
               currentRun++;
               if (currentRun > maxRun) maxRun = currentRun;
             } else {
@@ -171,36 +171,37 @@ void main() {
       }
 
       ConnectionData horizontalBackwardEdge() => ConnectionData(
-            connection: Connection(
-              id: 'be_h',
-              sourcePortId: 'src',
-              destinationPortId: 'dst',
-              connectionType: ConnectionType.algorithmToAlgorithm,
-              isBackwardEdge: true,
-            ),
-            sourcePosition: const Offset(20, yScan),
-            destinationPosition: const Offset(180, yScan),
-          );
+        connection: Connection(
+          id: 'be_h',
+          sourcePortId: 'src',
+          destinationPortId: 'dst',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+          isBackwardEdge: true,
+        ),
+        sourcePosition: const Offset(20, yScan),
+        destinationPosition: const Offset(180, yScan),
+      );
 
       testWidgets(
-          'backward edge renders as round dots (max horizontal run ≤ 4 px)',
-          (tester) async {
-        final conn = horizontalBackwardEdge();
-        final maxRun = await maxOrangeRunOnScanlineFor(conn, tester);
-        expect(
-          maxRun,
-          greaterThan(0),
-          reason:
-              'expected to find orange pixels on the rendered backward edge',
-        );
-        expect(
-          maxRun,
-          lessThanOrEqualTo(4),
-          reason:
-              'a dotted stroke should yield short orange runs (~2-3 px), '
-              'not 8 px dashes',
-        );
-      });
+        'backward edge renders as round dots (max horizontal run ≤ 4 px)',
+        (tester) async {
+          final conn = horizontalBackwardEdge();
+          final maxRun = await maxOrangeRunOnScanlineFor(conn, tester);
+          expect(
+            maxRun,
+            greaterThan(0),
+            reason:
+                'expected to find orange pixels on the rendered backward edge',
+          );
+          expect(
+            maxRun,
+            lessThanOrEqualTo(4),
+            reason:
+                'a dotted stroke should yield short orange runs (~2-3 px), '
+                'not 8 px dashes',
+          );
+        },
+      );
 
       Future<Uint8List> renderToBytes(
         ConnectionData conn,
@@ -219,8 +220,9 @@ void main() {
           painter.paint(canvas, const Size(w * 1.0, h * 1.0));
           final picture = recorder.endRecording();
           final image = await picture.toImage(w, h);
-          byteData =
-              (await image.toByteData(format: dart_ui.ImageByteFormat.rawRgba))!;
+          byteData = (await image.toByteData(
+            format: dart_ui.ImageByteFormat.rawRgba,
+          ))!;
         });
         return byteData.buffer.asUint8List();
       }
@@ -251,43 +253,42 @@ void main() {
         return false;
       }
 
-      testWidgets(
-        'backward edge does not draw port-color endpoint circles',
-        (tester) async {
-          // Use a port id that maps to the audio accessible port color
-          // (a blue, non-orange color); a 3px-radius endpoint circle in
-          // that color would be the only thing visible at the source/dest
-          // endpoint area when endpoints are drawn.
-          final conn = ConnectionData(
-            connection: Connection(
-              id: 'be_audio',
-              sourcePortId: 'algA_audio_out_1',
-              destinationPortId: 'algB_audio_in_1',
-              connectionType: ConnectionType.algorithmToAlgorithm,
-              isBackwardEdge: true,
-            ),
-            sourcePosition: const Offset(20, yScan),
-            destinationPosition: const Offset(180, yScan),
-          );
+      testWidgets('backward edge does not draw port-color endpoint circles', (
+        tester,
+      ) async {
+        // Use a port id that maps to the audio accessible port color
+        // (a blue, non-orange color); a 3px-radius endpoint circle in
+        // that color would be the only thing visible at the source/dest
+        // endpoint area when endpoints are drawn.
+        final conn = ConnectionData(
+          connection: Connection(
+            id: 'be_audio',
+            sourcePortId: 'algA_audio_out_1',
+            destinationPortId: 'algB_audio_in_1',
+            connectionType: ConnectionType.algorithmToAlgorithm,
+            isBackwardEdge: true,
+          ),
+          sourcePosition: const Offset(20, yScan),
+          destinationPosition: const Offset(180, yScan),
+        );
 
-          final bytes = await renderToBytes(conn, tester);
-          expect(
-            hasOpaqueNonOrange(bytes, const Offset(20, yScan)),
-            isFalse,
-            reason:
-                'an opaque non-orange pixel near the source endpoint means '
-                'the port-color endpoint circle was drawn — backward edges '
-                'must not draw endpoint circles',
-          );
-          expect(
-            hasOpaqueNonOrange(bytes, const Offset(180, yScan)),
-            isFalse,
-            reason:
-                'an opaque non-orange pixel near the destination endpoint '
-                'means the port-color endpoint circle was drawn',
-          );
-        },
-      );
+        final bytes = await renderToBytes(conn, tester);
+        expect(
+          hasOpaqueNonOrange(bytes, const Offset(20, yScan)),
+          isFalse,
+          reason:
+              'an opaque non-orange pixel near the source endpoint means '
+              'the port-color endpoint circle was drawn — backward edges '
+              'must not draw endpoint circles',
+        );
+        expect(
+          hasOpaqueNonOrange(bytes, const Offset(180, yScan)),
+          isFalse,
+          reason:
+              'an opaque non-orange pixel near the destination endpoint '
+              'means the port-color endpoint circle was drawn',
+        );
+      });
     });
   });
 }

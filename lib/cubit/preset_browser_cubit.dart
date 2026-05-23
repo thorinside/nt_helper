@@ -86,8 +86,9 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       );
 
       // Load the target directory to verify it exists
-      final targetListing =
-          await midiManager.requestDirectoryListing(targetPath);
+      final targetListing = await midiManager.requestDirectoryListing(
+        targetPath,
+      );
       if (targetListing == null) return;
 
       final targetEntries = _sortEntries(
@@ -99,8 +100,10 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       _directoryCache[targetPath] = targetEntries;
 
       // Parse path segments to rebuild panel hierarchy
-      final segments =
-          targetPath.split('/').where((s) => s.isNotEmpty).toList();
+      final segments = targetPath
+          .split('/')
+          .where((s) => s.isNotEmpty)
+          .toList();
 
       // Determine panel layout based on depth
       String currentPath;
@@ -111,17 +114,16 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
       if (segments.length >= 2) {
         // Deep path: grandparent = currentPath, parent = left, target = center
-        currentPath =
-            '/${segments.take(segments.length - 2).join('/')}';
+        currentPath = '/${segments.take(segments.length - 2).join('/')}';
         final parentName = segments[segments.length - 2];
         final targetName = segments.last;
 
-        final parentPath =
-            '/${segments.take(segments.length - 1).join('/')}';
+        final parentPath = '/${segments.take(segments.length - 1).join('/')}';
 
         // Load currentPath (grandparent) for left panel
-        final leftListing =
-            await midiManager.requestDirectoryListing(currentPath);
+        final leftListing = await midiManager.requestDirectoryListing(
+          currentPath,
+        );
         if (leftListing == null) return;
         leftItems = _sortEntries(
           leftListing.entries,
@@ -132,8 +134,9 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
         _directoryCache[currentPath] = leftItems;
 
         // Load parent directory for center panel
-        final centerListing =
-            await midiManager.requestDirectoryListing(parentPath);
+        final centerListing = await midiManager.requestDirectoryListing(
+          parentPath,
+        );
         centerItems = centerListing != null
             ? _sortEntries(
                 centerListing.entries,
@@ -533,7 +536,9 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       }
     }
 
-    throw Exception('$description failed after ${stopwatch.elapsed.inSeconds}s: $lastError');
+    throw Exception(
+      '$description failed after ${stopwatch.elapsed.inSeconds}s: $lastError',
+    );
   }
 
   Future<void> deleteEntry(String fullPath) async {
@@ -598,8 +603,9 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
     while (uploadPos < data.length) {
       final remainingBytes = data.length - uploadPos;
-      final currentChunkSize =
-          remainingBytes < chunkSize ? remainingBytes : chunkSize;
+      final currentChunkSize = remainingBytes < chunkSize
+          ? remainingBytes
+          : chunkSize;
       final chunk = data.sublist(uploadPos, uploadPos + currentChunkSize);
 
       await _retryOperation(() async {
@@ -732,14 +738,11 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
         // Fetch fresh listing with retry
         final DirectoryListing listing;
         try {
-          listing = await _retryOperation(
-            () async {
-              final result = await midiManager.requestDirectoryListing(dirPath);
-              if (result == null) throw Exception('No response');
-              return result;
-            },
-            'List directory $dirPath',
-          );
+          listing = await _retryOperation(() async {
+            final result = await midiManager.requestDirectoryListing(dirPath);
+            if (result == null) throw Exception('No response');
+            return result;
+          }, 'List directory $dirPath');
         } catch (_) {
           // If all retries fail, leave current state unchanged
           return;
@@ -748,8 +751,7 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
           listing.entries,
           currentState.sortByDate,
           currentPath: dirPath,
-          addParentEntry: dirPath != '/' &&
-              dirPath == currentState.currentPath,
+          addParentEntry: dirPath != '/' && dirPath == currentState.currentPath,
         );
         _directoryCache[dirPath] = entries;
 
@@ -777,60 +779,79 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
         if (dirPath == leftPath) {
           // Refresh left panel; clear center/right if selected items no longer exist
-          final leftStillExists = currentState.selectedLeftItem != null &&
+          final leftStillExists =
+              currentState.selectedLeftItem != null &&
               entries.any((e) => e.name == currentState.selectedLeftItem!.name);
 
-          emit(currentState.copyWith(
-            leftPanelItems: entries,
-            selectedLeftItem: leftStillExists
-                ? currentState.selectedLeftItem
-                : null,
-            centerPanelItems:
-                leftStillExists ? currentState.centerPanelItems : const [],
-            rightPanelItems:
-                leftStillExists ? currentState.rightPanelItems : const [],
-            selectedCenterItem:
-                leftStillExists ? currentState.selectedCenterItem : null,
-            selectedRightItem:
-                leftStillExists ? currentState.selectedRightItem : null,
-            // Also refresh mobile drill-down if viewing same dir
-            currentDrillItems:
-                (currentState.drillPath ?? currentState.currentPath) == dirPath
-                    ? entries
-                    : currentState.currentDrillItems,
-            selectedDrillItem:
-                (currentState.drillPath ?? currentState.currentPath) == dirPath
-                    ? null
-                    : currentState.selectedDrillItem,
-          ));
+          emit(
+            currentState.copyWith(
+              leftPanelItems: entries,
+              selectedLeftItem: leftStillExists
+                  ? currentState.selectedLeftItem
+                  : null,
+              centerPanelItems: leftStillExists
+                  ? currentState.centerPanelItems
+                  : const [],
+              rightPanelItems: leftStillExists
+                  ? currentState.rightPanelItems
+                  : const [],
+              selectedCenterItem: leftStillExists
+                  ? currentState.selectedCenterItem
+                  : null,
+              selectedRightItem: leftStillExists
+                  ? currentState.selectedRightItem
+                  : null,
+              // Also refresh mobile drill-down if viewing same dir
+              currentDrillItems:
+                  (currentState.drillPath ?? currentState.currentPath) ==
+                      dirPath
+                  ? entries
+                  : currentState.currentDrillItems,
+              selectedDrillItem:
+                  (currentState.drillPath ?? currentState.currentPath) ==
+                      dirPath
+                  ? null
+                  : currentState.selectedDrillItem,
+            ),
+          );
         } else if (dirPath == centerPath) {
           final centerStillExists =
               currentState.selectedCenterItem != null &&
-                  entries.any(
-                      (e) => e.name == currentState.selectedCenterItem!.name);
+              entries.any(
+                (e) => e.name == currentState.selectedCenterItem!.name,
+              );
 
-          emit(currentState.copyWith(
-            centerPanelItems: entries,
-            selectedCenterItem:
-                centerStillExists ? currentState.selectedCenterItem : null,
-            rightPanelItems:
-                centerStillExists ? currentState.rightPanelItems : const [],
-            selectedRightItem:
-                centerStillExists ? currentState.selectedRightItem : null,
-          ));
+          emit(
+            currentState.copyWith(
+              centerPanelItems: entries,
+              selectedCenterItem: centerStillExists
+                  ? currentState.selectedCenterItem
+                  : null,
+              rightPanelItems: centerStillExists
+                  ? currentState.rightPanelItems
+                  : const [],
+              selectedRightItem: centerStillExists
+                  ? currentState.selectedRightItem
+                  : null,
+            ),
+          );
         } else if (dirPath == rightPath) {
-          emit(currentState.copyWith(
-            rightPanelItems: entries,
-            selectedRightItem: null,
-          ));
+          emit(
+            currentState.copyWith(
+              rightPanelItems: entries,
+              selectedRightItem: null,
+            ),
+          );
         } else {
           // dirPath is the mobile drill path or doesn't match any panel —
           // refresh mobile view and left panel as fallback
           if ((currentState.drillPath ?? currentState.currentPath) == dirPath) {
-            emit(currentState.copyWith(
-              currentDrillItems: entries,
-              selectedDrillItem: null,
-            ));
+            emit(
+              currentState.copyWith(
+                currentDrillItems: entries,
+                selectedDrillItem: null,
+              ),
+            );
           }
         }
       },
@@ -1004,24 +1025,15 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
             if (currentState.selectedRightItem != null &&
                 !currentState.selectedRightItem!.isDirectory) {
-              return _joinPath(
-                centerDir,
-                currentState.selectedRightItem!.name,
-              );
+              return _joinPath(centerDir, currentState.selectedRightItem!.name);
             }
           } else if (currentState.selectedCenterItem != null &&
               !currentState.selectedCenterItem!.isDirectory) {
-            return _joinPath(
-              leftDir,
-              currentState.selectedCenterItem!.name,
-            );
+            return _joinPath(leftDir, currentState.selectedCenterItem!.name);
           }
         } else if (currentState.selectedLeftItem != null &&
             !currentState.selectedLeftItem!.isDirectory) {
-          return _joinPath(
-            currentPath,
-            currentState.selectedLeftItem!.name,
-          );
+          return _joinPath(currentPath, currentState.selectedLeftItem!.name);
         }
 
         return '';

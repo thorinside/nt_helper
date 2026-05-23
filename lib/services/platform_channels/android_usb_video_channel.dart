@@ -72,7 +72,9 @@ class AndroidUsbVideoChannel {
               device.name, // UvcCameraDevice doesn't have productName, use name
           vendorId: device.vendorId,
           productId: device.productId,
-          isDistingNT: device.vendorId == 0x3773, // Expert Sleepers vendor ID (14195 decimal)
+          isDistingNT:
+              device.vendorId ==
+              0x3773, // Expert Sleepers vendor ID (14195 decimal)
         );
       }).toList();
     } catch (e, stack) {
@@ -109,7 +111,9 @@ class AndroidUsbVideoChannel {
 
     // If we already have a camera open for this device, just return the stream
     if (_cameraId != null && _currentDevice?.name == deviceId) {
-      _debugLog('Camera already open for device (cameraId: $_cameraId), reusing stream');
+      _debugLog(
+        'Camera already open for device (cameraId: $_cameraId), reusing stream',
+      );
       if (_frameStreamController == null || _frameStreamController!.isClosed) {
         _frameStreamController = StreamController<Uint8List>.broadcast();
       }
@@ -117,18 +121,21 @@ class AndroidUsbVideoChannel {
     }
 
     // Clean up any existing stream (async, with timeout)
-    _stopCurrentStream().timeout(
-      const Duration(seconds: 2),
-      onTimeout: () {
-        _debugLog('Stop stream timed out, proceeding anyway');
-      },
-    ).then((_) {
-      // Start the connection process after cleanup
-      _connectToDevice(deviceId);
-    }).catchError((error) {
-      _debugLog('ERROR during stream cleanup: $error, proceeding anyway');
-      _connectToDevice(deviceId);
-    });
+    _stopCurrentStream()
+        .timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {
+            _debugLog('Stop stream timed out, proceeding anyway');
+          },
+        )
+        .then((_) {
+          // Start the connection process after cleanup
+          _connectToDevice(deviceId);
+        })
+        .catchError((error) {
+          _debugLog('ERROR during stream cleanup: $error, proceeding anyway');
+          _connectToDevice(deviceId);
+        });
 
     // Create a new stream controller
     _frameStreamController = StreamController<Uint8List>.broadcast();
@@ -223,7 +230,9 @@ class AndroidUsbVideoChannel {
       } else if (_isOpeningCamera) {
         _debugLog('Permission granted but camera is already being opened');
       } else {
-        _debugLog('Permission granted but camera already open (cameraId: $_cameraId)');
+        _debugLog(
+          'Permission granted but camera already open (cameraId: $_cameraId)',
+        );
       }
     } catch (e, stack) {
       _debugLog('ERROR connecting to device: $e');
@@ -243,40 +252,39 @@ class AndroidUsbVideoChannel {
     }
 
     try {
-      _debugLog(
-        'Starting frame capture with cameraId: $_cameraId',
-      );
+      _debugLog('Starting frame capture with cameraId: $_cameraId');
 
       // Call UvcCamera Dart API to start frame streaming
-      await UvcCamera.startFrameStreaming(_cameraId!, 5); // 5 = NV21 pixel format
+      await UvcCamera.startFrameStreaming(
+        _cameraId!,
+        5,
+      ); // 5 = NV21 pixel format
 
       // Subscribe to uvccamera's NV21 frame stream and convert to BMP
-      _frameSubscription = uvccameraFrameChannel.receiveBroadcastStream().listen(
-        (data) async {
-          if (data is Uint8List) {
-            try {
-              // Convert NV21 to BMP using native method
-              final bmpData = await methodChannel.invokeMethod<Uint8List>(
-                'convertNV21ToBMP',
-                {
-                  'nv21Data': data,
-                  'width': 256,
-                  'height': 64,
-                },
-              );
+      _frameSubscription = uvccameraFrameChannel
+          .receiveBroadcastStream()
+          .listen(
+            (data) async {
+              if (data is Uint8List) {
+                try {
+                  // Convert NV21 to BMP using native method
+                  final bmpData = await methodChannel.invokeMethod<Uint8List>(
+                    'convertNV21ToBMP',
+                    {'nv21Data': data, 'width': 256, 'height': 64},
+                  );
 
-              if (bmpData != null) {
-                _frameStreamController?.add(bmpData);
+                  if (bmpData != null) {
+                    _frameStreamController?.add(bmpData);
+                  }
+                } catch (e) {
+                  _debugLog('Frame conversion error: $e');
+                }
               }
-            } catch (e) {
-              _debugLog('Frame conversion error: $e');
-            }
-          }
-        },
-        onError: (error) {
-          _debugLog('Frame stream error: $error');
-        },
-      );
+            },
+            onError: (error) {
+              _debugLog('Frame stream error: $error');
+            },
+          );
 
       _debugLog('Frame capture started successfully');
     } catch (e) {
@@ -299,19 +307,26 @@ class AndroidUsbVideoChannel {
         // This event fires on first permission grant (when dialog is shown)
         // We handle opening in _connectToDevice after requestDevicePermission, but this
         // serves as a fallback in case the permission was granted another way
-        if (event.device.name == _currentDevice?.name && _cameraId == null && !_isOpeningCamera) {
+        if (event.device.name == _currentDevice?.name &&
+            _cameraId == null &&
+            !_isOpeningCamera) {
           _debugLog('Opening camera from connected event (fallback path)');
           _isOpeningCamera = true;
-          _createAndInitializeController(event.device).then((_) {
-            _isOpeningCamera = false;
-          }).catchError((error) {
-            _isOpeningCamera = false;
-            _debugLog('ERROR in connected event handler: $error');
-          });
-        } else if (event.device.name == _currentDevice?.name && _isOpeningCamera) {
+          _createAndInitializeController(event.device)
+              .then((_) {
+                _isOpeningCamera = false;
+              })
+              .catchError((error) {
+                _isOpeningCamera = false;
+                _debugLog('ERROR in connected event handler: $error');
+              });
+        } else if (event.device.name == _currentDevice?.name &&
+            _isOpeningCamera) {
           _debugLog('Camera is already being opened, ignoring connected event');
         } else if (event.device.name == _currentDevice?.name) {
-          _debugLog('Camera already open (cameraId: $_cameraId), ignoring connected event');
+          _debugLog(
+            'Camera already open (cameraId: $_cameraId), ignoring connected event',
+          );
         }
         break;
 
@@ -347,7 +362,8 @@ class AndroidUsbVideoChannel {
       try {
         final result = await uvccameraChannel.invokeMethod('openCamera', {
           'deviceName': device.name,
-          'resolutionPreset': 'low', // Preset doesn't matter, fork uses first available size
+          'resolutionPreset':
+              'low', // Preset doesn't matter, fork uses first available size
         });
 
         _cameraId = result as int;
@@ -355,7 +371,9 @@ class AndroidUsbVideoChannel {
         _debugLog('Camera opened successfully with ID: $_cameraId');
       } catch (openError) {
         _debugLog('ERROR opening camera: $openError');
-        _debugLog('Device info: ${device.name}, VID: ${device.vendorId}, PID: ${device.productId}');
+        _debugLog(
+          'Device info: ${device.name}, VID: ${device.vendorId}, PID: ${device.productId}',
+        );
 
         throw Exception('Camera open failed: $openError');
       }
@@ -434,22 +452,24 @@ class AndroidUsbVideoChannel {
       // Close camera if open
       try {
         const uvccameraChannel = MethodChannel('uvccamera/native');
-        await uvccameraChannel.invokeMethod('closeCamera', {
-          'cameraId': _cameraId,
-        }).timeout(
-          const Duration(seconds: 1),
-          onTimeout: () {
-            _debugLog('WARNING: closeCamera timed out');
-            return null;
-          },
-        );
+        await uvccameraChannel
+            .invokeMethod('closeCamera', {'cameraId': _cameraId})
+            .timeout(
+              const Duration(seconds: 1),
+              onTimeout: () {
+                _debugLog('WARNING: closeCamera timed out');
+                return null;
+              },
+            );
         _debugLog('Camera closed: $_cameraId');
       } catch (e) {
         _debugLog('ERROR closing camera: $e');
       }
       _cameraId = null;
     } else if (_cameraId != null) {
-      _debugLog('Camera not initialized, skipping stop/close (_cameraId: $_cameraId)');
+      _debugLog(
+        'Camera not initialized, skipping stop/close (_cameraId: $_cameraId)',
+      );
       _cameraId = null;
     } else {
       _debugLog('No camera to stop/close');

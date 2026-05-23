@@ -81,10 +81,43 @@ class AlgorithmTextSearchIndex {
   };
 
   static const Set<String> _stopWords = {
-    'a', 'an', 'the', 'is', 'it', 'in', 'on', 'of', 'to', 'for',
-    'and', 'or', 'but', 'not', 'with', 'from', 'by', 'at', 'as',
-    'this', 'that', 'be', 'are', 'was', 'were', 'been', 'has', 'have',
-    'had', 'do', 'does', 'did', 'will', 'can', 'may', 'which', 'its',
+    'a',
+    'an',
+    'the',
+    'is',
+    'it',
+    'in',
+    'on',
+    'of',
+    'to',
+    'for',
+    'and',
+    'or',
+    'but',
+    'not',
+    'with',
+    'from',
+    'by',
+    'at',
+    'as',
+    'this',
+    'that',
+    'be',
+    'are',
+    'was',
+    'were',
+    'been',
+    'has',
+    'have',
+    'had',
+    'do',
+    'does',
+    'did',
+    'will',
+    'can',
+    'may',
+    'which',
+    'its',
   };
 
   // term -> (guid -> _TermInfo)
@@ -183,7 +216,9 @@ class AlgorithmTextSearchIndex {
         final fieldWeight = info.maxFieldWeight;
 
         final numerator = tf * (_k1 + 1);
-        final denominator = tf + _k1 * (1 - _b + _b * dl / (_avgDocLength == 0 ? 1 : _avgDocLength));
+        final denominator =
+            tf +
+            _k1 * (1 - _b + _b * dl / (_avgDocLength == 0 ? 1 : _avgDocLength));
         final bm25 = idf * (numerator / denominator) * fieldWeight * termWeight;
 
         scores[guid] = (scores[guid] ?? 0.0) + bm25;

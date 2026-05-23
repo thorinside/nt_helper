@@ -56,16 +56,13 @@ void main() {
       expect(deps.hasCommunityPlugins, true);
     });
 
-    test(
-      'hasCommunityPlugins returns false when both are empty',
-      () {
-        // Arrange
-        final deps = PresetDependencies();
+    test('hasCommunityPlugins returns false when both are empty', () {
+      // Arrange
+      final deps = PresetDependencies();
 
-        // Act & Assert
-        expect(deps.hasCommunityPlugins, false);
-      },
-    );
+      // Act & Assert
+      expect(deps.hasCommunityPlugins, false);
+    });
 
     test('pluginPaths does not affect totalCount', () {
       // Arrange
@@ -81,10 +78,7 @@ void main() {
     test('addAll works with pluginPaths', () {
       // Arrange
       final deps = PresetDependencies();
-      final paths = {
-        'PLUGIN_A': 'path/a.elf',
-        'PLUGIN_B': 'path/b.elf',
-      };
+      final paths = {'PLUGIN_A': 'path/a.elf', 'PLUGIN_B': 'path/b.elf'};
 
       // Act
       deps.pluginPaths.addAll(paths);

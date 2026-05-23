@@ -12,7 +12,9 @@ class _StateHelpersDelegate {
       final List<AlgorithmInfo> availableAlgorithmsInfo = [];
 
       final detailedFutures = allBasicAlgoEntries.map((basicEntry) async {
-        return await _cubit._metadataDao.getFullAlgorithmDetails(basicEntry.guid);
+        return await _cubit._metadataDao.getFullAlgorithmDetails(
+          basicEntry.guid,
+        );
       }).toList();
 
       final detailedResults = await Future.wait(detailedFutures);
@@ -81,4 +83,3 @@ class _StateHelpersDelegate {
       (("spin" == state.slots[algorithmIndex].algorithm.guid) ||
           ("lua " == state.slots[algorithmIndex].algorithm.guid));
 }
-

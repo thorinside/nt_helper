@@ -72,10 +72,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final semantics = tester.getSemantics(find.byType(AppUpdateBanner));
-      expect(
-        semantics.label,
-        contains('NT Helper 3.0.0 is available'),
-      );
+      expect(semantics.label, contains('NT Helper 3.0.0 is available'));
     });
 
     testWidgets('shows update icon', (tester) async {

@@ -33,19 +33,24 @@ void main() {
         }
       });
 
-      test('extractGuidFromBytes returns first GUID for compatibility', () async {
-        final pluginFile = File('test/fixtures/plugins/directionalSequencer.o');
-        final bytes = Uint8List.fromList(await pluginFile.readAsBytes());
+      test(
+        'extractGuidFromBytes returns first GUID for compatibility',
+        () async {
+          final pluginFile = File(
+            'test/fixtures/plugins/directionalSequencer.o',
+          );
+          final bytes = Uint8List.fromList(await pluginFile.readAsBytes());
 
-        final guid = await ElfGuidExtractor.extractGuidFromBytes(
-          bytes,
-          'directionalSequencer.o',
-        );
+          final guid = await ElfGuidExtractor.extractGuidFromBytes(
+            bytes,
+            'directionalSequencer.o',
+          );
 
-        // Should return a valid GUID
-        expect(guid.guid.length, 4);
-        expect(guid.isCommunityPlugin, isTrue);
-      });
+          // Should return a valid GUID
+          expect(guid.guid.length, 4);
+          expect(guid.isCommunityPlugin, isTrue);
+        },
+      );
     });
 
     group('_isFactorySymbol pattern matching', () {

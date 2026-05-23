@@ -3,7 +3,12 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterEnumStrings, ParameterInfo, ParameterValue, Mapping;
+    show
+        Algorithm,
+        ParameterEnumStrings,
+        ParameterInfo,
+        ParameterValue,
+        Mapping;
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/services/disting_controller.dart';
@@ -98,7 +103,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     registerFallbackValue(FakePackedMappingData());
     registerFallbackValue(
-        Algorithm(algorithmIndex: 0, guid: 'fake', name: 'Fake'));
+      Algorithm(algorithmIndex: 0, guid: 'fake', name: 'Fake'),
+    );
 
     database = AppDatabase.forTesting(NativeDatabase.memory());
 
@@ -131,21 +137,26 @@ void main() {
     distingTools = DistingTools(controller, cubit);
 
     when(() => controller.isSynchronized).thenReturn(true);
-    when(() => controller.getAlgorithmInSlot(0))
-        .thenAnswer((_) async => testAlgorithm);
-    when(() => controller.getParametersForSlot(0))
-        .thenAnswer((_) async => testParameters);
-    when(() => controller.getValuesForSlot(0))
-        .thenAnswer((_) async => testValues);
-    when(() => controller.getMappingsForSlot(0))
-        .thenAnswer((_) async => testMappings);
+    when(
+      () => controller.getAlgorithmInSlot(0),
+    ).thenAnswer((_) async => testAlgorithm);
+    when(
+      () => controller.getParametersForSlot(0),
+    ).thenAnswer((_) async => testParameters);
+    when(
+      () => controller.getValuesForSlot(0),
+    ).thenAnswer((_) async => testValues);
+    when(
+      () => controller.getMappingsForSlot(0),
+    ).thenAnswer((_) async => testMappings);
     when(() => controller.flushParameterQueue()).thenAnswer((_) async {});
     when(() => controller.savePreset()).thenAnswer((_) async {});
-    when(() => controller.getCurrentPresetName())
-        .thenAnswer((_) async => 'TestPreset');
-    when(() => controller.getAllSlots()).thenAnswer((_) async => {
-          0: testAlgorithm,
-        });
+    when(
+      () => controller.getCurrentPresetName(),
+    ).thenAnswer((_) async => 'TestPreset');
+    when(
+      () => controller.getAllSlots(),
+    ).thenAnswer((_) async => {0: testAlgorithm});
     when(() => controller.setPresetName(any())).thenAnswer((_) async {});
     when(() => cubit.state).thenReturn(const DistingStateInitial());
   });
@@ -163,8 +174,9 @@ void main() {
           values: ['Off', 'Low', 'Mid', 'High'],
         ),
       );
-      when(() => controller.updateParameterValue(0, 5, 2))
-          .thenAnswer((_) async {});
+      when(
+        () => controller.updateParameterValue(0, 5, 2),
+      ).thenAnswer((_) async {});
 
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
@@ -208,8 +220,9 @@ void main() {
           values: ['Off', 'Low', 'Mid', 'High'],
         ),
       );
-      when(() => controller.updateParameterValue(0, 5, 3))
-          .thenAnswer((_) async {});
+      when(
+        () => controller.updateParameterValue(0, 5, 3),
+      ).thenAnswer((_) async {});
 
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
@@ -266,8 +279,9 @@ void main() {
   group('setParameterValue — powerOfTen scaling', () {
     test('scales display value to raw using powerOfTen', () async {
       // Freq param: powerOfTen=2, so display 1.5 => raw 150
-      when(() => controller.updateParameterValue(0, 10, 150))
-          .thenAnswer((_) async {});
+      when(
+        () => controller.updateParameterValue(0, 10, 150),
+      ).thenAnswer((_) async {});
 
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
@@ -297,8 +311,9 @@ void main() {
     test('accepts display value at display max boundary', () async {
       // Freq param: powerOfTen=2, raw max=10000, display max=100
       // Display value 100 => raw 10000 == max
-      when(() => controller.updateParameterValue(0, 10, 10000))
-          .thenAnswer((_) async {});
+      when(
+        () => controller.updateParameterValue(0, 10, 10000),
+      ).thenAnswer((_) async {});
 
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
@@ -347,29 +362,38 @@ void main() {
       ),
     ];
 
-    test('getParameterValue by duplicate name should error with ambiguity',
-        () async {
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => duplicateNameParams);
-      // Stub in case it picks the first match instead of erroring
-      when(() => controller.getParameterValue(0, 0)).thenAnswer(
-        (_) async =>
-            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
-      );
+    test(
+      'getParameterValue by duplicate name should error with ambiguity',
+      () async {
+        when(
+          () => controller.getParametersForSlot(0),
+        ).thenAnswer((_) async => duplicateNameParams);
+        // Stub in case it picks the first match instead of erroring
+        when(() => controller.getParameterValue(0, 0)).thenAnswer(
+          (_) async =>
+              ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
+        );
 
-      final result = await distingTools.getParameterValue({
-        'slot_index': 0,
-        'parameter_name': 'Level',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+        final result = await distingTools.getParameterValue({
+          'slot_index': 0,
+          'parameter_name': 'Level',
+        });
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      // Should fail with ambiguity, matching setParameterValue behavior
-      expect(json['success'], isFalse,
+        // Should fail with ambiguity, matching setParameterValue behavior
+        expect(
+          json['success'],
+          isFalse,
           reason:
-              'getParameterValue should error on ambiguous name, like setParameterValue does');
-      expect(json['error'], contains('ambiguous'),
-          reason: 'Error should mention ambiguity');
-    });
+              'getParameterValue should error on ambiguous name, like setParameterValue does',
+        );
+        expect(
+          json['error'],
+          contains('ambiguous'),
+          reason: 'Error should mention ambiguity',
+        );
+      },
+    );
   });
 
   group('setMultipleParameters — partial failures', () {
@@ -382,8 +406,9 @@ void main() {
         ),
       );
       // Valid: set Level (param 0) to 80
-      when(() => controller.updateParameterValue(0, 0, 80))
-          .thenAnswer((_) async {});
+      when(
+        () => controller.updateParameterValue(0, 0, 80),
+      ).thenAnswer((_) async {});
       // Invalid: param 99 doesn't exist
 
       final result = await distingTools.setMultipleParameters({
@@ -430,8 +455,9 @@ void main() {
         (_) async =>
             ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
       );
-      when(() => controller.getParameterMapping(0, 0))
-          .thenAnswer((_) async => testMappings[0]);
+      when(
+        () => controller.getParameterMapping(0, 0),
+      ).thenAnswer((_) async => testMappings[0]);
 
       final result = await distingTools.getMultipleParameters({
         'slot_index': 0,
@@ -502,42 +528,47 @@ void main() {
     });
   });
 
-  group('Bug: getParameterEnumValues current_value_index returns raw object',
-      () {
-    test('current_value_index should be an integer, not a ParameterValue object',
-        () async {
-      when(() => controller.getParameterEnumStrings(0, 5)).thenAnswer(
-        (_) async => ParameterEnumStrings(
-          algorithmIndex: 0,
-          parameterNumber: 5,
-          values: ['Off', 'Low', 'Mid', 'High'],
-        ),
-      );
-      when(() => controller.getParameterValue(0, 5)).thenAnswer(
-        (_) async =>
-            ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 2),
-      );
+  group('Bug: getParameterEnumValues current_value_index returns raw object', () {
+    test(
+      'current_value_index should be an integer, not a ParameterValue object',
+      () async {
+        when(() => controller.getParameterEnumStrings(0, 5)).thenAnswer(
+          (_) async => ParameterEnumStrings(
+            algorithmIndex: 0,
+            parameterNumber: 5,
+            values: ['Off', 'Low', 'Mid', 'High'],
+          ),
+        );
+        when(() => controller.getParameterValue(0, 5)).thenAnswer(
+          (_) async =>
+              ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 2),
+        );
 
-      final result = await distingTools.getParameterEnumValues({
-        'slot_index': 0,
-        'parameter_number': 5,
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+        final result = await distingTools.getParameterEnumValues({
+          'slot_index': 0,
+          'parameter_number': 5,
+        });
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json['success'], isTrue);
-      // current_value_index should be the integer value (2), not a serialized
-      // ParameterValue object or null
-      expect(json['current_value_index'], isA<int>(),
+        expect(json['success'], isTrue);
+        // current_value_index should be the integer value (2), not a serialized
+        // ParameterValue object or null
+        expect(
+          json['current_value_index'],
+          isA<int>(),
           reason:
-              'current_value_index should be an int, not a ParameterValue object');
-      expect(json['current_value_index'], equals(2));
-    });
+              'current_value_index should be an int, not a ParameterValue object',
+        );
+        expect(json['current_value_index'], equals(2));
+      },
+    );
   });
 
   group('setParameterValue — parameter name resolution', () {
     test('resolves parameter by name to correct hardware number', () async {
-      when(() => controller.updateParameterValue(0, 0, 80))
-          .thenAnswer((_) async {});
+      when(
+        () => controller.updateParameterValue(0, 0, 80),
+      ).thenAnswer((_) async {});
 
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
@@ -584,24 +615,32 @@ void main() {
   });
 
   group('Bug: getParameterValue null paramValue error uses wrong variable', () {
-    test('error message should use resolvedParameterNumber, not input parameterNumber', () async {
-      // Look up by name so input parameterNumber is null
-      when(() => controller.getParameterValue(0, 0))
-          .thenAnswer((_) async => null);
+    test(
+      'error message should use resolvedParameterNumber, not input parameterNumber',
+      () async {
+        // Look up by name so input parameterNumber is null
+        when(
+          () => controller.getParameterValue(0, 0),
+        ).thenAnswer((_) async => null);
 
-      final result = await distingTools.getParameterValue({
-        'slot_index': 0,
-        'parameter_name': 'Level',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+        final result = await distingTools.getParameterValue({
+          'slot_index': 0,
+          'parameter_name': 'Level',
+        });
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json['success'], isFalse);
-      // The error message should mention the resolved parameter number (0),
-      // not "null" which would happen if using the input parameterNumber variable
-      expect(json['error'], isNot(contains('null')),
-          reason: 'Error message should use resolvedParameterNumber, not the input parameterNumber which is null');
-      expect(json['error'], contains('0'));
-    });
+        expect(json['success'], isFalse);
+        // The error message should mention the resolved parameter number (0),
+        // not "null" which would happen if using the input parameterNumber variable
+        expect(
+          json['error'],
+          isNot(contains('null')),
+          reason:
+              'Error message should use resolvedParameterNumber, not the input parameterNumber which is null',
+        );
+        expect(json['error'], contains('0'));
+      },
+    );
   });
 
   group('getParameterValue — both parameter_number and parameter_name', () {
@@ -651,21 +690,32 @@ void main() {
       ),
     ];
 
-    test('should error when parameter_name matches multiple parameters', () async {
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => duplicateNameParams);
+    test(
+      'should error when parameter_name matches multiple parameters',
+      () async {
+        when(
+          () => controller.getParametersForSlot(0),
+        ).thenAnswer((_) async => duplicateNameParams);
 
-      final result = await distingTools.getParameterEnumValues({
-        'slot_index': 0,
-        'parameter_name': 'Mode',
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+        final result = await distingTools.getParameterEnumValues({
+          'slot_index': 0,
+          'parameter_name': 'Mode',
+        });
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json['success'], isFalse,
-          reason: 'getParameterEnumValues should error on ambiguous name, like setParameterValue does');
-      expect(json['error'], contains('ambiguous'),
-          reason: 'Error should mention ambiguity');
-    });
+        expect(
+          json['success'],
+          isFalse,
+          reason:
+              'getParameterEnumValues should error on ambiguous name, like setParameterValue does',
+        );
+        expect(
+          json['error'],
+          contains('ambiguous'),
+          reason: 'Error should mention ambiguity',
+        );
+      },
+    );
   });
 
   group('setParameterValue — enum string case sensitivity', () {
@@ -677,8 +727,9 @@ void main() {
           values: ['Off', 'Low', 'Mid', 'High'],
         ),
       );
-      when(() => controller.updateParameterValue(0, 5, 2))
-          .thenAnswer((_) async {});
+      when(
+        () => controller.updateParameterValue(0, 5, 2),
+      ).thenAnswer((_) async {});
 
       // User types "mid" but enum is "Mid"
       final result = await distingTools.setParameterValue({
@@ -688,27 +739,34 @@ void main() {
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json['success'], isTrue,
-          reason: 'Enum string matching should be case-insensitive for usability');
+      expect(
+        json['success'],
+        isTrue,
+        reason: 'Enum string matching should be case-insensitive for usability',
+      );
     });
   });
 
   group('setParameterValue — zero powerOfTen', () {
-    test('integer value passes through without scaling when powerOfTen is 0', () async {
-      // Level param: powerOfTen=0, so value 80 => raw 80
-      when(() => controller.updateParameterValue(0, 0, 80))
-          .thenAnswer((_) async {});
+    test(
+      'integer value passes through without scaling when powerOfTen is 0',
+      () async {
+        // Level param: powerOfTen=0, so value 80 => raw 80
+        when(
+          () => controller.updateParameterValue(0, 0, 80),
+        ).thenAnswer((_) async {});
 
-      final result = await distingTools.setParameterValue({
-        'slot_index': 0,
-        'parameter_number': 0,
-        'value': 80,
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+        final result = await distingTools.setParameterValue({
+          'slot_index': 0,
+          'parameter_number': 0,
+          'value': 80,
+        });
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json['success'], isTrue);
-      verify(() => controller.updateParameterValue(0, 0, 80)).called(1);
-    });
+        expect(json['success'], isTrue);
+        verify(() => controller.updateParameterValue(0, 0, 80)).called(1);
+      },
+    );
   });
 
   group('setParameterValue — negative scaled value', () {
@@ -726,10 +784,12 @@ void main() {
           powerOfTen: 2,
         ),
       ];
-      when(() => controller.getParametersForSlot(0))
-          .thenAnswer((_) async => negParams);
-      when(() => controller.updateParameterValue(0, 0, -5000))
-          .thenAnswer((_) async {});
+      when(
+        () => controller.getParametersForSlot(0),
+      ).thenAnswer((_) async => negParams);
+      when(
+        () => controller.updateParameterValue(0, 0, -5000),
+      ).thenAnswer((_) async {});
 
       final result = await distingTools.setParameterValue({
         'slot_index': 0,
@@ -744,47 +804,56 @@ void main() {
   });
 
   group('getParameterValue — enum parameter returns enum metadata', () {
-    test('includes valid_enum_values and string value for enum parameter', () async {
-      when(() => controller.getParameterValue(0, 5)).thenAnswer(
-        (_) async =>
-            ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 2),
-      );
-      when(() => controller.getParameterEnumStrings(0, 5)).thenAnswer(
-        (_) async => ParameterEnumStrings(
-          algorithmIndex: 0,
-          parameterNumber: 5,
-          values: ['Off', 'Low', 'Mid', 'High'],
-        ),
-      );
+    test(
+      'includes valid_enum_values and string value for enum parameter',
+      () async {
+        when(() => controller.getParameterValue(0, 5)).thenAnswer(
+          (_) async =>
+              ParameterValue(algorithmIndex: 0, parameterNumber: 5, value: 2),
+        );
+        when(() => controller.getParameterEnumStrings(0, 5)).thenAnswer(
+          (_) async => ParameterEnumStrings(
+            algorithmIndex: 0,
+            parameterNumber: 5,
+            values: ['Off', 'Low', 'Mid', 'High'],
+          ),
+        );
 
-      final result = await distingTools.getParameterValue({
-        'slot_index': 0,
-        'parameter_number': 5,
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+        final result = await distingTools.getParameterValue({
+          'slot_index': 0,
+          'parameter_number': 5,
+        });
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json['success'], isTrue);
-      expect(json['is_enum'], isTrue);
-      expect(json['valid_enum_values'], equals(['Off', 'Low', 'Mid', 'High']));
-      expect(json['value'], equals('Mid'));
-    });
+        expect(json['success'], isTrue);
+        expect(json['is_enum'], isTrue);
+        expect(
+          json['valid_enum_values'],
+          equals(['Off', 'Low', 'Mid', 'High']),
+        );
+        expect(json['value'], equals('Mid'));
+      },
+    );
   });
 
   group('setMultipleParameters — both identifier fields provided', () {
-    test('rejects parameter entry with both parameter_number and parameter_name', () async {
-      final result = await distingTools.setMultipleParameters({
-        'slot_index': 0,
-        'parameters': [
-          {'parameter_number': 0, 'parameter_name': 'Level', 'value': 80},
-        ],
-      });
-      final json = jsonDecode(result) as Map<String, dynamic>;
+    test(
+      'rejects parameter entry with both parameter_number and parameter_name',
+      () async {
+        final result = await distingTools.setMultipleParameters({
+          'slot_index': 0,
+          'parameters': [
+            {'parameter_number': 0, 'parameter_name': 'Level', 'value': 80},
+          ],
+        });
+        final json = jsonDecode(result) as Map<String, dynamic>;
 
-      expect(json['has_errors'], isTrue);
-      final results = json['results'] as List<dynamic>;
-      final failure = results[0] as Map<String, dynamic>;
-      expect(failure.containsKey('error'), isTrue);
-    });
+        expect(json['has_errors'], isTrue);
+        final results = json['results'] as List<dynamic>;
+        final failure = results[0] as Map<String, dynamic>;
+        expect(failure.containsKey('error'), isTrue);
+      },
+    );
   });
 
   group('setMultipleParameters — non-object in parameters array', () {

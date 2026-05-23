@@ -4,12 +4,13 @@ import 'package:nt_helper/models/performance_page_item.dart';
 
 enum PerformanceLayoutMode { condensed, asIndexed }
 
-typedef ParameterChangedCallback = void Function(
-  int slotIndex,
-  int parameterNumber,
-  int value,
-  bool userIsChanging,
-);
+typedef ParameterChangedCallback =
+    void Function(
+      int slotIndex,
+      int parameterNumber,
+      int value,
+      bool userIsChanging,
+    );
 
 class HardwarePreviewWidget extends StatelessWidget {
   const HardwarePreviewWidget({
@@ -85,11 +86,12 @@ class HardwarePreviewWidget extends StatelessWidget {
             if (item.slotIndex < slots!.length) {
               final slot = slots![item.slotIndex];
               if (item.parameterNumber < slot.values.length) {
-                final currentValue =
-                    slot.values[item.parameterNumber].value;
-                fillFraction = ((currentValue - item.min) /
-                        (item.max - item.min))
-                    .clamp(0.0, 1.0);
+                final currentValue = slot.values[item.parameterNumber].value;
+                fillFraction =
+                    ((currentValue - item.min) / (item.max - item.min)).clamp(
+                      0.0,
+                      1.0,
+                    );
               }
             }
           }
@@ -110,11 +112,9 @@ class HardwarePreviewWidget extends StatelessWidget {
             ),
           );
         } else {
-          knobs.add(const _KnobData(
-            label: '',
-            algorithmName: '',
-            isEmpty: true,
-          ));
+          knobs.add(
+            const _KnobData(label: '', algorithmName: '', isEmpty: true),
+          );
         }
       }
       pages.add(_PageData(pageNumber: page + 1, knobs: knobs));
@@ -142,8 +142,10 @@ class HardwarePreviewWidget extends StatelessWidget {
                 final min = p.parameter.min;
                 final max = p.parameter.max;
                 if (min != max) {
-                  fillFraction =
-                      ((currentValue - min) / (max - min)).clamp(0.0, 1.0);
+                  fillFraction = ((currentValue - min) / (max - min)).clamp(
+                    0.0,
+                    1.0,
+                  );
                 }
               }
             }
@@ -201,8 +203,10 @@ class HardwarePreviewWidget extends StatelessWidget {
                 final min = p.parameter.min;
                 final max = p.parameter.max;
                 if (min != max) {
-                  fillFraction =
-                      ((currentValue - min) / (max - min)).clamp(0.0, 1.0);
+                  fillFraction = ((currentValue - min) / (max - min)).clamp(
+                    0.0,
+                    1.0,
+                  );
                 }
               }
             }
@@ -319,11 +323,7 @@ class _PageCard extends StatelessWidget {
 }
 
 class _KnobSlot extends StatefulWidget {
-  const _KnobSlot({
-    required this.potLabel,
-    this.knob,
-    this.onParameterChanged,
-  });
+  const _KnobSlot({required this.potLabel, this.knob, this.onParameterChanged});
 
   final String potLabel;
   final _KnobData? knob;
@@ -377,7 +377,9 @@ class _KnobSlotState extends State<_KnobSlot> {
 
   void _onDragStart(DragStartDetails details) {
     final knob = widget.knob;
-    if (knob == null || !knob.isInteractive || widget.onParameterChanged == null) {
+    if (knob == null ||
+        !knob.isInteractive ||
+        widget.onParameterChanged == null) {
       return;
     }
     setState(() {

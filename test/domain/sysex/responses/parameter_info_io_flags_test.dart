@@ -196,9 +196,9 @@ void main() {
 
       expect(result.powerOfTen, -1);
       expect(result.ioFlags, 5);
-      expect(result.isInput, true);  // bit 0 set
+      expect(result.isInput, true); // bit 0 set
       expect(result.isOutput, false); // bit 1 not set
-      expect(result.isAudio, true);   // bit 2 set
+      expect(result.isAudio, true); // bit 2 set
       expect(result.isOutputMode, false); // bit 3 not set
     });
 
@@ -217,9 +217,9 @@ void main() {
 
       expect(result.powerOfTen, -2);
       expect(result.ioFlags, 10);
-      expect(result.isInput, false);  // bit 0 not set
-      expect(result.isOutput, true);  // bit 1 set
-      expect(result.isAudio, false);  // bit 2 not set
+      expect(result.isInput, false); // bit 0 not set
+      expect(result.isOutput, true); // bit 1 set
+      expect(result.isAudio, false); // bit 2 not set
       expect(result.isOutputMode, true); // bit 3 set
     });
   });

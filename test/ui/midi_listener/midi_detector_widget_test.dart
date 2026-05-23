@@ -13,8 +13,7 @@ String formatMidiDetectionMessage({
   required int channel,
 }) {
   return switch (type) {
-    MidiEventType.cc14BitLowFirst ||
-    MidiEventType.cc14BitHighFirst =>
+    MidiEventType.cc14BitLowFirst || MidiEventType.cc14BitHighFirst =>
       '14-bit CC $eventNumber Ch ${channel + 1}',
     _ => 'Detected $eventTypeStr $eventNumber on channel ${channel + 1}',
   };

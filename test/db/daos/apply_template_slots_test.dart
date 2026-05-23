@@ -371,8 +371,9 @@ void main() {
         slots: [_slot(slotIndex: 0, guid: 'AAAA')],
       );
       final targetId = await _savePreset(db, 'Target');
-      final before =
-          (await db.presetsDao.getPresetById(targetId))!.lastModified;
+      final before = (await db.presetsDao.getPresetById(
+        targetId,
+      ))!.lastModified;
       await Future<void>.delayed(const Duration(milliseconds: 5));
 
       await db.presetsDao.applyTemplateSlots(
@@ -382,93 +383,94 @@ void main() {
         insertionOffset: 0,
       );
 
-      final after =
-          (await db.presetsDao.getPresetById(targetId))!.lastModified;
-      expect(
-        after.isAfter(before) || after.isAtSameMomentAs(before),
-        isTrue,
-      );
+      final after = (await db.presetsDao.getPresetById(targetId))!.lastModified;
+      expect(after.isAfter(before) || after.isAtSameMomentAs(before), isTrue);
     });
   });
 
   group('PresetsDao.applyTemplateSlots — replace mode', () {
-    test('replaces slots at offset and removes mapping/routing of replaced',
-        () async {
-      await _seedAlgorithm(db, 'AAAA');
-      await _seedAlgorithm(db, 'TARG');
+    test(
+      'replaces slots at offset and removes mapping/routing of replaced',
+      () async {
+        await _seedAlgorithm(db, 'AAAA');
+        await _seedAlgorithm(db, 'TARG');
 
-      final templateId = await _savePreset(
-        db,
-        'Tmpl',
-        isTemplate: true,
-        slots: [
-          _slot(slotIndex: 0, guid: 'AAAA', values: {1: 1}),
-          _slot(slotIndex: 1, guid: 'AAAA', values: {1: 2}),
-        ],
-      );
-      final targetId = await _savePreset(
-        db,
-        'Target',
-        slots: [
-          _slot(slotIndex: 0, guid: 'TARG', values: {9: 100}),
-          _slot(slotIndex: 1, guid: 'TARG', values: {9: 200}),
-          _slot(
-            slotIndex: 2,
-            guid: 'TARG',
-            mappings: {3: _mapping(source: 99, delta: 7)},
-          ),
-          _slot(slotIndex: 3, guid: 'TARG'),
-        ],
-      );
-
-      // Snapshot the slot ids that will be replaced so we can verify their
-      // child rows are gone.
-      final targetSlots = await (db.select(db.presetSlots)
-            ..where((s) => s.presetId.equals(targetId))
-            ..orderBy([(s) => OrderingTerm.asc(s.slotIndex)]))
-          .get();
-      final slotIdsBeforeReplace = {
-        for (final s in targetSlots) s.slotIndex: s.id,
-      };
-
-      // Add a routing row for the slot at index 2 so we can confirm it
-      // is deleted on replace (PresetRoutings does not cascade).
-      await db.into(db.presetRoutings).insert(
-            PresetRoutingsCompanion.insert(
-              presetSlotId: Value(slotIdsBeforeReplace[2]!),
-              routingInfoJson: const [1, 2, 3],
+        final templateId = await _savePreset(
+          db,
+          'Tmpl',
+          isTemplate: true,
+          slots: [
+            _slot(slotIndex: 0, guid: 'AAAA', values: {1: 1}),
+            _slot(slotIndex: 1, guid: 'AAAA', values: {1: 2}),
+          ],
+        );
+        final targetId = await _savePreset(
+          db,
+          'Target',
+          slots: [
+            _slot(slotIndex: 0, guid: 'TARG', values: {9: 100}),
+            _slot(slotIndex: 1, guid: 'TARG', values: {9: 200}),
+            _slot(
+              slotIndex: 2,
+              guid: 'TARG',
+              mappings: {3: _mapping(source: 99, delta: 7)},
             ),
-          );
+            _slot(slotIndex: 3, guid: 'TARG'),
+          ],
+        );
 
-      final result = await db.presetsDao.applyTemplateSlots(
-        templateId: templateId,
-        targetPresetId: targetId,
-        templateSlotIndices: const [0, 1],
-        insertionOffset: 2,
-        overwrite: true,
-      );
+        // Snapshot the slot ids that will be replaced so we can verify their
+        // child rows are gone.
+        final targetSlots =
+            await (db.select(db.presetSlots)
+                  ..where((s) => s.presetId.equals(targetId))
+                  ..orderBy([(s) => OrderingTerm.asc(s.slotIndex)]))
+                .get();
+        final slotIdsBeforeReplace = {
+          for (final s in targetSlots) s.slotIndex: s.id,
+        };
 
-      expect(result.insertedSlotIndices, [2, 3]);
-      final loaded = await db.presetsDao.getFullPresetDetails(targetId);
-      expect(loaded!.slots, hasLength(4));
-      expect(loaded.slots[0].algorithm.guid, 'TARG');
-      expect(loaded.slots[1].algorithm.guid, 'TARG');
-      expect(loaded.slots[2].algorithm.guid, 'AAAA');
-      expect(loaded.slots[2].parameterValues[1], 1);
-      expect(loaded.slots[3].algorithm.guid, 'AAAA');
-      expect(loaded.slots[3].parameterValues[1], 2);
+        // Add a routing row for the slot at index 2 so we can confirm it
+        // is deleted on replace (PresetRoutings does not cascade).
+        await db
+            .into(db.presetRoutings)
+            .insert(
+              PresetRoutingsCompanion.insert(
+                presetSlotId: Value(slotIdsBeforeReplace[2]!),
+                routingInfoJson: const [1, 2, 3],
+              ),
+            );
 
-      // Verify the orphaned PresetMappings and PresetRoutings of the replaced
-      // slots are gone — those slot ids no longer exist.
-      final mappingsLeft = await (db.select(db.presetMappings)
-            ..where((m) => m.presetSlotId.equals(slotIdsBeforeReplace[2]!)))
-          .get();
-      expect(mappingsLeft, isEmpty);
-      final routingsLeft = await (db.select(db.presetRoutings)
-            ..where((r) => r.presetSlotId.equals(slotIdsBeforeReplace[2]!)))
-          .get();
-      expect(routingsLeft, isEmpty);
-    });
+        final result = await db.presetsDao.applyTemplateSlots(
+          templateId: templateId,
+          targetPresetId: targetId,
+          templateSlotIndices: const [0, 1],
+          insertionOffset: 2,
+          overwrite: true,
+        );
+
+        expect(result.insertedSlotIndices, [2, 3]);
+        final loaded = await db.presetsDao.getFullPresetDetails(targetId);
+        expect(loaded!.slots, hasLength(4));
+        expect(loaded.slots[0].algorithm.guid, 'TARG');
+        expect(loaded.slots[1].algorithm.guid, 'TARG');
+        expect(loaded.slots[2].algorithm.guid, 'AAAA');
+        expect(loaded.slots[2].parameterValues[1], 1);
+        expect(loaded.slots[3].algorithm.guid, 'AAAA');
+        expect(loaded.slots[3].parameterValues[1], 2);
+
+        // Verify the orphaned PresetMappings and PresetRoutings of the replaced
+        // slots are gone — those slot ids no longer exist.
+        final mappingsLeft = await (db.select(
+          db.presetMappings,
+        )..where((m) => m.presetSlotId.equals(slotIdsBeforeReplace[2]!))).get();
+        expect(mappingsLeft, isEmpty);
+        final routingsLeft = await (db.select(
+          db.presetRoutings,
+        )..where((r) => r.presetSlotId.equals(slotIdsBeforeReplace[2]!))).get();
+        expect(routingsLeft, isEmpty);
+      },
+    );
 
     test('replace into empty positions still inserts', () async {
       await _seedAlgorithm(db, 'AAAA');
@@ -520,11 +522,7 @@ void main() {
           5,
           (i) => _slot(slotIndex: i, guid: 'TARG'),
         );
-        final targetId = await _savePreset(
-          db,
-          'Target',
-          slots: targetSlots,
-        );
+        final targetId = await _savePreset(db, 'Target', slots: targetSlots);
 
         try {
           await db.presetsDao.applyTemplateSlots(
@@ -541,87 +539,94 @@ void main() {
         }
 
         final loaded = await db.presetsDao.getFullPresetDetails(targetId);
-        expect(loaded!.slots, hasLength(5),
-            reason: 'no slots should be added on failure');
+        expect(
+          loaded!.slots,
+          hasLength(5),
+          reason: 'no slots should be added on failure',
+        );
         // No new param/mapping/routing rows beyond original
         final allParamValues = await db.select(db.presetParameterValues).get();
         expect(allParamValues, isEmpty);
       },
     );
 
-    test('replace mode beyond 32 slots throws TemplateSpaceException',
-        () async {
-      await _seedAlgorithm(db, 'AAAA');
-      await _seedAlgorithm(db, 'TARG');
-      final templateId = await _savePreset(
-        db,
-        'Tmpl',
-        isTemplate: true,
-        slots: List<FullPresetSlot>.generate(
-          10,
-          (i) => _slot(slotIndex: i, guid: 'AAAA'),
-        ),
-      );
-      final targetId = await _savePreset(
-        db,
-        'Target',
-        slots: List<FullPresetSlot>.generate(
-          5,
-          (i) => _slot(slotIndex: i, guid: 'TARG'),
-        ),
-      );
+    test(
+      'replace mode beyond 32 slots throws TemplateSpaceException',
+      () async {
+        await _seedAlgorithm(db, 'AAAA');
+        await _seedAlgorithm(db, 'TARG');
+        final templateId = await _savePreset(
+          db,
+          'Tmpl',
+          isTemplate: true,
+          slots: List<FullPresetSlot>.generate(
+            10,
+            (i) => _slot(slotIndex: i, guid: 'AAAA'),
+          ),
+        );
+        final targetId = await _savePreset(
+          db,
+          'Target',
+          slots: List<FullPresetSlot>.generate(
+            5,
+            (i) => _slot(slotIndex: i, guid: 'TARG'),
+          ),
+        );
 
-      expect(
-        () => db.presetsDao.applyTemplateSlots(
-          templateId: templateId,
-          targetPresetId: targetId,
-          templateSlotIndices: List<int>.generate(10, (i) => i),
-          insertionOffset: 25,
-          overwrite: true,
-        ),
-        throwsA(isA<TemplateSpaceException>()),
-      );
-    });
+        expect(
+          () => db.presetsDao.applyTemplateSlots(
+            templateId: templateId,
+            targetPresetId: targetId,
+            templateSlotIndices: List<int>.generate(10, (i) => i),
+            insertionOffset: 25,
+            overwrite: true,
+          ),
+          throwsA(isA<TemplateSpaceException>()),
+        );
+      },
+    );
   });
 
   group('PresetsDao.applyTemplateSlots — missing algorithm metadata', () {
-    test('skips slots without local algorithm rows and populates warning',
-        () async {
-      await _seedAlgorithm(db, 'AAAA');
-      await _seedAlgorithm(db, 'GHST');
-      final templateId = await _savePreset(
-        db,
-        'Tmpl',
-        isTemplate: true,
-        slots: [
-          _slot(slotIndex: 0, guid: 'AAAA'),
-          _slot(slotIndex: 1, guid: 'GHST'),
-          _slot(slotIndex: 2, guid: 'AAAA'),
-        ],
-      );
-      // Now remove GHST from algorithms to simulate missing metadata locally.
-      await (db.delete(db.algorithms)
-            ..where((a) => a.guid.equals('GHST')))
-          .go();
+    test(
+      'skips slots without local algorithm rows and populates warning',
+      () async {
+        await _seedAlgorithm(db, 'AAAA');
+        await _seedAlgorithm(db, 'GHST');
+        final templateId = await _savePreset(
+          db,
+          'Tmpl',
+          isTemplate: true,
+          slots: [
+            _slot(slotIndex: 0, guid: 'AAAA'),
+            _slot(slotIndex: 1, guid: 'GHST'),
+            _slot(slotIndex: 2, guid: 'AAAA'),
+          ],
+        );
+        // Now remove GHST from algorithms to simulate missing metadata locally.
+        await (db.delete(
+          db.algorithms,
+        )..where((a) => a.guid.equals('GHST'))).go();
 
-      final targetId = await _savePreset(db, 'Target');
+        final targetId = await _savePreset(db, 'Target');
 
-      final result = await db.presetsDao.applyTemplateSlots(
-        templateId: templateId,
-        targetPresetId: targetId,
-        templateSlotIndices: const [0, 1, 2],
-        insertionOffset: 0,
-      );
+        final result = await db.presetsDao.applyTemplateSlots(
+          templateId: templateId,
+          targetPresetId: targetId,
+          templateSlotIndices: const [0, 1, 2],
+          insertionOffset: 0,
+        );
 
-      expect(result.skippedTemplateSlotIndices, [1]);
-      expect(result.insertedSlotIndices, [0, 1]);
-      expect(result.warning, isNotNull);
-      expect(result.warning, contains('GHST'));
+        expect(result.skippedTemplateSlotIndices, [1]);
+        expect(result.insertedSlotIndices, [0, 1]);
+        expect(result.warning, isNotNull);
+        expect(result.warning, contains('GHST'));
 
-      final loaded = await db.presetsDao.getFullPresetDetails(targetId);
-      expect(loaded!.slots, hasLength(2));
-      expect(loaded.slots.every((s) => s.algorithm.guid == 'AAAA'), isTrue);
-    });
+        final loaded = await db.presetsDao.getFullPresetDetails(targetId);
+        expect(loaded!.slots, hasLength(2));
+        expect(loaded.slots.every((s) => s.algorithm.guid == 'AAAA'), isTrue);
+      },
+    );
 
     test('space check uses non-skipped count', () async {
       await _seedAlgorithm(db, 'AAAA');
@@ -629,9 +634,7 @@ void main() {
       // Template has 30 slots — 20 of them are GHST (will skip).
       final templateSlots = <FullPresetSlot>[];
       for (var i = 0; i < 30; i++) {
-        templateSlots.add(
-          _slot(slotIndex: i, guid: i < 20 ? 'GHST' : 'AAAA'),
-        );
+        templateSlots.add(_slot(slotIndex: i, guid: i < 20 ? 'GHST' : 'AAAA'));
       }
       final templateId = await _savePreset(
         db,
@@ -639,9 +642,9 @@ void main() {
         isTemplate: true,
         slots: templateSlots,
       );
-      await (db.delete(db.algorithms)
-            ..where((a) => a.guid.equals('GHST')))
-          .go();
+      await (db.delete(
+        db.algorithms,
+      )..where((a) => a.guid.equals('GHST'))).go();
 
       // Target with 25 existing slots — 25 + 10 (non-skipped) = 35 > 32 → still fails.
       final targetId = await _savePreset(
@@ -660,11 +663,9 @@ void main() {
           templateSlotIndices: List<int>.generate(30, (i) => i),
           insertionOffset: 25,
         ),
-        throwsA(isA<TemplateSpaceException>().having(
-          (e) => e.applied,
-          'applied',
-          10,
-        )),
+        throwsA(
+          isA<TemplateSpaceException>().having((e) => e.applied, 'applied', 10),
+        ),
       );
 
       // Now with 22 existing — 22 + 10 = 32 → should succeed.
@@ -752,11 +753,12 @@ void main() {
       );
 
       // Attach a PresetRouting row to the template slot manually.
-      final tmplSlotId = (await (db.select(db.presetSlots)
-                ..where((s) => s.presetId.equals(templateId)))
-              .getSingle())
-          .id;
-      await db.into(db.presetRoutings).insert(
+      final tmplSlotId = (await (db.select(
+        db.presetSlots,
+      )..where((s) => s.presetId.equals(templateId))).getSingle()).id;
+      await db
+          .into(db.presetRoutings)
+          .insert(
             PresetRoutingsCompanion.insert(
               presetSlotId: Value(tmplSlotId),
               routingInfoJson: const [4, 5, 6, 7, 8, 9],
@@ -784,12 +786,12 @@ void main() {
       expect(slot.mappings[1]?.midiCC, 7);
 
       // Routing should also have been copied.
-      final newSlot = await (db.select(db.presetSlots)
-            ..where((s) => s.presetId.equals(targetId)))
-          .getSingle();
-      final routings = await (db.select(db.presetRoutings)
-            ..where((r) => r.presetSlotId.equals(newSlot.id)))
-          .get();
+      final newSlot = await (db.select(
+        db.presetSlots,
+      )..where((s) => s.presetId.equals(targetId))).getSingle();
+      final routings = await (db.select(
+        db.presetRoutings,
+      )..where((r) => r.presetSlotId.equals(newSlot.id))).get();
       expect(routings, hasLength(1));
       expect(routings.first.routingInfoJson, [4, 5, 6, 7, 8, 9]);
     });

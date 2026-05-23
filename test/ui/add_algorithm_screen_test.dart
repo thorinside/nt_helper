@@ -147,7 +147,9 @@ void main() {
       // Assert
       expect(find.text('Load Plugin'), findsOneWidget);
       expect(
-          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsNothing);
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+        findsNothing,
+      );
 
       // Verify button is enabled
       final button = tester.widget<ElevatedButton>(
@@ -190,7 +192,9 @@ void main() {
 
       // Assert
       expect(
-          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+        findsOneWidget,
+      );
       expect(find.text('Load Plugin'), findsNothing);
 
       // Verify button is enabled
@@ -234,7 +238,9 @@ void main() {
 
       // Assert
       expect(
-          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+        findsOneWidget,
+      );
       expect(find.text('Load Plugin'), findsNothing);
     });
 
@@ -332,7 +338,9 @@ void main() {
 
         // Assert: Button should now show "Add Algorithm" without requiring another press
         expect(
-            find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+          findsOneWidget,
+        );
         expect(find.text('Load Plugin'), findsNothing);
 
         // Verify loadPlugin was called
@@ -384,7 +392,9 @@ void main() {
         // Assert: Button should still show "Load Plugin" since loading failed
         expect(find.text('Load Plugin'), findsOneWidget);
         expect(
-            find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsNothing);
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+          findsNothing,
+        );
 
         // Check for error snackbar
         expect(find.text('Failed to load Test Plugin'), findsOneWidget);
@@ -480,7 +490,9 @@ void main() {
         await tester.tap(find.text('Clock'));
         await tester.pumpAndSettle();
         expect(
-            find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+          find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+          findsOneWidget,
+        );
 
         // Plugin (uppercase GUID) should show load button when unloaded
         await tester.tap(find.text('Test Plugin'));
@@ -491,8 +503,10 @@ void main() {
   });
 
   group('AddAlgorithmScreen Stay-open option', () {
-    DistingState synchronizedWith(List<AlgorithmInfo> algorithms,
-        {int slotCount = 0}) {
+    DistingState synchronizedWith(
+      List<AlgorithmInfo> algorithms, {
+      int slotCount = 0,
+    }) {
       return DistingState.synchronized(
         disting: mockDistingMidi,
         distingVersion: '',
@@ -529,8 +543,9 @@ void main() {
 
     testWidgets('Add Another button appears alongside Add Algorithm '
         'after a loaded algorithm is selected', (tester) async {
-      when(() => mockCubit.state)
-          .thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(createTestWidget());
@@ -544,18 +559,24 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+        findsOneWidget,
+      );
       expect(
-          find.widgetWithText(ElevatedButton, 'Add Another'), findsOneWidget);
+        find.widgetWithText(ElevatedButton, 'Add Another'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Add Another adds, clears selection, '
         'shows SnackBar, and stays open', (tester) async {
-      when(() => mockCubit.state)
-          .thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.onAlgorithmSelected(any(), any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockCubit.onAlgorithmSelected(any(), any()),
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -564,20 +585,26 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.widgetWithText(ElevatedButton, 'Add Another'));
       await tester.pumpAndSettle();
 
       // Cubit add was invoked exactly once
-      verify(() => mockCubit.onAlgorithmSelected(
-            any(that: predicate<AlgorithmInfo>((a) => a.guid == 'clck')),
-            any(),
-          )).called(1);
+      verify(
+        () => mockCubit.onAlgorithmSelected(
+          any(that: predicate<AlgorithmInfo>((a) => a.guid == 'clck')),
+          any(),
+        ),
+      ).called(1);
 
       // Selection was cleared (button reverts to disabled "Select Algorithm")
       expect(
-          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsNothing);
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+        findsNothing,
+      );
       expect(find.text('Select Algorithm'), findsOneWidget);
 
       // SnackBar confirms the add
@@ -587,11 +614,12 @@ void main() {
       expect(find.text('Add Algorithm'), findsOneWidget);
     });
 
-    testWidgets('Add Another button hidden when slot cap is reached',
-        (tester) async {
-      when(() => mockCubit.state).thenReturn(
-        synchronizedWith([mockFactoryAlgorithm], slotCount: 32),
-      );
+    testWidgets('Add Another button hidden when slot cap is reached', (
+      tester,
+    ) async {
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockFactoryAlgorithm], slotCount: 32));
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(createTestWidget());
@@ -602,7 +630,9 @@ void main() {
 
       // Add Algorithm is still rendered (existing behavior unchanged)
       expect(
-          find.widgetWithText(ElevatedButton, 'Add Algorithm'), findsOneWidget);
+        find.widgetWithText(ElevatedButton, 'Add Algorithm'),
+        findsOneWidget,
+      );
       // But the Add Another button is gone
       expect(find.widgetWithText(ElevatedButton, 'Add Another'), findsNothing);
     });

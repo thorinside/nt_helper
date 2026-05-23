@@ -51,7 +51,10 @@ void main() {
 
     setUp(() {
       distingCubit = DistingCubit(database, midiCommand: MockMidiCommand());
-      tools = MCPAlgorithmTools(DistingControllerImpl(distingCubit), distingCubit);
+      tools = MCPAlgorithmTools(
+        DistingControllerImpl(distingCubit),
+        distingCubit,
+      );
     });
 
     tearDown(() {
@@ -175,7 +178,9 @@ void main() {
       test('should filter by category', () async {
         // In test environment, algorithms are synced from full_metadata.json
         // and get "Synced From Device" category
-        final result = await tools.listAlgorithms({'category': 'Synced From Device'});
+        final result = await tools.listAlgorithms({
+          'category': 'Synced From Device',
+        });
 
         final decoded = jsonDecode(result);
         expect(decoded, isList);
@@ -212,12 +217,15 @@ void main() {
     });
 
     group('show tool display_mode parameter', () {
-      test('should return valid string to DisplayMode mapping for parameter', () {
-        // Test that parameter maps to DisplayMode.parameters
-        // This is a unit test for the conversion logic
-        // The main testing happens in integration tests below
-        expect(true, isTrue); // Placeholder
-      });
+      test(
+        'should return valid string to DisplayMode mapping for parameter',
+        () {
+          // Test that parameter maps to DisplayMode.parameters
+          // This is a unit test for the conversion logic
+          // The main testing happens in integration tests below
+          expect(true, isTrue); // Placeholder
+        },
+      );
 
       test('should validate display_mode parameter value', () async {
         // Test invalid display_mode value
@@ -229,7 +237,10 @@ void main() {
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
         expect(decoded['error'], contains('Invalid display_mode'));
-        expect(decoded['valid_modes'], equals(['parameter', 'algorithm', 'overview', 'vu_meters']));
+        expect(
+          decoded['valid_modes'],
+          equals(['parameter', 'algorithm', 'overview', 'vu_meters']),
+        );
       });
 
       test('should accept valid display_mode values', () async {
@@ -248,19 +259,14 @@ void main() {
           // Should either succeed or fail with non-validation error
           // (device not synchronized is expected in test environment)
           if (decoded['error'] != null) {
-            expect(
-              decoded['error'],
-              isNot(contains('Invalid display_mode')),
-            );
+            expect(decoded['error'], isNot(contains('Invalid display_mode')));
           }
         }
       });
 
       test('should work without display_mode parameter', () async {
         // Test that show works when display_mode is not provided
-        final result = await tools.show({
-          'target': 'screen',
-        });
+        final result = await tools.show({'target': 'screen'});
 
         final decoded = jsonDecode(result);
         // Should either succeed or fail with non-validation error
@@ -269,27 +275,31 @@ void main() {
       });
 
       test('should handle missing target parameter', () async {
-        final result = await tools.show({
-          'display_mode': 'parameter',
-        });
+        final result = await tools.show({'display_mode': 'parameter'});
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('Missing required parameter: target'));
+        expect(
+          decoded['error'],
+          contains('Missing required parameter: target'),
+        );
       });
 
-      test('should accept display_mode with other targets without error', () async {
-        // Test that display_mode is accepted but not used with non-screen targets
-        // (it should be ignored gracefully)
-        final result = await tools.show({
-          'target': 'preset',
-          'display_mode': 'parameter',
-        });
+      test(
+        'should accept display_mode with other targets without error',
+        () async {
+          // Test that display_mode is accepted but not used with non-screen targets
+          // (it should be ignored gracefully)
+          final result = await tools.show({
+            'target': 'preset',
+            'display_mode': 'parameter',
+          });
 
-        final decoded = jsonDecode(result);
-        // Should work normally for preset target, ignoring display_mode
-        expect(decoded, isNotEmpty);
-      });
+          final decoded = jsonDecode(result);
+          // Should work normally for preset target, ignoring display_mode
+          expect(decoded, isNotEmpty);
+        },
+      );
     });
 
     group('Error Handling', () {

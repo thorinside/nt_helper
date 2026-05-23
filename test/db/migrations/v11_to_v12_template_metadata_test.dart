@@ -19,83 +19,94 @@ void main() {
       expect(database.schemaVersion, 12);
     });
 
-    test('fresh v12 schema accepts null category and templateMetadata',
-        () async {
-      final id = await database.into(database.presets).insert(
-            PresetsCompanion.insert(
-              name: 'My Template',
-              isTemplate: const Value(true),
-            ),
-          );
-
-      final preset = await (database.select(database.presets)
-            ..where((p) => p.id.equals(id)))
-          .getSingle();
-
-      expect(preset.name, 'My Template');
-      expect(preset.isTemplate, isTrue);
-      expect(preset.category, isNull);
-      expect(preset.templateMetadata, isNull);
-    });
-
-    test('fresh v12 schema persists category and templateMetadata strings',
-        () async {
-      final id = await database.into(database.presets).insert(
-            PresetsCompanion.insert(
-              name: 'Cathedral Reverb',
-              isTemplate: const Value(true),
-              category: const Value('Reverb'),
-              templateMetadata: const Value(
-                '{"description":"Long hall","tags":["space","wet"],"author":"neal","schemaVersion":1}',
+    test(
+      'fresh v12 schema accepts null category and templateMetadata',
+      () async {
+        final id = await database
+            .into(database.presets)
+            .insert(
+              PresetsCompanion.insert(
+                name: 'My Template',
+                isTemplate: const Value(true),
               ),
-            ),
-          );
+            );
 
-      final preset = await (database.select(database.presets)
-            ..where((p) => p.id.equals(id)))
-          .getSingle();
+        final preset = await (database.select(
+          database.presets,
+        )..where((p) => p.id.equals(id))).getSingle();
 
-      expect(preset.category, 'Reverb');
-      expect(
-        preset.templateMetadata,
-        contains('"description":"Long hall"'),
-      );
-    });
+        expect(preset.name, 'My Template');
+        expect(preset.isTemplate, isTrue);
+        expect(preset.category, isNull);
+        expect(preset.templateMetadata, isNull);
+      },
+    );
 
-    test('category and templateMetadata round-trip including UTF-8 codepoints',
-        () async {
-      const jsonText = '{"description":"Glöcken — 🔔","tags":["bells","✨"]}';
-      final id = await database.into(database.presets).insert(
-            PresetsCompanion.insert(
-              name: 'Bells',
-              isTemplate: const Value(true),
-              category: const Value('Перкуссия'),
-              templateMetadata: const Value(jsonText),
-            ),
-          );
+    test(
+      'fresh v12 schema persists category and templateMetadata strings',
+      () async {
+        final id = await database
+            .into(database.presets)
+            .insert(
+              PresetsCompanion.insert(
+                name: 'Cathedral Reverb',
+                isTemplate: const Value(true),
+                category: const Value('Reverb'),
+                templateMetadata: const Value(
+                  '{"description":"Long hall","tags":["space","wet"],"author":"neal","schemaVersion":1}',
+                ),
+              ),
+            );
 
-      final preset = await (database.select(database.presets)
-            ..where((p) => p.id.equals(id)))
-          .getSingle();
+        final preset = await (database.select(
+          database.presets,
+        )..where((p) => p.id.equals(id))).getSingle();
 
-      expect(preset.category, 'Перкуссия');
-      expect(preset.templateMetadata, jsonText);
-    });
+        expect(preset.category, 'Reverb');
+        expect(preset.templateMetadata, contains('"description":"Long hall"'));
+      },
+    );
 
-    test('default values for existing rows are null (migration safety)',
-        () async {
-      // Insert a row without specifying the new columns.
-      final id = await database.into(database.presets).insert(
-            PresetsCompanion.insert(name: 'Legacy preset'),
-          );
+    test(
+      'category and templateMetadata round-trip including UTF-8 codepoints',
+      () async {
+        const jsonText = '{"description":"Glöcken — 🔔","tags":["bells","✨"]}';
+        final id = await database
+            .into(database.presets)
+            .insert(
+              PresetsCompanion.insert(
+                name: 'Bells',
+                isTemplate: const Value(true),
+                category: const Value('Перкуссия'),
+                templateMetadata: const Value(jsonText),
+              ),
+            );
 
-      final preset = await (database.select(database.presets)
-            ..where((p) => p.id.equals(id)))
-          .getSingle();
+        final preset = await (database.select(
+          database.presets,
+        )..where((p) => p.id.equals(id))).getSingle();
 
-      expect(preset.category, isNull);
-      expect(preset.templateMetadata, isNull);
-      expect(preset.isTemplate, isFalse);
-    });
+        expect(preset.category, 'Перкуссия');
+        expect(preset.templateMetadata, jsonText);
+      },
+    );
+
+    test(
+      'default values for existing rows are null (migration safety)',
+      () async {
+        // Insert a row without specifying the new columns.
+        final id = await database
+            .into(database.presets)
+            .insert(PresetsCompanion.insert(name: 'Legacy preset'));
+
+        final preset = await (database.select(
+          database.presets,
+        )..where((p) => p.id.equals(id))).getSingle();
+
+        expect(preset.category, isNull);
+        expect(preset.templateMetadata, isNull);
+        expect(preset.isTemplate, isFalse);
+      },
+    );
   });
 }

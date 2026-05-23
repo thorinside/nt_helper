@@ -180,7 +180,6 @@ void main() {
 
     test('invalid slot_index returns error', () async {
       final result = await distingTools.addSimple({
-
         'name': 'VCO',
         'slot_index': -1,
       });
@@ -191,7 +190,6 @@ void main() {
 
     test('slot_index 32 (out of range) returns error', () async {
       final result = await distingTools.addSimple({
-
         'name': 'VCO',
         'slot_index': 32,
       });
@@ -248,10 +246,7 @@ void main() {
         );
         when(() => cubit.refreshSlot(0)).thenAnswer((_) async {});
 
-        final result = await distingTools.addSimple({
-  
-          'guid': guid,
-        });
+        final result = await distingTools.addSimple({'guid': guid});
         final json = jsonDecode(result) as Map<String, dynamic>;
 
         expect(json['success'], isTrue);
@@ -284,10 +279,7 @@ void main() {
     });
 
     test('out of range slot_index returns error', () async {
-      final result = await distingTools.removeSlot({
-
-        'slot_index': 32,
-      });
+      final result = await distingTools.removeSlot({'slot_index': 32});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
       expect(json['error'], contains('32'));
@@ -298,10 +290,7 @@ void main() {
         () => controller.getAllSlots(),
       ).thenAnswer((_) async => <int, Algorithm?>{});
 
-      final result = await distingTools.removeSlot({
-
-        'slot_index': 0,
-      });
+      final result = await distingTools.removeSlot({'slot_index': 0});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isTrue);
       expect(json['message'], contains('already empty'));
@@ -310,10 +299,7 @@ void main() {
     test('occupied slot calls clearSlot and returns success', () async {
       when(() => controller.clearSlot(0)).thenAnswer((_) async {});
 
-      final result = await distingTools.removeSlot({
-
-        'slot_index': 0,
-      });
+      final result = await distingTools.removeSlot({'slot_index': 0});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isTrue);
       expect(json['message'], contains('Removed'));
@@ -335,10 +321,7 @@ void main() {
         ).thenAnswer((_) async => <int, Algorithm?>{5: algoInSlot5});
         when(() => controller.clearSlot(5)).thenAnswer((_) async {});
 
-        final result = await distingTools.removeSlot({
-  
-          'slot_index': 5,
-        });
+        final result = await distingTools.removeSlot({'slot_index': 5});
         final json = jsonDecode(result) as Map<String, dynamic>;
 
         // Should say "Removed" not "already empty", because the slot IS occupied.
@@ -400,7 +383,6 @@ void main() {
         when(() => controller.getSlotName(0)).thenAnswer((_) async => null);
 
         final result = await distingTools.editSlot({
-  
           'slot_index': 0,
           'data': {
             'algorithm': {'guid': guid},
@@ -591,7 +573,6 @@ void main() {
       ).thenAnswer((_) async => 'OldPreset');
 
       final result = await distingTools.editPreset({
-
         'data': {'name': 'NewPreset'},
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -602,7 +583,6 @@ void main() {
       when(() => controller.isSynchronized).thenReturn(false);
 
       final result = await distingTools.editPreset({
-
         'data': {
           'name': 'NewPreset',
           'slots': [
@@ -627,7 +607,6 @@ void main() {
 
     test('empty preset name returns error', () async {
       final result = await distingTools.editPreset({
-
         'data': {'name': ''},
       });
       final json = jsonDecode(result) as Map<String, dynamic>;
@@ -645,19 +624,14 @@ void main() {
     });
 
     test('out of range slot_index returns error', () async {
-      final result = await distingTools.editSlot({
-        'slot_index': 32,
-      });
+      final result = await distingTools.editSlot({'slot_index': 32});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
       expect(json['error'], contains('32'));
     });
 
     test('missing data returns error', () async {
-      final result = await distingTools.editSlot({
-
-        'slot_index': 0,
-      });
+      final result = await distingTools.editSlot({'slot_index': 0});
       final json = jsonDecode(result) as Map<String, dynamic>;
       expect(json['success'], isFalse);
       expect(json['error'], contains('data'));
@@ -667,7 +641,6 @@ void main() {
       when(() => controller.isSynchronized).thenReturn(false);
 
       final result = await distingTools.editSlot({
-
         'slot_index': 0,
         'data': {
           'parameters': [

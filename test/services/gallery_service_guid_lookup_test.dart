@@ -19,12 +19,12 @@ void main() {
       mockSettingsService = MockSettingsService();
 
       // Mock the settings service methods
-      when(() => mockSettingsService.galleryUrl).thenReturn(
-        'https://example.com/gallery.json',
-      );
-      when(() => mockSettingsService.graphqlEndpoint).thenReturn(
-        'https://example.com/graphql',
-      );
+      when(
+        () => mockSettingsService.galleryUrl,
+      ).thenReturn('https://example.com/gallery.json');
+      when(
+        () => mockSettingsService.graphqlEndpoint,
+      ).thenReturn('https://example.com/graphql');
 
       galleryService = GalleryService(settingsService: mockSettingsService);
     });
@@ -192,13 +192,15 @@ void main() {
       expect(gallery.plugins, hasLength(3));
 
       // Verify we can find plugins with GUIDs
-      final pluginsWithGuid =
-          gallery.plugins.where((p) => p.guid != null).toList();
+      final pluginsWithGuid = gallery.plugins
+          .where((p) => p.guid != null)
+          .toList();
       expect(pluginsWithGuid, hasLength(2));
 
       // Verify we can find plugins with collectionGuids
-      final collections =
-          gallery.plugins.where((p) => p.collectionGuids.isNotEmpty).toList();
+      final collections = gallery.plugins
+          .where((p) => p.collectionGuids.isNotEmpty)
+          .toList();
       expect(collections, hasLength(1));
       expect(collections.first.collectionGuids, hasLength(2));
     });
@@ -238,11 +240,7 @@ void main() {
         'description': 'Test',
         'type': 'cpp',
         'author': 'author',
-        'repository': {
-          'owner': 'o',
-          'name': 'n',
-          'url': 'https://example.com',
-        },
+        'repository': {'owner': 'o', 'name': 'n', 'url': 'https://example.com'},
         'releases': {'latest': 'v1.0.0'},
         'installation': {'targetPath': 'path'},
         'guid': 'TEST',
@@ -264,11 +262,7 @@ void main() {
         'description': 'Test',
         'type': 'cpp',
         'author': 'author',
-        'repository': {
-          'owner': 'o',
-          'name': 'n',
-          'url': 'https://example.com',
-        },
+        'repository': {'owner': 'o', 'name': 'n', 'url': 'https://example.com'},
         'releases': {'latest': 'v1.0.0'},
         'installation': {'targetPath': 'path'},
       };

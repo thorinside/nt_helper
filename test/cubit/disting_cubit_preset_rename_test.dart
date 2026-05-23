@@ -42,12 +42,8 @@ void main() {
     when(
       () => mockDisting.requestSetPresetName(any()),
     ).thenAnswer((_) async {});
-    when(
-      () => mockDisting.requestSavePreset(),
-    ).thenAnswer((_) async {});
-    when(
-      () => mockDisting.requestPresetName(),
-    ).thenAnswer((_) async => null);
+    when(() => mockDisting.requestSavePreset()).thenAnswer((_) async {});
+    when(() => mockDisting.requestPresetName()).thenAnswer((_) async => null);
 
     cubit = DistingCubit(mockDatabase, midiCommand: mockMidiCommand);
   });
@@ -139,19 +135,21 @@ void main() {
       verifyNever(() => mockDisting.requestSavePreset());
     });
 
-    test('two rapid renames produce two saves with last name being final',
-        () async {
-      cubit.emit(makeSyncState(presetName: 'Old Name'));
+    test(
+      'two rapid renames produce two saves with last name being final',
+      () async {
+        cubit.emit(makeSyncState(presetName: 'Old Name'));
 
-      cubit.renamePreset('First');
-      cubit.renamePreset('Second');
-      await pumpEventQueue();
+        cubit.renamePreset('First');
+        cubit.renamePreset('Second');
+        await pumpEventQueue();
 
-      final captured = verify(
-        () => mockDisting.requestSetPresetName(captureAny()),
-      ).captured;
-      expect(captured, ['First', 'Second']);
-      verify(() => mockDisting.requestSavePreset()).called(2);
-    });
+        final captured = verify(
+          () => mockDisting.requestSetPresetName(captureAny()),
+        ).captured;
+        expect(captured, ['First', 'Second']);
+        verify(() => mockDisting.requestSavePreset()).called(2);
+      },
+    );
   });
 }

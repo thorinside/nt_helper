@@ -45,7 +45,8 @@ class LinkifiedText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final defaultStyle = style ?? DefaultTextStyle.of(context).style;
-    final defaultLinkStyle = linkStyle ??
+    final defaultLinkStyle =
+        linkStyle ??
         defaultStyle.copyWith(
           color: Theme.of(context).colorScheme.primary,
           decoration: TextDecoration.underline,
@@ -68,31 +69,32 @@ class LinkifiedText extends StatelessWidget {
     for (final match in matches) {
       // Add text before the URL
       if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: text.substring(lastEnd, match.start),
-          style: defaultStyle,
-        ));
+        spans.add(
+          TextSpan(
+            text: text.substring(lastEnd, match.start),
+            style: defaultStyle,
+          ),
+        );
       }
 
       // Add the clickable URL (shortened)
       final url = match.group(0)!;
       final shortUrl = _shortenUrl(url);
-      spans.add(TextSpan(
-        text: shortUrl,
-        style: defaultLinkStyle,
-        recognizer: TapGestureRecognizer()..onTap = () => _launchUrl(url),
-        semanticsLabel: 'Link: $url',
-      ));
+      spans.add(
+        TextSpan(
+          text: shortUrl,
+          style: defaultLinkStyle,
+          recognizer: TapGestureRecognizer()..onTap = () => _launchUrl(url),
+          semanticsLabel: 'Link: $url',
+        ),
+      );
 
       lastEnd = match.end;
     }
 
     // Add remaining text after last URL
     if (lastEnd < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastEnd),
-        style: defaultStyle,
-      ));
+      spans.add(TextSpan(text: text.substring(lastEnd), style: defaultStyle));
     }
 
     return Text.rich(

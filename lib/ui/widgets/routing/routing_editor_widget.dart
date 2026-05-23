@@ -45,10 +45,10 @@ enum _RoutingViewMode {
   static const _prefsKey = 'routing_view_mode';
 
   static _RoutingViewMode fromString(String? value) => switch (value) {
-        'list' => list,
-        'table' => table,
-        _ => canvas,
-      };
+    'list' => list,
+    'table' => table,
+    _ => canvas,
+  };
 }
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.
@@ -162,11 +162,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         final target = _lastScrollOffset != Offset.zero
             ? _lastScrollOffset
             : (context.read<RoutingEditorCubit>().state
-                    is RoutingEditorStateLoaded
-                ? (context.read<RoutingEditorCubit>().state
-                        as RoutingEditorStateLoaded)
-                    .panOffset
-                : Offset.zero);
+                      is RoutingEditorStateLoaded
+                  ? (context.read<RoutingEditorCubit>().state
+                            as RoutingEditorStateLoaded)
+                        .panOffset
+                  : Offset.zero);
         if (target != Offset.zero) {
           if (_horizontalScrollController.hasClients) {
             _horizontalScrollController.jumpTo(target.dx);
@@ -1089,10 +1089,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
         }
 
         // Auto-detect accessible navigation mode
-        final effectiveMode =
-            MediaQuery.of(context).accessibleNavigation
-                ? _RoutingViewMode.list
-                : _viewMode;
+        final effectiveMode = MediaQuery.of(context).accessibleNavigation
+            ? _RoutingViewMode.list
+            : _viewMode;
 
         if (effectiveMode == _RoutingViewMode.list) {
           return Stack(
@@ -1110,11 +1109,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 ),
                 child: const AccessibleRoutingListView(),
               ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: _buildViewModeButton(),
-              ),
+              Positioned(top: 8, right: 8, child: _buildViewModeButton()),
             ],
           );
         }
@@ -1135,11 +1130,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                 ),
                 child: const RoutingTableView(),
               ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: _buildViewModeButton(),
-              ),
+              Positioned(top: 8, right: 8, child: _buildViewModeButton()),
             ],
           );
         }
@@ -1182,11 +1173,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                     : _buildCanvasContent(context, state),
               ),
             ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: _buildViewModeButton(),
-            ),
+            Positioned(top: 8, right: 8, child: _buildViewModeButton()),
             // AUX bus usage + MiniMap in bottom-right corner
             if (state is RoutingEditorStateLoaded)
               Positioned(
@@ -1202,8 +1189,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
                       focusedBusNumber: _deriveFocusedBusNumber(state),
                       onBusTapped: (bus) =>
                           context.read<RoutingEditorCubit>().focusAuxBus(bus),
-                      onBusMoved: (source, dest) =>
-                          context.read<RoutingEditorCubit>().moveAuxBus(source, dest),
+                      onBusMoved: (source, dest) => context
+                          .read<RoutingEditorCubit>()
+                          .moveAuxBus(source, dest),
                     ),
                     const SizedBox(height: 8),
                     LayoutBuilder(
@@ -2767,7 +2755,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
       Map<int, bool> toggles,
       Map<int, int> parameterNumbers,
       List<int> channelNumbers,
-    }) es5Data,
+    })
+    es5Data,
   ) {
     final guid = algorithm.algorithm.guid;
     if (guid.startsWith('py')) {
@@ -3004,7 +2993,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     }
 
     final editorState = context.read<RoutingEditorCubit>().state;
-    final hasExtended = editorState is RoutingEditorStateLoaded &&
+    final hasExtended =
+        editorState is RoutingEditorStateLoaded &&
         editorState.hasExtendedAuxBuses;
 
     // Choose rendering approach based on platform capabilities
@@ -3416,7 +3406,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     if (conn == null) return;
 
     final editorState = context.read<RoutingEditorCubit>().state;
-    final hasExtended = editorState is RoutingEditorStateLoaded &&
+    final hasExtended =
+        editorState is RoutingEditorStateLoaded &&
         editorState.hasExtendedAuxBuses;
     final label = painter.ConnectionPainter.formatBusLabelWithMode(
       conn.busNumber,
@@ -4042,7 +4033,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget>
     }
 
     // Check focused algorithm IDs for highlight changes
-    if (!_setEquals(previous.focusedAlgorithmIds, current.focusedAlgorithmIds)) {
+    if (!_setEquals(
+      previous.focusedAlgorithmIds,
+      current.focusedAlgorithmIds,
+    )) {
       return true;
     }
 

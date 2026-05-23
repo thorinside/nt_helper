@@ -472,7 +472,6 @@ class McpServerService extends ChangeNotifier {
     return server;
   }
 
-
   /// Create a new transport and connect server following example pattern
   Future<StreamableHTTPServerTransport> _createNewTransport({
     String? sessionId,

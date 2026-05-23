@@ -6,21 +6,11 @@ import 'package:nt_helper/models/sd_card_file_system.dart';
 
 class MockIDistingMidiManager extends Mock implements IDistingMidiManager {}
 
-DirectoryEntry _file(String name) => DirectoryEntry(
-      name: name,
-      attributes: 0x20,
-      date: 0,
-      time: 0,
-      size: 0,
-    );
+DirectoryEntry _file(String name) =>
+    DirectoryEntry(name: name, attributes: 0x20, date: 0, time: 0, size: 0);
 
-DirectoryEntry _dir(String name) => DirectoryEntry(
-      name: '$name/',
-      attributes: 0x10,
-      date: 0,
-      time: 0,
-      size: 0,
-    );
+DirectoryEntry _dir(String name) =>
+    DirectoryEntry(name: '$name/', attributes: 0x10, date: 0, time: 0, size: 0);
 
 void main() {
   late MockIDistingMidiManager mockManager;
@@ -32,19 +22,23 @@ void main() {
   });
 
   group('PresetFileSystemImpl.listFiles', () {
-    test('returns empty list when requestDirectoryListing returns null',
-        () async {
-      when(() => mockManager.requestDirectoryListing(any()))
-          .thenAnswer((_) async => null);
+    test(
+      'returns empty list when requestDirectoryListing returns null',
+      () async {
+        when(
+          () => mockManager.requestDirectoryListing(any()),
+        ).thenAnswer((_) async => null);
 
-      final result = await fileSystem.listFiles('samples');
+        final result = await fileSystem.listFiles('samples');
 
-      expect(result, isEmpty);
-    });
+        expect(result, isEmpty);
+      },
+    );
 
     test('returns empty list for empty directory', () async {
-      when(() => mockManager.requestDirectoryListing('samples'))
-          .thenAnswer((_) async => DirectoryListing(entries: []));
+      when(
+        () => mockManager.requestDirectoryListing('samples'),
+      ).thenAnswer((_) async => DirectoryListing(entries: []));
 
       final result = await fileSystem.listFiles('samples');
 
@@ -52,11 +46,10 @@ void main() {
     });
 
     test('returns full paths for files in root directory', () async {
-      when(() => mockManager.requestDirectoryListing('samples'))
-          .thenAnswer((_) async => DirectoryListing(entries: [
-                _file('kick.wav'),
-                _file('snare.wav'),
-              ]));
+      when(() => mockManager.requestDirectoryListing('samples')).thenAnswer(
+        (_) async =>
+            DirectoryListing(entries: [_file('kick.wav'), _file('snare.wav')]),
+      );
 
       final result = await fileSystem.listFiles('samples');
 
@@ -64,11 +57,10 @@ void main() {
     });
 
     test('non-recursive does not descend into subdirectories', () async {
-      when(() => mockManager.requestDirectoryListing('samples'))
-          .thenAnswer((_) async => DirectoryListing(entries: [
-                _file('kick.wav'),
-                _dir('Drums'),
-              ]));
+      when(() => mockManager.requestDirectoryListing('samples')).thenAnswer(
+        (_) async =>
+            DirectoryListing(entries: [_file('kick.wav'), _dir('Drums')]),
+      );
 
       final result = await fileSystem.listFiles('samples', recursive: false);
 
@@ -78,64 +70,74 @@ void main() {
     });
 
     test('recursive descends into subdirectories with full paths', () async {
-      when(() => mockManager.requestDirectoryListing('samples'))
-          .thenAnswer((_) async => DirectoryListing(entries: [
-                _file('root.wav'),
-                _dir('Drums'),
-              ]));
-      when(() => mockManager.requestDirectoryListing('samples/Drums'))
-          .thenAnswer((_) async => DirectoryListing(entries: [
-                _file('kick.wav'),
-                _file('snare.wav'),
-              ]));
+      when(() => mockManager.requestDirectoryListing('samples')).thenAnswer(
+        (_) async =>
+            DirectoryListing(entries: [_file('root.wav'), _dir('Drums')]),
+      );
+      when(
+        () => mockManager.requestDirectoryListing('samples/Drums'),
+      ).thenAnswer(
+        (_) async =>
+            DirectoryListing(entries: [_file('kick.wav'), _file('snare.wav')]),
+      );
 
       final result = await fileSystem.listFiles('samples', recursive: true);
 
-      expect(result, unorderedEquals([
-        'samples/root.wav',
-        'samples/Drums/kick.wav',
-        'samples/Drums/snare.wav',
-      ]));
+      expect(
+        result,
+        unorderedEquals([
+          'samples/root.wav',
+          'samples/Drums/kick.wav',
+          'samples/Drums/snare.wav',
+        ]),
+      );
     });
 
     test('recursive handles nested subdirectories', () async {
-      when(() => mockManager.requestDirectoryListing('samples'))
-          .thenAnswer((_) async => DirectoryListing(entries: [_dir('A')]));
-      when(() => mockManager.requestDirectoryListing('samples/A'))
-          .thenAnswer((_) async => DirectoryListing(entries: [_dir('B')]));
-      when(() => mockManager.requestDirectoryListing('samples/A/B'))
-          .thenAnswer(
-              (_) async => DirectoryListing(entries: [_file('deep.wav')]));
+      when(
+        () => mockManager.requestDirectoryListing('samples'),
+      ).thenAnswer((_) async => DirectoryListing(entries: [_dir('A')]));
+      when(
+        () => mockManager.requestDirectoryListing('samples/A'),
+      ).thenAnswer((_) async => DirectoryListing(entries: [_dir('B')]));
+      when(
+        () => mockManager.requestDirectoryListing('samples/A/B'),
+      ).thenAnswer((_) async => DirectoryListing(entries: [_file('deep.wav')]));
 
       final result = await fileSystem.listFiles('samples', recursive: true);
 
       expect(result, ['samples/A/B/deep.wav']);
     });
 
-    test('strips trailing slash from directory names in path construction',
-        () async {
-      // Hardware appends '/' to directory names; ensure path is constructed correctly
-      when(() => mockManager.requestDirectoryListing('samples'))
-          .thenAnswer((_) async => DirectoryListing(entries: [
-                _dir('Drums'), // stored as 'Drums/' by hardware
-              ]));
-      when(() => mockManager.requestDirectoryListing('samples/Drums'))
-          .thenAnswer((_) async => DirectoryListing(entries: [
-                _file('kick.wav'),
-              ]));
+    test(
+      'strips trailing slash from directory names in path construction',
+      () async {
+        // Hardware appends '/' to directory names; ensure path is constructed correctly
+        when(() => mockManager.requestDirectoryListing('samples')).thenAnswer(
+          (_) async => DirectoryListing(
+            entries: [
+              _dir('Drums'), // stored as 'Drums/' by hardware
+            ],
+          ),
+        );
+        when(
+          () => mockManager.requestDirectoryListing('samples/Drums'),
+        ).thenAnswer(
+          (_) async => DirectoryListing(entries: [_file('kick.wav')]),
+        );
 
-      final result = await fileSystem.listFiles('samples', recursive: true);
+        final result = await fileSystem.listFiles('samples', recursive: true);
 
-      // Should be 'samples/Drums/kick.wav' not 'samples/Drums//kick.wav'
-      expect(result, ['samples/Drums/kick.wav']);
-    });
+        // Should be 'samples/Drums/kick.wav' not 'samples/Drums//kick.wav'
+        expect(result, ['samples/Drums/kick.wav']);
+      },
+    );
 
     test('directories are not included in file results', () async {
-      when(() => mockManager.requestDirectoryListing('samples'))
-          .thenAnswer((_) async => DirectoryListing(entries: [
-                _dir('Drums'),
-                _file('top.wav'),
-              ]));
+      when(() => mockManager.requestDirectoryListing('samples')).thenAnswer(
+        (_) async =>
+            DirectoryListing(entries: [_dir('Drums'), _file('top.wav')]),
+      );
 
       final result = await fileSystem.listFiles('samples', recursive: false);
 

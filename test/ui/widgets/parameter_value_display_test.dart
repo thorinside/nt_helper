@@ -22,18 +22,20 @@ Future<void> _doubleTap(WidgetTester tester, Finder finder) async {
 void main() {
   group('ParameterValueDisplay double-tap editing', () {
     testWidgets('1. Double-tap unit display enters edit mode', (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 440,
-          min: 0,
-          max: 20000,
-          name: 'Frequency',
-          unit: 'Hz',
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 440,
+            min: 0,
+            max: 20000,
+            name: 'Frequency',
+            unit: 'Hz',
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       expect(find.text('440 Hz'), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
@@ -45,17 +47,19 @@ void main() {
     });
 
     testWidgets('2. Double-tap raw integer enters edit mode', (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 50,
-          min: 0,
-          max: 100,
-          name: 'Level',
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 50,
+            min: 0,
+            max: 100,
+            name: 'Level',
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       expect(find.text('50'), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
@@ -65,63 +69,71 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
     });
 
-    testWidgets('3. Double-tap On/Off does NOT enter edit mode',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 1,
-          min: 0,
-          max: 1,
-          name: 'Enabled',
-          isOnOff: true,
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+    testWidgets('3. Double-tap On/Off does NOT enter edit mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 1,
+            min: 0,
+            max: 1,
+            name: 'Enabled',
+            isOnOff: true,
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       final checkbox = find.byType(Checkbox);
       expect(checkbox, findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 
-    testWidgets('4. Double-tap enum dropdown does NOT enter edit mode',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 0,
-          min: 0,
-          max: 2,
-          name: 'Mode',
-          dropdownItems: const ['Sine', 'Square', 'Saw'],
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+    testWidgets('4. Double-tap enum dropdown does NOT enter edit mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 0,
+            min: 0,
+            max: 2,
+            name: 'Mode',
+            dropdownItems: const ['Sine', 'Square', 'Saw'],
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       // DropdownMenu has its own TextField internally, that's expected.
       // Verify there's exactly one (the dropdown's), not an editing one.
       expect(find.byType(DropdownMenu<String>), findsOneWidget);
-      final textFieldCount =
-          tester.widgetList(find.byType(TextField)).length;
+      final textFieldCount = tester.widgetList(find.byType(TextField)).length;
       expect(textFieldCount, 1); // Only the dropdown's internal TextField
     });
 
-    testWidgets('5. Double-tap MIDI note does NOT enter edit mode',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 60,
-          min: 0,
-          max: 127,
-          name: 'Note',
-          unit: 'semitones',
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+    testWidgets('5. Double-tap MIDI note does NOT enter edit mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 60,
+            min: 0,
+            max: 127,
+            name: 'Note',
+            unit: 'semitones',
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       expect(find.byType(TextField), findsNothing);
 
@@ -132,20 +144,23 @@ void main() {
       expect(find.byType(TextField), findsNothing);
     });
 
-    testWidgets('6. Double-tap displayString does NOT enter edit mode',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 5,
-          min: 0,
-          max: 10,
-          name: 'Preset',
-          displayString: 'Cool Preset',
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+    testWidgets('6. Double-tap displayString does NOT enter edit mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 5,
+            min: 0,
+            max: 10,
+            name: 'Preset',
+            displayString: 'Cool Preset',
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       expect(find.text('Cool Preset'), findsOneWidget);
 
@@ -154,20 +169,21 @@ void main() {
       expect(find.byType(TextField), findsNothing);
     });
 
-    testWidgets('7. TextField shows scaled value without unit',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 440,
-          min: 0,
-          max: 20000,
-          name: 'Frequency',
-          unit: 'Hz',
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+    testWidgets('7. TextField shows scaled value without unit', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 440,
+            min: 0,
+            max: 20000,
+            name: 'Frequency',
+            unit: 'Hz',
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       await _doubleTap(tester, find.text('440 Hz'));
 
@@ -176,19 +192,21 @@ void main() {
     });
 
     testWidgets('8. TextField shows correct decimal value', (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 4400,
-          min: 0,
-          max: 20000,
-          name: 'Frequency',
-          unit: 'Hz',
-          powerOfTen: -1,
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 4400,
+            min: 0,
+            max: 20000,
+            name: 'Frequency',
+            unit: 'Hz',
+            powerOfTen: -1,
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       expect(find.text('440.0 Hz'), findsOneWidget);
 
@@ -200,18 +218,20 @@ void main() {
 
     testWidgets('9. Enter submits and converts to raw value', (tester) async {
       int? submittedValue;
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 440,
-          min: 0,
-          max: 20000,
-          name: 'Frequency',
-          unit: 'Hz',
-          widescreen: false,
-          onValueChanged: (v) => submittedValue = v,
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 440,
+            min: 0,
+            max: 20000,
+            name: 'Frequency',
+            unit: 'Hz',
+            widescreen: false,
+            onValueChanged: (v) => submittedValue = v,
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       await _doubleTap(tester, find.text('440 Hz'));
 
@@ -224,17 +244,19 @@ void main() {
 
     testWidgets('10. Value clamped to max', (tester) async {
       int? submittedValue;
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 50,
-          min: 0,
-          max: 100,
-          name: 'Level',
-          widescreen: false,
-          onValueChanged: (v) => submittedValue = v,
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 50,
+            min: 0,
+            max: 100,
+            name: 'Level',
+            widescreen: false,
+            onValueChanged: (v) => submittedValue = v,
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       await _doubleTap(tester, find.text('50'));
 
@@ -247,17 +269,19 @@ void main() {
 
     testWidgets('11. Escape cancels without value change', (tester) async {
       int? submittedValue;
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 50,
-          min: 0,
-          max: 100,
-          name: 'Level',
-          widescreen: false,
-          onValueChanged: (v) => submittedValue = v,
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 50,
+            min: 0,
+            max: 100,
+            name: 'Level',
+            widescreen: false,
+            onValueChanged: (v) => submittedValue = v,
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       await _doubleTap(tester, find.text('50'));
 
@@ -276,27 +300,29 @@ void main() {
       int? submittedValue;
       // Use a second focusable widget so we can shift focus away
       final otherFocus = FocusNode();
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: Column(
-            children: [
-              SizedBox(
-                width: 300,
-                child: ParameterValueDisplay(
-                  currentValue: 50,
-                  min: 0,
-                  max: 100,
-                  name: 'Level',
-                  widescreen: false,
-                  onValueChanged: (v) => submittedValue = v,
-                  onLongPress: () {},
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                SizedBox(
+                  width: 300,
+                  child: ParameterValueDisplay(
+                    currentValue: 50,
+                    min: 0,
+                    max: 100,
+                    name: 'Level',
+                    widescreen: false,
+                    onValueChanged: (v) => submittedValue = v,
+                    onLongPress: () {},
+                  ),
                 ),
-              ),
-              TextField(focusNode: otherFocus),
-            ],
+                TextField(focusNode: otherFocus),
+              ],
+            ),
           ),
         ),
-      ));
+      );
 
       await _doubleTap(tester, find.text('50'));
 
@@ -312,19 +338,21 @@ void main() {
 
     testWidgets('13. Decimal round-trip', (tester) async {
       int? submittedValue;
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 5000,
-          min: 0,
-          max: 10000,
-          name: 'Frequency',
-          unit: 'Hz',
-          powerOfTen: -2,
-          widescreen: false,
-          onValueChanged: (v) => submittedValue = v,
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 5000,
+            min: 0,
+            max: 10000,
+            name: 'Frequency',
+            unit: 'Hz',
+            powerOfTen: -2,
+            widescreen: false,
+            onValueChanged: (v) => submittedValue = v,
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       expect(find.text('50.00 Hz'), findsOneWidget);
 
@@ -338,17 +366,19 @@ void main() {
     });
 
     testWidgets('14. After submit, returns to text display', (tester) async {
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 50,
-          min: 0,
-          max: 100,
-          name: 'Level',
-          widescreen: false,
-          onValueChanged: (_) {},
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 50,
+            min: 0,
+            max: 100,
+            name: 'Level',
+            widescreen: false,
+            onValueChanged: (_) {},
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       await _doubleTap(tester, find.text('50'));
 
@@ -365,17 +395,19 @@ void main() {
 
     testWidgets('15. Negative value support', (tester) async {
       int? submittedValue;
-      await tester.pumpWidget(_wrap(
-        ParameterValueDisplay(
-          currentValue: 0,
-          min: -100,
-          max: 100,
-          name: 'Pan',
-          widescreen: false,
-          onValueChanged: (v) => submittedValue = v,
-          onLongPress: () {},
+      await tester.pumpWidget(
+        _wrap(
+          ParameterValueDisplay(
+            currentValue: 0,
+            min: -100,
+            max: 100,
+            name: 'Pan',
+            widescreen: false,
+            onValueChanged: (v) => submittedValue = v,
+            onLongPress: () {},
+          ),
         ),
-      ));
+      );
 
       await _doubleTap(tester, find.text('0'));
 

@@ -266,14 +266,20 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 5), // Out of range
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 5,
+          ), // Out of range
         ],
         enums: const [],
         mappings: const [],
         valueStrings: const [],
       );
 
-      final paramsWithHighValue = StepSequencerParams.fromSlot(slotWithHighValue);
+      final paramsWithHighValue = StepSequencerParams.fromSlot(
+        slotWithHighValue,
+      );
       expect(paramsWithHighValue.permutation, equals(0));
 
       // In playback_controls, we clamp the value when reading
@@ -304,14 +310,20 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 5), // Out of range
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 5,
+          ), // Out of range
         ],
         enums: const [],
         mappings: const [],
         valueStrings: const [],
       );
 
-      final paramsWithHighValue = StepSequencerParams.fromSlot(slotWithHighValue);
+      final paramsWithHighValue = StepSequencerParams.fromSlot(
+        slotWithHighValue,
+      );
       expect(paramsWithHighValue.gateType, equals(0));
 
       // In playback_controls, we clamp the value when reading
@@ -348,7 +360,9 @@ void main() {
         valueStrings: const [],
       );
 
-      final paramsNoPermutation = StepSequencerParams.fromSlot(slotNoPermutation);
+      final paramsNoPermutation = StepSequencerParams.fromSlot(
+        slotNoPermutation,
+      );
       expect(paramsNoPermutation.permutation, isNull);
     });
 
@@ -420,8 +434,17 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50, isDisabled: false),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0), // Gate mode
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 50,
+            isDisabled: false,
+          ),
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            value: 0,
+          ), // Gate mode
         ],
         enums: const [],
         mappings: const [],
@@ -468,8 +491,17 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50, isDisabled: true),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 1), // Trigger mode
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 50,
+            isDisabled: true,
+          ),
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            value: 1,
+          ), // Trigger mode
         ],
         enums: const [],
         mappings: const [],
@@ -516,8 +548,17 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 10, isDisabled: true),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0), // Gate mode
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 10,
+            isDisabled: true,
+          ),
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            value: 0,
+          ), // Gate mode
         ],
         enums: const [],
         mappings: const [],
@@ -564,8 +605,17 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 10, isDisabled: false),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 1), // Trigger mode
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 10,
+            isDisabled: false,
+          ),
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            value: 1,
+          ), // Trigger mode
         ],
         enums: const [],
         mappings: const [],
@@ -602,7 +652,11 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50), // No isDisabled specified
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 50,
+          ), // No isDisabled specified
         ],
         enums: const [],
         mappings: const [],

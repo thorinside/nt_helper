@@ -49,8 +49,6 @@ class StepSequencerParams {
     }
   }
 
-
-
   /// Gets parameter index for a specific step and parameter type
   ///
   /// Uses hardware naming pattern: "1:Pitch", "2:Velocity", etc.
@@ -90,7 +88,8 @@ class StepSequencerParams {
   int? get currentSequence => _paramIndices['Sequence'];
 
   // Permutation and Gate Type parameters (global playback controls)
-  int? get permutation => _findParameter('Permutation') ?? _findParameter('Permute');
+  int? get permutation =>
+      _findParameter('Permutation') ?? _findParameter('Permute');
   int? get gateType =>
       _findParameter('Gate type') ?? // Firmware uses lowercase 't'
       _findParameter('Gate Type') ?? // Legacy fallback
@@ -99,7 +98,8 @@ class StepSequencerParams {
 
   // Randomize parameters (17 total)
   // Trigger parameter
-  int? get randomise => _findParameter('Randomise') ?? _findParameter('Randomize');
+  int? get randomise =>
+      _findParameter('Randomise') ?? _findParameter('Randomize');
 
   // What to randomize (0-3: Nothing, Pitches, Rhythm, Both)
   int? get randomiseWhat =>

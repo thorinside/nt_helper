@@ -141,8 +141,13 @@ class RequestKey {
           libraryIndex == other.libraryIndex;
 
   @override
-  int get hashCode =>
-      Object.hash(sysExId, messageType, algorithmIndex, parameterNumber, libraryIndex);
+  int get hashCode => Object.hash(
+    sysExId,
+    messageType,
+    algorithmIndex,
+    parameterNumber,
+    libraryIndex,
+  );
 
   @override
   String toString() =>

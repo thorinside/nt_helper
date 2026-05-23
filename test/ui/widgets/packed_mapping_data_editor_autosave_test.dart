@@ -85,11 +85,7 @@ void main() {
     });
 
     testWidgets('CV tab shows RangeSlider and Slider', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -151,8 +147,9 @@ void main() {
       expect(lastSavedData?.midiCC, equals(64));
     });
 
-    testWidgets('MIDI RangeSlider triggers save after debounce',
-        (tester) async {
+    testWidgets('MIDI RangeSlider triggers save after debounce', (
+      tester,
+    ) async {
       int saveCount = 0;
 
       await tester.pumpWidget(
@@ -205,8 +202,7 @@ void main() {
       expect(lastSavedData?.i2cCC, equals(32));
     });
 
-    testWidgets('I2C RangeSlider is present',
-        (tester) async {
+    testWidgets('I2C RangeSlider is present', (tester) async {
       int saveCount = 0;
 
       await tester.pumpWidget(
@@ -226,43 +222,44 @@ void main() {
       expect(saveCount, 0);
     });
 
-    testWidgets('Rapid slider edits collapse to single save after final debounce', (
-      tester,
-    ) async {
-      int saveCount = 0;
-      PackedMappingData? lastSavedData;
+    testWidgets(
+      'Rapid slider edits collapse to single save after final debounce',
+      (tester) async {
+        int saveCount = 0;
+        PackedMappingData? lastSavedData;
 
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {
-            saveCount++;
-            lastSavedData = data;
-          },
-        ),
-      );
+        await tester.pumpWidget(
+          createTestWidget(
+            onSave: (data) async {
+              saveCount++;
+              lastSavedData = data;
+            },
+          ),
+        );
 
-      await tester.tap(find.text('CV'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('CV'));
+        await tester.pumpAndSettle();
 
-      final sliderFinder = find.byType(Slider);
-      expect(sliderFinder, findsOneWidget);
+        final sliderFinder = find.byType(Slider);
+        expect(sliderFinder, findsOneWidget);
 
-      // Rapid slider changes
-      tester.widget<Slider>(sliderFinder).onChanged!(3.0);
-      await tester.pump(const Duration(milliseconds: 200));
-      tester.widget<Slider>(sliderFinder).onChanged!(6.0);
-      await tester.pump(const Duration(milliseconds: 200));
-      tester.widget<Slider>(sliderFinder).onChanged!(9.0);
-      await tester.pump();
+        // Rapid slider changes
+        tester.widget<Slider>(sliderFinder).onChanged!(3.0);
+        await tester.pump(const Duration(milliseconds: 200));
+        tester.widget<Slider>(sliderFinder).onChanged!(6.0);
+        await tester.pump(const Duration(milliseconds: 200));
+        tester.widget<Slider>(sliderFinder).onChanged!(9.0);
+        await tester.pump();
 
-      expect(saveCount, 0);
+        expect(saveCount, 0);
 
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
 
-      expect(saveCount, 1);
-      expect(lastSavedData?.volts, equals(9));
-    });
+        expect(saveCount, 1);
+        expect(lastSavedData?.volts, equals(9));
+      },
+    );
   });
 
   group('PackedMappingDataEditor - Dropdown and Switch Autosave', () {
@@ -367,7 +364,9 @@ void main() {
       expect(lastSavedData?.cvInput, equals(3));
     });
 
-    testWidgets('MIDI Channel dropdown triggers immediate save', (tester) async {
+    testWidgets('MIDI Channel dropdown triggers immediate save', (
+      tester,
+    ) async {
       int saveCount = 0;
       PackedMappingData? lastSavedData;
 
@@ -423,8 +422,9 @@ void main() {
             widget is DropdownMenu<MidiMappingType> &&
             widget.label.toString().contains('MIDI Type'),
       );
-      final dropdown =
-          tester.widget<DropdownMenu<MidiMappingType>>(dropdownFinder);
+      final dropdown = tester.widget<DropdownMenu<MidiMappingType>>(
+        dropdownFinder,
+      );
 
       dropdown.onSelected?.call(MidiMappingType.noteMomentary);
       await tester.pump();
@@ -435,7 +435,10 @@ void main() {
       await tester.pump();
 
       expect(saveCount, 1);
-      expect(lastSavedData?.midiMappingType, equals(MidiMappingType.noteMomentary));
+      expect(
+        lastSavedData?.midiMappingType,
+        equals(MidiMappingType.noteMomentary),
+      );
     });
 
     testWidgets('Unipolar switch triggers immediate save', (tester) async {
@@ -546,7 +549,9 @@ void main() {
       expect(lastSavedData?.isMidiEnabled, equals(true));
     });
 
-    testWidgets('MIDI Symmetric switch triggers immediate save', (tester) async {
+    testWidgets('MIDI Symmetric switch triggers immediate save', (
+      tester,
+    ) async {
       int saveCount = 0;
       PackedMappingData? lastSavedData;
 
@@ -586,8 +591,9 @@ void main() {
       int saveCount = 0;
       PackedMappingData? lastSavedData;
 
-      final testDataCC = PackedMappingData.filler()
-          .copyWith(midiMappingType: MidiMappingType.cc);
+      final testDataCC = PackedMappingData.filler().copyWith(
+        midiMappingType: MidiMappingType.cc,
+      );
 
       await tester.pumpWidget(
         createTestWidget(
@@ -880,11 +886,7 @@ void main() {
     }
 
     testWidgets('Indicator shows when slider is modified', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -918,11 +920,7 @@ void main() {
     });
 
     testWidgets('Indicator shows when dropdown is changed', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -949,11 +947,7 @@ void main() {
     });
 
     testWidgets('Indicator shows when switch is toggled', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -1038,11 +1032,7 @@ void main() {
     });
 
     testWidgets('Indicator clears when save completes', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -1069,13 +1059,10 @@ void main() {
       );
     });
 
-    testWidgets('Indicator persists across tab switches until save completes',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+    testWidgets('Indicator persists across tab switches until save completes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -1117,13 +1104,10 @@ void main() {
       );
     });
 
-    testWidgets('Indicator tooltip displays correct message for dirty state',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+    testWidgets('Indicator tooltip displays correct message for dirty state', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('CV'));
       await tester.pumpAndSettle();
@@ -1191,13 +1175,10 @@ void main() {
       );
     }
 
-    testWidgets('MIDI tab shows RangeSlider instead of text fields',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+    testWidgets('MIDI tab shows RangeSlider instead of text fields', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('MIDI'));
       await tester.pumpAndSettle();
@@ -1222,13 +1203,10 @@ void main() {
       );
     });
 
-    testWidgets('I2C tab shows RangeSlider instead of text fields',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          onSave: (data) async {},
-        ),
-      );
+    testWidgets('I2C tab shows RangeSlider instead of text fields', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget(onSave: (data) async {}));
 
       await tester.tap(find.text('I2C'));
       await tester.pumpAndSettle();
@@ -1253,8 +1231,9 @@ void main() {
       );
     });
 
-    testWidgets('New mapping auto-defaults MIDI min/max to parameter range',
-        (tester) async {
+    testWidgets('New mapping auto-defaults MIDI min/max to parameter range', (
+      tester,
+    ) async {
       PackedMappingData? lastSavedData;
 
       await tester.pumpWidget(

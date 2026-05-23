@@ -1313,8 +1313,10 @@ class MockDistingMidiManager implements IDistingMidiManager {
     // No-op in mock mode - remount not applicable without hardware
   }
 
-  final List<PerformancePageItem> _perfPageItems =
-      List.generate(30, (i) => PerformancePageItem.empty(i));
+  final List<PerformancePageItem> _perfPageItems = List.generate(
+    30,
+    (i) => PerformancePageItem.empty(i),
+  );
 
   @override
   Future<PerformancePageItem?> requestPerfPageItem(int itemIndex) async {

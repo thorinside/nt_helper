@@ -44,8 +44,9 @@ void main() {
     when(() => toolRegistry.findByName(any())).thenReturn(null);
     when(() => memoryService.readMemory()).thenAnswer((_) async => '');
     when(() => memoryService.readDailyLogs()).thenAnswer((_) async => '');
-    when(() => memoryService.saveSessionSnapshot(any()))
-        .thenAnswer((_) async {});
+    when(
+      () => memoryService.saveSessionSnapshot(any()),
+    ).thenAnswer((_) async {});
   });
 
   group('Bug 1: permanent thinking spinner — onDone without isFinal', () {
@@ -155,8 +156,7 @@ void main() {
         expect(s.isProcessing, isFalse);
         expect(
           s.messages.any(
-            (m) =>
-                m.role == ChatMessageRole.assistant && m.content == 'Hello!',
+            (m) => m.role == ChatMessageRole.assistant && m.content == 'Hello!',
           ),
           isTrue,
         );
@@ -194,8 +194,9 @@ void main() {
     blocTest<ChatCubit, ChatState>(
       'resets isProcessing when memory bootstrap throws',
       build: () {
-        when(() => memoryService.readMemory())
-            .thenThrow(Exception('filesystem error'));
+        when(
+          () => memoryService.readMemory(),
+        ).thenThrow(Exception('filesystem error'));
 
         final provider = MockLlmProvider();
         when(() => provider.dispose()).thenReturn(null);
@@ -247,93 +248,96 @@ void main() {
   });
 
   group('Bug 3: cancelProcessing after completed loop wipes history', () {
-    test('cancelProcessing after successful loop preserves conversation history',
-        () async {
-      final provider = MockLlmProvider();
-      when(() => provider.dispose()).thenReturn(null);
-      when(
-        () => provider.sendMessages(
-          messages: any(named: 'messages'),
-          tools: any(named: 'tools'),
-          systemPrompt: any(named: 'systemPrompt'),
-        ),
-      ).thenAnswer(
-        (_) async => const LlmResponse(
-          content: 'Hello!',
-          isComplete: true,
-          usage: LlmUsage(inputTokens: 10, outputTokens: 5),
-        ),
-      );
+    test(
+      'cancelProcessing after successful loop preserves conversation history',
+      () async {
+        final provider = MockLlmProvider();
+        when(() => provider.dispose()).thenReturn(null);
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer(
+          (_) async => const LlmResponse(
+            content: 'Hello!',
+            isComplete: true,
+            usage: LlmUsage(inputTokens: 10, outputTokens: 5),
+          ),
+        );
 
-      final cubit = ChatCubit(
-        toolRegistry: toolRegistry,
-        memoryService: memoryService,
-        providerFactory: (_) => provider,
-      );
-      addTearDown(cubit.close);
+        final cubit = ChatCubit(
+          toolRegistry: toolRegistry,
+          memoryService: memoryService,
+          providerFactory: (_) => provider,
+        );
+        addTearDown(cubit.close);
 
-      // Send a message and let the loop complete
-      await cubit.sendMessage('hello', _settings);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Send a message and let the loop complete
+        await cubit.sendMessage('hello', _settings);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      final stateBeforeCancel = cubit.state as ChatReady;
-      expect(stateBeforeCancel.isProcessing, isFalse);
-      expect(stateBeforeCancel.messages, hasLength(2)); // user + assistant
+        final stateBeforeCancel = cubit.state as ChatReady;
+        expect(stateBeforeCancel.isProcessing, isFalse);
+        expect(stateBeforeCancel.messages, hasLength(2)); // user + assistant
 
-      // Cancel after loop already completed — should be a no-op
-      cubit.cancelProcessing();
+        // Cancel after loop already completed — should be a no-op
+        cubit.cancelProcessing();
 
-      // Send another message — it should work, proving history wasn't wiped
-      when(
-        () => provider.sendMessages(
-          messages: any(named: 'messages'),
-          tools: any(named: 'tools'),
-          systemPrompt: any(named: 'systemPrompt'),
-        ),
-      ).thenAnswer(
-        (_) async => const LlmResponse(
-          content: 'Second response',
-          isComplete: true,
-          usage: LlmUsage(inputTokens: 15, outputTokens: 8),
-        ),
-      );
+        // Send another message — it should work, proving history wasn't wiped
+        when(
+          () => provider.sendMessages(
+            messages: any(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).thenAnswer(
+          (_) async => const LlmResponse(
+            content: 'Second response',
+            isComplete: true,
+            usage: LlmUsage(inputTokens: 15, outputTokens: 8),
+          ),
+        );
 
-      await cubit.sendMessage('second message', _settings);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        await cubit.sendMessage('second message', _settings);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // The LLM should have received the full conversation history
-      // (user + assistant from first turn, plus user from second turn).
-      // If cancelProcessing wiped the internal history, the LLM would only
-      // see the second user message.
-      final captured = verify(
-        () => provider.sendMessages(
-          messages: captureAny(named: 'messages'),
-          tools: any(named: 'tools'),
-          systemPrompt: any(named: 'systemPrompt'),
-        ),
-      ).captured;
+        // The LLM should have received the full conversation history
+        // (user + assistant from first turn, plus user from second turn).
+        // If cancelProcessing wiped the internal history, the LLM would only
+        // see the second user message.
+        final captured = verify(
+          () => provider.sendMessages(
+            messages: captureAny(named: 'messages'),
+            tools: any(named: 'tools'),
+            systemPrompt: any(named: 'systemPrompt'),
+          ),
+        ).captured;
 
-      // The second sendMessage call's messages should include the first turn.
-      // captured contains one list per invocation. The second invocation (index 1)
-      // is the one from the agentic loop's second call.
-      // But sendMessages is called once per loop iteration, and our mock returns
-      // a final response immediately. So the second call to sendMessages is from
-      // the second sendMessage(). The messages passed should be:
-      // user("hello"), assistant("Hello!"), user("second message")
-      final secondCallMessages = captured.last as List<LlmMessage>;
-      expect(
-        secondCallMessages.length,
-        greaterThanOrEqualTo(3),
-        reason: 'Expected at least 3 messages: '
-            '${secondCallMessages.map((m) => '${m.role.name}:${m.content}').join(', ')}',
-      );
-      // First-turn user message should be present
-      expect(secondCallMessages[0].content, 'hello');
-      // First-turn assistant response should be present
-      expect(secondCallMessages[1].content, 'Hello!');
-      // Second-turn user message should be present
-      expect(secondCallMessages[2].content, 'second message');
-    });
+        // The second sendMessage call's messages should include the first turn.
+        // captured contains one list per invocation. The second invocation (index 1)
+        // is the one from the agentic loop's second call.
+        // But sendMessages is called once per loop iteration, and our mock returns
+        // a final response immediately. So the second call to sendMessages is from
+        // the second sendMessage(). The messages passed should be:
+        // user("hello"), assistant("Hello!"), user("second message")
+        final secondCallMessages = captured.last as List<LlmMessage>;
+        expect(
+          secondCallMessages.length,
+          greaterThanOrEqualTo(3),
+          reason:
+              'Expected at least 3 messages: '
+              '${secondCallMessages.map((m) => '${m.role.name}:${m.content}').join(', ')}',
+        );
+        // First-turn user message should be present
+        expect(secondCallMessages[0].content, 'hello');
+        // First-turn assistant response should be present
+        expect(secondCallMessages[1].content, 'Hello!');
+        // Second-turn user message should be present
+        expect(secondCallMessages[2].content, 'second message');
+      },
+    );
   });
 
   group('Bug 4: cancelProcessing resets state', () {
@@ -367,10 +371,7 @@ void main() {
       expect(s.isProcessing, isFalse);
       expect(s.currentToolName, isNull);
 
-      completer.complete(const LlmResponse(
-        content: 'late',
-        isComplete: true,
-      ));
+      completer.complete(const LlmResponse(content: 'late', isComplete: true));
     });
 
     test('cancelProcessing clears currentToolName', () async {
@@ -400,16 +401,12 @@ void main() {
       final s = cubit.state as ChatReady;
       expect(s.currentToolName, isNull);
 
-      completer.complete(const LlmResponse(
-        content: 'late',
-        isComplete: true,
-      ));
+      completer.complete(const LlmResponse(content: 'late', isComplete: true));
     });
   });
 
   group('Bug 5: compaction trim breaks message role ordering', () {
-    test(
-        'after compaction, history sent to provider starts with user message '
+    test('after compaction, history sent to provider starts with user message '
         'even when trim boundary falls mid-tool-sequence', () async {
       int callCount = 0;
 

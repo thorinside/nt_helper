@@ -4,13 +4,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 ///
 /// Uses heuristics (parameter names and number ranges) to assign parameters
 /// to MIDI, Routing, Modulation, or Global pages.
-enum ParamPage {
-  midi,
-  routing,
-  modulation,
-  global,
-  other,
-}
+enum ParamPage { midi, routing, modulation, global, other }
 
 class ParameterPageAssigner {
   /// Assigns a parameter to a specific page based on name patterns and parameter number
@@ -48,7 +42,8 @@ class ParameterPageAssigner {
 
     // Modulation/CV-related parameters
     if (name.contains('cv') ||
-        name.contains('mod') && !_isStepMod(name) || // Exclude "1:Mod" step params
+        name.contains('mod') &&
+            !_isStepMod(name) || // Exclude "1:Mod" step params
         name.contains('modulation') ||
         name.contains('lfo') ||
         name.contains('envelope') ||

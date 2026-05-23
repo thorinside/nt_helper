@@ -35,10 +35,14 @@ class BusLabelFormatter {
   /// Formats a bus value (alias for formatBusNumber)
   ///
   /// This is provided for convenience and compatibility.
-  static String formatBusValue(int busValue,
-      {bool hasExtendedAuxBuses = false}) {
-    return formatBusNumber(busValue,
-            hasExtendedAuxBuses: hasExtendedAuxBuses) ??
+  static String formatBusValue(
+    int busValue, {
+    bool hasExtendedAuxBuses = false,
+  }) {
+    return formatBusNumber(
+          busValue,
+          hasExtendedAuxBuses: hasExtendedAuxBuses,
+        ) ??
         'Bus$busValue';
   }
 
@@ -51,18 +55,24 @@ class BusLabelFormatter {
   /// - "ES-5 L" for bus 29
   /// - "ES-5 R" for bus 30
   /// - null for invalid bus numbers
-  static String? formatBusNumber(int? busNumber,
-      {bool hasExtendedAuxBuses = false}) {
+  static String? formatBusNumber(
+    int? busNumber, {
+    bool hasExtendedAuxBuses = false,
+  }) {
     if (busNumber == null || !isValidBusNumber(busNumber)) {
       return null;
     }
 
-    final localNumber =
-        getLocalBusNumber(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses);
+    final localNumber = getLocalBusNumber(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
     if (localNumber == null) return null;
 
-    final busType =
-        getBusType(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses);
+    final busType = getBusType(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
     switch (busType) {
       case BusType.input:
         return 'I$localNumber';
@@ -99,12 +109,16 @@ class BusLabelFormatter {
       return null;
     }
 
-    final localNumber =
-        getLocalBusNumber(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses);
+    final localNumber = getLocalBusNumber(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
     if (localNumber == null) return null;
 
-    final busType =
-        getBusType(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses);
+    final busType = getBusType(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
     switch (busType) {
       case BusType.input:
         return 'I$localNumber';
@@ -124,18 +138,24 @@ class BusLabelFormatter {
   /// Determines the type of bus from its number
   ///
   /// Returns the [BusType] for valid bus numbers, null otherwise
-  static BusType? getBusType(int? busNumber,
-      {bool hasExtendedAuxBuses = false}) {
+  static BusType? getBusType(
+    int? busNumber, {
+    bool hasExtendedAuxBuses = false,
+  }) {
     if (busNumber == null) return null;
     if (BusSpec.isPhysicalInput(busNumber)) {
       return BusType.input;
     } else if (BusSpec.isPhysicalOutput(busNumber)) {
       return BusType.output;
-    } else if (BusSpec.isAuxForFirmware(busNumber,
-        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+    } else if (BusSpec.isAuxForFirmware(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    )) {
       return BusType.auxiliary;
-    } else if (BusSpec.isEs5ForFirmware(busNumber,
-        hasExtendedAuxBuses: hasExtendedAuxBuses)) {
+    } else if (BusSpec.isEs5ForFirmware(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    )) {
       return BusType.es5;
     }
 
@@ -173,14 +193,18 @@ class BusLabelFormatter {
   /// - Bus 13-20 returns 1-8 (outputs start at 1)
   /// - Bus 21-64 returns 1-44 (aux buses start at 1, excluding ES-5)
   /// - Bus 29-30 returns 1-2 (ES-5 L/R)
-  static int? getLocalBusNumber(int? busNumber,
-      {bool hasExtendedAuxBuses = false}) {
+  static int? getLocalBusNumber(
+    int? busNumber, {
+    bool hasExtendedAuxBuses = false,
+  }) {
     if (busNumber == null || !isValidBusNumber(busNumber)) {
       return null;
     }
 
-    final busType =
-        getBusType(busNumber, hasExtendedAuxBuses: hasExtendedAuxBuses);
+    final busType = getBusType(
+      busNumber,
+      hasExtendedAuxBuses: hasExtendedAuxBuses,
+    );
     switch (busType) {
       case BusType.input:
         return busNumber; // Inputs are already 1-based
@@ -190,7 +214,8 @@ class BusLabelFormatter {
         return busNumber - (BusSpec.auxMin - 1); // Convert 21-64 to 1-44
       case BusType.es5:
         return BusSpec.isEs5Extended(busNumber)
-            ? busNumber - (BusSpec.es5MinExtended - 1) // Convert 65-66 to 1-2
+            ? busNumber -
+                  (BusSpec.es5MinExtended - 1) // Convert 65-66 to 1-2
             : busNumber - (BusSpec.es5Min - 1); // Convert 29-30 to 1-2
       case null:
         return null;

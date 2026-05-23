@@ -88,7 +88,9 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
     required this.config,
     super.validator,
     super.initialState,
-  }) : super(algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?);
+  }) : super(
+         algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?,
+       );
 
   @override
   List<Port> generateInputPorts() {
@@ -214,20 +216,21 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
     if (outputs is List && outputs.isNotEmpty) {
       for (final item in outputs) {
         if (item is Map) {
-          final port = buildPortFromDeclaration(
-            item,
-            direction: PortDirection.output,
-            defaultId: 'out_${ports.length + 1}',
-            defaultName: 'Output',
-            defaultType: PortType.audio,
-            includeOutputMode: true,
-          ).copyWith(
-            channelNumber: coerceInt(item['channel']),
-            isStereoChannel: item['channel'] != null,
-            stereoSide: item['channel']?.toString(),
-            isPolyVoice: item['voiceNumber'] != null,
-            voiceNumber: coerceInt(item['voiceNumber']),
-          );
+          final port =
+              buildPortFromDeclaration(
+                item,
+                direction: PortDirection.output,
+                defaultId: 'out_${ports.length + 1}',
+                defaultName: 'Output',
+                defaultType: PortType.audio,
+                includeOutputMode: true,
+              ).copyWith(
+                channelNumber: coerceInt(item['channel']),
+                isStereoChannel: item['channel'] != null,
+                stereoSide: item['channel']?.toString(),
+                isPolyVoice: item['voiceNumber'] != null,
+                voiceNumber: coerceInt(item['voiceNumber']),
+              );
 
           ports.add(port);
         }
@@ -278,8 +281,7 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
     }
 
     if (_isVirtualCvPort(destination)) {
-      return source.type == PortType.cv ||
-          source.type == PortType.audio;
+      return source.type == PortType.cv || source.type == PortType.audio;
     }
 
     return true;
@@ -456,8 +458,9 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
         // Check if this output parameter is controlled by any mode parameter
         // by iterating through the output mode map
         for (final entry in slot.outputModeMap.entries) {
-          final sourceParam = entry.key;  // Mode control parameter number
-          final affectedParams = entry.value;  // List of affected output parameters
+          final sourceParam = entry.key; // Mode control parameter number
+          final affectedParams =
+              entry.value; // List of affected output parameters
 
           if (affectedParams.contains(paramNumber)) {
             // This output is controlled by a mode parameter
@@ -537,7 +540,9 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
       'First output',
     );
     final gateOutputsParam = slot.parameters.firstWhere(
-      (p) => p.name == 'Gate outputs' || AlgorithmRouting.stripPagePrefix(p.name) == 'Gate outputs',
+      (p) =>
+          p.name == 'Gate outputs' ||
+          AlgorithmRouting.stripPagePrefix(p.name) == 'Gate outputs',
       orElse: () => ParameterInfo.filler(),
     );
     final hasPolyCvOutputPattern =
@@ -571,7 +576,9 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
 
       // Get ES-5 Expander parameter number for UI toggle synchronization
       final es5ExpanderParam = slot.parameters.firstWhere(
-        (p) => p.name == 'ES-5 Expander' || AlgorithmRouting.stripPagePrefix(p.name) == 'ES-5 Expander',
+        (p) =>
+            p.name == 'ES-5 Expander' ||
+            AlgorithmRouting.stripPagePrefix(p.name) == 'ES-5 Expander',
         orElse: () => ParameterInfo.filler(),
       );
       final es5ExpanderParamNumber = es5ExpanderParam.parameterNumber >= 0
@@ -727,8 +734,9 @@ class PolyAlgorithmRouting extends CachedAlgorithmRouting {
       String? paraGateMode;
       if (modeParameters != null &&
           modeParameters.containsKey('Para gate mode')) {
-        paraGateMode =
-            modeParameters['Para gate mode'] == 1 ? 'replace' : 'add';
+        paraGateMode = modeParameters['Para gate mode'] == 1
+            ? 'replace'
+            : 'add';
       }
 
       // Get mode from outputModeMap if available

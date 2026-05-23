@@ -164,7 +164,10 @@ void main() {
       expect(switchFinder, findsOneWidget);
 
       final switchListTile = tester.widget<SwitchListTile>(switchFinder);
-      final switchWidget = Switch(value: switchListTile.value, onChanged: switchListTile.onChanged);
+      final switchWidget = Switch(
+        value: switchListTile.value,
+        onChanged: switchListTile.onChanged,
+      );
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
@@ -192,7 +195,10 @@ void main() {
       expect(switchFinder, findsOneWidget);
 
       final switchListTile = tester.widget<SwitchListTile>(switchFinder);
-      final switchWidget = Switch(value: switchListTile.value, onChanged: switchListTile.onChanged);
+      final switchWidget = Switch(
+        value: switchListTile.value,
+        onChanged: switchListTile.onChanged,
+      );
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
@@ -216,7 +222,10 @@ void main() {
       expect(switchFinder, findsOneWidget);
 
       final switchListTile = tester.widget<SwitchListTile>(switchFinder);
-      final switchWidget = Switch(value: switchListTile.value, onChanged: switchListTile.onChanged);
+      final switchWidget = Switch(
+        value: switchListTile.value,
+        onChanged: switchListTile.onChanged,
+      );
 
       // Verify it's enabled (onChanged is not null)
       expect(switchWidget.onChanged, isNotNull);
@@ -242,7 +251,10 @@ void main() {
       expect(switchFinder, findsOneWidget);
 
       final switchListTile = tester.widget<SwitchListTile>(switchFinder);
-      final switchWidget = Switch(value: switchListTile.value, onChanged: switchListTile.onChanged);
+      final switchWidget = Switch(
+        value: switchListTile.value,
+        onChanged: switchListTile.onChanged,
+      );
 
       // Verify it's disabled (onChanged is null)
       expect(switchWidget.onChanged, isNull);
@@ -678,7 +690,9 @@ void main() {
       expect(find.text('Performance'), findsOneWidget);
     });
 
-    testWidgets('TabController has length 4 - navigate all tabs', (tester) async {
+    testWidgets('TabController has length 4 - navigate all tabs', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
 
       // Navigate through first 3 tabs (CV, MIDI, I2C)
@@ -741,8 +755,9 @@ void main() {
       );
     }
 
-    testWidgets('MIDI CC field shows 0 instead of -1 for filler data',
-        (tester) async {
+    testWidgets('MIDI CC field shows 0 instead of -1 for filler data', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(initialData: PackedMappingData.filler()),
       );
@@ -756,8 +771,9 @@ void main() {
       expect(ccField, findsWidgets);
     });
 
-    testWidgets('I2C CC field shows 0 instead of -1 for filler data',
-        (tester) async {
+    testWidgets('I2C CC field shows 0 instead of -1 for filler data', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(initialData: PackedMappingData.filler()),
       );
@@ -770,23 +786,22 @@ void main() {
     });
 
     testWidgets(
-        'MIDI CC preserves valid value when min/max are from hardware',
-        (tester) async {
-      final dataWithValidCC = PackedMappingData.filler().copyWith(
-        midiCC: 42,
-        midiMin: 10,
-        midiMax: 90,
-        isMidiEnabled: true,
-      );
-      await tester.pumpWidget(
-        createTestWidget(initialData: dataWithValidCC),
-      );
+      'MIDI CC preserves valid value when min/max are from hardware',
+      (tester) async {
+        final dataWithValidCC = PackedMappingData.filler().copyWith(
+          midiCC: 42,
+          midiMin: 10,
+          midiMax: 90,
+          isMidiEnabled: true,
+        );
+        await tester.pumpWidget(createTestWidget(initialData: dataWithValidCC));
 
-      await tester.tap(find.text('MIDI'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('MIDI'));
+        await tester.pumpAndSettle();
 
-      // CC field should show the original value
-      expect(find.widgetWithText(TextField, '42'), findsOneWidget);
-    });
+        // CC field should show the original value
+        expect(find.widgetWithText(TextField, '42'), findsOneWidget);
+      },
+    );
   });
 }

@@ -111,7 +111,9 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
     required this.config,
     super.validator,
     super.initialState,
-  }) : super(algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?);
+  }) : super(
+         algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?,
+       );
 
   @override
   List<Port> generateInputPorts() {
@@ -129,16 +131,17 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       for (final item in declaredInputs) {
         if (item is Map) {
           final hasChannelNumber = item['channelNumber'] != null;
-          final port = buildPortFromDeclaration(
-            item,
-            direction: PortDirection.input,
-            defaultId: 'in_${ports.length + 1}',
-            defaultName: 'Input',
-            defaultType: PortType.audio,
-          ).copyWith(
-            channelNumber: coerceInt(item['channelNumber']),
-            isMultiChannel: hasChannelNumber,
-          );
+          final port =
+              buildPortFromDeclaration(
+                item,
+                direction: PortDirection.input,
+                defaultId: 'in_${ports.length + 1}',
+                defaultName: 'Input',
+                defaultType: PortType.audio,
+              ).copyWith(
+                channelNumber: coerceInt(item['channelNumber']),
+                isMultiChannel: hasChannelNumber,
+              );
 
           ports.add(port);
         }
@@ -235,19 +238,20 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
             }
           }
 
-          final port = buildPortFromDeclaration(
-            item,
-            direction: PortDirection.output,
-            defaultId: 'out_${ports.length + 1}',
-            defaultName: 'Output',
-            defaultType: PortType.audio,
-            includeOutputMode: true,
-          ).copyWith(
-            modeParameterNumber: modeParameterNumber,
-            channelNumber: coerceInt(item['channel']),
-            isStereoChannel: item['channel'] != null,
-            stereoSide: item['channel']?.toString(),
-          );
+          final port =
+              buildPortFromDeclaration(
+                item,
+                direction: PortDirection.output,
+                defaultId: 'out_${ports.length + 1}',
+                defaultName: 'Output',
+                defaultType: PortType.audio,
+                includeOutputMode: true,
+              ).copyWith(
+                modeParameterNumber: modeParameterNumber,
+                channelNumber: coerceInt(item['channel']),
+                isStereoChannel: item['channel'] != null,
+                stereoSide: item['channel']?.toString(),
+              );
 
           ports.add(port);
         }
@@ -651,14 +655,15 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
       // I/O flags come from firmware SysEx messages (Story 7.3)
       // Bit 0: isInput, Bit 1: isOutput, Bit 2: isAudio, Bit 3: isOutputMode
       final bool isOutputFlag = paramInfo?.isOutput ?? false;
-      final bool isInputFlag = (paramInfo?.isInput ?? false) ||
-          AlgorithmRouting.isHardcodedInput(
-            slot.algorithm.guid, paramName);
+      final bool isInputFlag =
+          (paramInfo?.isInput ?? false) ||
+          AlgorithmRouting.isHardcodedInput(slot.algorithm.guid, paramName);
 
       // Fallback logic for offline/mock mode (ioFlags = 0)
       // When no flags are set, infer direction from bus range:
       // Buses 1-12 are inputs, buses 13-20 are outputs
-      final bool isOutput = isOutputFlag ||
+      final bool isOutput =
+          isOutputFlag ||
           (!isInputFlag && !isOutputFlag && busValue >= 13 && busValue <= 20);
 
       // Infer port type from isAudio flag
@@ -681,7 +686,9 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
         'id': '${algorithmUuid ?? 'algo'}_${sanitizedName}_$paramNumber',
         // Use algorithm UUID, sanitized name, and parameter number for uniqueness
         'name': paramName, // Keep original name for display
-        'type': portType == PortType.audio ? 'audio' : 'cv', // Store as string for parsing
+        'type': portType == PortType.audio
+            ? 'audio'
+            : 'cv', // Store as string for parsing
         'busParam': paramName,
         'busValue': busValue,
         // Store bus value for connection discovery
@@ -709,8 +716,9 @@ class MultiChannelAlgorithmRouting extends CachedAlgorithmRouting {
         // Check if this output parameter is controlled by any mode parameter
         // by iterating through the output mode map
         for (final entry in slot.outputModeMap.entries) {
-          final sourceParam = entry.key;  // Mode control parameter number
-          final affectedParams = entry.value;  // List of affected output parameters
+          final sourceParam = entry.key; // Mode control parameter number
+          final affectedParams =
+              entry.value; // List of affected output parameters
 
           if (affectedParams.contains(paramNumber)) {
             // This output is controlled by a mode parameter

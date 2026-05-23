@@ -97,9 +97,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       initial: () => emit(const RoutingEditorState.initial()),
       selectDevice: (inputDevices, outputDevices, canWorkOffline) =>
           emit(const RoutingEditorState.disconnected()),
-      connected: (disting, inputDevice, outputDevice, offline, loading,
-              syncStatus, syncProgress) =>
-          emit(const RoutingEditorState.disconnected()),
+      connected:
+          (
+            disting,
+            inputDevice,
+            outputDevice,
+            offline,
+            loading,
+            syncStatus,
+            syncProgress,
+          ) => emit(const RoutingEditorState.disconnected()),
       synchronized:
           (
             disting,
@@ -194,8 +201,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Conditionally create ES-5 ports based on algorithm presence
       final es5Inputs = shouldShowEs5Node(slots)
-          ? ES5HardwareNode.createInputPorts(
-              hasExtendedAuxBuses: hasExtended)
+          ? ES5HardwareNode.createInputPorts(hasExtendedAuxBuses: hasExtended)
           : <Port>[];
 
       // Build algorithm representations with ports determined by AlgorithmRouting
@@ -271,9 +277,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // Use the ConnectionDiscoveryService to discover connections from AlgorithmRouting instances
       final discoveredConnections =
           ConnectionDiscoveryService.discoverConnections(
-        routings,
-        hasExtendedAuxBuses: hasExtended,
-      );
+            routings,
+            hasExtendedAuxBuses: hasExtended,
+          );
 
       // Validate connections for slot ordering violations
       final connections = ConnectionValidator.validateConnections(
@@ -671,7 +677,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // ES-5 L/R ports — only UsbAudioFromHost ('usbf') can connect to these
     if (hardwareOutputPortId == 'es5_L' || hardwareOutputPortId == 'es5_R') {
-      final algorithmIndex = _findAlgorithmIndexForPort(state, algorithmOutputPort.id);
+      final algorithmIndex = _findAlgorithmIndexForPort(
+        state,
+        algorithmOutputPort.id,
+      );
       if (algorithmIndex == null) return null;
       final distingState = _distingCubit?.state;
       if (distingState is! DistingStateSynchronized) return null;
@@ -942,12 +951,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
 
     // Detect virtual ports (negative parameterNumber = firmware-implicit bus)
-    final targetIsVirtual = targetInputPort.parameterNumber != null &&
+    final targetIsVirtual =
+        targetInputPort.parameterNumber != null &&
         targetInputPort.parameterNumber! < 0;
 
     // Detect fixed-bus source ports (null parameterNumber with a busValue,
     // e.g. the right channel of a stereo send whose bus = left bus + 1).
-    final sourceIsFixed = sourceOutputPort.parameterNumber == null &&
+    final sourceIsFixed =
+        sourceOutputPort.parameterNumber == null &&
         sourceOutputPort.busValue != null;
 
     // Get actual parameter values from slots
@@ -987,8 +998,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // Virtual port's bus is fixed by firmware — route source to match it.
       busToUse = targetBusValue;
     } else if (sourceBusValue != null &&
-        BusSpec.isAuxForFirmware(sourceBusValue,
-            hasExtendedAuxBuses: hasExtended)) {
+        BusSpec.isAuxForFirmware(
+          sourceBusValue,
+          hasExtendedAuxBuses: hasExtended,
+        )) {
       // Source already on an AUX bus — reuse for fan-out
       busToUse = sourceBusValue;
     } else {
@@ -1000,7 +1013,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         state,
         sourceAlgorithmIndex,
         allowReuse: canReplace,
-        needsStereoPartner: sourceOutputPort.isStereoChannel &&
+        needsStereoPartner:
+            sourceOutputPort.isStereoChannel &&
             sourceOutputPort.stereoSide == 'left',
       );
       if (availableBus == null) {
@@ -1116,8 +1130,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final busValue = _resolvePortBusValue(port, slot);
         if (busValue == null) continue;
         if (busValue < BusSpec.auxMin || busValue > auxCeiling) continue;
-        if (!BusSpec.isAuxForFirmware(busValue,
-            hasExtendedAuxBuses: hasExtended)) {
+        if (!BusSpec.isAuxForFirmware(
+          busValue,
+          hasExtendedAuxBuses: hasExtended,
+        )) {
           continue;
         }
         final info = result.putIfAbsent(
@@ -1132,8 +1148,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final busValue = _resolvePortBusValue(port, slot);
         if (busValue == null) continue;
         if (busValue < BusSpec.auxMin || busValue > auxCeiling) continue;
-        if (!BusSpec.isAuxForFirmware(busValue,
-            hasExtendedAuxBuses: hasExtended)) {
+        if (!BusSpec.isAuxForFirmware(
+          busValue,
+          hasExtendedAuxBuses: hasExtended,
+        )) {
           continue;
         }
         final info = result.putIfAbsent(
@@ -1215,8 +1233,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             final paramValue = slot.values
                 .firstWhere((v) => v.parameterNumber == port.parameterNumber!)
                 .value;
-            if (BusSpec.isAuxForFirmware(paramValue,
-                hasExtendedAuxBuses: hasExtended)) {
+            if (BusSpec.isAuxForFirmware(
+              paramValue,
+              hasExtendedAuxBuses: hasExtended,
+            )) {
               final current = maxSlotPerBus[paramValue];
               if (current == null || algorithm.index > current) {
                 maxSlotPerBus[paramValue] = algorithm.index;
@@ -2755,9 +2775,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     if (port.isBus) return; // Physical/ES-5 ports don't have parameters
 
     for (final algorithm in state.algorithms) {
-      final match = [...algorithm.inputPorts, ...algorithm.outputPorts]
-          .where((p) => p.id == port.id && p.parameterNumber != null)
-          .firstOrNull;
+      final match = [
+        ...algorithm.inputPorts,
+        ...algorithm.outputPorts,
+      ].where((p) => p.id == port.id && p.parameterNumber != null).firstOrNull;
       if (match == null) continue;
 
       if (!_canClearBusAssignment(
@@ -2770,8 +2791,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             state,
             algorithmIndex: algorithm.index,
             parameterNumber: match.parameterNumber!,
-            needsStereoPartner: port.isStereoChannel &&
-                port.stereoSide == 'left',
+            needsStereoPartner:
+                port.isStereoChannel && port.stereoSide == 'left',
           );
           if (newBus != null) {
             await _distingCubit.updateParameterValue(
@@ -3141,8 +3162,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final positionsMap = jsonDecode(json) as Map<String, dynamic>;
 
         // Extract viewport state before processing node positions
-        final viewportData =
-            positionsMap['_viewport'] as Map<String, dynamic>?;
+        final viewportData = positionsMap['_viewport'] as Map<String, dynamic>?;
         final scrollH = (viewportData?['scrollH'] as num?)?.toDouble() ?? 0.0;
         final scrollV = (viewportData?['scrollV'] as num?)?.toDouble() ?? 0.0;
         final zoom = (viewportData?['zoom'] as num?)?.toDouble() ?? 1.0;
@@ -3329,10 +3349,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           : null;
     }
 
-    emit(currentState.copyWith(
-      focusedAlgorithmIds: {algorithmId},
-      cascadeScrollTarget: scrollTarget,
-    ));
+    emit(
+      currentState.copyWith(
+        focusedAlgorithmIds: {algorithmId},
+        cascadeScrollTarget: scrollTarget,
+      ),
+    );
   }
 
   /// Set focus by slot index - finds the algorithm at that slot and focuses it

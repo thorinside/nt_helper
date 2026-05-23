@@ -111,7 +111,8 @@ class _FloatingScreenshotContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               child: screenshot != null
                   ? Semantics(
-                      label: 'Disting NT screen capture. Long press to copy to clipboard.',
+                      label:
+                          'Disting NT screen capture. Long press to copy to clipboard.',
                       image: true,
                       child: GestureDetector(
                         onLongPress: onCopyToClipboard,
@@ -137,7 +138,11 @@ class _FloatingScreenshotContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white, semanticLabel: 'Close screenshot overlay'),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    semanticLabel: 'Close screenshot overlay',
+                  ),
                   iconSize: 16,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(

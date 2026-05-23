@@ -34,7 +34,8 @@ void main() {
     });
 
     test('parses known fields', () {
-      const src = '{'
+      const src =
+          '{'
           '"description":"Reverbs and delays",'
           '"tags":["space","wet","stereo"],'
           '"author":"neal",'
@@ -111,8 +112,7 @@ void main() {
         description: 'desc',
         extras: {'futureFlag': true, 'customNumber': 42},
       );
-      final decoded =
-          jsonDecode(m.toJsonString()) as Map<String, dynamic>;
+      final decoded = jsonDecode(m.toJsonString()) as Map<String, dynamic>;
 
       expect(decoded['description'], 'desc');
       expect(decoded['futureFlag'], isTrue);
@@ -124,8 +124,7 @@ void main() {
         description: 'real',
         extras: {'description': 'shadow'},
       );
-      final decoded =
-          jsonDecode(m.toJsonString()) as Map<String, dynamic>;
+      final decoded = jsonDecode(m.toJsonString()) as Map<String, dynamic>;
 
       expect(decoded['description'], 'real');
     });
@@ -138,8 +137,9 @@ void main() {
         createdAt: '2026-05-22T00:00:00Z',
         extras: {'foo': 'bar'},
       );
-      final roundTripped =
-          TemplateMetadata.fromJsonString(original.toJsonString());
+      final roundTripped = TemplateMetadata.fromJsonString(
+        original.toJsonString(),
+      );
 
       expect(roundTripped.description, original.description);
       expect(roundTripped.tags, original.tags);
@@ -160,10 +160,7 @@ void main() {
       expect(const TemplateMetadata(tags: ['a']).isEmpty, isFalse);
       expect(const TemplateMetadata(author: 'n').isEmpty, isFalse);
       expect(const TemplateMetadata(createdAt: '2026').isEmpty, isFalse);
-      expect(
-        const TemplateMetadata(extras: {'k': 'v'}).isEmpty,
-        isFalse,
-      );
+      expect(const TemplateMetadata(extras: {'k': 'v'}).isEmpty, isFalse);
     });
   });
 }

@@ -22,7 +22,9 @@ void main() {
     group('needsIoFlagsUpgrade', () {
       test('returns true when all parameters have null ioFlags', () async {
         // Create test algorithm
-        await database.into(database.algorithms).insert(
+        await database
+            .into(database.algorithms)
+            .insert(
               AlgorithmsCompanion.insert(
                 guid: 'test',
                 name: 'Test Algorithm',
@@ -31,7 +33,9 @@ void main() {
             );
 
         // Create test parameters with null ioFlags
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 0,
@@ -39,7 +43,9 @@ void main() {
                 ioFlags: const Value(null),
               ),
             );
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 1,
@@ -54,7 +60,9 @@ void main() {
 
       test('returns false when some parameters have ioFlags', () async {
         // Create test algorithm
-        await database.into(database.algorithms).insert(
+        await database
+            .into(database.algorithms)
+            .insert(
               AlgorithmsCompanion.insert(
                 guid: 'test',
                 name: 'Test Algorithm',
@@ -63,7 +71,9 @@ void main() {
             );
 
         // Create test parameters - one with ioFlags, one without
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 0,
@@ -71,7 +81,9 @@ void main() {
                 ioFlags: const Value(5), // Has ioFlags
               ),
             );
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 1,
@@ -86,7 +98,9 @@ void main() {
 
       test('returns false when all parameters have ioFlags', () async {
         // Create test algorithm
-        await database.into(database.algorithms).insert(
+        await database
+            .into(database.algorithms)
+            .insert(
               AlgorithmsCompanion.insert(
                 guid: 'test',
                 name: 'Test Algorithm',
@@ -95,7 +109,9 @@ void main() {
             );
 
         // Create test parameters with ioFlags
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 0,
@@ -103,7 +119,9 @@ void main() {
                 ioFlags: const Value(5),
               ),
             );
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 1,
@@ -124,14 +142,18 @@ void main() {
 
       test('handles database errors gracefully', () async {
         // Create algorithm and parameter to set up state
-        await database.into(database.algorithms).insert(
+        await database
+            .into(database.algorithms)
+            .insert(
               AlgorithmsCompanion.insert(
                 guid: 'test',
                 name: 'Test Algorithm',
                 numSpecifications: 0,
               ),
             );
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 0,
@@ -168,7 +190,9 @@ void main() {
     group('performUpgradeIfNeeded', () {
       test('returns 0 when upgrade not needed', () async {
         // Create test algorithm
-        await database.into(database.algorithms).insert(
+        await database
+            .into(database.algorithms)
+            .insert(
               AlgorithmsCompanion.insert(
                 guid: 'test',
                 name: 'Test Algorithm',
@@ -177,7 +201,9 @@ void main() {
             );
 
         // Create parameter with existing ioFlags
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 0,
@@ -190,39 +216,47 @@ void main() {
         expect(updateCount, equals(0));
       });
 
-      test('attempts upgrade when needed but throws without bundled metadata',
-          () async {
-        // Create test algorithm
-        await database.into(database.algorithms).insert(
-              AlgorithmsCompanion.insert(
-                guid: 'test',
-                name: 'Test Algorithm',
-                numSpecifications: 0,
-              ),
-            );
+      test(
+        'attempts upgrade when needed but throws without bundled metadata',
+        () async {
+          // Create test algorithm
+          await database
+              .into(database.algorithms)
+              .insert(
+                AlgorithmsCompanion.insert(
+                  guid: 'test',
+                  name: 'Test Algorithm',
+                  numSpecifications: 0,
+                ),
+              );
 
-        // Create parameter with null ioFlags
-        await database.into(database.parameters).insert(
-              ParametersCompanion.insert(
-                algorithmGuid: 'test',
-                parameterNumber: 0,
-                name: 'Test Param',
-                ioFlags: const Value(null),
-              ),
-            );
+          // Create parameter with null ioFlags
+          await database
+              .into(database.parameters)
+              .insert(
+                ParametersCompanion.insert(
+                  algorithmGuid: 'test',
+                  parameterNumber: 0,
+                  name: 'Test Param',
+                  ioFlags: const Value(null),
+                ),
+              );
 
-        // Should throw because bundled metadata is not available in test
-        expect(
-          () => service.performUpgradeIfNeeded(database),
-          throwsA(isA<Exception>()),
-        );
-      });
+          // Should throw because bundled metadata is not available in test
+          expect(
+            () => service.performUpgradeIfNeeded(database),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
     });
 
     group('idempotent behavior', () {
       test('running upgrade multiple times is safe', () async {
         // Create test algorithm
-        await database.into(database.algorithms).insert(
+        await database
+            .into(database.algorithms)
+            .insert(
               AlgorithmsCompanion.insert(
                 guid: 'test',
                 name: 'Test Algorithm',
@@ -231,7 +265,9 @@ void main() {
             );
 
         // Create parameter with existing ioFlags
-        await database.into(database.parameters).insert(
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion.insert(
                 algorithmGuid: 'test',
                 parameterNumber: 0,
@@ -248,9 +284,9 @@ void main() {
         expect(count2, equals(0));
 
         // Verify ioFlags unchanged
-        final param = await (database.select(database.parameters)
-              ..where((p) => p.algorithmGuid.equals('test')))
-            .getSingle();
+        final param = await (database.select(
+          database.parameters,
+        )..where((p) => p.algorithmGuid.equals('test'))).getSingle();
         expect(param.ioFlags, equals(5));
       });
     });

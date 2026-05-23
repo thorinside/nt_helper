@@ -14,15 +14,8 @@ class _MockDistingCubit extends Mock implements DistingCubit {}
 
 Slot _textNameSlot() {
   return Slot(
-    algorithm: Algorithm(
-      algorithmIndex: 0,
-      guid: 'mix2',
-      name: 'Mixer Stereo',
-    ),
-    routing: RoutingInfo(
-      algorithmIndex: 0,
-      routingInfo: List.filled(6, 0),
-    ),
+    algorithm: Algorithm(algorithmIndex: 0, guid: 'mix2', name: 'Mixer Stereo'),
+    routing: RoutingInfo(algorithmIndex: 0, routingInfo: List.filled(6, 0)),
     pages: ParameterPages(algorithmIndex: 0, pages: []),
     parameters: [
       ParameterInfo(
@@ -36,9 +29,7 @@ Slot _textNameSlot() {
         powerOfTen: 0,
       ),
     ],
-    values: [
-      ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0),
-    ],
+    values: [ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0)],
     enums: [
       ParameterEnumStrings(
         algorithmIndex: 0,
@@ -112,12 +103,8 @@ void main() {
       (tester) async {
         final slot = _textNameSlot();
         final cubit = _MockDistingCubit();
-        when(() => cubit.state).thenReturn(
-          DistingStateInitial(),
-        );
-        when(() => cubit.stream).thenAnswer(
-          (_) => const Stream.empty(),
-        );
+        when(() => cubit.state).thenReturn(DistingStateInitial());
+        when(() => cubit.stream).thenAnswer((_) => const Stream.empty());
 
         final trapped = <LogicalKeyboardKey>[];
 

@@ -87,11 +87,10 @@ class PluginGalleryScreen extends StatelessWidget {
             final devicePluginPaths = _getDevicePluginPathsFromState(
               distingCubit.state,
             );
-            return GalleryCubit(galleryService)
-              ..loadGallery(
-                devicePluginGuids: devicePluginGuids,
-                devicePluginPaths: devicePluginPaths,
-              );
+            return GalleryCubit(galleryService)..loadGallery(
+              devicePluginGuids: devicePluginGuids,
+              devicePluginPaths: devicePluginPaths,
+            );
           },
         ),
       ],
@@ -191,7 +190,8 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
   }
 
   PreferredSizeWidget _buildAppBar(GalleryState state) {
-    final isRefreshing = state is GalleryLoading ||
+    final isRefreshing =
+        state is GalleryLoading ||
         (state is GalleryLoaded && state.isRefreshing);
 
     return AppBar(
@@ -209,7 +209,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         // Install from file
         IconButton(
           onPressed: _installFromFile,
-          icon: const Icon(Icons.upload_file, semanticLabel: 'Install from File'),
+          icon: const Icon(
+            Icons.upload_file,
+            semanticLabel: 'Install from File',
+          ),
           tooltip: 'Install from File',
         ),
         // Reboot
@@ -232,7 +235,8 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             context.showSettingsDialog(
               midiManager: midiManager,
               algorithms: algorithms,
-              ccNotificationDiagnostics: widget.distingCubit.ccNotificationDiagnostics,
+              ccNotificationDiagnostics:
+                  widget.distingCubit.ccNotificationDiagnostics,
             );
           },
           tooltip: 'Settings',
@@ -252,9 +256,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           onPressed: isRefreshing
               ? null
               : () => context.read<GalleryCubit>().refreshUpdates(
-                    devicePluginGuids: _getDevicePluginGuids(),
-                    devicePluginPaths: _getDevicePluginPaths(),
-                  ),
+                  devicePluginGuids: _getDevicePluginGuids(),
+                  devicePluginPaths: _getDevicePluginPaths(),
+                ),
           tooltip: 'Refresh Gallery',
         ),
       ],
@@ -286,8 +290,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
               color: Theme.of(context).colorScheme.error,
             ),
             const SizedBox(height: 16),
-            Text('Failed to load gallery',
-                style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              'Failed to load gallery',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 8),
             Text(
               state.message,
@@ -299,10 +305,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => context.read<GalleryCubit>().loadGallery(
-                    forceRefresh: true,
-                    devicePluginGuids: _getDevicePluginGuids(),
-                    devicePluginPaths: _getDevicePluginPaths(),
-                  ),
+                forceRefresh: true,
+                devicePluginGuids: _getDevicePluginGuids(),
+                devicePluginPaths: _getDevicePluginPaths(),
+              ),
               child: const Text('Retry'),
             ),
           ],
@@ -360,7 +366,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
+                          icon: const Icon(
+                            Icons.clear,
+                            semanticLabel: 'Clear search',
+                          ),
                           onPressed: () {
                             _searchController.clear();
                             context.read<GalleryCubit>().clearFilters();
@@ -410,7 +419,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear, semanticLabel: 'Clear search'),
+                                icon: const Icon(
+                                  Icons.clear,
+                                  semanticLabel: 'Clear search',
+                                ),
                                 onPressed: () {
                                   _searchController.clear();
                                   context.read<GalleryCubit>().clearFilters();
@@ -449,10 +461,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
               Text(
                 '${state.filteredPlugins.length} plugin${state.filteredPlugins.length == 1 ? '' : 's'}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -472,11 +483,21 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         button: true,
         excludeSemantics: true,
         child: Chip(
-          avatar: Icon(Icons.category, size: 18,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+          avatar: Icon(
+            Icons.category,
+            size: 18,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
           label: Text(state.selectedCategory ?? 'Category'),
-          deleteIcon: Icon(Icons.arrow_drop_down, size: 18,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+          deleteIcon: Icon(
+            Icons.arrow_drop_down,
+            size: 18,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
           onDeleted: () {},
         ),
       ),
@@ -484,14 +505,19 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         context.read<GalleryCubit>().applyFilters(category: value);
       },
       itemBuilder: (context) => [
-        const PopupMenuItem<String?>(value: null, child: Text('All Categories')),
+        const PopupMenuItem<String?>(
+          value: null,
+          child: Text('All Categories'),
+        ),
         ...(state.gallery.categories).map(
           (cat) => PopupMenuItem<String>(
             value: cat.id,
             child: Row(
               children: [
                 if (cat.icon != null) ...[
-                  ExcludeSemantics(child: Icon(_getIconData(cat.icon!), size: 16)),
+                  ExcludeSemantics(
+                    child: Icon(_getIconData(cat.icon!), size: 16),
+                  ),
                   const SizedBox(width: 8),
                 ],
                 Text(cat.name),
@@ -511,11 +537,21 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         button: true,
         excludeSemantics: true,
         child: Chip(
-          avatar: Icon(Icons.extension, size: 18,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+          avatar: Icon(
+            Icons.extension,
+            size: 18,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
           label: Text(state.selectedType?.displayName ?? 'Type'),
-          deleteIcon: Icon(Icons.arrow_drop_down, size: 18,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+          deleteIcon: Icon(
+            Icons.arrow_drop_down,
+            size: 18,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
           onDeleted: () {},
         ),
       ),
@@ -539,10 +575,13 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
 
   Widget _buildFeaturedFilter(GalleryLoaded state) {
     return FilterChip(
-      avatar: Icon(Icons.star, size: 18,
+      avatar: Icon(
+        Icons.star,
+        size: 18,
         color: state.showFeaturedOnly
             ? Theme.of(context).colorScheme.onPrimary
-            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
       label: const Text('Featured'),
       selected: state.showFeaturedOnly,
       selectedColor: Theme.of(context).colorScheme.primary,
@@ -560,8 +599,11 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
 
   Widget _buildClearFilter() {
     return ActionChip(
-      avatar: Icon(Icons.clear, size: 18,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+      avatar: Icon(
+        Icons.clear,
+        size: 18,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
       label: const Text('Clear'),
       onPressed: () {
         _searchController.clear();
@@ -582,9 +624,11 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         .toList();
 
     final installedPlugins = filteredPlugins
-        .where((p) =>
-            state.updateInfo[p.id] != null &&
-            !(state.updateInfo[p.id]?.hasUpdate ?? false))
+        .where(
+          (p) =>
+              state.updateInfo[p.id] != null &&
+              !(state.updateInfo[p.id]?.hasUpdate ?? false),
+        )
         .toList();
 
     final availablePlugins = filteredPlugins
@@ -592,7 +636,11 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         .toList();
 
     return _buildListView(
-      state, pluginsWithUpdates, installedPlugins, availablePlugins);
+      state,
+      pluginsWithUpdates,
+      installedPlugins,
+      availablePlugins,
+    );
   }
 
   Widget _buildEmptyPluginState() {
@@ -600,16 +648,31 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
           const SizedBox(height: 16),
-          Text('No plugins found',
+          Text(
+            'No plugins found',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Try adjusting your search or filters',
+          Text(
+            'Try adjusting your search or filters',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4))),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
         ],
       ),
     );
@@ -623,15 +686,18 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
       children: [
         Text(
           '$title ($count)',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         if (showUpdateAll)
           FilledButton.tonalIcon(
-            onPressed: state.installStatuses.values.any((s) =>
-                    s.phase != PluginInstallPhase.completed &&
-                    s.phase != PluginInstallPhase.failed)
+            onPressed:
+                state.installStatuses.values.any(
+                  (s) =>
+                      s.phase != PluginInstallPhase.completed &&
+                      s.phase != PluginInstallPhase.failed,
+                )
                 ? null
                 : () => _updateAllPlugins(state),
             icon: const Icon(Icons.system_update, size: 18),
@@ -699,134 +765,192 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
     final galleryCubit = context.read<GalleryCubit>();
 
     return Semantics(
-      label: '${plugin.name}, ${plugin.type.displayName}${hasUpdate ? ', update available' : isInstalled ? ', installed' : ''}',
+      label:
+          '${plugin.name}, ${plugin.type.displayName}${hasUpdate
+              ? ', update available'
+              : isInstalled
+              ? ', installed'
+              : ''}',
       container: true,
       child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 72),
-          child: Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              children: [
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
-                  leading: (plugin.featured || plugin.isCollection)
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (plugin.featured)
-                              Icon(Icons.star,
-                                color: Theme.of(context).colorScheme.primary),
-                            if (plugin.isCollection)
-                              Padding(
-                                padding: EdgeInsets.only(left: plugin.featured ? 4 : 0),
-                                child: Icon(Icons.folder_copy,
-                                  color: Theme.of(context).colorScheme.tertiary),
-                              ),
-                          ],
-                        )
-                      : null,
-                  title: Text(
-                    plugin.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Row(
+        constraints: const BoxConstraints(minHeight: 72),
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                leading: (plugin.featured || plugin.isCollection)
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (author != null) ...[
-                            Icon(Icons.person, size: 12,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant),
-                            const SizedBox(width: 4),
-                            Text(author.name,
-                              style: Theme.of(context).textTheme.bodySmall),
-                            const SizedBox(width: 12),
-                          ],
+                          if (plugin.featured)
+                            Icon(
+                              Icons.star,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          if (plugin.isCollection)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                left: plugin.featured ? 4 : 0,
+                              ),
+                              child: Icon(
+                                Icons.folder_copy,
+                                color: Theme.of(context).colorScheme.tertiary,
+                              ),
+                            ),
+                        ],
+                      )
+                    : null,
+                title: Text(
+                  plugin.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (author != null) ...[
+                          Icon(
+                            Icons.person,
+                            size: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            author.name,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.secondary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            plugin.type.displayName,
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondary,
+                                ),
+                          ),
+                        ),
+                        if (category != null) ...[
+                          const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.secondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              plugin.type.displayName,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSecondary),
+                              category.name,
+                              style: Theme.of(context).textTheme.labelSmall,
                             ),
                           ),
-                          if (category != null) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(category.name,
-                                style: Theme.of(context).textTheme.labelSmall),
-                            ),
-                          ],
-                          if (updateInfo != null) ...[
-                            const SizedBox(width: 6),
-                            _buildVersionBadge(updateInfo),
-                          ],
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      LinkifiedText(
-                        text: plugin.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [SizedBox(
-                    width: 160,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      child: installStatus != null
-                          ? Center(child: _buildInstallProgress(plugin.id, installStatus))
-                          : Row(
-                              key: const ValueKey('trailing_actions'),
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                if (plugin.formattedLatestVersion.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Text(plugin.formattedLatestVersion,
-                                      style: Theme.of(context).textTheme.bodySmall),
-                                  ),
-                                if (plugin.hasReadmeDocumentation)
-                                  IconButton(
-                                    icon: Icon(Icons.description_outlined,
-                                      semanticLabel: 'View Documentation', size: 20,
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                                    tooltip: 'View Documentation',
-                                    onPressed: () => _showReadmeDialog(plugin),
-                                  ),
-                                const SizedBox(width: 4),
-                                _buildListActionButton(plugin, hasUpdate, isInstalled, galleryCubit),
-                              ],
-                            ),
+                        if (updateInfo != null) ...[
+                          const SizedBox(width: 6),
+                          _buildVersionBadge(updateInfo),
+                        ],
+                      ],
                     ),
-                  )],
-                  ),
+                    const SizedBox(height: 4),
+                    LinkifiedText(
+                      text: plugin.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 160,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        child: installStatus != null
+                            ? Center(
+                                child: _buildInstallProgress(
+                                  plugin.id,
+                                  installStatus,
+                                ),
+                              )
+                            : Row(
+                                key: const ValueKey('trailing_actions'),
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (plugin.formattedLatestVersion.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: Text(
+                                        plugin.formattedLatestVersion,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                    ),
+                                  if (plugin.hasReadmeDocumentation)
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.description_outlined,
+                                        semanticLabel: 'View Documentation',
+                                        size: 20,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.6),
+                                      ),
+                                      tooltip: 'View Documentation',
+                                      onPressed: () =>
+                                          _showReadmeDialog(plugin),
+                                    ),
+                                  const SizedBox(width: 4),
+                                  _buildListActionButton(
+                                    plugin,
+                                    hasUpdate,
+                                    isInstalled,
+                                    galleryCubit,
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildListActionButton(
@@ -837,10 +961,7 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
   ) {
     if (plugin.isCollection) {
       return IconButton(
-        icon: const Icon(
-          Icons.folder_open,
-          semanticLabel: 'Show contents',
-        ),
+        icon: const Icon(Icons.folder_open, semanticLabel: 'Show contents'),
         onPressed: () => _showCollectionDialog(plugin, galleryCubit),
         tooltip: 'Show contents',
         color: Theme.of(context).colorScheme.primary,
@@ -898,12 +1019,18 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         key: ValueKey('queued_$pluginId'),
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.schedule, size: 16,
-            color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.schedule,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 8),
-          Text('Queued',
+          Text(
+            'Queued',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       );
     }
@@ -938,13 +1065,16 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           ],
         ),
         const SizedBox(height: 4),
-        LinearProgressIndicator(value: status.progress > 0 ? status.progress : null),
+        LinearProgressIndicator(
+          value: status.progress > 0 ? status.progress : null,
+        ),
       ],
     );
   }
 
   Widget _buildVersionBadge(PluginUpdateInfo info) {
-    final isUntracked = info.installedVersion == 'unknown' ||
+    final isUntracked =
+        info.installedVersion == 'unknown' ||
         info.installedVersion == 'user-installed' ||
         info.installedVersion == 'device-detected';
 
@@ -977,21 +1107,22 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
 
     galleryCubit.installPlugin(
       plugin,
-      distingInstallPlugin: (
-        fileName,
-        fileData, {
-        onProgress,
-        galleryPluginId,
-        galleryPluginVersion,
-      }) async {
-        await distingCubit.installPlugin(
-          fileName,
-          fileData,
-          onProgress: onProgress,
-          galleryPluginId: galleryPluginId,
-          galleryPluginVersion: galleryPluginVersion,
-        );
-      },
+      distingInstallPlugin:
+          (
+            fileName,
+            fileData, {
+            onProgress,
+            galleryPluginId,
+            galleryPluginVersion,
+          }) async {
+            await distingCubit.installPlugin(
+              fileName,
+              fileData,
+              onProgress: onProgress,
+              galleryPluginId: galleryPluginId,
+              galleryPluginVersion: galleryPluginVersion,
+            );
+          },
       distingInstallSample: (targetPath, fileData, {onProgress}) async {
         return await distingCubit.installSampleFile(
           targetPath,
@@ -1030,21 +1161,22 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
     galleryCubit.installCollectionPlugins(
       pluginId,
       selected,
-      distingInstallPlugin: (
-        fileName,
-        fileData, {
-        onProgress,
-        galleryPluginId,
-        galleryPluginVersion,
-      }) async {
-        await distingCubit.installPlugin(
-          fileName,
-          fileData,
-          onProgress: onProgress,
-          galleryPluginId: galleryPluginId,
-          galleryPluginVersion: galleryPluginVersion,
-        );
-      },
+      distingInstallPlugin:
+          (
+            fileName,
+            fileData, {
+            onProgress,
+            galleryPluginId,
+            galleryPluginVersion,
+          }) async {
+            await distingCubit.installPlugin(
+              fileName,
+              fileData,
+              onProgress: onProgress,
+              galleryPluginId: galleryPluginId,
+              galleryPluginVersion: galleryPluginVersion,
+            );
+          },
       distingInstallSample: (targetPath, fileData, {onProgress}) async {
         return await distingCubit.installSampleFile(
           targetPath,
@@ -1138,9 +1270,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             if (mounted) {
               Navigator.of(context).pop();
               context.read<GalleryCubit>().refreshUpdates(
-                    devicePluginGuids: _getDevicePluginGuids(),
-                    devicePluginPaths: _getDevicePluginPaths(),
-                  );
+                devicePluginGuids: _getDevicePluginGuids(),
+                devicePluginPaths: _getDevicePluginPaths(),
+              );
             }
           } catch (e) {
             if (mounted) {
@@ -1157,7 +1289,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
       } else {
         scaffoldMessenger.showSnackBar(
           const SnackBar(
-            content: Text('File installation is only available on desktop platforms'),
+            content: Text(
+              'File installation is only available on desktop platforms',
+            ),
           ),
         );
       }
@@ -1263,7 +1397,8 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           builder: (context) => AlertDialog(
             title: const Text('Directory Already Exists'),
             content: Text(
-              'The folder "$folderName" already exists. Use it for the backup?'),
+              'The folder "$folderName" already exists. Use it for the backup?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -1344,7 +1479,8 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         title: const Text('Reboot Disting NT?'),
         content: const Text(
           'This will reboot the Disting NT device. '
-          'This is commonly needed after installing plugins.'),
+          'This is commonly needed after installing plugins.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1362,9 +1498,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
       try {
         await widget.distingCubit.reboot();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Reboot command sent')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Reboot command sent')));
           Navigator.of(context).pop(); // Return to main screen
         }
       } catch (e) {
@@ -1399,7 +1535,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             final screenHeight = MediaQuery.of(context).size.height;
 
             return Dialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: 480,
@@ -1417,8 +1556,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                           const Icon(Icons.folder_open, size: 22),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(plugin.name,
-                              style: Theme.of(context).textTheme.titleLarge),
+                            child: Text(
+                              plugin.name,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
                           ),
                           SizedBox(
                             width: 32,
@@ -1426,7 +1567,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                             child: IconButton(
                               padding: EdgeInsets.zero,
                               iconSize: 20,
-                              icon: const Icon(Icons.close, semanticLabel: 'Close'),
+                              icon: const Icon(
+                                Icons.close,
+                                semanticLabel: 'Close',
+                              ),
                               onPressed: () {
                                 galleryCubit.collapseCollection(plugin.id);
                                 Navigator.of(dialogContext).pop();
@@ -1451,7 +1595,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                                     SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     ),
                                     SizedBox(width: 12),
                                     Text('Loading collection contents...'),
@@ -1463,13 +1609,21 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
                                 pluginId: plugin.id,
                                 installDisabled: false,
                                 fillHeight: true,
-                                onTogglePlugin: (index) =>
-                                    context.read<GalleryCubit>().toggleCollectionPlugin(plugin.id, index),
-                                onSelectAll: (selected) =>
-                                    context.read<GalleryCubit>().selectAllCollectionPlugins(plugin.id, selected),
+                                onTogglePlugin: (index) => context
+                                    .read<GalleryCubit>()
+                                    .toggleCollectionPlugin(plugin.id, index),
+                                onSelectAll: (selected) => context
+                                    .read<GalleryCubit>()
+                                    .selectAllCollectionPlugins(
+                                      plugin.id,
+                                      selected,
+                                    ),
                                 onInstall: (selected) {
                                   Navigator.of(dialogContext).pop();
-                                  _doInstallCollectionPlugins(plugin.id, selected);
+                                  _doInstallCollectionPlugins(
+                                    plugin.id,
+                                    selected,
+                                  );
                                 },
                               ),
                       ),
@@ -1503,9 +1657,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not open $readmeUrl')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Could not open $readmeUrl')));
         }
       }
     } catch (e) {
@@ -1581,9 +1735,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
         context.read<GalleryCubit>().refreshUpdates(
-              devicePluginGuids: _getDevicePluginGuids(),
-              devicePluginPaths: _getDevicePluginPaths(),
-            );
+          devicePluginGuids: _getDevicePluginGuids(),
+          devicePluginPaths: _getDevicePluginPaths(),
+        );
       }
     } catch (e) {
       setState(() => _isInstallingFile = false);
@@ -1613,7 +1767,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1622,8 +1778,11 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.cloud_upload_outlined, size: 64,
-                color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.cloud_upload_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Drop plugin files here to install',
@@ -1637,7 +1796,10 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
               Text(
                 'Supports .lua, .3pot, and .o files',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1658,7 +1820,9 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1669,12 +1833,19 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text('Installing plugin...',
-                style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Installing plugin...',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
-              Text('This may take a few moments',
+              Text(
+                'This may take a few moments',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
             ],
           ),
         ),
@@ -1772,13 +1943,20 @@ class _CompletionRowState extends State<_CompletionRow>
         children: [
           ScaleTransition(
             scale: _scaleAnimation,
-            child: Icon(Icons.check_circle, size: 20, color: theme.colorScheme.primary),
+            child: Icon(
+              Icons.check_circle,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(width: 6),
-          Text('Installed',
+          Text(
+            'Installed',
             style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: theme.colorScheme.primary)),
+              color: theme.colorScheme.primary,
+            ),
+          ),
         ],
       ),
     );
@@ -1789,7 +1967,11 @@ class _CompletionRowState extends State<_CompletionRow>
 class _FailureRow extends StatefulWidget {
   final String? errorMessage;
   final VoidCallback onAutoDismiss;
-  const _FailureRow({super.key, this.errorMessage, required this.onAutoDismiss});
+  const _FailureRow({
+    super.key,
+    this.errorMessage,
+    required this.onAutoDismiss,
+  });
 
   @override
   State<_FailureRow> createState() => _FailureRowState();
@@ -1840,10 +2022,13 @@ class _FailureRowState extends State<_FailureRow>
             children: [
               Icon(Icons.error, size: 18, color: theme.colorScheme.error),
               const SizedBox(width: 6),
-              Text('Failed',
+              Text(
+                'Failed',
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.error)),
+                  color: theme.colorScheme.error,
+                ),
+              ),
             ],
           ),
           if (widget.errorMessage != null) ...[
@@ -1851,7 +2036,8 @@ class _FailureRowState extends State<_FailureRow>
             Text(
               widget.errorMessage!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error),
+                color: theme.colorScheme.error,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1937,7 +2123,8 @@ class _BackupProgressDialogState extends State<_BackupProgressDialog> {
             Text(
               'Error: $_error',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error),
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
           ],
         ],

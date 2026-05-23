@@ -106,7 +106,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
   void _scheduleParameterRefresh() {
     // Schedule a debounced refresh after parameter commit
-    context.read<DistingCubit>().scheduleParameterRefresh(widget.algorithmIndex);
+    context.read<DistingCubit>().scheduleParameterRefresh(
+      widget.algorithmIndex,
+    );
   }
 
   String _getAccessibleValueString([int? value]) {
@@ -200,8 +202,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             child: Semantics(
               label: paramName,
               customSemanticsActions: {
-                CustomSemanticsAction(label: 'Focus on hardware display'):
-                    () {
+                CustomSemanticsAction(label: 'Focus on hardware display'): () {
                   var cubit = context.read<DistingCubit>();
                   cubit.disting()?.let((manager) {
                     manager.requestSetFocus(
@@ -230,8 +231,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                   });
                 },
                 onLongPress: () {
-                  final manager =
-                      context.read<DistingCubit>().requireDisting();
+                  final manager = context.read<DistingCubit>().requireDisting();
                   manager.requestSetFocus(
                     widget.algorithmIndex,
                     widget.parameterNumber,
@@ -259,9 +259,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             flex: widescreen ? 8 : 6,
             child: GestureDetector(
               onDoubleTap: () =>
-                  isBpmUnit ||
-                      fileEditor != null ||
-                      _showAlternateEditor
+                  isBpmUnit || fileEditor != null || _showAlternateEditor
                   ? () {}
                   : setState(() {
                       currentValue = widget.defaultValue;
@@ -302,7 +300,10 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                           onPressed: () {
                                             setState(() {
                                               currentValue = min(
-                                                max(currentValue - 1, widget.min),
+                                                max(
+                                                  currentValue - 1,
+                                                  widget.min,
+                                                ),
                                                 widget.max,
                                               );
                                             });
@@ -319,7 +320,10 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                           onPressed: () {
                                             setState(() {
                                               currentValue = min(
-                                                max(currentValue + 1, widget.min),
+                                                max(
+                                                  currentValue + 1,
+                                                  widget.min,
+                                                ),
                                                 widget.max,
                                               );
                                             });
@@ -335,10 +339,14 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                     label: paramName,
                                     value: _getAccessibleValueString(),
                                     increasedValue: currentValue < widget.max
-                                        ? _getAccessibleValueString(currentValue + 1)
+                                        ? _getAccessibleValueString(
+                                            currentValue + 1,
+                                          )
                                         : null,
                                     decreasedValue: currentValue > widget.min
-                                        ? _getAccessibleValueString(currentValue - 1)
+                                        ? _getAccessibleValueString(
+                                            currentValue - 1,
+                                          )
                                         : null,
                                     child: Slider(
                                       value: currentValue.toDouble(),
@@ -348,7 +356,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                           ? widget.max - widget.min
                                           : null,
                                       semanticFormatterCallback: (value) =>
-                                          _getAccessibleValueString(value.toInt()),
+                                          _getAccessibleValueString(
+                                            value.toInt(),
+                                          ),
                                       onChangeStart: (value) {
                                         isChanging = true;
                                       },

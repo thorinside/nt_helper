@@ -203,7 +203,9 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
                 children: [
                   Row(
                     children: [
-                      const ExcludeSemantics(child: Icon(Icons.folder_open, size: 20)),
+                      const ExcludeSemantics(
+                        child: Icon(Icons.folder_open, size: 20),
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Save Location:',

@@ -486,15 +486,15 @@ class _PluginDelegate {
     Function(double)? onProgress,
   }) async {
     // Ensure absolute path for SD card operations
-    final absolutePath =
-        targetPath.startsWith('/') ? targetPath : '/$targetPath';
+    final absolutePath = targetPath.startsWith('/')
+        ? targetPath
+        : '/$targetPath';
 
     final disting = _cubit.requireDisting();
     await disting.requestWake();
 
     // Ensure parent directory exists
-    final parentPath =
-        absolutePath.substring(0, absolutePath.lastIndexOf('/'));
+    final parentPath = absolutePath.substring(0, absolutePath.lastIndexOf('/'));
     if (parentPath.isNotEmpty) {
       await _ensureDirectoryExists(parentPath, disting);
     }
@@ -672,4 +672,3 @@ class _PluginDelegate {
     }
   }
 }
-

@@ -45,32 +45,34 @@ mixin _DistingCubitPresetOps on _DistingCubitBase {
     if (finalName == currentState.presetName) return;
 
     // Optimistic update
-    emit(currentState.copyWith(
-      presetName: finalName,
-      isDirty: true,
-    ));
+    emit(currentState.copyWith(presetName: finalName, isDirty: true));
 
     final disting = currentState.disting;
-    disting.requestSetPresetName(finalName).then((_) {
-      disting.requestSavePreset().catchError((_) {});
-    }, onError: (e, s) {
-      // Revert to device truth if the request failed
-      _renamePresetVerificationOperation?.cancel();
-      _renamePresetVerificationOperation = CancelableOperation.fromFuture(
-        Future.delayed(const Duration(milliseconds: 250), () async {
-          final syncState = state;
-          if (syncState is! DistingStateSynchronized) return;
-          final actual = await disting.requestPresetName();
-          final latestState = state;
-          if (actual != null &&
-              latestState is DistingStateSynchronized &&
-              latestState.presetName != actual) {
-            emit(latestState.copyWith(presetName: actual));
-          }
-        }),
-        onCancel: () {},
-      );
-    });
+    disting
+        .requestSetPresetName(finalName)
+        .then(
+          (_) {
+            disting.requestSavePreset().catchError((_) {});
+          },
+          onError: (e, s) {
+            // Revert to device truth if the request failed
+            _renamePresetVerificationOperation?.cancel();
+            _renamePresetVerificationOperation = CancelableOperation.fromFuture(
+              Future.delayed(const Duration(milliseconds: 250), () async {
+                final syncState = state;
+                if (syncState is! DistingStateSynchronized) return;
+                final actual = await disting.requestPresetName();
+                final latestState = state;
+                if (actual != null &&
+                    latestState is DistingStateSynchronized &&
+                    latestState.presetName != actual) {
+                  emit(latestState.copyWith(presetName: actual));
+                }
+              }),
+              onCancel: () {},
+            );
+          },
+        );
 
     // Verification loop to ensure the name actually took
     _renamePresetVerificationOperation?.cancel();

@@ -6,10 +6,7 @@ void main() {
   group('BusMapping', () {
     group('busToName', () {
       test('returns None for bus 0', () {
-        expect(
-          BusMapping.busToName(0, hasExtendedAuxBuses: false),
-          'None',
-        );
+        expect(BusMapping.busToName(0, hasExtendedAuxBuses: false), 'None');
       });
 
       test('returns correct names for input buses 1-12', () {
@@ -40,47 +37,23 @@ void main() {
       });
 
       test('returns ES-5 L/R for buses 29-30 (pre-1.15)', () {
-        expect(
-          BusMapping.busToName(29, hasExtendedAuxBuses: false),
-          'ES-5 L',
-        );
-        expect(
-          BusMapping.busToName(30, hasExtendedAuxBuses: false),
-          'ES-5 R',
-        );
+        expect(BusMapping.busToName(29, hasExtendedAuxBuses: false), 'ES-5 L');
+        expect(BusMapping.busToName(30, hasExtendedAuxBuses: false), 'ES-5 R');
       });
 
       test('returns ES-5 L/R for buses 65-66 (extended firmware)', () {
-        expect(
-          BusMapping.busToName(65, hasExtendedAuxBuses: true),
-          'ES-5 L',
-        );
-        expect(
-          BusMapping.busToName(66, hasExtendedAuxBuses: true),
-          'ES-5 R',
-        );
+        expect(BusMapping.busToName(65, hasExtendedAuxBuses: true), 'ES-5 L');
+        expect(BusMapping.busToName(66, hasExtendedAuxBuses: true), 'ES-5 R');
       });
 
       test('treats 29-30 as Aux on extended firmware', () {
-        expect(
-          BusMapping.busToName(29, hasExtendedAuxBuses: true),
-          'Aux 9',
-        );
-        expect(
-          BusMapping.busToName(30, hasExtendedAuxBuses: true),
-          'Aux 10',
-        );
+        expect(BusMapping.busToName(29, hasExtendedAuxBuses: true), 'Aux 9');
+        expect(BusMapping.busToName(30, hasExtendedAuxBuses: true), 'Aux 10');
       });
 
       test('returns extended aux names on 1.15+', () {
-        expect(
-          BusMapping.busToName(44, hasExtendedAuxBuses: true),
-          'Aux 24',
-        );
-        expect(
-          BusMapping.busToName(64, hasExtendedAuxBuses: true),
-          'Aux 44',
-        );
+        expect(BusMapping.busToName(44, hasExtendedAuxBuses: true), 'Aux 24');
+        expect(BusMapping.busToName(64, hasExtendedAuxBuses: true), 'Aux 44');
       });
 
       test('returns Unknown for out-of-range', () {
@@ -97,17 +70,11 @@ void main() {
 
     group('nameToBus', () {
       test('returns 0 for None', () {
-        expect(
-          BusMapping.nameToBus('None', hasExtendedAuxBuses: false),
-          0,
-        );
+        expect(BusMapping.nameToBus('None', hasExtendedAuxBuses: false), 0);
       });
 
       test('returns correct bus for Input names', () {
-        expect(
-          BusMapping.nameToBus('Input 1', hasExtendedAuxBuses: false),
-          1,
-        );
+        expect(BusMapping.nameToBus('Input 1', hasExtendedAuxBuses: false), 1);
         expect(
           BusMapping.nameToBus('Input 12', hasExtendedAuxBuses: false),
           12,
@@ -126,63 +93,27 @@ void main() {
       });
 
       test('returns correct bus for Aux names', () {
-        expect(
-          BusMapping.nameToBus('Aux 1', hasExtendedAuxBuses: false),
-          21,
-        );
-        expect(
-          BusMapping.nameToBus('Aux 8', hasExtendedAuxBuses: false),
-          28,
-        );
+        expect(BusMapping.nameToBus('Aux 1', hasExtendedAuxBuses: false), 21);
+        expect(BusMapping.nameToBus('Aux 8', hasExtendedAuxBuses: false), 28);
       });
 
       test('returns correct bus for ES-5 names (pre-1.15)', () {
-        expect(
-          BusMapping.nameToBus('ES-5 L', hasExtendedAuxBuses: false),
-          29,
-        );
-        expect(
-          BusMapping.nameToBus('ES-5 R', hasExtendedAuxBuses: false),
-          30,
-        );
+        expect(BusMapping.nameToBus('ES-5 L', hasExtendedAuxBuses: false), 29);
+        expect(BusMapping.nameToBus('ES-5 R', hasExtendedAuxBuses: false), 30);
       });
 
       test('returns correct bus for ES-5 names (extended)', () {
-        expect(
-          BusMapping.nameToBus('ES-5 L', hasExtendedAuxBuses: true),
-          65,
-        );
-        expect(
-          BusMapping.nameToBus('ES-5 R', hasExtendedAuxBuses: true),
-          66,
-        );
+        expect(BusMapping.nameToBus('ES-5 L', hasExtendedAuxBuses: true), 65);
+        expect(BusMapping.nameToBus('ES-5 R', hasExtendedAuxBuses: true), 66);
       });
 
       test('is case-insensitive', () {
-        expect(
-          BusMapping.nameToBus('input 1', hasExtendedAuxBuses: false),
-          1,
-        );
-        expect(
-          BusMapping.nameToBus('INPUT 1', hasExtendedAuxBuses: false),
-          1,
-        );
-        expect(
-          BusMapping.nameToBus('none', hasExtendedAuxBuses: false),
-          0,
-        );
-        expect(
-          BusMapping.nameToBus('NONE', hasExtendedAuxBuses: false),
-          0,
-        );
-        expect(
-          BusMapping.nameToBus('es-5 l', hasExtendedAuxBuses: false),
-          29,
-        );
-        expect(
-          BusMapping.nameToBus('ES-5 R', hasExtendedAuxBuses: false),
-          30,
-        );
+        expect(BusMapping.nameToBus('input 1', hasExtendedAuxBuses: false), 1);
+        expect(BusMapping.nameToBus('INPUT 1', hasExtendedAuxBuses: false), 1);
+        expect(BusMapping.nameToBus('none', hasExtendedAuxBuses: false), 0);
+        expect(BusMapping.nameToBus('NONE', hasExtendedAuxBuses: false), 0);
+        expect(BusMapping.nameToBus('es-5 l', hasExtendedAuxBuses: false), 29);
+        expect(BusMapping.nameToBus('ES-5 R', hasExtendedAuxBuses: false), 30);
       });
 
       test('trims whitespace', () {
@@ -190,10 +121,7 @@ void main() {
           BusMapping.nameToBus('  Input 1  ', hasExtendedAuxBuses: false),
           1,
         );
-        expect(
-          BusMapping.nameToBus('  None  ', hasExtendedAuxBuses: false),
-          0,
-        );
+        expect(BusMapping.nameToBus('  None  ', hasExtendedAuxBuses: false), 0);
       });
 
       test('returns null for unknown names', () {
@@ -201,10 +129,7 @@ void main() {
           BusMapping.nameToBus('Unknown', hasExtendedAuxBuses: false),
           isNull,
         );
-        expect(
-          BusMapping.nameToBus('', hasExtendedAuxBuses: false),
-          isNull,
-        );
+        expect(BusMapping.nameToBus('', hasExtendedAuxBuses: false), isNull);
         expect(
           BusMapping.nameToBus('Input', hasExtendedAuxBuses: false),
           isNull,
@@ -240,14 +165,8 @@ void main() {
       });
 
       test('accepts extended aux on 1.15+', () {
-        expect(
-          BusMapping.nameToBus('Aux 9', hasExtendedAuxBuses: true),
-          29,
-        );
-        expect(
-          BusMapping.nameToBus('Aux 44', hasExtendedAuxBuses: true),
-          64,
-        );
+        expect(BusMapping.nameToBus('Aux 9', hasExtendedAuxBuses: true), 29);
+        expect(BusMapping.nameToBus('Aux 44', hasExtendedAuxBuses: true), 64);
       });
     });
 
@@ -270,37 +189,16 @@ void main() {
       });
 
       test('parses name strings', () {
-        expect(
-          BusMapping.parseBus('None', hasExtendedAuxBuses: false),
-          0,
-        );
-        expect(
-          BusMapping.parseBus('Input 1', hasExtendedAuxBuses: false),
-          1,
-        );
-        expect(
-          BusMapping.parseBus('Output 1', hasExtendedAuxBuses: false),
-          13,
-        );
-        expect(
-          BusMapping.parseBus('Aux 1', hasExtendedAuxBuses: false),
-          21,
-        );
-        expect(
-          BusMapping.parseBus('ES-5 L', hasExtendedAuxBuses: false),
-          29,
-        );
+        expect(BusMapping.parseBus('None', hasExtendedAuxBuses: false), 0);
+        expect(BusMapping.parseBus('Input 1', hasExtendedAuxBuses: false), 1);
+        expect(BusMapping.parseBus('Output 1', hasExtendedAuxBuses: false), 13);
+        expect(BusMapping.parseBus('Aux 1', hasExtendedAuxBuses: false), 21);
+        expect(BusMapping.parseBus('ES-5 L', hasExtendedAuxBuses: false), 29);
       });
 
       test('parses case-insensitively', () {
-        expect(
-          BusMapping.parseBus('none', hasExtendedAuxBuses: false),
-          0,
-        );
-        expect(
-          BusMapping.parseBus('input 1', hasExtendedAuxBuses: false),
-          1,
-        );
+        expect(BusMapping.parseBus('none', hasExtendedAuxBuses: false), 0);
+        expect(BusMapping.parseBus('input 1', hasExtendedAuxBuses: false), 1);
       });
 
       test('returns null for non-int non-string types', () {

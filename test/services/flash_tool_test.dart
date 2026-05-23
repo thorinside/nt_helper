@@ -19,7 +19,10 @@ void main() {
     test('fromMachineValue returns null for unknown stage', () {
       expect(FlashStage.fromMachineValue('UNKNOWN'), isNull);
       expect(FlashStage.fromMachineValue(''), isNull);
-      expect(FlashStage.fromMachineValue('sdp_connect'), isNull); // case-sensitive
+      expect(
+        FlashStage.fromMachineValue('sdp_connect'),
+        isNull,
+      ); // case-sensitive
     });
 
     test('machineValue returns correct string', () {

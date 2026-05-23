@@ -142,9 +142,9 @@ void main() {
 
     test('clearCache clears cached data', () async {
       // First make a successful request
-      when(() => mockClient.get(any())).thenAnswer(
-        (_) async => http.Response(_sampleHtml, 200),
-      );
+      when(
+        () => mockClient.get(any()),
+      ).thenAnswer((_) async => http.Response(_sampleHtml, 200));
 
       final result1 = await service.fetchAvailableVersions();
       expect(result1, isNotEmpty);
@@ -153,9 +153,9 @@ void main() {
       service.clearCache();
 
       // Next request should make a new HTTP call
-      when(() => mockClient.get(any())).thenAnswer(
-        (_) async => http.Response(_sampleHtml, 200),
-      );
+      when(
+        () => mockClient.get(any()),
+      ).thenAnswer((_) async => http.Response(_sampleHtml, 200));
 
       await service.fetchAvailableVersions();
 
@@ -164,9 +164,9 @@ void main() {
     });
 
     test('fetchAvailableVersions caches results', () async {
-      when(() => mockClient.get(any())).thenAnswer(
-        (_) async => http.Response(_sampleHtml, 200),
-      );
+      when(
+        () => mockClient.get(any()),
+      ).thenAnswer((_) async => http.Response(_sampleHtml, 200));
 
       // Make two calls
       await service.fetchAvailableVersions();
@@ -177,9 +177,9 @@ void main() {
     });
 
     test('fetchAvailableVersions handles HTTP errors', () async {
-      when(() => mockClient.get(any())).thenAnswer(
-        (_) async => http.Response('Not Found', 404),
-      );
+      when(
+        () => mockClient.get(any()),
+      ).thenAnswer((_) async => http.Response('Not Found', 404));
 
       expect(
         () => service.fetchAvailableVersions(),
@@ -188,9 +188,9 @@ void main() {
     });
 
     test('fetchAvailableVersions parses HTML correctly', () async {
-      when(() => mockClient.get(any())).thenAnswer(
-        (_) async => http.Response(_sampleHtml, 200),
-      );
+      when(
+        () => mockClient.get(any()),
+      ).thenAnswer((_) async => http.Response(_sampleHtml, 200));
 
       final versions = await service.fetchAvailableVersions();
 

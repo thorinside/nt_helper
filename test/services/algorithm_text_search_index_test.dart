@@ -11,7 +11,9 @@ void main() {
       });
 
       test('should split on non-alphanumeric characters', () {
-        final tokens = AlgorithmTextSearchIndex.tokenize('low-pass filter/bank');
+        final tokens = AlgorithmTextSearchIndex.tokenize(
+          'low-pass filter/bank',
+        );
         expect(tokens, contains('low'));
         expect(tokens, contains('pass'));
         expect(tokens, contains('filter'));
@@ -32,7 +34,9 @@ void main() {
       });
 
       test('should strip trailing "ing" for stemming', () {
-        final tokens = AlgorithmTextSearchIndex.tokenize('filtering processing');
+        final tokens = AlgorithmTextSearchIndex.tokenize(
+          'filtering processing',
+        );
         expect(tokens, contains('filter'));
         expect(tokens, contains('process'));
       });
@@ -105,8 +109,7 @@ void main() {
           guid: 'clck',
           name: 'Clock',
           categories: ['utility', 'clock'],
-          description:
-              'A master clock generator for tempo synchronization.',
+          description: 'A master clock generator for tempo synchronization.',
           shortDescription: 'Master clock source',
         ),
         const AlgorithmMetadata(

@@ -19,10 +19,7 @@ void main() {
         guid: guid,
         name: 'Test Algorithm',
       ),
-      routing: RoutingInfo(
-        algorithmIndex: 0,
-        routingInfo: List.filled(6, 0),
-      ),
+      routing: RoutingInfo(algorithmIndex: 0, routingInfo: List.filled(6, 0)),
       pages: ParameterPages(algorithmIndex: 0, pages: []),
       parameters: [
         ParameterInfo(
@@ -36,13 +33,7 @@ void main() {
           powerOfTen: 0,
         ),
       ],
-      values: [
-        ParameterValue(
-          algorithmIndex: 0,
-          parameterNumber: 0,
-          value: 0,
-        ),
-      ],
+      values: [ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 0)],
       enums: [ParameterEnumStrings.filler()],
       mappings: [
         Mapping(
@@ -82,7 +73,9 @@ void main() {
         final fileEditor = editor as FileParameterEditor;
         expect(fileEditor.rule.mode, equals(FileSelectionMode.directFile));
         expect(
-            fileEditor.rule.description.toLowerCase(), contains('lua script'));
+          fileEditor.rule.description.toLowerCase(),
+          contains('lua script'),
+        );
       }
     });
 
@@ -101,7 +94,9 @@ void main() {
         final fileEditor = editor as FileParameterEditor;
         expect(fileEditor.rule.mode, equals(FileSelectionMode.directFile));
         expect(
-            fileEditor.rule.description.toLowerCase(), contains('three pot'));
+          fileEditor.rule.description.toLowerCase(),
+          contains('three pot'),
+        );
       }
     });
 
@@ -362,17 +357,21 @@ void main() {
 
     test('returns true for legacy string units', () {
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(
-              ParameterUnits.legacyFilePath),
-          isTrue);
+        ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.legacyFilePath),
+        isTrue,
+      );
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(
-              ParameterUnits.legacyFileFolder),
-          isTrue);
+        ParameterEditorRegistry.isStringTypeUnit(
+          ParameterUnits.legacyFileFolder,
+        ),
+        isTrue,
+      );
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(
-              ParameterUnits.legacyTextInput),
-          isTrue);
+        ParameterEditorRegistry.isStringTypeUnit(
+          ParameterUnits.legacyTextInput,
+        ),
+        isTrue,
+      );
       expect(ParameterEditorRegistry.isStringTypeUnit(0), isFalse);
       expect(ParameterEditorRegistry.isStringTypeUnit(1), isFalse);
     });
@@ -380,20 +379,25 @@ void main() {
     test('returns true for modern string units', () {
       ParameterEditorRegistry.setFirmwareVersion(FirmwareVersion('1.13.0'));
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(
-              ParameterUnits.modernHasStrings),
-          isTrue);
+        ParameterEditorRegistry.isStringTypeUnit(
+          ParameterUnits.modernHasStrings,
+        ),
+        isTrue,
+      );
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(
-              ParameterUnits.modernConfirm),
-          isTrue);
+        ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.modernConfirm),
+        isTrue,
+      );
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(
-              ParameterUnits.modernTextInput),
-          isTrue);
+        ParameterEditorRegistry.isStringTypeUnit(
+          ParameterUnits.modernTextInput,
+        ),
+        isTrue,
+      );
       expect(
-          ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.modernBPM),
-          isFalse);
+        ParameterEditorRegistry.isStringTypeUnit(ParameterUnits.modernBPM),
+        isFalse,
+      );
       expect(ParameterEditorRegistry.isStringTypeUnit(0), isFalse);
       expect(ParameterEditorRegistry.isStringTypeUnit(1), isFalse);
     });
@@ -401,28 +405,44 @@ void main() {
 
   group('ParameterEditorRegistry - Firmware scheme detection', () {
     test('schemeFor correctly detects legacy firmware', () {
-      expect(ParameterUnits.schemeFor(FirmwareVersion('1.12.0')),
-          equals(ParameterUnitScheme.legacy));
-      expect(ParameterUnits.schemeFor(FirmwareVersion('1.11.5')),
-          equals(ParameterUnitScheme.legacy));
-      expect(ParameterUnits.schemeFor(FirmwareVersion('1.0.0')),
-          equals(ParameterUnitScheme.legacy));
+      expect(
+        ParameterUnits.schemeFor(FirmwareVersion('1.12.0')),
+        equals(ParameterUnitScheme.legacy),
+      );
+      expect(
+        ParameterUnits.schemeFor(FirmwareVersion('1.11.5')),
+        equals(ParameterUnitScheme.legacy),
+      );
+      expect(
+        ParameterUnits.schemeFor(FirmwareVersion('1.0.0')),
+        equals(ParameterUnitScheme.legacy),
+      );
     });
 
     test('schemeFor correctly detects modern firmware', () {
-      expect(ParameterUnits.schemeFor(FirmwareVersion('1.13.0')),
-          equals(ParameterUnitScheme.modern));
-      expect(ParameterUnits.schemeFor(FirmwareVersion('1.13.1')),
-          equals(ParameterUnitScheme.modern));
-      expect(ParameterUnits.schemeFor(FirmwareVersion('1.14.0')),
-          equals(ParameterUnitScheme.modern));
-      expect(ParameterUnits.schemeFor(FirmwareVersion('2.0.0')),
-          equals(ParameterUnitScheme.modern));
+      expect(
+        ParameterUnits.schemeFor(FirmwareVersion('1.13.0')),
+        equals(ParameterUnitScheme.modern),
+      );
+      expect(
+        ParameterUnits.schemeFor(FirmwareVersion('1.13.1')),
+        equals(ParameterUnitScheme.modern),
+      );
+      expect(
+        ParameterUnits.schemeFor(FirmwareVersion('1.14.0')),
+        equals(ParameterUnitScheme.modern),
+      );
+      expect(
+        ParameterUnits.schemeFor(FirmwareVersion('2.0.0')),
+        equals(ParameterUnitScheme.modern),
+      );
     });
 
     test('schemeFor returns modern for null version', () {
       expect(
-          ParameterUnits.schemeFor(null), equals(ParameterUnitScheme.modern));
+        ParameterUnits.schemeFor(null),
+        equals(ParameterUnitScheme.modern),
+      );
     });
   });
 

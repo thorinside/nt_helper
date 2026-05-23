@@ -24,16 +24,26 @@ class LogDisplayPage extends StatelessWidget {
               logger.isRecording
                   ? Icons.pause_circle_filled
                   : Icons.play_circle_filled,
-              semanticLabel: logger.isRecording ? 'Pause Logging' : 'Resume Logging',
+              semanticLabel: logger.isRecording
+                  ? 'Pause Logging'
+                  : 'Resume Logging',
             ),
             tooltip: logger.isRecording ? 'Pause Logging' : 'Resume Logging',
             onPressed: () {
               if (logger.isRecording) {
                 logger.stopRecording();
-                SemanticsService.sendAnnouncement(View.of(context), 'Logging paused', TextDirection.ltr);
+                SemanticsService.sendAnnouncement(
+                  View.of(context),
+                  'Logging paused',
+                  TextDirection.ltr,
+                );
               } else {
                 logger.startRecording();
-                SemanticsService.sendAnnouncement(View.of(context), 'Logging resumed', TextDirection.ltr);
+                SemanticsService.sendAnnouncement(
+                  View.of(context),
+                  'Logging resumed',
+                  TextDirection.ltr,
+                );
               }
             },
           ),

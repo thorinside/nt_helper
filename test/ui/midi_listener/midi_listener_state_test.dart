@@ -39,11 +39,13 @@ void main() {
     });
 
     test('copyWith preserves 14-bit type (cc14BitLowFirst)', () {
-      final state = MidiListenerState.data(
-        lastDetectedType: MidiEventType.cc14BitLowFirst,
-        lastDetectedCc: 1,
-        lastDetectedChannel: 0,
-      ) as Data;
+      final state =
+          MidiListenerState.data(
+                lastDetectedType: MidiEventType.cc14BitLowFirst,
+                lastDetectedCc: 1,
+                lastDetectedChannel: 0,
+              )
+              as Data;
 
       final updated = state.copyWith(lastDetectedTime: DateTime.now());
 
@@ -53,11 +55,13 @@ void main() {
     });
 
     test('copyWith preserves 14-bit type (cc14BitHighFirst)', () {
-      final state = MidiListenerState.data(
-        lastDetectedType: MidiEventType.cc14BitHighFirst,
-        lastDetectedCc: 32,
-        lastDetectedChannel: 5,
-      ) as Data;
+      final state =
+          MidiListenerState.data(
+                lastDetectedType: MidiEventType.cc14BitHighFirst,
+                lastDetectedCc: 32,
+                lastDetectedChannel: 5,
+              )
+              as Data;
 
       final updated = state.copyWith(lastDetectedTime: DateTime.now());
 

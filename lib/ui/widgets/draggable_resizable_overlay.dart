@@ -184,7 +184,8 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
   @override
   Widget build(BuildContext context) {
     final isAccessible = MediaQuery.of(context).accessibleNavigation;
-    final showControls = _controlsVisible || _isResizing || _isDragging || isAccessible;
+    final showControls =
+        _controlsVisible || _isResizing || _isDragging || isAccessible;
 
     final hasTopBar = widget.topBar != null;
     final barHeight = hasTopBar ? widget.topBarHeight : 0.0;

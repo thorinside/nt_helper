@@ -35,36 +35,49 @@ Future<void> _pump(
 void main() {
   group('FirmwareFlowDiagram', () {
     testWidgets(
-        'renders at the documented 600x150 size for every FlashStage without throwing',
-        (tester) async {
-      for (final stage in FlashStage.values) {
-        await _pump(
-          tester,
-          progress: FlashProgress(stage: stage, percent: 50, message: ''),
-        );
+      'renders at the documented 600x150 size for every FlashStage without throwing',
+      (tester) async {
+        for (final stage in FlashStage.values) {
+          await _pump(
+            tester,
+            progress: FlashProgress(stage: stage, percent: 50, message: ''),
+          );
 
-        expect(tester.takeException(), isNull,
-            reason: 'should not throw for stage $stage');
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'should not throw for stage $stage',
+          );
 
-        final paintFinder = find.descendant(
-          of: find.byType(FirmwareFlowDiagram),
-          matching: find.byType(CustomPaint),
-        );
-        expect(paintFinder, findsWidgets,
-            reason: 'CustomPaint should be present for stage $stage');
+          final paintFinder = find.descendant(
+            of: find.byType(FirmwareFlowDiagram),
+            matching: find.byType(CustomPaint),
+          );
+          expect(
+            paintFinder,
+            findsWidgets,
+            reason: 'CustomPaint should be present for stage $stage',
+          );
 
-        final svgFinder = find.descendant(
-          of: find.byType(FirmwareFlowDiagram),
-          matching: find.byType(SvgPicture),
-        );
-        expect(svgFinder, findsOneWidget,
-            reason: 'SvgPicture should render disting NT icon for stage $stage');
+          final svgFinder = find.descendant(
+            of: find.byType(FirmwareFlowDiagram),
+            matching: find.byType(SvgPicture),
+          );
+          expect(
+            svgFinder,
+            findsOneWidget,
+            reason: 'SvgPicture should render disting NT icon for stage $stage',
+          );
 
-        final size = tester.getSize(find.byType(FirmwareFlowDiagram));
-        expect(size, const Size(600, 150),
-            reason: 'widget should fill its 600x150 container for stage $stage');
-      }
-    });
+          final size = tester.getSize(find.byType(FirmwareFlowDiagram));
+          expect(
+            size,
+            const Size(600, 150),
+            reason: 'widget should fill its 600x150 container for stage $stage',
+          );
+        }
+      },
+    );
 
     testWidgets('renders the error variant without overflow', (tester) async {
       await _pump(
@@ -91,8 +104,7 @@ void main() {
       );
     });
 
-    testWidgets('renders the reduced-motion (static) variant',
-        (tester) async {
+    testWidgets('renders the reduced-motion (static) variant', (tester) async {
       await _pump(
         tester,
         progress: FlashProgress(
@@ -117,8 +129,7 @@ void main() {
       );
     });
 
-    testWidgets('renders under a dark theme without throwing',
-        (tester) async {
+    testWidgets('renders under a dark theme without throwing', (tester) async {
       await _pump(
         tester,
         progress: FlashProgress(
@@ -136,8 +147,7 @@ void main() {
       );
     });
 
-    testWidgets('renders at a narrower width without overflow',
-        (tester) async {
+    testWidgets('renders at a narrower width without overflow', (tester) async {
       await _pump(
         tester,
         progress: FlashProgress(

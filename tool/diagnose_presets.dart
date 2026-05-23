@@ -78,10 +78,7 @@ bool _looksLikeFileRef(String value) {
   return false;
 }
 
-bool _isKnownDependency(
-  String value,
-  Set<String> allDeps,
-) {
+bool _isKnownDependency(String value, Set<String> allDeps) {
   if (allDeps.contains(value)) return true;
   // Some fields are stored bare (filename only) while the analyzer
   // composes paths (e.g. trigger `<folder>/<sample>`). Match by suffix
@@ -116,16 +113,19 @@ void main(List<String> args) async {
     exit(66);
   }
 
-  final presetFiles = presetsDir
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((f) => f.path.toLowerCase().endsWith('.json'))
-      // macOS AppleDouble metadata (`._foo.json`) — never preset content.
-      .where((f) => !f.uri.pathSegments.last.startsWith('._'))
-      .toList()
-    ..sort((a, b) => a.path.compareTo(b.path));
+  final presetFiles =
+      presetsDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.toLowerCase().endsWith('.json'))
+          // macOS AppleDouble metadata (`._foo.json`) — never preset content.
+          .where((f) => !f.uri.pathSegments.last.startsWith('._'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
 
-  stdout.writeln('Scanning ${presetFiles.length} preset(s) under ${presetsDir.path}\n');
+  stdout.writeln(
+    'Scanning ${presetFiles.length} preset(s) under ${presetsDir.path}\n',
+  );
 
   var binaryFiles = 0;
   var jsonParseErrors = 0;
@@ -308,9 +308,7 @@ void main(List<String> args) async {
     final sorted = guidsWithUnclassified.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
     for (final entry in sorted) {
-      stdout.writeln(
-        "  '${entry.key}': ${entry.value.toList()..sort()}",
-      );
+      stdout.writeln("  '${entry.key}': ${entry.value.toList()..sort()}");
     }
   }
 
@@ -343,20 +341,15 @@ void main(List<String> args) async {
       final guid = entry.key;
       final fileFields = guidFileLikeFields[guid] ?? <String>{};
       final unknownFields =
-          fileFields.where((f) => !handledFields.contains(f)).toList()
-            ..sort();
+          fileFields.where((f) => !handledFields.contains(f)).toList()..sort();
       final marker = RegExp(r'[A-Z]').hasMatch(guid) ? ' [community]' : '';
       final suffix = fileFields.isEmpty
           ? ' (no file-valued fields)'
           : ' fields=${fileFields.toList()..sort()}';
-      stdout.writeln(
-        "  '${guid.padRight(6)}' ×${entry.value}$marker$suffix",
-      );
+      stdout.writeln("  '${guid.padRight(6)}' ×${entry.value}$marker$suffix");
       if (unknownFields.isNotEmpty) {
         unhandled++;
-        stdout.writeln(
-          '     ! analyzer does not consume: $unknownFields',
-        );
+        stdout.writeln('     ! analyzer does not consume: $unknownFields');
       }
     }
     stdout.writeln(

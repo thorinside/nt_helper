@@ -88,85 +88,85 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            // Current preset section
-            _buildSectionHeader('Current Preset', theme),
-            const SizedBox(height: 8),
-            Text(
-              '${widget.currentSlotCount} algorithm${widget.currentSlotCount == 1 ? '' : 's'}${widget.currentSlotCount > 0 ? ' (slots 1-${widget.currentSlotCount})' : ''}',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-
-            // Template section
-            _buildSectionHeader('Template', theme),
-            const SizedBox(height: 8),
-            Text(
-              '$_templateSlotCount algorithm${_templateSlotCount == 1 ? '' : 's'}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+              // Current preset section
+              _buildSectionHeader('Current Preset', theme),
+              const SizedBox(height: 8),
+              Text(
+                '${widget.currentSlotCount} algorithm${widget.currentSlotCount == 1 ? '' : 's'}${widget.currentSlotCount > 0 ? ' (slots 1-${widget.currentSlotCount})' : ''}',
+                style: theme.textTheme.bodyMedium,
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-            // Algorithm list (scrollable if many)
-            Container(
-              constraints: const BoxConstraints(maxHeight: 200),
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.dividerColor),
-                borderRadius: BorderRadius.circular(4),
+              // Template section
+              _buildSectionHeader('Template', theme),
+              const SizedBox(height: 8),
+              Text(
+                '$_templateSlotCount algorithm${_templateSlotCount == 1 ? '' : 's'}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _templateSlotCount,
-                itemBuilder: (context, index) {
-                  final slot = widget.template.slots[index];
-                  return ListTile(
-                    dense: true,
-                    leading: ExcludeSemantics(
-                      child: Icon(
-                        Icons.music_note,
-                        size: 16,
-                        color: theme.colorScheme.primary,
+              const SizedBox(height: 8),
+
+              // Algorithm list (scrollable if many)
+              Container(
+                constraints: const BoxConstraints(maxHeight: 200),
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.dividerColor),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _templateSlotCount,
+                  itemBuilder: (context, index) {
+                    final slot = widget.template.slots[index];
+                    return ListTile(
+                      dense: true,
+                      leading: ExcludeSemantics(
+                        child: Icon(
+                          Icons.music_note,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
-                    ),
-                    title: Text(
-                      slot.algorithm.name,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Result section
-            _buildSectionHeader('After Injection', theme),
-            const SizedBox(height: 8),
-            Text(
-              '$_totalSlotsAfterInjection algorithm${_totalSlotsAfterInjection == 1 ? '' : 's'}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            if (widget.currentSlotCount > 0 && _templateSlotCount > 0) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Current: slots 1-${widget.currentSlotCount}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                      title: Text(
+                        slot.algorithm.name,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    );
+                  },
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // Result section
+              _buildSectionHeader('After Injection', theme),
+              const SizedBox(height: 8),
               Text(
-                'Template: slots ${widget.currentSlotCount + 1}-$_totalSlotsAfterInjection',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                '$_totalSlotsAfterInjection algorithm${_totalSlotsAfterInjection == 1 ? '' : 's'}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ],
-            const SizedBox(height: 16),
+              if (widget.currentSlotCount > 0 && _templateSlotCount > 0) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Current: slots 1-${widget.currentSlotCount}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  'Template: slots ${widget.currentSlotCount + 1}-$_totalSlotsAfterInjection',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
 
-            // Warning section if limit exceeded
-            if (_exceedsLimit) _buildWarningSection(theme),
+              // Warning section if limit exceeded
+              if (_exceedsLimit) _buildWarningSection(theme),
             ],
           ),
         ),
@@ -201,10 +201,7 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: _handleCancel,
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: _handleCancel, child: const Text('Cancel')),
         ],
       ),
     );
@@ -273,17 +270,11 @@ class _TemplatePreviewDialogState extends State<TemplatePreviewDialog> {
       decoration: BoxDecoration(
         color: theme.colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.colorScheme.error,
-          width: 2,
-        ),
+        border: Border.all(color: theme.colorScheme.error, width: 2),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.warning,
-            color: theme.colorScheme.error,
-          ),
+          Icon(Icons.warning, color: theme.colorScheme.error),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

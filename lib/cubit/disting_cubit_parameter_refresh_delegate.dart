@@ -99,10 +99,7 @@ class _ParameterRefreshDelegate {
 
     try {
       final disting = _cubit.requireDisting();
-      final updatedSlot = await _cubit.fetchSlot(
-        disting,
-        slotIndex,
-      );
+      final updatedSlot = await _cubit.fetchSlot(disting, slotIndex);
 
       // Check if state is still synchronized and slot still exists
       final newState = _cubit.state;
@@ -273,7 +270,9 @@ class _ParameterRefreshDelegate {
     String key,
   ) async {
     final task = _pollingTasks[key];
-    if (task == null || !task.active || _cubit.state is! DistingStateSynchronized) {
+    if (task == null ||
+        !task.active ||
+        _cubit.state is! DistingStateSynchronized) {
       return;
     }
 

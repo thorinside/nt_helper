@@ -505,241 +505,244 @@ void main() {
     });
   });
 
-  group('StepSequencerParams - AC1: Permutation and Gate Type Parameter Discovery', () {
-    late Slot testSlot;
+  group(
+    'StepSequencerParams - AC1: Permutation and Gate Type Parameter Discovery',
+    () {
+      late Slot testSlot;
 
-    setUp(() {
-      // Create test slot with permutation and gate type global parameters
-      testSlot = Slot(
-        algorithm: Algorithm(
-          algorithmIndex: 0,
-          guid: 'spsq',
-          name: 'Step Sequencer',
-        ),
-        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
-        pages: ParameterPages(algorithmIndex: 0, pages: const []),
-        parameters: [
-          // Step 1 minimal params
-          ParameterInfo(
+      setUp(() {
+        // Create test slot with permutation and gate type global parameters
+        testSlot = Slot(
+          algorithm: Algorithm(
             algorithmIndex: 0,
-            parameterNumber: 0,
-            name: '1:Pitch',
-            min: 0,
-            max: 127,
-            defaultValue: 60,
-            unit: 0,
-            powerOfTen: 0,
+            guid: 'spsq',
+            name: 'Step Sequencer',
           ),
-          // Global playback parameters
-          ParameterInfo(
+          routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+          pages: ParameterPages(algorithmIndex: 0, pages: const []),
+          parameters: [
+            // Step 1 minimal params
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              name: '1:Pitch',
+              min: 0,
+              max: 127,
+              defaultValue: 60,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+            // Global playback parameters
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Direction',
+              min: 0,
+              max: 6,
+              defaultValue: 0,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 2,
+              name: 'Permutation',
+              min: 0,
+              max: 3,
+              defaultValue: 0,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 3,
+              name: 'Gate Type',
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+          ],
+          values: [
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+            ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0),
+            ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 1),
+            ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 1),
+          ],
+          enums: const [],
+          mappings: const [],
+          valueStrings: const [],
+        );
+      });
+
+      test('discovers Permutation parameter by primary name', () {
+        final params = StepSequencerParams.fromSlot(testSlot);
+        expect(params.permutation, equals(2));
+      });
+
+      test('discovers Gate Type parameter by primary name', () {
+        final params = StepSequencerParams.fromSlot(testSlot);
+        expect(params.gateType, equals(3));
+      });
+
+      test('discovers Permutation parameter by fallback name (Permute)', () {
+        final slotWithFallback = Slot(
+          algorithm: Algorithm(
             algorithmIndex: 0,
-            parameterNumber: 1,
-            name: 'Direction',
-            min: 0,
-            max: 6,
-            defaultValue: 0,
-            unit: 0,
-            powerOfTen: 0,
+            guid: 'spsq',
+            name: 'Step Sequencer',
           ),
-          ParameterInfo(
+          routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+          pages: ParameterPages(algorithmIndex: 0, pages: const []),
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              name: '1:Pitch',
+              min: 0,
+              max: 127,
+              defaultValue: 60,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Permute',
+              min: 0,
+              max: 3,
+              defaultValue: 0,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+          ],
+          values: [
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+            ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 2),
+          ],
+          enums: const [],
+          mappings: const [],
+          valueStrings: const [],
+        );
+
+        final params = StepSequencerParams.fromSlot(slotWithFallback);
+        expect(params.permutation, equals(1));
+      });
+
+      test('discovers Gate Type parameter by fallback names', () {
+        // Test "Gate/Trigger" fallback
+        final slotWithGateTrigger = Slot(
+          algorithm: Algorithm(
             algorithmIndex: 0,
-            parameterNumber: 2,
-            name: 'Permutation',
-            min: 0,
-            max: 3,
-            defaultValue: 0,
-            unit: 0,
-            powerOfTen: 0,
+            guid: 'spsq',
+            name: 'Step Sequencer',
           ),
-          ParameterInfo(
+          routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+          pages: ParameterPages(algorithmIndex: 0, pages: const []),
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              name: '1:Pitch',
+              min: 0,
+              max: 127,
+              defaultValue: 60,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Gate/Trigger',
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+          ],
+          values: [
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+            ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 1),
+          ],
+          enums: const [],
+          mappings: const [],
+          valueStrings: const [],
+        );
+
+        final params = StepSequencerParams.fromSlot(slotWithGateTrigger);
+        expect(params.gateType, equals(1));
+      });
+
+      test('returns null for missing Permutation parameter', () {
+        final slotWithoutPermutation = Slot(
+          algorithm: Algorithm(
             algorithmIndex: 0,
-            parameterNumber: 3,
-            name: 'Gate Type',
-            min: 0,
-            max: 1,
-            defaultValue: 0,
-            unit: 0,
-            powerOfTen: 0,
+            guid: 'spsq',
+            name: 'Step Sequencer',
           ),
-        ],
-        values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 0),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 1),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 1),
-        ],
-        enums: const [],
-        mappings: const [],
-        valueStrings: const [],
-      );
-    });
+          routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+          pages: ParameterPages(algorithmIndex: 0, pages: const []),
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              name: '1:Pitch',
+              min: 0,
+              max: 127,
+              defaultValue: 60,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+          ],
+          values: [
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+          ],
+          enums: const [],
+          mappings: const [],
+          valueStrings: const [],
+        );
 
-    test('discovers Permutation parameter by primary name', () {
-      final params = StepSequencerParams.fromSlot(testSlot);
-      expect(params.permutation, equals(2));
-    });
+        final params = StepSequencerParams.fromSlot(slotWithoutPermutation);
+        expect(params.permutation, isNull);
+      });
 
-    test('discovers Gate Type parameter by primary name', () {
-      final params = StepSequencerParams.fromSlot(testSlot);
-      expect(params.gateType, equals(3));
-    });
-
-    test('discovers Permutation parameter by fallback name (Permute)', () {
-      final slotWithFallback = Slot(
-        algorithm: Algorithm(
-          algorithmIndex: 0,
-          guid: 'spsq',
-          name: 'Step Sequencer',
-        ),
-        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
-        pages: ParameterPages(algorithmIndex: 0, pages: const []),
-        parameters: [
-          ParameterInfo(
+      test('returns null for missing Gate Type parameter', () {
+        // Create a new slot without Gate Type
+        final slotWithoutGateType = Slot(
+          algorithm: Algorithm(
             algorithmIndex: 0,
-            parameterNumber: 0,
-            name: '1:Pitch',
-            min: 0,
-            max: 127,
-            defaultValue: 60,
-            unit: 0,
-            powerOfTen: 0,
+            guid: 'spsq',
+            name: 'Step Sequencer',
           ),
-          ParameterInfo(
-            algorithmIndex: 0,
-            parameterNumber: 1,
-            name: 'Permute',
-            min: 0,
-            max: 3,
-            defaultValue: 0,
-            unit: 0,
-            powerOfTen: 0,
-          ),
-        ],
-        values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 2),
-        ],
-        enums: const [],
-        mappings: const [],
-        valueStrings: const [],
-      );
+          routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+          pages: ParameterPages(algorithmIndex: 0, pages: const []),
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              name: '1:Pitch',
+              min: 0,
+              max: 127,
+              defaultValue: 60,
+              unit: 0,
+              powerOfTen: 0,
+            ),
+          ],
+          values: [
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
+          ],
+          enums: const [],
+          mappings: const [],
+          valueStrings: const [],
+        );
 
-      final params = StepSequencerParams.fromSlot(slotWithFallback);
-      expect(params.permutation, equals(1));
-    });
-
-    test('discovers Gate Type parameter by fallback names', () {
-      // Test "Gate/Trigger" fallback
-      final slotWithGateTrigger = Slot(
-        algorithm: Algorithm(
-          algorithmIndex: 0,
-          guid: 'spsq',
-          name: 'Step Sequencer',
-        ),
-        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
-        pages: ParameterPages(algorithmIndex: 0, pages: const []),
-        parameters: [
-          ParameterInfo(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            name: '1:Pitch',
-            min: 0,
-            max: 127,
-            defaultValue: 60,
-            unit: 0,
-            powerOfTen: 0,
-          ),
-          ParameterInfo(
-            algorithmIndex: 0,
-            parameterNumber: 1,
-            name: 'Gate/Trigger',
-            min: 0,
-            max: 1,
-            defaultValue: 0,
-            unit: 0,
-            powerOfTen: 0,
-          ),
-        ],
-        values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
-          ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 1),
-        ],
-        enums: const [],
-        mappings: const [],
-        valueStrings: const [],
-      );
-
-      final params = StepSequencerParams.fromSlot(slotWithGateTrigger);
-      expect(params.gateType, equals(1));
-    });
-
-    test('returns null for missing Permutation parameter', () {
-      final slotWithoutPermutation = Slot(
-        algorithm: Algorithm(
-          algorithmIndex: 0,
-          guid: 'spsq',
-          name: 'Step Sequencer',
-        ),
-        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
-        pages: ParameterPages(algorithmIndex: 0, pages: const []),
-        parameters: [
-          ParameterInfo(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            name: '1:Pitch',
-            min: 0,
-            max: 127,
-            defaultValue: 60,
-            unit: 0,
-            powerOfTen: 0,
-          ),
-        ],
-        values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
-        ],
-        enums: const [],
-        mappings: const [],
-        valueStrings: const [],
-      );
-
-      final params = StepSequencerParams.fromSlot(slotWithoutPermutation);
-      expect(params.permutation, isNull);
-    });
-
-    test('returns null for missing Gate Type parameter', () {
-      // Create a new slot without Gate Type
-      final slotWithoutGateType = Slot(
-        algorithm: Algorithm(
-          algorithmIndex: 0,
-          guid: 'spsq',
-          name: 'Step Sequencer',
-        ),
-        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
-        pages: ParameterPages(algorithmIndex: 0, pages: const []),
-        parameters: [
-          ParameterInfo(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            name: '1:Pitch',
-            min: 0,
-            max: 127,
-            defaultValue: 60,
-            unit: 0,
-            powerOfTen: 0,
-          ),
-        ],
-        values: [
-          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
-        ],
-        enums: const [],
-        mappings: const [],
-        valueStrings: const [],
-      );
-
-      final paramsNoGate = StepSequencerParams.fromSlot(slotWithoutGateType);
-      expect(paramsNoGate.gateType, isNull);
-    });
-  });
+        final paramsNoGate = StepSequencerParams.fromSlot(slotWithoutGateType);
+        expect(paramsNoGate.gateType, isNull);
+      });
+    },
+  );
 
   group('StepSequencerParams - AC7: Randomize Parameter Discovery', () {
     late Slot testSlot;
@@ -755,25 +758,187 @@ void main() {
         routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
         pages: ParameterPages(algorithmIndex: 0, pages: const []),
         parameters: [
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 0, name: '1:Pitch', min: 0, max: 127, defaultValue: 60, unit: 0, powerOfTen: 0),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
           // Randomize parameters
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 1, name: 'Randomise', min: 0, max: 1, defaultValue: 0, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 2, name: 'Randomise what', min: 0, max: 3, defaultValue: 0, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 3, name: 'Note distribution', min: 0, max: 1, defaultValue: 0, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 4, name: 'Min note', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 5, name: 'Max note', min: 0, max: 127, defaultValue: 127, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 6, name: 'Mean note', min: 0, max: 127, defaultValue: 60, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 7, name: 'Note deviation', min: 0, max: 127, defaultValue: 12, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 8, name: 'Min repeat', min: 2, max: 8, defaultValue: 2, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 9, name: 'Max repeat', min: 2, max: 8, defaultValue: 8, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 10, name: 'Min ratchet', min: 2, max: 8, defaultValue: 2, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 11, name: 'Max ratchet', min: 2, max: 8, defaultValue: 8, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 12, name: 'Note probability', min: 0, max: 127, defaultValue: 127, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 13, name: 'Tie probability', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 14, name: 'Accent probability', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 15, name: 'Repeat probability', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 16, name: 'Ratchet probability', min: 0, max: 127, defaultValue: 0, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 17, name: 'Unaccented velocity', min: 1, max: 127, defaultValue: 64, unit: 0, powerOfTen: 0),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Randomise',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 2,
+            name: 'Randomise what',
+            min: 0,
+            max: 3,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 3,
+            name: 'Note distribution',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 4,
+            name: 'Min note',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 5,
+            name: 'Max note',
+            min: 0,
+            max: 127,
+            defaultValue: 127,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 6,
+            name: 'Mean note',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 7,
+            name: 'Note deviation',
+            min: 0,
+            max: 127,
+            defaultValue: 12,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 8,
+            name: 'Min repeat',
+            min: 2,
+            max: 8,
+            defaultValue: 2,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 9,
+            name: 'Max repeat',
+            min: 2,
+            max: 8,
+            defaultValue: 8,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 10,
+            name: 'Min ratchet',
+            min: 2,
+            max: 8,
+            defaultValue: 2,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 11,
+            name: 'Max ratchet',
+            min: 2,
+            max: 8,
+            defaultValue: 8,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 12,
+            name: 'Note probability',
+            min: 0,
+            max: 127,
+            defaultValue: 127,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 13,
+            name: 'Tie probability',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 14,
+            name: 'Accent probability',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 15,
+            name: 'Repeat probability',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 16,
+            name: 'Ratchet probability',
+            min: 0,
+            max: 127,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 17,
+            name: 'Unaccented velocity',
+            min: 1,
+            max: 127,
+            defaultValue: 64,
+            unit: 0,
+            powerOfTen: 0,
+          ),
         ],
         values: [
           ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
@@ -888,12 +1053,34 @@ void main() {
 
     test('uses fallback name "Randomize" for trigger parameter', () {
       final slotWithFallback = Slot(
-        algorithm: Algorithm(algorithmIndex: 0, guid: 'spsq', name: 'Step Sequencer'),
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
         routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
         pages: ParameterPages(algorithmIndex: 0, pages: const []),
         parameters: [
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 0, name: '1:Pitch', min: 0, max: 127, defaultValue: 60, unit: 0, powerOfTen: 0),
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 1, name: 'Randomize', min: 0, max: 1, defaultValue: 0, unit: 0, powerOfTen: 0),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 1,
+            name: 'Randomize',
+            min: 0,
+            max: 1,
+            defaultValue: 0,
+            unit: 0,
+            powerOfTen: 0,
+          ),
         ],
         values: [
           ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),
@@ -910,11 +1097,24 @@ void main() {
 
     test('returns null for missing randomize parameters', () {
       final slotWithoutRandomize = Slot(
-        algorithm: Algorithm(algorithmIndex: 0, guid: 'spsq', name: 'Step Sequencer'),
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'spsq',
+          name: 'Step Sequencer',
+        ),
         routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
         pages: ParameterPages(algorithmIndex: 0, pages: const []),
         parameters: [
-          ParameterInfo(algorithmIndex: 0, parameterNumber: 0, name: '1:Pitch', min: 0, max: 127, defaultValue: 60, unit: 0, powerOfTen: 0),
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: '1:Pitch',
+            min: 0,
+            max: 127,
+            defaultValue: 60,
+            unit: 0,
+            powerOfTen: 0,
+          ),
         ],
         values: [
           ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 60),

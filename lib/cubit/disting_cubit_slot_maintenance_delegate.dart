@@ -84,10 +84,7 @@ class _SlotMaintenanceDelegate {
 
     try {
       final disting = _cubit.requireDisting();
-      final Slot updatedSlot = await _cubit.fetchSlot(
-        disting,
-        algorithmIndex,
-      );
+      final Slot updatedSlot = await _cubit.fetchSlot(disting, algorithmIndex);
       final currentState = _cubit.state;
       if (currentState is! DistingStateSynchronized ||
           algorithmIndex >= currentState.slots.length) {
@@ -121,10 +118,7 @@ class _SlotMaintenanceDelegate {
 
     try {
       final disting = _cubit.requireDisting();
-      final Slot updatedSlot = await _cubit.fetchSlot(
-        disting,
-        algorithmIndex,
-      );
+      final Slot updatedSlot = await _cubit.fetchSlot(disting, algorithmIndex);
       final currentState = _cubit.state;
       if (currentState is! DistingStateSynchronized ||
           algorithmIndex >= currentState.slots.length) {

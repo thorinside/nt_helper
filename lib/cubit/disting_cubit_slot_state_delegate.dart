@@ -21,8 +21,7 @@ class _SlotStateDelegate {
     Map<int, List<int>> outputModeMap,
   ) {
     _outputModeUsageMap[slotIndex] = outputModeMap;
-    _queriedOutputModeParameters[slotIndex] =
-        outputModeMap.keys.toSet();
+    _queriedOutputModeParameters[slotIndex] = outputModeMap.keys.toSet();
   }
 
   Future<void> ensureOutputModeUsageFromDb({
@@ -34,8 +33,8 @@ class _SlotStateDelegate {
     }
 
     try {
-      final dbOutputModeUsage =
-          await _cubit._metadataDao.getOutputModeUsageForAlgorithm(algorithmGuid);
+      final dbOutputModeUsage = await _cubit._metadataDao
+          .getOutputModeUsageForAlgorithm(algorithmGuid);
       if (dbOutputModeUsage.isNotEmpty) {
         _outputModeUsageMap[slotIndex] = dbOutputModeUsage;
       }
@@ -81,10 +80,7 @@ class _SlotStateDelegate {
 
   /// Query output mode usage for a parameter with isOutputMode flag.
   /// Uses debounce logic to avoid duplicate queries during sync operations.
-  Future<void> _queryOutputModeUsage(
-    int slotIndex,
-    int parameterNumber,
-  ) async {
+  Future<void> _queryOutputModeUsage(int slotIndex, int parameterNumber) async {
     final currentState = _cubit.state;
     if (currentState is! DistingStateSynchronized) {
       return;

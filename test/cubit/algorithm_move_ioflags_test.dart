@@ -12,14 +12,8 @@ void main() {
           name: 'Test Algorithm',
           guid: 'test-guid',
         ),
-        routing: RoutingInfo(
-          algorithmIndex: 0,
-          routingInfo: [],
-        ),
-        pages: ParameterPages(
-          algorithmIndex: 0,
-          pages: [],
-        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
+        pages: ParameterPages(algorithmIndex: 0, pages: []),
         parameters: [
           ParameterInfo(
             algorithmIndex: 0,

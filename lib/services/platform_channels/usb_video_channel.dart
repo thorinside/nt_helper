@@ -87,7 +87,9 @@ class UsbVideoChannel {
 
     // If already streaming from this device, return existing stream
     if (_videoStream != null && _currentDeviceId == deviceId) {
-      _debugLog('Already streaming from device $deviceId, returning existing stream');
+      _debugLog(
+        'Already streaming from device $deviceId, returning existing stream',
+      );
       return _videoStream!;
     }
 
@@ -119,7 +121,9 @@ class UsbVideoChannel {
         });
 
     // Create a keep-alive subscription to prevent EventChannel from cancelling
-    _debugLog('Creating keep-alive subscription to prevent stream cancellation');
+    _debugLog(
+      'Creating keep-alive subscription to prevent stream cancellation',
+    );
     _keepAliveSubscription = _videoStream!.listen(
       (_) {}, // Do nothing with the data
       onError: (error) => _debugLog('Keep-alive subscription error: $error'),
@@ -201,5 +205,4 @@ class UsbVideoChannel {
     _androidChannel = null;
     await stopVideoStream();
   }
-
 }

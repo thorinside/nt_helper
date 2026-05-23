@@ -204,15 +204,15 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
         style: textStyle,
         decoration: InputDecoration(
           isDense: true,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 8.0,
+            horizontal: 8.0,
+          ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
           suffixText: hasSuffix ? unitText : null,
         ),
         onSubmitted: (_) => _submitEdit(),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(pattern)),
-        ],
+        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(pattern))],
       ),
     );
   }
@@ -220,8 +220,9 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final textStyle =
-        widget.widescreen ? textTheme.labelLarge : textTheme.labelSmall;
+    final textStyle = widget.widescreen
+        ? textTheme.labelLarge
+        : textTheme.labelSmall;
 
     // If BPM or file editor, hide default display (handled elsewhere)
     if (widget.isBpmUnit || widget.hasFileEditor) {
@@ -231,8 +232,7 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
     // On/Off checkbox
     if (widget.isOnOff) {
       return Semantics(
-        label:
-            '${widget.name}: ${widget.currentValue == 1 ? "On" : "Off"}',
+        label: '${widget.name}: ${widget.currentValue == 1 ? "On" : "Off"}',
         toggled: widget.currentValue == 1,
         child: Checkbox(
           value: widget.currentValue == 1,
@@ -252,8 +252,10 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
           requestFocusOnTap: false,
           initialSelection: widget.dropdownItems![widget.currentValue],
           inputDecorationTheme: const InputDecorationTheme(
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 8.0,
+            ),
             border: OutlineInputBorder(),
             isDense: true,
           ),
@@ -264,8 +266,9 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
               .map((item) => DropdownMenuEntry(value: item, label: item))
               .toList(),
           onSelected: (value) {
-            final newValue =
-                widget.dropdownItems!.indexOf(value!).clamp(widget.min, widget.max);
+            final newValue = widget.dropdownItems!
+                .indexOf(value!)
+                .clamp(widget.min, widget.max);
             widget.onValueChanged(newValue);
           },
         ),
@@ -284,8 +287,9 @@ class _ParameterValueDisplayState extends State<ParameterValueDisplay> {
 
     // MIDI channel parameters
     if (widget.name.toLowerCase().contains("midi channel")) {
-      final channelStr =
-          widget.currentValue == 0 ? "None" : widget.currentValue.toString();
+      final channelStr = widget.currentValue == 0
+          ? "None"
+          : widget.currentValue.toString();
       return Semantics(
         liveRegion: true,
         label: '${widget.name}: $channelStr',

@@ -595,16 +595,18 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     value: _getOrCreateChatCubit(cubit),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        final maxChatWidth =
-                            (constraints.maxWidth * 0.5).clamp(280.0, 800.0);
-                        final clampedWidth =
-                            _chatPanelWidth.clamp(280.0, maxChatWidth);
+                        final maxChatWidth = (constraints.maxWidth * 0.5).clamp(
+                          280.0,
+                          800.0,
+                        );
+                        final clampedWidth = _chatPanelWidth.clamp(
+                          280.0,
+                          maxChatWidth,
+                        );
                         return Row(
                           children: [
                             Expanded(
-                              child: FocusTraversalGroup(
-                                child: scaffold,
-                              ),
+                              child: FocusTraversalGroup(child: scaffold),
                             ),
                             Semantics(
                               label: 'Chat panel resize handle',
@@ -613,20 +615,21 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 child: GestureDetector(
                                   onHorizontalDragUpdate: (details) {
                                     setState(() {
-                                      _chatPanelWidth = (_chatPanelWidth -
-                                              details.delta.dx)
-                                          .clamp(280.0, maxChatWidth);
+                                      _chatPanelWidth =
+                                          (_chatPanelWidth - details.delta.dx)
+                                              .clamp(280.0, maxChatWidth);
                                     });
                                   },
                                   onHorizontalDragEnd: (_) {
-                                    SettingsService()
-                                        .setChatPanelWidth(_chatPanelWidth);
+                                    SettingsService().setChatPanelWidth(
+                                      _chatPanelWidth,
+                                    );
                                   },
                                   child: Container(
                                     width: 4,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                   ),
                                 ),
                               ),
@@ -683,7 +686,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         context,
         MaterialPageRoute(
           builder: (context) => BlocProvider.value(
-              value: cubit, child: const AddAlgorithmScreen()),
+            value: cubit,
+            child: const AddAlgorithmScreen(),
+          ),
         ),
       );
 
@@ -752,31 +757,34 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         final availableWidth = constraints.maxWidth - dividerWidth;
         final minFraction = minPaneWidth / availableWidth;
         final maxFraction = (1.0 - minFraction).clamp(minFraction, 1.0);
-        final clampedPosition =
-            _splitDividerPosition.clamp(minFraction, maxFraction);
+        final clampedPosition = _splitDividerPosition.clamp(
+          minFraction,
+          maxFraction,
+        );
         final leftFlex = (clampedPosition * 1000).round();
         final rightFlex = ((1.0 - clampedPosition) * 1000).round();
 
         return Row(
           children: [
-            Expanded(
-              flex: leftFlex,
-              child: _buildWideScreenBody(),
-            ),
+            Expanded(flex: leftFlex, child: _buildWideScreenBody()),
             MouseRegion(
               cursor: SystemMouseCursors.resizeColumn,
               child: GestureDetector(
                 onHorizontalDragUpdate: (details) {
                   setState(() {
-                    final newPosition = _splitDividerPosition +
+                    final newPosition =
+                        _splitDividerPosition +
                         details.delta.dx / availableWidth;
-                    _splitDividerPosition =
-                        newPosition.clamp(minFraction, maxFraction);
+                    _splitDividerPosition = newPosition.clamp(
+                      minFraction,
+                      maxFraction,
+                    );
                   });
                 },
                 onHorizontalDragEnd: (_) {
-                  SettingsService()
-                      .setSplitDividerPosition(_splitDividerPosition);
+                  SettingsService().setSplitDividerPosition(
+                    _splitDividerPosition,
+                  );
                 },
                 child: Container(
                   width: dividerWidth,
@@ -786,10 +794,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       width: 4,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withValues(alpha: 0.4),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -797,10 +804,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 ),
               ),
             ),
-            Expanded(
-              flex: rightFlex,
-              child: _cachedRoutingCanvas,
-            ),
+            Expanded(flex: rightFlex, child: _cachedRoutingCanvas),
           ],
         );
       },
@@ -1307,10 +1311,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           // Quick-action buttons for frequently used features
           BlocBuilder<DistingCubit, DistingState>(
             buildWhen: (previous, current) {
-              final prevOffline = previous is DistingStateSynchronized &&
-                  previous.offline;
-              final currOffline = current is DistingStateSynchronized &&
-                  current.offline;
+              final prevOffline =
+                  previous is DistingStateSynchronized && previous.offline;
+              final currOffline =
+                  current is DistingStateSynchronized && current.offline;
               return prevOffline != currOffline;
             },
             builder: (context, state) {
@@ -1337,10 +1341,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   ),
                   IconButton(
                     tooltip: 'Video',
-                    icon: const Icon(
-                      Icons.videocam,
-                      semanticLabel: 'Video',
-                    ),
+                    icon: const Icon(Icons.videocam, semanticLabel: 'Video'),
                     onPressed: widget.loading || isOffline
                         ? null
                         : () {
@@ -1357,8 +1358,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         ? null
                         : () {
                             final cubit = context.read<DistingCubit>();
-                            final midiListener =
-                                context.read<MidiListenerCubit>();
+                            final midiListener = context
+                                .read<MidiListenerCubit>();
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -1367,8 +1368,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                     BlocProvider.value(value: cubit),
                                     BlocProvider.value(value: midiListener),
                                   ],
-                                  child:
-                                      PerformanceScreen(units: widget.units),
+                                  child: PerformanceScreen(units: widget.units),
                                 ),
                               ),
                             );
@@ -1384,8 +1384,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       onPressed: widget.loading
                           ? null
                           : () {
-                              final distingCubit =
-                                  context.read<DistingCubit>();
+                              final distingCubit = context.read<DistingCubit>();
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -1439,7 +1438,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Firmware update indicator (desktop only)
-                    if (!kPlayStoreBuild && updateAvailable != null && isDesktop)
+                    if (!kPlayStoreBuild &&
+                        updateAvailable != null &&
+                        isDesktop)
                       Tooltip(
                         message:
                             'Update available: v${updateAvailable.version}',
@@ -1467,7 +1468,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           constraints: const BoxConstraints(),
                         ),
                       ),
-                    if (!kPlayStoreBuild && updateAvailable != null && isDesktop)
+                    if (!kPlayStoreBuild &&
+                        updateAvailable != null &&
+                        isDesktop)
                       const SizedBox(width: 4),
                     DistingVersion(
                       distingVersion: widget.distingVersion,
@@ -1594,8 +1597,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         IconButton(
           icon: Icon(
             _showChatPanel ? Icons.chat_bubble : Icons.chat_bubble_outline,
-            semanticLabel:
-                _showChatPanel ? 'Hide chat panel' : 'Show chat panel',
+            semanticLabel: _showChatPanel
+                ? 'Hide chat panel'
+                : 'Show chat panel',
           ),
           tooltip: _showChatPanel ? 'Hide chat' : 'Show chat',
           onPressed: _toggleChatPanel,
@@ -1958,7 +1962,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                     final result = await popupCtx.showSettingsDialog(
                       midiManager: midiManager,
                       algorithms: algorithms,
-                      ccNotificationDiagnostics: cubit.ccNotificationDiagnostics,
+                      ccNotificationDiagnostics:
+                          cubit.ccNotificationDiagnostics,
                     );
 
                     // Logic copied and adapted from _DistingPageState._handleSettingsDialog
@@ -1978,10 +1983,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             : InternetAddress.loopbackIPv4;
                         if (isMcpEnabledAfterDialog) {
                           if (!isServerStillRunningBeforeAction) {
-                            await mcpInstance.start(bindAddress: bindAddress).catchError((e) {});
+                            await mcpInstance
+                                .start(bindAddress: bindAddress)
+                                .catchError((e) {});
                           } else {
-                            if (mcpInstance.boundAddress?.address != bindAddress.address) {
-                              await mcpInstance.restart(bindAddress: bindAddress).catchError((e) {});
+                            if (mcpInstance.boundAddress?.address !=
+                                bindAddress.address) {
+                              await mcpInstance
+                                  .restart(bindAddress: bindAddress)
+                                  .catchError((e) {});
                             }
                           }
                         } else {
@@ -2293,7 +2303,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           final originalName = AlgorithmMetadataService()
                               .getAlgorithmByGuid(slot.algorithm.guid)
                               ?.name;
-                          final isRenamed = originalName != null &&
+                          final isRenamed =
+                              originalName != null &&
                               originalName != displayName;
                           if (!isRenamed) {
                             return Tab(text: displayName);
@@ -2305,14 +2316,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 Text(displayName),
                                 Text(
                                   originalName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
+                                  style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withAlpha(153),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface.withAlpha(153),
                                       ),
                                 ),
                               ],
@@ -2394,10 +2402,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
   }
 
-  void _showRebootConfirmationDialog(
-    BuildContext context,
-    DistingCubit cubit,
-  ) {
+  void _showRebootConfirmationDialog(BuildContext context, DistingCubit cubit) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -2454,7 +2459,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     Overlay.of(context).insert(overlayEntry);
   }
 
-  Widget _buildCheckpointButton(BuildContext context, ButtonStyle? buttonStyle) {
+  Widget _buildCheckpointButton(
+    BuildContext context,
+    ButtonStyle? buttonStyle,
+  ) {
     final distingCubit = context.read<DistingCubit>();
     final checkpoints = distingCubit.checkpoints;
 
@@ -2531,8 +2539,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       result > 0
                           ? 'Restored $result parameters'
                           : result == 0
-                              ? 'Nothing to restore (no changes)'
-                              : 'Restore failed',
+                          ? 'Nothing to restore (no changes)'
+                          : 'Restore failed',
                     ),
                     duration: const Duration(seconds: 2),
                   ),
@@ -2580,9 +2588,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 value: 'restore:$i',
                 child: ListTile(
                   leading: const Icon(Icons.restore),
-                  title: Text(
-                    cp.label ?? _formatCheckpointTime(cp.createdAt),
-                  ),
+                  title: Text(cp.label ?? _formatCheckpointTime(cp.createdAt)),
                   subtitle: Text(
                     '${cp.slotCount} slots'
                     '${cp.label != null ? ' - ${_formatCheckpointTime(cp.createdAt)}' : ''}',

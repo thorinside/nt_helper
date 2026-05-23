@@ -27,7 +27,9 @@ class MCPAlgorithmTools {
     final state = _distingCubit.state;
     if (state is DistingStateSynchronized) {
       final metadataGuids = metadataAlgorithms.map((a) => a.guid).toSet();
-      final deviceOnly = state.algorithms.where((a) => !metadataGuids.contains(a.guid));
+      final deviceOnly = state.algorithms.where(
+        (a) => !metadataGuids.contains(a.guid),
+      );
       return [...metadataAlgorithms, ...deviceOnly];
     }
     return metadataAlgorithms;
@@ -263,12 +265,14 @@ class MCPAlgorithmTools {
         'slotIndex': i,
         'algorithmName': slot.algorithm.name,
         'inputBuses': sortedInputs
-            .map((b) => BusMapping.busToName(b,
-                hasExtendedAuxBuses: hasExtended))
+            .map(
+              (b) => BusMapping.busToName(b, hasExtendedAuxBuses: hasExtended),
+            )
             .toList(),
         'outputBuses': sortedOutputs
-            .map((b) => BusMapping.busToName(b,
-                hasExtendedAuxBuses: hasExtended))
+            .map(
+              (b) => BusMapping.busToName(b, hasExtendedAuxBuses: hasExtended),
+            )
             .toList(),
       });
     }
@@ -327,12 +331,7 @@ class MCPAlgorithmTools {
 
       // Only include results that meet minimum threshold
       if (score >= 30) {
-        results.add(
-          _SearchResult(
-            algorithm: algorithm,
-            score: score,
-          ),
-        );
+        results.add(_SearchResult(algorithm: algorithm, score: score));
       }
     }
 
@@ -347,8 +346,10 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'results': [],
-          'message': 'No algorithms found matching "$query". Try searching by algorithm name or category.',
-          'suggestions': 'Use `list_algorithms` to browse by category or `get_algorithm_details` for specific algorithms.',
+          'message':
+              'No algorithms found matching "$query". Try searching by algorithm name or category.',
+          'suggestions':
+              'Use `list_algorithms` to browse by category or `get_algorithm_details` for specific algorithms.',
         }),
       );
     }
@@ -361,7 +362,9 @@ class MCPAlgorithmTools {
       resultList.add({
         'guid': algorithm.guid,
         'name': algorithm.name,
-        'category': algorithm.categories.isNotEmpty ? algorithm.categories[0] : 'Unknown',
+        'category': algorithm.categories.isNotEmpty
+            ? algorithm.categories[0]
+            : 'Unknown',
         'categories': algorithm.categories,
         'description': algorithm.description,
         'general_parameters': generalParams,
@@ -422,7 +425,8 @@ class MCPAlgorithmTools {
     // Category fuzzy match = 20-29
     for (final category in algorithm.categories) {
       final catSimilarity = MCPUtils.similarity(category, lowerQuery);
-      if (catSimilarity >= 0.70 || category.toLowerCase().contains(lowerQuery)) {
+      if (catSimilarity >= 0.70 ||
+          category.toLowerCase().contains(lowerQuery)) {
         return 20.0 + (catSimilarity * 9.0);
       }
     }
@@ -447,50 +451,64 @@ class MCPAlgorithmTools {
     }
 
     // Check for common parameter patterns
-    if (paramNames.any((name) => name.contains('freq') || name.contains('pitch'))) {
+    if (paramNames.any(
+      (name) => name.contains('freq') || name.contains('pitch'),
+    )) {
       paramCategories.add('frequency/pitch controls');
     }
-    if (paramNames.any((name) =>
-        name.contains('resonance') ||
-        name == 'q' ||
-        name.contains('filter'))) {
+    if (paramNames.any(
+      (name) =>
+          name.contains('resonance') || name == 'q' || name.contains('filter'),
+    )) {
       paramCategories.add('resonance/filter emphasis controls');
     }
-    if (paramNames.any((name) =>
-        name.contains('attack') ||
-        name.contains('decay') ||
-        name.contains('sustain') ||
-        name.contains('release'))) {
+    if (paramNames.any(
+      (name) =>
+          name.contains('attack') ||
+          name.contains('decay') ||
+          name.contains('sustain') ||
+          name.contains('release'),
+    )) {
       paramCategories.add('envelope controls');
     }
-    if (paramNames.any((name) =>
-        name.contains('amount') ||
-        name.contains('depth') ||
-        name.contains('level') ||
-        name.contains('volume') ||
-        name.contains('gain'))) {
+    if (paramNames.any(
+      (name) =>
+          name.contains('amount') ||
+          name.contains('depth') ||
+          name.contains('level') ||
+          name.contains('volume') ||
+          name.contains('gain'),
+    )) {
       paramCategories.add('level/amplitude controls');
     }
-    if (paramNames.any((name) =>
-        name.contains('rate') ||
-        name.contains('speed') ||
-        name.contains('tempo'))) {
+    if (paramNames.any(
+      (name) =>
+          name.contains('rate') ||
+          name.contains('speed') ||
+          name.contains('tempo'),
+    )) {
       paramCategories.add('rate/speed controls');
     }
-    if (paramNames.any((name) =>
-        name.contains('mix') ||
-        name.contains('balance') ||
-        name.contains('blend'))) {
+    if (paramNames.any(
+      (name) =>
+          name.contains('mix') ||
+          name.contains('balance') ||
+          name.contains('blend'),
+    )) {
       paramCategories.add('mix/blend controls');
     }
-    if (paramNames.any((name) =>
-        name.contains('mode') ||
-        name.contains('type') ||
-        name.contains('shape') ||
-        name.contains('form'))) {
+    if (paramNames.any(
+      (name) =>
+          name.contains('mode') ||
+          name.contains('type') ||
+          name.contains('shape') ||
+          name.contains('form'),
+    )) {
       paramCategories.add('mode/type selectors');
     }
-    if (paramNames.any((name) => name.contains('time') || name.contains('duration'))) {
+    if (paramNames.any(
+      (name) => name.contains('time') || name.contains('duration'),
+    )) {
       paramCategories.add('time/duration controls');
     }
 
@@ -519,7 +537,14 @@ class MCPAlgorithmTools {
           convertToSnakeCaseKeys({
             'success': false,
             'error': 'Missing required parameter: target',
-            'valid_targets': ['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu'],
+            'valid_targets': [
+              'preset',
+              'slot',
+              'parameter',
+              'screen',
+              'routing',
+              'cpu',
+            ],
           }),
         );
       }
@@ -542,7 +567,14 @@ class MCPAlgorithmTools {
             convertToSnakeCaseKeys({
               'success': false,
               'error': 'Invalid target: $target',
-              'valid_targets': ['preset', 'slot', 'parameter', 'screen', 'routing', 'cpu'],
+              'valid_targets': [
+                'preset',
+                'slot',
+                'parameter',
+                'screen',
+                'routing',
+                'cpu',
+              ],
             }),
           );
       }
@@ -578,25 +610,23 @@ class MCPAlgorithmTools {
       final parameters = await _controller.getParametersForSlot(i);
       slotsJson.add({
         'slot_index': i,
-        'algorithm': {
-          'guid': algorithm.guid,
-          'name': algorithm.name,
-        },
+        'algorithm': {'guid': algorithm.guid, 'name': algorithm.name},
         'parameter_count': parameters.length,
       });
     }
 
     return jsonEncode(
-      convertToSnakeCaseKeys({
-        'name': presetName,
-        'slots': slotsJson,
-      }),
+      convertToSnakeCaseKeys({'name': presetName, 'slots': slotsJson}),
     );
   }
 
   /// Show a slot with paginated parameter summaries.
   /// Use show_parameter for full detail (enum value lists, mapping details).
-  Future<String> showSlot(dynamic identifier, {int offset = 0, int limit = 10}) async {
+  Future<String> showSlot(
+    dynamic identifier, {
+    int offset = 0,
+    int limit = 10,
+  }) async {
     if (identifier == null) {
       return jsonEncode(
         convertToSnakeCaseKeys({
@@ -608,12 +638,15 @@ class MCPAlgorithmTools {
 
     int slotIndex = -1;
     try {
-      slotIndex = (identifier is int) ? identifier : int.parse(identifier.toString());
+      slotIndex = (identifier is int)
+          ? identifier
+          : int.parse(identifier.toString());
     } catch (e) {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid identifier format: identifier must be an integer (0-${MCPConstants.maxSlots - 1}).',
+          'error':
+              'Invalid identifier format: identifier must be an integer (0-${MCPConstants.maxSlots - 1}).',
         }),
       );
     }
@@ -622,7 +655,8 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid slot index: $slotIndex. Must be 0-${MCPConstants.maxSlots - 1}.',
+          'error':
+              'Invalid slot index: $slotIndex. Must be 0-${MCPConstants.maxSlots - 1}.',
         }),
       );
     }
@@ -638,15 +672,17 @@ class MCPAlgorithmTools {
 
     final algorithm = await _controller.getAlgorithmInSlot(slotIndex);
     if (algorithm == null) {
-      return jsonEncode(convertToSnakeCaseKeys({
-        'slot_index': slotIndex,
-        'algorithm': {'guid': '', 'name': ''},
-        'parameter_count': 0,
-        'offset': 0,
-        'limit': limit,
-        'has_more': false,
-        'parameters': <dynamic>[],
-      }));
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'slot_index': slotIndex,
+          'algorithm': {'guid': '', 'name': ''},
+          'parameter_count': 0,
+          'offset': 0,
+          'limit': limit,
+          'has_more': false,
+          'parameters': <dynamic>[],
+        }),
+      );
     }
 
     var parameters = await _controller.getParametersForSlot(slotIndex);
@@ -664,26 +700,27 @@ class MCPAlgorithmTools {
 
     final parametersJson = <Map<String, dynamic>>[];
     for (int i = clampedOffset; i < endIndex; i++) {
-      parametersJson.add(await _buildParameterSummaryJson(
-        slotIndex,
-        parameters[i],
-        values[i],
-        mappings[i],
-      ));
+      parametersJson.add(
+        await _buildParameterSummaryJson(
+          slotIndex,
+          parameters[i],
+          values[i],
+          mappings[i],
+        ),
+      );
     }
 
-    return jsonEncode(convertToSnakeCaseKeys({
-      'slot_index': slotIndex,
-      'algorithm': {
-        'guid': algorithm.guid,
-        'name': algorithm.name,
-      },
-      'parameter_count': totalCount,
-      'offset': clampedOffset,
-      'limit': limit,
-      'has_more': hasMore,
-      'parameters': parametersJson,
-    }));
+    return jsonEncode(
+      convertToSnakeCaseKeys({
+        'slot_index': slotIndex,
+        'algorithm': {'guid': algorithm.guid, 'name': algorithm.name},
+        'parameter_count': totalCount,
+        'offset': clampedOffset,
+        'limit': limit,
+        'has_more': hasMore,
+        'parameters': parametersJson,
+      }),
+    );
   }
 
   /// Show single parameter with value and optional mapping.
@@ -704,7 +741,8 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid identifier format: expected slot_index:parameter_number.',
+          'error':
+              'Invalid identifier format: expected slot_index:parameter_number.',
         }),
       );
     }
@@ -712,7 +750,8 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid identifier format: expected slot_index:parameter_number.',
+          'error':
+              'Invalid identifier format: expected slot_index:parameter_number.',
         }),
       );
     }
@@ -735,7 +774,8 @@ class MCPAlgorithmTools {
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Invalid slot index: $slotIndex. Must be 0-${MCPConstants.maxSlots - 1}.',
+          'error':
+              'Invalid slot index: $slotIndex. Must be 0-${MCPConstants.maxSlots - 1}.',
         }),
       );
     }
@@ -750,13 +790,16 @@ class MCPAlgorithmTools {
     }
 
     final parameters = await _controller.getParametersForSlot(slotIndex);
-    final paramIdx = parameters.indexWhere((p) => p.parameterNumber == parameterNumber);
+    final paramIdx = parameters.indexWhere(
+      (p) => p.parameterNumber == parameterNumber,
+    );
     if (paramIdx == -1) {
       final available = parameters.map((p) => p.parameterNumber).toList();
       return jsonEncode(
         convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Parameter number $parameterNumber not found in slot $slotIndex. Available parameter numbers: $available',
+          'error':
+              'Parameter number $parameterNumber not found in slot $slotIndex. Available parameter numbers: $available',
         }),
       );
     }
@@ -781,17 +824,22 @@ class MCPAlgorithmTools {
 
   /// Show single parameter by separate slot_index and parameter identifier.
   /// Accepts integer parameter number or string parameter name.
-  Future<String> showParameterByIndex(int slotIndex, dynamic parameterIdent) async {
+  Future<String> showParameterByIndex(
+    int slotIndex,
+    dynamic parameterIdent,
+  ) async {
     if (parameterIdent is int) {
       return showParameter('$slotIndex:$parameterIdent');
     }
     if (parameterIdent is String) {
       // Resolve parameter name to number
       if (!_controller.isSynchronized) {
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': false,
-          'error': 'Device not synchronized',
-        }));
+        return jsonEncode(
+          convertToSnakeCaseKeys({
+            'success': false,
+            'error': 'Device not synchronized',
+          }),
+        );
       }
       final parameters = await _controller.getParametersForSlot(slotIndex);
       for (final p in parameters) {
@@ -800,16 +848,20 @@ class MCPAlgorithmTools {
         }
       }
       final availableNames = parameters.map((p) => p.name).join(', ');
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': false,
-        'error':
-            'Parameter "$parameterIdent" not found in slot $slotIndex. Available: $availableNames',
-      }));
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error':
+              'Parameter "$parameterIdent" not found in slot $slotIndex. Available: $availableNames',
+        }),
+      );
     }
-    return jsonEncode(convertToSnakeCaseKeys({
-      'success': false,
-      'error': 'parameter_number must be an integer or string name.',
-    }));
+    return jsonEncode(
+      convertToSnakeCaseKeys({
+        'success': false,
+        'error': 'parameter_number must be an integer or string name.',
+      }),
+    );
   }
 
   /// Show current device screen as base64 PNG image.
@@ -821,8 +873,14 @@ class MCPAlgorithmTools {
           return jsonEncode(
             convertToSnakeCaseKeys({
               'success': false,
-              'error': 'Invalid display_mode: expected a string, got ${displayMode.runtimeType}',
-              'valid_modes': ['parameter', 'algorithm', 'overview', 'vu_meters'],
+              'error':
+                  'Invalid display_mode: expected a string, got ${displayMode.runtimeType}',
+              'valid_modes': [
+                'parameter',
+                'algorithm',
+                'overview',
+                'vu_meters',
+              ],
             }),
           );
         }
@@ -832,7 +890,12 @@ class MCPAlgorithmTools {
             convertToSnakeCaseKeys({
               'success': false,
               'error': 'Invalid display_mode: $displayMode',
-              'valid_modes': ['parameter', 'algorithm', 'overview', 'vu_meters'],
+              'valid_modes': [
+                'parameter',
+                'algorithm',
+                'overview',
+                'vu_meters',
+              ],
             }),
           );
         }
@@ -948,16 +1011,23 @@ class MCPAlgorithmTools {
       paramJson['is_enum'] = true;
       paramJson['value'] = currentEnumValue ?? '';
     } else {
-      paramJson['value'] =
-          MCPUtils.scaleForDisplay(value.value, parameter.powerOfTen);
-      paramJson['min'] =
-          MCPUtils.scaleForDisplay(parameter.min, parameter.powerOfTen);
-      paramJson['max'] =
-          MCPUtils.scaleForDisplay(parameter.max, parameter.powerOfTen);
+      paramJson['value'] = MCPUtils.scaleForDisplay(
+        value.value,
+        parameter.powerOfTen,
+      );
+      paramJson['min'] = MCPUtils.scaleForDisplay(
+        parameter.min,
+        parameter.powerOfTen,
+      );
+      paramJson['max'] = MCPUtils.scaleForDisplay(
+        parameter.max,
+        parameter.powerOfTen,
+      );
     }
 
     final data = mapping.packedMappingData;
-    final hasMapping = data.cvInput > 0 ||
+    final hasMapping =
+        data.cvInput > 0 ||
         data.source > 0 ||
         data.isMidiEnabled ||
         data.isI2cEnabled ||
@@ -1007,12 +1077,18 @@ class MCPAlgorithmTools {
         paramJson['valid_enum_values'] = enumValues;
       }
     } else {
-      paramJson['value'] =
-          MCPUtils.scaleForDisplay(value.value, parameter.powerOfTen);
-      paramJson['min'] =
-          MCPUtils.scaleForDisplay(parameter.min, parameter.powerOfTen);
-      paramJson['max'] =
-          MCPUtils.scaleForDisplay(parameter.max, parameter.powerOfTen);
+      paramJson['value'] = MCPUtils.scaleForDisplay(
+        value.value,
+        parameter.powerOfTen,
+      );
+      paramJson['min'] = MCPUtils.scaleForDisplay(
+        parameter.min,
+        parameter.powerOfTen,
+      );
+      paramJson['max'] = MCPUtils.scaleForDisplay(
+        parameter.max,
+        parameter.powerOfTen,
+      );
     }
 
     // Include mapping only if at least one type is enabled
@@ -1130,12 +1206,16 @@ class MCPAlgorithmTools {
             'cpu1_percent': cpuUsage.cpu1,
             'cpu2_percent': cpuUsage.cpu2,
             'total_usage_percent': (cpuUsage.cpu1 + cpuUsage.cpu2) / 2.0,
-            'slot_usages': cpuUsage.slotUsages.asMap().map((index, usage) =>
-              MapEntry(index.toString(), {
-                'slot_index': index,
-                'usage_percent': usage,
-              })
-            ).values.toList(),
+            'slot_usages': cpuUsage.slotUsages
+                .asMap()
+                .map(
+                  (index, usage) => MapEntry(index.toString(), {
+                    'slot_index': index,
+                    'usage_percent': usage,
+                  }),
+                )
+                .values
+                .toList(),
           },
         }),
       );
@@ -1155,8 +1235,5 @@ class _SearchResult {
   final AlgorithmMetadata algorithm;
   final double score;
 
-  _SearchResult({
-    required this.algorithm,
-    required this.score,
-  });
+  _SearchResult({required this.algorithm, required this.score});
 }

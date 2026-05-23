@@ -273,9 +273,7 @@ class FileCollector {
             );
           }
         } catch (e) {
-          warnings.add(
-            'Error reading plugin ${entry.key} at $pluginPath: $e',
-          );
+          warnings.add('Error reading plugin ${entry.key} at $pluginPath: $e');
         }
       }
 
@@ -287,8 +285,7 @@ class FileCollector {
         final originalGuid = entry.value;
         // Skip if a "not found" warning already exists for this GUID
         // (we'd have emitted one during the loop above).
-        if (dependencies.pluginPaths.keys
-            .any((k) => k.trim() == entry.key)) {
+        if (dependencies.pluginPaths.keys.any((k) => k.trim() == entry.key)) {
           continue;
         }
         warnings.add(
@@ -365,7 +362,9 @@ class FileCollector {
       // Fallback: a single-file wavetable at the /wavetables/ root.
       // The slot field may already include the extension (e.g.
       // `"wavetable": "01-Gentle Speech.wav"`) — don't double it up.
-      final flatPath = _isAudioFile(folderPath) ? folderPath : '$folderPath.wav';
+      final flatPath = _isAudioFile(folderPath)
+          ? folderPath
+          : '$folderPath.wav';
       await _collectFile(
         flatPath,
         files,
@@ -426,10 +425,7 @@ class FileCollector {
     required String label,
   }) async {
     try {
-      final folderFiles = await fileSystem.listFiles(
-        basePath,
-        recursive: true,
-      );
+      final folderFiles = await fileSystem.listFiles(basePath, recursive: true);
       for (final filePath in folderFiles) {
         final ext = filePath.toLowerCase().split('.').last;
         if (!extensions.contains(ext)) continue;

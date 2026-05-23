@@ -16,12 +16,14 @@ void main() {
       mockCubit = MockDistingCubit();
       when(() => mockCubit.scheduleParameterRefresh(any())).thenReturn(null);
       when(() => mockCubit.disting()).thenReturn(null);
-      when(() => mockCubit.updateParameterValue(
-            algorithmIndex: any(named: 'algorithmIndex'),
-            parameterNumber: any(named: 'parameterNumber'),
-            value: any(named: 'value'),
-            userIsChangingTheValue: any(named: 'userIsChangingTheValue'),
-          )).thenAnswer((_) async {});
+      when(
+        () => mockCubit.updateParameterValue(
+          algorithmIndex: any(named: 'algorithmIndex'),
+          parameterNumber: any(named: 'parameterNumber'),
+          value: any(named: 'value'),
+          userIsChangingTheValue: any(named: 'userIsChangingTheValue'),
+        ),
+      ).thenAnswer((_) async {});
     });
 
     Widget createTestWidget({
@@ -41,7 +43,11 @@ void main() {
               algorithmIndex: 0,
               initialValue: 50,
               slot: Slot(
-                algorithm: Algorithm(algorithmIndex: 0, guid: 'test-guid', name: 'Test'),
+                algorithm: Algorithm(
+                  algorithmIndex: 0,
+                  guid: 'test-guid',
+                  name: 'Test',
+                ),
                 routing: RoutingInfo.filler(),
                 pages: ParameterPages(algorithmIndex: 0, pages: []),
                 parameters: [
@@ -75,19 +81,26 @@ void main() {
       );
     }
 
-    testWidgets('disabled parameter does not show disabled explanation tooltip', (WidgetTester tester) async {
-      await tester.pumpWidget(createTestWidget(isDisabled: true));
+    testWidgets(
+      'disabled parameter does not show disabled explanation tooltip',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget(isDisabled: true));
 
-      // Search for Tooltip with disabled message - should not exist
-      // Note: MappingEditButton has its own tooltip which is unrelated
-      final disabledTooltipFinder = find.byWidgetPredicate(
-        (widget) => widget is Tooltip &&
-                   widget.message == 'This parameter is disabled by the current configuration',
-      );
-      expect(disabledTooltipFinder, findsNothing);
-    });
+        // Search for Tooltip with disabled message - should not exist
+        // Note: MappingEditButton has its own tooltip which is unrelated
+        final disabledTooltipFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is Tooltip &&
+              widget.message ==
+                  'This parameter is disabled by the current configuration',
+        );
+        expect(disabledTooltipFinder, findsNothing);
+      },
+    );
 
-    testWidgets('disabled parameter maintains 0.5 opacity appearance', (WidgetTester tester) async {
+    testWidgets('disabled parameter maintains 0.5 opacity appearance', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(isDisabled: true));
 
       // Find the Opacity widget that wraps the row content
@@ -106,10 +119,16 @@ void main() {
           break;
         }
       }
-      expect(foundCorrectOpacity, isTrue, reason: 'Should have Opacity widget with 0.5 opacity');
+      expect(
+        foundCorrectOpacity,
+        isTrue,
+        reason: 'Should have Opacity widget with 0.5 opacity',
+      );
     });
 
-    testWidgets('disabled parameter has IgnorePointer set to true', (WidgetTester tester) async {
+    testWidgets('disabled parameter has IgnorePointer set to true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(isDisabled: true));
 
       // Find IgnorePointer widgets
@@ -125,16 +144,20 @@ void main() {
           break;
         }
       }
-      expect(foundCorrectIgnorePointer, isTrue,
-          reason: 'Should have IgnorePointer widget with ignoring=true');
+      expect(
+        foundCorrectIgnorePointer,
+        isTrue,
+        reason: 'Should have IgnorePointer widget with ignoring=true',
+      );
     });
 
-    testWidgets('parameter name is displayed correctly when disabled', (WidgetTester tester) async {
+    testWidgets('parameter name is displayed correctly when disabled', (
+      WidgetTester tester,
+    ) async {
       const testName = 'Frequency Parameter';
-      await tester.pumpWidget(createTestWidget(
-        isDisabled: true,
-        parameterName: testName,
-      ));
+      await tester.pumpWidget(
+        createTestWidget(isDisabled: true, parameterName: testName),
+      );
 
       // Verify parameter name is still displayed
       expect(find.text(testName), findsWidgets);

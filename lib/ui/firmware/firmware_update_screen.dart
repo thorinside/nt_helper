@@ -62,9 +62,10 @@ class FirmwareUpdateScreen extends StatelessWidget {
     final syncState = distingState is DistingStateSynchronized
         ? distingState
         : null;
-    final currentVersion = currentVersionOverride
-        ?? syncState?.firmwareVersion.versionString
-        ?? 'Unknown';
+    final currentVersion =
+        currentVersionOverride ??
+        syncState?.firmwareVersion.versionString ??
+        'Unknown';
     final isDemo = syncState?.demo ?? false;
     final isOffline = syncState?.offline ?? false;
 
@@ -77,9 +78,8 @@ class FirmwareUpdateScreen extends StatelessWidget {
         ? FirmwareVersion(currentVersionOverride!)
         : syncState?.firmwareVersion;
 
-    final hasDeviceInfo = inputDevice != null &&
-        outputDevice != null &&
-        sysExId != null;
+    final hasDeviceInfo =
+        inputDevice != null && outputDevice != null && sysExId != null;
 
     return BlocProvider.value(
       value: distingCubit,
@@ -95,17 +95,17 @@ class FirmwareUpdateScreen extends StatelessWidget {
           midiManager: syncState != null ? distingCubit.disting() : null,
           createMidiManager: hasDeviceInfo
               ? () => distingCubit.createFirmwareMidiManager(
-                    inputDevice!,
-                    outputDevice!,
-                    sysExId!,
-                  )
+                  inputDevice!,
+                  outputDevice!,
+                  sysExId!,
+                )
               : null,
           disposeMidiManager: hasDeviceInfo
               ? (manager) => distingCubit.disposeFirmwareMidiManager(
-                    manager,
-                    inputDevice!,
-                    outputDevice!,
-                  )
+                  manager,
+                  inputDevice!,
+                  outputDevice!,
+                )
               : null,
         )..loadAvailableVersions(),
         child: const _FirmwareUpdateView(),
@@ -599,7 +599,7 @@ class _BootloaderInstructionsView extends StatelessWidget {
           Text(
             state.canAutoEnter
                 ? 'Your Disting NT will be rebooted into bootloader mode '
-                    'automatically and the firmware will be flashed.'
+                      'automatically and the firmware will be flashed.'
                 : 'Follow these steps on your Disting NT:',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
@@ -612,8 +612,7 @@ class _BootloaderInstructionsView extends StatelessWidget {
               context,
               number: 1,
               title: 'Enter Bootloader Mode',
-              description:
-                  'Menu > Misc > Enter bootloader mode, then confirm',
+              description: 'Menu > Misc > Enter bootloader mode, then confirm',
             ),
             const SizedBox(height: 16),
             _buildStep(
@@ -638,10 +637,7 @@ class _BootloaderInstructionsView extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: theme.colorScheme.primary,
-                    ),
+                    Icon(Icons.info_outline, color: theme.colorScheme.primary),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
@@ -723,8 +719,7 @@ class _EnteringBootloaderView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final secondsLeft =
-        ((1.0 - state.progress) * 5).ceil().clamp(0, 5);
+    final secondsLeft = ((1.0 - state.progress) * 5).ceil().clamp(0, 5);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

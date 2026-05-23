@@ -78,8 +78,9 @@ class AlgorithmResolver {
         return AlgorithmResolutionResult.success(exactMatches.first.guid);
       } else {
         // Multiple exact matches - ambiguous
-        final candidateNames =
-            exactMatches.map((alg) => '"${alg.name}" (${alg.guid})').toList();
+        final candidateNames = exactMatches
+            .map((alg) => '"${alg.name}" (${alg.guid})')
+            .toList();
         return AlgorithmResolutionResult.error(
           MCPUtils.buildError(
             'Multiple algorithms match "$algorithmName": ${candidateNames.join(", ")}. '
@@ -108,8 +109,9 @@ class AlgorithmResolver {
       return AlgorithmResolutionResult.success(fuzzyMatches.first.guid);
     } else {
       // Multiple fuzzy matches - ambiguous
-      final candidateNames =
-          fuzzyMatches.map((alg) => '"${alg.name}" (${alg.guid})').toList();
+      final candidateNames = fuzzyMatches
+          .map((alg) => '"${alg.name}" (${alg.guid})')
+          .toList();
       return AlgorithmResolutionResult.error(
         MCPUtils.buildError(
           'Multiple algorithms match "$algorithmName": ${candidateNames.join(", ")}. '

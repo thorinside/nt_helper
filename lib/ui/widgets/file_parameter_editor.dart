@@ -66,7 +66,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   void initState() {
     super.initState();
     _textController = TextEditingController();
-    _textInputFocusNode = FocusNode(debugLabel: 'FileParameterEditor.textInput');
+    _textInputFocusNode = FocusNode(
+      debugLabel: 'FileParameterEditor.textInput',
+    );
     _currentDirectory = widget.rule.baseDirectory;
     _updateDisplayValue();
     if (widget.rule.mode != FileSelectionMode.textInput) {
@@ -161,9 +163,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     }
 
     // Fallback for non-per-trigger parameters or when trigger-specific not found
-    return widget.slot.parameters.indexWhere(
-      (p) => p.name.contains('Folder'),
-    );
+    return widget.slot.parameters.indexWhere((p) => p.name.contains('Folder'));
   }
 
   void _checkForFolderChanges(FileParameterEditor oldWidget) {
@@ -682,7 +682,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               onPressed: () {
                 _onTextSubmitted(_textController.text);
               },
-              icon: const Icon(Icons.check, semanticLabel: 'Confirm text input'),
+              icon: const Icon(
+                Icons.check,
+                semanticLabel: 'Confirm text input',
+              ),
               iconSize: 24,
               visualDensity: VisualDensity.compact,
               color: Theme.of(context).colorScheme.primary,
@@ -780,7 +783,11 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Icon(_getIconForMode(), size: 18, color: Colors.grey.shade600),
+                  Icon(
+                    _getIconForMode(),
+                    size: 18,
+                    color: Colors.grey.shade600,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -832,7 +839,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               onTap: _isLoadingFiles ? null : _showFileSelectionDialog,
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1257,8 +1267,7 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
 
   void _scrollToSelected() {
     if (_searchQuery.isNotEmpty) return;
-    final selectedIndex =
-        widget.currentValue - widget.parameterInfo.min;
+    final selectedIndex = widget.currentValue - widget.parameterInfo.min;
     if (selectedIndex >= 0 && selectedIndex < widget.availableFiles.length) {
       const itemHeight = 36.0;
       final offset = selectedIndex * itemHeight;
@@ -1313,8 +1322,10 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
                   hintText: 'Search...',
                   prefixIcon: Icon(Icons.search, size: 20),
                   isDense: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
                 onChanged: (value) => setState(() => _searchQuery = value),
               ),
@@ -1338,10 +1349,8 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       color: isSelected
-                          ? Theme.of(context)
-                              .colorScheme
-                              .primaryContainer
-                              .withValues(alpha: 0.5)
+                          ? Theme.of(context).colorScheme.primaryContainer
+                                .withValues(alpha: 0.5)
                           : null,
                       child: Row(
                         children: [
@@ -1360,8 +1369,7 @@ class _FileSelectionDialogState extends State<_FileSelectionDialog> {
                               displayName,
                               overflow: TextOverflow.ellipsis,
                               style: isSelected
-                                  ? const TextStyle(
-                                      fontWeight: FontWeight.bold)
+                                  ? const TextStyle(fontWeight: FontWeight.bold)
                                   : null,
                             ),
                           ),

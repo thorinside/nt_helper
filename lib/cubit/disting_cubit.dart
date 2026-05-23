@@ -129,8 +129,9 @@ class DistingCubit extends _DistingCubitBase
   late final _PerfPageDelegate _perfPageDelegate = _PerfPageDelegate(this);
   late final _CcNotificationDelegate _ccNotificationDelegate =
       _CcNotificationDelegate(this);
-  late final _CheckpointDelegate _checkpointDelegate =
-      _CheckpointDelegate(this);
+  late final _CheckpointDelegate _checkpointDelegate = _CheckpointDelegate(
+    this,
+  );
 
   /// Service for checking firmware updates
   final FirmwareVersionService _firmwareVersionService =
@@ -596,10 +597,7 @@ class DistingCubit extends _DistingCubitBase
     PresetCheckpoint checkpoint, {
     void Function(int completed, int total)? onProgress,
   }) =>
-      _checkpointDelegate.restoreCheckpoint(
-        checkpoint,
-        onProgress: onProgress,
-      );
+      _checkpointDelegate.restoreCheckpoint(checkpoint, onProgress: onProgress);
 
   void removeCheckpoint(PresetCheckpoint checkpoint) =>
       _checkpointDelegate.removeCheckpoint(checkpoint);
@@ -939,8 +937,9 @@ class DistingCubit extends _DistingCubitBase
         sysExId: sysExId,
       );
       try {
-        final version = await manager.requestVersionString()
-            .timeout(const Duration(seconds: 3));
+        final version = await manager.requestVersionString().timeout(
+          const Duration(seconds: 3),
+        );
         return version;
       } finally {
         manager.dispose();
@@ -955,7 +954,6 @@ class DistingCubit extends _DistingCubitBase
       _midiSetupSubscription?.resume();
     }
   }
-
 
   /// Creates a connected [IDistingMidiManager] for firmware operations.
   ///

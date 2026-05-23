@@ -4,10 +4,7 @@ import 'package:nt_helper/domain/sysex/requests/request_perf_page_item.dart';
 void main() {
   group('RequestPerfPageItemMessage', () {
     test('encodes message for item 0', () {
-      final message = RequestPerfPageItemMessage(
-        sysExId: 1,
-        itemIndex: 0,
-      );
+      final message = RequestPerfPageItemMessage(sysExId: 1, itemIndex: 0);
 
       final encoded = message.encode();
 
@@ -23,10 +20,7 @@ void main() {
     });
 
     test('encodes message for item 29', () {
-      final message = RequestPerfPageItemMessage(
-        sysExId: 2,
-        itemIndex: 29,
-      );
+      final message = RequestPerfPageItemMessage(sysExId: 2, itemIndex: 29);
 
       final encoded = message.encode();
 
@@ -36,10 +30,7 @@ void main() {
     });
 
     test('masks item index to 7 bits', () {
-      final message = RequestPerfPageItemMessage(
-        sysExId: 1,
-        itemIndex: 0xFF,
-      );
+      final message = RequestPerfPageItemMessage(sysExId: 1, itemIndex: 0xFF);
 
       final encoded = message.encode();
 

@@ -58,7 +58,9 @@ class _ParameterValueDelegate {
 
             _cubit._emitState(
               syncstate.copyWith(
-                slots: _cubit.updateSlot(algorithmIndex, syncstate.slots, (slot) {
+                slots: _cubit.updateSlot(algorithmIndex, syncstate.slots, (
+                  slot,
+                ) {
                   return slot.copyWith(
                     values: _cubit.replaceInList(
                       slot.values,
@@ -107,7 +109,9 @@ class _ParameterValueDelegate {
 
             _cubit._emitState(
               syncstate.copyWith(
-                slots: _cubit.updateSlot(algorithmIndex, syncstate.slots, (slot) {
+                slots: _cubit.updateSlot(algorithmIndex, syncstate.slots, (
+                  slot,
+                ) {
                   return slot.copyWith(
                     values: _cubit.replaceInList(
                       slot.values,
@@ -142,4 +146,3 @@ class _ParameterValueDelegate {
     }
   }
 }
-

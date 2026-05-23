@@ -272,7 +272,9 @@ void main() {
       expect(find.text('Installed'), findsOneWidget);
     });
 
-    testWidgets('enables install button for uninstalled plugin', (tester) async {
+    testWidgets('enables install button for uninstalled plugin', (
+      tester,
+    ) async {
       // Arrange
       final plugin = createTestPlugin(
         id: 'test-plugin',

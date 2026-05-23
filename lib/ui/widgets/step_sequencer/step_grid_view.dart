@@ -84,7 +84,8 @@ class _StepGridViewState extends State<StepGridView> {
         if (curr is! DistingStateSynchronized) return false;
         if (prev is! DistingStateSynchronized) return true;
 
-        return prev.slots[widget.slotIndex].values != curr.slots[widget.slotIndex].values;
+        return prev.slots[widget.slotIndex].values !=
+            curr.slots[widget.slotIndex].values;
       },
       builder: (context, state) {
         if (state is! DistingStateSynchronized) {
@@ -108,18 +109,20 @@ class _StepGridViewState extends State<StepGridView> {
     StepSequencerParams params,
   ) {
     // Disable drag-to-paint for Pattern and Ties modes to allow direct bit clicking
-    final isBitPatternMode = widget.activeParameter == StepParameter.pattern ||
+    final isBitPatternMode =
+        widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties;
 
     return FocusTraversalGroup(
       child: GestureDetector(
         onPanStart: isBitPatternMode
             ? null
-            : (details) => _handleDragStart(details.globalPosition, slot, params),
+            : (details) =>
+                  _handleDragStart(details.globalPosition, slot, params),
         onPanUpdate: isBitPatternMode
             ? null
             : (details) =>
-                _handleDragUpdate(details.globalPosition, slot, params),
+                  _handleDragUpdate(details.globalPosition, slot, params),
         onPanEnd: isBitPatternMode ? null : (details) => _handleDragEnd(),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -147,18 +150,20 @@ class _StepGridViewState extends State<StepGridView> {
     StepSequencerParams params,
   ) {
     // Disable drag-to-paint for Pattern and Ties modes to allow direct bit clicking
-    final isBitPatternMode = widget.activeParameter == StepParameter.pattern ||
+    final isBitPatternMode =
+        widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties;
 
     return FocusTraversalGroup(
       child: GestureDetector(
         onPanStart: isBitPatternMode
             ? null
-            : (details) => _handleDragStart(details.globalPosition, slot, params),
+            : (details) =>
+                  _handleDragStart(details.globalPosition, slot, params),
         onPanUpdate: isBitPatternMode
             ? null
             : (details) =>
-                _handleDragUpdate(details.globalPosition, slot, params),
+                  _handleDragUpdate(details.globalPosition, slot, params),
         onPanEnd: isBitPatternMode ? null : (details) => _handleDragEnd(),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -182,10 +187,16 @@ class _StepGridViewState extends State<StepGridView> {
     );
   }
 
-  void _handleStepKeyEvent(int stepIndex, KeyEvent event, Slot slot, StepSequencerParams params) {
+  void _handleStepKeyEvent(
+    int stepIndex,
+    KeyEvent event,
+    Slot slot,
+    StepSequencerParams params,
+  ) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) return;
 
-    final isBitMode = widget.activeParameter == StepParameter.pattern ||
+    final isBitMode =
+        widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties;
 
     switch (event.logicalKey) {
@@ -228,12 +239,19 @@ class _StepGridViewState extends State<StepGridView> {
     }
   }
 
-  void _adjustStepValue(int stepIndex, int delta, Slot slot, StepSequencerParams params) {
+  void _adjustStepValue(
+    int stepIndex,
+    int delta,
+    Slot slot,
+    StepSequencerParams params,
+  ) {
     final paramIndex = _getParameterIndexForStep(stepIndex, params);
     if (paramIndex == null || paramIndex >= slot.parameters.length) return;
 
     final paramInfo = slot.parameters[paramIndex];
-    final currentValue = paramIndex < slot.values.length ? slot.values[paramIndex].value : 0;
+    final currentValue = paramIndex < slot.values.length
+        ? slot.values[paramIndex].value
+        : 0;
     final newValue = (currentValue + delta).clamp(paramInfo.min, paramInfo.max);
 
     if (newValue != currentValue) {
@@ -265,12 +283,13 @@ class _StepGridViewState extends State<StepGridView> {
     final velocityParamIndex = params.getVelocity(stepIndex + 1);
 
     // Get current values (default to 0 if parameter not found)
-    final pitchValue = pitchParamIndex != null && pitchParamIndex < slot.values.length
+    final pitchValue =
+        pitchParamIndex != null && pitchParamIndex < slot.values.length
         ? slot.values[pitchParamIndex].value
         : 0;
 
-    final velocityValue = velocityParamIndex != null &&
-            velocityParamIndex < slot.values.length
+    final velocityValue =
+        velocityParamIndex != null && velocityParamIndex < slot.values.length
         ? slot.values[velocityParamIndex].value
         : 0;
 
@@ -282,19 +301,21 @@ class _StepGridViewState extends State<StepGridView> {
         });
       },
       onKeyEvent: (node, event) {
-        final isBitMode = widget.activeParameter == StepParameter.pattern ||
+        final isBitMode =
+            widget.activeParameter == StepParameter.pattern ||
             widget.activeParameter == StepParameter.ties;
 
         if (event is KeyDownEvent || event is KeyRepeatEvent) {
           final key = event.logicalKey;
           if (key == LogicalKeyboardKey.arrowLeft ||
               key == LogicalKeyboardKey.arrowRight ||
-              (!isBitMode && (key == LogicalKeyboardKey.arrowUp ||
-                  key == LogicalKeyboardKey.arrowDown ||
-                  key == LogicalKeyboardKey.pageUp ||
-                  key == LogicalKeyboardKey.pageDown ||
-                  key == LogicalKeyboardKey.home ||
-                  key == LogicalKeyboardKey.end))) {
+              (!isBitMode &&
+                  (key == LogicalKeyboardKey.arrowUp ||
+                      key == LogicalKeyboardKey.arrowDown ||
+                      key == LogicalKeyboardKey.pageUp ||
+                      key == LogicalKeyboardKey.pageDown ||
+                      key == LogicalKeyboardKey.home ||
+                      key == LogicalKeyboardKey.end))) {
             _handleStepKeyEvent(stepIndex, event, slot, params);
             return KeyEventResult.handled;
           }
@@ -328,7 +349,11 @@ class _StepGridViewState extends State<StepGridView> {
   }
 
   /// Handle drag start - begin painting values
-  void _handleDragStart(Offset globalPosition, Slot slot, StepSequencerParams params) {
+  void _handleDragStart(
+    Offset globalPosition,
+    Slot slot,
+    StepSequencerParams params,
+  ) {
     setState(() {
       _isDragging = true;
       _lastPaintedStep = null;
@@ -337,7 +362,11 @@ class _StepGridViewState extends State<StepGridView> {
   }
 
   /// Handle drag update - continue painting as drag moves
-  void _handleDragUpdate(Offset globalPosition, Slot slot, StepSequencerParams params) {
+  void _handleDragUpdate(
+    Offset globalPosition,
+    Slot slot,
+    StepSequencerParams params,
+  ) {
     if (_isDragging) {
       _paintValueAtPosition(globalPosition, slot, params);
     }
@@ -352,7 +381,11 @@ class _StepGridViewState extends State<StepGridView> {
   }
 
   /// Paint value at the given position
-  void _paintValueAtPosition(Offset globalPosition, Slot slot, StepSequencerParams params) {
+  void _paintValueAtPosition(
+    Offset globalPosition,
+    Slot slot,
+    StepSequencerParams params,
+  ) {
     // Skip bit pattern modes (Pattern, Ties) - they need special editor
     if (widget.activeParameter == StepParameter.pattern ||
         widget.activeParameter == StepParameter.ties) {
@@ -360,7 +393,8 @@ class _StepGridViewState extends State<StepGridView> {
     }
 
     // Convert global position to local position relative to the Row
-    final RenderBox? rowBox = _rowKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? rowBox =
+        _rowKey.currentContext?.findRenderObject() as RenderBox?;
     if (rowBox == null) {
       return; // Row not yet rendered
     }
@@ -405,7 +439,10 @@ class _StepGridViewState extends State<StepGridView> {
   /// Calculate parameter value from Y position within step column
   int? _calculateValueFromY(double y, Slot slot, StepSequencerParams params) {
     // Get parameter info for range
-    final paramIndex = _getParameterIndexForStep(0, params); // Use step 0 as reference
+    final paramIndex = _getParameterIndexForStep(
+      0,
+      params,
+    ); // Use step 0 as reference
     if (paramIndex == null || paramIndex >= slot.parameters.length) {
       return null;
     }
@@ -440,7 +477,8 @@ class _StepGridViewState extends State<StepGridView> {
     final relativeY = yInContainer - barTop;
 
     // Bar height estimate (from 400px grid height - 44px padding - 44px header/footer)
-    final barHeight = 400.0 - (containerPadding * 2) - headerHeight - footerHeight;
+    final barHeight =
+        400.0 - (containerPadding * 2) - headerHeight - footerHeight;
 
     if (relativeY < 0 || relativeY > barHeight) {
       // Outside bar area - clamp to nearest edge
@@ -450,7 +488,11 @@ class _StepGridViewState extends State<StepGridView> {
 
       // Apply quantization for pitch if enabled
       if (widget.activeParameter == StepParameter.pitch && widget.snapEnabled) {
-        value = ScaleQuantizer.quantize(value, widget.selectedScale, widget.rootNote);
+        value = ScaleQuantizer.quantize(
+          value,
+          widget.selectedScale,
+          widget.rootNote,
+        );
       }
       return value;
     }
@@ -500,7 +542,11 @@ class _StepGridViewState extends State<StepGridView> {
   }
 
   /// Update step parameter value with debouncing
-  void _updateStepParameter(int stepIndex, int value, StepSequencerParams params) {
+  void _updateStepParameter(
+    int stepIndex,
+    int value,
+    StepSequencerParams params,
+  ) {
     final paramIndex = _getParameterIndexForStep(stepIndex, params);
     if (paramIndex == null) {
       return;

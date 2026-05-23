@@ -479,7 +479,8 @@ abstract class AlgorithmRouting {
     };
 
     for (final param in slot.parameters) {
-      if (param.isInput || param.isOutput ||
+      if (param.isInput ||
+          param.isOutput ||
           isHardcodedInput(slot.algorithm.guid, param.name)) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
         ioParameters[param.name] = value;
@@ -493,7 +494,9 @@ abstract class AlgorithmRouting {
   /// Remove once OS fixes ioFlags for these algorithms.
   static final _hardcodedInputs = <String, RegExp>{
     'logi': RegExp(r'^\d+:Input [XY]$'),
-    'musw': RegExp(r'^\d+:(In control source|Out control source|Reset source)$'),
+    'musw': RegExp(
+      r'^\d+:(In control source|Out control source|Reset source)$',
+    ),
   };
 
   static bool isHardcodedInput(String guid, String paramName) {
@@ -606,7 +609,8 @@ abstract class AlgorithmRouting {
   @protected
   static int getParameterValue(Slot slot, String parameterName) {
     final param = slot.parameters.firstWhere(
-      (p) => p.name == parameterName || stripPagePrefix(p.name) == parameterName,
+      (p) =>
+          p.name == parameterName || stripPagePrefix(p.name) == parameterName,
       orElse: () => ParameterInfo.filler(),
     );
 
@@ -650,7 +654,8 @@ abstract class AlgorithmRouting {
   @protected
   static bool hasParameter(Slot slot, String parameterName) {
     return slot.parameters.any(
-      (p) => p.name == parameterName || stripPagePrefix(p.name) == parameterName,
+      (p) =>
+          p.name == parameterName || stripPagePrefix(p.name) == parameterName,
     );
   }
 

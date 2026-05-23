@@ -32,7 +32,8 @@ class ParameterValueResponse extends SysexResponse {
     // Mask out flag bits (bits 16-20) from byte0 to preserve only value bits (14-15)
     // byte0 layout: [b6 b5 b4 b3 b2] [b1 b0]
     //                ↑ flag bits     ↑ value bits 14-15
-    final maskedByte0 = data[offset] & 0x03; // Keep only bits 0-1 (value bits 14-15)
+    final maskedByte0 =
+        data[offset] & 0x03; // Keep only bits 0-1 (value bits 14-15)
     final maskedData = [maskedByte0, data[offset + 1], data[offset + 2]];
     return decode16(maskedData, 0);
   }

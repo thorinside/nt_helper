@@ -364,7 +364,8 @@ class _InteractiveConnectionWidgetState
     // Connection data mode: render the connection with hover detection
     if (widget.connectionData != null) {
       final editorState = widget.routingEditorCubit.state;
-      final hasExtended = editorState is RoutingEditorStateLoaded &&
+      final hasExtended =
+          editorState is RoutingEditorStateLoaded &&
           editorState.hasExtendedAuxBuses;
 
       if (!_platformService.supportsHoverInteractions()) {
@@ -372,8 +373,8 @@ class _InteractiveConnectionWidgetState
         return Semantics(
           label: _getConnectionSemanticLabel(),
           customSemanticsActions: {
-            const CustomSemanticsAction(label: 'Delete this connection'):
-                () => _showDeleteConfirmationDialog(),
+            const CustomSemanticsAction(label: 'Delete this connection'): () =>
+                _showDeleteConfirmationDialog(),
           },
           child: CustomPaint(
             size: widget.size ?? Size.zero,
@@ -391,31 +392,31 @@ class _InteractiveConnectionWidgetState
       return Semantics(
         label: _getConnectionSemanticLabel(),
         customSemanticsActions: {
-          const CustomSemanticsAction(label: 'Delete this connection'):
-              () => _deleteConnection(),
+          const CustomSemanticsAction(label: 'Delete this connection'): () =>
+              _deleteConnection(),
         },
         child: Stack(
           children: [
-          // Render the actual connection
-          CustomPaint(
-            size: widget.size ?? Size.zero,
-            painter: painter.ConnectionPainter(
-              connections: [widget.connectionData!],
-              theme: Theme.of(context),
-              showLabels: true,
-              hoveredConnectionId: _isHovering
-                  ? widget.connectionData!.connection.id
-                  : null,
-              hasExtendedAuxBuses: hasExtended,
+            // Render the actual connection
+            CustomPaint(
+              size: widget.size ?? Size.zero,
+              painter: painter.ConnectionPainter(
+                connections: [widget.connectionData!],
+                theme: Theme.of(context),
+                showLabels: true,
+                hoveredConnectionId: _isHovering
+                    ? widget.connectionData!.connection.id
+                    : null,
+                hasExtendedAuxBuses: hasExtended,
+              ),
             ),
-          ),
 
-          // Single hover region along connection with very narrow hit area
-          _buildConnectionHoverRegion(),
+            // Single hover region along connection with very narrow hit area
+            _buildConnectionHoverRegion(),
 
-          // Delete button overlay
-          _buildDeleteButton(),
-        ],
+            // Delete button overlay
+            _buildDeleteButton(),
+          ],
         ),
       );
     }

@@ -41,15 +41,20 @@ void main() {
       await database.metadataDao.upsertOutputModeUsage(entries);
 
       // Assert - verify entries were persisted
-      final retrievedEntries = await database.metadataDao.getAllOutputModeUsage();
+      final retrievedEntries = await database.metadataDao
+          .getAllOutputModeUsage();
       expect(retrievedEntries, isNotEmpty);
       expect(retrievedEntries.length, equals(2));
 
-      final entry1 = retrievedEntries.firstWhere((e) => e.parameterNumber == paramNumber1);
+      final entry1 = retrievedEntries.firstWhere(
+        (e) => e.parameterNumber == paramNumber1,
+      );
       expect(entry1.algorithmGuid, equals(algorithmGuid));
       expect(entry1.affectedOutputNumbers, equals(affectedOutputs1));
 
-      final entry2 = retrievedEntries.firstWhere((e) => e.parameterNumber == paramNumber2);
+      final entry2 = retrievedEntries.firstWhere(
+        (e) => e.parameterNumber == paramNumber2,
+      );
       expect(entry2.algorithmGuid, equals(algorithmGuid));
       expect(entry2.affectedOutputNumbers, equals(affectedOutputs2));
     });
@@ -85,7 +90,11 @@ void main() {
 
       // Assert - verify replacement
       retrieved = await database.metadataDao.getAllOutputModeUsage();
-      expect(retrieved.length, equals(1), reason: 'Should have replaced, not added');
+      expect(
+        retrieved.length,
+        equals(1),
+        reason: 'Should have replaced, not added',
+      );
       expect(retrieved.first.affectedOutputNumbers, equals(updatedAffected));
     });
 
@@ -139,10 +148,14 @@ void main() {
       final allEntries = await database.metadataDao.getAllOutputModeUsage();
       expect(allEntries.length, equals(3));
 
-      final algo1Entries = allEntries.where((e) => e.algorithmGuid == 'algo-1').toList();
+      final algo1Entries = allEntries
+          .where((e) => e.algorithmGuid == 'algo-1')
+          .toList();
       expect(algo1Entries.length, equals(2));
 
-      final algo2Entries = allEntries.where((e) => e.algorithmGuid == 'algo-2').toList();
+      final algo2Entries = allEntries
+          .where((e) => e.algorithmGuid == 'algo-2')
+          .toList();
       expect(algo2Entries.length, equals(1));
     });
 
@@ -162,12 +175,16 @@ void main() {
 
       // Assert
       final retrieved = await database.metadataDao.getAllOutputModeUsage();
-      final batchEntriesRetrieved = retrieved.where((e) => e.algorithmGuid == 'batch-algo').toList();
+      final batchEntriesRetrieved = retrieved
+          .where((e) => e.algorithmGuid == 'batch-algo')
+          .toList();
       expect(batchEntriesRetrieved.length, equals(5));
 
       // Verify each entry
       for (int i = 0; i < 5; i++) {
-        final entry = batchEntriesRetrieved.firstWhere((e) => e.parameterNumber == i);
+        final entry = batchEntriesRetrieved.firstWhere(
+          (e) => e.parameterNumber == i,
+        );
         expect(entry.affectedOutputNumbers, equals([i * 10, i * 10 + 1]));
       }
     });

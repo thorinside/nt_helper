@@ -68,14 +68,8 @@ void main() {
           BusSpec.isEs5ForFirmware(30, hasExtendedAuxBuses: true),
           isFalse,
         );
-        expect(
-          BusSpec.isEs5ForFirmware(65, hasExtendedAuxBuses: true),
-          isTrue,
-        );
-        expect(
-          BusSpec.isEs5ForFirmware(66, hasExtendedAuxBuses: true),
-          isTrue,
-        );
+        expect(BusSpec.isEs5ForFirmware(65, hasExtendedAuxBuses: true), isTrue);
+        expect(BusSpec.isEs5ForFirmware(66, hasExtendedAuxBuses: true), isTrue);
       });
     });
 
@@ -100,26 +94,11 @@ void main() {
       });
 
       test('firmware 1.15+: aux is 21-64, includes 29-30', () {
-        expect(
-          BusSpec.isAuxForFirmware(21, hasExtendedAuxBuses: true),
-          isTrue,
-        );
-        expect(
-          BusSpec.isAuxForFirmware(28, hasExtendedAuxBuses: true),
-          isTrue,
-        );
-        expect(
-          BusSpec.isAuxForFirmware(29, hasExtendedAuxBuses: true),
-          isTrue,
-        );
-        expect(
-          BusSpec.isAuxForFirmware(30, hasExtendedAuxBuses: true),
-          isTrue,
-        );
-        expect(
-          BusSpec.isAuxForFirmware(64, hasExtendedAuxBuses: true),
-          isTrue,
-        );
+        expect(BusSpec.isAuxForFirmware(21, hasExtendedAuxBuses: true), isTrue);
+        expect(BusSpec.isAuxForFirmware(28, hasExtendedAuxBuses: true), isTrue);
+        expect(BusSpec.isAuxForFirmware(29, hasExtendedAuxBuses: true), isTrue);
+        expect(BusSpec.isAuxForFirmware(30, hasExtendedAuxBuses: true), isTrue);
+        expect(BusSpec.isAuxForFirmware(64, hasExtendedAuxBuses: true), isTrue);
         expect(
           BusSpec.isAuxForFirmware(65, hasExtendedAuxBuses: true),
           isFalse,

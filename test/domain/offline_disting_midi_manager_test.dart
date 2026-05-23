@@ -21,7 +21,9 @@ void main() {
 
     test('requestParameterInfo reads ioFlags from database', () async {
       // Insert test algorithm
-      await database.into(database.algorithms).insert(
+      await database
+          .into(database.algorithms)
+          .insert(
             AlgorithmsCompanion(
               guid: const Value('test'),
               name: const Value('Test Algorithm'),
@@ -30,7 +32,9 @@ void main() {
           );
 
       // Insert parameter with ioFlags = 7
-      await database.into(database.parameters).insert(
+      await database
+          .into(database.parameters)
+          .insert(
             ParametersCompanion(
               algorithmGuid: const Value('test'),
               parameterNumber: const Value(0),
@@ -77,7 +81,9 @@ void main() {
         ),
       );
 
-      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
+      final presetDetails = await database.presetsDao.getFullPresetDetails(
+        preset,
+      );
       await manager.initializeFromDb(presetDetails);
 
       // Request parameter info
@@ -90,7 +96,9 @@ void main() {
 
     test('requestParameterInfo defaults null ioFlags to 0', () async {
       // Insert test algorithm
-      await database.into(database.algorithms).insert(
+      await database
+          .into(database.algorithms)
+          .insert(
             AlgorithmsCompanion(
               guid: const Value('test'),
               name: const Value('Test Algorithm'),
@@ -99,7 +107,9 @@ void main() {
           );
 
       // Insert parameter with null ioFlags
-      await database.into(database.parameters).insert(
+      await database
+          .into(database.parameters)
+          .insert(
             ParametersCompanion(
               algorithmGuid: const Value('test'),
               parameterNumber: const Value(0),
@@ -146,7 +156,9 @@ void main() {
         ),
       );
 
-      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
+      final presetDetails = await database.presetsDao.getFullPresetDetails(
+        preset,
+      );
       await manager.initializeFromDb(presetDetails);
 
       // Request parameter info
@@ -157,250 +169,278 @@ void main() {
       expect(paramInfo!.ioFlags, 0);
     });
 
-    test('requestParameterInfo distinguishes between null and 0 ioFlags', () async {
-      // Insert test algorithm
-      await database.into(database.algorithms).insert(
-            AlgorithmsCompanion(
-              guid: const Value('test'),
-              name: const Value('Test Algorithm'),
-              numSpecifications: const Value(0),
-            ),
-          );
-
-      // Insert parameter with ioFlags = 0 (explicit zero)
-      await database.into(database.parameters).insert(
-            ParametersCompanion(
-              algorithmGuid: const Value('test'),
-              parameterNumber: const Value(0),
-              name: const Value('Param with zero flags'),
-              minValue: const Value(0),
-              maxValue: const Value(100),
-              defaultValue: const Value(50),
-              unitId: const Value(null),
-              powerOfTen: const Value(0),
-              rawUnitIndex: const Value(5),
-              ioFlags: const Value(0), // Explicit zero
-            ),
-          );
-
-      // Insert parameter with null ioFlags
-      await database.into(database.parameters).insert(
-            ParametersCompanion(
-              algorithmGuid: const Value('test'),
-              parameterNumber: const Value(1),
-              name: const Value('Param with null flags'),
-              minValue: const Value(0),
-              maxValue: const Value(100),
-              defaultValue: const Value(50),
-              unitId: const Value(null),
-              powerOfTen: const Value(0),
-              rawUnitIndex: const Value(5),
-              ioFlags: const Value(null), // Null
-            ),
-          );
-
-      // Initialize manager with preset
-      final preset = await database.presetsDao.saveFullPreset(
-        FullPresetDetails(
-          preset: PresetEntry(
-            id: -1,
-            name: 'Test Preset',
-            lastModified: DateTime.now(),
-            isTemplate: false,
-          ),
-          slots: [
-            FullPresetSlot(
-              slot: PresetSlotEntry(
-                id: -1,
-                presetId: -1,
-                slotIndex: 0,
-                algorithmGuid: 'test',
-                customName: null,
+    test(
+      'requestParameterInfo distinguishes between null and 0 ioFlags',
+      () async {
+        // Insert test algorithm
+        await database
+            .into(database.algorithms)
+            .insert(
+              AlgorithmsCompanion(
+                guid: const Value('test'),
+                name: const Value('Test Algorithm'),
+                numSpecifications: const Value(0),
               ),
-              algorithm: AlgorithmEntry(
-                guid: 'test',
-                name: 'Test Algorithm',
-                numSpecifications: 0,
-                pluginFilePath: null,
-              ),
-              parameterValues: {},
-              parameterStringValues: {},
-              mappings: {},
-            ),
-          ],
-        ),
-      );
+            );
 
-      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
-      await manager.initializeFromDb(presetDetails);
-
-      // Request both parameters
-      final paramInfo0 = await manager.requestParameterInfo(0, 0);
-      final paramInfo1 = await manager.requestParameterInfo(0, 1);
-
-      // Both should default to 0, but both came from database
-      expect(paramInfo0, isNotNull);
-      expect(paramInfo0!.ioFlags, 0);
-
-      expect(paramInfo1, isNotNull);
-      expect(paramInfo1!.ioFlags, 0);
-    });
-
-    test('requestParameterInfo handles all valid ioFlags values (0-15)', () async {
-      // Insert test algorithm
-      await database.into(database.algorithms).insert(
-            AlgorithmsCompanion(
-              guid: const Value('test'),
-              name: const Value('Test Algorithm'),
-              numSpecifications: const Value(0),
-            ),
-          );
-
-      // Insert parameters with all valid ioFlags values
-      for (int flagValue = 0; flagValue <= 15; flagValue++) {
-        await database.into(database.parameters).insert(
+        // Insert parameter with ioFlags = 0 (explicit zero)
+        await database
+            .into(database.parameters)
+            .insert(
               ParametersCompanion(
                 algorithmGuid: const Value('test'),
-                parameterNumber: Value(flagValue),
-                name: Value('Param $flagValue'),
+                parameterNumber: const Value(0),
+                name: const Value('Param with zero flags'),
                 minValue: const Value(0),
                 maxValue: const Value(100),
                 defaultValue: const Value(50),
                 unitId: const Value(null),
                 powerOfTen: const Value(0),
                 rawUnitIndex: const Value(5),
-                ioFlags: Value(flagValue),
+                ioFlags: const Value(0), // Explicit zero
               ),
             );
-      }
 
-      // Initialize manager with preset
-      final preset = await database.presetsDao.saveFullPreset(
-        FullPresetDetails(
-          preset: PresetEntry(
-            id: -1,
-            name: 'Test Preset',
-            lastModified: DateTime.now(),
-            isTemplate: false,
-          ),
-          slots: [
-            FullPresetSlot(
-              slot: PresetSlotEntry(
-                id: -1,
-                presetId: -1,
-                slotIndex: 0,
-                algorithmGuid: 'test',
-                customName: null,
+        // Insert parameter with null ioFlags
+        await database
+            .into(database.parameters)
+            .insert(
+              ParametersCompanion(
+                algorithmGuid: const Value('test'),
+                parameterNumber: const Value(1),
+                name: const Value('Param with null flags'),
+                minValue: const Value(0),
+                maxValue: const Value(100),
+                defaultValue: const Value(50),
+                unitId: const Value(null),
+                powerOfTen: const Value(0),
+                rawUnitIndex: const Value(5),
+                ioFlags: const Value(null), // Null
               ),
-              algorithm: AlgorithmEntry(
-                guid: 'test',
-                name: 'Test Algorithm',
-                numSpecifications: 0,
-                pluginFilePath: null,
-              ),
-              parameterValues: {},
-              parameterStringValues: {},
-              mappings: {},
+            );
+
+        // Initialize manager with preset
+        final preset = await database.presetsDao.saveFullPreset(
+          FullPresetDetails(
+            preset: PresetEntry(
+              id: -1,
+              name: 'Test Preset',
+              lastModified: DateTime.now(),
+              isTemplate: false,
             ),
-          ],
-        ),
-      );
+            slots: [
+              FullPresetSlot(
+                slot: PresetSlotEntry(
+                  id: -1,
+                  presetId: -1,
+                  slotIndex: 0,
+                  algorithmGuid: 'test',
+                  customName: null,
+                ),
+                algorithm: AlgorithmEntry(
+                  guid: 'test',
+                  name: 'Test Algorithm',
+                  numSpecifications: 0,
+                  pluginFilePath: null,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
+              ),
+            ],
+          ),
+        );
 
-      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
-      await manager.initializeFromDb(presetDetails);
+        final presetDetails = await database.presetsDao.getFullPresetDetails(
+          preset,
+        );
+        await manager.initializeFromDb(presetDetails);
 
-      // Request all parameters and verify ioFlags values
-      for (int flagValue = 0; flagValue <= 15; flagValue++) {
-        final paramInfo = await manager.requestParameterInfo(0, flagValue);
+        // Request both parameters
+        final paramInfo0 = await manager.requestParameterInfo(0, 0);
+        final paramInfo1 = await manager.requestParameterInfo(0, 1);
+
+        // Both should default to 0, but both came from database
+        expect(paramInfo0, isNotNull);
+        expect(paramInfo0!.ioFlags, 0);
+
+        expect(paramInfo1, isNotNull);
+        expect(paramInfo1!.ioFlags, 0);
+      },
+    );
+
+    test(
+      'requestParameterInfo handles all valid ioFlags values (0-15)',
+      () async {
+        // Insert test algorithm
+        await database
+            .into(database.algorithms)
+            .insert(
+              AlgorithmsCompanion(
+                guid: const Value('test'),
+                name: const Value('Test Algorithm'),
+                numSpecifications: const Value(0),
+              ),
+            );
+
+        // Insert parameters with all valid ioFlags values
+        for (int flagValue = 0; flagValue <= 15; flagValue++) {
+          await database
+              .into(database.parameters)
+              .insert(
+                ParametersCompanion(
+                  algorithmGuid: const Value('test'),
+                  parameterNumber: Value(flagValue),
+                  name: Value('Param $flagValue'),
+                  minValue: const Value(0),
+                  maxValue: const Value(100),
+                  defaultValue: const Value(50),
+                  unitId: const Value(null),
+                  powerOfTen: const Value(0),
+                  rawUnitIndex: const Value(5),
+                  ioFlags: Value(flagValue),
+                ),
+              );
+        }
+
+        // Initialize manager with preset
+        final preset = await database.presetsDao.saveFullPreset(
+          FullPresetDetails(
+            preset: PresetEntry(
+              id: -1,
+              name: 'Test Preset',
+              lastModified: DateTime.now(),
+              isTemplate: false,
+            ),
+            slots: [
+              FullPresetSlot(
+                slot: PresetSlotEntry(
+                  id: -1,
+                  presetId: -1,
+                  slotIndex: 0,
+                  algorithmGuid: 'test',
+                  customName: null,
+                ),
+                algorithm: AlgorithmEntry(
+                  guid: 'test',
+                  name: 'Test Algorithm',
+                  numSpecifications: 0,
+                  pluginFilePath: null,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
+              ),
+            ],
+          ),
+        );
+
+        final presetDetails = await database.presetsDao.getFullPresetDetails(
+          preset,
+        );
+        await manager.initializeFromDb(presetDetails);
+
+        // Request all parameters and verify ioFlags values
+        for (int flagValue = 0; flagValue <= 15; flagValue++) {
+          final paramInfo = await manager.requestParameterInfo(0, flagValue);
+          expect(paramInfo, isNotNull);
+          expect(paramInfo!.ioFlags, flagValue);
+        }
+      },
+    );
+
+    test(
+      'requestParameterInfo preserves all other fields when reading ioFlags',
+      () async {
+        // Insert test algorithm
+        await database
+            .into(database.algorithms)
+            .insert(
+              AlgorithmsCompanion(
+                guid: const Value('test'),
+                name: const Value('Test Algorithm'),
+                numSpecifications: const Value(0),
+              ),
+            );
+
+        // Insert unit
+        await database
+            .into(database.units)
+            .insert(
+              UnitsCompanion(id: const Value(1), unitString: const Value('%')),
+            );
+
+        // Insert parameter with all fields populated including ioFlags
+        await database
+            .into(database.parameters)
+            .insert(
+              ParametersCompanion(
+                algorithmGuid: const Value('test'),
+                parameterNumber: const Value(0),
+                name: const Value('Full Parameter'),
+                minValue: const Value(10),
+                maxValue: const Value(90),
+                defaultValue: const Value(45),
+                unitId: const Value(1),
+                powerOfTen: const Value(2),
+                rawUnitIndex: const Value(3),
+                ioFlags: const Value(12), // Test ioFlags
+              ),
+            );
+
+        // Initialize manager with preset
+        final preset = await database.presetsDao.saveFullPreset(
+          FullPresetDetails(
+            preset: PresetEntry(
+              id: -1,
+              name: 'Test Preset',
+              lastModified: DateTime.now(),
+              isTemplate: false,
+            ),
+            slots: [
+              FullPresetSlot(
+                slot: PresetSlotEntry(
+                  id: -1,
+                  presetId: -1,
+                  slotIndex: 0,
+                  algorithmGuid: 'test',
+                  customName: null,
+                ),
+                algorithm: AlgorithmEntry(
+                  guid: 'test',
+                  name: 'Test Algorithm',
+                  numSpecifications: 0,
+                  pluginFilePath: null,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
+              ),
+            ],
+          ),
+        );
+
+        final presetDetails = await database.presetsDao.getFullPresetDetails(
+          preset,
+        );
+        await manager.initializeFromDb(presetDetails);
+
+        // Request parameter info
+        final paramInfo = await manager.requestParameterInfo(0, 0);
+
+        // Verify all fields are preserved
         expect(paramInfo, isNotNull);
-        expect(paramInfo!.ioFlags, flagValue);
-      }
-    });
-
-    test('requestParameterInfo preserves all other fields when reading ioFlags', () async {
-      // Insert test algorithm
-      await database.into(database.algorithms).insert(
-            AlgorithmsCompanion(
-              guid: const Value('test'),
-              name: const Value('Test Algorithm'),
-              numSpecifications: const Value(0),
-            ),
-          );
-
-      // Insert unit
-      await database.into(database.units).insert(
-            UnitsCompanion(
-              id: const Value(1),
-              unitString: const Value('%'),
-            ),
-          );
-
-      // Insert parameter with all fields populated including ioFlags
-      await database.into(database.parameters).insert(
-            ParametersCompanion(
-              algorithmGuid: const Value('test'),
-              parameterNumber: const Value(0),
-              name: const Value('Full Parameter'),
-              minValue: const Value(10),
-              maxValue: const Value(90),
-              defaultValue: const Value(45),
-              unitId: const Value(1),
-              powerOfTen: const Value(2),
-              rawUnitIndex: const Value(3),
-              ioFlags: const Value(12), // Test ioFlags
-            ),
-          );
-
-      // Initialize manager with preset
-      final preset = await database.presetsDao.saveFullPreset(
-        FullPresetDetails(
-          preset: PresetEntry(
-            id: -1,
-            name: 'Test Preset',
-            lastModified: DateTime.now(),
-            isTemplate: false,
-          ),
-          slots: [
-            FullPresetSlot(
-              slot: PresetSlotEntry(
-                id: -1,
-                presetId: -1,
-                slotIndex: 0,
-                algorithmGuid: 'test',
-                customName: null,
-              ),
-              algorithm: AlgorithmEntry(
-                guid: 'test',
-                name: 'Test Algorithm',
-                numSpecifications: 0,
-                pluginFilePath: null,
-              ),
-              parameterValues: {},
-              parameterStringValues: {},
-              mappings: {},
-            ),
-          ],
-        ),
-      );
-
-      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
-      await manager.initializeFromDb(presetDetails);
-
-      // Request parameter info
-      final paramInfo = await manager.requestParameterInfo(0, 0);
-
-      // Verify all fields are preserved
-      expect(paramInfo, isNotNull);
-      expect(paramInfo!.algorithmIndex, 0);
-      expect(paramInfo.parameterNumber, 0);
-      expect(paramInfo.name, 'Full Parameter');
-      expect(paramInfo.min, 10);
-      expect(paramInfo.max, 90);
-      expect(paramInfo.defaultValue, 45);
-      expect(paramInfo.unit, 3); // rawUnitIndex
-      expect(paramInfo.powerOfTen, 2);
-      expect(paramInfo.ioFlags, 12);
-    });
+        expect(paramInfo!.algorithmIndex, 0);
+        expect(paramInfo.parameterNumber, 0);
+        expect(paramInfo.name, 'Full Parameter');
+        expect(paramInfo.min, 10);
+        expect(paramInfo.max, 90);
+        expect(paramInfo.defaultValue, 45);
+        expect(paramInfo.unit, 3); // rawUnitIndex
+        expect(paramInfo.powerOfTen, 2);
+        expect(paramInfo.ioFlags, 12);
+      },
+    );
   });
 
   group('OfflineDistingMidiManager requestOutputModeUsage Tests', () {
@@ -416,32 +456,39 @@ void main() {
       await database.close();
     });
 
-    test('DAO getOutputModeUsage retrieves data correctly from database', () async {
-      // Insert test algorithm
-      await database.into(database.algorithms).insert(
-            AlgorithmsCompanion(
-              guid: const Value('test'),
-              name: const Value('Test Algorithm'),
-              numSpecifications: const Value(0),
-            ),
-          );
+    test(
+      'DAO getOutputModeUsage retrieves data correctly from database',
+      () async {
+        // Insert test algorithm
+        await database
+            .into(database.algorithms)
+            .insert(
+              AlgorithmsCompanion(
+                guid: const Value('test'),
+                name: const Value('Test Algorithm'),
+                numSpecifications: const Value(0),
+              ),
+            );
 
-      // Insert output mode usage data
-      await database.into(database.parameterOutputModeUsage).insert(
-            ParameterOutputModeUsageCompanion(
-              algorithmGuid: const Value('test'),
-              parameterNumber: const Value(0),
-              affectedOutputNumbers: const Value([1, 2, 3]),
-            ),
-          );
+        // Insert output mode usage data
+        await database
+            .into(database.parameterOutputModeUsage)
+            .insert(
+              ParameterOutputModeUsageCompanion(
+                algorithmGuid: const Value('test'),
+                parameterNumber: const Value(0),
+                affectedOutputNumbers: const Value([1, 2, 3]),
+              ),
+            );
 
-      // Query via DAO
-      final result = await database.metadataDao.getOutputModeUsage('test', 0);
+        // Query via DAO
+        final result = await database.metadataDao.getOutputModeUsage('test', 0);
 
-      // Verify data is retrieved correctly
-      expect(result, isNotNull);
-      expect(result, equals([1, 2, 3]));
-    });
+        // Verify data is retrieved correctly
+        expect(result, isNotNull);
+        expect(result, equals([1, 2, 3]));
+      },
+    );
 
     test('DAO getOutputModeUsage returns null when no data exists', () async {
       // Query for non-existent data
@@ -451,124 +498,142 @@ void main() {
       expect(result, isNull);
     });
 
-    test('requestOutputModeUsage returns OutputModeUsage when data exists', () async {
-      // Insert test algorithm
-      await database.into(database.algorithms).insert(
-            AlgorithmsCompanion(
-              guid: const Value('test'),
-              name: const Value('Test Algorithm'),
-              numSpecifications: const Value(0),
-            ),
-          );
+    test(
+      'requestOutputModeUsage returns OutputModeUsage when data exists',
+      () async {
+        // Insert test algorithm
+        await database
+            .into(database.algorithms)
+            .insert(
+              AlgorithmsCompanion(
+                guid: const Value('test'),
+                name: const Value('Test Algorithm'),
+                numSpecifications: const Value(0),
+              ),
+            );
 
-      // Insert output mode usage data
-      await database.into(database.parameterOutputModeUsage).insert(
-            ParameterOutputModeUsageCompanion(
-              algorithmGuid: const Value('test'),
-              parameterNumber: const Value(2),
-              affectedOutputNumbers: const Value([5, 6]),
-            ),
-          );
+        // Insert output mode usage data
+        await database
+            .into(database.parameterOutputModeUsage)
+            .insert(
+              ParameterOutputModeUsageCompanion(
+                algorithmGuid: const Value('test'),
+                parameterNumber: const Value(2),
+                affectedOutputNumbers: const Value([5, 6]),
+              ),
+            );
 
-      // Initialize manager with preset
-      final preset = await database.presetsDao.saveFullPreset(
-        FullPresetDetails(
-          preset: PresetEntry(
-            id: -1,
-            name: 'Test Preset',
-            lastModified: DateTime.now(),
-            isTemplate: false,
+        // Initialize manager with preset
+        final preset = await database.presetsDao.saveFullPreset(
+          FullPresetDetails(
+            preset: PresetEntry(
+              id: -1,
+              name: 'Test Preset',
+              lastModified: DateTime.now(),
+              isTemplate: false,
+            ),
+            slots: [
+              FullPresetSlot(
+                slot: PresetSlotEntry(
+                  id: -1,
+                  presetId: -1,
+                  slotIndex: 0,
+                  algorithmGuid: 'test',
+                  customName: null,
+                ),
+                algorithm: AlgorithmEntry(
+                  guid: 'test',
+                  name: 'Test Algorithm',
+                  numSpecifications: 0,
+                  pluginFilePath: null,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
+              ),
+            ],
           ),
-          slots: [
-            FullPresetSlot(
-              slot: PresetSlotEntry(
-                id: -1,
-                presetId: -1,
-                slotIndex: 0,
-                algorithmGuid: 'test',
-                customName: null,
+        );
+
+        final presetDetails = await database.presetsDao.getFullPresetDetails(
+          preset,
+        );
+        await manager.initializeFromDb(presetDetails);
+
+        // Request output mode usage
+        final result = await manager.requestOutputModeUsage(0, 2);
+
+        // Verify OutputModeUsage is returned with correct data
+        expect(result, isNotNull);
+        expect(result!.parameterNumber, equals(2));
+        expect(result.affectedParameterNumbers, equals([5, 6]));
+      },
+    );
+
+    test(
+      'requestOutputModeUsage returns null when no data in database',
+      () async {
+        // Insert test algorithm with no output mode usage data
+        await database
+            .into(database.algorithms)
+            .insert(
+              AlgorithmsCompanion(
+                guid: const Value('test'),
+                name: const Value('Test Algorithm'),
+                numSpecifications: const Value(0),
               ),
-              algorithm: AlgorithmEntry(
-                guid: 'test',
-                name: 'Test Algorithm',
-                numSpecifications: 0,
-                pluginFilePath: null,
+            );
+
+        // Initialize manager with preset
+        final preset = await database.presetsDao.saveFullPreset(
+          FullPresetDetails(
+            preset: PresetEntry(
+              id: -1,
+              name: 'Test Preset',
+              lastModified: DateTime.now(),
+              isTemplate: false,
+            ),
+            slots: [
+              FullPresetSlot(
+                slot: PresetSlotEntry(
+                  id: -1,
+                  presetId: -1,
+                  slotIndex: 0,
+                  algorithmGuid: 'test',
+                  customName: null,
+                ),
+                algorithm: AlgorithmEntry(
+                  guid: 'test',
+                  name: 'Test Algorithm',
+                  numSpecifications: 0,
+                  pluginFilePath: null,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
               ),
-              parameterValues: {},
-              parameterStringValues: {},
-              mappings: {},
-            ),
-          ],
-        ),
-      );
-
-      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
-      await manager.initializeFromDb(presetDetails);
-
-      // Request output mode usage
-      final result = await manager.requestOutputModeUsage(0, 2);
-
-      // Verify OutputModeUsage is returned with correct data
-      expect(result, isNotNull);
-      expect(result!.parameterNumber, equals(2));
-      expect(result.affectedParameterNumbers, equals([5, 6]));
-    });
-
-    test('requestOutputModeUsage returns null when no data in database', () async {
-      // Insert test algorithm with no output mode usage data
-      await database.into(database.algorithms).insert(
-            AlgorithmsCompanion(
-              guid: const Value('test'),
-              name: const Value('Test Algorithm'),
-              numSpecifications: const Value(0),
-            ),
-          );
-
-      // Initialize manager with preset
-      final preset = await database.presetsDao.saveFullPreset(
-        FullPresetDetails(
-          preset: PresetEntry(
-            id: -1,
-            name: 'Test Preset',
-            lastModified: DateTime.now(),
-            isTemplate: false,
+            ],
           ),
-          slots: [
-            FullPresetSlot(
-              slot: PresetSlotEntry(
-                id: -1,
-                presetId: -1,
-                slotIndex: 0,
-                algorithmGuid: 'test',
-                customName: null,
-              ),
-              algorithm: AlgorithmEntry(
-                guid: 'test',
-                name: 'Test Algorithm',
-                numSpecifications: 0,
-                pluginFilePath: null,
-              ),
-              parameterValues: {},
-              parameterStringValues: {},
-              mappings: {},
-            ),
-          ],
-        ),
-      );
+        );
 
-      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
-      await manager.initializeFromDb(presetDetails);
+        final presetDetails = await database.presetsDao.getFullPresetDetails(
+          preset,
+        );
+        await manager.initializeFromDb(presetDetails);
 
-      // Request output mode usage for non-existent parameter
-      final result = await manager.requestOutputModeUsage(0, 99);
+        // Request output mode usage for non-existent parameter
+        final result = await manager.requestOutputModeUsage(0, 99);
 
-      // Verify null is returned (graceful fallback)
-      expect(result, isNull);
-    });
+        // Verify null is returned (graceful fallback)
+        expect(result, isNull);
+      },
+    );
 
     test('requestOutputModeUsage returns invalid index handling', () async {
       // Insert test algorithm
-      await database.into(database.algorithms).insert(
+      await database
+          .into(database.algorithms)
+          .insert(
             AlgorithmsCompanion(
               guid: const Value('test'),
               name: const Value('Test Algorithm'),
@@ -608,7 +673,9 @@ void main() {
         ),
       );
 
-      final presetDetails = await database.presetsDao.getFullPresetDetails(preset);
+      final presetDetails = await database.presetsDao.getFullPresetDetails(
+        preset,
+      );
       await manager.initializeFromDb(presetDetails);
 
       // Request with invalid algorithm index

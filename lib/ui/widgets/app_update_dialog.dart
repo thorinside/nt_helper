@@ -82,10 +82,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Semantics(
-        header: true,
-        child: const Text('Update Available'),
-      ),
+      title: Semantics(header: true, child: const Text('Update Available')),
       content: SizedBox(
         width: 480,
         height: 400,
@@ -132,8 +129,8 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
                         ? '${_errorMessage.substring(0, 200)}...'
                         : _errorMessage,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ),
               ),
@@ -143,8 +140,8 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
               Text(
                 _doneMessage,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ],
           ],
@@ -152,7 +149,8 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _state == _UpdateState.downloading ||
+          onPressed:
+              _state == _UpdateState.downloading ||
                   _state == _UpdateState.installing
               ? null
               : () => Navigator.of(context).pop(),

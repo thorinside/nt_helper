@@ -41,19 +41,17 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     final devices = await _midiCommand.devices;
 
     if (devices != null) {
-      final filtered = devices
-          .where(
-            (value) => !value.name.toLowerCase().contains('disting'),
-          )
-          .toList()
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      _debugLog('Discovered ${filtered.length} devices: ${filtered.map((d) => d.name).join(', ')}');
-      emit(
-        MidiListenerState.data(
-          devices: filtered,
-          isConnected: false,
-        ),
+      final filtered =
+          devices
+              .where((value) => !value.name.toLowerCase().contains('disting'))
+              .toList()
+            ..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
+      _debugLog(
+        'Discovered ${filtered.length} devices: ${filtered.map((d) => d.name).join(', ')}',
       );
+      emit(MidiListenerState.data(devices: filtered, isConnected: false));
     } else {
       _debugLog('Discovered devices: null');
     }
@@ -64,8 +62,9 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
   void _startMidiSetupListener() {
     _midiSetupSubscription?.cancel();
-    _midiSetupSubscription =
-        _midiCommand.onMidiSetupChanged?.listen((_) => _refreshDevices());
+    _midiSetupSubscription = _midiCommand.onMidiSetupChanged?.listen(
+      (_) => _refreshDevices(),
+    );
     _debugLog('MIDI setup listener started');
   }
 
@@ -76,19 +75,22 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       return;
     }
 
-    final filtered = devices
-        .where((d) => !d.name.toLowerCase().contains('disting'))
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final filtered =
+        devices.where((d) => !d.name.toLowerCase().contains('disting')).toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
-    _debugLog('Refreshed devices: ${filtered.length} found (${filtered.map((d) => d.name).join(', ')})');
+    _debugLog(
+      'Refreshed devices: ${filtered.length} found (${filtered.map((d) => d.name).join(', ')})',
+    );
 
     final currentState = state;
     if (currentState is Data) {
       // Check if the currently-connected device disappeared
       final selected = currentState.selectedDevice;
-      final deviceDisappeared = selected != null &&
-          !filtered.any((d) => d.name == selected.name);
+      final deviceDisappeared =
+          selected != null && !filtered.any((d) => d.name == selected.name);
 
       if (deviceDisappeared) {
         _debugLog('Device disappeared: ${selected.name}, disconnecting');
@@ -125,10 +127,14 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
     // Subscribe to the broadcast stream before connecting (stream already exists)
     final stream = _midiCommand.onMidiDataReceived;
-    _debugLog('onMidiDataReceived stream: ${stream == null ? "NULL" : "available"}');
+    _debugLog(
+      'onMidiDataReceived stream: ${stream == null ? "NULL" : "available"}',
+    );
     _midiSubscription = stream?.listen(
       (packet) {
-        _debugLog('RAW: ${packet.data.length} bytes from ${packet.device.name}');
+        _debugLog(
+          'RAW: ${packet.data.length} bytes from ${packet.device.name}',
+        );
         _handleMidiData(packet);
       },
       onError: (Object error, StackTrace stackTrace) {
@@ -196,7 +202,9 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
     final data = packet.data;
     if (data.isEmpty || data.length < 3) {
-      _debugLog('Short packet dropped: ${data.length} bytes from ${packet.device.name}');
+      _debugLog(
+        'Short packet dropped: ${data.length} bytes from ${packet.device.name}',
+      );
       return;
     }
 
@@ -210,8 +218,10 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       0x80 => 'NoteOff',
       _ => '0x${messageType.toRadixString(16).toUpperCase()}',
     };
-    _debugLog('Packet: status=0x${statusByte.toRadixString(16).toUpperCase()} '
-        'type=$typeLabel ch=$channel data=[${data.skip(1).map((b) => b.toString()).join(', ')}]');
+    _debugLog(
+      'Packet: status=0x${statusByte.toRadixString(16).toUpperCase()} '
+      'type=$typeLabel ch=$channel data=[${data.skip(1).map((b) => b.toString()).join(', ')}]',
+    );
 
     DetectionResult? result;
 
@@ -232,37 +242,46 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
     if (result != null) {
       _emitDetectionResult(result);
-    } else if (messageType == 0xB0 || messageType == 0x90 || messageType == 0x80) {
+    } else if (messageType == 0xB0 ||
+        messageType == 0x90 ||
+        messageType == 0x80) {
       _debugLog('Sub-threshold activity: $typeLabel ch=$channel');
       // Sub-threshold: emit state update with null detection (preserves activity indication)
       final currentState = state;
       if (currentState is Data) {
-        emit(currentState.copyWith(
-          lastDetectedType: null,
-          lastDetectedChannel: null,
-          lastDetectedCc: null,
-          lastDetectedNote: null,
-          lastDetectedTime: DateTime.timestamp(),
-        ));
+        emit(
+          currentState.copyWith(
+            lastDetectedType: null,
+            lastDetectedChannel: null,
+            lastDetectedCc: null,
+            lastDetectedNote: null,
+            lastDetectedTime: DateTime.timestamp(),
+          ),
+        );
       }
     }
   }
 
   void _emitDetectionResult(DetectionResult result) {
-    _debugLog('Detected: type=${result.type.name} ch=${result.channel} number=${result.number}');
+    _debugLog(
+      'Detected: type=${result.type.name} ch=${result.channel} number=${result.number}',
+    );
     final currentState = state;
     if (currentState is Data) {
-      final isCcType = result.type == MidiEventType.cc ||
+      final isCcType =
+          result.type == MidiEventType.cc ||
           result.type == MidiEventType.cc14BitLowFirst ||
           result.type == MidiEventType.cc14BitHighFirst;
 
-      emit(currentState.copyWith(
-        lastDetectedType: result.type,
-        lastDetectedChannel: result.channel,
-        lastDetectedCc: isCcType ? result.number : null,
-        lastDetectedNote: !isCcType ? result.number : null,
-        lastDetectedTime: DateTime.timestamp(),
-      ));
+      emit(
+        currentState.copyWith(
+          lastDetectedType: result.type,
+          lastDetectedChannel: result.channel,
+          lastDetectedCc: isCcType ? result.number : null,
+          lastDetectedNote: !isCcType ? result.number : null,
+          lastDetectedTime: DateTime.timestamp(),
+        ),
+      );
     }
   }
 

@@ -11,7 +11,12 @@ class RttStatsDialog extends StatefulWidget {
   final List<AlgorithmInfo>? algorithms;
   final Map<String, dynamic>? ccNotificationDiagnostics;
 
-  const RttStatsDialog({super.key, this.midiManager, this.algorithms, this.ccNotificationDiagnostics});
+  const RttStatsDialog({
+    super.key,
+    this.midiManager,
+    this.algorithms,
+    this.ccNotificationDiagnostics,
+  });
 
   @override
   State<RttStatsDialog> createState() => _RttStatsDialogState();
@@ -66,7 +71,9 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ExcludeSemantics(child: Icon(Icons.wifi_off, size: 64, color: Colors.grey)),
+            ExcludeSemantics(
+              child: Icon(Icons.wifi_off, size: 64, color: Colors.grey),
+            ),
             SizedBox(height: 16),
             Text(
               'No MIDI connection available.',
@@ -82,7 +89,9 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ExcludeSemantics(child: Icon(Icons.hourglass_empty, size: 64, color: Colors.grey)),
+            ExcludeSemantics(
+              child: Icon(Icons.hourglass_empty, size: 64, color: Colors.grey),
+            ),
             SizedBox(height: 16),
             Text(
               'No RTT data collected yet.',
@@ -141,7 +150,9 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
 
     // Helper to look up algorithm info by index
     AlgorithmInfo? getAlgorithmByIndex(int index) {
-      if (widget.algorithms == null || index < 0 || index >= widget.algorithms!.length) {
+      if (widget.algorithms == null ||
+          index < 0 ||
+          index >= widget.algorithms!.length) {
         return null;
       }
       return widget.algorithms![index];
@@ -237,7 +248,9 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
                   'CC Callback',
                   diag['ccCallbackRegistered'] == true ? 'Yes' : 'No',
                   Icons.link,
-                  diag['ccCallbackRegistered'] == true ? Colors.green : Colors.red,
+                  diag['ccCallbackRegistered'] == true
+                      ? Colors.green
+                      : Colors.red,
                 ),
                 if (widget.ccNotificationDiagnostics != null) ...[
                   _buildStatItem(
@@ -277,14 +290,14 @@ class _RttStatsDialogState extends State<RttStatsDialog> {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               Text(
                 value,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),

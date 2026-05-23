@@ -93,26 +93,22 @@ void main() {
     group('firmware-aware formatting (1.15+)', () {
       test('buses 29-30 are aux on extended firmware', () {
         expect(
-          BusLabelFormatter.formatBusNumber(29,
-              hasExtendedAuxBuses: true),
+          BusLabelFormatter.formatBusNumber(29, hasExtendedAuxBuses: true),
           'A9',
         );
         expect(
-          BusLabelFormatter.formatBusNumber(30,
-              hasExtendedAuxBuses: true),
+          BusLabelFormatter.formatBusNumber(30, hasExtendedAuxBuses: true),
           'A10',
         );
       });
 
       test('buses 65-66 are ES-5 on extended firmware', () {
         expect(
-          BusLabelFormatter.formatBusNumber(65,
-              hasExtendedAuxBuses: true),
+          BusLabelFormatter.formatBusNumber(65, hasExtendedAuxBuses: true),
           'ES-5 L',
         );
         expect(
-          BusLabelFormatter.formatBusNumber(66,
-              hasExtendedAuxBuses: true),
+          BusLabelFormatter.formatBusNumber(66, hasExtendedAuxBuses: true),
           'ES-5 R',
         );
       });
@@ -128,25 +124,27 @@ void main() {
         );
       });
 
-      test('getLocalBusNumber returns 9-10 for buses 29-30 on extended firmware',
-          () {
-        expect(
-          BusLabelFormatter.getLocalBusNumber(29,
-              hasExtendedAuxBuses: true),
-          9,
-        );
-        expect(
-          BusLabelFormatter.getLocalBusNumber(30,
-              hasExtendedAuxBuses: true),
-          10,
-        );
-      });
+      test(
+        'getLocalBusNumber returns 9-10 for buses 29-30 on extended firmware',
+        () {
+          expect(
+            BusLabelFormatter.getLocalBusNumber(29, hasExtendedAuxBuses: true),
+            9,
+          );
+          expect(
+            BusLabelFormatter.getLocalBusNumber(30, hasExtendedAuxBuses: true),
+            10,
+          );
+        },
+      );
 
       test('all 44 aux buses labeled A1-A44 on extended firmware', () {
         // Buses 21-64, all aux (no ES-5 gap at 29-30)
         for (int b = 21; b <= 64; b++) {
-          final label = BusLabelFormatter.formatBusNumber(b,
-              hasExtendedAuxBuses: true);
+          final label = BusLabelFormatter.formatBusNumber(
+            b,
+            hasExtendedAuxBuses: true,
+          );
           expect(label, startsWith('A'), reason: 'Bus $b should be aux');
         }
         expect(

@@ -13,8 +13,7 @@ class ConsolidateBusesDialog extends StatefulWidget {
   });
 
   @override
-  State<ConsolidateBusesDialog> createState() =>
-      _ConsolidateBusesDialogState();
+  State<ConsolidateBusesDialog> createState() => _ConsolidateBusesDialogState();
 }
 
 class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
@@ -29,8 +28,9 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
   @override
   void initState() {
     super.initState();
-    _enabledMerges =
-        Set<int>.from(List.generate(widget.plan.merges.length, (i) => i));
+    _enabledMerges = Set<int>.from(
+      List.generate(widget.plan.merges.length, (i) => i),
+    );
   }
 
   bool get _hasEnabledMerges => _enabledMerges.isNotEmpty;
@@ -121,8 +121,11 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.check_circle,
-                        color: Colors.green, size: 18),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Optimization complete',
@@ -159,7 +162,10 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
   }
 
   Widget _buildMergeSection(
-      int mergeIndex, ColorScheme colorScheme, TextTheme textTheme) {
+    int mergeIndex,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
     final merge = widget.plan.merges[mergeIndex];
     final enabled = _enabledMerges.contains(mergeIndex);
     final keepLocal = BusSpec.toLocalNumber(merge.keepBus) ?? merge.keepBus;
@@ -172,12 +178,12 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
           InkWell(
             onTap: canToggle
                 ? () => setState(() {
-                      if (enabled) {
-                        _enabledMerges.remove(mergeIndex);
-                      } else {
-                        _enabledMerges.add(mergeIndex);
-                      }
-                    })
+                    if (enabled) {
+                      _enabledMerges.remove(mergeIndex);
+                    } else {
+                      _enabledMerges.add(mergeIndex);
+                    }
+                  })
                 : null,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -209,8 +215,7 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
         if (enabled) ...[
           for (int r = 0; r < merge.replaceModeSteps.length; r++)
             _buildStepRow(
-              done:
-                  _replaceModesDone[mergeIndex]?.contains(r) ?? false,
+              done: _replaceModesDone[mergeIndex]?.contains(r) ?? false,
               label:
                   'Set ${merge.replaceModeSteps[r].algorithmName} to Replace on AUX $keepLocal',
               colorScheme: colorScheme,
@@ -218,8 +223,7 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
           for (int i = 0; i < merge.steps.length; i++)
             _buildStepRow(
               done: _completedSteps[mergeIndex]?.contains(i) ?? false,
-              label:
-                  'Move ${merge.steps[i].algorithmName} to AUX $keepLocal',
+              label: 'Move ${merge.steps[i].algorithmName} to AUX $keepLocal',
               colorScheme: colorScheme,
             ),
         ],
@@ -240,8 +244,11 @@ class _ConsolidateBusesDialogState extends State<ConsolidateBusesDialog> {
         children: [
           done
               ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
-              : Icon(Icons.circle_outlined,
-                  color: colorScheme.onSurfaceVariant, size: 20),
+              : Icon(
+                  Icons.circle_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
           const SizedBox(width: 12),
           Expanded(child: Text(label)),
         ],

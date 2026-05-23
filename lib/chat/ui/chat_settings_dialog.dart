@@ -24,33 +24,32 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   bool get _isOpenAI => _provider == LlmProviderType.openai;
 
   /// The effective provider type, factoring in the subscription toggle.
-  LlmProviderType get _effectiveProvider =>
-      !_isOpenAI && _useSubscription
-          ? LlmProviderType.anthropicSubscription
-          : _provider;
+  LlmProviderType get _effectiveProvider => !_isOpenAI && _useSubscription
+      ? LlmProviderType.anthropicSubscription
+      : _provider;
 
   @override
   void initState() {
     super.initState();
     final savedProvider = _settings.chatLlmProvider;
-    _useSubscription =
-        savedProvider == LlmProviderType.anthropicSubscription;
+    _useSubscription = savedProvider == LlmProviderType.anthropicSubscription;
     // Collapse subscription back to the anthropic tab
     _provider = savedProvider == LlmProviderType.anthropicSubscription
         ? LlmProviderType.anthropic
         : savedProvider;
-    _anthropicKeyController =
-        TextEditingController(text: _settings.anthropicApiKey);
-    _openaiKeyController =
-        TextEditingController(text: _settings.openaiApiKey);
-    _anthropicModelController =
-        TextEditingController(text: _settings.anthropicModel);
-    _openaiModelController =
-        TextEditingController(text: _settings.openaiModel);
-    _openaiBaseUrlController =
-        TextEditingController(text: _settings.openaiBaseUrl);
-    _showAdvanced = _settings.openaiBaseUrl != null &&
-        _settings.openaiBaseUrl!.isNotEmpty;
+    _anthropicKeyController = TextEditingController(
+      text: _settings.anthropicApiKey,
+    );
+    _openaiKeyController = TextEditingController(text: _settings.openaiApiKey);
+    _anthropicModelController = TextEditingController(
+      text: _settings.anthropicModel,
+    );
+    _openaiModelController = TextEditingController(text: _settings.openaiModel);
+    _openaiBaseUrlController = TextEditingController(
+      text: _settings.openaiBaseUrl,
+    );
+    _showAdvanced =
+        _settings.openaiBaseUrl != null && _settings.openaiBaseUrl!.isNotEmpty;
   }
 
   @override
@@ -70,7 +69,8 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
     await _settings.setAnthropicModel(_anthropicModelController.text.trim());
     await _settings.setOpenaiModel(_openaiModelController.text.trim());
     await _settings.setOpenaiBaseUrl(
-        _showAdvanced ? _openaiBaseUrlController.text.trim() : '');
+      _showAdvanced ? _openaiBaseUrlController.text.trim() : '',
+    );
     if (mounted) Navigator.of(context).pop(true);
   }
 
@@ -78,10 +78,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      title: Semantics(
-        header: true,
-        child: const Text('Chat Settings'),
-      ),
+      title: Semantics(header: true, child: const Text('Chat Settings')),
       content: SizedBox(
         width: 400,
         height: 420,
@@ -104,8 +101,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                   ),
                 ],
                 selected: {_provider},
-                onSelectionChanged: (s) =>
-                    setState(() => _provider = s.first),
+                onSelectionChanged: (s) => setState(() => _provider = s.first),
               ),
               if (!_isOpenAI) ...[
                 const SizedBox(height: 12),
@@ -128,9 +124,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
               ],
               const SizedBox(height: 16),
               Text(
-                _useSubscription && !_isOpenAI
-                    ? 'OAuth Token'
-                    : 'API Key',
+                _useSubscription && !_isOpenAI ? 'OAuth Token' : 'API Key',
                 style: theme.textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
@@ -145,8 +139,8 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                     hintText: _isOpenAI
                         ? 'sk-...'
                         : _useSubscription
-                            ? 'sk-ant-oat...'
-                            : 'sk-ant-...',
+                        ? 'sk-ant-oat...'
+                        : 'sk-ant-...',
                     isDense: true,
                   ),
                   obscureText: true,
@@ -172,7 +166,8 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const TextSpan(
-                            text: '1. Install Claude Code (npm install -g @anthropic-ai/claude-code)\n'
+                            text:
+                                '1. Install Claude Code (npm install -g @anthropic-ai/claude-code)\n'
                                 '2. Run: claude setup-key\n'
                                 '3. Copy the token (starts with sk-ant-oat)\n'
                                 '4. Paste it here',
@@ -213,9 +208,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                   child: Row(
                     children: [
                       Icon(
-                        _showAdvanced
-                            ? Icons.expand_less
-                            : Icons.expand_more,
+                        _showAdvanced ? Icons.expand_less : Icons.expand_more,
                         size: 20,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -238,8 +231,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
                       controller: _openaiBaseUrlController,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText:
-                            'https://api.openai.com/v1/chat/completions',
+                        hintText: 'https://api.openai.com/v1/chat/completions',
                         isDense: true,
                       ),
                       keyboardType: TextInputType.url,
@@ -270,10 +262,7 @@ class _ChatSettingsDialogState extends State<ChatSettingsDialog> {
           onPressed: () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _save,
-          child: const Text('Save'),
-        ),
+        FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }
