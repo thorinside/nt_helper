@@ -117,3 +117,4 @@ See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for details.
 - Zero tolerance for `flutter analyze` errors
 - Never add debug logging unless explicitly asked
 - Do not restart the app if already running — disrupts MCP/debugger connections
+- Prefer snackbars for exceptions, failures, or invalid actions; avoid success snackbars unless explicitly requested.
