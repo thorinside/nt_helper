@@ -125,6 +125,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   bool _isAddAlgorithmOpen = false;
   bool _isBrowsePresetsOpen = false;
   bool _isShortcutHelpOpen = false;
+  bool _isTemplateManagerOpen = false;
   bool _showChatPanel = false;
   bool _chatFocusRequested = false;
   double _chatPanelWidth = 360;
@@ -527,6 +528,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             }
           },
           onShowShortcutHelp: () => _handleShowShortcutHelp(),
+          onOpenTemplateManager: () => _handleOpenTemplateManagerShortcut(),
           onSwitchToParameters: () {
             setState(() => _currentMode = EditMode.parameters);
             SemanticsService.sendAnnouncement(
@@ -1249,14 +1251,14 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     return !_platformService.isMobilePlatform() && width >= 1008;
   }
 
-  void _openTemplateManager(BuildContext context) {
+  Future<void> _openTemplateManager(BuildContext context) {
     final distingCubit = context.read<DistingCubit>();
     final metadataCubit = MetadataSyncCubit(
       distingCubit.database,
       distingCubit,
     );
 
-    Navigator.push(
+    return Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => TemplateManagerScreen(
@@ -1278,6 +1280,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         ),
       ),
     ).whenComplete(metadataCubit.close);
+  }
+
+  Future<void> _handleOpenTemplateManagerShortcut() async {
+    if (_isTemplateManagerOpen) return;
+    _isTemplateManagerOpen = true;
+    try {
+      await _openTemplateManager(context);
+    } finally {
+      _isTemplateManagerOpen = false;
+    }
   }
 
   BottomAppBar _buildBottomAppBar() {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -86,6 +88,10 @@ void main() {
 
       // Should find exactly one ShortcutHelpOverlay dialog
       expect(find.byType(ShortcutHelpOverlay), findsOneWidget);
+      expect(
+        find.text('${Platform.isMacOS ? 'Cmd' : 'Ctrl'}+T'),
+        findsOneWidget,
+      );
     });
 
     testWidgets(

@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -172,7 +172,7 @@ void main() {
       expect(find.byTooltip('Plugin Manager'), findsOneWidget);
     });
 
-    testWidgets('Template Manager shortcut pushes TemplateManagerScreen', (
+    testWidgets('Template Manager button pushes TemplateManagerScreen', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -180,6 +180,20 @@ void main() {
       );
 
       await tester.tap(find.byTooltip('Template Manager'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TemplateManagerScreen), findsOneWidget);
+      expect(find.text('Template Manager'), findsOneWidget);
+    });
+
+    testWidgets('Mod+T pushes TemplateManagerScreen', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(isMobile: false, isOffline: false),
+      );
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyT);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
       await tester.pumpAndSettle();
 
       expect(find.byType(TemplateManagerScreen), findsOneWidget);

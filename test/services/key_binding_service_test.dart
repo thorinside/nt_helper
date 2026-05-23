@@ -66,6 +66,29 @@ void main() {
       );
     });
 
+    test('provides global shortcut for template manager', () {
+      final service = KeyBindingService(
+        platformInteractionService: _TestPlatformInteractionService(
+          TargetPlatform.macOS,
+        ),
+        hardwareKeyboard: hardwareAdapter,
+      );
+
+      final shortcuts = service.globalShortcuts;
+
+      expect(
+        shortcuts[const SingleActivator(LogicalKeyboardKey.keyT, meta: true)],
+        isA<OpenTemplateManagerIntent>(),
+      );
+      expect(
+        shortcuts[const SingleActivator(
+          LogicalKeyboardKey.keyT,
+          control: true,
+        )],
+        isA<OpenTemplateManagerIntent>(),
+      );
+    });
+
     testWidgets('builds actions that invoke provided callbacks', (
       tester,
     ) async {
@@ -112,6 +135,58 @@ void main() {
       expect(zoomInCount, 1);
       expect(zoomOutCount, 1);
       expect(resetCount, 1);
+    });
+
+    testWidgets('builds global action for template manager callback', (
+      tester,
+    ) async {
+      int openTemplateManagerCount = 0;
+
+      final service = KeyBindingService(
+        platformInteractionService: _TestPlatformInteractionService(
+          TargetPlatform.windows,
+        ),
+        hardwareKeyboard: hardwareAdapter,
+      );
+
+      final actions = service.buildGlobalActions(
+        onSavePreset: () {},
+        onNewPreset: () {},
+        onBrowsePresets: () {},
+        onAddAlgorithm: () {},
+        onRefresh: () {},
+        onShowShortcutHelp: () {},
+        onSwitchToParameters: () {},
+        onSwitchToRouting: () {},
+        onSwitchToBoth: () {},
+        onPreviousSlot: () {},
+        onNextSlot: () {},
+        onToggleChat: () {},
+        onOpenTemplateManager: () => openTemplateManagerCount++,
+      );
+
+      late BuildContext capturedContext;
+
+      await tester.pumpWidget(
+        WidgetsApp(
+          color: const Color(0xFF000000),
+          builder: (context, child) {
+            return Actions(
+              actions: actions,
+              child: Builder(
+                builder: (innerContext) {
+                  capturedContext = innerContext;
+                  return const SizedBox.shrink();
+                },
+              ),
+            );
+          },
+        ),
+      );
+
+      Actions.invoke(capturedContext, const OpenTemplateManagerIntent());
+
+      expect(openTemplateManagerCount, 1);
     });
 
     test('reports zoom modifier state correctly on macOS', () {

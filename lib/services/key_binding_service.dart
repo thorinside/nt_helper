@@ -66,6 +66,10 @@ class ToggleChatIntent extends Intent {
   const ToggleChatIntent();
 }
 
+class OpenTemplateManagerIntent extends Intent {
+  const OpenTemplateManagerIntent();
+}
+
 /// Abstracts access to the hardware keyboard to facilitate testing and
 /// deterministic modifier checks.
 abstract class HardwareKeyboardAdapter {
@@ -211,6 +215,12 @@ class KeyBindingService {
         const ToggleChatIntent(),
     const SingleActivator(LogicalKeyboardKey.keyL, meta: true):
         const ToggleChatIntent(),
+
+    // Open Template Manager: Mod+T
+    const SingleActivator(LogicalKeyboardKey.keyT, control: true):
+        const OpenTemplateManagerIntent(),
+    const SingleActivator(LogicalKeyboardKey.keyT, meta: true):
+        const OpenTemplateManagerIntent(),
   };
 
   /// Creates the actions map for zoom in/out/reset callbacks.
@@ -255,6 +265,7 @@ class KeyBindingService {
     required VoidCallback onPreviousSlot,
     required VoidCallback onNextSlot,
     required VoidCallback onToggleChat,
+    required VoidCallback onOpenTemplateManager,
   }) {
     return {
       SavePresetIntent: CallbackAction<SavePresetIntent>(
@@ -326,6 +337,12 @@ class KeyBindingService {
       ToggleChatIntent: CallbackAction<ToggleChatIntent>(
         onInvoke: (_) {
           onToggleChat();
+          return null;
+        },
+      ),
+      OpenTemplateManagerIntent: CallbackAction<OpenTemplateManagerIntent>(
+        onInvoke: (_) {
+          onOpenTemplateManager();
           return null;
         },
       ),
