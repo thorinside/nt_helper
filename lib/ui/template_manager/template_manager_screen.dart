@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/semantics.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/models/template_metadata.dart';
@@ -73,6 +74,15 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
     });
   }
 
+  void _announce(String message) {
+    if (!mounted) return;
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
   bool get _supportsDrop {
     return !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.macOS ||
@@ -106,7 +116,10 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
     if (path == null) return;
 
     final jsonText = TemplateShareService(_database).encodeTemplate(template);
+    _announce('Exporting ${template.preset.name} template.');
     await File(path).writeAsString(jsonText);
+    if (!mounted) return;
+    _announce('Exported ${template.preset.name} template.');
   }
 
   Future<void> _importDroppedFiles(List<XFile> files) async {
@@ -114,6 +127,7 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
         .where((file) => file.path.toLowerCase().endsWith('.json'))
         .toList(growable: false);
     if (jsonFiles.isEmpty) {
+      _announce('No template JSON file found in drop.');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Drop a Template Manager JSON file.')),
       );
@@ -128,13 +142,19 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
   Future<void> _importTemplateJson(String jsonText) async {
     if (_isImporting) return;
     setState(() => _isImporting = true);
+    _announce('Importing template JSON.');
     try {
       final service = TemplateShareService(_database);
-      await service.importTemplate(jsonText);
+      final presetId = await service.importTemplate(jsonText);
+      final imported = await _database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
       if (!mounted) return;
       _refresh();
+      _announce('Imported ${imported?.preset.name ?? 'template'}.');
     } catch (error) {
       if (!mounted) return;
+      _announce('Template import failed.');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Template import failed: $error')));
@@ -204,6 +224,9 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
       _selected = template;
       _selectedSlots = _allSlotIndices(template);
     });
+    _announce(
+      '${template.preset.name} selected. ${template.slots.length} slots selected.',
+    );
   }
 
   Future<void> _applySelected(BuildContext context) async {
@@ -224,17 +247,22 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
 
     final applyRun = ++_applyRun;
     setState(() => _isApplying = true);
+    _announce(
+      'Applying ${selected.length} selected ${selected.length == 1 ? 'slot' : 'slots'} from ${template.preset.name}.',
+    );
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     try {
       await applyDevice(template, selected);
       if (!mounted || applyRun != _applyRun) return;
       setState(() => _isApplying = false);
+      _announce('Applied template slots.');
       if (navigator.canPop()) {
         navigator.pop();
       }
     } catch (error) {
       if (!mounted || applyRun != _applyRun) return;
+      _announce('Template apply failed.');
       messenger.showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted && applyRun == _applyRun) {
@@ -248,6 +276,7 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
     _applyRun++;
     widget.onCancelDeviceApply?.call();
     setState(() => _isApplying = false);
+    _announce('Template apply cancelled.');
   }
 
   Future<void> _createFromCurrentPreset() async {
@@ -275,11 +304,11 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Template Manager'),
+        title: Semantics(header: true, child: Text('Template Manager')),
         actions: [
           IconButton(
             tooltip: 'Refresh templates',
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, semanticLabel: 'Refresh templates'),
             onPressed: _isImporting ? null : _refresh,
           ),
         ],
@@ -303,18 +332,27 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('No templates found.'),
+                    Semantics(
+                      liveRegion: true,
+                      child: Text('No templates found.'),
+                    ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       children: [
                         FilledButton.icon(
-                          icon: const Icon(Icons.file_open_outlined),
+                          icon: const Icon(
+                            Icons.file_open_outlined,
+                            semanticLabel: 'Import template from file',
+                          ),
                           label: const Text('Import from file'),
                           onPressed: _loadTemplateFromFile,
                         ),
                         FilledButton.icon(
-                          icon: const Icon(Icons.add),
+                          icon: const Icon(
+                            Icons.add,
+                            semanticLabel: 'New from current preset',
+                          ),
                           label: const Text('New from current preset'),
                           onPressed: widget.loadCurrentPresetSource == null
                               ? null
@@ -392,34 +430,50 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
         child,
         if (_isDragOver)
           Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withAlpha(32),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 3,
-                ),
-              ),
-              child: Center(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Drop template JSON to import',
-                      style: Theme.of(context).textTheme.titleMedium,
+            child: Semantics(
+              liveRegion: true,
+              label: 'Drop target active. Drop template JSON to import.',
+              child: ExcludeSemantics(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withAlpha(32),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 3,
+                    ),
+                  ),
+                  child: Center(
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Drop template JSON to import',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        if (_isImporting) const Center(child: CircularProgressIndicator()),
+        if (_isImporting)
+          Center(
+            child: Semantics(
+              liveRegion: true,
+              label: 'Importing template JSON',
+              child: ExcludeSemantics(child: CircularProgressIndicator()),
+            ),
+          ),
       ],
     );
 
     if (!_supportsDrop) return content;
     return DropTarget(
-      onDragEntered: (_) => setState(() => _isDragOver = true),
+      onDragEntered: (_) {
+        setState(() => _isDragOver = true);
+        _announce('Drop target active. Drop template JSON to import.');
+      },
       onDragExited: (_) => setState(() => _isDragOver = false),
       onDragDone: (details) => _importDroppedFiles(details.files),
       child: content,
@@ -468,72 +522,100 @@ class _TemplateManagerList extends StatelessWidget {
     }
     final categories = grouped.keys.toList()..sort();
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              IconButton(
-                tooltip: 'New from current preset',
-                icon: const Icon(Icons.add),
-                onPressed: canCreateFromCurrentPreset
-                    ? onCreateFromCurrentPreset
-                    : null,
-              ),
-              IconButton(
-                tooltip: 'Import template from file',
-                icon: const Icon(Icons.file_open_outlined),
-                onPressed: canImportExport ? onImportTemplate : null,
-              ),
-              IconButton(
-                tooltip: 'Export selected template',
-                icon: const Icon(Icons.file_download_outlined),
-                onPressed: canImportExport ? onExportSelected : null,
-              ),
-              IconButton(
-                tooltip: 'Edit metadata',
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: canModifySelected ? onEditSelected : null,
-              ),
-              IconButton(
-                tooltip: 'Delete template',
-                icon: const Icon(Icons.delete_outline),
-                onPressed: canModifySelected ? onDeleteSelected : null,
-              ),
-              const Spacer(),
-              Text(
-                '${templates.length}',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: ListView(
-            children: [
-              for (final category in categories) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+    return Semantics(
+      container: true,
+      label:
+          'Template list, ${templates.length} ${templates.length == 1 ? 'template' : 'templates'}',
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: 'New from current preset',
+                  icon: const Icon(
+                    Icons.add,
+                    semanticLabel: 'New from current preset',
+                  ),
+                  onPressed: canCreateFromCurrentPreset
+                      ? onCreateFromCurrentPreset
+                      : null,
+                ),
+                IconButton(
+                  tooltip: 'Import template from file',
+                  icon: const Icon(
+                    Icons.file_open_outlined,
+                    semanticLabel: 'Import template from file',
+                  ),
+                  onPressed: canImportExport ? onImportTemplate : null,
+                ),
+                IconButton(
+                  tooltip: 'Export selected template',
+                  icon: const Icon(
+                    Icons.file_download_outlined,
+                    semanticLabel: 'Export selected template',
+                  ),
+                  onPressed: canImportExport ? onExportSelected : null,
+                ),
+                IconButton(
+                  tooltip: 'Edit metadata',
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    semanticLabel: 'Edit selected template metadata',
+                  ),
+                  onPressed: canModifySelected ? onEditSelected : null,
+                ),
+                IconButton(
+                  tooltip: 'Delete template',
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    semanticLabel: 'Delete selected template',
+                  ),
+                  onPressed: canModifySelected ? onDeleteSelected : null,
+                ),
+                const Spacer(),
+                Semantics(
+                  liveRegion: true,
+                  label: '${templates.length} templates',
                   child: Text(
-                    category,
-                    style: Theme.of(context).textTheme.titleSmall,
+                    '${templates.length}',
+                    style: Theme.of(context).textTheme.labelLarge,
                   ),
                 ),
-                for (final template
-                    in grouped[category]!
-                      ..sort((a, b) => a.preset.name.compareTo(b.preset.name)))
-                  _TemplateListTile(
-                    template: template,
-                    selected: template.preset.id == selectedId,
-                    onTap: () => onSelected(template),
-                  ),
               ],
-            ],
+            ),
           ),
-        ),
-      ],
+          const Divider(height: 1),
+          Expanded(
+            child: ListView(
+              children: [
+                for (final category in categories) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        category,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                  ),
+                  for (final template
+                      in grouped[category]!..sort(
+                        (a, b) => a.preset.name.compareTo(b.preset.name),
+                      ))
+                    _TemplateListTile(
+                      template: template,
+                      selected: template.preset.id == selectedId,
+                      onTap: () => onSelected(template),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -555,16 +637,35 @@ class _TemplateListTile extends StatelessWidget {
       template.preset.templateMetadata,
     );
     final firstTag = metadata.tags.isEmpty ? null : metadata.tags.first;
+    final semanticParts = <String>[
+      template.preset.name,
+      '${template.slots.length} ${template.slots.length == 1 ? 'slot' : 'slots'}',
+      if ((template.preset.category ?? '').isNotEmpty)
+        'category ${template.preset.category}',
+      if (firstTag != null) 'tag $firstTag',
+      if (selected) 'selected',
+    ];
 
-    return ListTile(
+    return Semantics(
+      button: true,
       selected: selected,
-      leading: const Icon(Icons.star_outline),
-      title: Text(template.preset.name),
-      subtitle: Text('${template.slots.length} slots'),
-      trailing: firstTag == null
-          ? null
-          : Chip(label: Text(firstTag), visualDensity: VisualDensity.compact),
+      label: semanticParts.join(', '),
       onTap: onTap,
+      child: ExcludeSemantics(
+        child: ListTile(
+          selected: selected,
+          leading: const Icon(Icons.star_outline),
+          title: Text(template.preset.name),
+          subtitle: Text('${template.slots.length} slots'),
+          trailing: firstTag == null
+              ? null
+              : Chip(
+                  label: Text(firstTag),
+                  visualDensity: VisualDensity.compact,
+                ),
+          onTap: onTap,
+        ),
+      ),
     );
   }
 }
@@ -678,7 +779,7 @@ class _EditTemplateMetadataDialogState
     final canSave = _nameController.text.trim().isNotEmpty && !_saving;
 
     return AlertDialog(
-      title: const Text('Edit template metadata'),
+      title: Semantics(header: true, child: Text('Edit template metadata')),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
@@ -714,10 +815,13 @@ class _EditTemplateMetadataDialogState
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ),
                 ),
@@ -732,11 +836,20 @@ class _EditTemplateMetadataDialogState
         ),
         FilledButton.icon(
           icon: _saving
-              ? const SizedBox.square(
+              ? SizedBox.square(
                   dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: Semantics(
+                    liveRegion: true,
+                    label: 'Saving template metadata',
+                    child: ExcludeSemantics(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
                 )
-              : const Icon(Icons.save_outlined),
+              : const Icon(
+                  Icons.save_outlined,
+                  semanticLabel: 'Save template metadata',
+                ),
           label: const Text('Save'),
           onPressed: canSave ? _save : null,
         ),
@@ -770,6 +883,7 @@ class _TemplateManagerDetail extends StatelessWidget {
       template.preset.templateMetadata,
     );
     final tags = metadata.tags.join(', ');
+    final selectedCount = selectedSlots.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -781,9 +895,14 @@ class _TemplateManagerDetail extends StatelessWidget {
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(
-                template.preset.name,
-                style: Theme.of(context).textTheme.headlineSmall,
+              Semantics(
+                header: true,
+                label:
+                    '${template.preset.name}, template details, ${template.slots.length} ${template.slots.length == 1 ? 'slot' : 'slots'}',
+                child: Text(
+                  template.preset.name,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
               ),
               if ((template.preset.category ?? '').isNotEmpty)
                 Text('Category: ${template.preset.category!}'),
@@ -792,7 +911,9 @@ class _TemplateManagerDetail extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.person_outline, size: 18),
+                    const ExcludeSemantics(
+                      child: Icon(Icons.person_outline, size: 18),
+                    ),
                     const SizedBox(width: 6),
                     Text(metadata.author!),
                   ],
@@ -820,9 +941,12 @@ class _TemplateManagerDetail extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (isApplying && appliesToDevice) ...[
-                Text(
-                  'Applying ${selectedSlots.length} selected',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    'Applying $selectedCount selected',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 TextButton(
@@ -833,11 +957,20 @@ class _TemplateManagerDetail extends StatelessWidget {
               ],
               FilledButton.icon(
                 icon: isApplying
-                    ? const SizedBox.square(
+                    ? SizedBox.square(
                         dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: Semantics(
+                          liveRegion: true,
+                          label: 'Applying selected template slots',
+                          child: ExcludeSemantics(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
                       )
-                    : const Icon(Icons.playlist_add),
+                    : const Icon(
+                        Icons.playlist_add,
+                        semanticLabel: 'Apply selected template slots',
+                      ),
                 label: const Text('Apply selected'),
                 onPressed: selectedSlots.isEmpty || isApplying
                     ? null

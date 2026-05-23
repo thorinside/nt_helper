@@ -73,104 +73,119 @@ class _TemplateSlotSelectionListState extends State<TemplateSlotSelectionList> {
     final visibleSelected = visible.every(widget.selectedIndices.contains);
     final toggleSelectsAll = visible.isEmpty || !visibleSelected;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: TextField(
-            controller: _searchController,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              labelText: 'Search slots',
-              border: OutlineInputBorder(),
-              isDense: true,
+    return Semantics(
+      container: true,
+      label:
+          'Template slot selection list for ${widget.template.preset.name}. ${widget.template.slots.length} ${widget.template.slots.length == 1 ? 'slot' : 'slots'}.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                labelText: 'Search slots',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '$selectedCount selected + ${widget.currentTargetSlotCount} current = $total / ${widget.maxSlots}',
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: overLimit
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.onSurfaceVariant,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Semantics(
+                    liveRegion: true,
+                    label:
+                        '$selectedCount selected, ${widget.currentTargetSlotCount} current slots, $total of ${widget.maxSlots} maximum slots${overLimit ? ', over the slot limit' : ''}',
+                    child: Text(
+                      '$selectedCount selected + ${widget.currentTargetSlotCount} current = $total / ${widget.maxSlots}',
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: overLimit
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                tooltip: toggleSelectsAll
-                    ? 'Select all visible slots'
-                    : 'Clear visible slot selection',
-                icon: Icon(
-                  toggleSelectsAll ? Icons.select_all : Icons.deselect,
+                IconButton(
+                  tooltip: toggleSelectsAll
+                      ? 'Select all visible slots'
+                      : 'Clear visible slot selection',
+                  icon: Icon(
+                    toggleSelectsAll ? Icons.select_all : Icons.deselect,
+                  ),
+                  onPressed: visible.isEmpty
+                      ? null
+                      : () {
+                          final next = {...widget.selectedIndices};
+                          if (toggleSelectsAll) {
+                            next.addAll(visible);
+                          } else {
+                            next.removeAll(visible);
+                          }
+                          _setSelected(next);
+                        },
                 ),
-                onPressed: visible.isEmpty
-                    ? null
-                    : () {
-                        final next = {...widget.selectedIndices};
-                        if (toggleSelectsAll) {
-                          next.addAll(visible);
-                        } else {
-                          next.removeAll(visible);
-                        }
-                        _setSelected(next);
-                      },
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: visible.isEmpty
-              ? const Center(child: Text('No slots match'))
-              : ListView.builder(
-                  itemCount: visible.length,
-                  itemBuilder: (context, rowIndex) {
-                    final templateIndex = visible[rowIndex];
-                    final slot = widget.template.slots[templateIndex];
-                    final checked = widget.selectedIndices.contains(
-                      templateIndex,
-                    );
-                    final subtitleParts = <String>[
-                      'Slot ${slot.slot.slotIndex}',
-                      '${slot.parameterValues.length} params',
-                      '${slot.mappings.length} mappings',
-                    ];
-                    final customName = slot.slot.customName;
-                    if (customName != null && customName.isNotEmpty) {
-                      subtitleParts.insert(1, customName);
-                    }
+          const Divider(height: 1),
+          Expanded(
+            child: visible.isEmpty
+                ? Center(
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text('No slots match'),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: visible.length,
+                    itemBuilder: (context, rowIndex) {
+                      final templateIndex = visible[rowIndex];
+                      final slot = widget.template.slots[templateIndex];
+                      final checked = widget.selectedIndices.contains(
+                        templateIndex,
+                      );
+                      final subtitleParts = <String>[
+                        'Slot ${slot.slot.slotIndex}',
+                        '${slot.parameterValues.length} params',
+                        '${slot.mappings.length} mappings',
+                      ];
+                      final customName = slot.slot.customName;
+                      if (customName != null && customName.isNotEmpty) {
+                        subtitleParts.insert(1, customName);
+                      }
 
-                    return CheckboxListTile(
-                      key: ValueKey('template-slot-$templateIndex'),
-                      value: checked,
-                      onChanged: (value) {
-                        final next = {...widget.selectedIndices};
-                        if (value == true) {
-                          next.add(templateIndex);
-                        } else {
-                          next.remove(templateIndex);
-                        }
-                        _setSelected(next);
-                      },
-                      title: Text(slot.algorithm.name),
-                      subtitle: Text(subtitleParts.join(' · ')),
-                      secondary: Text(
-                        '${slot.slot.slotIndex}',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    );
-                  },
-                ),
-        ),
-      ],
+                      return CheckboxListTile(
+                        key: ValueKey('template-slot-$templateIndex'),
+                        value: checked,
+                        onChanged: (value) {
+                          final next = {...widget.selectedIndices};
+                          if (value == true) {
+                            next.add(templateIndex);
+                          } else {
+                            next.remove(templateIndex);
+                          }
+                          _setSelected(next);
+                        },
+                        title: Text(slot.algorithm.name),
+                        subtitle: Text(subtitleParts.join(' · ')),
+                        secondary: Text(
+                          '${slot.slot.slotIndex}',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

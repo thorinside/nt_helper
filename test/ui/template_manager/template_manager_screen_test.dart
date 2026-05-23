@@ -125,6 +125,36 @@ void main() {
     expect(find.textContaining('2 selected from Space Kit'), findsOneWidget);
   });
 
+  testWidgets('exposes template manager actions and state to semantics', (
+    tester,
+  ) async {
+    final semanticsHandle = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(home: TemplateManagerScreen(database: db)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel(RegExp(r'Template list, 2 templates')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        RegExp(r'Space Kit, 2 slots, category Ambience, tag wide, selected'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(r'2 selected, 0 current slots, 2 of 32')),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Import template from file'), findsWidgets);
+    expect(find.bySemanticsLabel('Export selected template'), findsWidgets);
+
+    semanticsHandle.dispose();
+  });
+
   testWidgets('edits selected template metadata', (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: TemplateManagerScreen(database: db)),

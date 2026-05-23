@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/semantics.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -59,6 +60,15 @@ class _CreateTemplateFromPresetDialogState
 
   AppDatabase get _database => widget.database ?? context.read<AppDatabase>();
 
+  void _announce(String message) {
+    if (!mounted) return;
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +102,7 @@ class _CreateTemplateFromPresetDialogState
       _creating = true;
       _error = null;
     });
+    _announce('Creating template from selected preset slots.');
 
     try {
       final metadata = TemplateMetadata(
@@ -156,6 +167,7 @@ class _CreateTemplateFromPresetDialogState
       );
 
       if (!mounted) return;
+      _announce('Created $name template.');
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       } else {
@@ -167,6 +179,7 @@ class _CreateTemplateFromPresetDialogState
         _creating = false;
         _error = error.toString();
       });
+      _announce('Create template failed.');
     }
   }
 
@@ -184,11 +197,13 @@ class _CreateTemplateFromPresetDialogState
       _loadingFromFile = true;
       _error = null;
     });
+    _announce('Importing template JSON.');
     try {
       await TemplateShareService(
         _database,
       ).importTemplate(await File(path).readAsString());
       if (!mounted) return;
+      _announce('Imported template.');
       Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
@@ -196,6 +211,7 @@ class _CreateTemplateFromPresetDialogState
         _loadingFromFile = false;
         _error = error.toString();
       });
+      _announce('Template import failed.');
     }
   }
 
@@ -210,7 +226,9 @@ class _CreateTemplateFromPresetDialogState
         _selected.isNotEmpty && _nameController.text.trim().isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Template')),
+      appBar: AppBar(
+        title: Semantics(header: true, child: Text('Create Template')),
+      ),
       body: Column(
         children: [
           Padding(
@@ -266,9 +284,12 @@ class _CreateTemplateFromPresetDialogState
           if (_error != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ),
             ),
           Expanded(
@@ -286,11 +307,20 @@ class _CreateTemplateFromPresetDialogState
               children: [
                 OutlinedButton.icon(
                   icon: _loadingFromFile
-                      ? const SizedBox.square(
+                      ? SizedBox.square(
                           dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: Semantics(
+                            liveRegion: true,
+                            label: 'Importing template JSON',
+                            child: ExcludeSemantics(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
                         )
-                      : const Icon(Icons.file_open_outlined),
+                      : const Icon(
+                          Icons.file_open_outlined,
+                          semanticLabel: 'Import template from file',
+                        ),
                   label: const Text('Import from file'),
                   onPressed: _creating || _loadingFromFile
                       ? null
@@ -302,9 +332,15 @@ class _CreateTemplateFromPresetDialogState
                       ? _create
                       : null,
                   child: _creating
-                      ? const SizedBox.square(
+                      ? SizedBox.square(
                           dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: Semantics(
+                            liveRegion: true,
+                            label: 'Creating template',
+                            child: ExcludeSemantics(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
                         )
                       : const Text('Create template'),
                 ),
