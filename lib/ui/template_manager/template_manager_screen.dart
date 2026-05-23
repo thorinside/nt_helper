@@ -37,6 +37,8 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
   late Future<List<FullPresetDetails>> _templatesFuture;
   FullPresetDetails? _selected;
   Set<int> _selectedSlots = {};
+  bool _isApplying = false;
+  int _applyRun = 0;
 
   AppDatabase get _database => widget.database ?? context.read<AppDatabase>();
 
@@ -46,12 +48,75 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
     _templatesFuture = _database.presetsDao.getTemplates();
   }
 
+  @override
+  void dispose() {
+    if (_isApplying) {
+      widget.onCancelDeviceApply?.call();
+    }
+    super.dispose();
+  }
+
   void _refresh() {
     setState(() {
       _templatesFuture = _database.presetsDao.getTemplates();
       _selected = null;
       _selectedSlots = {};
     });
+  }
+
+  Set<int> _allSlotIndices(FullPresetDetails template) {
+    return {for (var i = 0; i < template.slots.length; i++) i};
+  }
+
+  void _selectTemplate(FullPresetDetails template) {
+    setState(() {
+      _selected = template;
+      _selectedSlots = _allSlotIndices(template);
+    });
+  }
+
+  Future<void> _applySelected(BuildContext context) async {
+    final template = _selected;
+    if (_isApplying || template == null || _selectedSlots.isEmpty) return;
+
+    final selected = _selectedSlots.toList()..sort();
+    final applyDevice = widget.onApplyDevice;
+    if (applyDevice == null) {
+      await TemplateApplyDialog.show(
+        context,
+        database: _database,
+        template: template,
+        selectedIndices: _selectedSlots,
+      );
+      return;
+    }
+
+    final applyRun = ++_applyRun;
+    setState(() => _isApplying = true);
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await applyDevice(template, selected);
+      if (!mounted || applyRun != _applyRun) return;
+      setState(() => _isApplying = false);
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+    } catch (error) {
+      if (!mounted || applyRun != _applyRun) return;
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted && applyRun == _applyRun) {
+        setState(() => _isApplying = false);
+      }
+    }
+  }
+
+  void _cancelApply() {
+    if (!_isApplying) return;
+    _applyRun++;
+    widget.onCancelDeviceApply?.call();
+    setState(() => _isApplying = false);
   }
 
   Future<void> _createFromCurrentPreset() async {
@@ -119,8 +184,11 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
               ),
             );
           }
-          final selected = _selected ?? templates.first;
-          _selected ??= selected;
+          if (_selected == null) {
+            _selected = templates.first;
+            _selectedSlots = _allSlotIndices(_selected!);
+          }
+          final selected = _selected!;
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -131,20 +199,17 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
                 canCreateFromCurrentPreset:
                     widget.loadCurrentPresetSource != null,
                 onCreateFromCurrentPreset: () => _createFromCurrentPreset(),
-                onSelected: (template) {
-                  setState(() {
-                    _selected = template;
-                    _selectedSlots = {};
-                  });
-                },
+                onSelected: _isApplying ? (_) {} : _selectTemplate,
               );
               final detail = _TemplateManagerDetail(
-                database: _database,
                 template: selected,
                 selectedSlots: _selectedSlots,
-                onApplyDevice: widget.onApplyDevice,
-                onCancelDeviceApply: widget.onCancelDeviceApply,
+                isApplying: _isApplying,
+                appliesToDevice: widget.onApplyDevice != null,
+                onApplySelected: () => _applySelected(context),
+                onCancelApply: _cancelApply,
                 onSelectionChanged: (next) {
+                  if (_isApplying) return;
                   setState(() => _selectedSlots = next);
                 },
               );
@@ -294,19 +359,21 @@ class _TemplateListTile extends StatelessWidget {
 }
 
 class _TemplateManagerDetail extends StatelessWidget {
-  final AppDatabase database;
   final FullPresetDetails template;
   final Set<int> selectedSlots;
-  final TemplateDeviceApplyCallback? onApplyDevice;
-  final VoidCallback? onCancelDeviceApply;
+  final bool isApplying;
+  final bool appliesToDevice;
+  final VoidCallback onApplySelected;
+  final VoidCallback? onCancelApply;
   final ValueChanged<Set<int>> onSelectionChanged;
 
   const _TemplateManagerDetail({
-    required this.database,
     required this.template,
     required this.selectedSlots,
-    this.onApplyDevice,
-    this.onCancelDeviceApply,
+    required this.isApplying,
+    required this.appliesToDevice,
+    required this.onApplySelected,
+    this.onCancelApply,
     required this.onSelectionChanged,
   });
 
@@ -362,27 +429,34 @@ class _TemplateManagerDetail extends StatelessWidget {
         const Divider(height: 1),
         Padding(
           padding: const EdgeInsets.all(12),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.playlist_add),
-              label: const Text('Apply selected'),
-              onPressed: selectedSlots.isEmpty
-                  ? null
-                  : () {
-                      final selected = selectedSlots.toList()..sort();
-                      TemplateApplyDialog.show(
-                        context,
-                        database: database,
-                        template: template,
-                        selectedIndices: selectedSlots,
-                        onApplyDevice: onApplyDevice == null
-                            ? null
-                            : () => onApplyDevice!(template, selected),
-                        onCancelDeviceApply: onCancelDeviceApply,
-                      );
-                    },
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (isApplying && appliesToDevice) ...[
+                Text(
+                  'Applying ${selectedSlots.length} selected',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: onCancelApply,
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+              ],
+              FilledButton.icon(
+                icon: isApplying
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.playlist_add),
+                label: const Text('Apply selected'),
+                onPressed: selectedSlots.isEmpty || isApplying
+                    ? null
+                    : onApplySelected,
+              ),
+            ],
           ),
         ),
       ],

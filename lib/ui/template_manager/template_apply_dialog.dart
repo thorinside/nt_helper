@@ -32,7 +32,7 @@ class TemplateApplyDialog extends StatefulWidget {
   }) {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => Dialog(
         child: SizedBox(
           width: 560,
@@ -54,7 +54,7 @@ class TemplateApplyDialog extends StatefulWidget {
 
 class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
   late Future<List<FullPresetDetails>> _targetsFuture;
-  _TemplateApplyTarget _target = _TemplateApplyTarget.preset;
+  late _TemplateApplyTarget _target;
   int? _targetPresetId;
   bool _inFlight = false;
   bool _overwrite = false;
@@ -67,6 +67,9 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
   @override
   void initState() {
     super.initState();
+    _target = widget.onApplyDevice == null
+        ? _TemplateApplyTarget.preset
+        : _TemplateApplyTarget.device;
     _targetsFuture = _database.presetsDao.getNonTemplates();
   }
 
@@ -185,7 +188,7 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
         }
 
         return PopScope(
-          canPop: !_inFlight,
+          canPop: true,
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -308,11 +311,16 @@ class _TemplateApplyDialogState extends State<TemplateApplyDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (_inFlight && _target == _TemplateApplyTarget.device)
-                      TextButton(
-                        onPressed: widget.onCancelDeviceApply,
-                        child: const Text('Cancel'),
-                      ),
+                    TextButton(
+                      onPressed: () {
+                        if (_inFlight &&
+                            _target == _TemplateApplyTarget.device) {
+                          widget.onCancelDeviceApply?.call();
+                        }
+                        Navigator.of(context).pop();
+                      },
+                      child: Text(_message == null ? 'Cancel' : 'Close'),
+                    ),
                     const SizedBox(width: 8),
                     FilledButton.icon(
                       icon: _inFlight

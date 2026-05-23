@@ -70,6 +70,8 @@ class _TemplateSlotSelectionListState extends State<TemplateSlotSelectionList> {
     final selectedCount = widget.selectedIndices.length;
     final total = widget.currentTargetSlotCount + selectedCount;
     final overLimit = total > widget.maxSlots;
+    final visibleSelected = visible.every(widget.selectedIndices.contains);
+    final toggleSelectsAll = visible.isEmpty || !visibleSelected;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -102,20 +104,23 @@ class _TemplateSlotSelectionListState extends State<TemplateSlotSelectionList> {
                 ),
               ),
               IconButton(
-                tooltip: 'Select all visible slots',
-                icon: const Icon(Icons.select_all),
+                tooltip: toggleSelectsAll
+                    ? 'Select all visible slots'
+                    : 'Clear visible slot selection',
+                icon: Icon(
+                  toggleSelectsAll ? Icons.select_all : Icons.deselect,
+                ),
                 onPressed: visible.isEmpty
                     ? null
                     : () {
-                        _setSelected({...widget.selectedIndices, ...visible});
+                        final next = {...widget.selectedIndices};
+                        if (toggleSelectsAll) {
+                          next.addAll(visible);
+                        } else {
+                          next.removeAll(visible);
+                        }
+                        _setSelected(next);
                       },
-              ),
-              IconButton(
-                tooltip: 'Select none',
-                icon: const Icon(Icons.deselect),
-                onPressed: widget.selectedIndices.isEmpty
-                    ? null
-                    : () => _setSelected({}),
               ),
             ],
           ),

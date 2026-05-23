@@ -55,7 +55,9 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('toggles rows and supports select all / none', (tester) async {
+  testWidgets('toggles rows and supports the visible selection toggle', (
+    tester,
+  ) async {
     var selected = <int>{};
 
     await _pump(
@@ -82,7 +84,7 @@ void main() {
       selected: selected,
       onChanged: (next) => selected = next,
     );
-    await tester.tap(find.byTooltip('Select none'));
+    await tester.tap(find.byTooltip('Clear visible slot selection'));
     await tester.pumpAndSettle();
     expect(selected, isEmpty);
   });

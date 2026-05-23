@@ -101,19 +101,28 @@ void main() {
     expect(find.text('Reverb'), findsOneWidget);
   });
 
-  testWidgets('opens apply dialog for selected slots', (tester) async {
+  testWidgets('selects all template slots by default and opens local apply', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(home: TemplateManagerScreen(database: db)),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Delay').last);
+    final checkboxes = tester.widgetList<Checkbox>(
+      find.descendant(
+        of: find.byType(CheckboxListTile),
+        matching: find.byType(Checkbox),
+      ),
+    );
+    expect(checkboxes.map((checkbox) => checkbox.value), everyElement(isTrue));
+
     await tester.pumpAndSettle();
     await tester.tap(find.text('Apply selected'));
     await tester.pumpAndSettle();
 
     expect(find.text('Apply template slots'), findsOneWidget);
-    expect(find.textContaining('1 selected from Space Kit'), findsOneWidget);
+    expect(find.textContaining('2 selected from Space Kit'), findsOneWidget);
   });
 
   testWidgets(
@@ -202,17 +211,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Reverb').last);
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Apply selected'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Current device'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Apply selected').last);
-    await tester.pumpAndSettle();
 
-    expect(find.textContaining('Applied 1 slot'), findsOneWidget);
     expect(appliedTemplate?.preset.name, 'Space Kit');
-    expect(appliedSlots, [1]);
+    expect(appliedSlots, [0, 1]);
   });
 }
