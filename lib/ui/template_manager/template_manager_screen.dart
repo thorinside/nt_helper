@@ -107,10 +107,6 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
 
     final jsonText = TemplateShareService(_database).encodeTemplate(template);
     await File(path).writeAsString(jsonText);
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Exported ${template.preset.name}')));
   }
 
   Future<void> _importDroppedFiles(List<XFile> files) async {
@@ -134,17 +130,9 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
     setState(() => _isImporting = true);
     try {
       final service = TemplateShareService(_database);
-      final presetId = await service.importTemplate(jsonText);
-      final template = await _database.presetsDao.getFullPresetDetails(
-        presetId,
-      );
+      await service.importTemplate(jsonText);
       if (!mounted) return;
       _refresh();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Imported ${template?.preset.name ?? 'template'}'),
-        ),
-      );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
