@@ -148,30 +148,23 @@ nt_helper/
 │
 ├── docs/                            # Documentation
 │   ├── algorithms/                  # Algorithm metadata (190 files)
+│   ├── a11y/                        # Accessibility audits and plans
+│   ├── architecture/                # Architecture notes and standards
 │   ├── features/                    # Feature documentation
-│   ├── specs/                       # Technical specs
-│   ├── audit/                       # Audit reports
+│   ├── investigations/              # Research and investigation notes
 │   ├── schema/                      # JSON schemas
-│   ├── routing_editor_implementation.md
-│   ├── routing_special_cases.md
-│   ├── manual-1.10.0.md            # Firmware manual
+│   ├── architecture.md
+│   ├── mcp-api-guide.md
+│   ├── mcp-mapping-guide.md
 │   └── ... (extensive documentation)
 │
-├── CLAUDE/                          # BMAD-METHOD agent documentation
-│   ├── index.md                    # Documentation index
-│   ├── agents.md                   # Agent definitions
-│   ├── tasks.md                    # Task definitions
-│   └── ... (70+ documentation files)
-│
 ├── scripts/                         # Build and utility scripts
-│   ├── generate_algorithm_stubs.py
-│   ├── populate_algorithm_stubs.py
-│   ├── sync_params_from_manual.py
-│   └── ... (Python scripts for algorithm metadata)
+│   ├── generate-release-notes.sh
+│   ├── release-notes-for-workflow.sh
+│   └── update_algorithm_docs.sh
 │
 ├── .github/workflows/               # CI/CD
-│   ├── macos-build.yml             # macOS build & notarization
-│   ├── ios-build.yml               # iOS build & TestFlight
+│   ├── claude.yml                  # Claude Code integration
 │   └── tag-build.yml               # Release builds
 │
 ├── assets/                          # Asset bundles

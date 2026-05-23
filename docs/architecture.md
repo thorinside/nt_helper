@@ -266,30 +266,23 @@ nt_helper/
 │
 ├── docs/                            # Documentation
 │   ├── algorithms/                  # Algorithm metadata (190 files)
+│   ├── a11y/                        # Accessibility audits and plans
+│   ├── architecture/                # Architecture notes and standards
 │   ├── features/                    # Feature documentation
-│   ├── specs/                       # Technical specs
-│   ├── audit/                       # Audit reports
+│   ├── investigations/              # Research and investigation notes
 │   ├── schema/                      # JSON schemas
-│   ├── routing_editor_implementation.md
-│   ├── routing_special_cases.md
-│   ├── manual-1.10.0.md            # Firmware manual
+│   ├── architecture.md
+│   ├── mcp-api-guide.md
+│   ├── mcp-mapping-guide.md
 │   └── ... (extensive documentation)
 │
-├── CLAUDE/                          # BMAD-METHOD agent documentation
-│   ├── index.md                    # Documentation index
-│   ├── agents.md                   # Agent definitions
-│   ├── tasks.md                    # Task definitions
-│   └── ... (70+ documentation files)
-│
 ├── scripts/                         # Build and utility scripts
-│   ├── generate_algorithm_stubs.py
-│   ├── populate_algorithm_stubs.py
-│   ├── sync_params_from_manual.py
-│   └── ... (Python scripts for algorithm metadata)
+│   ├── generate-release-notes.sh
+│   ├── release-notes-for-workflow.sh
+│   └── update_algorithm_docs.sh
 │
 ├── .github/workflows/               # CI/CD
-│   ├── macos-build.yml             # macOS build & notarization
-│   ├── ios-build.yml               # iOS build & TestFlight
+│   ├── claude.yml                  # Claude Code integration
 │   └── tag-build.yml               # Release builds
 │
 ├── assets/                          # Asset bundles
@@ -529,8 +522,6 @@ Response: [0xF0, ..., 0x55, slot, source_param, count, affected_1, affected_2, .
 
 **Status**: Stories 7.1-7.7 are implemented (runtime parsing plus offline storage via the new `ioFlags` column). Stories 7.8-7.9 remain outstanding to regenerate the bundled metadata and backfill existing installs, so offline mode still sees `ioFlags = 0` until those stories land.
 
-**Reference**: See `docs/epic-7-context.md` for complete technical details.
-
 ### Important Files
 
 - `lib/core/routing/algorithm_routing.dart` - Base class and factory
@@ -538,9 +529,6 @@ Response: [0xF0, ..., 0x55, slot, source_param, count, affected_1, affected_2, .
 - `lib/core/routing/es5_direct_output_algorithm_routing.dart` - ES-5 base class
 - `lib/cubit/routing_editor_cubit.dart` - State orchestration
 - `lib/ui/widgets/routing/routing_editor_widget.dart` - Visualization only
-- `docs/routing_editor_implementation.md` - Implementation details
-- `docs/routing_special_cases.md` - Edge cases and workarounds
-- `docs/epic-7-context.md` - Epic 7 I/O metadata technical context
 
 ## Critical Architecture: SysEx Command System
 
@@ -588,8 +576,6 @@ New message type for querying which parameters are affected by mode control para
 ```
 
 **Purpose**: Explicitly maps mode parameters to their controlled outputs, replacing pattern matching like `'$paramName mode'`. Enables accurate Add/Replace mode visualization in routing editor.
-
-**Implementation**: See Story 7.4 in Epic 7 (docs/epic-7-context.md)
 
 ### How to Add a New SysEx Command
 
@@ -1427,12 +1413,6 @@ case StepParameter.newParameter:
 - `lib/services/scale_quantizer.dart` - Musical quantization algorithms
 - `lib/util/parameter_write_debouncer.dart` - Debouncing utility
 
-**Documentation**:
-- `docs/epics/epic-step-sequencer-ui.md` - Epic overview
-- `docs/epics/epic-step-sequencer-ui-technical-context.md` - Technical context (this architecture)
-- `docs/sprint-artifacts/e10-*.md` - Individual story files
-- `docs/manual-1.10.0.md` (pages 294-300) - Firmware manual (Step Sequencer specification)
-
 ### Current Status (November 2025)
 
 **Completed Stories**:
@@ -1592,20 +1572,9 @@ class Slot {
 
 **GitHub Actions** (`.github/workflows/`):
 
-**macOS Build** (`macos-build.yml`):
-- Trigger: Tags matching `v*` or push to `macos-build` branch
-- Steps:
-  1. Flutter setup (3.35.1)
-  2. Certificate decoding and keychain creation
-  3. Build macOS app
-  4. Code signing with Developer ID
-  5. Notarization via Apple
-  6. Staple notarization ticket
-  7. Create ZIP and upload to GitHub Release
-
-**iOS Build** (`ios-build.yml`):
-- Similar flow for iOS
-- Uploads to TestFlight
+**Multi-Platform Build** (`tag-build.yml`):
+- Trigger: Tags matching `v*`
+- Builds release artifacts and attaches them to the GitHub Release.
 
 **Release Process**:
 1. Update version in `pubspec.yaml`
@@ -1794,7 +1763,6 @@ Description of the algorithm...
 - `lib/db/daos/metadata_dao.dart` - Database queries
 - `assets/metadata/` - Bundled JSON
 - `docs/algorithms/` - Human-readable docs
-- `scripts/populate_algorithm_stubs.py` - Automation script
 
 ## Coding Standards and Patterns
 
@@ -2075,16 +2043,14 @@ flutter pub outdated                      # Check for updates
 # (Database is auto-created, no manual commands needed)
 ```
 
-### Python Scripts (for algorithm metadata)
+### Utility Scripts
 
 ```bash
 # Located in scripts/
 
-./generate_algorithm_stubs.py            # Create stub docs for new algorithms
-python3 populate_algorithm_stubs.py      # Fill stubs with metadata
-python3 sync_params_from_manual.py       # Extract params from firmware manual
-python3 enrich_from_manual.py            # Enrich metadata from manual
-./run_manual_scan.sh                     # Scan firmware manual for all algorithms
+./generate-release-notes.sh              # Generate local release notes
+./release-notes-for-workflow.sh          # Generate release notes in CI
+./update_algorithm_docs.sh               # Copy updated algorithm docs
 ```
 
 ### Git Workflow
@@ -2162,7 +2128,7 @@ flutter attach                            # Attach to running app for hot reload
 
 **When in doubt**:
 - Check existing code for similar patterns
-- Read the extensive documentation in `docs/` and `CLAUDE/`
+- Read the documentation in `docs/`
 - Use `MockDistingMidiManager` for testing
 - Ask specific questions about areas you don't understand
 

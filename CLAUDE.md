@@ -95,8 +95,6 @@ before `flutter analyze` or `flutter test`.
 ./version major && git push && git push --tags     # Major
 ```
 
-See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for details.
-
 ## MCP Docs
 
 - [MCP API Guide](./docs/mcp-api-guide.md) — 4-tool API (search, new, edit, show)

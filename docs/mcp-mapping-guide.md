@@ -598,6 +598,5 @@ This parameter is controlled by:
 
 ## See Also
 
-- [MCP Usage Guide](./mcp_usage_guide.md) - Overview of all MCP tools
+- [MCP API Guide](./mcp-api-guide.md) - Overview of all MCP tools
 - [Architecture Documentation](./architecture.md) - Technical architecture details
-- [Disting NT Manual](./manual-1.10.0.md) - Hardware manual for detailed parameter information
