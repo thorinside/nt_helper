@@ -125,6 +125,68 @@ void main() {
     expect(find.textContaining('2 selected from Space Kit'), findsOneWidget);
   });
 
+  testWidgets('edits selected template metadata', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: TemplateManagerScreen(database: db)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Edit metadata'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit template metadata'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('edit-template-name')),
+      'Space Kit Deluxe',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('edit-template-category')),
+      'Performance',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('edit-template-description')),
+      'Wide space rig',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('edit-template-tags')),
+      'wide, stage',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Space Kit Deluxe'), findsWidgets);
+    expect(find.text('Performance'), findsOneWidget);
+    expect(find.text('Ambience'), findsNothing);
+
+    final edited = (await db.presetsDao.getTemplates()).singleWhere(
+      (template) => template.preset.name == 'Space Kit Deluxe',
+    );
+    expect(edited.preset.category, 'Performance');
+    final metadata = TemplateMetadata.fromJsonString(
+      edited.preset.templateMetadata,
+    );
+    expect(metadata.description, 'Wide space rig');
+    expect(metadata.tags, ['wide', 'stage']);
+  });
+
+  testWidgets('deletes selected template after confirmation', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: TemplateManagerScreen(database: db)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Delete template'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete template?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Space Kit'), findsNothing);
+    final templates = await db.presetsDao.getTemplates();
+    expect(templates.map((template) => template.preset.name), ['Utility Kit']);
+  });
+
   testWidgets(
     'New from current preset opens creation dialog and saves template',
     (tester) async {

@@ -64,6 +64,48 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
     });
   }
 
+  Future<void> _editSelectedMetadata() async {
+    final template = _selected;
+    if (_isApplying || template == null) return;
+
+    final saved = await _EditTemplateMetadataDialog.show(
+      context,
+      template: template,
+      database: _database,
+    );
+    if (mounted && saved == true) {
+      _refresh();
+    }
+  }
+
+  Future<void> _deleteSelectedTemplate() async {
+    final template = _selected;
+    if (_isApplying || template == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete template?'),
+        content: Text('Delete "${template.preset.name}" from saved templates?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonalIcon(
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('Delete'),
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await _database.presetsDao.deletePreset(template.preset.id);
+    if (mounted) _refresh();
+  }
+
   Set<int> _allSlotIndices(FullPresetDetails template) {
     return {for (var i = 0; i < template.slots.length; i++) i};
   }
@@ -199,6 +241,9 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
                 canCreateFromCurrentPreset:
                     widget.loadCurrentPresetSource != null,
                 onCreateFromCurrentPreset: () => _createFromCurrentPreset(),
+                canModifySelected: !_isApplying,
+                onEditSelected: _editSelectedMetadata,
+                onDeleteSelected: _deleteSelectedTemplate,
                 onSelected: _isApplying ? (_) {} : _selectTemplate,
               );
               final detail = _TemplateManagerDetail(
@@ -243,6 +288,9 @@ class _TemplateManagerList extends StatelessWidget {
   final int selectedId;
   final bool canCreateFromCurrentPreset;
   final VoidCallback onCreateFromCurrentPreset;
+  final bool canModifySelected;
+  final VoidCallback onEditSelected;
+  final VoidCallback onDeleteSelected;
   final ValueChanged<FullPresetDetails> onSelected;
 
   const _TemplateManagerList({
@@ -250,6 +298,9 @@ class _TemplateManagerList extends StatelessWidget {
     required this.selectedId,
     required this.canCreateFromCurrentPreset,
     required this.onCreateFromCurrentPreset,
+    required this.canModifySelected,
+    required this.onEditSelected,
+    required this.onDeleteSelected,
     required this.onSelected,
   });
 
@@ -283,12 +334,12 @@ class _TemplateManagerList extends StatelessWidget {
               IconButton(
                 tooltip: 'Edit metadata',
                 icon: const Icon(Icons.edit_outlined),
-                onPressed: null,
+                onPressed: canModifySelected ? onEditSelected : null,
               ),
               IconButton(
                 tooltip: 'Delete template',
                 icon: const Icon(Icons.delete_outline),
-                onPressed: null,
+                onPressed: canModifySelected ? onDeleteSelected : null,
               ),
               const Spacer(),
               Text(
@@ -354,6 +405,182 @@ class _TemplateListTile extends StatelessWidget {
           ? null
           : Chip(label: Text(firstTag), visualDensity: VisualDensity.compact),
       onTap: onTap,
+    );
+  }
+}
+
+class _EditTemplateMetadataDialog extends StatefulWidget {
+  final FullPresetDetails template;
+  final AppDatabase database;
+
+  const _EditTemplateMetadataDialog({
+    required this.template,
+    required this.database,
+  });
+
+  static Future<bool?> show(
+    BuildContext context, {
+    required FullPresetDetails template,
+    required AppDatabase database,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) =>
+          _EditTemplateMetadataDialog(template: template, database: database),
+    );
+  }
+
+  @override
+  State<_EditTemplateMetadataDialog> createState() =>
+      _EditTemplateMetadataDialogState();
+}
+
+class _EditTemplateMetadataDialogState
+    extends State<_EditTemplateMetadataDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _categoryController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _tagsController;
+  late final TextEditingController _authorController;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final metadata = TemplateMetadata.fromJsonString(
+      widget.template.preset.templateMetadata,
+    );
+    _nameController = TextEditingController(text: widget.template.preset.name);
+    _categoryController = TextEditingController(
+      text: widget.template.preset.category ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: metadata.description ?? '',
+    );
+    _tagsController = TextEditingController(text: metadata.tags.join(', '));
+    _authorController = TextEditingController(text: metadata.author ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _categoryController.dispose();
+    _descriptionController.dispose();
+    _tagsController.dispose();
+    _authorController.dispose();
+    super.dispose();
+  }
+
+  String? _nullIfEmpty(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty || _saving) return;
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+
+    try {
+      final metadata = TemplateMetadata(
+        description: _nullIfEmpty(_descriptionController.text),
+        tags: _tagsController.text
+            .split(',')
+            .map((tag) => tag.trim())
+            .where((tag) => tag.isNotEmpty)
+            .toList(growable: false),
+        author: _nullIfEmpty(_authorController.text),
+      );
+      await widget.database.presetsDao.updateTemplateMetadata(
+        presetId: widget.template.preset.id,
+        name: name,
+        category: _nullIfEmpty(_categoryController.text),
+        templateMetadata: metadata.toJsonString(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = error.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canSave = _nameController.text.trim().isNotEmpty && !_saving;
+
+    return AlertDialog(
+      title: const Text('Edit template metadata'),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const ValueKey('edit-template-name'),
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Name'),
+                onChanged: (_) => setState(() {}),
+              ),
+              TextField(
+                key: const ValueKey('edit-template-category'),
+                controller: _categoryController,
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
+              TextField(
+                key: const ValueKey('edit-template-description'),
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+              TextField(
+                key: const ValueKey('edit-template-tags'),
+                controller: _tagsController,
+                decoration: const InputDecoration(labelText: 'Tags'),
+              ),
+              TextField(
+                key: const ValueKey('edit-template-author'),
+                controller: _authorController,
+                decoration: const InputDecoration(labelText: 'Author'),
+              ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton.icon(
+          icon: _saving
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save_outlined),
+          label: const Text('Save'),
+          onPressed: canSave ? _save : null,
+        ),
+      ],
     );
   }
 }

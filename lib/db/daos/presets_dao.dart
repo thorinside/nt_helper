@@ -394,6 +394,22 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     );
   }
 
+  Future<void> updateTemplateMetadata({
+    required int presetId,
+    required String name,
+    required String? category,
+    required String? templateMetadata,
+  }) async {
+    await (update(presets)..where((p) => p.id.equals(presetId))).write(
+      PresetsCompanion(
+        name: Value(name),
+        category: Value(category),
+        templateMetadata: Value(templateMetadata),
+        lastModified: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Future<void> toggleTemplateStatus(int presetId, bool newStatus) async {
     await (update(presets)..where((p) => p.id.equals(presetId))).write(
       PresetsCompanion(
