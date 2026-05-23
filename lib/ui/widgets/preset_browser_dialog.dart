@@ -642,7 +642,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         return;
       }
 
-      final result = await FilePicker.platform.saveFile(
+      final result = await FilePicker.saveFile(
         dialogTitle: 'Save $fileName',
         fileName: fileName,
         bytes: data,
@@ -672,7 +672,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
   Future<void> _uploadFileAction(String targetDirectory) async {
     final cubit = context.read<PresetBrowserCubit>();
-    final result = await FilePicker.platform.pickFiles();
+    final result = await FilePicker.pickFiles();
     if (result == null || result.files.isEmpty) return;
 
     final file = result.files.first;

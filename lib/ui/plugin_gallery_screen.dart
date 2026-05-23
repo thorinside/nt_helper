@@ -1216,7 +1216,7 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
           (defaultTargetPlatform == TargetPlatform.windows ||
               defaultTargetPlatform == TargetPlatform.macOS ||
               defaultTargetPlatform == TargetPlatform.linux)) {
-        final result = await FilePicker.platform.pickFiles(
+        final result = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['lua', '3pot', 'o'],
           allowMultiple: false,
@@ -1315,7 +1315,7 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
 
       String? directoryPath;
       if (backupChoice == 'existing') {
-        directoryPath = await FilePicker.platform.getDirectoryPath();
+        directoryPath = await FilePicker.getDirectoryPath();
       } else if (backupChoice == 'new') {
         directoryPath = await _createNewBackupDirectory();
       }
@@ -1380,7 +1380,7 @@ class _PluginGalleryViewState extends State<_PluginGalleryView> {
   }
 
   Future<String?> _createNewBackupDirectory() async {
-    final parentPath = await FilePicker.platform.getDirectoryPath();
+    final parentPath = await FilePicker.getDirectoryPath();
     if (parentPath == null) return null;
 
     final folderName = await _showCreateFolderDialog();

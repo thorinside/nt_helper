@@ -53,7 +53,7 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
 
   Future<void> _selectSaveLocation() async {
     try {
-      final result = await FilePicker.platform.saveFile(
+      final result = await FilePicker.saveFile(
         dialogTitle: 'Save Algorithm Details Export',
         fileName:
             'nt_algorithm_details_${DateTime.now().millisecondsSinceEpoch ~/ 1000}.json',

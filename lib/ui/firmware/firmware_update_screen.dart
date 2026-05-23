@@ -265,7 +265,7 @@ class _FirmwareUpdateScaffold extends StatelessWidget {
     final prefs = await SharedPreferences.getInstance();
     final lastDirectory = prefs.getString(_kLastFirmwareDirectoryKey);
 
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['zip'],
       dialogTitle: 'Select Firmware Package',

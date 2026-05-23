@@ -135,7 +135,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           .split('/')
           .last
           .replaceAll('.json', '');
-      final outputPath = await FilePicker.platform.saveFile(
+      final outputPath = await FilePicker.saveFile(
         dialogTitle: 'Save Preset Package',
         fileName: '${presetName}_package.zip',
         type: FileType.custom,

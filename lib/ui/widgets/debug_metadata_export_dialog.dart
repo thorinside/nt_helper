@@ -61,7 +61,7 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
 
   Future<void> _selectSaveLocation() async {
     try {
-      final result = await FilePicker.platform.saveFile(
+      final result = await FilePicker.saveFile(
         dialogTitle: 'Save Full Metadata Export (DEBUG)',
         fileName: 'full_metadata.json',
         type: FileType.custom,
