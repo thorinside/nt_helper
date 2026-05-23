@@ -15,47 +15,49 @@ class ParameterListView extends StatelessWidget {
     return FocusTraversalGroup(
       policy: OrderedTraversalPolicy(),
       child: ListView.builder(
-      cacheExtent: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      itemCount: slot.parameters.length,
-      itemBuilder: (context, index) {
-        // Use safe access with bounds checking
-        final parameter = slot.parameters.elementAtOrNull(index);
-        final value = slot.values.elementAtOrNull(index);
-        final enumStrings = slot.enums.elementAtOrNull(index);
-        final mapping = slot.mappings.elementAtOrNull(index);
-        final valueString = slot.valueStrings.elementAtOrNull(index);
+        // ignore: deprecated_member_use
+        cacheExtent: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        itemCount: slot.parameters.length,
+        itemBuilder: (context, index) {
+          // Use safe access with bounds checking
+          final parameter = slot.parameters.elementAtOrNull(index);
+          final value = slot.values.elementAtOrNull(index);
+          final enumStrings = slot.enums.elementAtOrNull(index);
+          final mapping = slot.mappings.elementAtOrNull(index);
+          final valueString = slot.valueStrings.elementAtOrNull(index);
 
-        // Skip this parameter if we don't have essential data
-        // Note: valueString and enumStrings can be empty/filler for many parameters
-        if (parameter == null || value == null) {
-          return const SizedBox.shrink();
-        }
+          // Skip this parameter if we don't have essential data
+          // Note: valueString and enumStrings can be empty/filler for many parameters
+          if (parameter == null || value == null) {
+            return const SizedBox.shrink();
+          }
 
-        // Use filler/empty data if not available
-        final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
-        final safeValueString = valueString ?? ParameterValueString.filler();
+          // Use filler/empty data if not available
+          final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
+          final safeValueString = valueString ?? ParameterValueString.filler();
 
-        // For string-type parameters, don't fetch unit - they use value strings
-        // The registry handles firmware version differences automatically
-        final shouldShowUnit =
-            !ParameterEditorRegistry.isStringTypeUnit(parameter.unit);
-        final unit = shouldShowUnit ? parameter.getUnitString(units) : null;
+          // For string-type parameters, don't fetch unit - they use value strings
+          // The registry handles firmware version differences automatically
+          final shouldShowUnit = !ParameterEditorRegistry.isStringTypeUnit(
+            parameter.unit,
+          );
+          final unit = shouldShowUnit ? parameter.getUnitString(units) : null;
 
-        return FocusTraversalOrder(
-          order: NumericFocusOrder(index.toDouble()),
-          child: ParameterEditorView(
-            slot: slot,
-            parameterInfo: parameter,
-            value: value,
-            enumStrings: safeEnumStrings,
-            mapping: mapping,
-            valueString: safeValueString,
-            unit: unit,
-          ),
-        );
-      },
-    ),
+          return FocusTraversalOrder(
+            order: NumericFocusOrder(index.toDouble()),
+            child: ParameterEditorView(
+              slot: slot,
+              parameterInfo: parameter,
+              value: value,
+              enumStrings: safeEnumStrings,
+              mapping: mapping,
+              valueString: safeValueString,
+              unit: unit,
+            ),
+          );
+        },
+      ),
     );
   }
 }

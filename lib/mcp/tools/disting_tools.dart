@@ -14,9 +14,12 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/models/packed_mapping_data.dart' show MidiMappingType;
 import 'package:nt_helper/cubit/disting_cubit.dart'
     show DistingCubit, DistingStateSynchronized;
+import 'package:nt_helper/db/daos/presets_dao.dart';
+import 'package:nt_helper/db/database.dart';
 // Re-added for Algorithm, ParameterInfo etc.
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/disting_controller.dart';
+import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/util/case_converter.dart';
 import 'package:nt_helper/mcp/mcp_constants.dart';
 import 'package:nt_helper/mcp/utils/bus_mapping.dart';
@@ -218,7 +221,6 @@ class DistingTools {
     return null;
   }
 
-
   /// MCP Tool: Gets the entire current preset state.
   /// Parameters: None
   /// Returns:
@@ -278,12 +280,18 @@ class DistingTools {
               paramData['value'] = liveRawValue != null
                   ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                   : null;
-              paramData['min_value'] =
-                  _scaleForDisplay(pInfo.min, pInfo.powerOfTen);
-              paramData['max_value'] =
-                  _scaleForDisplay(pInfo.max, pInfo.powerOfTen);
-              paramData['default_value'] =
-                  _scaleForDisplay(pInfo.defaultValue, pInfo.powerOfTen);
+              paramData['min_value'] = _scaleForDisplay(
+                pInfo.min,
+                pInfo.powerOfTen,
+              );
+              paramData['max_value'] = _scaleForDisplay(
+                pInfo.max,
+                pInfo.powerOfTen,
+              );
+              paramData['default_value'] = _scaleForDisplay(
+                pInfo.defaultValue,
+                pInfo.powerOfTen,
+              );
             }
 
             // Add mapping information (performance page, MIDI, CV, etc.)
@@ -928,8 +936,10 @@ class DistingTools {
               _enumIndexToString(enumValues, liveRawValue) ?? '';
         }
       } else {
-        responseData['value'] =
-            _scaleForDisplay(liveRawValue, paramInfo.powerOfTen);
+        responseData['value'] = _scaleForDisplay(
+          liveRawValue,
+          paramInfo.powerOfTen,
+        );
       }
 
       return jsonEncode(
@@ -1064,6 +1074,331 @@ class DistingTools {
         convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())),
       );
     }
+  }
+
+  /// MCP Tool: applies selected slots from a saved template to the device or
+  /// to another saved local preset.
+  Future<String> applyTemplateToPreset(Map<String, dynamic> params) async {
+    try {
+      final db = _distingCubit.database;
+      final dao = db.presetsDao;
+
+      final templateResolution = await _resolveTemplatePreset(dao, params);
+      if (templateResolution.error != null) {
+        return jsonEncode(convertToSnakeCaseKeys(templateResolution.error!));
+      }
+      final template = templateResolution.details!;
+
+      final slotIndicesOrError = _resolveTemplateSlotIndices(
+        params['slot_indices'],
+        template.slots.length,
+      );
+      if (slotIndicesOrError.error != null) {
+        return jsonEncode(convertToSnakeCaseKeys(slotIndicesOrError.error!));
+      }
+      final slotIndices = slotIndicesOrError.slotIndices!;
+
+      final target = (params['target'] as String?) ?? 'device';
+      if (target != 'device' && target != 'preset') {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError('target must be "device" or "preset".'),
+          ),
+        );
+      }
+
+      if (target == 'device') {
+        return _applyTemplateToDeviceTarget(
+          db: db,
+          template: template,
+          slotIndices: slotIndices,
+        );
+      }
+
+      final targetResolution = await _resolveTargetPreset(dao, params);
+      if (targetResolution.error != null) {
+        return jsonEncode(convertToSnakeCaseKeys(targetResolution.error!));
+      }
+      final targetPreset = targetResolution.preset!;
+      if (targetPreset.isTemplate && targetPreset.id != template.preset.id) {
+        return jsonEncode(
+          convertToSnakeCaseKeys(
+            MCPUtils.buildError(
+              'Target preset must not be a template. Use target_preset_id for the same template only when self-extending.',
+            ),
+          ),
+        );
+      }
+
+      final result = await dao.applyTemplateSlots(
+        templateId: template.preset.id,
+        targetPresetId: targetPreset.id,
+        templateSlotIndices: slotIndices,
+        insertionOffset: (params['insertion_offset'] as int?) ?? 0,
+        overwrite: (params['overwrite'] as bool?) ?? false,
+      );
+
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': true,
+          'target': 'preset',
+          'target_preset_id': result.targetPresetId,
+          'applied_slot_count': result.insertedSlotIndices.length,
+          'inserted_slot_indices': result.insertedSlotIndices,
+          'skipped_template_slot_indices': result.skippedTemplateSlotIndices,
+          'warning': result.warning,
+        }),
+      );
+    } on TemplateSpaceException catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'space',
+          'current': e.current,
+          'applied': e.applied,
+          'limit': e.limit,
+        }),
+      );
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError('Error applying template: ${e.toString()}'),
+        ),
+      );
+    }
+  }
+
+  Future<String> _applyTemplateToDeviceTarget({
+    required AppDatabase db,
+    required FullPresetDetails template,
+    required List<int> slotIndices,
+  }) async {
+    if (_isOfflineMode()) {
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            'Device target requires connected mode; offline mode cannot apply templates to hardware.',
+          ),
+        ),
+      );
+    }
+
+    final cubit = MetadataSyncCubit(db, _distingCubit);
+    var appliedCount = 0;
+    String? failureMessage;
+    try {
+      final subscription = cubit.stream.listen((state) {
+        if (state is InjectingTemplate) {
+          appliedCount = state.applied;
+        } else if (state is PresetLoadFailure) {
+          failureMessage = state.error;
+        }
+      });
+      try {
+        await cubit.applyTemplateToDevice(
+          template: template,
+          templateSlotIndices: slotIndices,
+          manager: _distingCubit.requireDisting(),
+        );
+        final finalState = cubit.state;
+        if (finalState is PresetLoadFailure) {
+          failureMessage = finalState.error;
+        } else if (finalState is InjectingTemplate) {
+          appliedCount = finalState.applied;
+        }
+      } finally {
+        await subscription.cancel();
+        await cubit.close();
+      }
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'partial_apply',
+          'applied_slot_count': appliedCount,
+          'message': e.toString(),
+        }),
+      );
+    }
+
+    if (failureMessage != null) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'partial_apply',
+          'applied_slot_count': appliedCount,
+          'message': failureMessage,
+        }),
+      );
+    }
+
+    return jsonEncode(
+      convertToSnakeCaseKeys({
+        'success': true,
+        'target': 'device',
+        'target_preset_id': null,
+        'applied_slot_count': slotIndices.length,
+        'inserted_slot_indices': const <int>[],
+        'skipped_template_slot_indices': const <int>[],
+        'warning': null,
+      }),
+    );
+  }
+
+  Future<_TemplateResolution> _resolveTemplatePreset(
+    PresetsDao dao,
+    Map<String, dynamic> params,
+  ) async {
+    final templateId = params['template_id'] as int?;
+    if (templateId != null) {
+      final details = await dao.getFullPresetDetails(templateId);
+      if (details == null) {
+        return _TemplateResolution.error(
+          MCPUtils.buildError('Template preset $templateId not found.'),
+        );
+      }
+      if (!details.preset.isTemplate) {
+        return _TemplateResolution.error(
+          MCPUtils.buildError('Preset $templateId is not a template.'),
+        );
+      }
+      return _TemplateResolution.details(details);
+    }
+
+    final templateName = params['template_name'] as String?;
+    if (templateName == null || templateName.trim().isEmpty) {
+      return _TemplateResolution.error(
+        MCPUtils.buildError('Provide template_id or template_name.'),
+      );
+    }
+
+    final preset = await _resolvePresetByName(
+      dao,
+      templateName,
+      (p) => p.isTemplate,
+      'template',
+    );
+    if (preset.error != null) {
+      return _TemplateResolution.error(preset.error!);
+    }
+    final details = await dao.getFullPresetDetails(preset.preset!.id);
+    if (details == null) {
+      return _TemplateResolution.error(
+        MCPUtils.buildError(
+          'Template "${preset.preset!.name}" could not be loaded.',
+        ),
+      );
+    }
+    return _TemplateResolution.details(details);
+  }
+
+  Future<_PresetResolution> _resolveTargetPreset(
+    PresetsDao dao,
+    Map<String, dynamic> params,
+  ) async {
+    final targetId = params['target_preset_id'] as int?;
+    if (targetId != null) {
+      final preset = await dao.getPresetById(targetId);
+      if (preset == null) {
+        return _PresetResolution.error(
+          MCPUtils.buildError('Target preset $targetId not found.'),
+        );
+      }
+      return _PresetResolution.preset(preset);
+    }
+
+    final targetName = params['target_preset_name'] as String?;
+    if (targetName == null || targetName.trim().isEmpty) {
+      return _PresetResolution.error(
+        MCPUtils.buildError(
+          'target_preset_id or target_preset_name is required when target is "preset".',
+        ),
+      );
+    }
+    return _resolvePresetByName(dao, targetName, (_) => true, 'target preset');
+  }
+
+  Future<_PresetResolution> _resolvePresetByName(
+    PresetsDao dao,
+    String name,
+    bool Function(PresetEntry preset) filter,
+    String label,
+  ) async {
+    final candidates = (await dao.getAllPresets()).where(filter).toList();
+    final exact = candidates.where((p) => p.name == name).toList();
+    if (exact.length == 1) {
+      return _PresetResolution.preset(exact.single);
+    }
+    if (exact.length > 1) {
+      return _PresetResolution.error(
+        MCPUtils.buildError(
+          'Multiple $label presets exactly match "$name": ${_candidateNames(exact)}. Use an id.',
+        ),
+      );
+    }
+
+    final lower = name.toLowerCase();
+    final ci = candidates.where((p) => p.name.toLowerCase() == lower).toList();
+    if (ci.length == 1) {
+      return _PresetResolution.preset(ci.single);
+    }
+    if (ci.isEmpty) {
+      return _PresetResolution.error(
+        MCPUtils.buildError(
+          'No $label preset named "$name". Candidates: ${_candidateNames(candidates)}.',
+        ),
+      );
+    }
+    return _PresetResolution.error(
+      MCPUtils.buildError(
+        'Multiple $label presets case-insensitively match "$name": ${_candidateNames(ci)}. Use an id.',
+      ),
+    );
+  }
+
+  _SlotIndicesResolution _resolveTemplateSlotIndices(
+    Object? raw,
+    int slotCount,
+  ) {
+    if (raw == null) {
+      return _SlotIndicesResolution.slotIndices(
+        List<int>.generate(slotCount, (i) => i),
+      );
+    }
+    if (raw is! List) {
+      return _SlotIndicesResolution.error(
+        MCPUtils.buildError('slot_indices must be an array of integers.'),
+      );
+    }
+
+    final indices = <int>[];
+    for (final item in raw) {
+      if (item is! int) {
+        return _SlotIndicesResolution.error(
+          MCPUtils.buildError('slot_indices must contain only integers.'),
+        );
+      }
+      if (item < 0 || item >= slotCount) {
+        return _SlotIndicesResolution.error(
+          MCPUtils.buildError(
+            'slot_indices value $item out of range [0, $slotCount).',
+          ),
+        );
+      }
+      indices.add(item);
+    }
+    if (indices.isEmpty) {
+      return _SlotIndicesResolution.error(
+        MCPUtils.buildError('slot_indices cannot be empty.'),
+      );
+    }
+    return _SlotIndicesResolution.slotIndices(indices);
+  }
+
+  String _candidateNames(List<PresetEntry> presets) {
+    if (presets.isEmpty) return '(none)';
+    final sorted = presets.map((p) => '"${p.name}" (${p.id})').toList()..sort();
+    return sorted.join(', ');
   }
 
   /// MCP Tool: Moves an algorithm in a specified slot one position up in the slot list.
@@ -2136,7 +2471,9 @@ class DistingTools {
         }
 
         if (matchingParams.length > 1) {
-          final paramNumbers = matchingParams.map((p) => p.parameterNumber).join(', ');
+          final paramNumbers = matchingParams
+              .map((p) => p.parameterNumber)
+              .join(', ');
           return jsonEncode(
             convertToSnakeCaseKeys(
               MCPUtils.buildError(
@@ -2612,12 +2949,18 @@ class DistingTools {
                 paramData['value'] = liveRawValue != null
                     ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                     : null;
-                paramData['min_value'] =
-                    _scaleForDisplay(pInfo.min, pInfo.powerOfTen);
-                paramData['max_value'] =
-                    _scaleForDisplay(pInfo.max, pInfo.powerOfTen);
-                paramData['default_value'] =
-                    _scaleForDisplay(pInfo.defaultValue, pInfo.powerOfTen);
+                paramData['min_value'] = _scaleForDisplay(
+                  pInfo.min,
+                  pInfo.powerOfTen,
+                );
+                paramData['max_value'] = _scaleForDisplay(
+                  pInfo.max,
+                  pInfo.powerOfTen,
+                );
+                paramData['default_value'] = _scaleForDisplay(
+                  pInfo.defaultValue,
+                  pInfo.powerOfTen,
+                );
               }
 
               // Add mapping information
@@ -3170,12 +3513,21 @@ class DistingTools {
                 );
               }
 
-              final rawValue = MCPUtils.scaleToRaw(paramValue, pInfo.powerOfTen);
+              final rawValue = MCPUtils.scaleToRaw(
+                paramValue,
+                pInfo.powerOfTen,
+              );
 
               // Validate against parameter bounds (raw)
               if (rawValue < pInfo.min || rawValue > pInfo.max) {
-                final displayMin = _scaleForDisplay(pInfo.min, pInfo.powerOfTen);
-                final displayMax = _scaleForDisplay(pInfo.max, pInfo.powerOfTen);
+                final displayMin = _scaleForDisplay(
+                  pInfo.min,
+                  pInfo.powerOfTen,
+                );
+                final displayMax = _scaleForDisplay(
+                  pInfo.max,
+                  pInfo.powerOfTen,
+                );
                 return jsonEncode(
                   convertToSnakeCaseKeys(
                     MCPUtils.buildError(
@@ -3596,10 +3948,14 @@ class DistingTools {
           }
           rawValue = MCPUtils.scaleToRaw(value, paramInfo.powerOfTen);
           if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
-            final displayMin =
-                _scaleForDisplay(paramInfo.min, paramInfo.powerOfTen);
-            final displayMax =
-                _scaleForDisplay(paramInfo.max, paramInfo.powerOfTen);
+            final displayMin = _scaleForDisplay(
+              paramInfo.min,
+              paramInfo.powerOfTen,
+            );
+            final displayMax = _scaleForDisplay(
+              paramInfo.max,
+              paramInfo.powerOfTen,
+            );
             return jsonEncode(
               convertToSnakeCaseKeys(
                 MCPUtils.buildError(
@@ -3664,12 +4020,10 @@ class DistingTools {
         if (enumValues != null) {
           result['is_enum'] = true;
           result['valid_enum_values'] = enumValues;
-          result['value'] =
-              _enumIndexToString(enumValues, updatedValue) ?? '';
+          result['value'] = _enumIndexToString(enumValues, updatedValue) ?? '';
         }
       } else {
-        result['value'] =
-            _scaleForDisplay(updatedValue, paramInfo.powerOfTen);
+        result['value'] = _scaleForDisplay(updatedValue, paramInfo.powerOfTen);
       }
 
       // Include mappings if any are enabled
@@ -3710,8 +4064,10 @@ class DistingTools {
             resolved = (cvInput >= 0 && cvInput <= 12) ? cvInput : null;
           } else if (cvInput is String) {
             // Accept "None" → 0, "Input 1"-"Input 12" → 1-12
-            final parsed = BusMapping.parseBus(cvInput,
-                hasExtendedAuxBuses: _hasExtendedAuxBuses);
+            final parsed = BusMapping.parseBus(
+              cvInput,
+              hasExtendedAuxBuses: _hasExtendedAuxBuses,
+            );
             if (parsed != null && parsed >= 0 && parsed <= 12) {
               resolved = parsed;
             }
@@ -4611,10 +4967,14 @@ class DistingTools {
                 matchData['value'] = paramValue != null
                     ? _scaleForDisplay(paramValue.value, param.powerOfTen)
                     : null;
-                matchData['min'] =
-                    _scaleForDisplay(param.min, param.powerOfTen);
-                matchData['max'] =
-                    _scaleForDisplay(param.max, param.powerOfTen);
+                matchData['min'] = _scaleForDisplay(
+                  param.min,
+                  param.powerOfTen,
+                );
+                matchData['max'] = _scaleForDisplay(
+                  param.max,
+                  param.powerOfTen,
+                );
               }
               matches.add(matchData);
             }
@@ -4762,4 +5122,28 @@ class DesiredSlot {
   final Map<String, dynamic>? mapping;
 
   DesiredSlot({this.guid, this.name, this.parameters, this.mapping});
+}
+
+class _TemplateResolution {
+  final FullPresetDetails? details;
+  final Map<String, dynamic>? error;
+
+  const _TemplateResolution.details(this.details) : error = null;
+  const _TemplateResolution.error(this.error) : details = null;
+}
+
+class _PresetResolution {
+  final PresetEntry? preset;
+  final Map<String, dynamic>? error;
+
+  const _PresetResolution.preset(this.preset) : error = null;
+  const _PresetResolution.error(this.error) : preset = null;
+}
+
+class _SlotIndicesResolution {
+  final List<int>? slotIndices;
+  final Map<String, dynamic>? error;
+
+  const _SlotIndicesResolution.slotIndices(this.slotIndices) : error = null;
+  const _SlotIndicesResolution.error(this.error) : slotIndices = null;
 }

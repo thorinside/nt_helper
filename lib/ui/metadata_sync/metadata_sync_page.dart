@@ -15,6 +15,7 @@ import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/debug_metadata_export_dialog.dart';
 import 'package:nt_helper/ui/widgets/digit_shortcut_blocker.dart';
 import 'package:nt_helper/ui/widgets/template_preview_dialog.dart';
+import 'package:nt_helper/ui/template_manager/template_manager_screen.dart';
 
 class MetadataSyncAnnouncementListener extends StatelessWidget {
   final Widget child;
@@ -284,6 +285,40 @@ class MetadataSyncPage extends StatelessWidget {
                                   case 'export_algorithms':
                                     _showExportDialog(metaCtx);
                                     break;
+                                  case 'template_manager':
+                                    final metadataCubit = metaCtx
+                                        .read<MetadataSyncCubit>();
+                                    Navigator.of(metaCtx).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => TemplateManagerScreen(
+                                          onApplyDevice:
+                                              (
+                                                template,
+                                                selectedIndices,
+                                              ) async {
+                                                await metadataCubit
+                                                    .applyTemplateToDevice(
+                                                      template: template,
+                                                      templateSlotIndices:
+                                                          selectedIndices,
+                                                      manager: distingCubit
+                                                          .requireDisting(),
+                                                    );
+                                                final state =
+                                                    metadataCubit.state;
+                                                if (state
+                                                    case PresetLoadFailure(
+                                                      error: final error,
+                                                    )) {
+                                                  throw StateError(error);
+                                                }
+                                              },
+                                          onCancelDeviceApply:
+                                              metadataCubit.cancelInjection,
+                                        ),
+                                      ),
+                                    );
+                                    break;
                                   case 'debug_export_full':
                                     if (kDebugMode) {
                                       _showDebugFullExportDialog(metaCtx);
@@ -312,6 +347,17 @@ class MetadataSyncPage extends StatelessWidget {
                                       Icon(Icons.download, size: 20),
                                       SizedBox(width: 12),
                                       Text('Export Algorithm Details'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'template_manager',
+                                  enabled: !isBusy,
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.dashboard_customize, size: 20),
+                                      SizedBox(width: 12),
+                                      Text('Template Manager...'),
                                     ],
                                   ),
                                 ),
@@ -1205,98 +1251,161 @@ class _TemplateListView extends StatelessWidget {
           );
         }
 
-        return ListView.separated(
-          itemCount: templates.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final template = templates[index];
-            final preset = template.preset;
-            final formattedDate = preset.lastModified.toLocal().toString();
-
-            final bool isCurrentlyLoadedOffline = false;
-
-            // Determine button states
-            final bool canLoad = !isOperationInProgress;
-            final bool canDelete = !isOperationInProgress;
-
-            return ListTile(
-              key: ValueKey(preset.id),
-              selected: isCurrentlyLoadedOffline,
-              selectedTileColor: Theme.of(
-                context,
-              ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-              leading: Icon(
-                Icons.star,
-                color: Theme.of(context).colorScheme.tertiary,
-              ),
-              title: Text(preset.name.trim()),
-              subtitle: Text("Saved: $formattedDate"),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+              child: Row(
                 children: [
-                  // Inject Button
-                  IconButton(
-                    icon: Icon(
-                      Icons.add_circle_outline,
-                      color: canLoad
-                          ? Theme.of(context).colorScheme.secondary
-                          : Colors.grey,
-                      semanticLabel: isOffline
-                          ? 'Inject Template (Offline)'
-                          : 'Inject Template',
-                    ),
-                    tooltip: isOffline
-                        ? 'Inject Template (Offline)'
-                        : 'Inject Template',
-                    onPressed: canLoad
-                        ? () async => await _showInjectDialog(
-                            context,
-                            template,
-                            distingCubit,
-                            metadataSyncCubit,
-                          )
-                        : null,
+                  Text(
+                    '${templates.length} template${templates.length == 1 ? '' : 's'}',
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
-                  // Load Button
+                  const Spacer(),
                   IconButton(
-                    icon: Icon(
-                      isOffline ? Icons.edit_note : Icons.upload_file_outlined,
-                      color: canLoad
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey,
-                      semanticLabel: isOffline
-                          ? 'Load Preset Offline'
-                          : 'Send to NT',
-                    ),
-                    tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
-                    onPressed: canLoad
-                        ? () => _showLoadConfirmationDialog(
-                            context,
-                            template,
-                            isOffline,
-                            distingCubit,
-                            metadataSyncCubit,
-                          )
-                        : null,
-                  ),
-                  // Delete Button
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: canDelete
-                          ? Theme.of(context).colorScheme.error
-                          : Colors.grey,
-                      semanticLabel: 'Delete Template',
-                    ),
-                    tooltip: 'Delete Template',
-                    onPressed: canDelete
-                        ? () => _showDeleteConfirmationDialog(context, preset)
-                        : null,
+                    tooltip: 'Open Template Manager',
+                    icon: const Icon(Icons.dashboard_customize),
+                    onPressed: isOperationInProgress
+                        ? null
+                        : () {
+                            final metadataCubit = context
+                                .read<MetadataSyncCubit>();
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TemplateManagerScreen(
+                                  onApplyDevice:
+                                      (template, selectedIndices) async {
+                                        await metadataCubit
+                                            .applyTemplateToDevice(
+                                              template: template,
+                                              templateSlotIndices:
+                                                  selectedIndices,
+                                              manager: distingCubit
+                                                  .requireDisting(),
+                                            );
+                                        final state = metadataCubit.state;
+                                        if (state case PresetLoadFailure(
+                                          error: final error,
+                                        )) {
+                                          throw StateError(error);
+                                        }
+                                      },
+                                  onCancelDeviceApply:
+                                      metadataCubit.cancelInjection,
+                                ),
+                              ),
+                            );
+                          },
                   ),
                 ],
               ),
-            );
-          },
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.separated(
+                itemCount: templates.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final template = templates[index];
+                  final preset = template.preset;
+                  final formattedDate = preset.lastModified
+                      .toLocal()
+                      .toString();
+
+                  final bool isCurrentlyLoadedOffline = false;
+
+                  // Determine button states
+                  final bool canLoad = !isOperationInProgress;
+                  final bool canDelete = !isOperationInProgress;
+
+                  return ListTile(
+                    key: ValueKey(preset.id),
+                    selected: isCurrentlyLoadedOffline,
+                    selectedTileColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                    leading: Icon(
+                      Icons.star,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                    title: Text(preset.name.trim()),
+                    subtitle: Text("Saved: $formattedDate"),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Inject Button
+                        IconButton(
+                          icon: Icon(
+                            Icons.add_circle_outline,
+                            color: canLoad
+                                ? Theme.of(context).colorScheme.secondary
+                                : Colors.grey,
+                            semanticLabel: isOffline
+                                ? 'Inject Template (Offline)'
+                                : 'Inject Template',
+                          ),
+                          tooltip: isOffline
+                              ? 'Inject Template (Offline)'
+                              : 'Inject Template',
+                          onPressed: canLoad
+                              ? () async => await _showInjectDialog(
+                                  context,
+                                  template,
+                                  distingCubit,
+                                  metadataSyncCubit,
+                                )
+                              : null,
+                        ),
+                        // Load Button
+                        IconButton(
+                          icon: Icon(
+                            isOffline
+                                ? Icons.edit_note
+                                : Icons.upload_file_outlined,
+                            color: canLoad
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey,
+                            semanticLabel: isOffline
+                                ? 'Load Preset Offline'
+                                : 'Send to NT',
+                          ),
+                          tooltip: isOffline
+                              ? 'Load Preset Offline'
+                              : 'Send to NT',
+                          onPressed: canLoad
+                              ? () => _showLoadConfirmationDialog(
+                                  context,
+                                  template,
+                                  isOffline,
+                                  distingCubit,
+                                  metadataSyncCubit,
+                                )
+                              : null,
+                        ),
+                        // Delete Button
+                        IconButton(
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: canDelete
+                                ? Theme.of(context).colorScheme.error
+                                : Colors.grey,
+                            semanticLabel: 'Delete Template',
+                          ),
+                          tooltip: 'Delete Template',
+                          onPressed: canDelete
+                              ? () => _showDeleteConfirmationDialog(
+                                  context,
+                                  preset,
+                                )
+                              : null,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );

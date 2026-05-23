@@ -122,7 +122,7 @@ void main() {
         await cubit.injectTemplateToDevice(template, mockMidiManager);
       },
       expect: () => [
-        const MetadataSyncState.loadingPreset(),
+        const MetadataSyncState.injectingTemplate(applied: 0, total: 2),
         isA<PresetLoadFailure>().having(
           (state) => state.error,
           'error message',
@@ -483,7 +483,7 @@ void main() {
         await cubit.injectTemplateToDevice(emptyTemplate, mockMidiManager);
       },
       expect: () => [
-        const MetadataSyncState.loadingPreset(),
+        const MetadataSyncState.injectingTemplate(applied: 0, total: 0),
         isA<PresetLoadFailure>().having(
           (state) => state.error,
           'error message',
@@ -533,7 +533,7 @@ void main() {
         await cubit.injectTemplateToDevice(template, mockMidiManager);
       },
       expect: () => [
-        const MetadataSyncState.loadingPreset(),
+        const MetadataSyncState.injectingTemplate(applied: 0, total: 1),
         isA<PresetLoadFailure>().having(
           (state) => state.error,
           'error message',

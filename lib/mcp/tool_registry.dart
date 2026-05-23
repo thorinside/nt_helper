@@ -79,14 +79,16 @@ class ToolRegistry {
         ),
         callback: (args, extra) async {
           try {
-            final resultJson = await entry.handler(args).timeout(
-              entry.timeout,
-              onTimeout: () => jsonEncode({
-                'success': false,
-                'error':
-                    'Tool execution timed out after ${entry.timeout.inSeconds} seconds',
-              }),
-            );
+            final resultJson = await entry
+                .handler(args)
+                .timeout(
+                  entry.timeout,
+                  onTimeout: () => jsonEncode({
+                    'success': false,
+                    'error':
+                        'Tool execution timed out after ${entry.timeout.inSeconds} seconds',
+                  }),
+                );
             final image = tryParseImageResult(resultJson);
             if (image != null) {
               return CallToolResult.fromContent([
@@ -132,214 +134,365 @@ class ToolRegistry {
   }
 
   void _registerSearchTools() {
-    _entries.add(ToolRegistryEntry(
-      name: 'search_algorithms',
-      description:
-          'Search for algorithms by name/category. Uses fuzzy matching (70% threshold). Returns up to 10 results sorted by relevance.',
-      inputSchema: {
-        'properties': {
-          'query': {
-            'type': 'string',
-            'description':
-                'Search query: algorithm name, partial name, or category.',
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'search_algorithms',
+        description:
+            'Search for algorithms by name/category. Uses fuzzy matching (70% threshold). Returns up to 10 results sorted by relevance.',
+        inputSchema: {
+          'properties': {
+            'query': {
+              'type': 'string',
+              'description':
+                  'Search query: algorithm name, partial name, or category.',
+            },
           },
+          'required': ['query'],
         },
-        'required': ['query'],
-      },
-      handler: (args) => _algoTools.searchAlgorithms(args),
-      timeout: const Duration(seconds: 5),
-    ));
+        handler: (args) => _algoTools.searchAlgorithms(args),
+        timeout: const Duration(seconds: 5),
+      ),
+    );
 
-    _entries.add(ToolRegistryEntry(
-      name: 'search_parameters',
-      description:
-          'Search for parameters by name within the current preset or a specific slot. Uses exact or partial name matching.',
-      inputSchema: {
-        'properties': {
-          'query': {
-            'type': 'string',
-            'description': 'Parameter name to search for (case-insensitive).',
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'search_parameters',
+        description:
+            'Search for parameters by name within the current preset or a specific slot. Uses exact or partial name matching.',
+        inputSchema: {
+          'properties': {
+            'query': {
+              'type': 'string',
+              'description': 'Parameter name to search for (case-insensitive).',
+            },
+            'scope': {
+              'type': 'string',
+              'description':
+                  'Search scope: "preset" (all slots) or "slot" (specific slot).',
+              'enum': ['preset', 'slot'],
+            },
+            'slot_index': {
+              'type': 'integer',
+              'description':
+                  'Slot index (0-31). Required when scope is "slot".',
+            },
+            'partial_match': {
+              'type': 'boolean',
+              'description':
+                  'If true, find parameters containing the query. Default: false (exact match).',
+            },
           },
-          'scope': {
-            'type': 'string',
-            'description':
-                'Search scope: "preset" (all slots) or "slot" (specific slot).',
-            'enum': ['preset', 'slot'],
-          },
-          'slot_index': {
-            'type': 'integer',
-            'description': 'Slot index (0-31). Required when scope is "slot".',
-          },
-          'partial_match': {
-            'type': 'boolean',
-            'description':
-                'If true, find parameters containing the query. Default: false (exact match).',
-          },
+          'required': ['query', 'scope'],
         },
-        'required': ['query', 'scope'],
-      },
-      handler: (args) => _distingTools.searchParameters(args),
-      timeout: const Duration(seconds: 5),
-    ));
+        handler: (args) => _distingTools.searchParameters(args),
+        timeout: const Duration(seconds: 5),
+      ),
+    );
   }
 
   void _registerShowTools() {
-    _entries.add(ToolRegistryEntry(
-      name: 'show_preset',
-      description:
-          'Show a compact preset overview: preset name and slot list with algorithm names and parameter counts. '
-          'Does NOT include parameter values or mappings. Use show_slot to drill into a specific slot.',
-      inputSchema: {'properties': {}},
-      handler: (_) => _algoTools.showPreset(),
-    ));
-
-    _entries.add(ToolRegistryEntry(
-      name: 'show_slot',
-      description:
-          'Show a slot with its algorithm info and a page of parameter summaries (name, current value, range). '
-          'Does NOT include enum value lists or full mapping details — use show_parameter for those. '
-          'Parameters with mappings show has_mapping: true. Supports pagination via offset/limit.',
-      inputSchema: {
-        'properties': {
-          'slot_index': {
-            'type': 'integer',
-            'minimum': 0,
-            'maximum': 31,
-            'description': 'Slot index (0-31).',
-          },
-          'offset': {
-            'type': 'integer',
-            'minimum': 0,
-            'description': 'Parameter offset for pagination (default: 0).',
-          },
-          'limit': {
-            'type': 'integer',
-            'minimum': 1,
-            'maximum': 100,
-            'description': 'Max parameters to return (default: 10, max: 100).',
-          },
-        },
-        'required': ['slot_index'],
-      },
-      handler: (args) => _algoTools.showSlot(
-        args['slot_index'],
-        offset: (args['offset'] as int?) ?? 0,
-        limit: (args['limit'] as int?) ?? 10,
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'show_preset',
+        description:
+            'Show a compact preset overview: preset name and slot list with algorithm names and parameter counts. '
+            'Does NOT include parameter values or mappings. Use show_slot to drill into a specific slot.',
+        inputSchema: {'properties': {}},
+        handler: (_) => _algoTools.showPreset(),
       ),
-    ));
+    );
 
-    _entries.add(ToolRegistryEntry(
-      name: 'show_parameter',
-      description:
-          'Show a single parameter with its value, range, unit, and enabled mappings.',
-      inputSchema: {
-        'properties': {
-          'slot_index': {
-            'type': 'integer',
-            'minimum': 0,
-            'maximum': 31,
-            'description': 'Slot index (0-31).',
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'show_slot',
+        description:
+            'Show a slot with its algorithm info and a page of parameter summaries (name, current value, range). '
+            'Does NOT include enum value lists or full mapping details — use show_parameter for those. '
+            'Parameters with mappings show has_mapping: true. Supports pagination via offset/limit.',
+        inputSchema: {
+          'properties': {
+            'slot_index': {
+              'type': 'integer',
+              'minimum': 0,
+              'maximum': 31,
+              'description': 'Slot index (0-31).',
+            },
+            'offset': {
+              'type': 'integer',
+              'minimum': 0,
+              'description': 'Parameter offset for pagination (default: 0).',
+            },
+            'limit': {
+              'type': 'integer',
+              'minimum': 1,
+              'maximum': 100,
+              'description':
+                  'Max parameters to return (default: 10, max: 100).',
+            },
           },
-          'parameter_number': {
-            'description':
-                'Parameter identifier: integer number (0-based) or string name.',
-            'oneOf': [
-              {'type': 'string'},
-              {'type': 'integer'},
-            ],
-          },
+          'required': ['slot_index'],
         },
-        'required': ['slot_index', 'parameter_number'],
-      },
-      handler: (args) =>
-          _algoTools.showParameterByIndex(args['slot_index'], args['parameter_number']),
-    ));
+        handler: (args) => _algoTools.showSlot(
+          args['slot_index'],
+          offset: (args['offset'] as int?) ?? 0,
+          limit: (args['limit'] as int?) ?? 10,
+        ),
+      ),
+    );
 
-    _entries.add(ToolRegistryEntry(
-      name: 'show_screen',
-      description:
-          'Capture and return the current device screen as a base64 PNG image.',
-      inputSchema: {
-        'properties': {
-          'display_mode': {
-            'type': 'string',
-            'description':
-                'Optional display mode to switch to before capturing. Options: "parameter" (hardware parameter list), "algorithm" (custom algorithm interface), "overview" (all slots overview), "vu_meters" (VU meter display)',
-            'enum': ['parameter', 'algorithm', 'overview', 'vu_meters'],
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'show_parameter',
+        description:
+            'Show a single parameter with its value, range, unit, and enabled mappings.',
+        inputSchema: {
+          'properties': {
+            'slot_index': {
+              'type': 'integer',
+              'minimum': 0,
+              'maximum': 31,
+              'description': 'Slot index (0-31).',
+            },
+            'parameter_number': {
+              'description':
+                  'Parameter identifier: integer number (0-based) or string name.',
+              'oneOf': [
+                {'type': 'string'},
+                {'type': 'integer'},
+              ],
+            },
           },
+          'required': ['slot_index', 'parameter_number'],
         },
-      },
-      handler: (args) =>
-          _algoTools.showScreen(displayMode: args['display_mode']),
-    ));
+        handler: (args) => _algoTools.showParameterByIndex(
+          args['slot_index'],
+          args['parameter_number'],
+        ),
+      ),
+    );
 
-    _entries.add(ToolRegistryEntry(
-      name: 'show_routing',
-      description:
-          'Show the current signal routing state with input/output bus assignments for all slots.',
-      inputSchema: {'properties': {}},
-      handler: (_) => _algoTools.showRouting(),
-    ));
-
-    _entries.add(ToolRegistryEntry(
-      name: 'show_cpu',
-      description:
-          'Show CPU usage for the device and per-slot usage breakdown.',
-      inputSchema: {'properties': {}},
-      handler: (_) => _algoTools.showCpu(),
-    ));
-  }
-
-  void _registerEditTools() {
-    _entries.add(ToolRegistryEntry(
-      name: 'edit_preset',
-      description:
-          'Edit the entire preset state including name and all slots. WARNING: Replaces the full preset.',
-      inputSchema: {
-        'properties': {
-          'data': {
-            'type': 'object',
-            'description': 'Full preset data with name and slots array.',
-            'properties': {
-              'name': {'type': 'string', 'description': 'Preset name'},
-              'slots': {
-                'type': 'array',
-                'description':
-                    'Array of slot objects with algorithm and parameters',
-              },
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'show_screen',
+        description:
+            'Capture and return the current device screen as a base64 PNG image.',
+        inputSchema: {
+          'properties': {
+            'display_mode': {
+              'type': 'string',
+              'description':
+                  'Optional display mode to switch to before capturing. Options: "parameter" (hardware parameter list), "algorithm" (custom algorithm interface), "overview" (all slots overview), "vu_meters" (VU meter display)',
+              'enum': ['parameter', 'algorithm', 'overview', 'vu_meters'],
             },
           },
         },
-        'required': ['data'],
-      },
-      handler: (args) =>
-          _distingTools.editPreset(args),
-      timeout: const Duration(seconds: 30),
-    ));
+        handler: (args) =>
+            _algoTools.showScreen(displayMode: args['display_mode']),
+      ),
+    );
 
-    _entries.add(ToolRegistryEntry(
-      name: 'edit_slot',
-      description:
-          'Edit a specific slot: change algorithm, set parameters, or rename. Device must be in connected mode.',
-      inputSchema: {
-        'properties': {
-          'slot_index': {
-            'type': 'integer',
-            'minimum': 0,
-            'maximum': 31,
-            'description': 'Slot index (0-31).',
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'show_routing',
+        description:
+            'Show the current signal routing state with input/output bus assignments for all slots.',
+        inputSchema: {'properties': {}},
+        handler: (_) => _algoTools.showRouting(),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'show_cpu',
+        description:
+            'Show CPU usage for the device and per-slot usage breakdown.',
+        inputSchema: {'properties': {}},
+        handler: (_) => _algoTools.showCpu(),
+      ),
+    );
+  }
+
+  void _registerEditTools() {
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'edit_preset',
+        description:
+            'Edit the entire preset state including name and all slots. WARNING: Replaces the full preset.',
+        inputSchema: {
+          'properties': {
+            'data': {
+              'type': 'object',
+              'description': 'Full preset data with name and slots array.',
+              'properties': {
+                'name': {'type': 'string', 'description': 'Preset name'},
+                'slots': {
+                  'type': 'array',
+                  'description':
+                      'Array of slot objects with algorithm and parameters',
+                },
+              },
+            },
           },
-          'data': {
-            'type': 'object',
-            'description':
-                'Slot data with optional algorithm, parameters, and name.',
-            'properties': {
-              'algorithm': {
+          'required': ['data'],
+        },
+        handler: (args) => _distingTools.editPreset(args),
+        timeout: const Duration(seconds: 30),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'edit_slot',
+        description:
+            'Edit a specific slot: change algorithm, set parameters, or rename. Device must be in connected mode.',
+        inputSchema: {
+          'properties': {
+            'slot_index': {
+              'type': 'integer',
+              'minimum': 0,
+              'maximum': 31,
+              'description': 'Slot index (0-31).',
+            },
+            'data': {
+              'type': 'object',
+              'description':
+                  'Slot data with optional algorithm, parameters, and name.',
+              'properties': {
+                'algorithm': {
+                  'type': 'object',
+                  'description':
+                      'Algorithm specification (guid or name, plus optional specifications)',
+                  'properties': {
+                    'guid': {'type': 'string', 'description': 'Algorithm GUID'},
+                    'name': {
+                      'type': 'string',
+                      'description': 'Algorithm name (fuzzy matching)',
+                    },
+                    'specifications': {
+                      'type': 'array',
+                      'description': 'Algorithm-specific specification values',
+                      'items': {'type': 'integer'},
+                    },
+                  },
+                },
+                'name': {'type': 'string', 'description': 'Custom slot name'},
+                'parameters': {
+                  'type': 'array',
+                  'description':
+                      'Array of parameter objects with values and/or mappings',
+                  'items': {
+                    'type': 'object',
+                    'properties': {
+                      'parameter_number': {
+                        'type': 'integer',
+                        'description': 'Parameter index',
+                      },
+                      'value': {
+                        'description':
+                            'Parameter value. For enum parameters, use one of the exact strings from valid_enum_values. For numeric parameters, use a number.',
+                      },
+                      'mapping': {
+                        'type': 'object',
+                        'description':
+                            'Mapping with CV, MIDI, i2c, and performance page fields. Supports partial updates.',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          'required': ['slot_index', 'data'],
+        },
+        handler: (args) => _distingTools.editSlot(args),
+        timeout: const Duration(seconds: 30),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'edit_parameter',
+        description:
+            'Edit a single parameter value and/or mapping. Device must be in connected mode.',
+        inputSchema: {
+          'properties': {
+            'slot_index': {
+              'type': 'integer',
+              'minimum': 0,
+              'maximum': 31,
+              'description': 'Slot index (0-31).',
+            },
+            'parameter_number': {
+              'description':
+                  'Parameter identifier: integer number (0-based) or string name.',
+              'oneOf': [
+                {'type': 'string'},
+                {'type': 'integer'},
+              ],
+            },
+            'value': {
+              'description':
+                  'Parameter value. For enum parameters, use one of the exact strings from valid_enum_values. For numeric parameters, use a number. If omitted, mapping must be provided.',
+            },
+            'mapping': {
+              'type': 'object',
+              'description':
+                  'Parameter mapping with CV, MIDI, i2c, and performance page controls. Supports partial updates.',
+              'properties': {
+                'cv': {
+                  'type': 'object',
+                  'description':
+                      'CV mapping: source, cv_input (0-12), is_unipolar, is_gate, volts, delta',
+                },
+                'midi': {
+                  'type': 'object',
+                  'description':
+                      'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128), midi_type, is_midi_symmetric, is_midi_relative, midi_min, midi_max',
+                },
+                'i2c': {
+                  'type': 'object',
+                  'description':
+                      'i2c mapping: is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max',
+                },
+                'performance_page': {
+                  'type': 'integer',
+                  'description':
+                      'Performance page index (0=not assigned, 1-30=page number)',
+                },
+              },
+            },
+          },
+          'required': ['slot_index', 'parameter_number'],
+        },
+        handler: (args) => _distingTools.editParameter(args),
+        timeout: const Duration(seconds: 15),
+      ),
+    );
+  }
+
+  void _registerPresetTools() {
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'new',
+        description:
+            'Create new blank preset or preset with initial algorithms. WARNING: Clears current preset.',
+        inputSchema: {
+          'properties': {
+            'name': {
+              'type': 'string',
+              'description': 'Name for the new preset.',
+            },
+            'algorithms': {
+              'type': 'array',
+              'description':
+                  'Algorithms to add. Each: {name: string} or {guid: string}. Added to slots 0, 1, 2, etc.',
+              'items': {
                 'type': 'object',
-                'description':
-                    'Algorithm specification (guid or name, plus optional specifications)',
                 'properties': {
-                  'guid': {'type': 'string', 'description': 'Algorithm GUID'},
+                  'guid': {
+                    'type': 'string',
+                    'description': 'Algorithm GUID (alternative to name)',
+                  },
                   'name': {
                     'type': 'string',
                     'description': 'Algorithm name (fuzzy matching)',
@@ -351,215 +504,157 @@ class ToolRegistry {
                   },
                 },
               },
-              'name': {'type': 'string', 'description': 'Custom slot name'},
-              'parameters': {
-                'type': 'array',
-                'description':
-                    'Array of parameter objects with values and/or mappings',
-                'items': {
-                  'type': 'object',
-                  'properties': {
-                    'parameter_number': {
-                      'type': 'integer',
-                      'description': 'Parameter index',
-                    },
-                    'value': {
-                      'description':
-                          'Parameter value. For enum parameters, use one of the exact strings from valid_enum_values. For numeric parameters, use a number.',
-                    },
-                    'mapping': {
-                      'type': 'object',
-                      'description':
-                          'Mapping with CV, MIDI, i2c, and performance page fields. Supports partial updates.',
-                    },
-                  },
-                },
-              },
+            },
+          },
+          'required': ['name'],
+        },
+        handler: (args) => _distingTools.newWithAlgorithms(args),
+        timeout: const Duration(seconds: 30),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'save',
+        description: 'Save the current preset to the device.',
+        inputSchema: {'properties': {}},
+        handler: (args) => _distingTools.savePreset(args),
+      ),
+    );
+
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'add',
+        description: 'Add an algorithm to the preset. Requires name or guid.',
+        inputSchema: {
+          'properties': {
+            'name': {
+              'type': 'string',
+              'description':
+                  'Algorithm name (fuzzy matching). Required if no guid.',
+            },
+            'guid': {
+              'type': 'string',
+              'description': 'Algorithm GUID. Required if no name.',
+            },
+            'slot_index': {
+              'type': 'integer',
+              'description':
+                  'Insert position (0-31). Omit for first empty slot.',
+            },
+            'specifications': {
+              'type': 'array',
+              'items': {'type': 'integer'},
+              'description':
+                  'Specification values for algorithms that require them (e.g., channel count, max delay time).',
             },
           },
         },
-        'required': ['slot_index', 'data'],
-      },
-      handler: (args) => _distingTools.editSlot(args),
-      timeout: const Duration(seconds: 30),
-    ));
+        handler: (args) =>
+            _distingTools.addSimple({...args, 'target': 'algorithm'}),
+        timeout: const Duration(seconds: 30),
+      ),
+    );
 
-    _entries.add(ToolRegistryEntry(
-      name: 'edit_parameter',
-      description:
-          'Edit a single parameter value and/or mapping. Device must be in connected mode.',
-      inputSchema: {
-        'properties': {
-          'slot_index': {
-            'type': 'integer',
-            'minimum': 0,
-            'maximum': 31,
-            'description': 'Slot index (0-31).',
-          },
-          'parameter_number': {
-            'description':
-                'Parameter identifier: integer number (0-based) or string name.',
-            'oneOf': [
-              {'type': 'string'},
-              {'type': 'integer'},
-            ],
-          },
-          'value': {
-            'description':
-                'Parameter value. For enum parameters, use one of the exact strings from valid_enum_values. For numeric parameters, use a number. If omitted, mapping must be provided.',
-          },
-          'mapping': {
-            'type': 'object',
-            'description':
-                'Parameter mapping with CV, MIDI, i2c, and performance page controls. Supports partial updates.',
-            'properties': {
-              'cv': {
-                'type': 'object',
-                'description':
-                    'CV mapping: source, cv_input (0-12), is_unipolar, is_gate, volts, delta',
-              },
-              'midi': {
-                'type': 'object',
-                'description':
-                    'MIDI mapping: is_midi_enabled, midi_channel (0-15), midi_cc (0-128), midi_type, is_midi_symmetric, is_midi_relative, midi_min, midi_max',
-              },
-              'i2c': {
-                'type': 'object',
-                'description':
-                    'i2c mapping: is_i2c_enabled, i2c_cc (0-255), is_i2c_symmetric, i2c_min, i2c_max',
-              },
-              'performance_page': {
-                'type': 'integer',
-                'description':
-                    'Performance page index (0=not assigned, 1-30=page number)',
-              },
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'apply_template_to_preset',
+        description:
+            'Apply selected slots from a saved template to the connected device or to a saved local preset.',
+        inputSchema: {
+          'properties': {
+            'template_id': {
+              'type': 'integer',
+              'description': 'Template preset id.',
+            },
+            'template_name': {
+              'type': 'string',
+              'description':
+                  'Alternative to template_id; resolved by exact match, then case-insensitive exact match.',
+            },
+            'slot_indices': {
+              'type': 'array',
+              'items': {'type': 'integer', 'minimum': 0},
+              'description':
+                  'Which template slots to apply. Omit to apply all.',
+            },
+            'target': {
+              'type': 'string',
+              'enum': ['device', 'preset'],
+              'description': 'Where to apply. Default: device.',
+            },
+            'target_preset_id': {
+              'type': 'integer',
+              'description': 'Required when target is "preset".',
+            },
+            'target_preset_name': {
+              'type': 'string',
+              'description': 'Alternative to target_preset_id.',
+            },
+            'insertion_offset': {
+              'type': 'integer',
+              'description':
+                  'Slot index in target. Default: append for device, 0 for preset.',
+            },
+            'overwrite': {
+              'type': 'boolean',
+              'description':
+                  'Replace target slots starting at insertion_offset. Default: false.',
             },
           },
         },
-        'required': ['slot_index', 'parameter_number'],
-      },
-      handler: (args) => _distingTools.editParameter(args),
-      timeout: const Duration(seconds: 15),
-    ));
-  }
+        handler: (args) => _distingTools.applyTemplateToPreset(args),
+        timeout: const Duration(seconds: 120),
+      ),
+    );
 
-  void _registerPresetTools() {
-    _entries.add(ToolRegistryEntry(
-      name: 'new',
-      description:
-          'Create new blank preset or preset with initial algorithms. WARNING: Clears current preset.',
-      inputSchema: {
-        'properties': {
-          'name': {'type': 'string', 'description': 'Name for the new preset.'},
-          'algorithms': {
-            'type': 'array',
-            'description':
-                'Algorithms to add. Each: {name: string} or {guid: string}. Added to slots 0, 1, 2, etc.',
-            'items': {
-              'type': 'object',
-              'properties': {
-                'guid': {
-                  'type': 'string',
-                  'description': 'Algorithm GUID (alternative to name)',
-                },
-                'name': {
-                  'type': 'string',
-                  'description': 'Algorithm name (fuzzy matching)',
-                },
-                'specifications': {
-                  'type': 'array',
-                  'description': 'Algorithm-specific specification values',
-                  'items': {'type': 'integer'},
-                },
-              },
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'remove',
+        description:
+            'Remove the algorithm from a slot, leaving it empty. Succeeds gracefully if slot is already empty.',
+        inputSchema: {
+          'properties': {
+            'slot_index': {
+              'type': 'integer',
+              'description': 'Slot index to clear (0-31).',
             },
           },
+          'required': ['slot_index'],
         },
-        'required': ['name'],
-      },
-      handler: (args) => _distingTools.newWithAlgorithms(args),
-      timeout: const Duration(seconds: 30),
-    ));
+        handler: (args) =>
+            _distingTools.removeSlot({...args, 'target': 'slot'}),
+      ),
+    );
 
-    _entries.add(ToolRegistryEntry(
-      name: 'save',
-      description: 'Save the current preset to the device.',
-      inputSchema: {'properties': {}},
-      handler: (args) => _distingTools.savePreset(args),
-    ));
-
-    _entries.add(ToolRegistryEntry(
-      name: 'add',
-      description: 'Add an algorithm to the preset. Requires name or guid.',
-      inputSchema: {
-        'properties': {
-          'name': {
-            'type': 'string',
-            'description':
-                'Algorithm name (fuzzy matching). Required if no guid.',
+    _entries.add(
+      ToolRegistryEntry(
+        name: 'move_algorithm',
+        description:
+            'Move an algorithm up or down in the slot list. '
+            'Algorithms swap positions with adjacent slots.',
+        inputSchema: {
+          'properties': {
+            'slot_index': {
+              'type': 'integer',
+              'description':
+                  'Current slot index of the algorithm to move (0-31).',
+            },
+            'direction': {
+              'type': 'string',
+              'enum': ['up', 'down'],
+              'description':
+                  'Direction to move: "up" (lower slot number) or "down" (higher slot number).',
+            },
+            'steps': {
+              'type': 'integer',
+              'description': 'Number of positions to move (default: 1).',
+            },
           },
-          'guid': {
-            'type': 'string',
-            'description': 'Algorithm GUID. Required if no name.',
-          },
-          'slot_index': {
-            'type': 'integer',
-            'description': 'Insert position (0-31). Omit for first empty slot.',
-          },
-          'specifications': {
-            'type': 'array',
-            'items': {'type': 'integer'},
-            'description':
-                'Specification values for algorithms that require them (e.g., channel count, max delay time).',
-          },
+          'required': ['slot_index', 'direction'],
         },
-      },
-      handler: (args) =>
-          _distingTools.addSimple({...args, 'target': 'algorithm'}),
-      timeout: const Duration(seconds: 30),
-    ));
-
-    _entries.add(ToolRegistryEntry(
-      name: 'remove',
-      description:
-          'Remove the algorithm from a slot, leaving it empty. Succeeds gracefully if slot is already empty.',
-      inputSchema: {
-        'properties': {
-          'slot_index': {
-            'type': 'integer',
-            'description': 'Slot index to clear (0-31).',
-          },
-        },
-        'required': ['slot_index'],
-      },
-      handler: (args) =>
-          _distingTools.removeSlot({...args, 'target': 'slot'}),
-    ));
-
-    _entries.add(ToolRegistryEntry(
-      name: 'move_algorithm',
-      description:
-          'Move an algorithm up or down in the slot list. '
-          'Algorithms swap positions with adjacent slots.',
-      inputSchema: {
-        'properties': {
-          'slot_index': {
-            'type': 'integer',
-            'description': 'Current slot index of the algorithm to move (0-31).',
-          },
-          'direction': {
-            'type': 'string',
-            'enum': ['up', 'down'],
-            'description': 'Direction to move: "up" (lower slot number) or "down" (higher slot number).',
-          },
-          'steps': {
-            'type': 'integer',
-            'description': 'Number of positions to move (default: 1).',
-          },
-        },
-        'required': ['slot_index', 'direction'],
-      },
-      handler: (args) => _distingTools.moveAlgorithm(args),
-    ));
+        handler: (args) => _distingTools.moveAlgorithm(args),
+      ),
+    );
   }
 }

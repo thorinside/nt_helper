@@ -27,6 +27,10 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
   // Cancellation flag for template injection
   bool _isInjectionCancelled = false;
+  // Re-entrance guard for device-side template apply. The UI also disables
+  // the apply button, but this catches MCP/UI races where both paths could
+  // call applyTemplateToDevice concurrently.
+  bool _isInjectionRunning = false;
 
   // Checkpoint keys for SharedPreferences
   static const String _checkpointAlgorithmName =
@@ -677,104 +681,123 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   /// Injects a template preset into the current device preset by appending
   /// its algorithms to the end without clearing the existing preset.
   ///
-  /// This method:
-  /// - Validates that current preset + template slots ≤ 32
-  /// - Adds each template algorithm sequentially via requestAddAlgorithm()
-  /// - Sets parameter values and mappings for each injected slot
-  /// - Does NOT call requestNewPreset() (preserves current preset)
-  /// - Does NOT call requestSavePreset() (lets user save manually)
-  ///
-  /// Throws [Exception] if slot limit would be exceeded.
-  /// Emits loading/success/failure states to UI.
+  /// Delegates to [applyTemplateToDevice] with all slot indices selected.
   Future<void> injectTemplateToDevice(
     FullPresetDetails template,
     IDistingMidiManager manager,
-  ) async {
-    _isInjectionCancelled = false; // Reset cancellation flag
-    emit(const MetadataSyncState.loadingPreset());
+  ) {
+    return applyTemplateToDevice(
+      template: template,
+      templateSlotIndices:
+          List<int>.generate(template.slots.length, (i) => i),
+      manager: manager,
+    );
+  }
+
+  /// Applies a selected subset of [template] slots to the connected device.
+  ///
+  /// The slots in [templateSlotIndices] (positions within
+  /// `template.slots`, 0-based) are appended after the device's current
+  /// slots in the order given. Duplicates are honoured. The method emits
+  /// [InjectingTemplate] progress states between each algorithm-add.
+  ///
+  /// The supplied [template] is captured by value — concurrent edits to the
+  /// source preset are invisible to the in-flight apply.
+  Future<void> applyTemplateToDevice({
+    required FullPresetDetails template,
+    required List<int> templateSlotIndices,
+    required IDistingMidiManager manager,
+  }) async {
+    if (_isInjectionRunning) {
+      throw StateError(
+        'A template apply is already in progress; cannot start another.',
+      );
+    }
+    _isInjectionRunning = true;
+    _isInjectionCancelled = false;
+
+    final total = templateSlotIndices.length;
+    emit(MetadataSyncState.injectingTemplate(applied: 0, total: total));
 
     try {
-      // Check for empty template
       if (template.slots.isEmpty) {
         throw Exception('Cannot inject empty template');
       }
+      if (templateSlotIndices.isEmpty) {
+        throw Exception('Cannot inject empty template');
+      }
+      for (final i in templateSlotIndices) {
+        if (i < 0 || i >= template.slots.length) {
+          throw Exception(
+            'Template slot index $i out of range [0, ${template.slots.length}).',
+          );
+        }
+      }
 
-      // Check for cancellation early
       if (_isInjectionCancelled) {
         throw Exception(
           'Injection cancelled. Preset may be partially modified.',
         );
       }
 
-      // Validate that all template algorithms have metadata
-      for (int i = 0; i < template.slots.length; i++) {
+      // Pre-flight metadata check on every slot we will apply.
+      for (final i in templateSlotIndices) {
         final slot = template.slots[i];
-        final algorithmGuid = slot.algorithm.guid;
-        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
-          algorithmGuid,
-        );
-        if (algoDetails == null) {
+        final details =
+            await _metadataDao.getFullAlgorithmDetails(slot.algorithm.guid);
+        if (details == null) {
           throw Exception(
-            'Template missing algorithm metadata. '
-            'Sync algorithms first.',
+            'Template missing algorithm metadata. Sync algorithms first.',
           );
         }
       }
 
-      // Validate slot limit before starting injection
+      // Slot limit check.
       int currentSlotCount = 0;
       try {
         currentSlotCount = await manager.requestNumAlgorithmsInPreset() ?? 0;
-      } catch (e) {
-        // In offline/demo mode, assume empty preset
+      } catch (_) {
         currentSlotCount = 0;
       }
-      final templateSlotCount = template.slots.length;
-      final totalSlots = currentSlotCount + templateSlotCount;
-
+      final totalSlots = currentSlotCount + total;
       if (totalSlots > 32) {
         throw Exception(
           'Cannot inject: Would exceed 32 slot limit '
-          '(current: $currentSlotCount, template: $templateSlotCount)',
+          '(current: $currentSlotCount, template: $total)',
         );
       }
 
-      // Track the starting slot index for parameter/mapping application
       final startingSlotIndex = currentSlotCount;
+      int appliedCount = 0;
 
-      // Add all algorithms first (sequentially, not in parallel)
-      for (int i = 0; i < template.slots.length; i++) {
-        // Check for cancellation between algorithms
+      for (var i = 0; i < templateSlotIndices.length; i++) {
         if (_isInjectionCancelled) {
           throw Exception(
-            'Injection cancelled after adding $i of ${template.slots.length} algorithms. '
+            'Injection cancelled after adding $appliedCount of $total algorithms. '
             'Preset may be partially modified.',
           );
         }
 
-        final slot = template.slots[i];
+        final sourceIndex = templateSlotIndices[i];
+        final slot = template.slots[sourceIndex];
         final algorithmGuid = slot.algorithm.guid;
 
         try {
-          // Fetch full details to get specifications and AlgorithmInfo fields
-          final algoDetails = await _metadataDao.getFullAlgorithmDetails(
-            algorithmGuid,
-          );
-          if (algoDetails == null) {
+          final details =
+              await _metadataDao.getFullAlgorithmDetails(algorithmGuid);
+          if (details == null) {
             throw Exception(
               "Algorithm metadata for GUID '$algorithmGuid' not found locally. "
               "Cannot add template slot ${i + 1}.",
             );
           }
 
-          // Prepare AlgorithmInfo and default specifications
-          // Use startingSlotIndex + i as the target slot index
           final targetSlotIndex = startingSlotIndex + i;
           final algorithmInfo = AlgorithmInfo(
             algorithmIndex: targetSlotIndex,
-            guid: algoDetails.algorithm.guid,
-            name: algoDetails.algorithm.name,
-            specifications: algoDetails.specifications
+            guid: details.algorithm.guid,
+            name: details.algorithm.name,
+            specifications: details.specifications
                 .map(
                   (spec) => Specification(
                     name: spec.name,
@@ -786,84 +809,78 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
                 )
                 .toList(),
           );
-          final defaultSpecifications = algoDetails.specifications
-              .map((s) => s.defaultValue)
-              .toList();
+          final defaultSpecifications =
+              details.specifications.map((s) => s.defaultValue).toList();
 
-          await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
-          // Add delay after adding each algorithm
+          await manager.requestAddAlgorithm(
+            algorithmInfo,
+            defaultSpecifications,
+          );
           await Future.delayed(const Duration(milliseconds: 150));
+
+          appliedCount++;
+          emit(MetadataSyncState.injectingTemplate(
+            applied: appliedCount,
+            total: total,
+          ));
         } catch (algorithmError) {
-          // Report partial injection failure with specific algorithm that failed
           throw Exception(
             'Failed to inject algorithm "${slot.algorithm.name}" '
-            '(${i + 1} of ${template.slots.length}). '
-            'Preset may be partially modified. '
+            '(${i + 1} of $total). '
+            'Preset may be partially modified after $appliedCount slot(s). '
             'Error: ${algorithmError.toString()}',
           );
         }
       }
 
-      // Set parameters and mappings for each injected slot
-      for (int i = 0; i < template.slots.length; i++) {
-        final slot = template.slots[i];
+      // Set parameters and mappings for each injected slot, mirroring source
+      // slot data 1:1.
+      for (var i = 0; i < templateSlotIndices.length; i++) {
+        final sourceIndex = templateSlotIndices[i];
+        final slot = template.slots[sourceIndex];
         final targetSlotIndex = startingSlotIndex + i;
         final algorithmGuid = slot.algorithm.guid;
-        if (kDebugMode) {}
 
-        // Send the slot name to the device
-        await manager.requestSendSlotName(targetSlotIndex, slot.algorithm.name);
-
-        // Fetch metadata again to get parameter names for logging
-        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
-          algorithmGuid,
+        await manager.requestSendSlotName(
+          targetSlotIndex,
+          slot.algorithm.name,
         );
-        if (algoDetails == null) {
-          continue; // Skip configuration for this slot if metadata missing
+
+        final details =
+            await _metadataDao.getFullAlgorithmDetails(algorithmGuid);
+        if (details == null) {
+          continue;
         }
 
-        // Send Parameter Values
-        if (kDebugMode) {}
         for (final paramEntry in slot.parameterValues.entries) {
           final parameterNumber = paramEntry.key;
           final value = paramEntry.value;
 
-          // Find parameter name for logging (optional, but helpful)
-          final paramMetadata = algoDetails.parameters.firstWhereOrNull(
+          final paramMetadata = details.parameters.firstWhereOrNull(
             (p) => p.parameter.parameterNumber == parameterNumber,
           );
           paramMetadata?.parameter.name ?? 'Unnamed';
 
-          if (kDebugMode) {}
-          // Use setParameterValue
           await manager.setParameterValue(
             targetSlotIndex,
             parameterNumber,
             value,
           );
-          // Optional small delay between parameter sends
           await Future.delayed(const Duration(milliseconds: 20));
         }
 
-        // Send Mappings
-        if (kDebugMode) {}
         for (final mappingEntry in slot.mappings.entries) {
           final parameterNumber = mappingEntry.key;
           final mappingData = mappingEntry.value;
-
-          if (kDebugMode) {}
-          // Use requestSetMapping
           await manager.requestSetMapping(
             targetSlotIndex,
             parameterNumber,
             mappingData,
           );
-          // Optional small delay
           await Future.delayed(const Duration(milliseconds: 20));
         }
       }
 
-      // Add a final delay after all commands are sent
       await Future.delayed(const Duration(milliseconds: 100));
 
       emit(
@@ -872,32 +889,68 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           "Save manually when ready.",
         ),
       );
-      // Reload local data after success to ensure UI is in ViewingLocalData state
       await loadLocalData();
     } catch (e) {
-
-      // Provide specific error messages based on exception type
       String errorMessage;
-
-      // Check for connection-related errors
       if (e.toString().contains('connection') ||
           e.toString().contains('Connection') ||
           e.toString().contains('disconnect') ||
           e.toString().contains('MIDI') ||
           e.toString().contains('timeout')) {
         errorMessage =
-          'Connection lost during injection. Preset may be partially modified. '
-          'Reconnect your device and check the preset.';
+            'Connection lost during injection. Preset may be partially modified. '
+            'Reconnect your device and check the preset.';
       } else if (e.toString().contains('metadata') ||
-                 e.toString().contains('not found locally')) {
+          e.toString().contains('not found locally')) {
         errorMessage =
-          'Template missing algorithm metadata. '
-          'Go to Settings > Sync Algorithms to download latest metadata.';
+            'Template missing algorithm metadata. '
+            'Go to Settings > Sync Algorithms to download latest metadata.';
       } else {
         errorMessage = "Error injecting template: ${e.toString()}";
       }
-
       emit(MetadataSyncState.presetLoadFailure(errorMessage));
+    } finally {
+      _isInjectionRunning = false;
+    }
+  }
+
+  /// Copies a subset of slots from a saved template into another saved
+  /// preset (the *target*), without touching the connected device. Thin
+  /// orchestration over [PresetsDao.applyTemplateSlots].
+  ///
+  /// On success the cubit emits [ViewingLocalData] so list-driven UIs
+  /// refresh. [TemplateSpaceException] from the DAO is caught and
+  /// re-emitted as [MetadataSyncFailure] with a human-readable message.
+  Future<ApplyTemplateSlotsResult> applyTemplateToPreset({
+    required int templateId,
+    required int targetPresetId,
+    required List<int> templateSlotIndices,
+    required int insertionOffset,
+    bool overwrite = false,
+  }) async {
+    try {
+      final result = await _presetsDao.applyTemplateSlots(
+        templateId: templateId,
+        targetPresetId: targetPresetId,
+        templateSlotIndices: templateSlotIndices,
+        insertionOffset: insertionOffset,
+        overwrite: overwrite,
+      );
+      await loadLocalData();
+      return result;
+    } on TemplateSpaceException catch (e) {
+      emit(
+        MetadataSyncState.metadataSyncFailure(
+          'Cannot apply template: ${e.current} existing + ${e.applied} new '
+          'would exceed the ${e.limit}-slot limit.',
+        ),
+      );
+      rethrow;
+    } catch (e) {
+      emit(MetadataSyncState.metadataSyncFailure(
+        'Failed to apply template: $e',
+      ));
+      rethrow;
     }
   }
 }

@@ -134,6 +134,12 @@ class Presets extends Table {
   DateTimeColumn get lastModified =>
       dateTime().withDefault(currentDateAndTime)();
   BoolColumn get isTemplate => boolean().withDefault(const Constant(false))();
+  // Free-form short string used to group templates in the Template Manager.
+  // Meaningful only when isTemplate = true.
+  TextColumn get category => text().nullable()();
+  // JSON-encoded TemplateMetadata (description, tags, author, createdAt, extras).
+  // Meaningful only when isTemplate = true.
+  TextColumn get templateMetadata => text().nullable()();
 }
 
 @DataClassName('PresetSlotEntry')

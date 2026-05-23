@@ -2,6 +2,8 @@
 
 This guide explains how to work with parameter mappings in the Disting NT MCP API. Mappings allow you to control algorithm parameters through external control sources: CV inputs, MIDI messages, i2c communication, and performance page organization.
 
+Template application preserves packed mapping bytes verbatim. When using `apply_template_to_preset`, copied slots keep their CV, MIDI, i2c, and performance-page mapping data; the tool does not decode or reinterpret those mappings.
+
 ## Table of Contents
 
 1. [CV Mapping](#cv-mapping)

@@ -188,7 +188,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       buildDefaultDragHandles: false,
       itemCount: sortedParams.length,
-      onReorder: (oldIndex, newIndex) =>
+      onReorderItem: (oldIndex, newIndex) =>
           _onReorder(sortedParams, oldIndex, newIndex),
       itemBuilder: (context, index) {
         final item = sortedParams[index];
@@ -350,15 +350,20 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                         parameters: sortedParams,
                         layoutMode: _layoutMode,
                         slots: state.slots,
-                        onParameterChanged: (slotIndex, parameterNumber,
-                            value, userIsChanging) {
-                          context.read<DistingCubit>().updateParameterValue(
-                            algorithmIndex: slotIndex,
-                            parameterNumber: parameterNumber,
-                            value: value,
-                            userIsChangingTheValue: userIsChanging,
-                          );
-                        },
+                        onParameterChanged:
+                            (
+                              slotIndex,
+                              parameterNumber,
+                              value,
+                              userIsChanging,
+                            ) {
+                              context.read<DistingCubit>().updateParameterValue(
+                                algorithmIndex: slotIndex,
+                                parameterNumber: parameterNumber,
+                                value: value,
+                                userIsChangingTheValue: userIsChanging,
+                              );
+                            },
                       ),
                     ),
                   ],
@@ -390,15 +395,15 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
             child: HardwarePreviewWidget(
               perfPageItems: enabledItems,
               slots: state.slots,
-              onParameterChanged: (slotIndex, parameterNumber, value,
-                  userIsChanging) {
-                context.read<DistingCubit>().updateParameterValue(
-                  algorithmIndex: slotIndex,
-                  parameterNumber: parameterNumber,
-                  value: value,
-                  userIsChangingTheValue: userIsChanging,
-                );
-              },
+              onParameterChanged:
+                  (slotIndex, parameterNumber, value, userIsChanging) {
+                    context.read<DistingCubit>().updateParameterValue(
+                      algorithmIndex: slotIndex,
+                      parameterNumber: parameterNumber,
+                      value: value,
+                      userIsChangingTheValue: userIsChanging,
+                    );
+                  },
             ),
           ),
         ],

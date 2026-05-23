@@ -61,7 +61,7 @@ extension MetadataSyncStatePatterns on MetadataSyncState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( Idle value)?  idle,TResult Function( SyncingMetadata value)?  syncingMetadata,TResult Function( CheckpointFound value)?  checkpointFound,TResult Function( MetadataSyncSuccess value)?  metadataSyncSuccess,TResult Function( MetadataSyncFailure value)?  metadataSyncFailure,TResult Function( SavingPreset value)?  savingPreset,TResult Function( LoadingPreset value)?  loadingPreset,TResult Function( PresetSaveSuccess value)?  presetSaveSuccess,TResult Function( PresetSaveFailure value)?  presetSaveFailure,TResult Function( PresetLoadSuccess value)?  presetLoadSuccess,TResult Function( PresetLoadFailure value)?  presetLoadFailure,TResult Function( DeletingPreset value)?  deletingPreset,TResult Function( PresetDeleteSuccess value)?  presetDeleteSuccess,TResult Function( PresetDeleteFailure value)?  presetDeleteFailure,TResult Function( ViewingLocalData value)?  viewingLocalData,TResult Function( Failure value)?  failure,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( Idle value)?  idle,TResult Function( SyncingMetadata value)?  syncingMetadata,TResult Function( CheckpointFound value)?  checkpointFound,TResult Function( MetadataSyncSuccess value)?  metadataSyncSuccess,TResult Function( MetadataSyncFailure value)?  metadataSyncFailure,TResult Function( SavingPreset value)?  savingPreset,TResult Function( LoadingPreset value)?  loadingPreset,TResult Function( InjectingTemplate value)?  injectingTemplate,TResult Function( PresetSaveSuccess value)?  presetSaveSuccess,TResult Function( PresetSaveFailure value)?  presetSaveFailure,TResult Function( PresetLoadSuccess value)?  presetLoadSuccess,TResult Function( PresetLoadFailure value)?  presetLoadFailure,TResult Function( DeletingPreset value)?  deletingPreset,TResult Function( PresetDeleteSuccess value)?  presetDeleteSuccess,TResult Function( PresetDeleteFailure value)?  presetDeleteFailure,TResult Function( ViewingLocalData value)?  viewingLocalData,TResult Function( Failure value)?  failure,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case Idle() when idle != null:
@@ -71,7 +71,8 @@ return checkpointFound(_that);case MetadataSyncSuccess() when metadataSyncSucces
 return metadataSyncSuccess(_that);case MetadataSyncFailure() when metadataSyncFailure != null:
 return metadataSyncFailure(_that);case SavingPreset() when savingPreset != null:
 return savingPreset(_that);case LoadingPreset() when loadingPreset != null:
-return loadingPreset(_that);case PresetSaveSuccess() when presetSaveSuccess != null:
+return loadingPreset(_that);case InjectingTemplate() when injectingTemplate != null:
+return injectingTemplate(_that);case PresetSaveSuccess() when presetSaveSuccess != null:
 return presetSaveSuccess(_that);case PresetSaveFailure() when presetSaveFailure != null:
 return presetSaveFailure(_that);case PresetLoadSuccess() when presetLoadSuccess != null:
 return presetLoadSuccess(_that);case PresetLoadFailure() when presetLoadFailure != null:
@@ -98,7 +99,7 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( Idle value)  idle,required TResult Function( SyncingMetadata value)  syncingMetadata,required TResult Function( CheckpointFound value)  checkpointFound,required TResult Function( MetadataSyncSuccess value)  metadataSyncSuccess,required TResult Function( MetadataSyncFailure value)  metadataSyncFailure,required TResult Function( SavingPreset value)  savingPreset,required TResult Function( LoadingPreset value)  loadingPreset,required TResult Function( PresetSaveSuccess value)  presetSaveSuccess,required TResult Function( PresetSaveFailure value)  presetSaveFailure,required TResult Function( PresetLoadSuccess value)  presetLoadSuccess,required TResult Function( PresetLoadFailure value)  presetLoadFailure,required TResult Function( DeletingPreset value)  deletingPreset,required TResult Function( PresetDeleteSuccess value)  presetDeleteSuccess,required TResult Function( PresetDeleteFailure value)  presetDeleteFailure,required TResult Function( ViewingLocalData value)  viewingLocalData,required TResult Function( Failure value)  failure,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( Idle value)  idle,required TResult Function( SyncingMetadata value)  syncingMetadata,required TResult Function( CheckpointFound value)  checkpointFound,required TResult Function( MetadataSyncSuccess value)  metadataSyncSuccess,required TResult Function( MetadataSyncFailure value)  metadataSyncFailure,required TResult Function( SavingPreset value)  savingPreset,required TResult Function( LoadingPreset value)  loadingPreset,required TResult Function( InjectingTemplate value)  injectingTemplate,required TResult Function( PresetSaveSuccess value)  presetSaveSuccess,required TResult Function( PresetSaveFailure value)  presetSaveFailure,required TResult Function( PresetLoadSuccess value)  presetLoadSuccess,required TResult Function( PresetLoadFailure value)  presetLoadFailure,required TResult Function( DeletingPreset value)  deletingPreset,required TResult Function( PresetDeleteSuccess value)  presetDeleteSuccess,required TResult Function( PresetDeleteFailure value)  presetDeleteFailure,required TResult Function( ViewingLocalData value)  viewingLocalData,required TResult Function( Failure value)  failure,}){
 final _that = this;
 switch (_that) {
 case Idle():
@@ -108,7 +109,8 @@ return checkpointFound(_that);case MetadataSyncSuccess():
 return metadataSyncSuccess(_that);case MetadataSyncFailure():
 return metadataSyncFailure(_that);case SavingPreset():
 return savingPreset(_that);case LoadingPreset():
-return loadingPreset(_that);case PresetSaveSuccess():
+return loadingPreset(_that);case InjectingTemplate():
+return injectingTemplate(_that);case PresetSaveSuccess():
 return presetSaveSuccess(_that);case PresetSaveFailure():
 return presetSaveFailure(_that);case PresetLoadSuccess():
 return presetLoadSuccess(_that);case PresetLoadFailure():
@@ -131,7 +133,7 @@ return failure(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( Idle value)?  idle,TResult? Function( SyncingMetadata value)?  syncingMetadata,TResult? Function( CheckpointFound value)?  checkpointFound,TResult? Function( MetadataSyncSuccess value)?  metadataSyncSuccess,TResult? Function( MetadataSyncFailure value)?  metadataSyncFailure,TResult? Function( SavingPreset value)?  savingPreset,TResult? Function( LoadingPreset value)?  loadingPreset,TResult? Function( PresetSaveSuccess value)?  presetSaveSuccess,TResult? Function( PresetSaveFailure value)?  presetSaveFailure,TResult? Function( PresetLoadSuccess value)?  presetLoadSuccess,TResult? Function( PresetLoadFailure value)?  presetLoadFailure,TResult? Function( DeletingPreset value)?  deletingPreset,TResult? Function( PresetDeleteSuccess value)?  presetDeleteSuccess,TResult? Function( PresetDeleteFailure value)?  presetDeleteFailure,TResult? Function( ViewingLocalData value)?  viewingLocalData,TResult? Function( Failure value)?  failure,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( Idle value)?  idle,TResult? Function( SyncingMetadata value)?  syncingMetadata,TResult? Function( CheckpointFound value)?  checkpointFound,TResult? Function( MetadataSyncSuccess value)?  metadataSyncSuccess,TResult? Function( MetadataSyncFailure value)?  metadataSyncFailure,TResult? Function( SavingPreset value)?  savingPreset,TResult? Function( LoadingPreset value)?  loadingPreset,TResult? Function( InjectingTemplate value)?  injectingTemplate,TResult? Function( PresetSaveSuccess value)?  presetSaveSuccess,TResult? Function( PresetSaveFailure value)?  presetSaveFailure,TResult? Function( PresetLoadSuccess value)?  presetLoadSuccess,TResult? Function( PresetLoadFailure value)?  presetLoadFailure,TResult? Function( DeletingPreset value)?  deletingPreset,TResult? Function( PresetDeleteSuccess value)?  presetDeleteSuccess,TResult? Function( PresetDeleteFailure value)?  presetDeleteFailure,TResult? Function( ViewingLocalData value)?  viewingLocalData,TResult? Function( Failure value)?  failure,}){
 final _that = this;
 switch (_that) {
 case Idle() when idle != null:
@@ -141,7 +143,8 @@ return checkpointFound(_that);case MetadataSyncSuccess() when metadataSyncSucces
 return metadataSyncSuccess(_that);case MetadataSyncFailure() when metadataSyncFailure != null:
 return metadataSyncFailure(_that);case SavingPreset() when savingPreset != null:
 return savingPreset(_that);case LoadingPreset() when loadingPreset != null:
-return loadingPreset(_that);case PresetSaveSuccess() when presetSaveSuccess != null:
+return loadingPreset(_that);case InjectingTemplate() when injectingTemplate != null:
+return injectingTemplate(_that);case PresetSaveSuccess() when presetSaveSuccess != null:
 return presetSaveSuccess(_that);case PresetSaveFailure() when presetSaveFailure != null:
 return presetSaveFailure(_that);case PresetLoadSuccess() when presetLoadSuccess != null:
 return presetLoadSuccess(_that);case PresetLoadFailure() when presetLoadFailure != null:
@@ -167,7 +170,7 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)?  syncingMetadata,TResult Function( String algorithmName,  int algorithmIndex)?  checkpointFound,TResult Function( String message)?  metadataSyncSuccess,TResult Function( String error)?  metadataSyncFailure,TResult Function()?  savingPreset,TResult Function()?  loadingPreset,TResult Function( String message)?  presetSaveSuccess,TResult Function( String error)?  presetSaveFailure,TResult Function( String message)?  presetLoadSuccess,TResult Function( String error)?  presetLoadFailure,TResult Function()?  deletingPreset,TResult Function( String message)?  presetDeleteSuccess,TResult Function( String error)?  presetDeleteFailure,TResult Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)?  viewingLocalData,TResult Function( String error)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)?  syncingMetadata,TResult Function( String algorithmName,  int algorithmIndex)?  checkpointFound,TResult Function( String message)?  metadataSyncSuccess,TResult Function( String error)?  metadataSyncFailure,TResult Function()?  savingPreset,TResult Function()?  loadingPreset,TResult Function( int applied,  int total)?  injectingTemplate,TResult Function( String message)?  presetSaveSuccess,TResult Function( String error)?  presetSaveFailure,TResult Function( String message)?  presetLoadSuccess,TResult Function( String error)?  presetLoadFailure,TResult Function()?  deletingPreset,TResult Function( String message)?  presetDeleteSuccess,TResult Function( String error)?  presetDeleteFailure,TResult Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)?  viewingLocalData,TResult Function( String error)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case Idle() when idle != null:
 return idle();case SyncingMetadata() when syncingMetadata != null:
@@ -176,7 +179,8 @@ return checkpointFound(_that.algorithmName,_that.algorithmIndex);case MetadataSy
 return metadataSyncSuccess(_that.message);case MetadataSyncFailure() when metadataSyncFailure != null:
 return metadataSyncFailure(_that.error);case SavingPreset() when savingPreset != null:
 return savingPreset();case LoadingPreset() when loadingPreset != null:
-return loadingPreset();case PresetSaveSuccess() when presetSaveSuccess != null:
+return loadingPreset();case InjectingTemplate() when injectingTemplate != null:
+return injectingTemplate(_that.applied,_that.total);case PresetSaveSuccess() when presetSaveSuccess != null:
 return presetSaveSuccess(_that.message);case PresetSaveFailure() when presetSaveFailure != null:
 return presetSaveFailure(_that.error);case PresetLoadSuccess() when presetLoadSuccess != null:
 return presetLoadSuccess(_that.message);case PresetLoadFailure() when presetLoadFailure != null:
@@ -203,7 +207,7 @@ return failure(_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)  syncingMetadata,required TResult Function( String algorithmName,  int algorithmIndex)  checkpointFound,required TResult Function( String message)  metadataSyncSuccess,required TResult Function( String error)  metadataSyncFailure,required TResult Function()  savingPreset,required TResult Function()  loadingPreset,required TResult Function( String message)  presetSaveSuccess,required TResult Function( String error)  presetSaveFailure,required TResult Function( String message)  presetLoadSuccess,required TResult Function( String error)  presetLoadFailure,required TResult Function()  deletingPreset,required TResult Function( String message)  presetDeleteSuccess,required TResult Function( String error)  presetDeleteFailure,required TResult Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)  viewingLocalData,required TResult Function( String error)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)  syncingMetadata,required TResult Function( String algorithmName,  int algorithmIndex)  checkpointFound,required TResult Function( String message)  metadataSyncSuccess,required TResult Function( String error)  metadataSyncFailure,required TResult Function()  savingPreset,required TResult Function()  loadingPreset,required TResult Function( int applied,  int total)  injectingTemplate,required TResult Function( String message)  presetSaveSuccess,required TResult Function( String error)  presetSaveFailure,required TResult Function( String message)  presetLoadSuccess,required TResult Function( String error)  presetLoadFailure,required TResult Function()  deletingPreset,required TResult Function( String message)  presetDeleteSuccess,required TResult Function( String error)  presetDeleteFailure,required TResult Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)  viewingLocalData,required TResult Function( String error)  failure,}) {final _that = this;
 switch (_that) {
 case Idle():
 return idle();case SyncingMetadata():
@@ -212,7 +216,8 @@ return checkpointFound(_that.algorithmName,_that.algorithmIndex);case MetadataSy
 return metadataSyncSuccess(_that.message);case MetadataSyncFailure():
 return metadataSyncFailure(_that.error);case SavingPreset():
 return savingPreset();case LoadingPreset():
-return loadingPreset();case PresetSaveSuccess():
+return loadingPreset();case InjectingTemplate():
+return injectingTemplate(_that.applied,_that.total);case PresetSaveSuccess():
 return presetSaveSuccess(_that.message);case PresetSaveFailure():
 return presetSaveFailure(_that.error);case PresetLoadSuccess():
 return presetLoadSuccess(_that.message);case PresetLoadFailure():
@@ -235,7 +240,7 @@ return failure(_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)?  syncingMetadata,TResult? Function( String algorithmName,  int algorithmIndex)?  checkpointFound,TResult? Function( String message)?  metadataSyncSuccess,TResult? Function( String error)?  metadataSyncFailure,TResult? Function()?  savingPreset,TResult? Function()?  loadingPreset,TResult? Function( String message)?  presetSaveSuccess,TResult? Function( String error)?  presetSaveFailure,TResult? Function( String message)?  presetLoadSuccess,TResult? Function( String error)?  presetLoadFailure,TResult? Function()?  deletingPreset,TResult? Function( String message)?  presetDeleteSuccess,TResult? Function( String error)?  presetDeleteFailure,TResult? Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)?  viewingLocalData,TResult? Function( String error)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( double progress,  String mainMessage,  String subMessage,  int? algorithmsProcessed,  int? totalAlgorithms)?  syncingMetadata,TResult? Function( String algorithmName,  int algorithmIndex)?  checkpointFound,TResult? Function( String message)?  metadataSyncSuccess,TResult? Function( String error)?  metadataSyncFailure,TResult? Function()?  savingPreset,TResult? Function()?  loadingPreset,TResult? Function( int applied,  int total)?  injectingTemplate,TResult? Function( String message)?  presetSaveSuccess,TResult? Function( String error)?  presetSaveFailure,TResult? Function( String message)?  presetLoadSuccess,TResult? Function( String error)?  presetLoadFailure,TResult? Function()?  deletingPreset,TResult? Function( String message)?  presetDeleteSuccess,TResult? Function( String error)?  presetDeleteFailure,TResult? Function( List<AlgorithmEntry> algorithms,  Map<String, int> parameterCounts,  List<PresetEntry> presets)?  viewingLocalData,TResult? Function( String error)?  failure,}) {final _that = this;
 switch (_that) {
 case Idle() when idle != null:
 return idle();case SyncingMetadata() when syncingMetadata != null:
@@ -244,7 +249,8 @@ return checkpointFound(_that.algorithmName,_that.algorithmIndex);case MetadataSy
 return metadataSyncSuccess(_that.message);case MetadataSyncFailure() when metadataSyncFailure != null:
 return metadataSyncFailure(_that.error);case SavingPreset() when savingPreset != null:
 return savingPreset();case LoadingPreset() when loadingPreset != null:
-return loadingPreset();case PresetSaveSuccess() when presetSaveSuccess != null:
+return loadingPreset();case InjectingTemplate() when injectingTemplate != null:
+return injectingTemplate(_that.applied,_that.total);case PresetSaveSuccess() when presetSaveSuccess != null:
 return presetSaveSuccess(_that.message);case PresetSaveFailure() when presetSaveFailure != null:
 return presetSaveFailure(_that.error);case PresetLoadSuccess() when presetLoadSuccess != null:
 return presetLoadSuccess(_that.message);case PresetLoadFailure() when presetLoadFailure != null:
@@ -676,6 +682,80 @@ String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
 
 
 
+
+/// @nodoc
+
+
+class InjectingTemplate with DiagnosticableTreeMixin implements MetadataSyncState {
+  const InjectingTemplate({required this.applied, required this.total});
+  
+
+ final  int applied;
+ final  int total;
+
+/// Create a copy of MetadataSyncState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$InjectingTemplateCopyWith<InjectingTemplate> get copyWith => _$InjectingTemplateCopyWithImpl<InjectingTemplate>(this, _$identity);
+
+
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'MetadataSyncState.injectingTemplate'))
+    ..add(DiagnosticsProperty('applied', applied))..add(DiagnosticsProperty('total', total));
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InjectingTemplate&&(identical(other.applied, applied) || other.applied == applied)&&(identical(other.total, total) || other.total == total));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,applied,total);
+
+@override
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'MetadataSyncState.injectingTemplate(applied: $applied, total: $total)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $InjectingTemplateCopyWith<$Res> implements $MetadataSyncStateCopyWith<$Res> {
+  factory $InjectingTemplateCopyWith(InjectingTemplate value, $Res Function(InjectingTemplate) _then) = _$InjectingTemplateCopyWithImpl;
+@useResult
+$Res call({
+ int applied, int total
+});
+
+
+
+
+}
+/// @nodoc
+class _$InjectingTemplateCopyWithImpl<$Res>
+    implements $InjectingTemplateCopyWith<$Res> {
+  _$InjectingTemplateCopyWithImpl(this._self, this._then);
+
+  final InjectingTemplate _self;
+  final $Res Function(InjectingTemplate) _then;
+
+/// Create a copy of MetadataSyncState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? applied = null,Object? total = null,}) {
+  return _then(InjectingTemplate(
+applied: null == applied ? _self.applied : applied // ignore: cast_nullable_to_non_nullable
+as int,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
