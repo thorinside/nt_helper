@@ -341,6 +341,7 @@ void main() {
                   presetId: 1,
                   slotIndex: 0,
                   algorithmGuid: 'guid-1',
+                  customName: 'Custom Alg 1',
                 ),
                 algorithm: const AlgorithmEntry(
                   guid: 'guid-1',
@@ -357,6 +358,7 @@ void main() {
                   presetId: 1,
                   slotIndex: 1,
                   algorithmGuid: 'guid-2',
+                  customName: 'Custom Alg 2',
                 ),
                 algorithm: const AlgorithmEntry(
                   guid: 'guid-2',
@@ -377,6 +379,12 @@ void main() {
           'guid-1',
           'guid-2',
         ]);
+        verify(
+          () => mockManager.requestSendSlotName(0, 'Custom Alg 1'),
+        ).called(1);
+        verify(
+          () => mockManager.requestSendSlotName(1, 'Custom Alg 2'),
+        ).called(1);
       },
     );
   });
@@ -432,7 +440,27 @@ void main() {
         addTearDown(distingCubit.close);
 
         await syncCubit.applyTemplateToDevice(
-          template: _template(),
+          template: _template(
+            slots: [
+              FullPresetSlot(
+                slot: const PresetSlotEntry(
+                  id: 1,
+                  presetId: 1,
+                  slotIndex: 0,
+                  algorithmGuid: 'guid-1',
+                  customName: 'Custom Alg 1',
+                ),
+                algorithm: const AlgorithmEntry(
+                  guid: 'guid-1',
+                  name: 'Alg 1',
+                  numSpecifications: 0,
+                ),
+                parameterValues: {},
+                parameterStringValues: {},
+                mappings: {},
+              ),
+            ],
+          ),
           templateSlotIndices: const [0],
           manager: mockManager,
         );
@@ -442,6 +470,9 @@ void main() {
           'old',
           'guid-1',
         ]);
+        verify(
+          () => mockManager.requestSendSlotName(1, 'Custom Alg 1'),
+        ).called(1);
       },
     );
 

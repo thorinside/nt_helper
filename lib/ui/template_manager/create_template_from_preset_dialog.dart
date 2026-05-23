@@ -100,8 +100,16 @@ class _CreateTemplateFromPresetDialogState
       );
 
       final copiedSlots = <FullPresetSlot>[];
+      final missingAlgorithms = <String, AlgorithmEntry>{};
       for (var outputIndex = 0; outputIndex < selected.length; outputIndex++) {
         final sourceSlot = widget.source.slots[selected[outputIndex]];
+        final existingAlgorithm = await _database.metadataDao
+            .getAlgorithmByGuid(sourceSlot.slot.algorithmGuid);
+        final algorithm = existingAlgorithm ?? sourceSlot.algorithm;
+        if (existingAlgorithm == null) {
+          missingAlgorithms[algorithm.guid] = algorithm;
+        }
+
         copiedSlots.add(
           FullPresetSlot(
             slot: PresetSlotEntry(
@@ -111,7 +119,7 @@ class _CreateTemplateFromPresetDialogState
               algorithmGuid: sourceSlot.slot.algorithmGuid,
               customName: sourceSlot.slot.customName,
             ),
-            algorithm: sourceSlot.algorithm,
+            algorithm: algorithm,
             parameterValues: Map<int, int>.from(sourceSlot.parameterValues),
             parameterStringValues: Map<int, String>.from(
               sourceSlot.parameterStringValues,
@@ -121,9 +129,11 @@ class _CreateTemplateFromPresetDialogState
         );
       }
 
-      await _database.metadataDao.upsertAlgorithms(
-        copiedSlots.map((slot) => slot.algorithm).toList(growable: false),
-      );
+      if (missingAlgorithms.isNotEmpty) {
+        await _database.metadataDao.upsertAlgorithms(
+          missingAlgorithms.values.toList(growable: false),
+        );
+      }
 
       await _database.presetsDao.saveFullPreset(
         FullPresetDetails(

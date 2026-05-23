@@ -266,8 +266,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         final algorithmGuid = slot.algorithm.guid; // Needed again for metadata
         if (kDebugMode) {}
 
-        // Send the slot name to the device
-        await manager.requestSendSlotName(i, slot.algorithm.name);
+        // Send the saved slot display name to the device, falling back to the
+        // canonical algorithm name for older presets without custom names.
+        await manager.requestSendSlotName(
+          i,
+          slot.slot.customName ?? slot.algorithm.name,
+        );
 
         // Fetch metadata again to get parameter names for logging
         final algoDetails = await _metadataDao.getFullAlgorithmDetails(
@@ -856,7 +860,10 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         final targetSlotIndex = startingSlotIndex + i;
         final algorithmGuid = slot.algorithm.guid;
 
-        await manager.requestSendSlotName(targetSlotIndex, slot.algorithm.name);
+        await manager.requestSendSlotName(
+          targetSlotIndex,
+          slot.slot.customName ?? slot.algorithm.name,
+        );
 
         final details = await _metadataDao.getFullAlgorithmDetails(
           algorithmGuid,

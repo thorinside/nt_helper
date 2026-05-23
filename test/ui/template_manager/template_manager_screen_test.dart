@@ -126,7 +126,25 @@ void main() {
           lastModified: DateTime(2026),
           isTemplate: false,
         ),
-        slots: [_slot(0, 'dely', 'Delay')],
+        slots: [
+          FullPresetSlot(
+            slot: const PresetSlotEntry(
+              id: -1,
+              presetId: -1,
+              slotIndex: 0,
+              algorithmGuid: 'dely',
+              customName: 'Live Echo',
+            ),
+            algorithm: const AlgorithmEntry(
+              guid: 'dely',
+              name: 'Live Echo',
+              numSpecifications: 0,
+            ),
+            parameterValues: {0: 10},
+            parameterStringValues: {},
+            mappings: {},
+          ),
+        ],
       );
 
       await tester.pumpWidget(
@@ -156,6 +174,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Live Delay Template'), findsWidgets);
+
+      final created = (await db.presetsDao.getTemplates()).singleWhere(
+        (template) => template.preset.name == 'Live Delay Template',
+      );
+      expect(created.slots.single.algorithm.name, 'Delay');
+      expect(created.slots.single.slot.customName, 'Live Echo');
     },
   );
 
