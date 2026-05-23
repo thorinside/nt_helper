@@ -49,7 +49,7 @@ class DatabaseIntegrityService {
           );
         }
       } finally {
-        db.dispose();
+        db.close();
       }
     } catch (e) {
       return DatabaseIntegrityResult(
