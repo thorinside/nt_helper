@@ -173,7 +173,7 @@ class _CreateTemplateFromPresetDialogState
   Future<void> _loadFromFile() async {
     if (_creating || _loadingFromFile) return;
     final result = await FilePicker.pickFiles(
-      dialogTitle: 'Load Template JSON',
+      dialogTitle: 'Import Template JSON',
       type: FileType.custom,
       allowedExtensions: ['json'],
     );
@@ -291,7 +291,7 @@ class _CreateTemplateFromPresetDialogState
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.file_open_outlined),
-                  label: const Text('Load from file'),
+                  label: const Text('Import from file'),
                   onPressed: _creating || _loadingFromFile
                       ? null
                       : _loadFromFile,

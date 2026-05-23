@@ -83,7 +83,7 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
   Future<void> _loadTemplateFromFile() async {
     if (_isApplying || _isImporting) return;
     final result = await FilePicker.pickFiles(
-      dialogTitle: 'Load Template JSON',
+      dialogTitle: 'Import Template JSON',
       type: FileType.custom,
       allowedExtensions: ['json'],
     );
@@ -142,7 +142,7 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
       _refresh();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Loaded ${template?.preset.name ?? 'template'}'),
+          content: Text('Imported ${template?.preset.name ?? 'template'}'),
         ),
       );
     } catch (error) {
@@ -322,7 +322,7 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
                       children: [
                         FilledButton.icon(
                           icon: const Icon(Icons.file_open_outlined),
-                          label: const Text('Load from file'),
+                          label: const Text('Import from file'),
                           onPressed: _loadTemplateFromFile,
                         ),
                         FilledButton.icon(
@@ -494,7 +494,7 @@ class _TemplateManagerList extends StatelessWidget {
                     : null,
               ),
               IconButton(
-                tooltip: 'Load template from file',
+                tooltip: 'Import template from file',
                 icon: const Icon(Icons.file_open_outlined),
                 onPressed: canImportExport ? onImportTemplate : null,
               ),
