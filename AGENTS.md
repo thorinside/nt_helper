@@ -104,6 +104,16 @@ See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for details.
 - [MCP API Guide](./docs/mcp-api-guide.md) — 4-tool API (search, new, edit, show)
 - [MCP Mapping Guide](./docs/mcp-mapping-guide.md) — CV, MIDI, i2c mappings
 
+## Flutter Accessibility
+
+- Build Flutter UI so blind users can understand state, navigate controls, and complete workflows with a screen reader.
+- Provide semantic labels for icon-only controls, custom widgets, progress indicators, and non-text affordances.
+- Mark page, dialog, section, and group titles with `Semantics(header: true)` when they structure navigation.
+- Use `Semantics(liveRegion: true)` and `SemanticsService.sendAnnouncement` for meaningful async state changes, validation errors, empty states, selection changes, and completion of non-visual operations.
+- Wrap decorative or duplicated visual-only content in `ExcludeSemantics` so screen readers do not announce noise.
+- Preserve keyboard and focus traversal for dialogs, lists, toggles, segmented controls, file import/export flows, and drag/drop alternatives.
+- Add or update widget semantics tests for new interactive UI, especially icon-only actions, live status text, selected states, and error paths.
+
 ## Commits
 
 - Use Conventional Commit-style subjects so changelog and semver tooling can classify changes.
