@@ -1,9 +1,13 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/template_metadata.dart';
+import 'package:nt_helper/services/template_share_service.dart';
 import 'package:nt_helper/ui/template_manager/template_slot_selection_list.dart';
 
 class CreateTemplateFromPresetDialog extends StatefulWidget {
@@ -50,6 +54,7 @@ class _CreateTemplateFromPresetDialogState
   late final TextEditingController _authorController;
   Set<int> _selected = {};
   bool _creating = false;
+  bool _loadingFromFile = false;
   String? _error;
 
   AppDatabase get _database => widget.database ?? context.read<AppDatabase>();
@@ -165,6 +170,35 @@ class _CreateTemplateFromPresetDialogState
     }
   }
 
+  Future<void> _loadFromFile() async {
+    if (_creating || _loadingFromFile) return;
+    final result = await FilePicker.pickFiles(
+      dialogTitle: 'Load Template JSON',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    final path = result?.files.single.path;
+    if (path == null) return;
+
+    setState(() {
+      _loadingFromFile = true;
+      _error = null;
+    });
+    try {
+      await TemplateShareService(
+        _database,
+      ).importTemplate(await File(path).readAsString());
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingFromFile = false;
+        _error = error.toString();
+      });
+    }
+  }
+
   String? _nullIfEmpty(String value) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
@@ -250,8 +284,23 @@ class _CreateTemplateFromPresetDialogState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                OutlinedButton.icon(
+                  icon: _loadingFromFile
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.file_open_outlined),
+                  label: const Text('Load from file'),
+                  onPressed: _creating || _loadingFromFile
+                      ? null
+                      : _loadFromFile,
+                ),
+                const SizedBox(width: 8),
                 FilledButton(
-                  onPressed: canCreate && !_creating ? _create : null,
+                  onPressed: canCreate && !_creating && !_loadingFromFile
+                      ? _create
+                      : null,
                   child: _creating
                       ? const SizedBox.square(
                           dimension: 18,

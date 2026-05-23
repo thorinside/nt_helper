@@ -1,8 +1,15 @@
+import 'dart:io';
+
+import 'package:cross_file/cross_file.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/models/template_metadata.dart';
+import 'package:nt_helper/services/template_share_service.dart';
 import 'package:nt_helper/ui/template_manager/create_template_from_preset_dialog.dart';
 import 'package:nt_helper/ui/template_manager/template_apply_dialog.dart';
 import 'package:nt_helper/ui/template_manager/template_slot_selection_list.dart';
@@ -38,6 +45,8 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
   FullPresetDetails? _selected;
   Set<int> _selectedSlots = {};
   bool _isApplying = false;
+  bool _isDragOver = false;
+  bool _isImporting = false;
   int _applyRun = 0;
 
   AppDatabase get _database => widget.database ?? context.read<AppDatabase>();
@@ -62,6 +71,98 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
       _selected = null;
       _selectedSlots = {};
     });
+  }
+
+  bool get _supportsDrop {
+    return !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.macOS ||
+            defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux);
+  }
+
+  Future<void> _loadTemplateFromFile() async {
+    if (_isApplying || _isImporting) return;
+    final result = await FilePicker.pickFiles(
+      dialogTitle: 'Load Template JSON',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    final path = result?.files.single.path;
+    if (path == null) return;
+
+    await _importTemplateJson(await File(path).readAsString());
+  }
+
+  Future<void> _exportSelectedTemplate() async {
+    final template = _selected;
+    if (_isApplying || _isImporting || template == null) return;
+
+    final path = await FilePicker.saveFile(
+      dialogTitle: 'Export Template JSON',
+      fileName: '${_safeFileName(template.preset.name)}.json',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    if (path == null) return;
+
+    final jsonText = TemplateShareService(_database).encodeTemplate(template);
+    await File(path).writeAsString(jsonText);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Exported ${template.preset.name}')));
+  }
+
+  Future<void> _importDroppedFiles(List<XFile> files) async {
+    final jsonFiles = files
+        .where((file) => file.path.toLowerCase().endsWith('.json'))
+        .toList(growable: false);
+    if (jsonFiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Drop a Template Manager JSON file.')),
+      );
+      return;
+    }
+
+    for (final file in jsonFiles) {
+      await _importTemplateJson(await file.readAsString());
+    }
+  }
+
+  Future<void> _importTemplateJson(String jsonText) async {
+    if (_isImporting) return;
+    setState(() => _isImporting = true);
+    try {
+      final service = TemplateShareService(_database);
+      final presetId = await service.importTemplate(jsonText);
+      final template = await _database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
+      if (!mounted) return;
+      _refresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Loaded ${template?.preset.name ?? 'template'}'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Template import failed: $error')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+          _isDragOver = false;
+        });
+      }
+    }
+  }
+
+  String _safeFileName(String name) {
+    final sanitized = name.trim().replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
+    return sanitized.isEmpty ? 'template' : sanitized;
   }
 
   Future<void> _editSelectedMetadata() async {
@@ -189,96 +290,158 @@ class _TemplateManagerScreenState extends State<TemplateManagerScreen> {
         title: const Text('Template Manager'),
         actions: [
           IconButton(
+            tooltip: 'Load template from file',
+            icon: const Icon(Icons.file_open_outlined),
+            onPressed: _isApplying || _isImporting
+                ? null
+                : _loadTemplateFromFile,
+          ),
+          IconButton(
             tooltip: 'Refresh templates',
             icon: const Icon(Icons.refresh),
-            onPressed: _refresh,
+            onPressed: _isImporting ? null : _refresh,
           ),
         ],
       ),
-      body: FutureBuilder<List<FullPresetDetails>>(
-        future: _templatesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error loading templates: ${snapshot.error}'),
-            );
-          }
-
-          final templates = snapshot.data ?? const <FullPresetDetails>[];
-          if (templates.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('No templates found.'),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('New from current preset'),
-                    onPressed: widget.loadCurrentPresetSource == null
-                        ? null
-                        : () => _createFromCurrentPreset(),
-                  ),
-                ],
-              ),
-            );
-          }
-          if (_selected == null) {
-            _selected = templates.first;
-            _selectedSlots = _allSlotIndices(_selected!);
-          }
-          final selected = _selected!;
-
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final narrow = constraints.maxWidth < 720;
-              final list = _TemplateManagerList(
-                templates: templates,
-                selectedId: selected.preset.id,
-                canCreateFromCurrentPreset:
-                    widget.loadCurrentPresetSource != null,
-                onCreateFromCurrentPreset: () => _createFromCurrentPreset(),
-                canModifySelected: !_isApplying,
-                onEditSelected: _editSelectedMetadata,
-                onDeleteSelected: _deleteSelectedTemplate,
-                onSelected: _isApplying ? (_) {} : _selectTemplate,
+      body: _wrapDropTarget(
+        FutureBuilder<List<FullPresetDetails>>(
+          future: _templatesFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Error loading templates: ${snapshot.error}'),
               );
-              final detail = _TemplateManagerDetail(
-                template: selected,
-                selectedSlots: _selectedSlots,
-                isApplying: _isApplying,
-                appliesToDevice: widget.onApplyDevice != null,
-                onApplySelected: () => _applySelected(context),
-                onCancelApply: _cancelApply,
-                onSelectionChanged: (next) {
-                  if (_isApplying) return;
-                  setState(() => _selectedSlots = next);
-                },
-              );
+            }
 
-              if (narrow) {
-                return Column(
+            final templates = snapshot.data ?? const <FullPresetDetails>[];
+            if (templates.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(height: 220, child: list),
-                    const Divider(height: 1),
+                    const Text('No templates found.'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        FilledButton.icon(
+                          icon: const Icon(Icons.file_open_outlined),
+                          label: const Text('Load from file'),
+                          onPressed: _loadTemplateFromFile,
+                        ),
+                        FilledButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: const Text('New from current preset'),
+                          onPressed: widget.loadCurrentPresetSource == null
+                              ? null
+                              : () => _createFromCurrentPreset(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }
+            if (_selected == null) {
+              _selected = templates.first;
+              _selectedSlots = _allSlotIndices(_selected!);
+            }
+            final selected = _selected!;
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final narrow = constraints.maxWidth < 720;
+                final list = _TemplateManagerList(
+                  templates: templates,
+                  selectedId: selected.preset.id,
+                  canCreateFromCurrentPreset:
+                      widget.loadCurrentPresetSource != null,
+                  onCreateFromCurrentPreset: () => _createFromCurrentPreset(),
+                  canModifySelected: !_isApplying,
+                  canImportExport: !_isApplying && !_isImporting,
+                  onImportTemplate: _loadTemplateFromFile,
+                  onExportSelected: _exportSelectedTemplate,
+                  onEditSelected: _editSelectedMetadata,
+                  onDeleteSelected: _deleteSelectedTemplate,
+                  onSelected: _isApplying ? (_) {} : _selectTemplate,
+                );
+                final detail = _TemplateManagerDetail(
+                  template: selected,
+                  selectedSlots: _selectedSlots,
+                  isApplying: _isApplying,
+                  appliesToDevice: widget.onApplyDevice != null,
+                  onApplySelected: () => _applySelected(context),
+                  onCancelApply: _cancelApply,
+                  onSelectionChanged: (next) {
+                    if (_isApplying) return;
+                    setState(() => _selectedSlots = next);
+                  },
+                );
+
+                if (narrow) {
+                  return Column(
+                    children: [
+                      SizedBox(height: 220, child: list),
+                      const Divider(height: 1),
+                      Expanded(child: detail),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    SizedBox(width: 320, child: list),
+                    const VerticalDivider(width: 1),
                     Expanded(child: detail),
                   ],
                 );
-              }
-              return Row(
-                children: [
-                  SizedBox(width: 320, child: list),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: detail),
-                ],
-              );
-            },
-          );
-        },
+              },
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  Widget _wrapDropTarget(Widget child) {
+    final content = Stack(
+      children: [
+        child,
+        if (_isDragOver)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withAlpha(32),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 3,
+                ),
+              ),
+              child: Center(
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'Drop template JSON to load',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (_isImporting) const Center(child: CircularProgressIndicator()),
+      ],
+    );
+
+    if (!_supportsDrop) return content;
+    return DropTarget(
+      onDragEntered: (_) => setState(() => _isDragOver = true),
+      onDragExited: (_) => setState(() => _isDragOver = false),
+      onDragDone: (details) => _importDroppedFiles(details.files),
+      child: content,
     );
   }
 }
@@ -289,6 +452,9 @@ class _TemplateManagerList extends StatelessWidget {
   final bool canCreateFromCurrentPreset;
   final VoidCallback onCreateFromCurrentPreset;
   final bool canModifySelected;
+  final bool canImportExport;
+  final VoidCallback onImportTemplate;
+  final VoidCallback onExportSelected;
   final VoidCallback onEditSelected;
   final VoidCallback onDeleteSelected;
   final ValueChanged<FullPresetDetails> onSelected;
@@ -299,6 +465,9 @@ class _TemplateManagerList extends StatelessWidget {
     required this.canCreateFromCurrentPreset,
     required this.onCreateFromCurrentPreset,
     required this.canModifySelected,
+    required this.canImportExport,
+    required this.onImportTemplate,
+    required this.onExportSelected,
     required this.onEditSelected,
     required this.onDeleteSelected,
     required this.onSelected,
@@ -330,6 +499,16 @@ class _TemplateManagerList extends StatelessWidget {
                 onPressed: canCreateFromCurrentPreset
                     ? onCreateFromCurrentPreset
                     : null,
+              ),
+              IconButton(
+                tooltip: 'Load template from file',
+                icon: const Icon(Icons.file_open_outlined),
+                onPressed: canImportExport ? onImportTemplate : null,
+              ),
+              IconButton(
+                tooltip: 'Export selected template',
+                icon: const Icon(Icons.file_download_outlined),
+                onPressed: canImportExport ? onExportSelected : null,
               ),
               IconButton(
                 tooltip: 'Edit metadata',
