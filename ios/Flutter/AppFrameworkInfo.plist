@@ -22,5 +22,7 @@
   <string>1.0</string>
   <key>MinimumOSVersion</key>
   <string>13.0</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>nt_helper requires location access to discover and configure local hardware devices.</string>
 </dict>
 </plist>
