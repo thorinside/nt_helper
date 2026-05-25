@@ -1,8 +1,11 @@
 package com.example.nt_helper
 
+import android.Manifest
+import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -16,11 +19,14 @@ import android.os.Looper
 import android.view.Surface
 import android.view.TextureView
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.PluginRegistry.RequestPermissionsResultListener
 import io.flutter.view.TextureRegistry
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -31,12 +37,15 @@ import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.BitmapFactory
 
-class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler {
+class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler, ActivityAware, RequestPermissionsResultListener {
     private lateinit var channel: MethodChannel
     private lateinit var eventChannel: EventChannel
     private lateinit var debugEventChannel: EventChannel
     private lateinit var context: Context
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
+    private var activity: Activity? = null
+    private var activityBinding: ActivityPluginBinding? = null
+    private var pendingCameraPermissionResult: Result? = null
     private var eventSink: EventChannel.EventSink? = null
     var debugEventSink: EventChannel.EventSink? = null
     // Use high-priority thread for video capture callbacks to prevent frame drops
@@ -59,6 +68,7 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
     companion object {
         private const val DISTING_VENDOR_ID = 0x16C0  // Expert Sleepers vendor ID
         private const val ACTION_USB_PERMISSION = "com.example.nt_helper.USB_PERMISSION"
+        private const val CAMERA_PERMISSION_REQUEST_CODE = 1001
         private const val VIDEO_WIDTH = 256
         private const val VIDEO_HEIGHT = 64
         private const val TARGET_FPS = 15
@@ -100,6 +110,10 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
                 result.success(devices)
             }
             
+            "requestCameraPermission" -> {
+                requestCameraPermission(result)
+            }
+
             "requestUsbPermission" -> {
                 val deviceId = call.argument<String>("deviceId")
                 if (deviceId == null) {
@@ -195,6 +209,67 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
                 result.notImplemented()
             }
         }
+    }
+
+    private fun requestCameraPermission(result: Result) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+            context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        ) {
+            result.success(true)
+            return
+        }
+
+        val currentActivity = activity
+        if (currentActivity == null) {
+            result.error("NO_ACTIVITY", "Camera permission requires an active Android activity", null)
+            return
+        }
+
+        if (pendingCameraPermissionResult != null) {
+            result.error("REQUEST_IN_PROGRESS", "A camera permission request is already in progress", null)
+            return
+        }
+
+        pendingCameraPermissionResult = result
+        currentActivity.requestPermissions(
+            arrayOf(Manifest.permission.CAMERA),
+            CAMERA_PERMISSION_REQUEST_CODE
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ): Boolean {
+        if (requestCode != CAMERA_PERMISSION_REQUEST_CODE) {
+            return false
+        }
+
+        val wasGranted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+        pendingCameraPermissionResult?.success(wasGranted)
+        pendingCameraPermissionResult = null
+        return true
+    }
+
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        activityBinding = binding
+        activity = binding.activity
+        binding.addRequestPermissionsResultListener(this)
+    }
+
+    override fun onDetachedFromActivityForConfigChanges() {
+        onDetachedFromActivity()
+    }
+
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+        onAttachedToActivity(binding)
+    }
+
+    override fun onDetachedFromActivity() {
+        activityBinding?.removeRequestPermissionsResultListener(this)
+        activityBinding = null
+        activity = null
     }
 
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
@@ -445,6 +520,7 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        pendingCameraPermissionResult = null
         channel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
         debugEventChannel.setStreamHandler(null)
