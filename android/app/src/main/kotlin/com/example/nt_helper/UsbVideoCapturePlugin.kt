@@ -259,7 +259,7 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
-        onDetachedFromActivity()
+        detachFromActivityBinding()
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
@@ -267,9 +267,22 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
     }
 
     override fun onDetachedFromActivity() {
+        detachFromActivityBinding()
+        finishPendingCameraPermissionWithError(
+            "ACTIVITY_DETACHED",
+            "Camera permission request was interrupted because the Android activity detached"
+        )
+    }
+
+    private fun detachFromActivityBinding() {
         activityBinding?.removeRequestPermissionsResultListener(this)
         activityBinding = null
         activity = null
+    }
+
+    private fun finishPendingCameraPermissionWithError(code: String, message: String) {
+        pendingCameraPermissionResult?.error(code, message, null)
+        pendingCameraPermissionResult = null
     }
 
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
@@ -520,7 +533,10 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        pendingCameraPermissionResult = null
+        finishPendingCameraPermissionWithError(
+            "ENGINE_DETACHED",
+            "Camera permission request was interrupted because the Flutter engine detached"
+        )
         channel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
         debugEventChannel.setStreamHandler(null)
