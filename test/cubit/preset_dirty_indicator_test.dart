@@ -42,6 +42,7 @@ void main() {
     );
     registerFallbackValue(PackedMappingData.filler());
     registerFallbackValue(PerformancePageItem.empty(0));
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -323,12 +324,77 @@ void main() {
       when(
         () => mockDisting.requestAddAlgorithm(any(), any()),
       ).thenAnswer((_) async {});
+      when(
+        () => mockDisting.requestNumAlgorithmsInPreset(
+          timeout: any(named: 'timeout'),
+          maxRetries: any(named: 'maxRetries'),
+        ),
+      ).thenAnswer((_) async => 1);
 
       cubit.emit(makeSyncState());
       await cubit.onAlgorithmSelected(algorithmInfo, const []);
 
       expect((cubit.state as DistingStateSynchronized).isDirty, isTrue);
+      expect((cubit.state as DistingStateSynchronized).slots, hasLength(1));
     });
+
+    test(
+      'onAlgorithmSelected removes placeholder when slot count does not grow',
+      () async {
+        final algorithmInfo = AlgorithmInfo(
+          algorithmIndex: 0,
+          name: 'Rejected Algo',
+          guid: 'reject',
+          specifications: const [],
+        );
+        when(
+          () => mockDisting.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(
+            timeout: any(named: 'timeout'),
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ).thenAnswer((_) async => 0);
+
+        cubit.emit(makeSyncState());
+
+        await expectLater(
+          cubit.onAlgorithmSelected(algorithmInfo, const []),
+          throwsA(isA<AlgorithmAddFailedException>()),
+        );
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots, isEmpty);
+        expect(state.isDirty, isTrue);
+      },
+    );
+
+    test(
+      'onAlgorithmSelected removes placeholder when add request throws',
+      () async {
+        final algorithmInfo = AlgorithmInfo(
+          algorithmIndex: 0,
+          name: 'Rejected Algo',
+          guid: 'reject',
+          specifications: const [],
+        );
+        when(
+          () => mockDisting.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async => throw Exception('rejected'));
+
+        cubit.emit(makeSyncState());
+
+        await expectLater(
+          cubit.onAlgorithmSelected(algorithmInfo, const []),
+          throwsA(isA<AlgorithmAddFailedException>()),
+        );
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots, isEmpty);
+        expect(state.isDirty, isTrue);
+      },
+    );
 
     test('onRemoveAlgorithm marks state dirty', () async {
       when(

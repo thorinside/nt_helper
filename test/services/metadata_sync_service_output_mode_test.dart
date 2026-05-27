@@ -28,7 +28,10 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<int?> requestNumAlgorithmsInPreset() async => _numAlgorithmsInPreset;
+  Future<int?> requestNumAlgorithmsInPreset({
+    Duration? timeout,
+    int? maxRetries,
+  }) async => _numAlgorithmsInPreset;
 
   @override
   Future<List<String>?> requestUnitStrings() async => [];

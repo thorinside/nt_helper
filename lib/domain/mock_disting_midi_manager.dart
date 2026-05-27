@@ -898,7 +898,10 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<int?> requestNumAlgorithmsInPreset() async {
+  Future<int?> requestNumAlgorithmsInPreset({
+    Duration? timeout,
+    int? maxRetries,
+  }) async {
     return _state.presetSlots.length;
   }
 
@@ -991,7 +994,24 @@ class MockDistingMidiManager implements IDistingMidiManager {
     AlgorithmInfo algorithm,
     List<int> specifications,
   ) async {
-    // No-op
+    final slotIndex = _state.presetSlots.length;
+    _state.presetSlots.add(
+      Slot(
+        algorithm: Algorithm(
+          algorithmIndex: slotIndex,
+          guid: algorithm.guid,
+          name: algorithm.name,
+          specifications: specifications,
+        ),
+        routing: RoutingInfo.filler(),
+        pages: ParameterPages(algorithmIndex: slotIndex, pages: const []),
+        parameters: const [],
+        values: const [],
+        enums: const [],
+        mappings: const [],
+        valueStrings: const [],
+      ),
+    );
   }
 
   @override

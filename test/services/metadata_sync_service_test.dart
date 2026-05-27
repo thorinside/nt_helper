@@ -88,7 +88,10 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<int?> requestNumAlgorithmsInPreset() async {
+  Future<int?> requestNumAlgorithmsInPreset({
+    Duration? timeout,
+    int? maxRetries,
+  }) async {
     return _numAlgorithmsInPreset;
   }
 

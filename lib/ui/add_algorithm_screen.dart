@@ -1475,10 +1475,27 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
     final messenger = ScaffoldMessenger.of(context);
     final name = algorithm.name;
-    await context.read<DistingCubit>().onAlgorithmSelected(
-      algorithm,
-      List<int>.from(specs),
-    );
+    try {
+      await context.read<DistingCubit>().onAlgorithmSelected(
+        algorithm,
+        List<int>.from(specs),
+      );
+    } on AlgorithmAddFailedException {
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text(algorithmAddFailedMessage),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        algorithmAddFailedMessage,
+        TextDirection.ltr,
+      );
+      return;
+    }
 
     if (!mounted) return;
     messenger.hideCurrentSnackBar();

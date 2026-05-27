@@ -614,6 +614,33 @@ void main() {
       expect(find.text('Add Algorithm'), findsOneWidget);
     });
 
+    testWidgets('Add Another shows generic error when add verification fails', (
+      tester,
+    ) async {
+      when(
+        () => mockCubit.state,
+      ).thenReturn(synchronizedWith([mockFactoryAlgorithm]));
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockCubit.onAlgorithmSelected(any(), any()),
+      ).thenAnswer((_) async => throw const AlgorithmAddFailedException());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Clock'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add Another'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(algorithmAddFailedMessage), findsOneWidget);
+      expect(find.text('Clock added'), findsNothing);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Add Another'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('Add Another button hidden when slot cap is reached', (
       tester,
     ) async {

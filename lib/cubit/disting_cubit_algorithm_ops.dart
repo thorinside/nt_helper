@@ -1,6 +1,19 @@
 part of 'disting_cubit.dart';
 
+const algorithmAddFailedMessage =
+    'The algorithm did not appear. Something went wrong.';
+
+class AlgorithmAddFailedException implements Exception {
+  const AlgorithmAddFailedException();
+
+  @override
+  String toString() => algorithmAddFailedMessage;
+}
+
 mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
+  static const _addAlgorithmSlotCountRequestTimeout = Duration(
+    milliseconds: 700,
+  );
   CancelableOperation<void>? _moveVerificationOperation;
   CancelableOperation<void>? _addAlgorithmVerificationOperation;
 
@@ -72,6 +85,47 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
     );
   }
 
+  Future<bool> _waitForAlgorithmSlotCountIncrease(
+    IDistingMidiManager disting, {
+    required int previousSlotCount,
+  }) async {
+    try {
+      final currentCount = await disting.requestNumAlgorithmsInPreset(
+        timeout: _addAlgorithmSlotCountRequestTimeout,
+        maxRetries: 1,
+      );
+      return currentCount != null && currentCount > previousSlotCount;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool _removeOptimisticAlgorithmPlaceholder({
+    required int previousSlotCount,
+    required String algorithmGuid,
+    required String expectedPlaceholderName,
+  }) {
+    final st = state;
+    if (st is! DistingStateSynchronized) return false;
+    if (st.slots.length != previousSlotCount + 1) return false;
+
+    final placeholder = st.slots[previousSlotCount].algorithm;
+    if (placeholder.guid != algorithmGuid ||
+        placeholder.name != expectedPlaceholderName) {
+      return false;
+    }
+
+    emit(
+      st.copyWith(
+        slots: List<Slot>.from(st.slots)..removeLast(),
+        loading: false,
+        isDirty: true,
+      ),
+    );
+    _rebuildCcLookup();
+    return true;
+  }
+
   Future<void> onAlgorithmSelectedImpl(
     AlgorithmInfo algorithm,
     List<int> specifications,
@@ -100,6 +154,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         // An algorithm can only be added to the next empty slot, so we can be
         // optimistic and only reconcile the newly-added slot.
         final newSlotIndex = syncstate.slots.length;
+        _addAlgorithmVerificationOperation?.cancel();
 
         // 1) Optimistic placeholder slot for instant UI feedback
         final placeholder = _createPlaceholderSlotForAdd(
@@ -116,27 +171,35 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
           ),
         );
 
-        // 2) Send the add algorithm request
+        // 2) Send the add algorithm request.
         try {
           await disting.requestAddAlgorithm(algorithm, specsToSend);
-        } catch (e, stackTrace) {
-          debugPrintStack(stackTrace: stackTrace);
-          // Roll back optimistic slot if still present
-          final st = state;
-          if (st is DistingStateSynchronized &&
-              st.slots.length == syncstate.slots.length + 1) {
-            emit(
-              st.copyWith(
-                slots: List<Slot>.from(st.slots)..removeLast(),
-                isDirty: true,
-              ),
-            );
-          }
-          return;
+        } catch (_) {
+          _removeOptimisticAlgorithmPlaceholder(
+            previousSlotCount: syncstate.slots.length,
+            algorithmGuid: algorithm.guid,
+            expectedPlaceholderName: expectedPlaceholderName,
+          );
+          throw const AlgorithmAddFailedException();
         }
 
-        // 3) Verification/reconciliation: fetch only the new slot and correct if needed.
-        _addAlgorithmVerificationOperation?.cancel();
+        // 3) Fail-fast verification: confirm the preset slot count increased
+        // before doing slower slot/parameter probing. This prevents a rejected
+        // add from leaving an optimistic placeholder visible for many seconds.
+        final didAppear = await _waitForAlgorithmSlotCountIncrease(
+          disting,
+          previousSlotCount: syncstate.slots.length,
+        );
+        if (!didAppear) {
+          _removeOptimisticAlgorithmPlaceholder(
+            previousSlotCount: syncstate.slots.length,
+            algorithmGuid: algorithm.guid,
+            expectedPlaceholderName: expectedPlaceholderName,
+          );
+          throw const AlgorithmAddFailedException();
+        }
+
+        // 4) Reconciliation: fetch only the new slot and correct if needed.
         _addAlgorithmVerificationOperation = CancelableOperation.fromFuture(
           Future.delayed(const Duration(milliseconds: 700), () async {
             final current = state;
