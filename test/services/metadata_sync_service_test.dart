@@ -316,36 +316,33 @@ void main() {
       expect(mockManager.lastSpecifications, equals([5]));
     });
 
-    test(
-      'spec with default 0 sends midpoint (clamped to valid range)',
-      () async {
-        final mockManager = TestMockDistingMidiManager(
-          testAlgorithms: [
-            AlgorithmInfo(
-              algorithmIndex: 0,
-              guid: 'test-zero',
-              name: 'Zero Default',
-              specifications: [
-                Specification(
-                  name: 'Aux Sends per Channel',
-                  min: 0,
-                  max: 10,
-                  defaultValue: 0,
-                  type: 0,
-                ),
-              ],
-              isPlugin: false,
-              isLoaded: true,
-            ),
-          ],
-        );
+    test('spec with in-range default 0 sends 0', () async {
+      final mockManager = TestMockDistingMidiManager(
+        testAlgorithms: [
+          AlgorithmInfo(
+            algorithmIndex: 0,
+            guid: 'test-zero',
+            name: 'Zero Default',
+            specifications: [
+              Specification(
+                name: 'Aux Sends per Channel',
+                min: 0,
+                max: 10,
+                defaultValue: 0,
+                type: 0,
+              ),
+            ],
+            isPlugin: false,
+            isLoaded: true,
+          ),
+        ],
+      );
 
-        final service = MetadataSyncService(mockManager, database);
-        await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
+      final service = MetadataSyncService(mockManager, database);
+      await service.rescanSingleAlgorithm(mockManager.testAlgorithms[0]);
 
-        expect(mockManager.lastSpecifications, equals([5])); // (0+10)~/2 = 5
-      },
-    );
+      expect(mockManager.lastSpecifications, equals([0]));
+    });
 
     test('spec with default 0 and max 0 sends 0 (clamped)', () async {
       final mockManager = TestMockDistingMidiManager(
@@ -376,7 +373,7 @@ void main() {
     });
 
     test(
-      'spec with default 0 and min 2 sends midpoint (clamped to range)',
+      'spec with out-of-range default 0 sends midpoint (clamped to range)',
       () async {
         final mockManager = TestMockDistingMidiManager(
           testAlgorithms: [
@@ -447,8 +444,8 @@ void main() {
 
       expect(
         mockManager.lastSpecifications,
-        equals([4, 4, 3]),
-      ); // 4 (non-zero default), (0+8)~/2=4, (2+5)~/2=3
+        equals([4, 0, 3]),
+      ); // 4 (non-zero default), 0 (in range), (2+5)~/2=3
     });
   });
 

@@ -27,6 +27,7 @@ void main() {
   late AlgorithmInfo mockFactoryAlgorithm;
   late AlgorithmInfo mockUnloadedPlugin;
   late AlgorithmInfo mockLoadedPlugin;
+  late AlgorithmInfo mockZeroDefaultAlgorithm;
   late AppDatabase database;
 
   setUpAll(() async {
@@ -99,6 +100,22 @@ void main() {
       ],
       isPlugin: true,
       isLoaded: true, // Plugin loaded with specifications
+    );
+
+    mockZeroDefaultAlgorithm = AlgorithmInfo(
+      algorithmIndex: 3,
+      guid: 'samc',
+      name: 'Sample Player (Clocked)',
+      specifications: [
+        Specification(
+          name: 'Record time',
+          min: 0,
+          max: 60,
+          defaultValue: 0,
+          type: 1,
+        ),
+      ],
+      isLoaded: true,
     );
   });
 
@@ -242,6 +259,39 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Load Plugin'), findsNothing);
+    });
+
+    testWidgets('uses in-range zero specification default', (tester) async {
+      when(() => mockCubit.state).thenReturn(
+        DistingState.synchronized(
+          disting: mockDistingMidi,
+          distingVersion: '',
+          firmwareVersion: mockFirmwareVersion,
+          presetName: 'Test Preset',
+          algorithms: [mockZeroDefaultAlgorithm],
+          slots: const [],
+          unitStrings: const [],
+          inputDevice: null,
+          outputDevice: null,
+          loading: false,
+          offline: false,
+          screenshot: null,
+          demo: false,
+          videoStream: null,
+        ),
+      );
+      when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Sample Player (Clocked)'));
+      await tester.pumpAndSettle();
+
+      final specField = tester.widget<TextFormField>(
+        find.byType(TextFormField),
+      );
+      expect(specField.initialValue, '0');
     });
 
     group('Plugin Loading Workflow', () {

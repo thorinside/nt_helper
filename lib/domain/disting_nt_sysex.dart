@@ -61,8 +61,12 @@ class Specification {
     type: json['type'] as int,
   );
 
-  int get safeDefaultValue =>
-      defaultValue != 0 ? defaultValue : ((min + max) ~/ 2).clamp(min, max);
+  int get safeDefaultValue {
+    if (defaultValue >= min && defaultValue <= max) {
+      return defaultValue;
+    }
+    return ((min + max) ~/ 2).clamp(min, max);
+  }
 
   @override
   String toString() {
