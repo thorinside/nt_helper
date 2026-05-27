@@ -18,7 +18,10 @@ abstract class IDistingMidiManager {
   // Requests (returning Futures)
   Future<int?> requestNumberOfAlgorithms();
   Future<AlgorithmInfo?> requestAlgorithmInfo(int index);
-  Future<int?> requestNumAlgorithmsInPreset();
+  Future<int?> requestNumAlgorithmsInPreset({
+    Duration? timeout,
+    int? maxRetries,
+  });
   Future<String?> requestVersionString();
   Future<String?> requestPresetName();
   Future<List<String>?> requestUnitStrings();

@@ -698,19 +698,40 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       );
 
       if (result != null && result is Map) {
-        await cubit.onAlgorithmSelected(
-          result['algorithm'],
-          result['specValues'],
-        );
-        SemanticsService.sendAnnouncement(
-          view,
-          'Algorithm added',
-          TextDirection.ltr,
-        );
+        try {
+          await cubit.onAlgorithmSelected(
+            result['algorithm'],
+            result['specValues'],
+          );
+          SemanticsService.sendAnnouncement(
+            view,
+            'Algorithm added',
+            TextDirection.ltr,
+          );
+        } on AlgorithmAddFailedException {
+          _showAlgorithmAddFailedNotification();
+        }
       }
     } finally {
       _isAddAlgorithmOpen = false;
     }
+  }
+
+  void _showAlgorithmAddFailedNotification() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text(algorithmAddFailedMessage),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      algorithmAddFailedMessage,
+      TextDirection.ltr,
+    );
   }
 
   Future<void> _handleBrowsePresets(DistingCubit cubit) async {
@@ -926,15 +947,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             );
 
             if (result != null && result is Map) {
-              await cubit.onAlgorithmSelected(
-                result['algorithm'],
-                result['specValues'],
-              );
-              SemanticsService.sendAnnouncement(
-                WidgetsBinding.instance.platformDispatcher.views.first,
-                'Algorithm added',
-                TextDirection.ltr,
-              );
+              try {
+                await cubit.onAlgorithmSelected(
+                  result['algorithm'],
+                  result['specValues'],
+                );
+                SemanticsService.sendAnnouncement(
+                  WidgetsBinding.instance.platformDispatcher.views.first,
+                  'Algorithm added',
+                  TextDirection.ltr,
+                );
+              } on AlgorithmAddFailedException {
+                _showAlgorithmAddFailedNotification();
+              }
             }
           },
           child: Icon(

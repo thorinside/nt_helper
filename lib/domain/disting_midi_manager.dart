@@ -181,7 +181,10 @@ class DistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<int?> requestNumAlgorithmsInPreset() async {
+  Future<int?> requestNumAlgorithmsInPreset({
+    Duration? timeout,
+    int? maxRetries,
+  }) async {
     final message = RequestNumAlgorithmsInPresetMessage(sysExId: sysExId);
     final packet = message.encode();
     final key = RequestKey(
@@ -192,6 +195,8 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       key,
       responseExpectation: ResponseExpectation.required,
+      timeout: timeout,
+      maxRetries: maxRetries,
     );
   }
 
