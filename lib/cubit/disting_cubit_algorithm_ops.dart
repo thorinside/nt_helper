@@ -89,19 +89,39 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
     IDistingMidiManager disting, {
     required int previousSlotCount,
   }) async {
-    try {
-      final currentCount = await disting.requestNumAlgorithmsInPreset(
-        timeout: _addAlgorithmSlotCountRequestTimeout,
-        maxRetries: 1,
+    final deadline = DateTime.now().add(_addAlgorithmSlotCountRequestTimeout);
+
+    do {
+      try {
+        final remaining = deadline.difference(DateTime.now());
+        final currentCount = await disting.requestNumAlgorithmsInPreset(
+          timeout: remaining.isNegative || remaining == Duration.zero
+              ? const Duration(milliseconds: 1)
+              : remaining,
+          maxRetries: 1,
+        );
+        if (currentCount != null && currentCount > previousSlotCount) {
+          return true;
+        }
+      } catch (_) {
+        return false;
+      }
+
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) break;
+      await Future.delayed(
+        remaining < const Duration(milliseconds: 100)
+            ? remaining
+            : const Duration(milliseconds: 100),
       );
-      return currentCount != null && currentCount > previousSlotCount;
-    } catch (_) {
-      return false;
-    }
+    } while (DateTime.now().isBefore(deadline));
+
+    return false;
   }
 
   bool _removeOptimisticAlgorithmPlaceholder({
     required int previousSlotCount,
+    required bool previousIsDirty,
     required String algorithmGuid,
     required String expectedPlaceholderName,
   }) {
@@ -119,7 +139,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
       st.copyWith(
         slots: List<Slot>.from(st.slots)..removeLast(),
         loading: false,
-        isDirty: true,
+        isDirty: previousIsDirty,
       ),
     );
     _rebuildCcLookup();
@@ -177,6 +197,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         } catch (_) {
           _removeOptimisticAlgorithmPlaceholder(
             previousSlotCount: syncstate.slots.length,
+            previousIsDirty: syncstate.isDirty,
             algorithmGuid: algorithm.guid,
             expectedPlaceholderName: expectedPlaceholderName,
           );
@@ -193,6 +214,7 @@ mixin _DistingCubitAlgorithmOps on _DistingCubitBase {
         if (!didAppear) {
           _removeOptimisticAlgorithmPlaceholder(
             previousSlotCount: syncstate.slots.length,
+            previousIsDirty: syncstate.isDirty,
             algorithmGuid: algorithm.guid,
             expectedPlaceholderName: expectedPlaceholderName,
           );

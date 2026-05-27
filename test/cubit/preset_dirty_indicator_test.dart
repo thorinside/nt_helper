@@ -366,7 +366,37 @@ void main() {
 
         final state = cubit.state as DistingStateSynchronized;
         expect(state.slots, isEmpty);
+        expect(state.isDirty, isFalse);
+      },
+    );
+
+    test(
+      'onAlgorithmSelected keeps waiting briefly for delayed slot count growth',
+      () async {
+        final algorithmInfo = AlgorithmInfo(
+          algorithmIndex: 0,
+          name: 'Eventually Added Algo',
+          guid: 'eventual',
+          specifications: const [],
+        );
+        var countRequests = 0;
+        when(
+          () => mockDisting.requestAddAlgorithm(any(), any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDisting.requestNumAlgorithmsInPreset(
+            timeout: any(named: 'timeout'),
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ).thenAnswer((_) async => ++countRequests == 1 ? 0 : 1);
+
+        cubit.emit(makeSyncState());
+        await cubit.onAlgorithmSelected(algorithmInfo, const []);
+
+        final state = cubit.state as DistingStateSynchronized;
+        expect(state.slots, hasLength(1));
         expect(state.isDirty, isTrue);
+        expect(countRequests, 2);
       },
     );
 
@@ -392,7 +422,7 @@ void main() {
 
         final state = cubit.state as DistingStateSynchronized;
         expect(state.slots, isEmpty);
-        expect(state.isDirty, isTrue);
+        expect(state.isDirty, isFalse);
       },
     );
 
